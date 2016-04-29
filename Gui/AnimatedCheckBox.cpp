@@ -99,6 +99,7 @@ AnimatedCheckBox::keyPressEvent(QKeyEvent* e)
         Q_EMIT toggled(checked);
         Q_EMIT clicked(checked);
         update();
+        e->accept();
     } else {
         QFrame::keyPressEvent(e);
     }

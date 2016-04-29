@@ -28,12 +28,20 @@
 #include <algorithm> // min, max
 #include <vector>
 #include <stdexcept>
+#include <climits>
+#include <cfloat>
 
 #include <QApplication>
 #include <QHeaderView>
 #include <QMouseEvent>
+#include <QStyle>
 #include <QScrollBar>
+
 #include "Gui/GuiMacros.h"
+#include "Gui/Label.h"
+#include "Gui/AnimatedCheckBox.h"
+#include "Gui/ComboBox.h"
+#include "Gui/SpinBox.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -881,6 +889,118 @@ struct TableViewPrivate
     }
 };
 
+
+
+
+ExpandingLineEdit::ExpandingLineEdit(QWidget *parent)
+: LineEdit(parent), originalWidth(-1), widgetOwnsGeometry(false)
+{
+    connect(this, SIGNAL(textChanged(QString)), this, SLOT(resizeToContents()));
+    updateMinimumWidth();
+}
+
+void ExpandingLineEdit::changeEvent(QEvent *e)
+{
+    switch (e->type())
+    {
+        case QEvent::FontChange:
+        case QEvent::StyleChange:
+        case QEvent::ContentsRectChange:
+            updateMinimumWidth();
+            break;
+        default:
+            break;
+    }
+    
+    QLineEdit::changeEvent(e);
+}
+
+void ExpandingLineEdit::updateMinimumWidth()
+{
+    int left, right;
+    getTextMargins(&left, 0, &right, 0);
+    int width = left + right + 4 /*horizontalMargin in qlineedit.cpp*/;
+    getContentsMargins(&left, 0, &right, 0);
+    width += left + right;
+    
+    QStyleOptionFrameV2 opt;
+    initStyleOption(&opt);
+    
+    int minWidth = style()->sizeFromContents(QStyle::CT_LineEdit, &opt, QSize(width, 0).
+                                             expandedTo(QApplication::globalStrut()), this).width();
+    setMinimumWidth(minWidth);
+}
+
+void ExpandingLineEdit::resizeToContents()
+{
+    int oldWidth = width();
+    if (originalWidth == -1)
+        originalWidth = oldWidth;
+    if (QWidget *parent = parentWidget()) {
+        QPoint position = pos();
+        int hintWidth = minimumWidth() + fontMetrics().width(displayText());
+        int parentWidth = parent->width();
+        int maxWidth = isRightToLeft() ? position.x() + oldWidth : parentWidth - position.x();
+        int newWidth = qBound(originalWidth, hintWidth, maxWidth);
+        if (widgetOwnsGeometry)
+            setMaximumWidth(newWidth);
+        if (isRightToLeft())
+            move(position.x() - newWidth + oldWidth, position.y());
+        resize(newWidth, height());
+    }
+}
+
+QWidget*
+TableItemEditorFactory::createEditor(QVariant::Type type, QWidget *parent) const
+{
+    switch (type) {
+        case QVariant::UInt: {
+            SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
+            sb->setFrame(false);
+            sb->setMaximum(INT_MAX);
+            return sb; }
+        case QVariant::Int: {
+            SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
+            sb->setFrame(false);
+            sb->setMinimum(INT_MIN);
+            sb->setMaximum(INT_MAX);
+            return sb; }
+        case QVariant::Pixmap:
+            return new Label(parent);
+        case QVariant::Double: {
+            SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeDouble);
+            sb->setFrame(false);
+            sb->setMinimum(-DBL_MAX);
+            sb->setMaximum(DBL_MAX);
+            return sb; }
+        case QVariant::String:
+        default: {
+            // the default editor is a lineedit
+            ExpandingLineEdit *le = new ExpandingLineEdit(parent);
+            le->setFrame(le->style()->styleHint(QStyle::SH_ItemView_DrawDelegateFrame, 0, le));
+            if (!le->style()->styleHint(QStyle::SH_ItemView_ShowDecorationSelected, 0, le))
+                le->setWidgetOwnsGeometry(true);
+            return le; }
+
+    }
+    return 0;
+
+}
+
+QByteArray
+TableItemEditorFactory::valuePropertyName(QVariant::Type type) const
+{
+    switch (type) {
+        case QVariant::UInt:
+        case QVariant::Int:
+        case QVariant::Double:
+            return "value";
+        case QVariant::String:
+        default:
+            // the default editor is a lineedit
+            return "text";
+    }
+}
 
 /////////////// TableView
 TableView::TableView(QWidget* parent)

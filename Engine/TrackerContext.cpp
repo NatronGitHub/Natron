@@ -555,8 +555,11 @@ TrackerContext::selectAll(TrackSelectionReason reason)
         QMutexLocker k(&_imp->trackerContextMutex);
         markers = _imp->markers;
     }
+    int time = getNode()->getApp()->getTimeLine()->currentFrame();
     for (std::vector<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        addTrackToSelection(*it, reason);
+        if ((*it)->isEnabled(time)) {
+            addTrackToSelection(*it, reason);
+        }
     }
     endEditSelection(reason);
 }
@@ -767,6 +770,15 @@ TrackerContext::exportTrackDataFromExportOptions()
                 assert(ok);
             }
         }
+        {
+            KnobPtr knob = createdNode->getKnobByName(kCornerPinParamMatrix);
+            if (knob) {
+                KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+                if (isType) {
+                    isType->cloneAndUpdateGui(_imp->cornerPinMatrix.lock().get());
+                }
+            }
+        }
     }
     break;
     case eTrackerTransformNodeTransform: {
@@ -778,6 +790,7 @@ TrackerContext::exportTrackDataFromExportOptions()
                     isDbl->cloneAndUpdateGui(_imp->translate.lock().get());
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->translate.lock(), 0);
+                    dynamic_cast<KnobI*>(isDbl)->slaveTo(1, _imp->translate.lock(), 1);
                 }
             }
         }
@@ -790,6 +803,7 @@ TrackerContext::exportTrackDataFromExportOptions()
                     isDbl->cloneAndUpdateGui(_imp->scale.lock().get());
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->scale.lock(), 0);
+                    dynamic_cast<KnobI*>(isDbl)->slaveTo(1, _imp->scale.lock(), 1);
                 }
             }
         }
@@ -805,7 +819,14 @@ TrackerContext::exportTrackDataFromExportOptions()
                 }
             }
         }
-
+        KnobPtr centerKnob = createdNode->getKnobByName(kTransformParamCenter);
+        if (centerKnob) {
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(centerKnob.get());
+            if (isDbl) {
+                isDbl->cloneAndUpdateGui(_imp->center.lock().get());
+               
+            }
+        }
     }
     break;
     }
@@ -821,24 +842,46 @@ TrackerContext::exportTrackDataFromExportOptions()
             }
         }
     }
-} // TrackerContext::exportTrackDataFromExportOptions
-
-void
-TrackerContext::onSelectedKnobCurveChanged()
-{
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
-
-    if (handler) {
-        boost::shared_ptr<KnobI> knob = handler->getKnob();
-        for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->perTrackKnobs.begin(); it != _imp->perTrackKnobs.end(); ++it) {
-            boost::shared_ptr<KnobI> k = it->lock();
-            if ( k->getName() == knob->getName() ) {
-                k->clone( knob.get() );
-                break;
+    
+    {
+        KnobPtr knob = createdNode->getKnobByName(kTransformParamMotionBlur);
+        if (knob) {
+            KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+            if (isType) {
+                isType->cloneAndUpdateGui(_imp->motionBlur.lock().get());
             }
         }
     }
-}
+    {
+        KnobPtr knob = createdNode->getKnobByName(kTransformParamShutter);
+        if (knob) {
+            KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+            if (isType) {
+                isType->cloneAndUpdateGui(_imp->shutter.lock().get());
+            }
+        }
+    }
+    {
+        KnobPtr knob = createdNode->getKnobByName(kTransformParamShutterOffset);
+        if (knob) {
+            KnobChoice* isType = dynamic_cast<KnobChoice*>(knob.get());
+            if (isType) {
+                isType->cloneAndUpdateGui(_imp->shutterOffset.lock().get());
+            }
+        }
+    }
+    {
+        KnobPtr knob = createdNode->getKnobByName(kTransformParamCustomShutterOffset);
+        if (knob) {
+            KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+            if (isType) {
+                isType->cloneAndUpdateGui(_imp->customShutterOffset.lock().get());
+            }
+        }
+    }
+} // TrackerContext::exportTrackDataFromExportOptions
+
+
 
 void
 TrackerContext::onMarkerEnabledChanged(int reason)
@@ -848,6 +891,7 @@ TrackerContext::onMarkerEnabledChanged(int reason)
     if (!m) {
         return;
     }
+    
     Q_EMIT enabledChanged(m->shared_from_this(), reason);
 }
 
@@ -872,19 +916,26 @@ TrackerContext::knobChanged(KnobI* k,
         boost::shared_ptr<KnobInt> refFrame = _imp->referenceFrame.lock();
         refFrame->setValue( _imp->node.lock()->getApp()->getTimeLine()->currentFrame() );
     } else if ( k == _imp->transformType.lock().get() ) {
-        solveTransformParams();
+        solveTransformParamsIfAutomatic();
         _imp->refreshVisibilityFromTransformType();
     } else if ( k == _imp->motionType.lock().get() ) {
-        solveTransformParams();
+        solveTransformParamsIfAutomatic();
         _imp->refreshVisibilityFromTransformType();
     } else if ( k == _imp->jitterPeriod.lock().get() ) {
-        solveTransformParams();
+        solveTransformParamsIfAutomatic();
     } else if ( k == _imp->smoothCornerPin.lock().get() ) {
-        solveTransformParams();
+        solveTransformParamsIfAutomatic();
     } else if ( k == _imp->smoothTransform.lock().get() ) {
-        solveTransformParams();
+        solveTransformParamsIfAutomatic();
     } else if ( k == _imp->referenceFrame.lock().get() ) {
+        solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->robustModel.lock().get() ) {
+        solveTransformParamsIfAutomatic();
+    } else if ( k == _imp->generateTransformButton.lock().get() ) {
         solveTransformParams();
+    } else if ( k == _imp->autoGenerateTransform.lock().get() ) {
+        solveTransformParams();
+       _imp->refreshVisibilityFromTransformType();
     }
 }
 
@@ -967,38 +1018,31 @@ TrackerContext::resetTransformCenter()
 }
 
 void
-TrackerContext::resetTransformParams()
+TrackerContext::solveTransformParamsIfAutomatic()
 {
-    boost::shared_ptr<KnobDouble> translate = _imp->translate.lock();
-
-    translate->resetToDefaultValue(0);
-    translate->resetToDefaultValue(1);
-
-    boost::shared_ptr<KnobDouble> rotate = _imp->rotate.lock();
-    rotate->resetToDefaultValue(0);
-
-    boost::shared_ptr<KnobDouble> scale = _imp->scale.lock();
-    scale->resetToDefaultValue(0);
-    scale->resetToDefaultValue(1);
-
-    boost::shared_ptr<KnobDouble> skewX = _imp->skewX.lock();
-    skewX->resetToDefaultValue(0);
-
-    boost::shared_ptr<KnobDouble> skewY = _imp->skewY.lock();
-    skewY->resetToDefaultValue(0);
-
-    resetTransformCenter();
+    if (_imp->isTransformAutoGenerationEnabled()) {
+        solveTransformParams();
+    } else {
+        _imp->setTransformOutOfDate(true);
+    }
 }
 
 void
 TrackerContext::solveTransformParams()
 {
+    
+    _imp->setTransformOutOfDate(false);
+    
     std::vector<TrackMarkerPtr> markers;
 
     getAllMarkers(&markers);
     if (markers.empty()) {
         return;
     }
+   
+    _imp->resetTransformParamsAnimation();
+    
+
     
     boost::shared_ptr<KnobChoice> motionTypeKnob = _imp->motionType.lock();
     
@@ -1009,7 +1053,6 @@ TrackerContext::solveTransformParams()
     bool jitterAdd = false;
     switch (type) {
     case eTrackerMotionTypeNone:
-        _imp->resetTransformParamsAnimation();
         return;
     case eTrackerMotionTypeMatchMove:
     case eTrackerMotionTypeStabilize:
@@ -1069,7 +1112,9 @@ TrackerContext::solveTransformParams()
         centerValue.y /= nSamplesAtRefTime;
         centerKnob->setValues(centerValue.x, centerValue.y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
     }
-    
+
+    bool robustModel;
+    robustModel = _imp->robustModel.lock()->getValue();
     
     node->getApp()->progressStart(node, QObject::tr("Solving transform parameters...").toStdString(), std::string());
 
@@ -1078,7 +1123,7 @@ TrackerContext::solveTransformParams()
     _imp->lastSolveRequest.jitterAdd = jitterAdd;
     _imp->lastSolveRequest.allMarkers = markers;
     _imp->lastSolveRequest.keyframes = keyframes;
-    
+    _imp->lastSolveRequest.robustModel = robustModel;
     switch (transformType) {
     case eTrackerTransformNodeTransform:
             _imp->computeTransformParamsFromTracks();
@@ -1124,7 +1169,8 @@ TrackerContext::drawInternalNodesOverlay(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        thisNode->drawHostOverlay(time, renderScale, view);
+        thisNode->getEffectInstance()->drawOverlay_public(time, renderScale, view);
+        //thisNode->drawHostOverlay(time, renderScale, view);
     }
 }
 
@@ -1144,7 +1190,7 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure) ) {
             return true;
         }
     }
@@ -1168,7 +1214,7 @@ TrackerContext::onOverlayPenMotionInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayPenMotionDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure) ) {
             return true;
         }
     }
@@ -1192,7 +1238,7 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayPenUpDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure) ) {
             return true;
         }
     }
@@ -1215,7 +1261,7 @@ TrackerContext::onOverlayKeyDownInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayKeyDownDefault(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyDown_public(time, renderScale, view, key, modifiers) ) {
             return true;
         }
     }
@@ -1238,7 +1284,7 @@ TrackerContext::onOverlayKeyUpInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayKeyUpDefault(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyUp_public(time, renderScale, view, key, modifiers) ) {
             return true;
         }
     }
@@ -1261,7 +1307,7 @@ TrackerContext::onOverlayKeyRepeatInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayKeyRepeatDefault(time, renderScale, view, key, modifiers) ) {
+        if ( thisNode->getEffectInstance()->onOverlayKeyRepeat_public(time, renderScale, view, key, modifiers) ) {
             return true;
         }
     }
@@ -1282,7 +1328,7 @@ TrackerContext::onOverlayFocusGainedInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayFocusGainedDefault(time, renderScale, view) ) {
+        if ( thisNode->getEffectInstance()->onOverlayFocusGained_public(time, renderScale, view) ) {
             return true;
         }
     }
@@ -1303,7 +1349,7 @@ TrackerContext::onOverlayFocusLostInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->onOverlayFocusLostDefault(time, renderScale, view) ) {
+        if ( thisNode->getEffectInstance()->onOverlayFocusLost_public(time, renderScale, view) ) {
             return true;
         }
     }
@@ -1501,6 +1547,8 @@ TrackScheduler<TrackArgsType>::run()
                 cur = end;
             }
 
+            bool allTrackFailed = false;
+            
             while (cur != end) {
                 ///Launch parallel thread for each track using the global thread pool
                 QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
@@ -1510,14 +1558,16 @@ TrackScheduler<TrackArgsType>::run()
                                                                          cur) );
                 future.waitForFinished();
 
-                bool failure = false;
+                allTrackFailed = true;
                 for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
-                    if ( !(*it) ) {
-                        failure = true;
+                    if ((*it)) {
+                        allTrackFailed = false;
                         break;
                     }
                 }
-                if (failure) {
+                
+                // We don't have any successful track, stop
+                if (allTrackFailed) {
                     break;
                 }
 
@@ -1573,7 +1623,7 @@ TrackScheduler<TrackArgsType>::run()
             } // while (cur != end) {
         } // IsTrackingFlagSetter_RAII
         TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
-        if (isContext) {
+        if (!isContext) {
             isContext->solveTransformParams();
         }
 

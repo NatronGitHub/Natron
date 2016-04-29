@@ -307,7 +307,8 @@ struct KnobHelperPrivate
     mutable QMutex hasModificationsMutex;
     std::vector<bool> hasModifications;
     mutable QMutex valueChangedBlockedMutex;
-    int valueChangedBlocked;
+    int valueChangedBlocked; // protected by valueChangedBlockedMutex
+    int listenersNotificationBlocked; // protected by valueChangedBlockedMutex
     bool isClipPreferenceSlave;
 
     KnobHelperPrivate(KnobHelper* publicInterface_,
@@ -367,6 +368,7 @@ struct KnobHelperPrivate
         , hasModifications()
         , valueChangedBlockedMutex()
         , valueChangedBlocked(0)
+        , listenersNotificationBlocked(0)
         , isClipPreferenceSlave(false)
     {
         mustCloneGuiCurves.resize(dimension);
@@ -1606,6 +1608,33 @@ KnobHelper::isValueChangesBlocked() const
 }
 
 void
+KnobHelper::blockListenersNotification()
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    
+    ++_imp->listenersNotificationBlocked;
+
+}
+
+void
+KnobHelper::unblockListenersNotification()
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    
+    --_imp->listenersNotificationBlocked;
+
+}
+
+bool
+KnobHelper::isListenersNotificationBlocked() const
+{
+    QMutexLocker k(&_imp->valueChangedBlockedMutex);
+    
+    return _imp->listenersNotificationBlocked > 0;
+
+}
+
+void
 KnobHelper::evaluateValueChangeInternal(int dimension,
                                         double time,
                                         ViewSpec view,
@@ -1631,12 +1660,14 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     }
 
 
-    if (!_imp->holder && _signalSlotHandler) {
+    if (!_imp->holder) {
         computeHasModifications();
         if (refreshWidget) {
             _signalSlotHandler->s_valueChanged(view, dimension, (int)reason);
         }
-        refreshListenersAfterValueChange(view, originalReason, dimension);
+        if (!isListenersNotificationBlocked()) {
+            refreshListenersAfterValueChange(view, originalReason, dimension);
+        }
         checkAnimationLevel(view, dimension);
     }
 }
@@ -3494,7 +3525,9 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
         slaveKnob->evaluateValueChangeInternal(dimChanged, time, view, eValueChangedReasonSlaveRefresh, reason);
 
         //call recursively
-        slaveKnob->refreshListenersAfterValueChange(view, reason, dimChanged);
+        if (!slaveKnob->isListenersNotificationBlocked()) {
+            slaveKnob->refreshListenersAfterValueChange(view, reason, dimChanged);
+        }
     } // for all listeners
 } // KnobHelper::refreshListenersAfterValueChange
 
@@ -4959,7 +4992,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->checkAnimationLevel(it->view, dimension);
         }
 
-        if (!it->valueChangeBlocked) {
+        if (!it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked()) {
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }

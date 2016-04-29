@@ -266,7 +266,9 @@ TrackMarker::load(const TrackSerialization& serialization)
     for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serialization._knobs.begin(); it != serialization._knobs.end(); ++it) {
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == (*it)->getName() ) {
+                (*it2)->blockValueChanges();
                 (*it2)->clone( (*it)->getKnob() );
+                (*it2)->unblockValueChanges();
                 break;
             }
         }
@@ -491,6 +493,30 @@ TrackMarker::getEnabledNessAnimationLevel() const
 }
 
 void
+TrackMarker::setMotionModelFromGui(int index)
+{
+    boost::shared_ptr<KnobChoice> knob = _imp->motionModel.lock();
+    
+    if (!knob) {
+        return;
+    }
+    
+    
+    KeyFrame k;
+    std::pair<int,KnobPtr> master = knob->getMaster(0);
+    if (master.second) {
+        knob->unSlave(0, true);
+    }
+    knob->onValueChanged(index, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
+    if (master.second) {
+        master.second->cloneAndUpdateGui(knob.get());
+        knob->slaveTo(0, master.second, master.first);
+    }
+    
+
+}
+
+void
 TrackMarker::setEnabledFromGui(double /*time*/,
                                bool enabled)
 {
@@ -499,16 +525,20 @@ TrackMarker::setEnabledFromGui(double /*time*/,
     if (!knob) {
         return;
     }
+    
+    
     KeyFrame k;
     std::pair<int,KnobPtr> master = knob->getMaster(0);
     if (master.second) {
-        knob->unSlave(0, false);
+        knob->unSlave(0, true);
     }
     knob->onValueChanged(enabled, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
     if (master.second) {
-        master.second->clone(knob.get());
+        master.second->cloneAndUpdateGui(knob.get());
         knob->slaveTo(0, master.second, master.first);
     }
+    
+    getContext()->solveTransformParamsIfAutomatic();
 }
 
 void
@@ -649,6 +679,10 @@ TrackMarker::clearAnimation()
     KnobPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAll, 0);
+    
+    KnobPtr errorKnob = getErrorKnob();
+    assert(errorKnob);
+    deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationAll, 0);
 }
 
 void
@@ -664,6 +698,10 @@ TrackMarker::clearAnimationBeforeTime(int time)
     KnobPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationBeforeTime, time);
+    
+    KnobPtr errorKnob = getErrorKnob();
+    assert(errorKnob);
+    deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationBeforeTime, time);
 }
 
 void
@@ -679,6 +717,10 @@ TrackMarker::clearAnimationAfterTime(int time)
     KnobPtr centerKnob = getCenterKnob();
     assert(centerKnob);
     deleteKnobAnimation(userKeyframes, centerKnob, eDeleteKnobAnimationAfterTime, time);
+    
+    KnobPtr errorKnob = getErrorKnob();
+    assert(errorKnob);
+    deleteKnobAnimation(userKeyframes, errorKnob, eDeleteKnobAnimationAfterTime, time);
 }
 
 void
@@ -729,6 +771,25 @@ TrackMarker::removeAllUserKeyframes()
         _imp->userKeyframes.clear();
     }
     getContext()->s_allKeyframesRemovedOnTrack( shared_from_this() );
+}
+
+void
+TrackMarker::setKeyFrameOnCenterAndPatternAtTime(int time)
+{
+    boost::shared_ptr<KnobDouble> center = _imp->center.lock();
+    for (int i = 0; i < center->getDimension(); ++i) {
+        double v = center->getValueAtTime(time,i);
+        center->setValueAtTime(time, v, ViewSpec::all(), i);
+    }
+    
+    boost::shared_ptr<KnobDouble> patternCorners[4] = {_imp->patternBtmLeft.lock(), _imp->patternTopLeft.lock(), _imp->patternTopRight.lock(), _imp->patternBtmRight.lock()};
+    for (int c = 0; c < 4; ++c) {
+        boost::shared_ptr<KnobDouble> k = patternCorners[c];
+        for (int i = 0; i < k->getDimension(); ++i) {
+            double v = k->getValueAtTime(time,i);
+            k->setValueAtTime(time, v, ViewSpec::all(), i);
+        }
+    }
 }
 
 void

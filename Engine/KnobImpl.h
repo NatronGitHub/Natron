@@ -991,11 +991,14 @@ Knob<T>::setValue(const T & v,
     }
 
     KnobHelper::ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
-    EffectInstance* holder = dynamic_cast<EffectInstance*>( getHolder() );
+    KnobHolder* holder =  getHolder();
 
 #ifdef DEBUG
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
-        holder->checkCanSetValueAndWarn();
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+        if (isEffect) {
+            isEffect->checkCanSetValueAndWarn();
+        }
     }
 #endif
 
@@ -1391,11 +1394,14 @@ Knob<T>::setValueAtTime(double time,
     }
 
     KnobHelper::ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNoKeyframeAdded;
-    EffectInstance* holder = dynamic_cast<EffectInstance*>( getHolder() );
+    KnobHolder* holder =  getHolder();
 
 #ifdef DEBUG
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
-        holder->checkCanSetValueAndWarn();
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+        if (isEffect) {
+            isEffect->checkCanSetValueAndWarn();
+        }
     }
 #endif
 
@@ -1453,7 +1459,7 @@ Knob<T>::setValueAtTime(double time,
     makeKeyFrame(curve.get(), time, view, v, newKey);
 
 
-    if ( holder && !holder->canSetValue() ) {
+    if ( holder && !holder->isSetValueCurrentlyPossible() ) {
         ///If we cannot set value, queue it
         if ( holder && getEvaluateOnChange() ) {
             //We explicitly abort rendering now and do not wait for it to be done in EffectInstance::evaluate()
@@ -2221,7 +2227,7 @@ Knob<std::string>::getIntegrateFromTimeToTime(double /*time1*/,
 
 template<typename T>
 void
-Knob<T>::resetToDefaultValue(int dimension)
+Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
 {
     KnobI::removeAnimation(ViewSpec::all(), dimension);
     T defaultV;
@@ -2229,13 +2235,20 @@ Knob<T>::resetToDefaultValue(int dimension)
         QMutexLocker l(&_valueMutex);
         defaultV = _defaultValues[dimension];
     }
-
+    
     clearExpression(dimension, true);
     resetExtraToDefaultValue(dimension);
     ignore_result( setValue(defaultV, ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault, NULL) );
     if (_signalSlotHandler) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault);
     }
+}
+
+template<typename T>
+void
+Knob<T>::resetToDefaultValue(int dimension)
+{
+    resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
     setSecret( getDefaultIsSecret() );
     setEnabled( dimension, isDefaultEnabled(dimension) );
 }
@@ -2447,8 +2460,17 @@ Knob<int>::cloneValuesAndCheckIfChanged(KnobI* other,
     bool ret = false;
     QMutexLocker k(&_valueMutex);
     if (isInt) {
-        _values = isInt->getValueForEachDimension_mt_safe_vector();
-        _guiValues = _values;
+        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
+        
+        for (unsigned i = 0; i < v.size(); ++i) {
+            if ( ((int)i == dimension) || (dimension == -1) ) {
+                _guiValues[i] = v[i];
+                if (_values[i] != v[i]) {
+                    _values[i] = v[i];
+                    ret = true;
+                }
+            }
+        }
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
         assert( v.size() == _values.size() );
@@ -2503,8 +2525,17 @@ Knob<bool>::cloneValuesAndCheckIfChanged(KnobI* other,
             }
         }
     } else if (isBool) {
-        _values = isBool->getValueForEachDimension_mt_safe_vector();
-        _guiValues = _values;
+        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
+        
+        for (int i = 0; i < dimMin; ++i) {
+            if ( (i == dimension) || (dimension == -1) ) {
+                _guiValues[i] = v[i];
+                if (_values[i] != v[i]) {
+                    _values[i] = v[i];
+                    ret = true;
+                }
+            }
+        }
     } else if (isDouble) {
         std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
 
@@ -2643,16 +2674,24 @@ Knob<T>::clone(KnobI* other,
 
             boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i);
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i);
-            if (guiCurve && otherGuiCurve) {
-                guiCurve->clone(*otherGuiCurve);
+            if (guiCurve) {
+                if (otherGuiCurve) {
+                    guiCurve->clone(*otherGuiCurve);
+                } else {
+                    guiCurve->clone(*otherCurve);
+                }
             }
             checkAnimationLevel(ViewIdx(0), i);
         }
     }
-    if (_signalSlotHandler) {
+    if (!isValueChangesBlocked()) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+    }
+    if (!isListenersNotificationBlocked()) {
         refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
+    
+    
     cloneExtraData(other, dimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
@@ -2680,10 +2719,14 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,
             if (thisCurve && otherCurve) {
                 hasChanged |= thisCurve->cloneAndCheckIfChanged(*otherCurve);
             }
-            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i);
-            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i);
-            if (guiCurve && otherGuiCurve) {
-                hasChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
+            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i, true);
+            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i, true);
+            if (guiCurve) {
+                if (otherGuiCurve) {
+                    hasChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
+                } else {
+                    hasChanged |= guiCurve->cloneAndCheckIfChanged(*otherCurve);
+                }
             }
 
             if (hasChanged) {
@@ -2691,18 +2734,20 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,
             }
         }
     }
-    if (hasChanged) {
-        if (_signalSlotHandler) {
-            _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-            refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
-        }
-    }
+    
     hasChanged |= cloneExtraDataAndCheckIfChanged(other);
     if (hasChanged) {
         if ( getHolder() ) {
             getHolder()->updateHasAnimation();
         }
         computeHasModifications();
+    }
+    if (hasChanged) {
+        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+        if (!isListenersNotificationBlocked()) {
+            refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
+        }
+        
     }
 
     return hasChanged;
@@ -2728,22 +2773,28 @@ Knob<T>::clone(KnobI* other,
             if (thisCurve && otherCurve) {
                 thisCurve->clone(*otherCurve, offset, range);
             }
-            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i);
-            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i);
-            if (guiCurve && otherGuiCurve) {
-                guiCurve->clone(*otherGuiCurve, offset, range);
+            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i, true);
+            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i, true);
+            if (guiCurve) {
+                if (otherGuiCurve) {
+                    guiCurve->clone(*otherGuiCurve,offset,range);
+                } else {
+                    guiCurve->clone(*otherCurve,offset,range);
+                }
             }
             checkAnimationLevel(ViewSpec::all(), i);
         }
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-        refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
-    }
+    
     cloneExtraData(other, offset, range, dimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
     }
+    _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+    if (!isListenersNotificationBlocked()) {
+        refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
+    }
+    
 }
 
 template<typename T>
@@ -2751,33 +2802,58 @@ void
 Knob<T>::cloneAndUpdateGui(KnobI* other,
                            int dimension)
 {
+    
     if (other == this) {
         return;
     }
+    
+    bool hasChanged = cloneValuesAndCheckIfChanged(other, dimension);
+    hasChanged |= cloneExpressionsAndCheckIfChanged(other, dimension);
+    
     int dimMin = std::min( getDimension(), other->getDimension() );
-    cloneValues(other, dimension);
-    cloneExpressions(other);
     for (int i = 0; i < dimMin; ++i) {
         if ( (dimension == -1) || (i == dimension) ) {
-            if ( _signalSlotHandler && isAnimated( i, ViewIdx(0) ) ) {
-                _signalSlotHandler->s_animationAboutToBeRemoved(ViewSpec::all(), i);
-                _signalSlotHandler->s_animationRemoved(ViewSpec::all(), i);
+            boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), i, true);
+            
+            
+            KeyFrameSet oldKeys;
+            if (thisCurve) {
+                oldKeys = thisCurve->getKeyFrames_mt_safe();
             }
-            boost::shared_ptr<Curve> curve = getCurve(ViewIdx(0), i, true);
+            
+
             boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), i, true);
-            if (curve && otherCurve) {
-                curve->clone( *other->getCurve(ViewIdx(0), i, true) );
+            bool cloningCurveChanged = false;
+            if (thisCurve && otherCurve) {
+                cloningCurveChanged |= thisCurve->cloneAndCheckIfChanged(*otherCurve);
             }
-            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i);
-            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i);
-            if (guiCurve && otherGuiCurve) {
-                guiCurve->clone(*otherGuiCurve);
+            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i, true);
+            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i, true);
+            if (guiCurve) {
+                if (otherGuiCurve) {
+                    cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
+                } else {
+                    cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherCurve);
+                }
             }
-            if (_signalSlotHandler) {
+            
+            if (cloningCurveChanged) {
+                // Indicate that old keyframes are removed
+
+                std::list<double> oldKeysList;
+                for (KeyFrameSet::iterator it = oldKeys.begin(); it != oldKeys.end(); ++it) {
+                    oldKeysList.push_back( it->getTime() );
+                }
+                if ( !oldKeysList.empty() ) {
+                    _signalSlotHandler->s_multipleKeyFramesRemoved(oldKeysList, ViewSpec::all(), i, (int)eValueChangedReasonNatronInternalEdited);
+                }
+                
+                // Indicate new keyframes
+
                 std::list<double> keysList;
                 KeyFrameSet keys;
-                if (curve) {
-                    keys = curve->getKeyFrames_mt_safe();
+                if (thisCurve) {
+                    keys = thisCurve->getKeyFrames_mt_safe();
                 }
                 for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
                     keysList.push_back( it->getTime() );
@@ -2786,18 +2862,29 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
                     _signalSlotHandler->s_multipleKeyFramesSet(keysList, ViewSpec::all(), i, (int)eValueChangedReasonNatronInternalEdited);
                 }
             }
-            checkAnimationLevel(ViewSpec::all(), i);
+            
+            hasChanged |= cloningCurveChanged;
+        
+            if (hasChanged) {
+                checkAnimationLevel(ViewSpec::all(), i);
+            }
         }
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-    }
-    refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
-    cloneExtraData(other, dimension);
-    if ( getHolder() ) {
-        getHolder()->updateHasAnimation();
+    hasChanged |= cloneExtraDataAndCheckIfChanged(other);
+    if (hasChanged) {
+        if ( getHolder() ) {
+            getHolder()->updateHasAnimation();
+        }
         computeHasModifications();
     }
+    if (hasChanged) {
+        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
+        if (!isListenersNotificationBlocked()) {
+            refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
+        }
+        
+    }
+    
 } // >::cloneAndUpdateGui
 
 template <typename T>

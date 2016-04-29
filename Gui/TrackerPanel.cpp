@@ -238,6 +238,7 @@ struct TrackerPanelPrivate
     QVBoxLayout* mainLayout;
     TableView* view;
     TableModel* model;
+    boost::scoped_ptr<TableItemEditorFactory> itemEditorFactory;
     QWidget* buttonsContainer;
     QHBoxLayout* buttonsLayout;
     Button* addButton;
@@ -296,6 +297,8 @@ struct TrackerPanelPrivate
     void makeTrackRowItems(const TrackMarker& marker, int row, TrackDatas& data);
 
     void markersToSelection(const std::list<TrackMarkerPtr >& markers, QItemSelection* selection);
+    
+    void selectionFromIndexList(const QModelIndexList& indexes, std::list<TrackMarkerPtr >* markers);
 
     void selectionToMarkers(const QItemSelection& selection, std::list<TrackMarkerPtr >* markers);
 
@@ -438,6 +441,8 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( _imp->view, SIGNAL(deleteKeyPressed()), this, SLOT(onRemoveButtonClicked()) );
     QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
     TrackerTableItemDelegate* delegate = new TrackerTableItemDelegate(_imp->view, this);
+    _imp->itemEditorFactory.reset(new TableItemEditorFactory);
+    delegate->setItemEditorFactory(_imp->itemEditorFactory.get());
     _imp->view->setItemDelegate(delegate);
 
     _imp->model = new TableModel(0, 0, _imp->view);
@@ -740,7 +745,7 @@ TrackerPanel::addTableRow(const TrackMarkerPtr & node)
         ///select the new item
         std::list<TrackMarkerPtr > markers;
         markers.push_back(node);
-        selectInternal(markers, TrackerContext::eTrackSelectionSettingsPanel);
+        selectInternal(markers, TrackerContext::eTrackSelectionInternal);
     }
 }
 
@@ -768,7 +773,7 @@ TrackerPanel::insertTableRow(const TrackMarkerPtr & node,
         ///select the new item
         std::list<TrackMarkerPtr > markers;
         markers.push_back(node);
-        selectInternal(markers, TrackerContext::eTrackSelectionSettingsPanel);
+        selectInternal(markers, TrackerContext::eTrackSelectionInternal);
     }
 }
 
@@ -949,13 +954,16 @@ TrackerPanel::onResetButtonClicked()
     assert(context);
     std::list<TrackMarkerPtr > markers;
     context->getSelectedMarkers(&markers);
-    context->beginEditSelection();
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
+    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
+
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->resetTrack();
     }
+    context->beginEditSelection();
     context->addTracksToSelection(markers, TrackerContext::eTrackSelectionInternal);
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
+
 }
 
 TrackMarkerPtr
@@ -1123,18 +1131,15 @@ TrackerPanelPrivate::markersToSelection(const std::list<TrackMarkerPtr >& marker
 }
 
 void
-TrackerPanelPrivate::selectionToMarkers(const QItemSelection& selection,
-                                        std::list<TrackMarkerPtr >* markers)
+TrackerPanelPrivate::selectionFromIndexList(const QModelIndexList& indexes, std::list<TrackMarkerPtr >* markers)
 {
-    QModelIndexList indexes = selection.indexes();
-
     for (int i = 0; i < indexes.size(); ++i) {
         //Check that the item is valid
         assert(indexes[i].isValid() && indexes[i].row() >= 0 && indexes[i].row() < (int)items.size() && indexes[i].column() >= 0 && indexes[i].column() < NUM_COLS);
-
+        
         //Check that the items vector is in sync with the model
         assert( items[indexes[i].row()].items[indexes[i].column()].item == model->item(indexes[i]) );
-
+        
         TrackMarkerPtr marker = items[indexes[i].row()].marker.lock();
         if (marker) {
             if ( std::find(markers->begin(), markers->end(), marker) == markers->end() ) {
@@ -1142,6 +1147,15 @@ TrackerPanelPrivate::selectionToMarkers(const QItemSelection& selection,
             }
         }
     }
+}
+
+void
+TrackerPanelPrivate::selectionToMarkers(const QItemSelection& selection,
+                                        std::list<TrackMarkerPtr >* markers)
+{
+    QModelIndexList indexes = selection.indexes();
+    selectionFromIndexList(indexes, markers);
+    
 }
 
 void
@@ -1251,15 +1265,16 @@ TrackerPanel::onContextSelectionChanged(int reason)
 }
 
 void
-TrackerPanel::onModelSelectionChanged(const QItemSelection &newSelection,
-                                      const QItemSelection & oldSelection)
+TrackerPanel::onModelSelectionChanged(const QItemSelection &/*addedToSelection*/,
+                                      const QItemSelection & /*removedFromSelection*/)
 {
     if (_imp->selectionRecursion > 0) {
         return;
     }
     std::list<TrackMarkerPtr > oldMarkers, markers;
-    _imp->selectionToMarkers(newSelection, &markers);
-    _imp->selectionToMarkers(oldSelection, &oldMarkers);
+    _imp->context.lock()->getSelectedMarkers(&oldMarkers);
+    QModelIndexList newSelection = _imp->view->selectionModel()->selectedRows();
+    _imp->selectionFromIndexList(newSelection, &markers);
     onSelectionAboutToChangeInternal(oldMarkers);
     clearAndSelectTracks(markers, TrackerContext::eTrackSelectionSettingsPanel);
 }
@@ -1285,8 +1300,9 @@ TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
         ///select the new item
         QItemSelection selection;
         _imp->markersToSelection(markers, &selection);
-
-        _imp->view->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        if (selectionReason != TrackerContext::eTrackSelectionSettingsPanel) {
+            _imp->view->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+        }
 
 
         std::list<int> keysToAdd, userKeysToAdd;
@@ -1370,12 +1386,19 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                     boost::shared_ptr<KnobDouble> knob = boost::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
                     assert(knob);
                     int dim = _imp->items[it].items[i].dimension;
+                  
                     double value = item->data(Qt::DisplayRole).toDouble();
                     if ( knob->isAnimationEnabled() && knob->isAnimated(dim) ) {
                         KeyFrame kf;
                         knob->setValueAtTime(time, value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, &kf);
                     } else {
                         knob->setValue(value, ViewSpec(0), dim, eValueChangedReasonNatronGuiEdited, 0);
+                    }
+                    if (i != COL_ERROR) {
+                        NodePtr node = getContext()->getNode();
+                        if (node) {
+                            node->getApp()->redrawAllViewers();
+                        }
                     }
                 }
                 break;
@@ -1396,7 +1419,14 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
         if (widgetContainer == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
+            boost::shared_ptr<TrackerContext> context = getContext();
+            // Set the selection to only this marker otherwise all markers will get the enabled value
+            context->beginEditSelection();
+            context->clearSelection(TrackerContext::eTrackSelectionInternal);
+            context->addTrackToSelection(marker, TrackerContext::eTrackSelectionInternal);
+            context->endEditSelection(TrackerContext::eTrackSelectionInternal);
             marker->setEnabledFromGui(marker->getCurrentTime(), checked);
+            widget->setAnimation(marker->getEnabledNessAnimationLevel());
             break;
         }
     }
@@ -1413,7 +1443,14 @@ TrackerPanel::onItemMotionModelChanged(int index)
         QWidget* cellW = _imp->view->cellWidget(i, COL_MOTION_MODEL);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            marker->getMotionModelKnob()->setValue(index, ViewSpec(0), 0, eValueChangedReasonNatronGuiEdited, 0);
+            boost::shared_ptr<TrackerContext> context = getContext();
+            // Set the selection to only this marker otherwise all markers will get the enabled value
+            context->beginEditSelection();
+            context->clearSelection(TrackerContext::eTrackSelectionInternal);
+            context->addTrackToSelection(marker, TrackerContext::eTrackSelectionInternal);
+            context->endEditSelection(TrackerContext::eTrackSelectionInternal);
+
+            marker->setMotionModelFromGui(index);
             break;
         }
     }
@@ -1765,7 +1802,8 @@ TrackerPanel::onMotionModelKnobValueChanged(const TrackMarkerPtr &marker,
     if (!w) {
         return;
     }
-    w->setCurrentIndex_no_emit( marker->getMotionModelKnob()->getValue(0) );
+    int index = marker->getMotionModelKnob()->getValue();
+    w->setCurrentIndex_no_emit(index);
 }
 
 void
@@ -1788,6 +1826,7 @@ TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,
         AnimatedCheckBox* isCheckbox = dynamic_cast<AnimatedCheckBox*>(*it);
         if (isCheckbox) {
             isCheckbox->setChecked( marker->isEnabled( marker->getCurrentTime() ) );
+            isCheckbox->setAnimation((int)marker->getEnabledNessAnimationLevel());
             getNode()->getNode()->getApp()->redrawAllViewers();
             break;
         }

@@ -396,8 +396,7 @@ public:
 
     std::string getAppIDString() const;
 
-    void setCreatingNode(bool b);
-    bool isCreatingNode() const;
+    const std::list<NodePtr>& getNodesBeingCreated() const;
 
     virtual bool isDraftRenderEnabled() const { return false; }
 

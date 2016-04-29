@@ -48,6 +48,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TrackMarker.h"
 
 
 #define kTrackBaseName "track"
@@ -91,6 +92,9 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamPreBlurSigma "preBlurSigma"
 #define kTrackerParamPreBlurSigmaLabel "Pre-blur sigma"
 #define kTrackerParamPreBlurSigmaHint "The size in pixels of the blur kernel used to both smooth the image and take the image derivative."
+
+#define kTrackerParamPerTrackParamsSeparator "perTrackParams"
+#define kTrackerParamPerTrackParamsSeparatorLabel "Per-Track Parameters"
 
 #define kTrackerParamExportDataSeparator "exportDataSection"
 #define kTrackerParamExportDataSeparatorLabel "Export"
@@ -145,6 +149,11 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamMotionTypeAddJitter "Add Jitter"
 #define kTrackerParamMotionTypeAddJitterHelp "Transforms the image by the high frequencies of the animation of the tracks to increase the shake or apply it on another image"
 
+#define kTrackerParamRobustModel "robustModel"
+#define kTrackerParamRobustModelLabel "Robust Model"
+#define kTrackerParamRobustModelHint "When checked, the solver will assume that the model generated (i.e: the Transform or the CornerPin) is possible given the motion of the video and will eliminate points that do not match the model to compute the resulting parameters. " \
+"When unchecked, the solver assumes that all points that are enabled and have a keyframe are valid and fit the model: this may in some situations work better if you are trying to find a model that is just not correct for the given motion of the video."
+
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
 #define kTrackerParamReferenceFrameHint "When exporting tracks to a CornerPin or Transform, this will be the frame number at which the transform will be an identity."
@@ -164,6 +173,19 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamSmoothCornerPin "smoothCornerPin"
 #define kTrackerParamSmoothCornerPinLabel "Smooth"
 #define kTrackerParamSmoothCornerPinHint "Smooth the Corner Pin by averaging this number of frames together"
+
+#define kTrackerParamAutoGenerateTransform "autoComputeransform"
+#define kTrackerParamAutoGenerateTransformLabel "Compute Transform Automatically"
+#define kTrackerParamAutoGenerateTransformHint "When checked, whenever changing a parameter controlling the Transform Generation (such as Motion Type, Transform Type, Reference Frame, etc...) or changing the Enabled parameter of a track, the transform parameters will be re-computed automatically. " \
+"When unchecked, you must press the Compute button to compute it."
+
+#define kTrackerParamGenerateTransform "computeTransform"
+#define kTrackerParamGenerateTransformLabel "Compute"
+#define kTrackerParamGenerateTransformHint "Click to compute the parameters of the Transform Controls or CornerPin Controls (depending on the Transform Type) from the data acquired on the tracks during the tracking. This should be done after the tracking is finished and when you feel the results are satisfying. " \
+"For each frame, the resulting parameter is computed from the tracks that are enabled at this frame and that have a keyframe on the center point (e.g: are valid)."
+
+#define kTrackerParamTransformOutOfDate "transformOutOfDate"
+#define kTrackerParamTransformOutOfDateHint "The Transform parameters are out of date because parameters that control their generation have been changed, please click the Compute button to refresh them"
 
 
 #define kTransformParamTranslate "translate"
@@ -388,7 +410,9 @@ public:
     boost::weak_ptr<KnobInt> maxIterations;
     boost::weak_ptr<KnobBool> bruteForcePreTrack, useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
+    boost::weak_ptr<KnobSeparator> perTrackParamsSeparator;
     boost::weak_ptr<KnobBool> activateTrack;
+    boost::weak_ptr<KnobChoice> motionModel;
     boost::weak_ptr<KnobSeparator> exportDataSep;
     boost::weak_ptr<KnobBool> exportLink;
     boost::weak_ptr<KnobButton> exportButton;
@@ -396,11 +420,16 @@ public:
     boost::weak_ptr<KnobPage> transformPageKnob;
     boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
     boost::weak_ptr<KnobChoice> transformType, motionType;
+    boost::weak_ptr<KnobBool> robustModel;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
     boost::weak_ptr<KnobInt> smoothTransform;
     boost::weak_ptr<KnobInt> smoothCornerPin;
+    boost::weak_ptr<KnobBool> autoGenerateTransform;
+    boost::weak_ptr<KnobButton> generateTransformButton;
+    boost::weak_ptr<KnobString> transformOutOfDateLabel;
+    
     boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobDouble> translate;
     boost::weak_ptr<KnobDouble> rotate;
@@ -462,6 +491,7 @@ public:
         std::set<double> keyframes;
         int jitterPeriod;
         bool jitterAdd;
+        bool robustModel;
         std::vector<TrackMarkerPtr> allMarkers;
     };
     
@@ -548,7 +578,9 @@ public:
      * Requires at least 1 point. x1 and x2 must have the same size.
      * This function throws an exception with an error message upon failure.
      **/
-    static void computeTranslationFromNPoints(const std::vector<Point>& x1,
+    static void computeTranslationFromNPoints(const bool dataSetIsManual,
+                                              const bool robustModel,
+                                              const std::vector<Point>& x1,
                                               const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
                                               Point* translation);
@@ -558,7 +590,9 @@ public:
      * Requires at least 2 point. x1 and x2 must have the same size.
      * This function throws an exception with an error message upon failure.
      **/
-    static void computeSimilarityFromNPoints(const std::vector<Point>& x1,
+    static void computeSimilarityFromNPoints(const bool dataSetIsManual,
+                                             const bool robustModel,
+                                             const std::vector<Point>& x1,
                                              const std::vector<Point>& x2,
                                              int w1, int h1, int w2, int h2,
                                              Point* translation,
@@ -569,7 +603,9 @@ public:
      * Requires at least 4 point. x1 and x2 must have the same size.
      * This function throws an exception with an error message upon failure.
      **/
-    static void computeHomographyFromNPoints(const std::vector<Point>& x1,
+    static void computeHomographyFromNPoints(const bool dataSetIsManual,
+                                             const bool robustModel,
+                                             const std::vector<Point>& x1,
                                              const std::vector<Point>& x2,
                                              int w1, int h1, int w2, int h2,
                                              Transform::Matrix3x3* homog);
@@ -579,7 +615,9 @@ public:
      * Requires at least 7 point. x1 and x2 must have the same size.
      * This function throws an exception with an error message upon failure.
      **/
-    static void computeFundamentalFromNPoints(const std::vector<Point>& x1,
+    static void computeFundamentalFromNPoints(const bool dataSetIsManual,
+                                              const bool robustModel,
+                                              const std::vector<Point>& x1,
                                               const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
                                               Transform::Matrix3x3* fundamental);
@@ -606,12 +644,14 @@ public:
                                                          double time,
                                                          int jitterPeriod,
                                                          bool jitterAdd,
+                                                         bool robustModel,
                                                          const std::vector<TrackMarkerPtr>& allMarkers);
     
     CornerPinData computeCornerPinParamsFromTracksAtTime(double refTime,
                                                          double time,
                                                          int jitterPeriod,
                                                          bool jitterAdd,
+                                                         bool robustModel,
                                                          const std::vector<TrackMarkerPtr>& allMarkers);
     
     
@@ -630,6 +670,10 @@ public:
     void setSolverParamsEnabled(bool enabled);
     
     void endSolve();
+    
+    bool isTransformAutoGenerationEnabled() const;
+    
+    void setTransformOutOfDate(bool outdated);
     
 public Q_SLOTS:
 

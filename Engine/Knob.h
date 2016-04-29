@@ -455,7 +455,11 @@ public:
     virtual void blockValueChanges() = 0;
     virtual void unblockValueChanges() = 0;
     virtual bool isValueChangesBlocked() const = 0;
-
+    
+    virtual void blockListenersNotification() = 0;
+    virtual void unblockListenersNotification() = 0;
+    virtual bool isListenersNotificationBlocked() const = 0;
+    
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
@@ -1124,6 +1128,7 @@ public:
      * @brief Restores the default value
      **/
     virtual void resetToDefaultValue(int dimension) = 0;
+    virtual void resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension) = 0;
 
     /**
      * @brief Must return true if this Lnob holds a POD (plain old data) type, i.e. int, bool, or double.
@@ -1221,6 +1226,10 @@ public:
     virtual void blockValueChanges() OVERRIDE FINAL;
     virtual void unblockValueChanges() OVERRIDE FINAL;
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void blockListenersNotification() OVERRIDE FINAL;
+    virtual void unblockListenersNotification()OVERRIDE FINAL;
+    virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual void evaluateValueChange(int dimension, double time, ViewSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 protected:
@@ -1841,6 +1850,7 @@ public:
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
+    virtual void resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension) OVERRIDE FINAL;
     virtual void clone(KnobI* other, int dimension = -1)  OVERRIDE FINAL;
     virtual void clone(KnobI* other, double offset, const RangeD* range, int dimension = -1) OVERRIDE FINAL;
     virtual void cloneAndUpdateGui(KnobI* other, int dimension = -1) OVERRIDE FINAL;

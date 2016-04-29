@@ -235,6 +235,7 @@ struct TrackerGuiPrivate
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;
     GLTexturePtr selectedMarkerTexture;
+    int selectedMarkerTextureTime;
     RectI selectedMarkerTextureRoI;
     //If theres a single selection, this points to it
     boost::weak_ptr<TrackMarker> selectedMarker;
@@ -288,6 +289,7 @@ struct TrackerGuiPrivate
         , trackTextures()
         , trackRequestsMap()
         , selectedMarkerTexture()
+        , selectedMarkerTextureTime(0)
         , selectedMarkerTextureRoI()
         , selectedMarker()
         , pboID(0)
@@ -1260,7 +1262,7 @@ TrackerGui::drawOverlays(double time,
             } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
             if (_imp->showMarkerTexture) {
-                _imp->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset,  selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
+                _imp->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->selectedMarkerTextureTime, selectedCenter, selectedOffset,  selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
             }
             _imp->panel->getContext()->drawInternalNodesOverlay( time, renderScale, view, _imp->viewer->getViewer() );
         } // // if (_imp->panelv1) {
@@ -2756,7 +2758,7 @@ TrackerGui::penMotion(double time,
                                             eValueChangedReasonPluginEdited);
                 for (int i = 0; i < 4; ++i) {
                     for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
-                        patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(i, d), view, d);
+                        patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
                     }
                 }
             }
@@ -2851,11 +2853,8 @@ TrackerGui::penMotion(double time,
             cur.x -= (center.x + offset.x);
             cur.y -= (center.y + offset.y);
 
-            if ( patternCorners[index]->hasAnimation() ) {
-                patternCorners[index]->setValuesAtTime(time, cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
-            } else {
-                patternCorners[index]->setValues(cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
-            }
+            patternCorners[index]->setValuesAtTime(time, cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
+            
             if ( _imp->createKeyOnMoveButton->isChecked() ) {
                 _imp->interactMarker->setUserKeyframe(time);
             }
@@ -3144,10 +3143,16 @@ TrackerGui::penMotion(double time,
         case eMouseStateDraggingSelectedMarker: {
             double x = centerKnob->getValueAtTime(time, 0);
             double y = centerKnob->getValueAtTime(time, 1);
-            x -= delta.x *  _imp->selectedMarkerScale.x;
-            y -= delta.y *  _imp->selectedMarkerScale.y;
+            double dx = delta.x *  _imp->selectedMarkerScale.x;
+            double dy = delta.y *  _imp->selectedMarkerScale.y;
+            x -= dx;
+            y -= dy;
             centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
-
+            for (int i = 0; i < 4; ++i) {
+                for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
+                    patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
+                }
+            }
             if ( _imp->createKeyOnMoveButton->isChecked() ) {
                 _imp->interactMarker->setUserKeyframe(time);
             }
@@ -3611,7 +3616,7 @@ TrackerGui::onTrackBwClicked()
         }
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
-        int startFrame = timeline->currentFrame() - 1;
+        int startFrame = timeline->currentFrame();
         SequenceTime first, last;
         _imp->viewer->getTimelineBounds(&first, &last);
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
@@ -3630,9 +3635,9 @@ TrackerGui::onTrackPrevClicked()
         _imp->panelv1->trackPrevious( _imp->viewer->getInternalNode() );
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
-        int startFrame = timeline->currentFrame() - 1;
+        int startFrame = timeline->currentFrame();
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        ctx->trackSelectedMarkers( startFrame, startFrame - 1, false,  _imp->viewer->getInternalNode() );
+        ctx->trackSelectedMarkers( startFrame, startFrame - 2, false,  _imp->viewer->getInternalNode() );
     }
 }
 
@@ -3654,9 +3659,9 @@ TrackerGui::onTrackNextClicked()
     if (_imp->panelv1) {
         _imp->panelv1->trackNext( _imp->viewer->getInternalNode() );
     } else {
-        int startFrame = _imp->viewer->getGui()->getApp()->getTimeLine()->currentFrame() + 1;
+        int startFrame = _imp->viewer->getGui()->getApp()->getTimeLine()->currentFrame();
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        ctx->trackSelectedMarkers( startFrame, startFrame + 1, true,  _imp->viewer->getInternalNode() );
+        ctx->trackSelectedMarkers( startFrame, startFrame + 2, true,  _imp->viewer->getInternalNode() );
     }
 }
 
@@ -3677,7 +3682,7 @@ TrackerGui::onTrackFwClicked()
         }
     } else {
         boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
-        int startFrame = timeline->currentFrame() + 1;
+        int startFrame = timeline->currentFrame();
         SequenceTime first, last;
         _imp->viewer->getTimelineBounds(&first, &last);
         boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
@@ -3911,7 +3916,7 @@ TrackerGui::onTrackImageRenderingFinished()
     if (!_imp->selectedMarkerTexture) {
         _imp->selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
     }
-
+    _imp->selectedMarkerTextureTime = (int)ret.first->getTime();
     _imp->selectedMarkerTextureRoI = ret.second;
 
     _imp->convertImageTosRGBOpenGLTexture(ret.first, _imp->selectedMarkerTexture, ret.second);
@@ -4094,7 +4099,7 @@ TrackerGuiPrivate::refreshSelectedMarkerTexture()
     }
 
     selectedMarkerImg.reset();
-
+    
     imageGetterWatcher.reset( new TrackWatcher() );
     QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), _publicInterface, SLOT(onTrackImageRenderingFinished()) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );

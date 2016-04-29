@@ -1008,7 +1008,7 @@ namespace openMVG {
                         src_var += (weights(i) * dx1.dot(dx1));
                         // covar can be updated using outer prod:
                         // (outer_prod (v1, v2)) [i] [j] = v1 [i] * v2 [j]
-                        sigma += weights(i) * (dx2 * dx1.transpose());
+                        sigma += (weights(i) * (dx2 * dx1.transpose()));
                         ++nbInliers;
                     }
                 }
@@ -1026,48 +1026,38 @@ namespace openMVG {
                 //const Mat2 sigma = one_over_n * dst_demean * src_demean.transpose();
                 
                 Eigen::JacobiSVD<Mat2> svd(sigma, Eigen::ComputeFullU | Eigen::ComputeFullV);
-                
-                // Initialize the resulting transformation with an identity matrix...
-                Mat3 Rt = Mat3::Identity(m+1,m+1);
-                
-                // Eq. (39)
-                Vec S = Vec::Ones(m);
-                if (sigma.determinant() < 0.) {
-                    S(m - 1) = -1.;
+                if (svd.rank() < 1) {
+                    return 0; // probably no two points are distinct
                 }
-                
-                // Eq. (40) and (43)
-                const Vec& d = svd.singularValues();
-                int rank = 0;
-                for (int i = 0; i < m; ++i) {
-                    if (!Eigen::internal::isMuchSmallerThan(d.coeff(i),d.coeff(0))) {
-                        ++rank;
-                    }
-                }
-                if (rank == m-1) {
-                    if ( svd.matrixU().determinant() * svd.matrixV().determinant() > 0. ) {
-                        Rt.block(0,0,m,m).noalias() = svd.matrixU() * svd.matrixV().transpose();
-                    } else {
-                        const double s = S(m - 1);
-                        S(m - 1) = -1.;
-                        Rt.block(0,0,m,m).noalias() = svd.matrixU() * S.asDiagonal() * svd.matrixV().transpose();
-                        S(m - 1) = s;
-                    }
+
+                Mat2 U = svd.matrixU();
+                Mat2 VT = svd.matrixV().transpose();
+                Vec2 D = svd.singularValues();
+
+                Mat2 R; // actually, we only need one line or column of R
+                double c;
+                // R = U S V^T
+                // c = 1/var1 tr(DS)
+                // t = mu2 - c R mu1
+                // where S = (1, ..., 1, 1)  if det(U)det(V) = 1
+                //       S = (1, ..., 1, -1) if det(U)det(V) = -1
+                if (U.determinant() * VT.determinant() > 0) {
+                    R = U * VT;
+                    c = (D(0) + D(1)) / src_var;
                 } else {
-                    Rt.block(0,0,m,m).noalias() = svd.matrixU() * S.asDiagonal() * svd.matrixV().transpose();
+                    // multiply U by S
+                    U.col(1) *= -1;
+                    R = U * VT;
+                    c = (D(0) - D(1)) / src_var;
                 }
+                Vec2 t = dst_mean - c * (R * src_mean);
                 
-                
-                // Eq. (42)
-                const double c = 1. / src_var * svd.singularValues().dot(S);
-                
-                // Eq. (41)
-                Vec2 t = dst_mean - c * Rt.topLeftCorner(m,m) * src_mean;
                 // S = (tx, ty, c.sin(alpha), c.cos(alpha))
                 (*similarity)(0) =  t(0);
                 (*similarity)(1) =  t(1);
-                (*similarity)(2) =  c * Rt(1,0);
-                (*similarity)(3) =  c * Rt(0,0);
+                (*similarity)(2) =  c*R(1,0);
+                (*similarity)(3) =  c*R(0,0);
+                
                 return 1;
             }
             

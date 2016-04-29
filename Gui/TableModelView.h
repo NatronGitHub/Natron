@@ -38,11 +38,14 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTreeView>
 #include <QAbstractItemModel>
+#include <QItemEditorFactory>
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/GuiFwd.h"
+#include "Gui/LineEdit.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -247,6 +250,50 @@ TableItem::setFont(const QFont &afont)
 {
     setData(Qt::FontRole, afont);
 }
+
+class TableItemEditorFactory : public QItemEditorFactory
+{
+public:
+    
+    TableItemEditorFactory(): QItemEditorFactory() {}
+    
+    virtual ~TableItemEditorFactory()
+    {
+        
+    }
+    
+    virtual QWidget *createEditor(QVariant::Type type, QWidget *parent) const OVERRIDE FINAL;
+    
+    virtual QByteArray valuePropertyName(QVariant::Type type) const OVERRIDE FINAL;
+};
+
+
+class ExpandingLineEdit : public LineEdit
+{
+    Q_OBJECT
+    
+public:
+    ExpandingLineEdit(QWidget *parent);
+    
+    virtual ~ExpandingLineEdit() {}
+    
+    void setWidgetOwnsGeometry(bool value)
+    {
+        widgetOwnsGeometry = value;
+    }
+    
+protected:
+    void changeEvent(QEvent *e);
+    
+    public Q_SLOTS:
+    void resizeToContents();
+    
+private:
+    void updateMinimumWidth();
+    
+    int originalWidth;
+    bool widgetOwnsGeometry;
+};
 
 struct TableViewPrivate;
 class TableView

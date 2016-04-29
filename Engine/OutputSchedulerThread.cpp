@@ -3894,7 +3894,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
     };
 
-    if ( !_imp->viewer->getUiContext() || _imp->viewer->getApp()->isCreatingNode() ) {
+    if (!_imp->viewer->getUiContext()) {
         return;
     }
 

@@ -113,7 +113,35 @@ enum ProsacReturnCodeEnum
     
 };
 
-
+template<typename Kernel>
+bool searchModel_minimalSamples(const Kernel &kernel,
+                                typename Kernel::Model* bestModel,
+                                InliersVec *bestInliers = 0)
+{
+    assert(kernel.NumSamples() == Kernel::MinimumSamples());
+    
+    InliersVec isInlier(kernel.NumSamples());
+    int best_score = 0;
+    bool bestModelFound = false;
+    std::vector<typename Kernel::Model> possibleModels;
+    kernel.ComputeModelFromMinimumSamples(&possibleModels);
+    for (std::size_t i = 0; i < possibleModels.size(); ++i) {
+        int model_score = kernel.ComputeInliersForModel(possibleModels[i], &isInlier);
+        if (model_score > best_score) {
+            best_score = model_score;
+            *bestModel = possibleModels[i];
+            bestModelFound = true;
+        }
+    }
+    if (!bestModelFound) {
+        return false;
+    }
+    if (bestInliers) {
+        *bestInliers = isInlier;
+    }
+    kernel.Unnormalize(bestModel);
+    return true;
+}
 
 
 template<typename Kernel>
@@ -129,37 +157,19 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
     const int N_draw = N;
     const int m = (int)Kernel::MinimumSamples();
     
-    InliersVec isInlier(N);
-#ifndef PROSAC_DISABLE_LO_RANSAC
-    InliersVec isInlierLO(N);
-#endif
     
     // Test if we have sufficient points for the kernel.
     if (N < m) {
         return eProsacReturnCodeNotEnoughPoints;
     } else if (N == m) {
-        int best_score = 0;
-        bool bestModelFound = false;
-        std::vector<typename Kernel::Model> possibleModels;
-        kernel.ComputeModelFromMinimumSamples(&possibleModels);
-        for (std::size_t i = 0; i < possibleModels.size(); ++i) {
-            int model_score = kernel.ComputeInliersForModel(possibleModels[i], &isInlier);
-            if (model_score > best_score) {
-                best_score = model_score;
-                *bestModel = possibleModels[i];
-                bestModelFound = true;
-            }
-        }
-        if (!bestModelFound) {
-            return eProsacReturnCodeNoModelFound;
-        }
-        if (bestInliers) {
-            *bestInliers = isInlier;
-        }
-        kernel.Unnormalize(bestModel);
-        return eProsacReturnCodeFoundModel;
+        bool ok = searchModel_minimalSamples(kernel, bestModel, bestInliers);
+        return ok ? eProsacReturnCodeFoundModel : eProsacReturnCodeNoModelFound;
     }
     
+    InliersVec isInlier(N);
+#ifndef PROSAC_DISABLE_LO_RANSAC
+    InliersVec isInlierLO(N);
+#endif
     
     /* NOTE: the PROSAC article sets T_N (the number of iterations before PROSAC becomes RANSAC) to 200000,
      but that means :
@@ -386,9 +396,39 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
     
     return eProsacReturnCodeFoundModel;
 } // prosac
+    
+    
+/*
+Computes a model from N correspondences when we know the number of outliers is to be lower than 10%
+This should be used on user input data where we known there is likely no outlier.
+ 
+This function can be used when the model searched from the samples is likely not to be the correct model.
+This will give an average result that fits all correspondences but that is not necessarily the correct model.
+
+*/
+template<typename Kernel>
+bool searchModelLS(const Kernel &kernel,
+                  typename Kernel::Model* bestModel)
+{
+    assert(bestModel);
+    const int N = (int)kernel.NumSamples();
+    const int m = (int)Kernel::MinimumSamples();
+    
+    // Test if we have sufficient points for the kernel.
+    if (N < m) {
+        return 0;
+    } else if (N == m) {
+        return searchModel_minimalSamples(kernel, bestModel, 0);
+    }
+    
+    bool ok = kernel.ComputeModelFromAllSamples(bestModel);
+    kernel.Unnormalize(bestModel);
+    return ok;
+    
+} // searchModelWithMEstimator
 
 /*
- Computes a model from N correspondences when we know the number of outliers is to be lower than 10% 
+ Computes a model from N correspondences when we know the number of outliers is to be lower than 10%
  This should be used on user input data where we known there is likely no outlier
  
  @param maxNbIterations The number of iterations of the MEstimator
@@ -401,31 +441,15 @@ int searchModelWithMEstimator(const Kernel &kernel,
                               double *sigmaMAD_p = 0)
 {
     assert(bestModel);
-    const int N = (int)std::min(kernel.NumSamples(), (std::size_t)RAND_MAX);
+    const int N = (int)kernel.NumSamples();
     const int m = (int)Kernel::MinimumSamples();
     
     // Test if we have sufficient points for the kernel.
     if (N < m) {
         return 0;
     } else if (N == m) {
-        InliersVec isInlier(N);
-        int best_score = 0;
-        bool bestModelFound = false;
-        std::vector<typename Kernel::Model> possibleModels;
-        kernel.ComputeModelFromMinimumSamples(&possibleModels);
-        for (std::size_t i = 0; i < possibleModels.size(); ++i) {
-            int model_score = kernel.ComputeInliersForModel(possibleModels[i], &isInlier);
-            if (model_score > best_score) {
-                best_score = model_score;
-                *bestModel = possibleModels[i];
-                bestModelFound = true;
-            }
-        }
-        if (!bestModelFound) {
-            return 0;
-        }
-        kernel.Unnormalize(bestModel);
-        return 1;
+        bool ok = searchModel_minimalSamples(kernel, bestModel, 0);
+        return ok ? 1 : 0;
     }
 
     // Compute a first model on all samples with least squares

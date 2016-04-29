@@ -189,7 +189,7 @@ public:
     }
 };
 
-struct TrackerContextPrivate;
+class TrackerContextPrivate;
 class TrackerContext
     : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
 {
@@ -285,8 +285,6 @@ public:
 
     void resetTransformCenter();
 
-    void resetTransformParams();
-
     NodePtr getCurrentlySelectedTransformNode() const;
 
     void drawInternalNodesOverlay(double time,
@@ -330,6 +328,8 @@ public:
 
 
     void solveTransformParams();
+    
+    void solveTransformParamsIfAutomatic();
 
 
     void exportTrackDataFromExportOptions();
@@ -423,8 +423,6 @@ public:
     void s_onNodeInputChanged(int inputNb) { Q_EMIT onNodeInputChanged(inputNb); }
 
 public Q_SLOTS:
-
-    void onSelectedKnobCurveChanged();
 
     void onMarkerEnabledChanged(int reason);
 

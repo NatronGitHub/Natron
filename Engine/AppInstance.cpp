@@ -143,8 +143,8 @@ struct AppInstancePrivate
     //When a pyplug is created
     int _creatingGroup;
     
-    //When a node is created
-    bool _creatingNode;
+    //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
+    std::list<NodePtr> _creatingNodeQueue;
 
     //When a node tree is created
     int _creatingTree;
@@ -162,7 +162,7 @@ struct AppInstancePrivate
     , _projectCreatedWithLowerCaseIDs(false)
     , creatingGroupMutex()
     , _creatingGroup(0)
-    , _creatingNode(false)
+    , _creatingNodeQueue()
     , _creatingTree(0)
     , renderQueueMutex()
     , renderQueue()
@@ -205,20 +205,11 @@ AppInstance::~AppInstance()
     _imp->_currentProject->clearNodes(false);
 }
 
-void
-AppInstance::setCreatingNode(bool b)
+const std::list<NodePtr>&
+AppInstance::getNodesBeingCreated() const
 {
-    QMutexLocker k(&_imp->creatingGroupMutex);
-
-    _imp->_creatingNode = b;
-}
-
-bool
-AppInstance::isCreatingNode() const
-{
-    QMutexLocker k(&_imp->creatingGroupMutex);
-
-    return _imp->_creatingNode;
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->_creatingNodeQueue;
 }
 
 bool
@@ -779,6 +770,29 @@ AppInstance::loadPythonScript(const QFileInfo& file)
     return true;
 } // AppInstance::loadPythonScript
 
+class AddCreateNode_RAII
+{
+    AppInstancePrivate* _imp;
+    NodePtr _node;
+public:
+    
+    
+    AddCreateNode_RAII(AppInstancePrivate* imp,
+                       const NodePtr& node)
+    : _imp(imp)
+    , _node(node)
+    {
+        _imp->_creatingNodeQueue.push_back(node);
+    }
+    
+    virtual ~AddCreateNode_RAII() {
+        std::list<NodePtr>::iterator found = std::find(_imp->_creatingNodeQueue.begin(), _imp->_creatingNodeQueue.end(), _node);
+        if (found != _imp->_creatingNodeQueue.end()) {
+            _imp->_creatingNodeQueue.erase(found);
+        }
+    }
+};
+
 NodePtr
 AppInstance::createNodeFromPythonModule(Plugin* plugin,
                                         const boost::shared_ptr<NodeCollection>& group,
@@ -814,7 +828,8 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             }
         }
 
-
+        AddCreateNode_RAII creatingNode_raii(_imp.get(), containerNode);
+        
         std::string containerFullySpecifiedName;
         if (containerNode) {
             containerFullySpecifiedName = containerNode->getFullyQualifiedName();
@@ -1010,6 +1025,8 @@ isEntitledForInspector(Plugin* plugin,
     return false;
 }
 
+
+
 NodePtr
 AppInstance::createNodeInternal(CreateNodeArgs& args)
 {
@@ -1117,6 +1134,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         node.reset( new InspectorNode(this, args.group, plugin) );
     }
 
+    AddCreateNode_RAII creatingNode_raii(_imp.get(), node);
+    
     {
         ///Furnace plug-ins don't handle using the thread pool
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();

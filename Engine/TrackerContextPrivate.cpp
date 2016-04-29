@@ -275,6 +275,11 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     preBlurSigmaKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(preBlurSigmaKnob);
     preBlurSigma = preBlurSigmaKnob;
+    
+    boost::shared_ptr<KnobSeparator>  perTrackSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), kTrackerParamPerTrackParamsSeparatorLabel, 3);
+    perTrackSeparatorKnob->setName(kTrackerParamPerTrackParamsSeparator);
+    settingsPage->addKnob(perTrackSeparatorKnob);
+    perTrackParamsSeparator = perTrackSeparatorKnob;
 
     boost::shared_ptr<KnobBool> enableTrackKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamEnabledLabel, 1, false);
     enableTrackKnob->setName(kTrackerParamEnabled);
@@ -283,10 +288,27 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     enableTrackKnob->setDefaultValue(true);
     enableTrackKnob->setEvaluateOnChange(false);
     enableTrackKnob->setAllDimensionsEnabled(false);
+    enableTrackKnob->setAddNewLine(false);
     settingsPage->addKnob(enableTrackKnob);
     activateTrack = enableTrackKnob;
     perTrackKnobs.push_back(enableTrackKnob);
 
+    boost::shared_ptr<KnobChoice> motionModelKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamMotionModelLabel, 1, false);
+    motionModelKnob->setName(kTrackerParamMotionModel);
+    motionModelKnob->setHintToolTip(kTrackerParamMotionModelHint);
+    {
+        std::vector<std::string> choices, helps;
+        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        motionModelKnob->populateChoices(choices, helps);
+    }
+    motionModelKnob->setAllDimensionsEnabled(false);
+    motionModelKnob->setAnimationEnabled(false);
+    motionModelKnob->setEvaluateOnChange(false);
+    perTrackKnobs.push_back(motionModelKnob);
+    motionModel = motionModelKnob;
+    settingsPage->addKnob(motionModelKnob);
+
+    
 
     boost::shared_ptr<KnobSeparator>  transformGenerationSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Generation", 3);
     transformPage->addKnob(transformGenerationSeparatorKnob);
@@ -326,8 +348,19 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         transformTypeKnob->populateChoices(choices, helps);
     }
+    transformTypeKnob->setAddNewLine(false);
     transformType = transformTypeKnob;
     transformPage->addKnob(transformTypeKnob);
+
+    
+    boost::shared_ptr<KnobBool>  robustModelKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamRobustModelLabel, 1);
+    robustModelKnob->setName(kTrackerParamRobustModel);
+    robustModelKnob->setHintToolTip(kTrackerParamRobustModelHint);
+    robustModelKnob->setAnimationEnabled(false);
+    robustModelKnob->setEvaluateOnChange(false);
+    robustModelKnob->setDefaultValue(true);
+    transformPage->addKnob(robustModelKnob);
+    robustModel = robustModelKnob;
 
     boost::shared_ptr<KnobInt> referenceFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamReferenceFrameLabel, 1);
     referenceFrameKnob->setName(kTrackerParamReferenceFrame);
@@ -380,22 +413,73 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     smoothCornerPinKnob->setSecret(true);
     transformPage->addKnob(smoothCornerPinKnob);
     smoothCornerPin = smoothCornerPinKnob;
+    
+    boost::shared_ptr<KnobBool>  autoGenerateTransformKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamAutoGenerateTransformLabel, 1);
+    autoGenerateTransformKnob->setName(kTrackerParamAutoGenerateTransform);
+    autoGenerateTransformKnob->setHintToolTip(kTrackerParamAutoGenerateTransformHint);
+    autoGenerateTransformKnob->setAnimationEnabled(false);
+    autoGenerateTransformKnob->setEvaluateOnChange(false);
+    autoGenerateTransformKnob->setDefaultValue(true);
+    autoGenerateTransformKnob->setAddNewLine(false);
+    transformPage->addKnob(autoGenerateTransformKnob);
+    autoGenerateTransform = autoGenerateTransformKnob;
 
+    
+    boost::shared_ptr<KnobButton> computeTransformKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamGenerateTransformLabel, 1);
+    computeTransformKnob->setName(kTrackerParamGenerateTransform);
+    computeTransformKnob->setHintToolTip(kTrackerParamGenerateTransformHint);
+    computeTransformKnob->setEvaluateOnChange(false);
+    computeTransformKnob->setAddNewLine(false);
+    //computeTransformKnob->setAddNewLine(false);
+    transformPage->addKnob(computeTransformKnob);
+    generateTransformButton = computeTransformKnob;
+
+    
+    boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), "", 1);
+    transformOutOfDateLabelKnob->setName(kTrackerParamTransformOutOfDate);
+    transformOutOfDateLabelKnob->setHintToolTip(kTrackerParamTransformOutOfDateHint);
+    transformOutOfDateLabelKnob->setIconLabel("dialog-warning");
+    transformOutOfDateLabelKnob->setAsLabel();
+    transformOutOfDateLabelKnob->setEvaluateOnChange(false);
+    transformOutOfDateLabelKnob->setSecret(true);
+    transformPage->addKnob(transformOutOfDateLabelKnob);
+    transformOutOfDateLabel = transformOutOfDateLabelKnob;
+    
+    
     boost::shared_ptr<KnobSeparator>  transformSeparator = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Controls", 3);
     transformPage->addKnob(transformSeparator);
+    transformSeparator->setSecret(true);
     transformControlsSeparator = transformSeparator;
+
+
 
     NodePtr tNode = transformNode.lock();
     if (tNode) {
-        translate = createDuplicateKnob<KnobDouble>(kTransformParamTranslate, tNode, effect, transformPage);
-        rotate = createDuplicateKnob<KnobDouble>(kTransformParamRotate, tNode, effect, transformPage);
-        scale = createDuplicateKnob<KnobDouble>(kTransformParamScale, tNode, effect, transformPage);
-        scale.lock()->setAddNewLine(false);
-        scaleUniform = createDuplicateKnob<KnobBool>(kTransformParamUniform, tNode, effect, transformPage);
-        skewX = createDuplicateKnob<KnobDouble>(kTransformParamSkewX, tNode, effect, transformPage);
-        skewY = createDuplicateKnob<KnobDouble>(kTransformParamSkewY, tNode, effect, transformPage);
-        skewOrder = createDuplicateKnob<KnobChoice>(kTransformParamSkewOrder, tNode, effect, transformPage);
-        center = createDuplicateKnob<KnobDouble>(kTransformParamCenter, tNode, effect, transformPage);
+        boost::shared_ptr<KnobDouble> tKnob = createDuplicateKnob<KnobDouble>(kTransformParamTranslate, tNode, effect, transformPage);
+        tKnob->setSecret(true);
+        translate = tKnob;
+        boost::shared_ptr<KnobDouble> rotKnob = createDuplicateKnob<KnobDouble>(kTransformParamRotate, tNode, effect, transformPage);
+        rotKnob->setSecret(true);
+        rotate = rotKnob;
+        boost::shared_ptr<KnobDouble> scaleKnob = createDuplicateKnob<KnobDouble>(kTransformParamScale, tNode, effect, transformPage);
+        scaleKnob->setAddNewLine(false);
+        scaleKnob->setSecret(true);
+        scale = scaleKnob;
+        boost::shared_ptr<KnobBool> scaleUniKnob = createDuplicateKnob<KnobBool>(kTransformParamUniform, tNode, effect, transformPage);
+        scaleUniKnob->setSecret(true);
+        scaleUniform = scaleUniKnob;
+        boost::shared_ptr<KnobDouble> skewXKnob = createDuplicateKnob<KnobDouble>(kTransformParamSkewX, tNode, effect, transformPage);
+        skewXKnob->setSecret(true);
+        skewX = skewXKnob;
+        boost::shared_ptr<KnobDouble> skewYKnob = createDuplicateKnob<KnobDouble>(kTransformParamSkewY, tNode, effect, transformPage);
+        skewYKnob->setSecret(true);
+        skewY = skewYKnob;
+        boost::shared_ptr<KnobChoice> skewOrderKnob = createDuplicateKnob<KnobChoice>(kTransformParamSkewOrder, tNode, effect, transformPage);
+        skewOrderKnob->setSecret(true);
+        skewOrder = skewOrderKnob;
+        boost::shared_ptr<KnobDouble> centerKnob = createDuplicateKnob<KnobDouble>(kTransformParamCenter, tNode, effect, transformPage);
+        centerKnob->setSecret(true);
+        center = centerKnob;
     } // tNode
     NodePtr cNode = cornerPinNode.lock();
     if (cNode) {
@@ -437,16 +521,32 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
     // Add filtering & motion blur knobs
     if (tNode) {
-        invertTransform = createDuplicateKnob<KnobBool>(kTransformParamInvert, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
-        filter = createDuplicateKnob<KnobChoice>(kTransformParamFilter, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
-        filter.lock()->setAddNewLine(false);
-        clamp = createDuplicateKnob<KnobBool>(kTransformParamClamp, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
-        clamp.lock()->setAddNewLine(false);
-        blackOutside = createDuplicateKnob<KnobBool>(kTransformParamBlackOutside, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
-        motionBlur = createDuplicateKnob<KnobDouble>(kTransformParamMotionBlur, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
-        shutter = createDuplicateKnob<KnobDouble>(kTransformParamShutter, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
-        shutterOffset = createDuplicateKnob<KnobChoice>(kTransformParamShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
-        customShutterOffset = createDuplicateKnob<KnobDouble>(kTransformParamCustomShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        boost::shared_ptr<KnobBool> invertTransformKnob = createDuplicateKnob<KnobBool>(kTransformParamInvert, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        invertTransformKnob->setSecret(true);
+        invertTransform = invertTransformKnob;
+        boost::shared_ptr<KnobChoice> filterKnob = createDuplicateKnob<KnobChoice>(kTransformParamFilter, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        filterKnob->setSecret(true);
+        filterKnob->setAddNewLine(false);
+        filter = filterKnob;
+        boost::shared_ptr<KnobBool> clampKnob = createDuplicateKnob<KnobBool>(kTransformParamClamp, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        clampKnob->setSecret(true);
+        clampKnob->setAddNewLine(false);
+        clamp = clampKnob;
+        boost::shared_ptr<KnobBool> blackOutsideKnob = createDuplicateKnob<KnobBool>(kTransformParamBlackOutside, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        blackOutsideKnob->setSecret(true);
+        blackOutside = blackOutsideKnob;
+        boost::shared_ptr<KnobDouble> motionBlurKnob = createDuplicateKnob<KnobDouble>(kTransformParamMotionBlur, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        motionBlurKnob->setSecret(true);
+        motionBlur = motionBlurKnob;
+        boost::shared_ptr<KnobDouble> shutterKnob = createDuplicateKnob<KnobDouble>(kTransformParamShutter, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        shutterKnob->setSecret(true);
+        shutter = shutterKnob;
+        boost::shared_ptr<KnobChoice> shutterOffsetKnob = createDuplicateKnob<KnobChoice>(kTransformParamShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        shutterOffsetKnob->setSecret(true);
+        shutterOffset = shutterOffsetKnob;
+        boost::shared_ptr<KnobDouble> customShutterOffsetKnob = createDuplicateKnob<KnobDouble>(kTransformParamCustomShutterOffset, tNode, effect, transformPage, boost::shared_ptr<KnobGroup>(), cNode);
+        customShutterOffsetKnob->setSecret(true);
+        customShutterOffset = customShutterOffsetKnob;
 
         node->addTransformInteract(translate.lock(), scale.lock(), scaleUniform.lock(), rotate.lock(), skewX.lock(), skewY.lock(), skewOrder.lock(), center.lock(), invertTransform.lock(), boost::shared_ptr<KnobBool>() /*interactive*/);
 
@@ -482,6 +582,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     boost::shared_ptr<KnobButton> exportButtonKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamExportButtonLabel, 1);
     exportButtonKnob->setName(kTrackerParamExportButton);
     exportButtonKnob->setHintToolTip(kTrackerParamExportButtonHint);
+    exportButtonKnob->setAllDimensionsEnabled(false);
     transformPage->addKnob(exportButtonKnob);
     exportButton = exportButtonKnob;
 }
@@ -836,6 +937,9 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
         //Add the tracked marker
         QMutexLocker k(autoTrackMutex);
         natronTrackerToLibMVTracker(false, enabledChans, *track->natronMarker, trackIndex, trackTime, args.getStep(), args.getFormatHeight(), &track->mvMarker);
+        if (trackTime == args.getStart()) {
+            track->mvMarker.source = mv::Marker::MANUAL;
+        }
         autoTrack->AddMarker(track->mvMarker);
     }
 
@@ -949,6 +1053,9 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         boost::shared_ptr<TrackMarkerAndOptions> t(new TrackMarkerAndOptions);
         t->natronMarker = *it;
 
+        // Set a keyframe on the marker to initialize its position
+        (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
+        
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
 
@@ -1026,9 +1133,9 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
             }
 
             //Clone current state only for the last marker
-            if ( next == markers.end() ) {
-                found->cloneAndUpdateGui( it2->get() );
-            }
+            found->blockListenersNotification();
+            found->cloneAndUpdateGui( it2->get() );
+            found->unblockListenersNotification();
 
             //Slave internal knobs
             assert( (*it2)->getDimension() == found->getDimension() );
@@ -1040,7 +1147,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
                 }
             }
 
-            if (!slave) {
+            /*if (!slave) {
                 QObject::disconnect( (*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                      _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
                 QObject::disconnect( (*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
@@ -1066,7 +1173,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
                                   _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
                 QObject::connect( (*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
                                   _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
-            }
+            }*/
         }
         if ( next != markers.end() ) {
             ++next;
@@ -1129,8 +1236,9 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     shutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     customShutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     
-    exportLink.lock()->setEnabled(0, motionType != eTrackerMotionTypeNone);
-    exportButton.lock()->setEnabled(0, motionType != eTrackerMotionTypeNone);
+    exportLink.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
+    exportButton.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
+    
 }
 
 void
@@ -1232,19 +1340,29 @@ throwProsacError(ProsacReturnCodeEnum c,
     }
 }
 
+/*
+ * @brief Search for the best model that fits the correspondences x1 to x2. 
+ * @param dataSetIsManual If true, this indicates that the x1 points were placed manually by the user
+ * in which case we expect the vector to have less than 10% outliers
+ * @param robustModel When dataSetIsManual is true, if this parameter is true then the solver will run a MEsimator on the data
+ * assuming the model searched is the correct model. Otherwise if false, only a least-square pass is done to compute a model that fits
+ * all correspondences (but which may be incorrect)
+ */
 template <typename MODELTYPE>
 void
-runProsacForModel(const std::vector<Point>& x1,
-                  const std::vector<Point>& x2,
-                  int w1,
-                  int h1,
-                  int w2,
-                  int h2,
-                  typename MODELTYPE::Model* foundModel
+searchForModel(const bool dataSetIsManual,
+               const bool robustModel,
+               const std::vector<Point>& x1,
+               const std::vector<Point>& x2,
+               int w1,
+               int h1,
+               int w2,
+               int h2,
+               typename MODELTYPE::Model* foundModel
 #ifdef DEBUG
-                  ,std::vector<bool>* inliers = 0
+               ,std::vector<bool>* inliers = 0
 #endif
-                  )
+)
 {
     typedef ProsacKernelAdaptor<MODELTYPE> KernelType;
     
@@ -1259,66 +1377,77 @@ runProsacForModel(const std::vector<Point>& x1,
     }
     
     KernelType kernel(M1, w1, h1, M2, w2, h2);
-    
-    //We are running prosac on user points which are likely to be inliers anyway
-   
-   /* ProsacReturnCodeEnum ret = prosac(kernel, foundModel
+    if (dataSetIsManual) {
+        
+        if (robustModel) {
+            double sigmaMAD;
+            if (!searchModelWithMEstimator(kernel, 3, foundModel, &sigmaMAD)) {
+                throw std::runtime_error("MEstimator failed to run a successful iteration");
+            }
+        } else {
+            if (!searchModelLS(kernel, foundModel)) {
+                throw std::runtime_error("Least-squares solver failed to find a model");
+            }
+        }
+    } else {
+        
+        ProsacReturnCodeEnum ret = prosac(kernel, foundModel
 #ifdef DEBUG
-                                      , inliers
+                                          , inliers
 #endif
-                                      );
-    throwProsacError( ret, KernelType::MinimumSamples() );*/
-    
-    double sigmaMAD;
-    if (!searchModelWithMEstimator(kernel, 3, foundModel, &sigmaMAD)) {
-        throw std::runtime_error("MEstimator failed");
+                                          );
+        throwProsacError( ret, KernelType::MinimumSamples() );
     }
-    inliers->resize(x1.size());
-    std::fill(inliers->begin(), inliers->end(), true);
 }
 
 void
-TrackerContextPrivate::computeTranslationFromNPoints(const std::vector<Point>& x1,
-                                              const std::vector<Point>& x2,
-                                              int w1,
-                                              int h1,
-                                              int w2,
-                                              int h2,
-                                              Point* translation)
+TrackerContextPrivate::computeTranslationFromNPoints(const bool dataSetIsManual,
+                                                     const bool robustModel,
+                                                     const std::vector<Point>& x1,
+                                                     const std::vector<Point>& x2,
+                                                     int w1,
+                                                     int h1,
+                                                     int w2,
+                                                     int h2,
+                                                     Point* translation)
 {
     openMVG::Vec2 model;
     
-    runProsacForModel<openMVG::robust::Translation2DSolver>(x1, x2, w1, h1, w2, h2, &model);
+    searchForModel<openMVG::robust::Translation2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
     translation->x = model(0);
     translation->y = model(1);
 }
 
 void
-TrackerContextPrivate::computeSimilarityFromNPoints(const std::vector<Point>& x1,
-                                             const std::vector<Point>& x2,
-                                             int w1,
-                                             int h1,
-                                             int w2,
-                                             int h2,
-                                             Point* translation,
-                                             double* rotate,
-                                             double* scale)
+TrackerContextPrivate::computeSimilarityFromNPoints(const bool dataSetIsManual,
+                                                    const bool robustModel,
+                                                    const std::vector<Point>& x1,
+                                                    const std::vector<Point>& x2,
+                                                    int w1,
+                                                    int h1,
+                                                    int w2,
+                                                    int h2,
+                                                    Point* translation,
+                                                    double* rotate,
+                                                    double* scale)
 {
     openMVG::Vec4 model;
     
-    runProsacForModel<openMVG::robust::Similarity2DSolver>(x1, x2, w1, h1, w2, h2, &model);
+    searchForModel<openMVG::robust::Similarity2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
     openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
     *rotate = Transform::toDegrees(*rotate);
 }
 
 void
-TrackerContextPrivate::computeHomographyFromNPoints(const std::vector<Point>& x1,
-                                             const std::vector<Point>& x2,
-                                             int w1,
-                                             int h1,
-                                             int w2,
-                                             int h2,
-                                             Transform::Matrix3x3* homog)
+TrackerContextPrivate::computeHomographyFromNPoints(const bool dataSetIsManual,
+                                                    const bool robustModel,
+                                                    const std::vector<Point>& x1,
+                                                    const std::vector<Point>& x2,
+                                                    int w1,
+                                                    int h1,
+                                                    int w2,
+                                                    int h2,
+                                                    Transform::Matrix3x3* homog)
 {
     openMVG::Mat3 model;
     
@@ -1326,7 +1455,7 @@ TrackerContextPrivate::computeHomographyFromNPoints(const std::vector<Point>& x1
     std::vector<bool> inliers;
 #endif
     
-    runProsacForModel<openMVG::robust::Homography2DSolver>(x1, x2, w1, h1, w2, h2, &model
+    searchForModel<openMVG::robust::Homography2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model
 #ifdef DEBUG
                                                            , &inliers
 #endif
@@ -1340,7 +1469,7 @@ TrackerContextPrivate::computeHomographyFromNPoints(const std::vector<Point>& x1
     // Check that the warped x1 points match x2
     assert(x1.size() == x2.size());
     for (std::size_t i = 0; i < x1.size(); ++i) {
-        if (inliers[i]) {
+        if (!dataSetIsManual && inliers[i]) {
             Point p2 = applyHomography(x1[i], *homog);
             if (std::abs(p2.x - x2[i].x) >  0.02 ||
                 std::abs(p2.y - x2[i].y) > 0.02) {
@@ -1352,17 +1481,19 @@ TrackerContextPrivate::computeHomographyFromNPoints(const std::vector<Point>& x1
 }
 
 void
-TrackerContextPrivate::computeFundamentalFromNPoints(const std::vector<Point>& x1,
-                                              const std::vector<Point>& x2,
-                                              int w1,
-                                              int h1,
-                                              int w2,
-                                              int h2,
-                                              Transform::Matrix3x3* fundamental)
+TrackerContextPrivate::computeFundamentalFromNPoints(const bool dataSetIsManual,
+                                                     const bool robustModel,
+                                                     const std::vector<Point>& x1,
+                                                     const std::vector<Point>& x2,
+                                                     int w1,
+                                                     int h1,
+                                                     int w2,
+                                                     int h2,
+                                                     Transform::Matrix3x3* fundamental)
 {
     openMVG::Mat3 model;
     
-    runProsacForModel<openMVG::robust::FundamentalSolver>(x1, x2, w1, h1, w2, h2, &model);
+    searchForModel<openMVG::robust::FundamentalSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
     
     *fundamental = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
                                         model(1, 0), model(1, 1), model(1, 2),
@@ -1489,10 +1620,11 @@ TrackerContextPrivate::extractSortedPointsFromMarkers(double refTime,
 
 TrackerContextPrivate::TransformData
 TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
-                                                       double time,
-                                                       int jitterPeriod,
-                                                       bool jitterAdd,
-                                                       const std::vector<TrackMarkerPtr>& allMarkers)
+                                                              double time,
+                                                              int jitterPeriod,
+                                                              bool jitterAdd,
+                                                              bool robustModel,
+                                                              const std::vector<TrackMarkerPtr>& allMarkers)
 {
     std::vector<TrackMarkerPtr> markers;
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {
@@ -1526,13 +1658,15 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
     int w2 = rodTime.width();
     int h2 = rodTime.height();
     
+    const bool dataSetIsUserManual = false;
+    
     try {
         if (x1.size() == 1) {
             data.hasRotationAndScale = false;
-            computeTranslationFromNPoints(x1, x2, w1, h1, w2, h2, &data.translation);
+            computeTranslationFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.translation);
         } else {
             data.hasRotationAndScale = true;
-            computeSimilarityFromNPoints(x1, x2, w1, h1, w2, h2, &data.translation, &data.rotation, &data.scale);
+            computeSimilarityFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.translation, &data.rotation, &data.scale);
         }
     } catch (...) {
         data.valid = false;
@@ -1543,10 +1677,11 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
 
 TrackerContextPrivate::CornerPinData
 TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
-                                                       double time,
-                                                       int jitterPeriod,
-                                                       bool jitterAdd,
-                                                       const std::vector<TrackMarkerPtr>& allMarkers)
+                                                              double time,
+                                                              int jitterPeriod,
+                                                              bool jitterAdd,
+                                                              bool robustModel,
+                                                              const std::vector<TrackMarkerPtr>& allMarkers)
 {
     std::vector<TrackMarkerPtr> markers;
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {
@@ -1589,8 +1724,9 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
         data.h.setAffineFromThreePoints( euclideanToHomogenous(x1[0]), euclideanToHomogenous(x1[1]), euclideanToHomogenous(x1[2]), euclideanToHomogenous(x2[0]), euclideanToHomogenous(x2[1]), euclideanToHomogenous(x2[2]) );
         data.nbEnabledPoints = 3;
     } else {
+        const bool dataSetIsUserManual = true;
         try {
-            computeHomographyFromNPoints(x1, x2, w1, h1, w2, h2, &data.h);
+            computeHomographyFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.h);
             data.nbEnabledPoints = 4;
         } catch (...) {
             data.valid = false;
@@ -1636,7 +1772,6 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
         
     }
     
-    resetTransformParamsAnimation();
     
     
     Point refFrom[4];
@@ -1784,7 +1919,7 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
     lastSolveRequest.cpWatcher.reset(new QFutureWatcher<TrackerContextPrivate::CornerPinData>());
     QObject::connect(lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()));
     QObject::connect(lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)));
-    lastSolveRequest.cpWatcher->setFuture(QtConcurrent::mapped(lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.allMarkers)));
+    lastSolveRequest.cpWatcher->setFuture(QtConcurrent::mapped(lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers)));
 #else
     NodePtr thisNode = node.lock();
     QList<CornerPinData> validResults;
@@ -1821,29 +1956,29 @@ TrackerContextPrivate::resetTransformParamsAnimation()
         
         
         for (int i = 0; i < 4; ++i) {
-            fromPointsKnob[i]->removeAnimation(ViewSpec::all(), 0);
-            fromPointsKnob[i]->removeAnimation(ViewSpec::all(), 1);
-            toPointsKnob[i]->removeAnimation(ViewSpec::all(),0);
-            toPointsKnob[i]->removeAnimation(ViewSpec::all(),1);
-            enabledPointsKnob[i]->removeAnimation(ViewSpec::all(),0);
+            fromPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+            fromPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+            toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+            toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
+            enabledPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
         }
     }
     boost::shared_ptr<KnobDouble> centerKnob = center.lock();
-    centerKnob->removeAnimation(ViewSpec::all(),0);
-    centerKnob->removeAnimation(ViewSpec::all(),1);
+    centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+    centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
     {
         // Revert animation on the transform
         boost::shared_ptr<KnobDouble> translationKnob = translate.lock();
         boost::shared_ptr<KnobDouble> scaleKnob = scale.lock();
         boost::shared_ptr<KnobDouble> rotationKnob = rotate.lock();
         
-        translationKnob->removeAnimation(ViewSpec::all(),0);
-        translationKnob->removeAnimation(ViewSpec::all(),1);
+        translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+        translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
         
-        scaleKnob->removeAnimation(ViewSpec::all(),0);
-        scaleKnob->removeAnimation(ViewSpec::all(),1);
+        scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
+        scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
         
-        rotationKnob->removeAnimation(ViewSpec::all(),0);
+        rotationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
     }
     
 }
@@ -1881,7 +2016,6 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     animatedKnobsChanged.push_back(scaleKnob);
     animatedKnobsChanged.push_back(rotationKnob);
     
-    resetTransformParamsAnimation();
     
     Curve tmpTXCurve,tmpTYCurve,tmpRotateCurve,tmpScaleCurve;
     for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
@@ -2109,7 +2243,7 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
     lastSolveRequest.tWatcher.reset(new QFutureWatcher<TrackerContextPrivate::TransformData>());
     QObject::connect(lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()));
     QObject::connect(lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)));
-    lastSolveRequest.tWatcher->setFuture(QtConcurrent::mapped(lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.allMarkers)));
+    lastSolveRequest.tWatcher->setFuture(QtConcurrent::mapped(lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers)));
 #else
     NodePtr thisNode = node.lock();
     QList<TransformData> validResults;
@@ -2175,6 +2309,7 @@ TrackerContextPrivate::setSolverParamsEnabled(bool enabled)
 {
     motionType.lock()->setAllDimensionsEnabled(enabled);
     setCurrentFrameButton.lock()->setAllDimensionsEnabled(enabled);
+    robustModel.lock()->setAllDimensionsEnabled(enabled);
     referenceFrame.lock()->setAllDimensionsEnabled(enabled);
     transformType.lock()->setAllDimensionsEnabled(enabled);
     jitterPeriod.lock()->setAllDimensionsEnabled(enabled);
@@ -2195,6 +2330,18 @@ TrackerContextPrivate::endSolve()
     n->getApp()->progressEnd(n);
     n->getEffectInstance()->endChanges();
 
+}
+
+bool
+TrackerContextPrivate::isTransformAutoGenerationEnabled() const
+{
+    return autoGenerateTransform.lock()->getValue();
+}
+
+void
+TrackerContextPrivate::setTransformOutOfDate(bool outdated)
+{
+    transformOutOfDateLabel.lock()->setSecret(!outdated);
 }
 
 NATRON_NAMESPACE_EXIT;
