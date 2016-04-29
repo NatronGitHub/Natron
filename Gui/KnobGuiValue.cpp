@@ -959,6 +959,7 @@ KnobGuiValue::onSpinBoxValueChanged()
         for (std::size_t i = 1; i < _imp->spinBoxes.size(); ++i) {
             newValue[i] = newValue[0];
         }
+        spinBoxDim = -1;
     }
 
     if (spinBoxDim != -1) {
