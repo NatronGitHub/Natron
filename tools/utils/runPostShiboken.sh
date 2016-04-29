@@ -20,12 +20,15 @@
 # exit if a command returns an error status
 set -e
 
+# PySide version override, add 2 for Qt5/PySide2
+PYV="$1"
+
 # To be run after shiboken to fix errors
 
 sed -e '/<destroylistener.h>/d' -i'.bak' Engine/NatronEngine/*.cpp
 sed -e '/<destroylistener.h>/d' -i'.bak' Gui/NatronGui/*.cpp
-sed -e '/SbkPySide2_QtCoreTypes;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
-sed -e '/SbkPySide2_QtCoreTypeConverters;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
+sed -e "/SbkPySide${PYV}_QtCoreTypes;/d" -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
+sed -e "/SbkPySide${PYV}_QtCoreTypeConverters;/d" -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e '/SbkNatronEngineTypes;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e '/SbkNatronEngineTypeConverters;/d' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
 sed -e 's/cleanTypesAttributes/cleanGuiTypesAttributes/g' -i'.bak' Gui/NatronGui/natrongui_module_wrapper.cpp
