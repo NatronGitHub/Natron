@@ -94,7 +94,7 @@ class AutoTrack {
 
   // Wrapper around Tracks API; however these may add additional processing.
   void AddMarker(const Marker& tracked_marker);
-  void SetMarkers(vector<Marker>* markers);
+  void SetMarkers(TrackMarkersMap* markers);
   bool GetMarker(int clip, int frame, int track, Marker* marker) const;
 
   // TODO(keir): Implement frame matching! This could be very cool for loop

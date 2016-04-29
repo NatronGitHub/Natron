@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <vector>
 #include <iterator>
+#include <set>
 
 #include "libmv/numeric/numeric.h"
 
@@ -34,156 +35,212 @@ Tracks::Tracks(const Tracks& other) {
   markers_ = other.markers_;
 }
 
-Tracks::Tracks(const vector<Marker>& markers) : markers_(markers) {}
+Tracks::Tracks(const TrackMarkersMap& markers) : markers_(markers) {}
 
 bool Tracks::GetMarker(int clip, int frame, int track, Marker* marker) const {
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (markers_[i].clip  == clip &&
-        markers_[i].frame == frame &&
-        markers_[i].track == track) {
-      *marker = markers_[i];
-      return true;
+    TrackMarkersMap::const_iterator foundTrack = markers_.find(track);
+    if (foundTrack == markers_.end()) {
+        return false;
     }
-  }
-  return false;
+    ClipMarkersMap::const_iterator foundClip = foundTrack->second.find(clip);
+    if (foundClip == foundTrack->second.end()) {
+        return false;
+    }
+    FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame);
+    if (foundFrame == foundClip->second.end()) {
+        return false;
+    } else {
+        *marker = foundFrame->second;
+        return true;
+    }
 }
 
 void Tracks::GetMarkersForTrack(int track, vector<Marker>* markers) const {
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (track == markers_[i].track) {
-      markers->push_back(markers_[i]);
+    TrackMarkersMap::const_iterator foundTrack = markers_.find(track);
+    if (foundTrack == markers_.end()) {
+        return;
     }
-  }
+    for (ClipMarkersMap::const_iterator it = foundTrack->second.begin(); it != foundTrack->second.end(); ++it) {
+        for (FrameMarkerMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            markers->push_back(it2->second);
+        }
+    }
 }
 
 void Tracks::GetMarkersForTrackInClip(int clip,
                                       int track,
                                       vector<Marker>* markers) const {
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (clip  == markers_[i].clip &&
-        track == markers_[i].track) {
-      markers->push_back(markers_[i]);
+    TrackMarkersMap::const_iterator foundTrack = markers_.find(track);
+    if (foundTrack == markers_.end()) {
+        return;
     }
-  }
+    ClipMarkersMap::const_iterator foundClip = foundTrack->second.find(clip);
+    if (foundClip == foundTrack->second.end()) {
+        return;
+    }
+    for (FrameMarkerMap::const_iterator it2 = foundClip->second.begin(); it2 != foundClip->second.end(); ++it2) {
+        markers->push_back(it2->second);
+    }
 }
 
 void Tracks::GetMarkersInFrame(int clip,
                                int frame,
                                vector<Marker>* markers) const {
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (markers_[i].clip  == clip &&
-        markers_[i].frame == frame) {
-      markers->push_back(markers_[i]);
+    for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
+        ClipMarkersMap::const_iterator foundClip = it->second.find(clip);
+        if (foundClip == it->second.end()) {
+            continue;
+        }
+        FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame);
+        if (foundFrame == foundClip->second.end()) {
+            continue;
+        } else {
+            markers->push_back(foundFrame->second);
+        }
     }
-  }
 }
+    
+struct MarkerIteratorCompareLess
+{
+        bool operator() (const FrameMarkerMap::const_iterator & lhs,
+                         const FrameMarkerMap::const_iterator & rhs) const
+        {
+            if (lhs->second.track < rhs->second.track) {
+                return true;
+            } else if (lhs->second.track > rhs->second.track) {
+                return false;
+            } else {
+                if (lhs->second.clip < rhs->second.clip) {
+                    return true;
+                } else if (lhs->second.clip > rhs->second.clip) {
+                    return false;
+                } else {
+                    if (lhs->second.frame < rhs->second.frame) {
+                        return true;
+                    } else if (lhs->second.frame > rhs->second.frame) {
+                        return false;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+};
+    
+typedef std::set<FrameMarkerMap::const_iterator, MarkerIteratorCompareLess> FrameMarkersIteratorSet;
 
 void Tracks::GetMarkersForTracksInBothImages(int clip1, int frame1,
                                              int clip2, int frame2,
                                              vector<Marker>* markers) const {
-  std::vector<int> image1_tracks;
-  std::vector<int> image2_tracks;
+    FrameMarkersIteratorSet image1_tracks;
+    FrameMarkersIteratorSet image2_tracks;
+    
+    // Collect the tracks in each of the two images.
 
-  // Collect the tracks in each of the two images.
-  for (int i = 0; i < markers_.size(); ++i) {
-    int clip = markers_[i].clip;
-    int frame = markers_[i].frame;
-    if (clip == clip1 && frame == frame1) {
-      image1_tracks.push_back(markers_[i].track);
-    } else if (clip == clip2 && frame == frame2) {
-      image2_tracks.push_back(markers_[i].track);
+    for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
+        ClipMarkersMap::const_iterator foundClip = it->second.find(clip1);
+        if (foundClip == it->second.end()) {
+            continue;
+        }
+        FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame1);
+        if (foundFrame == foundClip->second.end()) {
+            continue;
+        } else {
+            image1_tracks.insert(foundFrame);
+        }
     }
-  }
-
-  // Intersect the two sets to find the tracks of interest.
-  std::sort(image1_tracks.begin(), image1_tracks.end());
-  std::sort(image2_tracks.begin(), image2_tracks.end());
-  std::vector<int> intersection;
-  std::set_intersection(image1_tracks.begin(), image1_tracks.end(),
-                        image2_tracks.begin(), image2_tracks.end(),
-                        std::back_inserter(intersection));
-
-  // Scan through and get the relevant tracks from the two images.
-  for (int i = 0; i < markers_.size(); ++i) {
-    // Save markers that are in either frame and are in our candidate set.
-    if (((markers_[i].clip  == clip1 &&
-          markers_[i].frame == frame1) ||
-         (markers_[i].clip  == clip2 &&
-          markers_[i].frame == frame2)) &&
-         std::binary_search(intersection.begin(),
-                            intersection.end(),
-                            markers_[i].track)) {
-      markers->push_back(markers_[i]);
+    
+    for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
+        ClipMarkersMap::const_iterator foundClip = it->second.find(clip2);
+        if (foundClip == it->second.end()) {
+            continue;
+        }
+        FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame2);
+        if (foundFrame == foundClip->second.end()) {
+            continue;
+        } else {
+            image2_tracks.insert(foundFrame);
+        }
     }
-  }
+    
+    // Intersect the two sets to find the tracks of interest.
+
+    for (FrameMarkersIteratorSet::const_iterator it = image1_tracks.begin(); it != image1_tracks.end(); ++it) {
+        FrameMarkersIteratorSet::const_iterator foundInImage2Tracks = image2_tracks.find(*it);
+        if (foundInImage2Tracks != image2_tracks.end()) {
+            markers->push_back((*it)->second);
+        }
+    }
 }
 
 void Tracks::AddMarker(const Marker& marker) {
-  // TODO(keir): This is quadratic for repeated insertions. Fix this by adding
-  // a smarter data structure like a set<>.
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (markers_[i].clip  == marker.clip &&
-        markers_[i].frame == marker.frame &&
-        markers_[i].track == marker.track) {
-      markers_[i] = marker;
-      return;
-    }
-  }
-  markers_.push_back(marker);
+    ClipMarkersMap& tracks = markers_[marker.track];
+    FrameMarkerMap& frames = tracks[marker.clip];
+    frames[marker.frame] = marker;
 }
 
-void Tracks::SetMarkers(vector<Marker>* markers) {
+void Tracks::SetMarkers(TrackMarkersMap* markers) {
   std::swap(markers_, *markers);
 }
 
 bool Tracks::RemoveMarker(int clip, int frame, int track) {
-  int size = markers_.size();
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (markers_[i].clip  == clip &&
-        markers_[i].frame == frame &&
-        markers_[i].track == track) {
-      markers_[i] = markers_[size - 1];
-      markers_.resize(size - 1);
-      return true;
+    TrackMarkersMap::iterator foundTrack = markers_.find(track);
+    if (foundTrack == markers_.end()) {
+        return false;
     }
-  }
-  return false;
+    ClipMarkersMap::iterator foundClip = foundTrack->second.find(clip);
+    if (foundClip == foundTrack->second.end()) {
+        return false;
+    }
+    FrameMarkerMap::iterator foundFrame = foundClip->second.find(frame);
+    if (foundFrame == foundClip->second.end()) {
+        return false;
+    } else {
+        foundClip->second.erase(foundFrame);
+        return true;
+    }
 }
 
 void Tracks::RemoveMarkersForTrack(int track) {
-  int size = 0;
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (markers_[i].track != track) {
-      markers_[size++] = markers_[i];
+    TrackMarkersMap::iterator foundTrack = markers_.find(track);
+    if (foundTrack == markers_.end()) {
+        return;
     }
-  }
-  markers_.resize(size);
+    markers_.erase(foundTrack);
 }
 
+
 int Tracks::MaxClip() const {
-  int max_clip = 0;
-  for (int i = 0; i < markers_.size(); ++i) {
-    max_clip = std::max(markers_[i].clip, max_clip);
-  }
-  return max_clip;
+    int max_clip = 0;
+    for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
+        if (!it->second.empty()) {
+            max_clip = std::max(it->second.rbegin()->first, max_clip);
+        }
+    }
+    return max_clip;
 }
 
 int Tracks::MaxFrame(int clip) const {
-  int max_frame = 0;
-  for (int i = 0; i < markers_.size(); ++i) {
-    if (markers_[i].clip == clip) {
-      max_frame = std::max(markers_[i].frame, max_frame);
+    int max_frame = 0;
+    for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
+        ClipMarkersMap::const_iterator foundClip = it->second.find(clip);
+        if (foundClip == it->second.end()) {
+            continue;
+        }
+        if (!foundClip->second.empty()) {
+            max_frame = std::max(foundClip->second.rbegin()->first, max_frame);
+        }
     }
-  }
-  return max_frame;
+    
+    return max_frame;
 }
 
 int Tracks::MaxTrack() const {
-  int max_track = 0;
-  for (int i = 0; i < markers_.size(); ++i) {
-    max_track = std::max(markers_[i].track, max_track);
-  }
-  return max_track;
+    if (!markers_.empty()) {
+        return markers_.rbegin()->first;
+    } else {
+        return 0;
+    }
 }
 
 int Tracks::NumMarkers() const {

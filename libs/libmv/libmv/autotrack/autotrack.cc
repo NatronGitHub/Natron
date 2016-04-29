@@ -205,7 +205,7 @@ void AutoTrack::AddMarker(const Marker& marker) {
   tracks_.AddMarker(marker);
 }
 
-void AutoTrack::SetMarkers(vector<Marker>* markers) {
+void AutoTrack::SetMarkers(TrackMarkersMap* markers) {
   tracks_.SetMarkers(markers);
 }
 

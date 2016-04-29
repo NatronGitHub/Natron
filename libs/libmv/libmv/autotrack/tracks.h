@@ -23,13 +23,27 @@
 #ifndef LIBMV_AUTOTRACK_TRACKS_H_
 #define LIBMV_AUTOTRACK_TRACKS_H_
 
+#include <map>
 #include "libmv/base/vector.h"
 #include "libmv/autotrack/marker.h"
 
 namespace mv {
 
 using libmv::vector;
-
+    
+struct MarkerCompareLess
+{
+    bool operator() (const Marker & lhs,
+                    const Marker & rhs) const
+    {
+        return lhs.frame < rhs.frame;
+    }
+};
+    
+typedef std::map<int, Marker> FrameMarkerMap;
+typedef std::map<int, FrameMarkerMap> ClipMarkersMap;
+typedef std::map<int, ClipMarkersMap> TrackMarkersMap;
+    
 // The Tracks container stores correspondences between frames.
 class Tracks {
  public:
@@ -37,7 +51,7 @@ class Tracks {
   Tracks(const Tracks &other);
 
   // Create a tracks object with markers already initialized. Copies markers.
-  explicit Tracks(const vector<Marker>& markers);
+  explicit Tracks(const TrackMarkersMap& markers);
 
   // All getters append to the output argument vector.
   bool GetMarker(int clip, int frame, int track, Marker* marker) const;
@@ -59,7 +73,7 @@ class Tracks {
 
   // Moves the contents of *markers over top of the existing markers. This
   // destroys *markers in the process (but avoids copies).
-  void SetMarkers(vector<Marker>* markers);
+  void SetMarkers(TrackMarkersMap* markers);
   bool RemoveMarker(int clip, int frame, int track);
   void RemoveMarkersForTrack(int track);
 
@@ -68,10 +82,10 @@ class Tracks {
   int MaxTrack() const;
   int NumMarkers() const;
 
-  const vector<Marker>& markers() const { return markers_; }
+  const TrackMarkersMap& markers() const { return markers_; }
 
  private:
-  vector<Marker> markers_;
+  TrackMarkersMap markers_;
 
   // TODO(keir): Consider adding access-map data structures to avoid all the
   // linear lookup penalties for the accessors.
