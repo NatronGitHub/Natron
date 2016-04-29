@@ -34,6 +34,7 @@
 GCC_DIAG_OFF(unused-function)
 GCC_DIAG_OFF(unused-parameter)
 #include <libmv/autotrack/autotrack.h>
+#include <libmv/autotrack/predict_tracks.h>
 #include <libmv/logging/logging.h>
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
@@ -258,6 +259,7 @@ struct TrackMarkerAndOptions
     TrackMarkerPtr natronMarker;
     mv::Marker mvMarker;
     mv::TrackRegionOptions mvOptions;
+    mv::KalmanFilterState mvState;
 };
 
 

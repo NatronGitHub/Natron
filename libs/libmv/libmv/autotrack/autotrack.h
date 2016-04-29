@@ -25,6 +25,7 @@
 
 #include "libmv/autotrack/tracks.h"
 #include "libmv/autotrack/region.h"
+#include "libmv/autotrack/predict_tracks.h"
 #include "libmv/tracking/track_region.h"
 
 namespace libmv {
@@ -90,6 +91,7 @@ class AutoTrack {
   // Caller maintains ownership of *result and *tracked_marker.
   bool TrackMarker(Marker* tracked_marker,
                    TrackRegionResult* result,
+                   KalmanFilterState* predictionState = NULL,
                    const TrackRegionOptions* track_options=NULL);
 
   // Wrapper around Tracks API; however these may add additional processing.

@@ -115,12 +115,18 @@ FrameAccessor::Key GetImageForMarker(const Marker& marker,
 
 bool AutoTrack::TrackMarker(Marker* tracked_marker,
                             TrackRegionResult* result,
+                            KalmanFilterState* predictionState,
                             const TrackRegionOptions* track_options) {
+    
   // Try to predict the location of the second marker.
-  bool predicted_position = false;
-  if (PredictMarkerPosition(tracks_, tracked_marker)) {
+    bool predicted_position;
+    if (predictionState) {
+        predicted_position = predictionState->PredictForward(tracked_marker->frame, tracked_marker);
+    } else {
+        predicted_position = PredictMarkerPosition(tracks_, tracked_marker);
+    }
+  if (predicted_position) {
     LG << "Succesfully predicted!";
-    predicted_position = true;
   } else {
     LG << "Prediction failed; trying to track anyway.";
   }
@@ -195,6 +201,11 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   frame_accessor_->ReleaseImage(reference_key);
   frame_accessor_->ReleaseImage(tracked_key);
 
+  // Update the kalman filter with the new measurement
+  if (predictionState) {
+    predictionState->Update(*tracked_marker);
+  }
+    
   // TODO(keir): Possibly the return here should get removed since the results
   // are part of TrackResult. However, eventually the autotrack stuff will have
   // extra status (e.g. prediction fail, etc) that should get included.

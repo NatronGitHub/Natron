@@ -24,6 +24,7 @@
 #define LIBMV_AUTOTRACK_TRACKS_H_
 
 #include <map>
+#include <set>
 #include "libmv/base/vector.h"
 #include "libmv/autotrack/marker.h"
 
@@ -31,7 +32,7 @@ namespace mv {
 
 using libmv::vector;
     
-struct MarkerCompareLess
+struct MarkerCompareFrameLess
 {
     bool operator() (const Marker & lhs,
                     const Marker & rhs) const
@@ -39,6 +40,9 @@ struct MarkerCompareLess
         return lhs.frame < rhs.frame;
     }
 };
+    
+// This is a set per track and per clip
+typedef std::set<Marker, MarkerCompareFrameLess> MarkerSet;
     
 typedef std::map<int, Marker> FrameMarkerMap;
 typedef std::map<int, FrameMarkerMap> ClipMarkersMap;

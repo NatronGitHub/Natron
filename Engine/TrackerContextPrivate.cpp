@@ -931,38 +931,40 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
     bool enabledChans[3];
     args.getEnabledChannels(&enabledChans[0], &enabledChans[1], &enabledChans[2]);
 
-
+    
     {
-        //Add the tracked marker
+        // Add a marker to the auto-track at the tracked time: the mv::Marker struct is filled with the values of the Natron TrackMarker at the trackTime
         QMutexLocker k(autoTrackMutex);
-        natronTrackerToLibMVTracker(false, enabledChans, *track->natronMarker, trackIndex, trackTime, args.getStep(), args.getFormatHeight(), &track->mvMarker);
         if (trackTime == args.getStart()) {
+            bool foundStartMarker = autoTrack->GetMarker(0, trackTime, trackIndex, &track->mvMarker);
+            assert(foundStartMarker);
             track->mvMarker.source = mv::Marker::MANUAL;
+        } else {
+            natronTrackerToLibMVTracker(false, enabledChans, *track->natronMarker, trackIndex, trackTime, args.getStep(), args.getFormatHeight(), &track->mvMarker);
+            autoTrack->AddMarker(track->mvMarker);
         }
-        autoTrack->AddMarker(track->mvMarker);
+
+        
+        
     }
-
-
-    //The frame on the mvMarker should have been set accordingly
-    assert(track->mvMarker.frame == trackTime);
 
     if (track->mvMarker.source == mv::Marker::MANUAL) {
         // This is a user keyframe or the first frame, we do not track it
         assert( trackTime == args.getStart() || track->natronMarker->isUserKeyframe(track->mvMarker.frame) );
 #ifdef TRACE_LIB_MV
-        qDebug() << QThread::currentThread() << "TrackStep:" << time << "is a keyframe";
+        qDebug() << QThread::currentThread() << "TrackStep:" << trackTime << "is a keyframe";
 #endif
         setKnobKeyframesFromMarker(track->mvMarker, args.getFormatHeight(), 0, track->natronMarker);
     } else {
-        // Set the reference rame
 
-
-        // Make sure the reference frame has the same search window as the tracked frame and exists in the AutoTrack
+        // Make sure the reference frame is in the auto-track: the mv::Marker struct is filled with the values of the Natron TrackMarker at the reference_frame
         {
             QMutexLocker k(autoTrackMutex);
             mv::Marker m;
-            natronTrackerToLibMVTracker(true, enabledChans, *track->natronMarker, track->mvMarker.track, track->mvMarker.reference_frame, args.getStep(), args.getFormatHeight(), &m);
-            autoTrack->AddMarker(m);
+            if (!autoTrack->GetMarker(0, track->mvMarker.reference_frame, trackIndex, &m)) {
+                natronTrackerToLibMVTracker(true, enabledChans, *track->natronMarker, track->mvMarker.track, track->mvMarker.reference_frame, args.getStep(), args.getFormatHeight(), &m);
+                autoTrack->AddMarker(m);
+            }
         }
 
 
@@ -976,7 +978,7 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
 
         // Do the actual tracking
         libmv::TrackRegionResult result;
-        if ( !autoTrack->TrackMarker(&track->mvMarker, &result, &track->mvOptions) || !result.is_usable() ) {
+        if ( !autoTrack->TrackMarker(&track->mvMarker, &result,  &track->mvState, &track->mvOptions) || !result.is_usable() ) {
 #ifdef TRACE_LIB_MV
             qDebug() << QThread::currentThread() << "Tracking FAILED (" << (int)result.termination <<  ") for track" << trackIndex << "at frame" << trackTime;
 #endif
@@ -1054,19 +1056,24 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         // Set a keyframe on the marker to initialize its position
         (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
         
+        
+        mv::MarkerSet previouslyComputedMarkersOrdered;
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
 
         // Add a libmv marker for all keyframes
         for (std::set<int>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
             if (*it2 == start) {
-                //Will be added in the track step
                 continue;
             } else {
                 mv::Marker marker;
                 TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
                 assert(marker.source == mv::Marker::MANUAL);
                 trackContext->AddMarker(marker);
+                // Add the marker to the markers ordered only if it can contribute to predicting its next position
+                if ((frameStep > 0 && *it2 < start) || (frameStep < 0 && *it2 > start)) {
+                    previouslyComputedMarkersOrdered.insert(marker);
+                }
             }
         }
 
@@ -1074,21 +1081,60 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         //For all already tracked frames which are not keyframes, add them to the AutoTrack too
         std::set<double> centerKeys;
         t->natronMarker->getCenterKeyframes(&centerKeys);
+        
+        // Make sure to create a marker at the start time
+        centerKeys.insert(start);
+        
+        // Taken from libmv
+        //const int max_frames_to_predict_from = 20;
+        
         for (std::set<double>::iterator it2 = centerKeys.begin(); it2 != centerKeys.end(); ++it2) {
             if ( userKeys.find(*it2) != userKeys.end() ) {
                 continue;
             }
-            if (*it2 == start) {
-                //Will be added in the track step
-                continue;
-            } else {
-                mv::Marker marker;
-                TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
-                assert(marker.source == mv::Marker::TRACKED);
-                trackContext->AddMarker(marker);
+            
+            mv::Marker marker;
+            TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
+            assert(marker.source == mv::Marker::TRACKED);
+            trackContext->AddMarker(marker);
+            // Add the marker to the markers ordered only if it can contribute to predicting its next position
+            if (((frameStep > 0 && *it2 <= start) || (frameStep < 0 && *it2 >= start))) {
+                previouslyComputedMarkersOrdered.insert(marker);
+            }
+            
+        }
+        
+        // There must be at least 1 marker at the start time
+        assert(!previouslyComputedMarkersOrdered.empty());
+        
+        // Initialise the kalman state with the marker at the position
+        
+        if (frameStep > 0) {
+            mv::MarkerSet::iterator mIt = previouslyComputedMarkersOrdered.begin();
+            t->mvState.Init(*mIt, frameStep);
+            ++mIt;
+            for (; mIt != previouslyComputedMarkersOrdered.end(); ++mIt) {
+                mv::Marker predictedMarker;
+                if (!t->mvState.PredictForward(mIt->frame, &predictedMarker)) {
+                    break;
+                } else {
+                    t->mvState.Update(*mIt);
+                }
+            }
+        } else {
+            mv::MarkerSet::reverse_iterator mIt = previouslyComputedMarkersOrdered.rbegin();
+            t->mvState.Init(*mIt, frameStep);
+            ++mIt;
+            for (; mIt != previouslyComputedMarkersOrdered.rend(); ++mIt) {
+                mv::Marker predictedMarker;
+                if (!t->mvState.PredictForward(mIt->frame, &predictedMarker)) {
+                    break;
+                } else {
+                    t->mvState.Update(*mIt);
+                }
             }
         }
-
+        
 
         t->mvOptions = mvOptions;
         _imp->endLibMVOptionsForTrack(*t->natronMarker, &t->mvOptions);
