@@ -80,7 +80,6 @@ KnobGuiTable::removeSpecificGui()
 {
     if (_imp->mainContainer) {
         _imp->mainContainer->deleteLater();
-        _imp->mainContainer = 0;
     }
 }
 

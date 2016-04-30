@@ -87,9 +87,7 @@ void
 KnobGuiFile::removeSpecificGui()
 {
     _lineEdit->deleteLater();
-    _lineEdit = 0;
     _openFileButton->deleteLater();
-    _openFileButton = 0;
 }
 
 void
@@ -483,9 +481,7 @@ void
 KnobGuiOutputFile::removeSpecificGui()
 {
     _lineEdit->deleteLater();
-    _lineEdit = 0;
     _openFileButton->deleteLater();
-    _openFileButton = 0;
 }
 
 void
@@ -571,6 +567,9 @@ KnobGuiOutputFile::updateGUI(int /*dimension*/)
 void
 KnobGuiOutputFile::onTextEdited()
 {
+    if (!_lineEdit) {
+        return;
+    }
     std::string newPattern = _lineEdit->text().toStdString();
 
 //    if (_knob->getHolder() && _knob->getHolder()->getApp()) {
@@ -712,7 +711,9 @@ KnobGuiOutputFile::updateToolTip()
 {
     if ( hasToolTip() ) {
         QString tt = toolTip();
-        _lineEdit->setToolTip(tt);
+        if (_lineEdit) {
+            _lineEdit->setToolTip(tt);
+        }
     }
 }
 
@@ -737,7 +738,6 @@ KnobGuiPath::removeSpecificGui()
 {
     if (_mainContainer) {
         _mainContainer->deleteLater();
-        _mainContainer = 0;
     }
     KnobGuiTable::removeSpecificGui();
 }

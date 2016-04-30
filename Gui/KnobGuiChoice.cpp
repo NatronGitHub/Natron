@@ -224,7 +224,6 @@ void
 KnobGuiChoice::removeSpecificGui()
 {
     _comboBox->deleteLater();
-    _comboBox = 0;
 }
 
 void

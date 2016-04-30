@@ -106,8 +106,8 @@ KnobGuiParametric::~KnobGuiParametric()
 void
 KnobGuiParametric::removeSpecificGui()
 {
-    delete _curveWidget;
-    delete treeColumn;
+    _curveWidget->deleteLater();
+    treeColumn->deleteLater();
 }
 
 void

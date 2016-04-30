@@ -234,7 +234,6 @@ KnobGuiBool::removeSpecificGui()
 {
     _checkBox->hide();
     _checkBox->deleteLater();
-    _checkBox = 0;
 }
 
 void

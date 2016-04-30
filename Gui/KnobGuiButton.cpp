@@ -142,7 +142,7 @@ KnobGuiButton::~KnobGuiButton()
 void
 KnobGuiButton::removeSpecificGui()
 {
-    delete _button;
+    _button->deleteLater();
 }
 
 void

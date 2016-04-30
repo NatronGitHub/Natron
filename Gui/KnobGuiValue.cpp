@@ -210,7 +210,6 @@ void
 KnobGuiValue::removeSpecificGui()
 {
     _imp->container->deleteLater();
-    _imp->container = 0;
     _imp->spinBoxes.clear();
 }
 

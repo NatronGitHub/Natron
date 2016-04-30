@@ -140,8 +140,8 @@ KnobGui::removeGui()
             _imp->descriptionLabel->deleteLater();
             _imp->descriptionLabel = 0;
         }
-        removeSpecificGui();
     }
+    removeSpecificGui();
     _imp->guiRemoved = true;
 }
 

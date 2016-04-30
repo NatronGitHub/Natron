@@ -126,7 +126,7 @@ KnobGuiSeparator::isLabelBold() const
 void
 KnobGuiSeparator::removeSpecificGui()
 {
-    delete _line;
+    _line->deleteLater();
 }
 
 void

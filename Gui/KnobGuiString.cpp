@@ -502,8 +502,8 @@ KnobGuiString::~KnobGuiString()
 void
 KnobGuiString::removeSpecificGui()
 {
-    delete _lineEdit;
-    delete _container;
+    _lineEdit->deleteLater();
+    _container->deleteLater();
 }
 
 std::string
