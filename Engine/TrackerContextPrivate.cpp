@@ -1009,6 +1009,28 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
     return true;
 } // TrackerContextPrivate::trackStepLibMV
 
+
+struct PreviouslyComputedTrackFrame
+{
+    int frame;
+    bool isUserKey;
+    
+    PreviouslyComputedTrackFrame() : frame(0), isUserKey(false) {}
+    
+    PreviouslyComputedTrackFrame(int f, bool b) : frame(f), isUserKey(b) {}
+};
+
+
+struct PreviouslyComputedTrackFrameCompareLess
+{
+    
+    bool operator() (const PreviouslyComputedTrackFrame& lhs, const PreviouslyComputedTrackFrame& rhs) const {
+        return lhs.frame < rhs.frame;
+    }
+};
+
+typedef std::set<PreviouslyComputedTrackFrame,PreviouslyComputedTrackFrameCompareLess> PreviouslyTrackedFrameSet;
+
 void
 TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                              int start,
@@ -1057,24 +1079,25 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
         
         
-        mv::MarkerSet previouslyComputedMarkersOrdered;
+        PreviouslyTrackedFrameSet previousFramesOrdered;
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
 
+        // Make sure to create a marker at the start time
+        userKeys.insert(start);
+
+        
         // Add a libmv marker for all keyframes
         for (std::set<int>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
-            if (*it2 == start) {
-                continue;
-            } else {
-                mv::Marker marker;
-                TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
-                assert(marker.source == mv::Marker::MANUAL);
-                trackContext->AddMarker(marker);
-                // Add the marker to the markers ordered only if it can contribute to predicting its next position
-                if ((frameStep > 0 && *it2 < start) || (frameStep < 0 && *it2 > start)) {
-                    previouslyComputedMarkersOrdered.insert(marker);
-                }
+           
+            mv::Marker marker;
+            TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
+            trackContext->AddMarker(marker);
+            // Add the marker to the markers ordered only if it can contribute to predicting its next position
+            if ((frameStep > 0 && *it2 <= start) || (frameStep < 0 && *it2 >= start)) {
+                previousFramesOrdered.insert(PreviouslyComputedTrackFrame(*it2, true));
             }
+            
         }
 
 
@@ -1082,11 +1105,6 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         std::set<double> centerKeys;
         t->natronMarker->getCenterKeyframes(&centerKeys);
         
-        // Make sure to create a marker at the start time
-        centerKeys.insert(start);
-        
-        // Taken from libmv
-        //const int max_frames_to_predict_from = 20;
         
         for (std::set<double>::iterator it2 = centerKeys.begin(); it2 != centerKeys.end(); ++it2) {
             if ( userKeys.find(*it2) != userKeys.end() ) {
@@ -1098,11 +1116,32 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
             assert(marker.source == mv::Marker::TRACKED);
             trackContext->AddMarker(marker);
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
-            if (((frameStep > 0 && *it2 <= start) || (frameStep < 0 && *it2 >= start))) {
-                previouslyComputedMarkersOrdered.insert(marker);
+            if (((frameStep > 0 && *it2 < start) || (frameStep < 0 && *it2 > start))) {
+                previousFramesOrdered.insert(PreviouslyComputedTrackFrame(*it2, false));
             }
             
         }
+        
+        // Taken from libmv, only initialize the filter to this amount of frames (max)
+        const int max_frames_to_predict_from = 20;
+        std::list<mv::Marker> previouslyComputedMarkersOrdered;
+        {
+            int i = 0;
+            for (PreviouslyTrackedFrameSet::reverse_iterator it = previousFramesOrdered.rbegin(); it != previousFramesOrdered.rend(); ++it, ++i) {
+                if (i == max_frames_to_predict_from) {
+                    break;
+                }
+                mv::Marker m;
+                if (trackContext->GetMarker(0, it->frame, trackIndex, &m)) {
+                    previouslyComputedMarkersOrdered.push_front(m);
+                } else {
+                    assert(false);
+                }
+                
+            }
+        }
+        
+        
         
         // There must be at least 1 marker at the start time
         assert(!previouslyComputedMarkersOrdered.empty());
@@ -1110,7 +1149,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         // Initialise the kalman state with the marker at the position
         
         if (frameStep > 0) {
-            mv::MarkerSet::iterator mIt = previouslyComputedMarkersOrdered.begin();
+            std::list<mv::Marker>::iterator mIt = previouslyComputedMarkersOrdered.begin();
             t->mvState.Init(*mIt, frameStep);
             ++mIt;
             for (; mIt != previouslyComputedMarkersOrdered.end(); ++mIt) {
@@ -1122,7 +1161,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                 }
             }
         } else {
-            mv::MarkerSet::reverse_iterator mIt = previouslyComputedMarkersOrdered.rbegin();
+            std::list<mv::Marker>::reverse_iterator mIt = previouslyComputedMarkersOrdered.rbegin();
             t->mvState.Init(*mIt, frameStep);
             ++mIt;
             for (; mIt != previouslyComputedMarkersOrdered.rend(); ++mIt) {

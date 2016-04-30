@@ -3831,6 +3831,7 @@ TrackerGui::onResetOffsetButtonClicked()
             offsetKnob->resetToDefaultValue(i);
         }
     }
+    _imp->viewer->getGui()->redrawAllViewers();
 }
 
 void

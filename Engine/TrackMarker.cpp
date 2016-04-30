@@ -563,7 +563,7 @@ TrackMarker::getReferenceFrame(int time,
         }
 
         // no keyframe - use the previous/next as reference
-        return time + frameStep;
+        return time - frameStep;
     } else {
         if ( upper == _imp->userKeyframes.begin() ) {
             ///all keys are greater than time

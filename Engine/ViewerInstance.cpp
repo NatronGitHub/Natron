@@ -2319,7 +2319,7 @@ void
 ViewerInstance::markAllOnGoingRendersAsAborted()
 {
     //Do not abort the oldest render while scrubbing timeline or sliders so that the user gets some feedback
-    bool keepOldest = getApp()->isDraftRenderEnabled();
+    bool keepOldest = getApp()->isDraftRenderEnabled() || isDoingPartialUpdates();
     QMutexLocker k(&_imp->renderAgeMutex);
 
     for (int i = 0; i < 2; ++i) {
