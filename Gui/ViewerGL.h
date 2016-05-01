@@ -169,7 +169,7 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const std::list<boost::shared_ptr<Image> >& tiles,
+                                            const ImagePtr& image,
                                             ImageBitDepthEnum depth,
                                             int time,
                                             const RectD& rod,
@@ -343,9 +343,9 @@ public:
      * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
      * rendered image by the viewer. It doesn't re-render the image if it is not present.
      **/
-    void getLastRenderedImage(int textureIndex, std::list<boost::shared_ptr<Image> >* ret) const;
+    ImagePtr getLastRenderedImage(int textureIndex) const;
 
-    void getLastRenderedImageByMipMapLevel(int textureIndex, unsigned int mipMapLevel, std::list<boost::shared_ptr<Image> >* ret) const;
+    ImagePtr getLastRenderedImageByMipMapLevel(int textureIndex, unsigned int mipMapLevel) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.

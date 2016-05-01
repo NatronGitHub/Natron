@@ -65,7 +65,7 @@ public:
         , alphaLayer()
         , alphaChannelName()
         , cachedFrame()
-        , tiles()
+        , colorImage()
         , rod()
         , abortInfo()
         , isSequential(false)
@@ -109,7 +109,9 @@ public:
 
     // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
     boost::shared_ptr<FrameEntry> cachedFrame;
-    std::list<boost::shared_ptr<Image> > tiles;
+    
+    // The image which was used to make the texture
+    boost::shared_ptr<Image> colorImage;
     RectD rod;
     AbortableRenderInfoPtr abortInfo;
     bool isSequential;

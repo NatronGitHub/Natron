@@ -43,14 +43,14 @@ public:
 
     FrameParams()
         : NonKeyParams()
-        , _tiles()
+        , _image()
         , _rod()
     {
     }
 
     FrameParams(const FrameParams & other)
         : NonKeyParams(other)
-        , _tiles(other._tiles)
+        , _image(other._image)
         , _rod(other._rod)
     {
     }
@@ -59,14 +59,12 @@ public:
                 int bitDepth,
                 int texW,
                 int texH,
-                const boost::shared_ptr<Image>& originalImage)
+                const ImagePtr& originalImage)
         : NonKeyParams(1, bitDepth != 0 ? texW * texH * 16 : texW * texH * 4)
-        , _tiles()
+        , _image(originalImage)
         , _rod(rod)
     {
-        if (originalImage) {
-            _tiles.push_back(originalImage);
-        }
+        
     }
 
     virtual ~FrameParams()
@@ -86,24 +84,22 @@ public:
         return !(*this == other);
     }
 
-    void getOriginalTiles(std::list<boost::shared_ptr<Image> >* ret) const
+    ImagePtr getInternalImage() const
     {
-        for (std::list<boost::weak_ptr<Image> >::const_iterator it = _tiles.begin(); it != _tiles.end(); ++it) {
-            boost::shared_ptr<Image> img = it->lock();
-            if (img) {
-                ret->push_back(img);
-            }
-        }
+        return _image.lock();
     }
 
-    void addOriginalTile(const boost::shared_ptr<Image>& image)
+    void setInternalImage(const ImagePtr& image)
     {
-        _tiles.push_back(image);
+        _image = image;
     }
 
 private:
 
-    std::list<boost::weak_ptr<Image> > _tiles;
+    // The image used to make this frame entry
+    boost::weak_ptr<Image>  _image;
+    
+    // The RoD of the image used to make this frame entry
     RectI _rod;
 };
 

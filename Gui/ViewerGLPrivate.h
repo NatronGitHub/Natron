@@ -105,7 +105,7 @@ struct TextureInfo
 
     // For now we always use the project format, but we store the pixel aspect ratio of the upstream image
     Format format;
-    std::vector<ImageList> lastRenderedTiles;
+    std::vector<ImageWPtr> lastRenderedTiles;
     U64 memoryHeldByLastRenderedImages;
     bool isPartialImage;
 };

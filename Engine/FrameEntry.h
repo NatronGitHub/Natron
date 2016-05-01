@@ -95,18 +95,18 @@ public:
         return _aborted;
     }
 
-    void getOriginalTiles(std::list<boost::shared_ptr<Image> >* ret) const
+    ImagePtr getInternalImage() const
     {
         QReadLocker k(&_entryLock);
 
-        _params->getOriginalTiles(ret);
+        return _params->getInternalImage();
     }
 
-    void addOriginalTile(const boost::shared_ptr<Image>& image)
+    void setInternalImage(const ImagePtr& image)
     {
         QWriteLocker k(&_entryLock);
 
-        _params->addOriginalTile(image);
+        _params->setInternalImage(image);
     }
 
 private:

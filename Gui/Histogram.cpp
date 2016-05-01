@@ -496,68 +496,12 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         }
     }
 
-    std::list<boost::shared_ptr<Image> > tiles;
+    ImagePtr image;
     if (viewer) {
-        viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor(), &tiles);
+        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor());
     }
 
-    ///We must copy all tiles into an image of the whole size
-    boost::shared_ptr<Image> ret;
-    if ( !tiles.empty() ) {
-        const boost::shared_ptr<Image>& firstTile = tiles.front();
-        RectI bounds;
-        unsigned int mipMapLevel = 0;
-        double par = 1.;
-        ImageBitDepthEnum depth = eImageBitDepthFloat;
-        ImageComponents comps;
-        ImagePremultiplicationEnum premult = eImagePremultiplicationPremultiplied;
-        ImageFieldingOrderEnum fielding = eImageFieldingOrderNone;
-        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
-            if ( bounds.isNull() ) {
-                bounds = (*it)->getBounds();
-                mipMapLevel = (*it)->getMipMapLevel();
-                par = (*it)->getPixelAspectRatio();
-                depth = (*it)->getBitDepth();
-                comps = (*it)->getComponents();
-                fielding = (*it)->getFieldingOrder();
-                premult = (*it)->getPremultiplication();
-            } else {
-                bounds.merge( (*it)->getBounds() );
-                assert( mipMapLevel == (*it)->getMipMapLevel() );
-                assert( depth == (*it)->getBitDepth() );
-                assert( comps == (*it)->getComponents() );
-                assert( par == (*it)->getPixelAspectRatio() );
-                assert( fielding == (*it)->getFieldingOrder() );
-                assert( premult == (*it)->getPremultiplication() );
-            }
-        }
-        if ( bounds.isNull() ) {
-            return ret;
-        }
-
-        ret.reset( new Image(comps,
-                             firstTile->getRoD(),
-                             bounds,
-                             mipMapLevel,
-                             par,
-                             depth,
-                             premult,
-                             fielding,
-                             false) );
-        for (std::list<boost::shared_ptr<Image> >::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
-            ret->pasteFrom(**it, (*it)->getBounds(), false);
-        }
-
-        if (!useImageRoD) {
-            if (viewer) {
-                *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds, par, mipMapLevel);
-            }
-        } else {
-            *imagePortion = ret->getBounds();
-        }
-    }
-
-    return ret;
+    return image;
 } // getHistogramImage
 
 void

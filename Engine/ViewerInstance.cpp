@@ -1544,7 +1544,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     }
                 }
                 assert(colorImage);
-                inArgs.params->tiles.push_back(colorImage);
+                inArgs.params->colorImage = colorImage;
             }
             if (!colorImage) {
                 if (retCode == EffectInstance::eRenderRoIRetCodeFailed) {
@@ -1742,7 +1742,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             }
         } // if (singleThreaded)
         if (inArgs.params->cachedFrame && colorImage) {
-            inArgs.params->cachedFrame->addOriginalTile(colorImage);
+            inArgs.params->cachedFrame->setInternalImage(colorImage);
         }
 
         if ( stats && stats->isInDepthProfilingEnabled() ) {
@@ -2671,27 +2671,20 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         doUpdate = false;
     }
     if (doUpdate) {
-        ImageList tiles;
-        if (params->cachedFrame) {
-            if ( !params->tiles.empty() ) {
-                tiles = params->tiles;
-            } else {
-                params->cachedFrame->getOriginalTiles(&tiles);
-            }
-        } else {
-            assert( !params->tiles.empty() );
-            tiles = params->tiles;
+        ImagePtr originalImage;
+        originalImage = params->colorImage;
+        if (params->cachedFrame && !originalImage) {
+            originalImage = params->cachedFrame->getInternalImage();
         }
-
         ImageBitDepthEnum depth;
-        if ( !tiles.empty() ) {
-            depth = tiles.front()->getBitDepth();
+        if (!originalImage) {
+            depth = originalImage->getBitDepth();
         } else {
             depth = (ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
         }
 
         uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
-                                              tiles,
+                                              originalImage,
                                               depth,
                                               params->time,
                                               params->rod,

@@ -119,21 +119,22 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 
 private:
-    SequenceTime _time;
-    U64 _treeVersion;
-    double _gain;
-    double _gamma;
-    int _lut;
-    int _bitDepth;
-    int _channels;
-    int /*ViewIdx*/ _view; // store it locally as an int for easier serialization
+    SequenceTime _time; // The frame in the sequence
+    U64 _treeVersion; // The hash of the viewer node
+    double _gain; // The gain on the viewer (if we don't apply it through GLSL shaders)
+    double _gamma;  // The gamma on the viewer (if we don't apply it through GLSL shaders)
+    int _lut;  // The lut on the viewer (if we don't apply it through GLSL shaders)
+    int _bitDepth;  // The bitdepth of the texture (i.e: 8bit or 32bit fp)
+    int _channels; // The display channels, as requested by the user. Note that this will make a new cache entry whenever the user
+                  // picks a new value in dropdown on the GUI
+    int /*ViewIdx*/ _view; // The view of the frame, store it locally as an int for easier serialization
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
-    RenderScale _scale;
-    std::string _inputName;
-    ImageComponents _layer;
+    RenderScale _scale; // The scale of the image from which this texture was made
+    std::string _inputName; // The name of the input node used (to not mix up input 1, 2, 3 etc...)
+    ImageComponents _layer; // The Layer of the image
     std::string _alphaChannelFullName; /// e.g: color.a , only used if _channels if A
-    bool _useShaders;
-    bool _draftMode;
+    bool _useShaders; // Whether GLSL shaders are active or not
+    bool _draftMode; // Whether draft mode is enabled or not
 };
 
 NATRON_NAMESPACE_EXIT;
