@@ -21,9 +21,7 @@ TEMPLATE = subdirs
 # build things in the order we give
 CONFIG += ordered
 
-!disable-breakpad {
-SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
-}
+include(breakpadpro.pri)
 
 SUBDIRS += \
     HostSupport \
