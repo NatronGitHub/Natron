@@ -31,13 +31,15 @@
 
 #include "Engine/TextureRect.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/OpenGLViewerI.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class Texture
+class Texture : public OpenGLTextureI
 {
+  
 public:
-    /*Note that the short datatype is not used currently*/
+    
     enum DataTypeEnum
     {
         eDataTypeNone,
@@ -46,19 +48,12 @@ public:
         eDataTypeHalf,
     };
 
-public:
-
 
     Texture(U32 target,
             int minFilter,
             int magFilter,
             int clamp);
-
-    U32 getTexID() const
-    {
-        return _texID;
-    }
-
+ 
     int w() const
     {
         return _textureRect.w;
@@ -74,8 +69,12 @@ public:
         return _type;
     }
 
-    bool mustAllocTexture(const TextureRect& rect) const;
-
+    /*
+     * @brief Ensures that the texture is of size texRect and of the given type
+     * @returns True if something changed, false otherwise
+     */
+    bool ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type);
+    
     /*allocates the texture*/
     void fillOrAllocateTexture(const TextureRect & texRect, DataTypeEnum type, const RectI& roi, bool updateOnlyRoi);
 
@@ -88,11 +87,11 @@ public:
 
 private:
 
-    U32 _texID;
     U32 _target;
     int _minFilter, _magFilter, _clamp;
     TextureRect _textureRect;
     DataTypeEnum _type;
+    
 };
 
 NATRON_NAMESPACE_EXIT;

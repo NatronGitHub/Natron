@@ -31,13 +31,46 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/OverlaySupport.h"
-#include "Engine/RectI.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TextureRect.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
+class OpenGLTextureI
+{
+    
+public:
+    
+   
+    
+    OpenGLTextureI()
+    : _texID(0)
+    {
+        
+    }
+    
+    U32 getTexID() const
+    {
+        return _texID;
+    }
+
+    
+    virtual ~OpenGLTextureI() {
+
+    }
+    
+    
+    
+protected:
+   
+    
+    
+    U32 _texID;
+
+
+};
 
 class OpenGLViewerI
     : public OverlaySupport
@@ -73,7 +106,8 @@ public:
      * actually displayed on the viewport. (It cannot be bigger than the rod)
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipMapLevel) = 0;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel,
+                                                              std::vector<RectI>* tiles) = 0;
     virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
 
     /**
@@ -104,21 +138,32 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const ImagePtr& image,
-                                            ImageBitDepthEnum depth,
-                                            int time,
-                                            const RectD& rod,
                                             size_t bytesCount,
+                                            const RectI &bounds,
                                             const TextureRect & region,
-                                            double gain, double gamma, double offset, int lut,
-                                            int pboIndex,
-                                            unsigned int mipMapLevel,
-                                            ImagePremultiplicationEnum premult,
                                             int textureIndex,
                                             bool isPartialRect,
-                                            bool recenterViewer,
-                                            const Point& viewportCenter) = 0;
+                                            bool isFirstTile,
+                                            boost::shared_ptr<OpenGLTextureI>* texture) = 0;
 
+    virtual void endTransferBufferFromRAMToGPU(int textureIndex,
+                                               const boost::shared_ptr<OpenGLTextureI>& texture,
+                                               const ImagePtr& image,
+                                               int time,
+                                               const RectD& rod,
+                                               const RectI& viewerRoI,
+                                               double par,
+                                               ImageBitDepthEnum depth,
+                                               unsigned int mipMapLevel,
+                                               ImagePremultiplicationEnum premult,
+                                               double gain,
+                                               double gamma,
+                                               double offset,
+                                               int lut,
+                                               bool recenterViewer,
+                                               const Point& viewportCenter,
+                                               bool isPartialRect) = 0;
+    
     /**
      * @brief Called when the input of a viewer should render black.
      **/

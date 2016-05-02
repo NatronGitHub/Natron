@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <cassert>
+#include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -61,18 +62,19 @@ template<typename EntryType>
 class ImageLockerHelper
 {
     LockManagerI<EntryType>* _manager;
-    boost::shared_ptr<EntryType> _entry;
+    std::list<boost::shared_ptr<EntryType> > _entries;
 
 public:
 
 
-    ImageLockerHelper(LockManagerI<EntryType>* manager) : _manager(manager), _entry() {}
+    ImageLockerHelper(LockManagerI<EntryType>* manager) : _manager(manager), _entries() {}
 
     ImageLockerHelper(LockManagerI<EntryType>* manager,
-                      const boost::shared_ptr<EntryType>& entry) : _manager(manager), _entry(entry)
+                      const boost::shared_ptr<EntryType>& entry) : _manager(manager), _entries()
     {
-        if (_entry && _manager) {
-            _manager->lock(_entry);
+        if (entry && _manager) {
+            _entries.push_back(entry);
+            _manager->lock(entry);
         }
     }
 
@@ -83,19 +85,17 @@ public:
 
     void lock(const boost::shared_ptr<EntryType>& entry)
     {
-        assert(!_entry);
-        _entry = entry;
+        _entries.push_back(entry);
         if (_manager) {
-            _manager->lock(_entry);
+            _manager->lock(entry);
         }
     }
 
     bool tryLock(const boost::shared_ptr<EntryType>& entry)
     {
-        assert(!_entry);
         if (_manager) {
             if ( _manager->tryLock(entry) ) {
-                _entry = entry;
+                _entries.push_back(entry);
 
                 return true;
             }
@@ -106,9 +106,12 @@ public:
 
     void unlock()
     {
-        if (_entry && _manager) {
-            _manager->unlock(_entry);
-            _entry.reset();
+        if (!_entries.empty() && _manager) {
+            for (typename std::list<boost::shared_ptr<EntryType> >::iterator it = _entries.begin(); it!=_entries.end(); ++it) {
+                _manager->unlock(*it);
+            }
+            
+            _entries.clear();
         }
     }
 };

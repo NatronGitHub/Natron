@@ -131,6 +131,9 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , wheelDeltaSeekFrame(0)
     , isUpdatingTexture(false)
     , renderOnPenUp(false)
+    , updateViewerPboIndex(0)
+    , lastTextureTransferRoI()
+    , lastTextureTransferMipMapLevel()
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;

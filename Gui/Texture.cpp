@@ -39,7 +39,8 @@ Texture::Texture(U32 target,
                  int minFilter,
                  int magFilter,
                  int clamp)
-    : _target(target)
+    : OpenGLTextureI()
+    , _target(target)
     , _minFilter(minFilter)
     , _magFilter(magFilter)
     , _clamp(clamp)
@@ -49,9 +50,48 @@ Texture::Texture(U32 target,
 }
 
 bool
-Texture::mustAllocTexture(const TextureRect& rect) const
+Texture::ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type)
 {
-    return _textureRect != rect;
+    if ( (texRect == _textureRect) && (_type == type) ) {
+        return false;
+    }
+    
+    GLProtectAttrib a(GL_ENABLE_BIT);
+    glEnable(_target);
+    glBindTexture (_target, _texID);
+    _textureRect = texRect;
+    _type = type;
+    glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+    
+    glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
+    glTexParameteri (_target, GL_TEXTURE_MAG_FILTER, _magFilter);
+    
+    glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
+    glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
+    if (type == eDataTypeByte) {
+        glTexImage2D(_target,
+                     0,         // level
+                     GL_RGBA8, //internalFormat
+                     w(), h(),
+                     0,         // border
+                     GL_BGRA,       // format
+                     GL_UNSIGNED_INT_8_8_8_8_REV,   // type
+                     0);            // pixels
+    } else if (type == eDataTypeFloat) {
+        glTexImage2D (_target,
+                      0,            // level
+                      GL_RGBA32F_ARB, //internalFormat
+                      w(), h(),
+                      0,            // border
+                      GL_RGBA,      // format
+                      GL_FLOAT, // type
+                      0);           // pixels
+    }
+    glBindTexture(_target, 0);
+    glCheckError();
+    return true;
+    
+    
 }
 
 void
@@ -63,15 +103,16 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
     //GLuint savedTexture;
     //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
+       
         GLProtectAttrib a(GL_ENABLE_BIT);
         int width = updateOnlyRoi ? roi.width() : w();
         int height = updateOnlyRoi ? roi.height() : h();
         int x1 = updateOnlyRoi ? roi.x1 - texRect.x1 : 0;
         int y1 = updateOnlyRoi ? roi.y1 - texRect.y1 : 0;
 
-        glEnable(_target);
-        glBindTexture (_target, _texID);
-        if ( (texRect == _textureRect) && (_type == type) ) {
+        if (!ensureTextureHasSize(texRect, type)) {
+            glEnable(_target);
+            glBindTexture (_target, _texID);
             if (_type == Texture::eDataTypeByte) {
                 glTexSubImage2D(_target,
                                 0,              // level
@@ -89,39 +130,10 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                                 GL_FLOAT,       // type
                                 0);
             }
-            glCheckError();
-        } else {
-            _textureRect = texRect;
-            _type = type;
-            glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-
-            glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
-            glTexParameteri (_target, GL_TEXTURE_MAG_FILTER, _magFilter);
-
-            glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
-            glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
-            if (type == eDataTypeByte) {
-                glTexImage2D(_target,
-                             0,         // level
-                             GL_RGBA8, //internalFormat
-                             w(), h(),
-                             0,         // border
-                             GL_BGRA,       // format
-                             GL_UNSIGNED_INT_8_8_8_8_REV,   // type
-                             0);            // pixels
-            } else if (type == eDataTypeFloat) {
-                glTexImage2D (_target,
-                              0,            // level
-                              GL_RGBA32F_ARB, //internalFormat
-                              w(), h(),
-                              0,            // border
-                              GL_RGBA,      // format
-                              GL_FLOAT, // type
-                              0);           // pixels
-            }
-
+            glBindTexture (_target, 0);
             glCheckError();
         }
+       
     } // GLProtectAttrib a(GL_ENABLE_BIT);
 } // fillOrAllocateTexture
 

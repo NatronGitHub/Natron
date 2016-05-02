@@ -29,6 +29,7 @@
 
 #include "Global/Macros.h"
 
+#include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -39,20 +40,16 @@ NATRON_NAMESPACE_ENTER;
  * and likewise y2 - y1 != h , this is because a texture might not contain all the lines/columns
  * of the image in the portion defined.
  **/
-class TextureRect
+class TextureRect : public RectI
 {
 public:
     double par; // the par of the associated image
-    int x1, y1, x2, y2; // the edges of the texture. These are coordinates in the full size image
     int w, h; // the width and height of the texture. This has nothing to do with x,y,r,t
     int closestPo2; //< the closest power of 2 of the original region of interest of the image
 
     TextureRect()
-        : par(1.)
-        , x1(0)
-        , y1(0)
-        , x2(0)
-        , y2(0)
+        : RectI()
+        , par(1.)
         , w(0)
         , h(0)
         , closestPo2(1)
@@ -67,11 +64,8 @@ public:
                 int h_,
                 int closestPo2_,
                 double par_)
-        : par(par_)
-        , x1(x1_)
-        , y1(y1_)
-        , x2(x2_)
-        , y2(y2_)
+        : RectI(x1_, y1_, x2_, y2_)
+        , par(par_)
         , w(w_)
         , h(h_)
         , closestPo2(closestPo2_)
@@ -87,10 +81,7 @@ public:
              int closestPo2_,
              double par_)
     {
-        x1 = x1_;
-        y1 = y1_;
-        x2 = x2_;
-        y2 = y2_;
+        RectI::set(x1_, y1_, x2_, y2_);
         w = w_;
         h = h_;
         closestPo2 = closestPo2_;
@@ -102,25 +93,10 @@ public:
         set(0, 0, 0, 0, 0, 0, 1, 1.);
     }
 
-    bool isNull() const
-    {
-        return (x2 <= x1) || (y2 <= y1);
-    }
+    void operator=(const RectI& other);
 
-    bool intersect(const RectI & r,
-                   RectI* intersection) const;
-
-    bool contains(const TextureRect& other) const
-    {
-        return other.x1 >= x1 &&
-               other.y1 >= y1 &&
-               other.x2 <= x2 &&
-               other.y2 <= y2;
-    }
-
-    void toCanonical_noClipping(unsigned int thisLevel,
-                                double par,
-                                RectD *rect) const;
+    bool contains(const TextureRect& other) const;
+    
 };
 
 inline bool

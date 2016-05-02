@@ -85,9 +85,11 @@ using boost::shared_ptr;
 static void scaleToTexture8bits(const RectI& roi,
                                 const RenderViewerArgs & args,
                                 ViewerInstance* viewer,
+                                const UpdateViewerParams::CachedTile& tile,
                                 U32* output);
 static void scaleToTexture32bits(const RectI& roi,
                                  const RenderViewerArgs & args,
+                                 const UpdateViewerParams::CachedTile& tile,
                                  float *output);
 static std::pair<double, double>findAutoContrastVminVmax(boost::shared_ptr<const Image> inputImage,
                                                          DisplayChannelsEnum channels,
@@ -95,7 +97,7 @@ static std::pair<double, double>findAutoContrastVminVmax(boost::shared_ptr<const
 static void renderFunctor(const RectI& roi,
                           const RenderViewerArgs & args,
                           ViewerInstance* viewer,
-                          void *buffer);
+                        UpdateViewerParams::CachedTile tile);
 
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
@@ -545,10 +547,16 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             /*
                Either failure, black or nothing, the texture is junk, remove it from the cache
              */
-            if (args[i] && args[i]->params && args[i]->params->cachedFrame) {
-                args[i]->params->cachedFrame->setAborted(true);
-                appPTR->removeFromViewerCache(args[i]->params->cachedFrame);
-                args[i]->params->cachedFrame.reset();
+            if (args[i] && args[i]->params) {
+                for (std::list<UpdateViewerParams::CachedTile>::iterator it = args[i]->params->tiles.begin(); it!=args[i]->params->tiles.end(); ++it) {
+                    if (it->cachedData) {
+                        it->cachedData->setAborted(true);
+                        appPTR->removeFromViewerCache(it->cachedData);
+                        it->cachedData.reset();
+                    }
+                }
+                args[i]->params->tiles.clear();
+                
             }
         }
 
@@ -631,10 +639,13 @@ ViewerInstance::renderViewer(ViewIdx view,
         eViewerRenderRetCodeRedraw, eViewerRenderRetCodeRedraw
     };
     for (int i = 0; i < 2; ++i) {
-        if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
-            break;
-        }
+        
         if (args[i] && args[i]->params) {
+            
+            if ( (i == 1) && (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) ) {
+                args[i]->params->tiles.clear();
+                break;
+            }
             assert(args[i]->params->textureIndex == i);
 
             ///We enable render stats just for the A input (i == 0) otherwise we would get crappy results
@@ -658,10 +669,15 @@ ViewerInstance::renderViewer(ViewIdx view,
                 /*
                    Either failure, black or nothing, the texture is junk, remove it from the cache
                  */
-                if (args[i] && args[i]->params && args[i]->params->cachedFrame) {
-                    args[i]->params->cachedFrame->setAborted(true);
-                    appPTR->removeFromViewerCache(args[i]->params->cachedFrame);
-                    args[i]->params->cachedFrame.reset();
+                if (args[i] && args[i]->params) {
+                    for (std::list<UpdateViewerParams::CachedTile>::iterator it = args[i]->params->tiles.begin(); it!=args[i]->params->tiles.end(); ++it) {
+                        if (it->cachedData) {
+                            it->cachedData->setAborted(true);
+                            appPTR->removeFromViewerCache(it->cachedData);
+                            it->cachedData.reset();
+                        }
+                    }
+                    args[i]->params->tiles.clear();
                 }
             }
 
@@ -888,7 +904,7 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
     outArgs->params.reset(new UpdateViewerParams);
 
     // The PAR of the input image
-    outArgs->params->textureRect.par = outArgs->activeInputToRender->getAspectRatio(-1);
+    outArgs->params->pixelAspectRatio = outArgs->activeInputToRender->getAspectRatio(-1);
 
     // Is it playback ?
     outArgs->params->isSequential = isSequential;
@@ -948,101 +964,146 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 {
     // Roi is the coordinates of the 4 corners of the texture in the bounds with the current zoom
     // factor taken into account.
-    RectI roi;
 
     // When auto-contrast is enabled or user RoI, we compute exactly the iamge portion displayed in the rectangle and
     // do not round it to Viewer tiles.
-    if (outArgs->autoContrast || outArgs->userRoIEnabled) {
-        roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->textureRect.par, mipmapLevel);
+    std::vector<RectI> tiles;
+    if (!useCache) {
+        outArgs->params->roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
+        if (outArgs->isDoingPartialUpdates) {
+            std::list<RectD> partialRects;
+            QMutexLocker k(&_imp->viewerParamsMutex);
+            partialRects = _imp->partialUpdateRects;
+            for (std::list<RectD>::iterator it = partialRects.begin(); it!=partialRects.end(); ++it) {
+                RectI pixelRect;
+                it->toPixelEnclosing(outArgs->params->mipMapLevel, outArgs->params->pixelAspectRatio, &pixelRect);
+                ///Intersect to the RoI
+                if ( pixelRect.intersect(outArgs->params->roi, &pixelRect) ) {
+                    tiles.push_back(pixelRect);
+                }
+
+            }
+        } else {
+            tiles.push_back(outArgs->params->roi);
+        }
     } else {
-        roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, outArgs->params->textureRect.par, mipmapLevel);
+        outArgs->params->roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, outArgs->params->pixelAspectRatio, mipmapLevel, &tiles);
     }
 
     // If the RoI does not fall into the visible portion on the viewer, just clear the viewer to black
-    if ( roi.isNull() ) {
+    if ( outArgs->params->roi.isNull() ) {
         return eViewerRenderRetCodeBlack;
     }
 
-    // Texture rect contains the pixel coordinates in the image to be rendered
-    outArgs->params->textureRect.x1 = roi.x1;
-    outArgs->params->textureRect.x2 = roi.x2;
-    outArgs->params->textureRect.y1 = roi.y1;
-    outArgs->params->textureRect.y2 = roi.y2;
-    outArgs->params->textureRect.w = roi.width();
-    outArgs->params->textureRect.h = roi.height();
-    outArgs->params->textureRect.closestPo2 = 1 << mipmapLevel;
-    outArgs->params->bytesCount = outArgs->params->textureRect.w * outArgs->params->textureRect.h * 4;
-    assert(outArgs->params->bytesCount > 0);
-    if (outArgs->params->depth == eImageBitDepthFloat) {
-        outArgs->params->bytesCount *= sizeof(float);
-    }
+    
     outArgs->params->rod = rod;
     outArgs->params->mipMapLevel = mipmapLevel;
 
     std::string inputToRenderName = outArgs->activeInputToRender->getNode()->getScriptName_mt_safe();
-    RenderScale scale;
-    scale.x = Image::getScaleFromMipMapLevel(mipmapLevel);
-    scale.y = scale.x;
+ 
 
-    outArgs->key.reset( new FrameKey(getNode().get(),
-                                     outArgs->params->time,
-                                     viewerHash,
-                                     outArgs->params->gain,
-                                     outArgs->params->gamma,
-                                     outArgs->params->lut,
-                                     (int)outArgs->params->depth,
-                                     outArgs->channels,
-                                     outArgs->params->view,
-                                     outArgs->params->textureRect,
-                                     scale,
-                                     inputToRenderName,
-                                     outArgs->params->layer,
-                                     outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
-                                     outArgs->params->depth == eImageBitDepthFloat && supportsGLSL(),
-                                     isDraftMode) );
-
-
-    if (useCache) {
-        bool isCached = AppManager::getTextureFromCache(*(outArgs->key), &outArgs->params->cachedFrame);
-
-        // If we want to force a refresh, we remove from  the cache texture
-        if (outArgs->forceRender && outArgs->params->cachedFrame) {
-            appPTR->removeFromViewerCache(outArgs->params->cachedFrame);
-            isCached = false;
-            outArgs->params->cachedFrame.reset();
+    // Texture rect contains the pixel coordinates in the image to be rendered
+    outArgs->params->tiles.clear();
+    for (std::vector<RectI>::iterator it = tiles.begin(); it != tiles.end(); ++it) {
+        UpdateViewerParams::CachedTile tile;
+        tile.rect.x1 = it->x1;
+        tile.rect.x2 = it->x2;
+        tile.rect.y1 = it->y1;
+        tile.rect.y2 = it->y2;
+        tile.rect.w = it->width();
+        tile.rect.h = it->height();
+        tile.rect.closestPo2 = 1 << mipmapLevel;
+        tile.bytesCount = tile.rect.w * tile.rect.h * 4; // RGBA
+        assert(outArgs->params->roi.contains(tile.rect));
+        // If we are using floating point textures, multiply by size of float
+        assert(tile.bytesCount > 0);
+        if (outArgs->params->depth == eImageBitDepthFloat) {
+            tile.bytesCount *= sizeof(float);
         }
-
-        if (!isCached) {
-            if ( stats  && stats->isInDepthProfilingEnabled() ) {
-                stats->addCacheInfosForNode(getNode(), true, false);
-            }
-        } else {
-            assert(outArgs->params->cachedFrame);
-
-            //  Make sure we have the lock on the texture because it may be in the cache already
-            // but not yet allocated.
-            FrameEntryLocker entryLocker( _imp.get() );
-            if ( !entryLocker.tryLock(outArgs->params->cachedFrame) ) {
-                // Another thread is rendering it, just return it is not useful to keep this thread waiting.
-                return eViewerRenderRetCodeRedraw;
-            }
-
-            if ( outArgs->params->cachedFrame->getAborted() ) {
-                // The thread rendering the frame entry might have been aborted and the entry removed from the cache
-                // but another thread might successfully have found it in the cache. This flag is to notify it the frame
-
-                // is invalid.
-                return eViewerRenderRetCodeRedraw;
-            }
-
-            // The data will be valid as long as the cachedFrame shared pointer use_count is gt 1
-            outArgs->params->ramBuffer = outArgs->params->cachedFrame->data();
-
-            if ( stats && stats->isInDepthProfilingEnabled() ) {
-                stats->addCacheInfosForNode(getNode(), false, false);
-            }
-        }
+        outArgs->params->tiles.push_back(tile);
     }
+    outArgs->params->nbCachedTile = 0;
+    if (useCache) {
+        
+        for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
+            
+            FrameKey key(getNode().get(),
+                         outArgs->params->time,
+                         viewerHash,
+                         outArgs->params->gain,
+                         outArgs->params->gamma,
+                         outArgs->params->lut,
+                         (int)outArgs->params->depth,
+                         outArgs->channels,
+                         outArgs->params->view,
+                         it->rect,
+                         mipmapLevel,
+                         inputToRenderName,
+                         outArgs->params->layer,
+                         outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
+                         outArgs->params->depth == eImageBitDepthFloat && supportsGLSL(),
+                         isDraftMode);
+            
+            std::list<FrameEntryPtr> entries;
+            bool hasTextureCached = AppManager::getTextureFromCache(key, &entries);
+            if ( stats  && stats->isInDepthProfilingEnabled() ) {
+                if (hasTextureCached) {
+                    stats->addCacheInfosForNode(getNode(), true, false);
+                } else {
+                    stats->addCacheInfosForNode(getNode(), false, false);
+                }
+            }
+            
+            // If we want to force a refresh, we remove from  the cache texture
+            if (outArgs->forceRender && hasTextureCached) {
+                for (std::list<FrameEntryPtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
+                    appPTR->removeFromViewerCache(*it);
+                }
+                hasTextureCached = false;
+            }
+            // Find out if we have a corresponding tile in the cache
+            FrameEntryPtr foundCachedEntry;
+            for (std::list<FrameEntryPtr>::iterator it2 = entries.begin(); it2 != entries.end(); ++it2) {
+                const TextureRect& entryRect = (*it2)->getKey().getTexRect();
+                if (entryRect == it->rect) {
+                    foundCachedEntry = *it2;
+                    break;
+                }
+            }
+            
+            
+            if (foundCachedEntry) {
+                
+                //  Make sure we have the lock on the texture because it may be in the cache already
+                // but not yet allocated.
+                FrameEntryLocker entryLocker( _imp.get() );
+                if ( !entryLocker.tryLock(foundCachedEntry) ) {
+                    // Another thread is rendering it, just return it is not useful to keep this thread waiting.
+                    return eViewerRenderRetCodeRedraw;
+                }
+                if ( foundCachedEntry->getAborted() ) {
+                    // The thread rendering the frame entry might have been aborted and the entry removed from the cache
+                    // but another thread might successfully have found it in the cache. This flag is to notify it the frame
+                    
+                    // is invalid.
+                    return eViewerRenderRetCodeRedraw;
+                }
+                
+                
+                // The data will be valid as long as the cachedFrame shared pointer use_count is gt 1
+                it->cachedData = foundCachedEntry;
+                it->isCached = true;
+                it->ramBuffer = foundCachedEntry->data();
+                assert(it->ramBuffer);
+                ++outArgs->params->nbCachedTile;
+            }
+        }
+
+        
+    }
+    
+
+
 
     return eViewerRenderRetCodeRender;
 } // ViewerInstance::getViewerRoIAndTexture
@@ -1121,7 +1182,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         }
 
         // We found something in the cache, stop now
-        if (outArgs->params->cachedFrame) {
+        if (outArgs->params->nbCachedTile > 0) {
             break;
         }
     } // for (int lookup = 0; lookup < nLookups; ++lookup)
@@ -1189,7 +1250,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool isSequentialRender,
                                       U64 viewerHash,
                                       bool /*canAbort*/,
-                                      NodePtr rotoPaintNode,
+                                      const NodePtr& rotoPaintNode,
                                       bool useTLS,
                                       const boost::shared_ptr<RequestedFrame>& request,
                                       const boost::shared_ptr<RenderStats>& stats,
@@ -1227,7 +1288,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         }
 
 
-        if (inArgs.params->cachedFrame) {
+        if (inArgs.params->nbCachedTile == (int)inArgs.params->tiles.size()) {
             // Found a cached texture
             return eViewerRenderRetCodeRender;
         }
@@ -1236,8 +1297,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     // Flag that we are going to render
     inArgs.isRenderingFlag.reset( new RenderingFlagSetter( getNode().get() ) );
 
-    //Do not call this if the texture is already cached.
-    assert(!inArgs.params->ramBuffer);
+    assert(inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size());
 
     /*
      * There are 3 types of renders:
@@ -1253,13 +1313,33 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
      * 3) Single frame non-abortable render: the canAbort flag is set to false and the isSequentialRender flag is set to false.
      */
 
+    const bool useTextureCache = !inArgs.forceRender && !inArgs.userRoIEnabled && !inArgs.autoContrast && rotoPaintNode.get() == 0 && !inArgs.isDoingPartialUpdates;
 
-    RectI roi;
-    roi.x1 = inArgs.params->textureRect.x1;
-    roi.y1 = inArgs.params->textureRect.y1;
-    roi.x2 = inArgs.params->textureRect.x2;
-    roi.y2 = inArgs.params->textureRect.y2;
 
+    RectI roi = inArgs.params->roi;
+    
+    // We might already have some tiles cached, get their bounding box to see if it is less than the actual RoI
+    if (useTextureCache) {
+        RectI tilesBbox;
+        bool tilesBboxSet = false;
+        for (std::list<UpdateViewerParams::CachedTile>::const_iterator it = inArgs.params->tiles.begin(); it != inArgs.params->tiles.end(); ++it) {
+            if (it->ramBuffer) {
+                continue;
+            }
+            if (!tilesBboxSet) {
+                tilesBboxSet = true;
+                tilesBbox.x1 = it->rect.x1;
+                tilesBbox.x2 = it->rect.x2;
+                tilesBbox.y1 = it->rect.y1;
+                tilesBbox.y2 = it->rect.y2;
+            } else {
+                tilesBbox.merge(it->rect.x1, it->rect.y1, it->rect.x2, it->rect.y2);
+            }
+        }
+        if (roi.contains(tilesBbox)) {
+            roi = tilesBbox;
+        }
+    }
 
     ///Check that we were not aborted already
     if ( !isSequentialRender && ( (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash) ||
@@ -1270,13 +1350,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     ///Notify the gui we're rendering.
     ViewerRenderingStarted_RAII renderingNotifier(this);
 
-    ///Don't allow different threads to write the texture entry
-    FrameEntryLocker entryLocker( _imp.get() );
-
 
     if (useTLS) {
         RectD canonicalRoi;
-        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->textureRect.par, inArgs.params->rod, &canonicalRoi);
+        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod, &canonicalRoi);
 
         FrameRequestMap requestPassData;
         StatusEnum stat = EffectInstance::computeRequestPass(inArgs.params->time, view, inArgs.params->mipMapLevel, canonicalRoi, getNode(), requestPassData);
@@ -1288,122 +1365,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         frameArgs->updateNodesRequest(requestPassData);
     }
 
-
-    ///If the user RoI is enabled, the odds that we find a texture containing exactly the same portion
-    ///is very low, we better render again (and let the NodeCache do the work) rather than just
-    ///overload the ViewerCache which may become slowe
-    assert(_imp->uiContext);
-    RectI lastPaintBboxPixel;
-    std::list<RectD> partialRectsToRender;
     const double par = inArgs.activeInputToRender->getAspectRatio(-1);
-    bool useTmpBuffer = inArgs.forceRender || inArgs.userRoIEnabled || inArgs.autoContrast || rotoPaintNode.get() != 0 || inArgs.isDoingPartialUpdates;
-
-    if (useTmpBuffer) {
-        assert(!inArgs.params->cachedFrame);
-
-        // If we are tracking, only update the partial rectangles
-        if (inArgs.isDoingPartialUpdates) {
-            QMutexLocker k(&_imp->viewerParamsMutex);
-            partialRectsToRender = _imp->partialUpdateRects;
-            inArgs.params->recenterViewport = _imp->viewportCenterSet;
-            inArgs.params->viewportCenter = _imp->viewportCenter;
-        }
-        // If we are actively painting, re-use the last texture instead of re-drawing everything
-        else if (rotoPaintNode) {
-            /*
-               Check if we have a last valid texture and re-use the old texture only if the new texture is at least as big
-               as the old texture.
-             */
-            QMutexLocker k(&_imp->lastRenderParamsMutex);
-            bool canUseOldTex = _imp->lastRenderParams[inArgs.params->textureIndex] &&
-                                inArgs.params->mipMapLevel == _imp->lastRenderParams[inArgs.params->textureIndex]->mipMapLevel &&
-                                inArgs.params->textureRect.contains(_imp->lastRenderParams[inArgs.params->textureIndex]->textureRect);
-
-            if (!canUseOldTex) {
-                //The old texture did not exist or was not usable, just make a new buffer
-                inArgs.params->mustFreeRamBuffer = true;
-                inArgs.params->ramBuffer =  (unsigned char*)malloc(inArgs.params->bytesCount);
-            } else {
-                //Overwrite the RoI to only the last portion rendered
-                RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
-
-
-                lastPaintBbox.toPixelEnclosing(inArgs.params->mipMapLevel, par, &lastPaintBboxPixel);
-
-                //The last buffer must be valid
-                assert(_imp->lastRenderParams[inArgs.params->textureIndex]->ramBuffer);
-                inArgs.params->ramBuffer =  0;
-
-                //If the old buffer size is the same as the requested texture size, this function does nothing
-                //otherwise it allocates a new buffer and copies the content of the old one.
-                bool mustFreeSource = copyAndSwap(_imp->lastRenderParams[inArgs.params->textureIndex]->textureRect, inArgs.params->textureRect, inArgs.params->bytesCount, inArgs.params->depth, _imp->lastRenderParams[inArgs.params->textureIndex]->ramBuffer, &inArgs.params->ramBuffer);
-
-                if (mustFreeSource) {
-                    //A new buffer was allocated and copied the previous content, free the old texture
-                    _imp->lastRenderParams[inArgs.params->textureIndex]->mustFreeRamBuffer = true;
-                } else {
-                    //The buffer did not change its size, make sure to keep it
-                    _imp->lastRenderParams[inArgs.params->textureIndex]->mustFreeRamBuffer = false;
-                }
-
-                //This will delete the previous buffer if mustFreeRamBuffer was set to true
-                _imp->lastRenderParams[inArgs.params->textureIndex].reset();
-
-                //Allocation may have failed
-                if (!inArgs.params->ramBuffer) {
-                    return eViewerRenderRetCodeFail;
-                }
-            }
-            _imp->lastRenderParams[inArgs.params->textureIndex] = inArgs.params;
-        }
-        // Make a new buffer that will be freed when the params get destroyed
-        else {
-            inArgs.params->mustFreeRamBuffer = true;
-            inArgs.params->ramBuffer =  (unsigned char*)malloc(inArgs.params->bytesCount);
-        }
-    } else { //!useTmpBuffer
-        //Look up the cache for a texture or create one
-        {
-            QMutexLocker k(&_imp->lastRenderParamsMutex);
-            _imp->lastRenderParams[inArgs.params->textureIndex].reset();
-        }
-
-        // For the viewer, we need the enclosing rectangle to avoid black borders.
-        // Do this here to avoid infinity values.
-        RectI bounds;
-        inArgs.params->rod.toPixelEnclosing(inArgs.params->mipMapLevel, inArgs.params->textureRect.par, &bounds);
-
-
-        boost::shared_ptr<FrameParams> cachedFrameParams =
-            FrameEntry::makeParams( bounds, inArgs.key->getBitDepth(), inArgs.params->textureRect.w, inArgs.params->textureRect.h, ImagePtr() );
-        bool cached = AppManager::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
-                                                              &inArgs.params->cachedFrame);
-        if (!inArgs.params->cachedFrame) {
-            std::stringstream ss;
-            ss << "Failed to allocate a texture of ";
-            ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
-            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
-
-            return eViewerRenderRetCodeFail;
-        }
-
-        entryLocker.lock(inArgs.params->cachedFrame);
-
-        ///The entry has already been locked by the cache
-        if (!cached) {
-            inArgs.params->cachedFrame->allocateMemory();
-        }
-
-
-        assert(inArgs.params->cachedFrame);
-        // how do you make sure cachedFrame->data() is not freed after this line?
-        ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
-        ///Since it is used during the whole function scope it is guaranteed not to be freed before
-        ///The viewer is actually done with it.
-        /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-        inArgs.params->ramBuffer = inArgs.params->cachedFrame->data();
-        assert(inArgs.params->ramBuffer);
-    } // useTmpBuffer
 
 
     //We are going to render a non cached frame and not in playback, clear persistent messages
@@ -1448,14 +1410,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
     EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(), inArgs.activeInputIndex);
     std::vector<RectI> splitRoi;
-    if ( !partialRectsToRender.empty() ) {
-        for (std::list<RectD>::iterator it = partialRectsToRender.begin(); it != partialRectsToRender.end(); ++it) {
-            RectI pixelRect;
-            it->toPixelEnclosing(inArgs.params->mipMapLevel, par, &pixelRect);
-            ///Intersect to the RoI
-            if ( pixelRect.intersect(roi, &pixelRect) ) {
-                splitRoi.push_back(pixelRect);
-            }
+    if ( inArgs.isDoingPartialUpdates ) {
+        for (std::list<UpdateViewerParams::CachedTile>::iterator it = inArgs.params->tiles.begin(); it != inArgs.params->tiles.end(); ++it) {
+            splitRoi.push_back(it->rect);
         }
     } else {
         /*
@@ -1509,7 +1466,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             {
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                 renderArgs.reset( new EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                    inArgs.key->getScale(),
+                                                                    Image::getScaleFromMipMapLevel(inArgs.params->mipMapLevel),
                                                                     inArgs.params->mipMapLevel,
                                                                     view,
                                                                     inArgs.forceRender,
@@ -1578,39 +1535,194 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         if ( inArgs.activeInputToRender->aborted() ) {
             return eViewerRenderRetCodeRedraw;
         }
+        
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
         splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
 
+        
         boost::shared_ptr<UpdateViewerParams> updateParams;
-        if ( !partialRectsToRender.empty() ) {
+        if ( !inArgs.isDoingPartialUpdates ) {
+            updateParams = inArgs.params;
+        } else {
             updateParams.reset( new UpdateViewerParams(*inArgs.params) );
-            assert(!updateParams->ramBuffer);
             updateParams->mustFreeRamBuffer = true;
             updateParams->isPartialRect = true;
-            updateParams->textureRect.x1 = viewerRenderRoI.x1;
-            updateParams->textureRect.x2 = viewerRenderRoI.x2;
-            updateParams->textureRect.y1 = viewerRenderRoI.y1;
-            updateParams->textureRect.y2 = viewerRenderRoI.y2;
-            updateParams->textureRect.w = viewerRenderRoI.width();
-            updateParams->textureRect.h = viewerRenderRoI.height();
-            updateParams->bytesCount = updateParams->textureRect.w * updateParams->textureRect.h * 4;
-            assert(updateParams->bytesCount > 0);
+            UpdateViewerParams::CachedTile tile;
+            tile.rect.x1 = viewerRenderRoI.x1;
+            tile.rect.x2 = viewerRenderRoI.x2;
+            tile.rect.y1 = viewerRenderRoI.y1;
+            tile.rect.y2 = viewerRenderRoI.y2;
+            tile.rect.w = viewerRenderRoI.width();
+            tile.rect.h = viewerRenderRoI.height();
+            tile.bytesCount = tile.rect.w * tile.rect.h * 4; // RGBA
+            assert(tile.bytesCount > 0);
             if (updateParams->depth == eImageBitDepthFloat) {
-                updateParams->bytesCount *= sizeof(float);
+                tile.bytesCount *= sizeof(float);
             }
             std::size_t pixelSize = 4;
             if (updateParams->depth == eImageBitDepthFloat) {
                 pixelSize *= sizeof(float);
             }
-            std::size_t dstRowSize = updateParams->textureRect.w * pixelSize;
-            updateParams->bytesCount = updateParams->textureRect.h * dstRowSize;
-            updateParams->ramBuffer =  (unsigned char*)malloc(updateParams->bytesCount);
-        } else {
-            updateParams = inArgs.params;
-            assert(updateParams->ramBuffer);
+            std::size_t dstRowSize = tile.rect.w * pixelSize;
+            tile.bytesCount = tile.rect.h * dstRowSize;
+            tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
+            updateParams->tiles.clear();
+            updateParams->tiles.push_back(tile);
         }
-
+        
+        // Allocate the texture on the CPU to apply the render viewer process
+        FrameEntryLocker entryLocker( _imp.get() );
+        
+        RectI lastPaintBboxPixel;
+        std::list<UpdateViewerParams::CachedTile> unCachedTiles;
+        if (!useTextureCache) {
+            
+            assert(updateParams->tiles.size() == 1);
+            
+            UpdateViewerParams::CachedTile& tile = updateParams->tiles.front();
+            
+            
+            // If we are tracking, only update the partial rectangles
+            if (inArgs.isDoingPartialUpdates) {
+                QMutexLocker k(&_imp->viewerParamsMutex);
+                updateParams->recenterViewport = _imp->viewportCenterSet;
+                updateParams->viewportCenter = _imp->viewportCenter;
+            }
+            // If we are actively painting, re-use the last texture instead of re-drawing everything
+            else if (rotoPaintNode) {
+                
+                /*
+                 Check if we have a last valid texture and re-use the old texture only if the new texture is at least as big
+                 as the old texture.
+                 */
+                QMutexLocker k(&_imp->lastRenderParamsMutex);
+                assert(_imp->lastRenderParams[updateParams->textureIndex]->tiles.size() == 1);
+                
+                bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
+                updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
+                tile.rect.contains(_imp->lastRenderParams[updateParams->textureIndex]->tiles.front().rect);
+                
+                if (!canUseOldTex) {
+                    //The old texture did not exist or was not usable, just make a new buffer
+                    updateParams->mustFreeRamBuffer = true;
+                    tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
+                } else {
+                    //Overwrite the RoI to only the last portion rendered
+                    RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
+                    
+                    
+                    lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par, &lastPaintBboxPixel);
+                    
+                    //The last buffer must be valid
+                    const UpdateViewerParams::CachedTile& lastTile = _imp->lastRenderParams[updateParams->textureIndex]->tiles.front();
+                    assert(lastTile.ramBuffer);
+                    tile.ramBuffer =  0;
+                    
+                    //If the old buffer size is the same as the requested texture size, this function does nothing
+                    //otherwise it allocates a new buffer and copies the content of the old one.
+                    bool mustFreeSource = copyAndSwap(lastTile.rect, tile.rect, tile.bytesCount, updateParams->depth, lastTile.ramBuffer, &tile.ramBuffer);
+                    
+                    if (mustFreeSource) {
+                        //A new buffer was allocated and copied the previous content, free the old texture
+                        _imp->lastRenderParams[updateParams->textureIndex]->mustFreeRamBuffer = true;
+                    } else {
+                        //The buffer did not change its size, make sure to keep it
+                        _imp->lastRenderParams[updateParams->textureIndex]->mustFreeRamBuffer = false;
+                    }
+                    
+                    //This will delete the previous buffer if mustFreeRamBuffer was set to true
+                    _imp->lastRenderParams[updateParams->textureIndex].reset();
+                    
+                    //Allocation may have failed
+                    if (!tile.ramBuffer) {
+                        return eViewerRenderRetCodeFail;
+                    }
+                }
+                _imp->lastRenderParams[updateParams->textureIndex] = updateParams;
+            }
+            // Make a new buffer that will be freed when the params get destroyed
+            else {
+                assert(updateParams->tiles.size() == 1);
+                
+                updateParams->mustFreeRamBuffer = true;
+                tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
+            }
+            unCachedTiles.push_back(tile);
+        } else { // useTextureCache
+            //Look up the cache for a texture or create one
+            {
+                QMutexLocker k(&_imp->lastRenderParamsMutex);
+                _imp->lastRenderParams[updateParams->textureIndex].reset();
+            }
+            
+            // For the viewer, we need the enclosing rectangle to avoid black borders.
+            // Do this here to avoid infinity values.
+            
+            RectI bounds;
+            updateParams->rod.toPixelEnclosing(updateParams->mipMapLevel, updateParams->pixelAspectRatio, &bounds);
+            
+            std::string inputToRenderName = inArgs.activeInputToRender->getNode()->getScriptName_mt_safe();
+            for (std::list<UpdateViewerParams::CachedTile>::iterator it = updateParams->tiles.begin(); it != updateParams->tiles.end(); ++it) {
+                if (it->isCached) {
+                    assert(it->ramBuffer);
+                } else {
+                    
+                    if (viewerRenderRoI.contains(it->rect)) {
+                        assert(!it->ramBuffer);
+                        
+                        
+                        FrameKey key(getNode().get(),
+                                     inArgs.params->time,
+                                     viewerHash,
+                                     inArgs.params->gain,
+                                     inArgs.params->gamma,
+                                     inArgs.params->lut,
+                                     (int)inArgs.params->depth,
+                                     inArgs.channels,
+                                     inArgs.params->view,
+                                     it->rect,
+                                     inArgs.params->mipMapLevel,
+                                     inputToRenderName,
+                                     inArgs.params->layer,
+                                     inArgs.params->alphaLayer.getLayerName() + inArgs.params->alphaChannelName,
+                                     inArgs.params->depth == eImageBitDepthFloat && supportsGLSL(),
+                                     inArgs.draftModeEnabled);
+                        
+                        boost::shared_ptr<FrameParams> cachedFrameParams = FrameEntry::makeParams( bounds, key.getBitDepth(), it->rect.w, it->rect.h, ImagePtr());
+                        bool cached = AppManager::getTextureFromCacheOrCreate(key, cachedFrameParams, &it->cachedData);
+                        if (!it->cachedData) {
+                            std::stringstream ss;
+                            ss << QObject::tr("Failed to allocate a texture of ").toStdString();
+                            ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
+                            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+                            
+                            return eViewerRenderRetCodeFail;
+                        }
+                        
+                        entryLocker.lock(it->cachedData);
+                        
+                        ///The entry has already been locked by the cache
+                        if (!cached) {
+                            it->cachedData->allocateMemory();
+                        }
+                        
+                        
+                        assert(it->cachedData);
+                        // how do you make sure cachedFrame->data() is not freed after this line?
+                        ///It is not freed as long as the cachedFrame shared_ptr has a used_count greater than 1.
+                        ///Since it is used during the whole function scope it is guaranteed not to be freed before
+                        ///The viewer is actually done with it.
+                        /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
+                        it->ramBuffer = it->cachedData->data();
+                        assert(it->ramBuffer);
+                        unCachedTiles.push_back(*it);
+                    }
+                }
+                it->cachedData->setInternalImage(colorImage);
+            }
+        } // !useTextureCache
+        
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
 
         assert( ( inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount() ) ||
@@ -1628,7 +1740,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         }
 
         if (singleThreaded) {
-            if (inArgs.autoContrast) {
+            if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
                 double vmin, vmax;
                 std::pair<double, double> vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
                 vmin = vMinMax.first;
@@ -1642,13 +1754,12 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 updateParams->gain = 1 / (vmax - vmin);
                 updateParams->offset = -vmin / ( vmax - vmin);
             }
-
+            
             const RenderViewerArgs args(colorImage,
                                         alphaImage,
-                                        updateParams->textureRect,
                                         inArgs.channels,
                                         updateParams->srcPremult,
-                                        inArgs.key->getBitDepth(),
+                                        updateParams->depth,
                                         updateParams->gain,
                                         updateParams->gamma == 0. ? 0. : 1. / updateParams->gamma,
                                         updateParams->offset,
@@ -1656,26 +1767,32 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         lutFromColorspace(updateParams->lut),
                                         alphaChannelIndex);
             QReadLocker k(&_imp->gammaLookupMutex);
-            renderFunctor(viewerRenderRoI,
-                          args,
-                          this,
-                          updateParams->ramBuffer);
+            for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
+                
+                renderFunctor(viewerRenderRoI,
+                              args,
+                              this,
+                              *it);
+                
+            }
         } else {
             bool runInCurrentThread = QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount();
-            std::vector<RectI> splitRects;
             if ( !runInCurrentThread && (splitRoi.size() > 1) ) {
                 runInCurrentThread = true;
             }
-            if (!runInCurrentThread) {
-                splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getHardwareIdealThreadCount() );
-            }
+          
 
             ///if autoContrast is enabled, find out the vmin/vmax before rendering and mapping against new values
-            if (inArgs.autoContrast) {
+            if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
                 double vmin = std::numeric_limits<double>::infinity();
                 double vmax = -std::numeric_limits<double>::infinity();
 
-                if (!runInCurrentThread) {
+                if (runInCurrentThread) {
+                    std::pair<double, double> vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
+                    vmin = vMinMax.first;
+                    vmax = vMinMax.second;
+                } else {
+                    std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getHardwareIdealThreadCount() );
                     QFuture<std::pair<double, double> > future = QtConcurrent::mapped( splitRects,
                                                                                        boost::bind(findAutoContrastVminVmax,
                                                                                                    colorImage,
@@ -1692,58 +1809,57 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                             vmax = vMinMax.second;
                         }
                     }
-                } else { //!runInCurrentThread
-                    std::pair<double, double> vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
-                    vmin = vMinMax.first;
-                    vmax = vMinMax.second;
-                }
+                } // runInCurrentThread
 
                 if (vmax == vmin) {
                     vmin = vmax - 1.;
                 }
 
                 if (vmax <= 0) {
-                    inArgs.params->gain = 0;
-                    inArgs.params->offset = 0;
+                    updateParams->gain = 0;
+                    updateParams->offset = 0;
                 } else {
-                    inArgs.params->gain = 1 / (vmax - vmin);
-                    inArgs.params->offset =  -vmin / (vmax - vmin);
+                    updateParams->gain = 1 / (vmax - vmin);
+                    updateParams->offset =  -vmin / (vmax - vmin);
                 }
             }
 
             const RenderViewerArgs args(colorImage,
                                         alphaImage,
-                                        updateParams->textureRect,
                                         inArgs.channels,
                                         updateParams->srcPremult,
-                                        inArgs.key->getBitDepth(),
+                                        updateParams->depth,
                                         updateParams->gain,
                                         updateParams->gamma == 0. ? 0. : 1. / updateParams->gamma,
                                         updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(updateParams->lut),
                                         alphaChannelIndex);
+            
             if (runInCurrentThread) {
+                
+                
                 QReadLocker k(&_imp->gammaLookupMutex);
-                renderFunctor(viewerRenderRoI,
-                              args, this, updateParams->ramBuffer);
+                for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
+                    renderFunctor(viewerRenderRoI,
+                                  args, this, *it);
+                }
+               
             } else {
                 QReadLocker k(&_imp->gammaLookupMutex);
-                QtConcurrent::map( splitRects,
+                QtConcurrent::map( unCachedTiles,
                                    boost::bind(&renderFunctor,
-                                               _1,
+                                               viewerRenderRoI,
                                                args,
                                                this,
-                                               updateParams->ramBuffer) ).waitForFinished();
+                                               _1) ).waitForFinished();
             }
 
-            if ( !partialRectsToRender.empty() ) {
+            if ( inArgs.isDoingPartialUpdates ) {
                 partialUpdateObjects.push_back(updateParams);
             }
         } // if (singleThreaded)
-        if (inArgs.params->cachedFrame && colorImage) {
-            inArgs.params->cachedFrame->setInternalImage(colorImage);
-        }
+       
 
         if ( stats && stats->isInDepthProfilingEnabled() ) {
             stats->addRenderInfosForNode( getNode(), NodePtr(), colorImage->getComponents().getComponentsGlobalName(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation() );
@@ -1807,16 +1923,15 @@ void
 renderFunctor(const RectI& roi,
               const RenderViewerArgs & args,
               ViewerInstance* viewer,
-              void *buffer)
+              UpdateViewerParams::CachedTile tile)
 {
-    assert(args.texRect.y1 <= roi.y1 && roi.y1 <= roi.y2 && roi.y2 <= args.texRect.y2);
 
     if ( (args.bitDepth == eImageBitDepthFloat) ) {
         // image is stored as linear, the OpenGL shader with do gamma/sRGB/Rec709 decompression, as well as gain and offset
-        scaleToTexture32bits(roi, args, (float*)buffer);
+        scaleToTexture32bits(roi, args, tile, (float*)tile.ramBuffer);
     } else {
         // texture is stored as sRGB/Rec709 compressed 8-bit RGBA
-        scaleToTexture8bits(roi, args, viewer, (U32*)buffer);
+        scaleToTexture8bits(roi, args, viewer, tile, (U32*)tile.ramBuffer);
     }
 }
 
@@ -1944,43 +2059,43 @@ scaleToTexture8bits_generic(const RectI& roi,
                             const RenderViewerArgs & args,
                             int nComps,
                             ViewerInstance* viewer,
-                            U32* output)
+                            const UpdateViewerParams::CachedTile& tile,
+                            U32* tileBuffer)
 {
-    size_t pixelSize = sizeof(PIX);
+    const size_t pixelSize = sizeof(PIX);
     const bool luminance = (args.channels == eDisplayChannelsY);
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
     const RectI srcImgBounds = args.inputImage->getBounds();
-
-    ///offset the output buffer at the starting point
-    U32* dst_pixels = output + (roi.y1 - args.texRect.y1) * args.texRect.w + (roi.x1 - args.texRect.x1);
-
-    ///Cannot be an empty rect
-    assert(args.texRect.x2 > args.texRect.x1);
-
-    const PIX* src_pixels = (const PIX*)acc.pixelAt(roi.x1, roi.y1);
+    
+    assert(tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2);
+    assert(tile.rect.x2 > tile.rect.x1);
+    
+    U32* dst_pixels = tileBuffer; // output + (roi.y1 - args.texRect.y1) * args.texRect.w + (roi.x1 - args.texRect.x1);
+    
+    const PIX* src_pixels = (const PIX*)acc.pixelAt(tile.rect.x1, tile.rect.y1);
     const int srcRowElements = (int)args.inputImage->getRowElements();
     boost::shared_ptr<Image::ReadAccess> matteAcc;
     if (applyMatte) {
         matteAcc.reset( new Image::ReadAccess( args.matteImage.get() ) );
     }
 
-    for (int y = roi.y1; y < roi.y2;
+    for (int y = tile.rect.y1; y < tile.rect.y2;
          ++y,
-         dst_pixels += args.texRect.w) {
+         dst_pixels += tile.rect.w) {
         // coverity[dont_call]
-        int start = (int)( rand() % (roi.x2 - roi.x1) );
+        int start = (int)( rand() % (tile.rect.x2 - tile.rect.x1) );
 
 
         for (int backward = 0; backward < 2; ++backward) {
             int index = backward ? start - 1 : start;
 
-            assert( backward == 1 || ( index >= 0 && index < (args.texRect.x2 - args.texRect.x1) ) );
+            assert( backward == 1 || ( index >= 0 && index < (tile.rect.x2 - tile.rect.x1) ) );
 
             unsigned error_r = 0x80;
             unsigned error_g = 0x80;
             unsigned error_b = 0x80;
 
-            while (index < (roi.x2 - roi.x1) && index >= 0) {
+            while (index < (tile.rect.x2 - tile.rect.x1) && index >= 0) {
                 double r = 0.;
                 double g = 0.;
                 double b = 0.;
@@ -2117,7 +2232,7 @@ scaleToTexture8bits_generic(const RectI& roi,
                             break;
                         }
                     } else {
-                        const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(roi.x1 + index, y);
+                        const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(tile.rect.x1 + index, y);
                         if (src_pixels) {
                             alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
                             switch (pixelSize) {
@@ -2161,9 +2276,10 @@ void
 scaleToTexture8bits_internal(const RectI& roi,
                              const RenderViewerArgs & args,
                              ViewerInstance* viewer,
+                             const UpdateViewerParams::CachedTile& tile,
                              U32* output)
 {
-    scaleToTexture8bits_generic<PIX, maxValue, opaque, matteOverlay, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
+    scaleToTexture8bits_generic<PIX, maxValue, opaque, matteOverlay, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, tile, output);
 }
 
 template <typename PIX, int maxValue, int nComps, bool opaque, int rOffset, int gOffset, int bOffset>
@@ -2171,14 +2287,15 @@ void
 scaleToTexture8bitsForMatte(const RectI& roi,
                             const RenderViewerArgs & args,
                             ViewerInstance* viewer,
+                            const UpdateViewerParams::CachedTile& tile,
                             U32* output)
 {
     bool applyMate = args.matteImage.get() && args.alphaChannelIndex >= 0;
 
     if (applyMate) {
-        scaleToTexture8bits_internal<PIX, maxValue, nComps, opaque, true, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+        scaleToTexture8bits_internal<PIX, maxValue, nComps, opaque, true, rOffset, gOffset, bOffset>(roi, args, viewer, tile, output);
     } else {
-        scaleToTexture8bits_internal<PIX, maxValue, nComps, opaque, false, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+        scaleToTexture8bits_internal<PIX, maxValue, nComps, opaque, false, rOffset, gOffset, bOffset>(roi, args, viewer, tile, output);
     }
 }
 
@@ -2187,29 +2304,30 @@ void
 scaleToTexture8bitsForDepthForComponents(const RectI& roi,
                                          const RenderViewerArgs & args,
                                          ViewerInstance* viewer,
+                                         const UpdateViewerParams::CachedTile& tile,
                                          U32* output)
 {
     int nComps = args.inputImage->getComponents().getNumComponents();
 
     switch (nComps) {
     case 4:
-        scaleToTexture8bitsForMatte<PIX, maxValue, 4, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+        scaleToTexture8bitsForMatte<PIX, maxValue, 4, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, tile, output);
         break;
     case 3:
-        scaleToTexture8bitsForMatte<PIX, maxValue, 3, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+        scaleToTexture8bitsForMatte<PIX, maxValue, 3, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, tile, output);
         break;
     case 2:
-        scaleToTexture8bitsForMatte<PIX, maxValue, 2, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+        scaleToTexture8bitsForMatte<PIX, maxValue, 2, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, tile, output);
         break;
     case 1:
-        scaleToTexture8bitsForMatte<PIX, maxValue, 1, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, output);
+        scaleToTexture8bitsForMatte<PIX, maxValue, 1, opaque, rOffset, gOffset, bOffset>(roi, args, viewer, tile, output);
         break;
     default:
         bool applyMate = args.matteImage.get() && args.alphaChannelIndex >= 0;
         if (applyMate) {
-            scaleToTexture8bits_generic<PIX, maxValue, opaque, true, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
+            scaleToTexture8bits_generic<PIX, maxValue, opaque, true, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, tile, output);
         } else {
-            scaleToTexture8bits_generic<PIX, maxValue, opaque, false, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, output);
+            scaleToTexture8bits_generic<PIX, maxValue, opaque, false, rOffset, gOffset, bOffset>(roi, args, nComps, viewer, tile, output);
         }
         break;
     }
@@ -2220,6 +2338,7 @@ void
 scaleToTexture8bitsForPremult(const RectI& roi,
                               const RenderViewerArgs & args,
                               ViewerInstance* viewer,
+                              const UpdateViewerParams::CachedTile& tile,
                               U32* output)
 {
     switch (args.channels) {
@@ -2227,39 +2346,39 @@ scaleToTexture8bitsForPremult(const RectI& roi,
     case eDisplayChannelsY:
     case eDisplayChannelsMatte:
 
-        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args, viewer, output);
+        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args, viewer, tile, output);
         break;
     case eDisplayChannelsG:
-        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, viewer, output);
+        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, viewer, tile, output);
         break;
     case eDisplayChannelsB:
-        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, viewer, output);
+        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, viewer, tile, output);
         break;
     case eDisplayChannelsA:
         switch (args.alphaChannelIndex) {
         case -1:
-            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, viewer, tile, output);
             break;
         case 0:
-            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, viewer, tile, output);
             break;
         case 1:
-            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, viewer, tile, output);
             break;
         case 2:
-            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, viewer, tile, output);
             break;
         case 3:
-            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, viewer, tile, output);
             break;
         default:
-            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, viewer, output);
+            scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, viewer, tile, output);
         }
 
         break;
     case eDisplayChannelsR:
     default:
-        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, viewer, output);
+        scaleToTexture8bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, viewer, tile, output);
 
         break;
     }
@@ -2270,16 +2389,17 @@ void
 scaleToTexture8bitsForDepth(const RectI& roi,
                             const RenderViewerArgs & args,
                             ViewerInstance* viewer,
+                            const UpdateViewerParams::CachedTile& tile,
                             U32* output)
 {
     switch (args.srcPremult) {
     case eImagePremultiplicationOpaque:
-        scaleToTexture8bitsForPremult<PIX, maxValue, true>(roi, args, viewer, output);
+        scaleToTexture8bitsForPremult<PIX, maxValue, true>(roi, args, viewer, tile, output);
         break;
     case eImagePremultiplicationPremultiplied:
     case eImagePremultiplicationUnPremultiplied:
     default:
-        scaleToTexture8bitsForPremult<PIX, maxValue, false>(roi, args, viewer, output);
+        scaleToTexture8bitsForPremult<PIX, maxValue, false>(roi, args, viewer, tile, output);
         break;
     }
 }
@@ -2288,18 +2408,19 @@ void
 scaleToTexture8bits(const RectI& roi,
                     const RenderViewerArgs & args,
                     ViewerInstance* viewer,
+                    const UpdateViewerParams::CachedTile& tile,
                     U32* output)
 {
     assert(output);
     switch ( args.inputImage->getBitDepth() ) {
     case eImageBitDepthFloat:
-        scaleToTexture8bitsForDepth<float, 1>(roi, args, viewer, output);
+        scaleToTexture8bitsForDepth<float, 1>(roi, args, viewer, tile, output);
         break;
     case eImageBitDepthByte:
-        scaleToTexture8bitsForDepth<unsigned char, 255>(roi, args, viewer, output);
+        scaleToTexture8bitsForDepth<unsigned char, 255>(roi, args, viewer, tile, output);
         break;
     case eImageBitDepthShort:
-        scaleToTexture8bitsForDepth<unsigned short, 65535>(roi, args, viewer, output);
+        scaleToTexture8bitsForDepth<unsigned short, 65535>(roi, args, viewer, tile, output);
         break;
     case eImageBitDepthHalf:
         assert(false);
@@ -2344,13 +2465,14 @@ void
 scaleToTexture32bitsGeneric(const RectI& roi,
                             const RenderViewerArgs & args,
                             int nComps,
-                            float *output)
+                            const UpdateViewerParams::CachedTile& tile,
+                            float *tileBuffer)
 {
-    size_t pixelSize = sizeof(PIX);
+    const size_t pixelSize = sizeof(PIX);
     const bool luminance = (args.channels == eDisplayChannelsY);
 
     ///the width of the output buffer multiplied by the channels count
-    const int dstRowElements = args.texRect.w * 4;
+    const int dstRowElements = tile.rect.w * 4;
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
     boost::shared_ptr<Image::ReadAccess> matteAcc;
 
@@ -2358,17 +2480,19 @@ scaleToTexture32bitsGeneric(const RectI& roi,
         matteAcc.reset( new Image::ReadAccess( args.matteImage.get() ) );
     }
 
-    float* dst_pixels =  output + (roi.y1 - args.texRect.y1) * dstRowElements + (roi.x1 - args.texRect.x1) * 4;
-    const float* src_pixels = (const float*)acc.pixelAt(roi.x1, roi.y1);
+    float* dst_pixels =  tileBuffer; //tileBuffer + (roi.y1 - args.texRect.y1) * dstRowElements + (roi.x1 - args.texRect.x1) * 4;
+    const float* src_pixels = (const float*)acc.pixelAt(tile.rect.x1, tile.rect.y1);
 
-    assert(args.texRect.w == args.texRect.x2 - args.texRect.x1);
+    assert(tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2);
+    assert(tile.rect.x2 > tile.rect.x1);
+    assert(tile.rect.w == tile.rect.x2 - tile.rect.x1);
 
     const int srcRowElements = (const int)args.inputImage->getRowElements();
 
-    for (int y = roi.y1; y < roi.y2;
+    for (int y = tile.rect.y1; y < tile.rect.y2;
          ++y,
          dst_pixels += dstRowElements) {
-        for (int x = 0; x < roi.width();
+        for (int x = 0; x < tile.rect.w;
              ++x) {
             double r = 0.;
             double g = 0.;
@@ -2504,23 +2628,25 @@ template <typename PIX, int maxValue, int nComps, bool opaque, bool applyMatte, 
 void
 scaleToTexture32bitsInternal(const RectI& roi,
                              const RenderViewerArgs & args,
+                             const UpdateViewerParams::CachedTile& tile,
                              float *output)
 {
-    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, applyMatte, rOffset, gOffset, bOffset>(roi, args, nComps, output);
+    scaleToTexture32bitsGeneric<PIX, maxValue, opaque, applyMatte, rOffset, gOffset, bOffset>(roi, args, nComps, tile, output);
 }
 
 template <typename PIX, int maxValue, int nComps, bool opaque, int rOffset, int gOffset, int bOffset>
 void
 scaleToTexture32bitsForMatte(const RectI& roi,
                              const RenderViewerArgs & args,
+                             const UpdateViewerParams::CachedTile& tile,
                              float *output)
 {
     bool applyMatte = args.matteImage.get() && args.alphaChannelIndex >= 0;
 
     if (applyMatte) {
-        scaleToTexture32bitsInternal<PIX, maxValue, nComps, opaque, true, rOffset, gOffset, bOffset>(roi, args, output);
+        scaleToTexture32bitsInternal<PIX, maxValue, nComps, opaque, true, rOffset, gOffset, bOffset>(roi, args, tile, output);
     } else {
-        scaleToTexture32bitsInternal<PIX, maxValue, nComps, opaque, false, rOffset, gOffset, bOffset>(roi, args, output);
+        scaleToTexture32bitsInternal<PIX, maxValue, nComps, opaque, false, rOffset, gOffset, bOffset>(roi, args, tile, output);
     }
 }
 
@@ -2528,29 +2654,30 @@ template <typename PIX, int maxValue, bool opaque, int rOffset, int gOffset, int
 void
 scaleToTexture32bitsForDepthForComponents(const RectI& roi,
                                           const RenderViewerArgs & args,
+                                          const UpdateViewerParams::CachedTile& tile,
                                           float *output)
 {
     int nComps = args.inputImage->getComponents().getNumComponents();
 
     switch (nComps) {
     case 4:
-        scaleToTexture32bitsForMatte<PIX, maxValue, 4, opaque, rOffset, gOffset, bOffset>(roi, args, output);
+        scaleToTexture32bitsForMatte<PIX, maxValue, 4, opaque, rOffset, gOffset, bOffset>(roi, args, tile, output);
         break;
     case 3:
-        scaleToTexture32bitsForMatte<PIX, maxValue, 3, opaque, rOffset, gOffset, bOffset>(roi, args, output);
+        scaleToTexture32bitsForMatte<PIX, maxValue, 3, opaque, rOffset, gOffset, bOffset>(roi, args, tile, output);
         break;
     case 2:
-        scaleToTexture32bitsForMatte<PIX, maxValue, 2, opaque, rOffset, gOffset, bOffset>(roi, args, output);
+        scaleToTexture32bitsForMatte<PIX, maxValue, 2, opaque, rOffset, gOffset, bOffset>(roi, args, tile, output);
         break;
     case 1:
-        scaleToTexture32bitsForMatte<PIX, maxValue, 1, opaque, rOffset, gOffset, bOffset>(roi, args, output);
+        scaleToTexture32bitsForMatte<PIX, maxValue, 1, opaque, rOffset, gOffset, bOffset>(roi, args, tile, output);
         break;
     default:
         bool applyMatte = args.matteImage.get() && args.alphaChannelIndex >= 0;
         if (applyMatte) {
-            scaleToTexture32bitsGeneric<PIX, maxValue, opaque, true, rOffset, gOffset, bOffset>(roi, args, nComps, output);
+            scaleToTexture32bitsGeneric<PIX, maxValue, opaque, true, rOffset, gOffset, bOffset>(roi, args, nComps, tile, output);
         } else {
-            scaleToTexture32bitsGeneric<PIX, maxValue, opaque, false, rOffset, gOffset, bOffset>(roi, args, nComps, output);
+            scaleToTexture32bitsGeneric<PIX, maxValue, opaque, false, rOffset, gOffset, bOffset>(roi, args, nComps, tile, output);
         }
         break;
     }
@@ -2560,46 +2687,47 @@ template <typename PIX, int maxValue, bool opaque>
 void
 scaleToTexture32bitsForPremultForComponents(const RectI& roi,
                                             const RenderViewerArgs & args,
+                                            const UpdateViewerParams::CachedTile& tile,
                                             float *output)
 {
     switch (args.channels) {
     case eDisplayChannelsRGB:
     case eDisplayChannelsY:
     case eDisplayChannelsMatte:
-        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args, output);
+        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 1, 2>(roi, args, tile, output);
         break;
     case eDisplayChannelsG:
-        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, output);
+        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, tile, output);
         break;
     case eDisplayChannelsB:
-        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, output);
+        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, tile, output);
         break;
     case eDisplayChannelsA:
         switch (args.alphaChannelIndex) {
         case -1:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, tile,output);
             break;
         case 0:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, tile, output);
             break;
         case 1:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 1, 1, 1>(roi, args, tile, output);
             break;
         case 2:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 2, 2, 2>(roi, args, tile, output);
             break;
         case 3:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, tile, output);
             break;
         default:
-            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, output);
+            scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 3, 3, 3>(roi, args, tile, output);
             break;
         }
 
         break;
     case eDisplayChannelsR:
     default:
-        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args, output);
+        scaleToTexture32bitsForDepthForComponents<PIX, maxValue, opaque, 0, 0, 0>(roi, args,tile, output);
         break;
     }
 }
@@ -2608,16 +2736,17 @@ template <typename PIX, int maxValue>
 void
 scaleToTexture32bitsForPremult(const RectI& roi,
                                const RenderViewerArgs & args,
+                               const UpdateViewerParams::CachedTile& tile,
                                float *output)
 {
     switch (args.srcPremult) {
     case eImagePremultiplicationOpaque:
-        scaleToTexture32bitsForPremultForComponents<PIX, maxValue, true>(roi, args, output);
+        scaleToTexture32bitsForPremultForComponents<PIX, maxValue, true>(roi, args, tile, output);
         break;
     case eImagePremultiplicationPremultiplied:
     case eImagePremultiplicationUnPremultiplied:
     default:
-        scaleToTexture32bitsForPremultForComponents<PIX, maxValue, false>(roi, args, output);
+        scaleToTexture32bitsForPremultForComponents<PIX, maxValue, false>(roi, args, tile, output);
         break;
     }
 }
@@ -2625,19 +2754,20 @@ scaleToTexture32bitsForPremult(const RectI& roi,
 void
 scaleToTexture32bits(const RectI& roi,
                      const RenderViewerArgs & args,
+                     const UpdateViewerParams::CachedTile& tile,
                      float *output)
 {
     assert(output);
 
     switch ( args.inputImage->getBitDepth() ) {
     case eImageBitDepthFloat:
-        scaleToTexture32bitsForPremult<float, 1>(roi, args, output);
+        scaleToTexture32bitsForPremult<float, 1>(roi, args, tile, output);
         break;
     case eImageBitDepthByte:
-        scaleToTexture32bitsForPremult<unsigned char, 255>(roi, args, output);
+        scaleToTexture32bitsForPremult<unsigned char, 255>(roi, args, tile, output);
         break;
     case eImageBitDepthShort:
-        scaleToTexture32bitsForPremult<unsigned short, 65535>(roi, args, output);
+        scaleToTexture32bitsForPremult<unsigned short, 65535>(roi, args, tile, output);
         break;
     case eImageBitDepthHalf:
         assert(false);
@@ -2657,60 +2787,55 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     // if (updateViewerRunning) {
     uiContext->makeOpenGLcontextCurrent();
 
-    // how do you make sure params->ramBuffer is not freed during this operation?
-    /// It is not freed as long as the cachedFrame shared_ptr in renderViewer has a used_count greater than 1.
-    /// i.e. until renderViewer exits.
-    /// Since updateViewer() is in the scope of cachedFrame, and renderViewer waits for the completion
-    /// of updateViewer(), it is guaranteed not to be freed before the viewer is actually done with it.
-    /// @see Cache::clearInMemoryPortion and Cache::clearDiskPortion and LRUHashTable::evict
-
-    assert(params->ramBuffer);
-
     bool doUpdate = true;
     if ( !params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex, params->abortInfo->age) ) {
         doUpdate = false;
     }
     if (doUpdate) {
-        ImagePtr originalImage;
-        originalImage = params->colorImage;
-        if (params->cachedFrame && !originalImage) {
-            originalImage = params->cachedFrame->getInternalImage();
+        assert(!params->tiles.empty());
+        RectI bounds;
+        params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);
+        
+        assert(params->isPartialRect && params->tiles.size() == 1 || !params->isPartialRect);
+        
+        boost::shared_ptr<OpenGLTextureI> texture;
+        bool isFirstTile = true;
+        for (std::list<UpdateViewerParams::CachedTile>::iterator it = params->tiles.begin(); it!=params->tiles.end(); ++it) {
+            assert(it->ramBuffer);
+            uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, bounds, it->rect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
+            isFirstTile = false;
         }
-        ImageBitDepthEnum depth;
-        if (!originalImage) {
-            depth = originalImage->getBitDepth();
-        } else {
-            depth = (ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
-        }
-
-        uiContext->transferBufferFromRAMtoGPU(params->ramBuffer,
-                                              originalImage,
-                                              depth,
-                                              params->time,
-                                              params->rod,
-                                              params->bytesCount,
-                                              params->textureRect,
-                                              params->gain,
-                                              params->gamma,
-                                              params->offset,
-                                              params->lut,
-                                              updateViewerPboIndex,
-                                              params->mipMapLevel,
-                                              params->srcPremult,
-                                              params->textureIndex,
-                                              params->isPartialRect,
-                                              params->recenterViewport,
-                                              params->viewportCenter);
-        updateViewerPboIndex = (updateViewerPboIndex + 1) % 2;
-
+        
         NodePtr rotoPaintNode;
         boost::shared_ptr<RotoStrokeItem> curStroke;
         bool isDrawing = false;
         instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
-
+        
         if (!isDrawing) {
             uiContext->updateColorPicker(params->textureIndex);
         }
+        
+        const UpdateViewerParams::CachedTile& firstTile = params->tiles.front();
+        
+        ImagePtr originalImage;
+        originalImage = params->colorImage;
+        if (firstTile.cachedData && !originalImage) {
+            originalImage = firstTile.cachedData->getInternalImage();
+        }
+        ImageBitDepthEnum depth;
+        if (originalImage) {
+            depth = originalImage->getBitDepth();
+        } else {
+            assert(firstTile.cachedData);
+            if (firstTile.cachedData) {
+                depth = (ImageBitDepthEnum)firstTile.cachedData->getKey().getBitDepth();
+            } else {
+                depth = eImageBitDepthByte;
+            }
+        }
+        
+        uiContext->endTransferBufferFromRAMToGPU(params->textureIndex, texture, originalImage, params->time, params->rod, params->roi, params->pixelAspectRatio, depth, params->mipMapLevel, params->srcPremult, params->gain, params->gamma, params->offset, params->lut, params->recenterViewport, params->viewportCenter, params->isPartialRect);
+        
     }
 
     //
@@ -2796,6 +2921,13 @@ ViewerInstance::onGainChanged(double exp)
     }
 }
 
+unsigned int
+ViewerInstance::getViewerMipMapLevel() const
+{
+    QMutexLocker l(&_imp->viewerParamsMutex);
+    return _imp->viewerMipMapLevel;
+}
+
 void
 ViewerInstance::onMipMapLevelChanged(int level)
 {
@@ -2808,9 +2940,7 @@ ViewerInstance::onMipMapLevelChanged(int level)
         }
         _imp->viewerMipMapLevel = level;
     }
-    if ( !getApp()->getProject()->isLoadingProject() ) {
-        renderCurrentFrame(true);
-    }
+    
 }
 
 void

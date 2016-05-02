@@ -1262,7 +1262,8 @@ ViewerGL::getExactImageRectangleDisplayed(const RectD & rod,
 RectI
 ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,
                                                       const double par,
-                                                      unsigned int mipMapLevel)
+                                                      unsigned int mipMapLevel,
+                                                      std::vector<RectI>* tiles)
 {
     bool clipToProject = isClippingImageToProjectWindow();
     RectD clippedRod;
@@ -1288,9 +1289,22 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,
     texRect.x2 = std::ceil( ( (double)roi.x2 ) / tileSize ) * tileSize;
     texRect.y2 = std::ceil( ( (double)roi.y2 ) / tileSize ) * tileSize;
 
-    ///Make sure the bounds of the area to render in the texture lies in the bounds
+    // Make sure the bounds of the area to render in the texture lies in the bounds
     texRect.intersect(bounds, &texRect);
-
+    if (tiles) {
+        for (int y = texRect.y1; y < texRect.y2; y+=tileSize) {
+            int y2 = std::min(y + (int)tileSize, texRect.y2);
+            for (int x = texRect.x1; x < texRect.x2; x+=tileSize) {
+                tiles->resize(tiles->size() + 1);
+                RectI& tile = tiles->back();
+                tile.x1 = x;
+                tile.x2 = std::min(x + (int)tileSize, texRect.x2);
+                tile.y1 = y;
+                tile.y2 = y2;
+                assert(texRect.contains(tile));
+            }
+        }
+    }
     return texRect;
 }
 
@@ -1366,84 +1380,37 @@ ViewerGL::clearPartialUpdateTextures()
 }
 
 void
-ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                     const ImagePtr& image,
-                                     ImageBitDepthEnum depth,
-                                     int time,
-                                     const RectD& rod,
-                                     size_t bytesCount,
-                                     const TextureRect & region,
-                                     double gain,
-                                     double gamma,
-                                     double offset,
-                                     int lut,
-                                     int pboIndex,
-                                     unsigned int mipMapLevel,
-                                     ImagePremultiplicationEnum premult,
-                                     int textureIndex,
-                                     bool isPartialRect,
-                                     bool recenterViewer,
-                                     const Point& viewportCenter)
+ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
+                                        const boost::shared_ptr<OpenGLTextureI>& texture,
+                                        const ImagePtr& image,
+                                        int time,
+                                        const RectD& rod,
+                                        const RectI& viewerRoI,
+                                        double par,
+                                        ImageBitDepthEnum depth,
+                                        unsigned int mipMapLevel,
+                                        ImagePremultiplicationEnum premult,
+                                        double gain,
+                                        double gamma,
+                                        double offset,
+                                        int lut,
+                                        bool recenterViewer,
+                                        const Point& viewportCenter,
+                                        bool isPartialRect)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
-    GLenum e = glGetError();
-    Q_UNUSED(e);
-
-    GLint currentBoundPBO = 0;
-    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
-    GLenum err = glGetError();
-    if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
-        qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed.";
-    }
-
-    GLuint pboId = getPboID(pboIndex);
-    ImageBitDepthEnum bd = getBitDepth();
-    assert(textureIndex == 0 || textureIndex == 1);
-
-    GLTexturePtr tex;
-    if (isPartialRect) {
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
-    } else {
-        tex = _imp->displayTextures[textureIndex].texture;
-    }
-
-
-    glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
-    GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-    glCheckError();
-    assert(ret);
-
-    memcpy(ret, (void*)ramBuffer, bytesCount);
-
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
-    glCheckError();
-
-    Texture::DataTypeEnum dataType;
-    if (bd == eImageBitDepthByte) {
-        dataType = Texture::eDataTypeByte;
-    } else {
-        //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        dataType = Texture::eDataTypeFloat;
-    }
-    tex->fillOrAllocateTexture(region, dataType, RectI(), false);
-
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
-    //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
-    glCheckError();
-
     if (recenterViewer) {
         QMutexLocker k(&_imp->zoomCtxMutex);
         double curCenterX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
         double curCenterY = ( _imp->zoomCtx.bottom() + _imp->zoomCtx.top() ) / 2.;
         _imp->zoomCtx.translate(viewportCenter.x - curCenterX, viewportCenter.y - curCenterY);
     }
+    
+    _imp->lastTextureTransferMipMapLevel[textureIndex] = mipMapLevel;
+    _imp->lastTextureTransferRoI[textureIndex] = viewerRoI;
 
     if (isPartialRect) {
         TextureInfo info;
-        info.texture = tex;
+        info.texture = boost::dynamic_pointer_cast<Texture>(texture);
         info.gain = gain;
         info.gamma = gamma;
         info.offset = offset;
@@ -1458,7 +1425,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->displayTextures[1].time = time;
     } else {
         ViewerInstance* internalNode = getInternalNode();
-
+        
         _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex].texture;
         _imp->displayTextures[textureIndex].gain = gain;
         _imp->displayTextures[textureIndex].gamma = gamma;
@@ -1467,13 +1434,13 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
         _imp->displayTextures[textureIndex].premult = premult;
         _imp->displayTextures[textureIndex].time = time;
-
+        
         if (_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages > 0) {
             internalNode->unregisterPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
         }
-
-
+        
+        
         if (image) {
             _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
             RectI pixelRoD;
@@ -1488,7 +1455,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
             }
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages += image->size();
-
+            
             internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
@@ -1498,8 +1465,91 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                 Q_EMIT imageChanged(textureIndex, true);
             }
         }
-        setRegionOfDefinition(rod, region.par, textureIndex);
+        setRegionOfDefinition(rod, par, textureIndex);
     }
+
+}
+
+void
+ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
+                                     size_t bytesCount,
+                                     const RectI &bounds,
+                                     const TextureRect & region,
+                                     int textureIndex,
+                                     bool isPartialRect,
+                                     bool isFirstTile,
+                                     boost::shared_ptr<OpenGLTextureI>* texture)
+{
+    
+    
+  
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    assert( QGLContext::currentContext() == context() );
+    GLenum e = glGetError();
+    Q_UNUSED(e);
+
+    GLint currentBoundPBO = 0;
+    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
+    GLenum err = glGetError();
+    if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
+        qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed.";
+    }
+
+    // We use 2 PBOs to make use of asynchronous data uploading
+    GLuint pboId = getPboID(_imp->updateViewerPboIndex);
+    
+    // The bitdepth of the texture
+    ImageBitDepthEnum bd = getBitDepth();
+    Texture::DataTypeEnum dataType;
+    if (bd == eImageBitDepthByte) {
+        dataType = Texture::eDataTypeByte;
+    } else {
+        //do 32bit fp textures either way, don't bother with half float. We might support it further on.
+        dataType = Texture::eDataTypeFloat;
+    }
+    assert(textureIndex == 0 || textureIndex == 1);
+
+    GLTexturePtr tex;
+    
+    TextureRect textureRectangle;
+    if (isPartialRect) {
+        // For small partial updates overlays, we make new textures
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+        textureRectangle = region;
+    } else {
+        // re-use the existing texture if possible
+        tex = _imp->displayTextures[textureIndex].texture;
+        textureRectangle = bounds;
+        textureRectangle.w = bounds.width();
+        textureRectangle.h = bounds.height();
+        textureRectangle.par = region.par;
+        if (isFirstTile) {
+            tex->ensureTextureHasSize(textureRectangle, dataType);
+        }
+
+    }
+
+    glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+    GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    glCheckError();
+    assert(ret);
+    assert(ramBuffer);
+    memcpy(ret, (void*)ramBuffer, bytesCount);
+
+    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    glCheckError();
+
+    tex->fillOrAllocateTexture(textureRectangle, dataType, region, true);
+
+    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+    //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
+    glCheckError();
+
+    *texture = tex;
+    
+    _imp->updateViewerPboIndex = (_imp->updateViewerPboIndex + 1) % 2;
 } // ViewerGL::transferBufferFromRAMtoGPU
 
 void
@@ -2073,7 +2123,7 @@ ViewerGL::penMotionInternal(int x,
             _imp->viewerTab->synchronizeOtherViewersProjection();
         }
 
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        checkIfViewPortRoIValidOrRender();
 
         //  else {
         mustRedraw = true;
@@ -2480,6 +2530,33 @@ ViewerGL::updateColorPicker(int textureIndex,
     }
 } // updateColorPicker
 
+bool
+ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
+{
+    unsigned int mipMapLevel = getInternalNode()->getViewerMipMapLevel();
+    if (mipMapLevel != _imp->lastTextureTransferMipMapLevel[texIndex]) {
+        return false;
+    }
+    RectI roi = getImageRectangleDisplayedRoundedToTileSize(_imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0);
+    if (roi != _imp->lastTextureTransferRoI[texIndex]) {
+        return false;
+    }
+    return true;
+}
+
+void
+ViewerGL::checkIfViewPortRoIValidOrRender()
+{
+    for (int i = 0; i< 2; ++i) {
+        if (!checkIfViewPortRoIValidOrRenderForInput(i)) {
+            if ( !getViewerTab()->getGui()->getApp()->getProject()->isLoadingProject() ) {
+                getInternalNode()->renderCurrentFrame(true);
+            }
+            break;
+        }
+    }
+}
+
 void
 ViewerGL::wheelEvent(QWheelEvent* e)
 {
@@ -2567,7 +2644,7 @@ ViewerGL::wheelEvent(QWheelEvent* e)
         _imp->viewerTab->synchronizeOtherViewersProjection();
     }
 
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+    checkIfViewPortRoIValidOrRender();
 
 
     ///Clear green cached line so the user doesn't expect to see things in the cache
@@ -2616,7 +2693,7 @@ ViewerGL::zoomSlot(int v)
         _imp->viewerTab->clearTimelineCacheLine();
     }
 
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+    checkIfViewPortRoIValidOrRender();
 }
 
 void
@@ -2682,7 +2759,7 @@ ViewerGL::fitImageToFormat(bool useProjectFormat)
         _imp->viewerTab->clearTimelineCacheLine();
     }
 
-    _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+    checkIfViewPortRoIValidOrRender();
 
     update();
 } // ViewerGL::fitImageToFormat

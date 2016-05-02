@@ -45,28 +45,45 @@ class UpdateViewerParams
     : public BufferableObject
 {
 public:
+    
+    struct CachedTile
+    {
+        TextureRect rect;
+        
+        // This is a pointer to the data held in the cache. If this is set the ramBuffer is no more than cachedFrame->data()
+        // use a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
+        FrameEntryPtr cachedData;
+        
+        bool isCached;
+        
+        unsigned char* ramBuffer; // a pointer to the RAM buffer held either by the cached frame or allocated by malloc()
+        
+        std::size_t bytesCount; // number of bytes in the texture
+
+        
+        CachedTile() : rect(), cachedData(), isCached(false), ramBuffer(0), bytesCount(0) {}
+    };
+    
     UpdateViewerParams()
-        : ramBuffer(NULL)
-        , mustFreeRamBuffer(false)
+        : mustFreeRamBuffer(false)
         , textureIndex(0)
         , time(0)
         , view(0)
-        , textureRect()
         , srcPremult(eImagePremultiplicationOpaque)
-        , bytesCount(0)
         , depth()
         , gain(1.)
         , gamma(1.)
         , offset(0.)
         , mipMapLevel(0)
-        , premult(eImagePremultiplicationOpaque)
         , lut(eViewerColorSpaceSRGB)
         , layer()
         , alphaLayer()
         , alphaChannelName()
-        , cachedFrame()
+        , tiles()
+        , nbCachedTile(0)
         , colorImage()
         , rod()
+        , pixelAspectRatio(1.)
         , abortInfo()
         , isSequential(false)
         , isPartialRect(false)
@@ -79,44 +96,65 @@ public:
     virtual ~UpdateViewerParams()
     {
         if (mustFreeRamBuffer) {
-            free(ramBuffer);
+            assert(tiles.size() == 1);
+            free(tiles.front().ramBuffer);
         }
     }
 
     virtual std::size_t sizeInRAM() const OVERRIDE FINAL
     {
-        return bytesCount;
+        std::size_t ret = 0;
+        for (std::list<CachedTile>::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+            ret += it->bytesCount;
+        }
+        return ret;
     }
 
-    unsigned char* ramBuffer;
-    bool mustFreeRamBuffer; //< set to true when !cachedFrame
-    int textureIndex;
-    int time;
-    ViewIdx view;
-    TextureRect textureRect;
-    ImagePremultiplicationEnum srcPremult;
-    size_t bytesCount;
-    ImageBitDepthEnum depth;
-    double gain;
-    double gamma;
-    double offset;
-    unsigned int mipMapLevel;
-    ImagePremultiplicationEnum premult;
-    ViewerColorSpaceEnum lut;
-    ImageComponents layer;
-    ImageComponents alphaLayer;
-    std::string alphaChannelName;
+    bool mustFreeRamBuffer; // set to true when !cachedFrame, in this case we have only 1 tile
+    int textureIndex; // The texture index (for input A or B)
+    int time; // the frame
+    ViewIdx view; // the view
+    ImagePremultiplicationEnum srcPremult; // the image premult
+    ImageBitDepthEnum depth; // bitdepth of the texture
+    double gain; // viewer gain
+    double gamma; // viewer gamma
+    double offset; // viewer offset
+    unsigned int mipMapLevel; // viewer mipmaplevel
+    ViewerColorSpaceEnum lut; // the viewer colorspace lut
+    ImageComponents layer; // the image layer
+    ImageComponents alphaLayer; // the alpha layer
+    std::string alphaChannelName; // the alpha channel name
 
-    // put a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
-    boost::shared_ptr<FrameEntry> cachedFrame;
+   
+    std::list<CachedTile> tiles;
+    
+    int nbCachedTile;
     
     // The image which was used to make the texture
-    boost::shared_ptr<Image> colorImage;
+    ImagePtr colorImage;
+    
+    // The RoD of the src image
     RectD rod;
+    
+    // The RoI of the viewer
+    RectI roi;
+    
+    // The Par of the input image
+    double pixelAspectRatio;
+    
+    // Abort data held so that we know if this frame is aborted
     AbortableRenderInfoPtr abortInfo;
+    
+    // Is this during playback ?
     bool isSequential;
+    
+    // Is this a marker overlay used when tracking ?
     bool isPartialRect;
+    
+    // Is the viewer paused ?
     bool isViewerPaused;
+    
+    // Should we center the viewer on the viewportCenter
     bool recenterViewport;
     Point viewportCenter;
 };

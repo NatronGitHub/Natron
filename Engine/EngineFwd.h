@@ -258,7 +258,7 @@ typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
 typedef boost::weak_ptr<Image> ImageWPtr;
 typedef boost::shared_ptr<Image> ImagePtr;
 typedef std::list<ImagePtr> ImageList;
-
+typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_EngineFwd_h

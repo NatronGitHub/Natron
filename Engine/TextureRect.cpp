@@ -31,36 +31,22 @@
 #include "Engine/RectD.h"
 
 NATRON_NAMESPACE_ENTER;
+void
+TextureRect::operator=(const RectI& other)
+{
+    x1 = other.x1;
+    x2 = other.x2;
+    y1 = other.y1;
+    y2 = other.y2;
+}
+
 
 bool
-TextureRect::intersect(const RectI & r,
-                       RectI* intersection) const
+TextureRect::contains(const TextureRect& other) const
 {
-    if ( isNull() || r.isNull() ) {
-        return false;
-    }
-
-    if ( (x1 > r.x2) || (r.x1 > x2) || (y1 > r.y2) || (r.y1 > y2) ) {
-        return false;
-    }
-
-    intersection->x1 = std::max(x1, r.x1);
-    intersection->x2 = std::min(x2, r.x2);
-    intersection->y1 = std::max(y1, r.y1);
-    intersection->y2 = std::min(y2, r.y2);
-
-    return true;
+    return other.x1 >= x1 &&
+    other.y1 >= y1 &&
+    other.x2 <= x2 &&
+    other.y2 <= y2;
 }
-
-void
-TextureRect::toCanonical_noClipping(unsigned int thisLevel,
-                                    double par,
-                                    RectD *rect) const
-{
-    rect->x1 = (x1 << thisLevel) * par;
-    rect->x2 = (x2 << thisLevel) * par;
-    rect->y1 = y1 << thisLevel;
-    rect->y2 = y2 << thisLevel;
-}
-
 NATRON_NAMESPACE_EXIT;

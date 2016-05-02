@@ -70,8 +70,7 @@ FrameKey::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Channels", _channels);
     ar & ::boost::serialization::make_nvp("View", _view);
     ar & ::boost::serialization::make_nvp("TextureRect", _textureRect);
-    ar & ::boost::serialization::make_nvp("ScaleX", _scale.x);
-    ar & ::boost::serialization::make_nvp("ScaleY", _scale.y);
+    ar & ::boost::serialization::make_nvp("LoD", _mipMapLevel);
 
     if (version >= FRAME_KEY_VERSION) {
         ar & ::boost::serialization::make_nvp("InputName", _inputName);

@@ -45,7 +45,6 @@ struct ViewerArgs
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
-    boost::shared_ptr<FrameKey> key;
     boost::shared_ptr<UpdateViewerParams> params;
     boost::shared_ptr<RenderingFlagSetter> isRenderingFlag;
     bool draftModeEnabled;
@@ -327,6 +326,8 @@ public:
     void setViewerPaused(bool paused, bool allInputs);
 
     bool isViewerPaused(int texIndex) const;
+    
+    unsigned int getViewerMipMapLevel() const;
 
 public Q_SLOTS:
 
@@ -429,7 +430,7 @@ private:
                                               bool isSequentialRender,
                                               U64 viewerHash,
                                               bool canAbort,
-                                              NodePtr rotoPaintNode,
+                                              const NodePtr& rotoPaintNode,
                                               bool useTLS,
                                               const boost::shared_ptr<RequestedFrame>& request,
                                               const boost::shared_ptr<RenderStats>& stats,

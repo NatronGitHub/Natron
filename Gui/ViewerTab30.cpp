@@ -186,6 +186,7 @@ ViewerTab::setMipMapLevel(int level)
     }
 
     _imp->viewerNode->onMipMapLevelChanged(level);
+    _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
 int
@@ -319,6 +320,7 @@ ViewerTab::onRenderScaleComboIndexChanged(int index)
         level = 0;
     }
     _imp->viewerNode->onMipMapLevelChanged(level);
+    _imp->viewer->checkIfViewPortRoIValidOrRender();
 }
 
 void

@@ -42,13 +42,12 @@ FrameKey::FrameKey()
     , _channels(0)
     , _view(0)
     , _textureRect()
-    , _scale(1.)
+    , _mipMapLevel(0)
     , _layer()
     , _alphaChannelFullName()
     , _useShaders(false)
     , _draftMode(false)
 {
-    _scale.x = _scale.y = 0.;
 }
 
 FrameKey::FrameKey(const CacheEntryHolder* holder,
@@ -61,7 +60,7 @@ FrameKey::FrameKey(const CacheEntryHolder* holder,
                    int channels,
                    ViewIdx view,
                    const TextureRect & textureRect,
-                   const RenderScale & scale,
+                   unsigned int mipMapLevel,
                    const std::string & inputName,
                    const ImageComponents& layer,
                    const std::string& alphaChannelFullName,
@@ -77,7 +76,7 @@ FrameKey::FrameKey(const CacheEntryHolder* holder,
     , _channels(channels)
     , _view(view)
     , _textureRect(textureRect)
-    , _scale(scale)
+    , _mipMapLevel(mipMapLevel)
     , _inputName(inputName)
     , _layer(layer)
     , _alphaChannelFullName(alphaChannelFullName)
@@ -106,8 +105,7 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_textureRect.w);
     hash->append(_textureRect.h);
     hash->append(_textureRect.closestPo2);
-    hash->append(_scale.x);
-    hash->append(_scale.y);
+    hash->append(_mipMapLevel);
     Hash64_appendQString( hash, QString::fromUtf8( _layer.getLayerName().c_str() ) );
     const std::vector<std::string>& channels = _layer.getComponentsNames();
     for (std::size_t i = 0; i < channels.size(); ++i) {
@@ -133,8 +131,7 @@ FrameKey::operator==(const FrameKey & other) const
            _channels == other._channels &&
            _view == other._view &&
            _textureRect == other._textureRect &&
-           _scale.x == other._scale.x &&
-           _scale.y == other._scale.y &&
+           _mipMapLevel == other._mipMapLevel &&
            _inputName == other._inputName &&
            _layer == other._layer &&
            _alphaChannelFullName == other._alphaChannelFullName &&

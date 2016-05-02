@@ -225,20 +225,20 @@ public:
     }
 
     bool getTexture(const FrameKey & key,
-                    boost::shared_ptr<FrameEntry>* returnValue) const;
+                    std::list<FrameEntryPtr>* returnValue) const;
 
     bool getTextureOrCreate(const FrameKey & key, const boost::shared_ptr<FrameParams>& params,
-                            boost::shared_ptr<FrameEntry>* returnValue) const;
+                            FrameEntryPtr* returnValue) const;
 
     static bool getTextureFromCache(const FrameKey & key,
-                                    boost::shared_ptr<FrameEntry>* returnValue)
+                                    std::list<FrameEntryPtr>* returnValue)
     {
         return appPTR->getTexture(key, returnValue);
     }
 
     static bool getTextureFromCacheOrCreate(const FrameKey & key,
                                             const boost::shared_ptr<FrameParams> &params,
-                                            boost::shared_ptr<FrameEntry>* returnValue)
+                                            FrameEntryPtr* returnValue)
     {
         return appPTR->getTextureOrCreate(key, params, returnValue);
     }
@@ -255,7 +255,7 @@ public:
     void setPlaybackCacheMaximumSize(double p);
 
     void removeFromNodeCache(const boost::shared_ptr<Image> & image);
-    void removeFromViewerCache(const boost::shared_ptr<FrameEntry> & texture);
+    void removeFromViewerCache(const FrameEntryPtr & texture);
 
     void removeFromNodeCache(U64 hash);
     void removeFromViewerCache(U64 hash);
@@ -519,6 +519,8 @@ public Q_SLOTS:
     void toggleAutoHideGraphInputs();
 
     void clearPlaybackCache();
+    
+    void clearViewerCache();
 
     void clearDiskCache();
 

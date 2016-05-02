@@ -69,7 +69,6 @@ struct RenderViewerArgs
 {
     RenderViewerArgs(const boost::shared_ptr<const Image> &inputImage_,
                      const boost::shared_ptr<const Image> &matteImage_,
-                     const TextureRect & texRect_,
                      DisplayChannelsEnum channels_,
                      ImagePremultiplicationEnum srcPremult_,
                      int bitDepth_,
@@ -81,7 +80,6 @@ struct RenderViewerArgs
                      int alphaChannelIndex_)
         : inputImage(inputImage_)
         , matteImage(matteImage_)
-        , texRect(texRect_)
         , channels(channels_)
         , srcPremult(srcPremult_)
         , bitDepth(bitDepth_)
@@ -96,7 +94,6 @@ struct RenderViewerArgs
 
     boost::shared_ptr<const Image> inputImage;
     boost::shared_ptr<const Image> matteImage;
-    TextureRect texRect;
     DisplayChannelsEnum channels;
     ImagePremultiplicationEnum srcPremult;
     int bitDepth;
@@ -106,6 +103,7 @@ struct RenderViewerArgs
     const Color::Lut* srcColorSpace;
     const Color::Lut* colorSpace;
     int alphaChannelIndex;
+    
 };
 
 struct ViewerInstance::ViewerInstancePrivate
@@ -124,7 +122,6 @@ public:
         , forceRender()
         , isViewerPausedMutex()
         , isViewerPaused()
-        , updateViewerPboIndex(0)
         , viewerParamsMutex()
         , viewerParamsGain(1.)
         , viewerParamsGamma(1.)
@@ -169,10 +166,10 @@ public:
 
 public:
 
-    virtual void lock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
+    virtual void lock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
+        std::list<FrameEntryPtr >::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         while ( it != textureBeingRendered.end() ) {
@@ -184,10 +181,10 @@ public:
         textureBeingRendered.push_back(entry);
     }
 
-    virtual bool tryLock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
+    virtual bool tryLock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
+        std::list<FrameEntryPtr >::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         if ( it != textureBeingRendered.end() ) {
@@ -200,10 +197,10 @@ public:
         return true;
     }
 
-    virtual void unlock(const boost::shared_ptr<FrameEntry>& entry) OVERRIDE FINAL
+    virtual void unlock(const FrameEntryPtr& entry) OVERRIDE FINAL
     {
         QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<boost::shared_ptr<FrameEntry> >::iterator it =
+        std::list<FrameEntryPtr >::iterator it =
             std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
 
         ///The image must exist, otherwise this is a bug
@@ -366,7 +363,6 @@ public:
     //is always called on the main thread, but the thread running renderViewer MUST
     //wait the entire time. This flag is here to make the renderViewer() thread wait
     //until the texture upload is finished by the main thread.
-    int updateViewerPboIndex;                // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
 
 
     // viewerParams: The viewer parameters that may be accessed from the GUI
@@ -388,7 +384,7 @@ public:
     bool activateInputChangedFromViewer;
     mutable QMutex textureBeingRenderedMutex;
     QWaitCondition textureBeingRenderedCond;
-    std::list<boost::shared_ptr<FrameEntry> > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
+    std::list<FrameEntryPtr > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
 

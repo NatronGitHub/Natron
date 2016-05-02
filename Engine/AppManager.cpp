@@ -804,6 +804,12 @@ AppManager::clearPlaybackCache()
 }
 
 void
+AppManager::clearViewerCache()
+{
+    _imp->_viewerCache->clear();
+}
+
+void
 AppManager::clearDiskCache()
 {
     clearLastRenderedTextures();
@@ -1766,7 +1772,7 @@ AppManager::removeFromNodeCache(const boost::shared_ptr<Image> & image)
 }
 
 void
-AppManager::removeFromViewerCache(const boost::shared_ptr<FrameEntry> & texture)
+AppManager::removeFromViewerCache(const FrameEntryPtr & texture)
 {
     _imp->_viewerCache->removeEntry(texture);
 }
@@ -1889,26 +1895,18 @@ AppManager::getImageOrCreate_diskCache(const ImageKey & key,
 
 bool
 AppManager::getTexture(const FrameKey & key,
-                       boost::shared_ptr<FrameEntry>* returnValue) const
+                       std::list<FrameEntryPtr>* returnValue) const
 {
-    std::list<boost::shared_ptr<FrameEntry> > retList;
+    std::list<FrameEntryPtr > retList;
     bool ret =  _imp->_viewerCache->get(key, &retList);
-
-    if ( !retList.empty() ) {
-        if (retList.size() > 1) {
-            qDebug() << "WARNING: Several FrameEntry's were found in the cache for with the same key, this is a bug since they are unique.";
-        }
-
-        *returnValue = retList.front();
-    }
-
+    *returnValue = retList;
     return ret;
 }
 
 bool
 AppManager::getTextureOrCreate(const FrameKey & key,
                                const boost::shared_ptr<FrameParams>& params,
-                               boost::shared_ptr<FrameEntry>* returnValue) const
+                               FrameEntryPtr* returnValue) const
 {
     return _imp->_viewerCache->getOrCreate(key, params, returnValue);
 }

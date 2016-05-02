@@ -132,7 +132,7 @@ public:
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & imageRoD, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
     virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel,std::vector<RectI>* tiles) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      * of the ViewerGL.
@@ -169,17 +169,32 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            const ImagePtr& image,
-                                            ImageBitDepthEnum depth,
-                                            int time,
-                                            const RectD& rod,
-                                            size_t bytesCount, const TextureRect & region,
-                                            double gain, double gamma, double offset, int lut, int pboIndex,
-                                            unsigned int mipMapLevel, ImagePremultiplicationEnum premult,
+                                            size_t bytesCount,
+                                            const RectI &bounds,
+                                            const TextureRect & region,
                                             int textureIndex,
                                             bool isPartialRect,
-                                            bool recenterViewer,
-                                            const Point& viewportCenter) OVERRIDE FINAL;
+                                            bool isFirstTile,
+                                            boost::shared_ptr<OpenGLTextureI>* texture) OVERRIDE FINAL;
+    
+    virtual void endTransferBufferFromRAMToGPU(int textureIndex,
+                                               const boost::shared_ptr<OpenGLTextureI>& texture,
+                                               const ImagePtr& image,
+                                               int time,
+                                               const RectD& rod,
+                                               const RectI& viewerRoI,
+                                               double par,
+                                               ImageBitDepthEnum depth,
+                                               unsigned int mipMapLevel,
+                                               ImagePremultiplicationEnum premult,
+                                               double gain,
+                                               double gamma,
+                                               double offset,
+                                               int lut,
+                                               bool recenterViewer,
+                                               const Point& viewportCenter,
+                                               bool isPartialRect) OVERRIDE FINAL;
+    
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
@@ -376,6 +391,8 @@ public:
 
     void getTopLeftAndBottomRightInZoomCoords(QPointF* topLeft, QPointF* bottomRight) const;
 
+    void checkIfViewPortRoIValidOrRender();
+
 
 Q_SIGNALS:
 
@@ -426,6 +443,9 @@ private:
 
 private:
 
+    
+    bool checkIfViewPortRoIValidOrRenderForInput(int texIndex);
+    
     bool penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* event);
 
     /**
