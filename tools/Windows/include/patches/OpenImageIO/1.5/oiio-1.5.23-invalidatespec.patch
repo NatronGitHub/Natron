@@ -1,0 +1,14 @@
+diff --git a/src/libtexture/imagecache_pvt.h b/src/libtexture/imagecache_pvt.h
+index dec3504..788c7bc 100644
+--- a/src/libtexture/imagecache_pvt.h
++++ b/src/libtexture/imagecache_pvt.h
+@@ -280,7 +280,8 @@ public:
+     /// Forget the specs we know
+     void invalidate_spec () {
+         m_validspec = false;
+-        m_subimages.clear ();
++        //Do not clear the subimages here because another thread might be using it
++        //m_subimages.clear ();
+     }
+     
+ private:

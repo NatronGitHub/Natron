@@ -1,0 +1,9 @@
+Package: natron
+Version: __VERSION__
+Architecture: __ARCH__
+Maintainer: INRIA <build@natron.fr>
+Installed-Size: __SIZE__
+Section: custom
+Priority: extra
+Description: open-source compositing software
+ Node-graph based, open-source compositing software. Similar in functionalities to Adobe After Effects and The Foundry Nuke.

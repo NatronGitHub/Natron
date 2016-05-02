@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Natron</DisplayName>
+    <Description>Open Source Compositing Software.</Description>
+    <Version>_VERSION_</Version>
+    <ReleaseDate>_DATE_</ReleaseDate>
+<RequiresAdminRights>true</RequiresAdminRights>
+    <Name>fr.inria.natron</Name>
+    <Dependencies>fr.inria.natron.libs</Dependencies>
+    <Dependencies>fr.inria.natron.color</Dependencies>
+    <Licenses>
+        <License name="Natron" file="natron-license.txt" />
+    </Licenses>
+    <SortingPriority>123456789</SortingPriority>
+    <Default>script</Default>
+    <Script>installscript.qs</Script>
+</Package>

@@ -1,0 +1,117 @@
+diff --git a/src/doc/imageioapi.tex b/src/doc/imageioapi.tex
+index 63425b2..66603ff 100644
+--- a/src/doc/imageioapi.tex
++++ b/src/doc/imageioapi.tex
+@@ -805,11 +805,31 @@ attribute is a string), the attribute will not be modified, and {\cf
+ \vspace{10pt}
+ \index{threads} \label{sec:attribute:threads}
+ Some \product operations can be accelerated if allowed to spawn multiple
+-threads to parallelize the task.  (Examples: decompressing multiple
+-simultaneously-read OpenEXR scanlines, or many \ImageBuf operations.)
+-This attribute sets the maximum number of threads that will be spawned.
+-The default is 1.  If set to 0, it means that it should use as many
++threads to parallelize the task.  (Examples: simultaneous format conversions
++of multiple scanlines read together, or many \ImageBufAlgo operations.)
++This attribute sets the default number of threads that will be spawned
++for these operations (the ``fan out'').
++The default is 0, which means that it should spawn as many
+ threads as there are hardware cores present on the system.
++
++Situations where the main application logic is essentially single threaded
++(i.e., one top-level call into OIIO at a time) should leave this at the
++default value, or some reasonable number of cores, thus allowing lots of
++threads to fill the cores when OIIO has big tasks to complete. But
++situations where you have many threads at the application level, each of
++which is expected to be making separate OIIO calls simultaneously, should
++set this to 1, thus having each calling thread do its own work inside of
++OIIO rather than spawning new threads with a high overall ``fan out.''
++\apiend
++
++\apiitem{int exr_threads}
++\vspace{10pt}
++\index{exr_threads}
++\NEW % 1.6
++Sets the internal OpenEXR thread pool size. The default is to use as many
++threads as the amount of hardware concurrency detected.
++Note that this is separate from the OIIO
++\qkw{threads} attribute.
+ \apiend
+ 
+ \apiitem{string plugin_searchpath}
+diff --git a/src/libOpenImageIO/imageio.cpp b/src/libOpenImageIO/imageio.cpp
+index 3fc2118..56d6054 100644
+--- a/src/libOpenImageIO/imageio.cpp
++++ b/src/libOpenImageIO/imageio.cpp
+@@ -51,6 +51,7 @@ OIIO_NAMESPACE_BEGIN
+ namespace pvt {
+ recursive_mutex imageio_mutex;
+ atomic_int oiio_threads (boost::thread::hardware_concurrency());
++atomic_int oiio_exr_threads (boost::thread::hardware_concurrency());
+ atomic_int oiio_read_chunk (256);
+ ustring plugin_searchpath (OIIO_DEFAULT_PLUGIN_SEARCHPATH);
+ std::string format_list;   // comma-separated list of all formats
+@@ -121,7 +122,7 @@ namespace {
+ // Private global OIIO data.
+ 
+ static spin_mutex attrib_mutex;
+-static const int maxthreads = 64;   // reasonable maximum for sanity check
++static const int maxthreads = 256;   // reasonable maximum for sanity check
+ 
+ };
+ 
+@@ -146,6 +147,10 @@ attribute (string_view name, TypeDesc type, const void *val)
+         plugin_searchpath = ustring (*(const char **)val);
+         return true;
+     }
++    if (name == "exr_threads" && type == TypeDesc::TypeInt) {
++        oiio_exr_threads = Imath::clamp (*(const int *)val, 0, maxthreads);
++        return true;
++    }
+     return false;
+ }
+ 
+@@ -179,6 +184,10 @@ getattribute (string_view name, TypeDesc type, void *val)
+         *(ustring *)val = ustring(extension_list);
+         return true;
+     }
++    if (name == "exr_threads" && type == TypeDesc::TypeInt) {
++        *(int *)val = oiio_exr_threads;
++        return true;
++    }
+     return false;
+ }
+ 
+diff --git a/src/oiiotool/oiiotool.cpp b/src/oiiotool/oiiotool.cpp
+index c484877..e7ca210 100644
+--- a/src/oiiotool/oiiotool.cpp
++++ b/src/oiiotool/oiiotool.cpp
+@@ -328,7 +328,9 @@ static int
+ set_threads (int argc, const char *argv[])
+ {
+     ASSERT (argc == 2);
+-    OIIO::attribute ("threads", atoi(argv[1]));
++    int nthreads = atoi(argv[1]);
++    OIIO::attribute ("threads", nthreads);
++    OIIO::attribute ("exr_threads", nthreads);
+     return 0;
+ }
+ 
+diff --git a/src/openexr.imageio/exrinput.cpp b/src/openexr.imageio/exrinput.cpp
+index 00c6145..40efba2 100644
+--- a/src/openexr.imageio/exrinput.cpp
++++ b/src/openexr.imageio/exrinput.cpp
+@@ -316,12 +316,12 @@ void set_exr_threads ()
+     static spin_mutex exr_threads_mutex;  
+ 
+     int oiio_threads = 1;
+-    OIIO::getattribute ("threads", oiio_threads);
++    OIIO::getattribute ("exr_threads", oiio_threads);
+ 
+     spin_lock lock (exr_threads_mutex);
+     if (exr_threads != oiio_threads) {
+         exr_threads = oiio_threads;
+-        Imf::setGlobalThreadCount (exr_threads == 1 ? 0 : exr_threads);
++        Imf::setGlobalThreadCount (exr_threads);
+     }
+ }
+ 

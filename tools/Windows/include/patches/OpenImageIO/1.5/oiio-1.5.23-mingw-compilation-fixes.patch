@@ -1,0 +1,272 @@
+diff --git a/src/cmake/modules/FindOpenJpeg.cmake b/src/cmake/modules/FindOpenJpeg.cmake
+index 9463525..f758b72 100644
+--- a/src/cmake/modules/FindOpenJpeg.cmake
++++ b/src/cmake/modules/FindOpenJpeg.cmake
+@@ -78,7 +78,9 @@ if (OPENJPEG_HOME)
+        ${OPENJPEG_HOME}/lib64)
+   set (OpenJpeg_include_paths
+        ${OpenJpeg_include_paths}
+-       ${OPENJPEG_HOME}/include)
++       ${OPENJPEG_HOME}/include
++       ${OPENJPEG_HOME}/include/openjpeg
++       ${OPENJPEG_HOME}/include/openjpeg-1.5)
+ endif()
+ 
+ 
+diff --git a/src/include/OpenImageIO/SHA1.h b/src/include/OpenImageIO/SHA1.h
+index 1175981..eef9621 100644
+--- a/src/include/OpenImageIO/SHA1.h
++++ b/src/include/OpenImageIO/SHA1.h
+@@ -88,6 +88,9 @@
+ #endif
+ #endif
+ 
++#ifdef WIN32
++#include <windef.h>
++#endif
+ #include <memory.h>
+ 
+ #ifdef SHA1_UTILITY_FUNCTIONS
+diff --git a/src/include/OpenImageIO/missing_math.h b/src/include/OpenImageIO/missing_math.h
+index 6f9d665..5387d4c 100644
+--- a/src/include/OpenImageIO/missing_math.h
++++ b/src/include/OpenImageIO/missing_math.h
+@@ -106,7 +106,7 @@
+ 
+ OIIO_NAMESPACE_ENTER {
+ 
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+ // Windows doesn't define these functions from math.h
+ #define hypotf _hypotf
+ #define copysign(x,y) _copysign(x,y)
+diff --git a/src/include/OpenImageIO/osdep.h b/src/include/OpenImageIO/osdep.h
+index 4b23313..48eacf0 100644
+--- a/src/include/OpenImageIO/osdep.h
++++ b/src/include/OpenImageIO/osdep.h
+@@ -33,7 +33,9 @@
+ #ifdef _WIN32
+ # define WIN32_LEAN_AND_MEAN
+ # define VC_EXTRALEAN
++# ifndef __MINGW32__
+ # define NOMINMAX
++# endif
+ # include <windows.h>
+ #endif
+ 
+diff --git a/src/include/OpenImageIO/typedesc.h b/src/include/OpenImageIO/typedesc.h
+index 2335cf9..36ee24c 100644
+--- a/src/include/OpenImageIO/typedesc.h
++++ b/src/include/OpenImageIO/typedesc.h
+@@ -78,12 +78,23 @@ OIIO_NAMESPACE_ENTER
+ struct OIIO_API TypeDesc {
+     /// BASETYPE is a simple enum for the C/C++ built-in types.
+     ///
++// ansidecl.h contains:
++// #if defined (__STDC__) || defined(__cplusplus) .. || defined(_WIN32)
++// "#define PTR		void *"
++#ifdef PTR
++#define PTR_OLD_DEFINE PTR
++#undef PTR
++#endif
+     enum BASETYPE { UNKNOWN, NONE, 
+                     UCHAR, UINT8=UCHAR, CHAR, INT8=CHAR,
+                     USHORT, UINT16=USHORT, SHORT, INT16=SHORT,
+                     UINT, UINT32=UINT, INT, INT32=INT,
+                     ULONGLONG, UINT64=ULONGLONG, LONGLONG, INT64=LONGLONG,
+                     HALF, FLOAT, DOUBLE, STRING, PTR, LASTBASE };
++// Set PTR back what it previously contained.
++#ifdef PTR_OLD_DEFINE
++#define PTR PTR_OLD_DEFINE
++#endif
+     /// AGGREGATE describes whether our type is a simple scalar of
+     /// one of the BASETYPE's, or one of several simple aggregates.
+     enum AGGREGATE { SCALAR=1, VEC2=2, VEC3=3, VEC4=4, MATRIX44=16 };
+diff --git a/src/libOpenImageIO/CMakeLists.txt b/src/libOpenImageIO/CMakeLists.txt
+index 54215f1..b4db06a 100644
+--- a/src/libOpenImageIO/CMakeLists.txt
++++ b/src/libOpenImageIO/CMakeLists.txt
+@@ -249,7 +249,7 @@ endif ()
+ 
+ 
+ if (WIN32)
+-    target_link_libraries (OpenImageIO psapi.lib)
++    target_link_libraries (OpenImageIO psapi ws2_32)
+ endif ()
+ 
+ add_dependencies (OpenImageIO "${CMAKE_CURRENT_SOURCE_DIR}/libOpenImageIO.map")
+diff --git a/src/libOpenImageIO/exif.cpp b/src/libOpenImageIO/exif.cpp
+index 391f622..385af88 100644
+--- a/src/libOpenImageIO/exif.cpp
++++ b/src/libOpenImageIO/exif.cpp
+@@ -36,6 +36,7 @@
+ #include <map>
+ #include <set>
+ #include <algorithm>
++#include <malloc.h>
+ 
+ #include <boost/foreach.hpp>
+ 
+diff --git a/src/libOpenImageIO/imageinput.cpp b/src/libOpenImageIO/imageinput.cpp
+index 69956cb..b98515f 100644
+--- a/src/libOpenImageIO/imageinput.cpp
++++ b/src/libOpenImageIO/imageinput.cpp
+@@ -32,6 +32,7 @@
+ #include <cstdlib>
+ #include <cmath>
+ #include <vector>
++#include <malloc.h>
+ 
+ #include "OpenImageIO/dassert.h"
+ #include "OpenImageIO/typedesc.h"
+diff --git a/src/libtexture/imagecache.cpp b/src/libtexture/imagecache.cpp
+index f750b5c..650cf03 100644
+--- a/src/libtexture/imagecache.cpp
++++ b/src/libtexture/imagecache.cpp
+@@ -32,6 +32,7 @@
+ #include <string>
+ #include <sstream>
+ #include <vector>
++#include <malloc.h>
+ #include <cstring>
+ 
+ #include <OpenEXR/ImathMatrix.h>
+diff --git a/src/libtexture/texturesys.cpp b/src/libtexture/texturesys.cpp
+index b08ae53..444577c 100644
+--- a/src/libtexture/texturesys.cpp
++++ b/src/libtexture/texturesys.cpp
+@@ -30,6 +30,7 @@
+ 
+ 
+ #include <math.h>
++#include <malloc.h>
+ #include <string>
+ #include <sstream>
+ #include <cstring>
+diff --git a/src/libutil/argparse.cpp b/src/libutil/argparse.cpp
+index dcf35bc..4b4076b 100644
+--- a/src/libutil/argparse.cpp
++++ b/src/libutil/argparse.cpp
+@@ -39,6 +39,7 @@
+ #include <iterator>
+ #include <string>
+ #include <sstream>
++#include <malloc.h>
+ 
+ #include "OpenImageIO/strutil.h"
+ #include "OpenImageIO/sysutil.h"
+diff --git a/src/libutil/filesystem.cpp b/src/libutil/filesystem.cpp
+index 7fb4759..f7d3073 100644
+--- a/src/libutil/filesystem.cpp
++++ b/src/libutil/filesystem.cpp
+@@ -490,7 +490,7 @@ void
+ Filesystem::open (std::ifstream &stream, string_view path,
+                   std::ios_base::openmode mode)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+     // Windows std::ifstream accepts non-standard wchar_t* 
+     std::wstring wpath = Strutil::utf8_to_utf16(path);
+     stream.open (wpath.c_str(), mode);
+@@ -506,7 +506,7 @@ void
+ Filesystem::open (std::ofstream &stream, string_view path,
+                   std::ios_base::openmode mode)
+ {
+-#ifdef _WIN32
++#if defined(_WIN32) && !defined(__GNUC__)
+     // Windows std::ofstream accepts non-standard wchar_t*
+     std::wstring wpath = Strutil::utf8_to_utf16 (path);
+     stream.open (wpath.c_str(), mode);
+diff --git a/src/libutil/plugin.cpp b/src/libutil/plugin.cpp
+index 95f8db0..1a8f84e 100644
+--- a/src/libutil/plugin.cpp
++++ b/src/libutil/plugin.cpp
+@@ -92,7 +92,7 @@ dlclose (Handle plugin_handle)
+ void *
+ dlsym (Handle plugin_handle, const char *symbol_name)
+ {
+-    return GetProcAddress ((HMODULE)plugin_handle, symbol_name);
++    return (void *)GetProcAddress ((HMODULE)plugin_handle, symbol_name);
+ }
+ 
+ 
+diff --git a/src/libutil/sysutil.cpp b/src/libutil/sysutil.cpp
+index 22ffa50..a6b8466 100644
+--- a/src/libutil/sysutil.cpp
++++ b/src/libutil/sysutil.cpp
+@@ -211,7 +211,7 @@ Sysutil::get_local_time (const time_t *time, struct tm *converted_time)
+ #ifdef _MSC_VER
+     localtime_s (converted_time, time);
+ #else
+-    localtime_r (time, converted_time);
++    *converted_time = *localtime(time);
+ #endif
+ }
+ 
+diff --git a/src/ptex.imageio/ptex/PtexCache.cpp b/src/ptex.imageio/ptex/PtexCache.cpp
+index 7794a21..868853a 100644
+--- a/src/ptex.imageio/ptex/PtexCache.cpp
++++ b/src/ptex.imageio/ptex/PtexCache.cpp
+@@ -224,12 +224,21 @@ public:
+ 	// split into dirs
+ 	_searchdirs.clear();
+ 	char* buff = strdup(path);
+-	char* pos = 0;
+-	char* token = strtok_r(buff, ":", &pos);
+-	while (token) {
+-	    if (token[0]) _searchdirs.push_back(token);
+-	    token = strtok_r(0, ":", &pos);
+-	}
++	char* pos = buff;
++
++	do {
++		char *token = pos;
++		pos = strstr(pos, ":");
++
++		if (pos) {
++			pos[0] = '\0';
++			pos++;
++		}
++
++		if (token[0]) _searchdirs.push_back(token);
++
++	} while(pos);
++
+ 	free(buff);
+     }
+ 
+diff --git a/src/ptex.imageio/ptex/PtexPlatform.h b/src/ptex.imageio/ptex/PtexPlatform.h
+index be6af44..37b400f 100644
+--- a/src/ptex.imageio/ptex/PtexPlatform.h
++++ b/src/ptex.imageio/ptex/PtexPlatform.h
+@@ -79,11 +79,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+ 
+ // missing functions on Windows
+ #ifdef WINDOWS
++#if !defined(__GNUC__)
+ #define snprintf sprintf_s
+ #define strtok_r strtok_s
++#endif
+ typedef __int64 FilePos;
++#if !defined(__GNUC__)
+ #define fseeko _fseeki64
+ #define ftello _ftelli64
++#else
++#define fseeko fseek
++#define ftello ftell
++#endif
+ 
+ inline double log2(double x) {
+     return log(x) * 1.4426950408889634; 
+diff --git a/src/rla.imageio/rlaoutput.cpp b/src/rla.imageio/rlaoutput.cpp
+index f7a2d81..5b472cb 100644
+--- a/src/rla.imageio/rlaoutput.cpp
++++ b/src/rla.imageio/rlaoutput.cpp
+@@ -32,6 +32,7 @@
+ #include <cstdlib>
+ #include <cmath>
+ #include <ctime>
++#include <malloc.h>
+ 
+ #include "OpenImageIO/dassert.h"
+ #include "OpenImageIO/typedesc.h"
