@@ -1,0 +1,20 @@
+--- coders/pango.c.orig	2015-10-27 19:45:50.079263256 +0100
++++ coders/pango.c	2015-10-27 19:46:33.672399568 +0100
+@@ -320,6 +320,17 @@
+   if ((align != PANGO_ALIGN_CENTER) &&
+       (draw_info->direction == RightToLeftDirection))
+     align=(PangoAlignment) (PANGO_ALIGN_LEFT+PANGO_ALIGN_RIGHT-align);
++  // start hack for TextPango.ofx
++  option=GetImageOption(image_info,"pango:align");
++  if (option != (const char *) NULL) {
++    if (LocaleCompare(option,"center") == 0)
++      align=PANGO_ALIGN_CENTER;
++    if (LocaleCompare(option,"left") == 0)
++      align=PANGO_ALIGN_LEFT;
++    if (LocaleCompare(option,"right") == 0)
++      align=PANGO_ALIGN_RIGHT;
++  }
++  // end hack
+   pango_layout_set_alignment(layout,align);
+   if (draw_info->font == (char *) NULL)
+     description=pango_font_description_new();

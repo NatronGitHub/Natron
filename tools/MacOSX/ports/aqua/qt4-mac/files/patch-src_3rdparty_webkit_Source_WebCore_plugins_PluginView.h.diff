@@ -1,0 +1,12 @@
+--- src/3rdparty/webkit/Source/WebCore/plugins/PluginView.h.orig	2012-04-23 14:49:04.000000000 -0400
++++ src/3rdparty/webkit/Source/WebCore/plugins/PluginView.h	2012-04-23 14:51:28.000000000 -0400
+@@ -411,7 +411,9 @@
+ 
+         Point m_lastMousePos;
+         void setNPWindowIfNeeded();
++#ifndef NP_NO_CARBON
+         void nullEventTimerFired(Timer<PluginView>*);
++#endif
+         Point globalMousePosForPlugin() const;
+         Point mousePosForPlugin(MouseEvent* event = 0) const;
+ #endif

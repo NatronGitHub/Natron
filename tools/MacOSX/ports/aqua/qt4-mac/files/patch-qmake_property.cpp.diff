@@ -1,0 +1,19 @@
+--- qmake/property.cpp.orig	2012-04-23 14:49:04.000000000 -0400
++++ qmake/property.cpp	2012-04-20 22:56:47.000000000 -0400
+@@ -91,6 +91,8 @@
+         return QLibraryInfo::location(QLibraryInfo::HeadersPath);
+     else if(v == "QT_INSTALL_LIBS")
+         return QLibraryInfo::location(QLibraryInfo::LibrariesPath);
++    else if(v == "QT_INSTALL_FRAMEWORKS")
++        return QLibraryInfo::location(QLibraryInfo::FrameworksPath);
+     else if(v == "QT_INSTALL_BINS")
+         return QLibraryInfo::location(QLibraryInfo::BinariesPath);
+     else if(v == "QT_INSTALL_PLUGINS")
+@@ -198,6 +200,7 @@
+             specialProps.append("QT_INSTALL_DOCS");
+             specialProps.append("QT_INSTALL_HEADERS");
+             specialProps.append("QT_INSTALL_LIBS");
++            specialProps.append("QT_INSTALL_FRAMEWORKS");
+             specialProps.append("QT_INSTALL_BINS");
+             specialProps.append("QT_INSTALL_PLUGINS");
+             specialProps.append("QT_INSTALL_IMPORTS");

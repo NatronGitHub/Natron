@@ -1,0 +1,761 @@
+diff -Naur ghostscript-9.05.orig/arm-arch.h ghostscript-9.05/arm-arch.h
+--- arm-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ arm-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/armeb-arch.h ghostscript-9.05/armeb-arch.h
+--- armeb-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ armeb-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/avr32-arch.h ghostscript-9.05/avr32-arch.h
+--- avr32-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ avr32-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/base/cross.mak ghostscript-9.05/base/cross.mak
+--- base/cross.mak.orig	1969-12-31 19:00:00.000000000 -0500
++++ base/cross.mak	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,5 @@
++
++cross_prepare:
++	make obj/aux/echogs obj/aux/genconf obj/aux/genarch CFLAGS=
++	cp -f $(ARCH)-arch.h $(GLGEN)/arch.h
++	touch $(GLGEN)/arch.h obj/aux/*
+diff -Naur ghostscript-9.05.orig/Makefile.in ghostscript-9.05/Makefile.in
+--- Makefile.in.orig	2012-02-13 13:07:44.000000000 -0500
++++ Makefile.in	2012-02-13 13:08:44.000000000 -0500
+@@ -636,3 +636,4 @@
+ check : default
+ 	$(NO_OP)
+ 
++include $(GLSRCDIR)/cross.mak
+diff -Naur ghostscript-9.05.orig/base/unix-aux.mak ghostscript-9.05/base/unix-aux.mak
+--- base/unix-aux.mak.orig	2012-02-13 13:07:44.000000000 -0500
++++ base/unix-aux.mak	2012-02-13 13:08:44.000000000 -0500
+@@ -104,7 +104,7 @@
+ $(MKROMFS_XE)_1: $(GLSRC)mkromfs.c $(MKROMFS_COMMON_DEPS) $(MKROMFS_OBJS_1)
+ 	$(CCAUX_) $(GENOPT) $(CFLAGS) $(I_)$(GLSRCDIR)$(_I) $(I_)$(GLOBJ)$(_I) $(I_)$(ZSRCDIR)$(_I) $(GLSRC)mkromfs.c $(O_)$(MKROMFS_XE)_1 $(MKROMFS_OBJS_1) -lm $(EXTRALIBS)
+ 
+-$(MKROMFS_XE): $(MKROMFS_XE)_$(SHARE_ZLIB) $(MAKEDIRS)
++$(MKROMFS_XE):
+ 	$(CP_) $(MKROMFS_XE)_$(SHARE_ZLIB) $(MKROMFS_XE)
+ 
+ # Query the environment to construct gconfig_.h.
+diff -Naur ghostscript-9.05.orig/base/unixhead.mak ghostscript-9.05/base/unixhead.mak
+--- base/unixhead.mak.orig	2012-02-13 13:07:44.000000000 -0500
++++ base/unixhead.mak	2012-02-13 13:08:44.000000000 -0500
+@@ -54,7 +54,7 @@
+ 
+ # Define generic commands.
+ 
+-CP_=cp
++CP_=cp -f
+ RM_=rm -f
+ RMN_=rm -f
+ 
+diff -Naur ghostscript-9.05.orig/i386-arch.h ghostscript-9.05/i386-arch.h
+--- i386-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ i386-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 4
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/m68k-arch.h ghostscript-9.05/m68k-arch.h
+--- m68k-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ m68k-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/mips64-arch.h ghostscript-9.05/mips64-arch.h
+--- mips64-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ mips64-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 8
++#define ARCH_ALIGN_PTR_MOD 8
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 3
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 8
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/mips64el-arch.h ghostscript-9.05/mips64el-arch.h
+--- mips64el-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ mips64el-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 8
++#define ARCH_ALIGN_PTR_MOD 8
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 3
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 8
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/mips-arch.h ghostscript-9.05/mips-arch.h
+--- mips-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ mips-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/mipsel-arch.h ghostscript-9.05/mipsel-arch.h
+--- mipsel-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ mipsel-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/nios2-arch.h ghostscript-9.05/nios2-arch.h
+--- nios2-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ nios2-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/ppc-arch.h ghostscript-9.05/ppc-arch.h
+--- ppc-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ ppc-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/ppc64-arch.h ghostscript-9.05/ppc64-arch.h
+--- ppc64-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ ppc64-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 8
++#define ARCH_ALIGN_PTR_MOD 8
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 3
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 8
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/sh-arch.h ghostscript-9.05/sh-arch.h
+--- sh-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ sh-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/sparc-arch.h ghostscript-9.05/sparc-arch.h
+--- sparc-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ sparc-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 1
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/x86_64-arch.h ghostscript-9.05/x86_64-arch.h
+--- x86_64-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ x86_64-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 8
++#define ARCH_ALIGN_PTR_MOD 8
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 3
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 8
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++
+diff -Naur ghostscript-9.05.orig/xtensa-arch.h ghostscript-9.05/xtensa-arch.h
+--- xtensa-arch.h.orig	1969-12-31 19:00:00.000000000 -0500
++++ xtensa-arch.h	2012-02-13 13:08:44.000000000 -0500
+@@ -0,0 +1,41 @@
++/* Parameters derived from machine and compiler architecture. */
++/* This file is generated mechanically by genarch.c. */
++
++   /* ---------------- Scalar alignments ---------------- */
++
++#define ARCH_ALIGN_SHORT_MOD 2
++#define ARCH_ALIGN_INT_MOD 4
++#define ARCH_ALIGN_LONG_MOD 4
++#define ARCH_ALIGN_PTR_MOD 4
++#define ARCH_ALIGN_FLOAT_MOD 4
++#define ARCH_ALIGN_DOUBLE_MOD 8
++
++   /* ---------------- Scalar sizes ---------------- */
++
++#define ARCH_LOG2_SIZEOF_CHAR 0
++#define ARCH_LOG2_SIZEOF_SHORT 1
++#define ARCH_LOG2_SIZEOF_INT 2
++#define ARCH_LOG2_SIZEOF_LONG 2
++#define ARCH_LOG2_SIZEOF_LONG_LONG 3
++#define ARCH_SIZEOF_GX_COLOR_INDEX 8
++#define ARCH_SIZEOF_PTR 4
++#define ARCH_SIZEOF_FLOAT 4
++#define ARCH_SIZEOF_DOUBLE 8
++#define ARCH_FLOAT_MANTISSA_BITS 24
++#define ARCH_DOUBLE_MANTISSA_BITS 53
++
++   /* ---------------- Unsigned max values ---------------- */
++
++#define ARCH_MAX_UCHAR ((unsigned char)0xff + (unsigned char)0)
++#define ARCH_MAX_USHORT ((unsigned short)0xffff + (unsigned short)0)
++#define ARCH_MAX_UINT ((unsigned int)~0 + (unsigned int)0)
++#define ARCH_MAX_ULONG ((unsigned long)~0L + (unsigned long)0)
++
++   /* ---------------- Miscellaneous ---------------- */
++
++#define ARCH_IS_BIG_ENDIAN 0
++#define ARCH_PTRS_ARE_SIGNED 0
++#define ARCH_FLOATS_ARE_IEEE 1
++#define ARCH_ARITH_RSHIFT 2
++#define ARCH_DIV_NEG_POS_TRUNCATES 1
++

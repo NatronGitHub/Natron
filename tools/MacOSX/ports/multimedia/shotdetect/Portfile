@@ -1,0 +1,31 @@
+# $Id: Portfile 31701 2007-12-03 17:44:25Z ryandesign@macports.org $
+
+PortSystem 1.0
+name		shotdetect
+version	1.0.86
+categories	multimedia
+maintainers	frederic.devernay@m4x.org
+description	A free software (LGPL) which is able to detect shots and scenes in a movie.
+
+long_description	\
+Shotdetect is a free software (LGPL) which is able to detect shots and scenes in a movie. \
+The result produced is a simple XML file containing all the informations about the movie generated. \
+To contact the project manager, send an email to : \
+johan dot mathe at nonutc dot fr
+
+homepage	http://shotdetect.nonutc.fr/
+checksums           md5     859b9380febd239247787ef6273f15a2 \
+                    sha1    99fab85e06d3cab3f3cc5ce1a0e298f530db67ee \
+                    rmd160  f4e1aca7a70dcb751a6d17ca9a22655af34540e4
+master_sites	http://shotdetect.nonutc.fr/releases/
+
+depends_build	
+depends_lib 	port:ffmpeg \
+		port:gd2 \
+		port:libxml2 \
+		port:libxslt
+
+patchfiles	ffmpeg-devel.diff
+
+configure.args --mandir=${prefix}/share/man
+

@@ -1,0 +1,25 @@
+--- src/corelib/global/qlibraryinfo.cpp.orig	2012-04-23 14:49:04.000000000 -0400
++++ src/corelib/global/qlibraryinfo.cpp	2012-04-20 22:59:34.000000000 -0400
+@@ -262,6 +262,11 @@
+             path = QT_CONFIGURE_LIBRARIES_PATH;
+             break;
+ #endif
++#ifdef QT_CONFIGURE_FRAMEWORKS_PATH
++        case FrameworksPath:
++            path = QT_CONFIGURE_FRAMEWORKS_PATH;
++            break;
++#endif
+ #ifdef QT_CONFIGURE_BINARIES_PATH
+         case BinariesPath:
+             path = QT_CONFIGURE_BINARIES_PATH;
+@@ -327,6 +332,10 @@
+             key = QLatin1String("Libraries");
+             defaultValue = QLatin1String("lib");
+             break;
++        case FrameworksPath:
++            key = QLatin1String("Frameworks");
++            defaultValue = QLatin1String("Library/Frameworks");
++            break;
+         case BinariesPath:
+             key = QLatin1String("Binaries");
+             defaultValue = QLatin1String("bin");

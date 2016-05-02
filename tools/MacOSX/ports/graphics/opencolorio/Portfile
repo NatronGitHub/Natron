@@ -1,0 +1,90 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem 1.0
+PortGroup        github 1.0
+PortGroup        cmake 1.0
+PortGroup        muniversal 1.0
+
+epoch        	 1
+
+# As of 20140921, there is no 1.0.10 release, and OCIO 1.0.9 doesn't build against yaml 0.5.1,
+# and doesn't build universal with the included yaml-cpp 0.3,
+# so we have to fetch a version from the github.
+github.setup     imageworks OpenColorIO a557a85454ee1ffa8cb66f8a96238e079c452f08
+version 1.0.9.20140912
+
+#github.setup     imageworks OpenColorIO 1.0.9 v
+##github.version      ${version}-dist
+##github.tarball_from downloads
+##fetch.type              standard
+name             opencolorio
+categories       graphics
+platforms           darwin
+license          BSD
+maintainers      openmaintainer
+description      OpenImageIO is a library for reading and writing images
+long_description ${description}
+homepage         http://opencolorio.org
+
+checksums           rmd160  ef018efd11a1a2178cfab39f031430f3336ed9a4 \
+                    sha256  736edf9c9cdd2b5b318184ce5f224686ba1ba570dcb37bacd735c5072bfb45ef
+
+depends_lib      port:lcms2 port:tinyxml port:boost port:yaml-cpp
+
+pre-extract		"file mkdir ${workpath}/${worksrcdir}"
+
+patchfiles opencolorio-includes.diff
+patch.pre_args	-p1
+
+configure.args-append \
+    -DOCIO_BUILD_JNIGLUE=OFF \
+ 	-DOCIO_BUILD_NUKE=OFF \
+ 	-DOCIO_BUILD_SHARED=ON \
+ 	-DOCIO_BUILD_STATIC=OFF \
+ 	-DOCIO_STATIC_JNIGLUE=OFF \
+ 	-DOCIO_BUILD_TRUELIGHT=OFF \
+ 	-DUSE_EXTERNAL_LCMS=ON \
+ 	-DUSE_EXTERNAL_TINYXML=ON \
+ 	-DUSE_EXTERNAL_YAML=ON \
+    -DOCIO_BUILD_APPS=OFF \
+    -DOCIO_USE_BOOST_PTR=ON \
+    -DAPPLE=OFF
+
+if {[variant_isset universal]} {
+    set merger_configure_args(x86_64) "-DOCIO_USE_SSE=ON"
+    set merger_configure_args(i386)   "-DOCIO_USE_SSE=ON"
+    set merger_configure_args(ppc)    "-DOCIO_USE_SSE=OFF"
+    set merger_configure_args(ppc64)  "-DOCIO_USE_SSE=OFF"
+} else {
+    switch -- ${configure.build_arch} {
+        x86_64 { configure.args-append "-DOCIO_USE_SSE=ON" }
+        i386   { configure.args-append "-DOCIO_USE_SSE=ON" }
+        ppc    { configure.args-append "-DOCIO_USE_SSE=OFF" }
+        ppc64  { configure.args-append "-DOCIO_USE_SSE=OFF" }
+    }
+}
+
+# The default post-extract from github-1.0.tcl doesn't work because worksrcpath doesn't exist
+pre-extract {
+    delete ${worksrcpath}
+}
+post-extract {
+#    move [glob ${workpath}/${github.author}-${github.project}-*] ${worksrcpath}
+}
+
+variant apps description {Build apps.} {
+    configure.args-delete -DOCIO_BUILD_APPS=OFF
+    configure.args-append -DOCIO_BUILD_APPS=ON
+    depends_lib-append port:openimageio port:glew
+}
+
+#77 	$(cmake-utils_use doc OCIO_BUILD_DOCS)
+#78 	$(cmake-utils_use opengl OCIO_BUILD_APPS)
+#79 	$(cmake-utils_use pdf OCIO_BUILD_PDF_DOCS)
+#80 	$(cmake-utils_use python OCIO_BUILD_PYGLUE)
+#81 	$(cmake-utils_use sse2 OCIO_USE_SSE)
+#82 	$(cmake-utils_use test OCIO_BUILD_TESTS)
+#configure.args   --enable-bsdtar=shared --enable-bsdcpio=shared \
+#                 --without-lzmadec --without-lzma
+#use_autoreconf	yes

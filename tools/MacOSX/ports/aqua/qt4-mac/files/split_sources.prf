@@ -1,0 +1,52 @@
+# move Obective C and C++ files from SOURCES to OBJECTIVE_SOURCES
+
+for(source, SOURCES) {
+    contains(source,.*\\.m$) {
+        warning(Objective-C source \'$$source\' found in SOURCES but should be in OBJECTIVE_SOURCES)
+        SOURCES -= $$source
+        OBJECTIVE_SOURCES += $$source
+    } else {
+        contains(source,.*\\.mm$) {
+            warning(Objective-C++ source \'$$source\' found in SOURCES but should be in OBJECTIVE_SOURCES)
+            SOURCES -= $$source
+            OBJECTIVE_SOURCES += $$source
+ 	}
+    }
+}
+
+# move C and C++ files from OBJECTIVE_SOURCES to SOURCES
+
+for(source, OBJECTIVE_SOURCES) {
+    contains(source,.*\\.c$) {
+        warning(C source \'$$source\' found in SOURCES but should be in SOURCES)
+        OBJECTIVE_SOURCES -= $$source
+        SOURCES += $$source
+    } else {
+      	contains(source,.*\\.cc$) {
+            warning(C++ source \'$$source\' found in SOURCES but should be in SOURCES)
+            OBJECTIVE_SOURCES -= $$source
+            SOURCES += $$source
+        } else {
+    	    contains(source,.*\\.cpp$) {
+	        warning(C++ source \'$$source\' found in SOURCES but should be in SOURCES)
+		OBJECTIVE_SOURCES -= $$source
+		SOURCES += $$source
+            }
+        }
+    }
+}
+
+# split Objective C and C++ sources into their own variables
+
+for(source, OBJECTIVE_SOURCES) {
+    contains(source,.*\\.mm$) {
+        OBJECTIVE_CXX_SOURCES += $$source
+    } else {
+        contains(source,.*\\.m$) {
+            OBJECTIVE_C_SOURCES += $$source
+        } else {
+            warning(Source \'$$source\' was found in OBJECTIVE_SOURCES but its file extension is not a typical objective C (\'.m\') or C++ (\'.mm\') extension; assuming Objective C.)
+            OBJECTIVE_C_SOURCES += $$source
+	}
+    }
+}

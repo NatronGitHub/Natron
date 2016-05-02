@@ -1,0 +1,28 @@
+diff --git a/src/SeExpr/SeExprFunc.cpp b/src/SeExpr/SeExprFunc.cpp
+index feb6b45..8269b39 100644
+--- a/src/SeExpr/SeExprFunc.cpp
++++ b/src/SeExpr/SeExprFunc.cpp
+@@ -208,7 +208,7 @@ SeExprFunc::getDocString(const char* functionName)
+
+ #ifndef SEEXPR_WIN32
+
+-#ifdef __APPLE__
++#if defined(__APPLE__) && __MAC_OS_X_VERSION_MIN_REQUIRED <= 1070
+ static int MatchPluginName(struct dirent* dir)
+ #else
+ static int MatchPluginName(const struct dirent* dir)
+diff --git a/src/SeExpr/SePlatform.h b/src/SeExpr/SePlatform.h
+index 32a6b96..82b0f44 100644
+--- a/src/SeExpr/SePlatform.h
++++ b/src/SeExpr/SePlatform.h
+@@ -40,6 +40,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+     @brief Platform-specific classes, functions, and includes.
+ */
+
++#ifdef __APPLE__
++#    include <Availability.h>
++#endif
++
+ // platform-specific includes
+ #if defined(_WIN32) || defined(_WINDOWS) || defined(_MSC_VER)
+ #    ifndef WINDOWS

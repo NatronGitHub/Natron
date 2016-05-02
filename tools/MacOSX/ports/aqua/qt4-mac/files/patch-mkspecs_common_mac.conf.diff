@@ -1,0 +1,23 @@
+--- mkspecs/common/mac.conf.orig	2012-08-14 15:49:12.000000000 -0400
++++ mkspecs/common/mac.conf	2012-08-14 15:49:25.000000000 -0400
+@@ -9,6 +9,7 @@
+ QMAKE_LIBDIR		=
+ QMAKE_INCDIR_QT		= $$[QT_INSTALL_HEADERS]
+ QMAKE_LIBDIR_QT		= $$[QT_INSTALL_LIBS]
++QMAKE_FRAMEWORKDIR_QT	= $$[QT_INSTALL_FRAMEWORKS]
+ QMAKE_INCDIR_OPENGL	= /System/Library/Frameworks/OpenGL.framework/Headers \
+ 	/System/Library/Frameworks/AGL.framework/Headers/
+ 
+@@ -38,7 +39,11 @@
+ QMAKE_DEL_DIR		= rmdir
+ QMAKE_CHK_DIR_EXISTS	= test -d
+ QMAKE_MKDIR		= mkdir -p
+-QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.4 # overridden to 10.5 for Cocoa on the compiler command line
++QMAKE_MACOSX_DEPLOYMENT_TARGET = @MACOSX_DEPLOYMENT_TARGET@
+ 
++# allow CC and CXX to use CCACHE;
++# use "make CCACHE=ccache" when building
++QMAKE_CC = $(CCACHE) $$QMAKE_CC
++QMAKE_CXX = $(CCACHE) $$QMAKE_CXX
+ 
+ include(unix.conf)

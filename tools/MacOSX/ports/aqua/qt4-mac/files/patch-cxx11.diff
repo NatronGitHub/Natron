@@ -1,0 +1,594 @@
+--- src/gui/kernel/qcursor_mac.mm.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/gui/kernel/qcursor_mac.mm	2013-01-22 16:05:57.000000000 -0500
+@@ -367,7 +367,7 @@
+     type = QCursorData::TYPE_ImageCursor;
+     curs.cp.my_cursor = true;
+     QPixmap bmCopy = QPixmap::fromImage(finalCursor);
+-    NSPoint hotSpot = { hx, hy };
++    NSPoint hotSpot = { (CGFloat) hx, (CGFloat) hy };
+     nsimage = static_cast<NSImage*>(qt_mac_create_nsimage(bmCopy));
+     curs.cp.nscursor = [[NSCursor alloc] initWithImage:nsimage hotSpot: hotSpot];
+     [nsimage release];
+@@ -377,7 +377,7 @@
+ {
+     type = QCursorData::TYPE_ImageCursor;
+     curs.cp.my_cursor = true;
+-    NSPoint hotSpot = { hx, hy };
++    NSPoint hotSpot = { (CGFloat) hx, (CGFloat) hy };
+     NSImage *nsimage;
+     nsimage = static_cast<NSImage *>(qt_mac_create_nsimage(pixmap));
+     curs.cp.nscursor = [[NSCursor alloc] initWithImage:nsimage hotSpot: hotSpot];
+--- src/gui/kernel/qcocoaview_mac.mm.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/gui/kernel/qcocoaview_mac.mm	2013-01-22 16:05:57.000000000 -0500
+@@ -1352,7 +1352,7 @@
+     // Save supported actions:
+     [theView setSupportedActions: qt_mac_mapDropActions(dragPrivate()->possible_actions)];
+     QPoint pointInView = [theView qt_qwidget]->mapFromGlobal(dndParams->globalPoint);
+-    NSPoint imageLoc = {pointInView.x() - hotspot.x(), pointInView.y() + pix.height() - hotspot.y()};
++    NSPoint imageLoc = {(CGFloat)(pointInView.x() - hotspot.x()), (CGFloat)(pointInView.y() + pix.height() - hotspot.y())};
+     NSSize mouseOffset = {0.0, 0.0};
+     NSPasteboard *pboard = [NSPasteboard pasteboardWithName:NSDragPboard];
+     dragPrivate()->executed_action = Qt::ActionMask;
+--- src/gui/kernel/qt_cocoa_helpers_mac.mm.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/gui/kernel/qt_cocoa_helpers_mac.mm	2013-01-22 16:05:57.000000000 -0500
+@@ -459,17 +459,17 @@
+ {
+     NSEvent *proximityEvent = static_cast<NSEvent *>(tabletEvent);
+     // simply construct a Carbon proximity record and handle it all in one spot.
+-    TabletProximityRec carbonProximityRec = { [proximityEvent vendorID],
+-                                              [proximityEvent tabletID],
+-                                              [proximityEvent pointingDeviceID],
+-                                              [proximityEvent deviceID],
+-                                              [proximityEvent systemTabletID],
+-                                              [proximityEvent vendorPointingDeviceType],
+-                                              [proximityEvent pointingDeviceSerialNumber],
++    TabletProximityRec carbonProximityRec = {(UInt16) [proximityEvent vendorID],
++                                              (UInt16) [proximityEvent tabletID],
++                                              (UInt16) [proximityEvent pointingDeviceID],
++                                              (UInt16) [proximityEvent deviceID],
++                                              (UInt16) [proximityEvent systemTabletID],
++                                              (UInt16) [proximityEvent vendorPointingDeviceType],
++                                              (UInt32) [proximityEvent pointingDeviceSerialNumber],
+                                               [proximityEvent uniqueID],
+-                                              [proximityEvent capabilityMask],
+-                                              [proximityEvent pointingDeviceType],
+-                                              [proximityEvent isEnteringProximity] };
++                                              (UInt32) [proximityEvent capabilityMask],
++					      (UInt8) [proximityEvent pointingDeviceType],
++					      (UInt8) [proximityEvent isEnteringProximity] };
+     qt_dispatchTabletProximityEvent(carbonProximityRec);
+ }
+ #endif // QT_MAC_USE_COCOA
+--- src/gui/accessible/qaccessible_mac.mm.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/gui/accessible/qaccessible_mac.mm	2013-01-22 16:05:57.000000000 -0500
+@@ -266,129 +266,129 @@
+     int qt;
+     QAXRoleType mac;
+     bool settable;
+-} text_bindings[][10] = {
++} text_bindings[][3] = {
+     { { QAccessible::MenuItem, QAXMenuItemRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::MenuBar, QAXMenuBarRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ScrollBar, QAXScrollBarRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Grip, QAXGrowAreaRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Window, QAXWindowRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Dialog, QAXWindowRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::AlertMessage, QAXWindowRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ToolTip, QAXWindowRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::HelpBalloon, QAXWindowRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::PopupMenu, QAXMenuRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Application, QAXApplicationRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Pane, QAXGroupRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Grouping, QAXGroupRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Separator, QAXSplitterRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ToolBar, QAXToolbarRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::PageTab, QAXRadioButtonRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ButtonMenu, QAXMenuButtonRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ButtonDropDown, QAXPopUpButtonRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::SpinBox, QAXIncrementorRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Slider, QAXSliderRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ProgressBar, QAXProgressIndicatorRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ComboBox, QAXPopUpButtonRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::RadioButton, QAXRadioButtonRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::CheckBox, QAXCheckBoxRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::StaticText, QAXStaticTextRole, false },
+       { QAccessible::Name, QAXValueAttribute, false },
+       { -1, 0, false }
+     },
+     { { QAccessible::Table, QAXTableRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::StatusBar, QAXStaticTextRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Column, QAXColumnRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ColumnHeader, QAXColumnRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Row, QAXRowRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::RowHeader, QAXRowRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Cell, QAXTextFieldRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::PushButton, QAXButtonRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::EditableText, QAXTextFieldRole, true },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Link, QAXTextFieldRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Indicator, QAXValueIndicatorRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Splitter, QAXSplitGroupRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::List, QAXListRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::ListItem, QAXStaticTextRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+     { { QAccessible::Cell, QAXStaticTextRole, false },
+-      { -1, 0, false }
++      { -1, 0, false }, { -1, 0, false }
+     },
+-    { { -1, 0, false } }
++    { { -1, 0, false }, { -1, 0, false }, { -1, 0, false } }
+ };
+ 
+ class QAInterface;
+--- src/gui/styles/qmacstyle_mac.mm.orig	2013-01-22 19:50:08.000000000 -0500
++++ src/gui/styles/qmacstyle_mac.mm	2013-01-22 19:55:50.000000000 -0500
+@@ -3466,8 +3466,8 @@
+                     tti.version = qt_mac_hitheme_version;
+                     tti.state = tds;
+                     QColor textColor = btn->palette.buttonText().color();
+-                    CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                          textColor.blueF(), textColor.alphaF() };
++                    CGFloat colorComp[] = { CGFloat(textColor.redF()), CGFloat(textColor.greenF()),
++					    CGFloat(textColor.blueF()), CGFloat(textColor.alphaF()) };
+                     CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                     CGContextSetFillColor(cg, colorComp);
+                     tti.fontID = themeId;
+@@ -3708,8 +3708,8 @@
+                 tti.version = qt_mac_hitheme_version;
+                 tti.state = tds;
+                 QColor textColor = myTab.palette.windowText().color();
+-                CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                        textColor.blueF(), textColor.alphaF() };
++                CGFloat colorComp[] = { CGFloat(textColor.redF()), CGFloat(textColor.greenF()),
++                                        CGFloat(textColor.blueF()), CGFloat(textColor.alphaF()) };
+                 CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                 CGContextSetFillColor(cg, colorComp);
+                 switch (d->aquaSizeConstrain(opt, w)) {
+@@ -3898,8 +3898,8 @@
+                 CGContextSetShouldAntialias(cg, true);
+                 CGContextSetShouldSmoothFonts(cg, true);
+                 QColor textColor = p->pen().color();
+-                CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                      textColor.blueF(), textColor.alphaF() };
++                CGFloat colorComp[] = { CGFloat(textColor.redF()), CGFloat(textColor.greenF()),
++					CGFloat(textColor.blueF()), CGFloat(textColor.alphaF()) };
+                 CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                 CGContextSetFillColor(cg, colorComp);
+                 HIThemeTextInfo tti;
+@@ -5034,8 +5034,8 @@
+                 tti.version = qt_mac_hitheme_version;
+                 tti.state = tds;
+                 QColor textColor = groupBox->palette.windowText().color();
+-                CGFloat colorComp[] = { textColor.redF(), textColor.greenF(),
+-                                      textColor.blueF(), textColor.alphaF() };
++                CGFloat colorComp[] = { CGFloat(textColor.redF()), CGFloat(textColor.greenF()),
++					CGFloat(textColor.blueF()), CGFloat(textColor.alphaF()) };
+                 CGContextSetFillColorSpace(cg, QCoreGraphicsPaintEngine::macGenericColorSpace());
+                 CGContextSetFillColor(cg, colorComp);
+                 tti.fontID = checkable ? kThemeSystemFont : kThemeSmallSystemFont;
+--- src/gui/text/qtextdocument_p.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/gui/text/qtextdocument_p.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -63,7 +63,15 @@
+ // The VxWorks DIAB compiler crashes when initializing the anonymouse union with { a7 }
+ #if !defined(Q_CC_DIAB)
+ #  define QT_INIT_TEXTUNDOCOMMAND(c, a1, a2, a3, a4, a5, a6, a7, a8) \
+-          QTextUndoCommand c = { a1, a2, 0, 0, quint8(a3), a4, quint32(a5), quint32(a6), { int(a7) }, quint32(a8) }
++  QTextUndoCommand c; \
++  c.command = a1; \
++  c.block_part = a2; \
++  c.operation = a3; \
++  c.format = a4; \
++  c.strPos = a5; \
++  c.pos = a6; \
++  c.length = a7; \
++  c.revision = a8;
+ #else
+ #  define QT_INIT_TEXTUNDOCOMMAND(c, a1, a2, a3, a4, a5, a6, a7, a8) \
+           QTextUndoCommand c = { a1, a2, 0, 0, a3, a4, a5, a6 }; c.blockFormat = a7; c.revision = a8
+--- src/gui/widgets/qdialogbuttonbox.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/gui/widgets/qdialogbuttonbox.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -212,7 +212,7 @@
+     return QDialogButtonBox::InvalidRole;
+ }
+ 
+-static const uint layouts[2][5][14] =
++static const UInt32 layouts[2][5][14] =
+ {
+     // Qt::Horizontal
+     {
+@@ -407,7 +407,7 @@
+             tmpPolicy = 4;  // Mac modeless
+     }
+ 
+-    const uint *currentLayout = layouts[orientation == Qt::Vertical][tmpPolicy];
++    const UInt32 *currentLayout = layouts[orientation == Qt::Vertical][tmpPolicy];
+ 
+     if (center)
+         buttonLayout->addStretch();
+@@ -415,7 +415,7 @@
+     QList<QAbstractButton *> acceptRoleList = buttonLists[AcceptRole];
+ 
+     while (*currentLayout != EOL) {
+-        int role = (*currentLayout & ~Reverse);
++        UInt32 role = (*currentLayout & ~Reverse);
+         bool reverse = (*currentLayout & Reverse);
+ 
+         switch (role) {
+--- src/qt3support/other/q3dragobject.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/qt3support/other/q3dragobject.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -1495,9 +1495,9 @@
+ 
+ void Q3ColorDrag::setColor(const QColor &col)
+ {
+-    short r = (col.red()   << 8) | col.red();
+-    short g = (col.green() << 8) | col.green();
+-    short b = (col.blue()  << 8) | col.blue();
++    ushort r = (col.red()   << 8) | col.red();
++    ushort g = (col.green() << 8) | col.green();
++    ushort b = (col.blue()  << 8) | col.blue();
+ 
+     // make sure we transmit data in network order
+     r = htons(r);
+--- src/openvg/qpaintengine_vg.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/openvg/qpaintengine_vg.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -971,23 +971,23 @@
+     yRadius = qMin(yRadius, rect.height() / 2);
+ 
+     VGfloat pts[] = {
+-        x1 + xRadius, y1,                   // MoveTo
+-        x2 - xRadius, y1,                   // LineTo
+-        x2 - (1 - KAPPA) * xRadius, y1,     // CurveTo
+-        x2, y1 + (1 - KAPPA) * yRadius,
+-        x2, y1 + yRadius,
+-        x2, y2 - yRadius,                   // LineTo
+-        x2, y2 - (1 - KAPPA) * yRadius,     // CurveTo
+-        x2 - (1 - KAPPA) * xRadius, y2,
+-        x2 - xRadius, y2,
+-        x1 + xRadius, y2,                   // LineTo
+-        x1 + (1 - KAPPA) * xRadius, y2,     // CurveTo
+-        x1, y2 - (1 - KAPPA) * yRadius,
+-        x1, y2 - yRadius,
+-        x1, y1 + yRadius,                   // LineTo
+-        x1, y1 + (1 - KAPPA) * yRadius,     // CurveTo
+-        x1 + (1 - KAPPA) * xRadius, y1,
+-        x1 + xRadius, y1
++      VGfloat(x1 + xRadius), VGfloat(y1),                   // MoveTo
++      VGfloat(x2 - xRadius), VGfloat(y1),                   // LineTo
++      VGfloat(x2 - (1 - KAPPA) * xRadius), VGfloat(y1),     // CurveTo
++      VGfloat(x2), VGfloat(y1 + (1 - KAPPA) * yRadius),
++      VGfloat(x2), VGfloat(y1 + yRadius),
++      VGfloat(x2), VGfloat(y2 - yRadius),                   // LineTo
++      VGfloat(x2), VGfloat(y2 - (1 - KAPPA) * yRadius),     // CurveTo
++      VGfloat(x2 - (1 - KAPPA) * xRadius), VGfloat(y2),
++      VGfloat(x2 - xRadius), VGfloat(y2),
++      VGfloat(x1 + xRadius), VGfloat(y2),                   // LineTo
++      VGfloat(x1 + (1 - KAPPA) * xRadius), VGfloat(y2),     // CurveTo
++      VGfloat(x1), VGfloat(y2 - (1 - KAPPA) * yRadius),
++      VGfloat(x1), VGfloat(y2 - yRadius),
++      VGfloat(x1), VGfloat(y1 + yRadius),                   // LineTo
++      VGfloat(x1), VGfloat(y1 + (1 - KAPPA) * yRadius),     // CurveTo
++      VGfloat(x1 + (1 - KAPPA) * xRadius), VGfloat(y1),
++      VGfloat(x1 + xRadius), VGfloat(y1)
+     };
+ 
+ #if !defined(QVG_NO_MODIFY_PATH)
+@@ -3207,7 +3207,7 @@
+         1.0f, 0.0f, 0.0f, 0.0f,
+         0.0f, 1.0f, 0.0f, 0.0f,
+         0.0f, 0.0f, 1.0f, 0.0f,
+-        0.0f, 0.0f, 0.0f, d->opacity,
++        0.0f, 0.0f, 0.0f, VGfloat(d->opacity),
+         0.0f, 0.0f, 0.0f, 0.0f
+     };
+     VGImage tileWithOpacity = VG_INVALID_HANDLE;
+--- src/openvg/qpixmapdata_vg.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/openvg/qpixmapdata_vg.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -421,7 +421,7 @@
+             1.0f, 0.0f, 0.0f, 0.0f,
+             0.0f, 1.0f, 0.0f, 0.0f,
+             0.0f, 0.0f, 1.0f, 0.0f,
+-            0.0f, 0.0f, 0.0f, opacity,
++            0.0f, 0.0f, 0.0f, VGfloat(opacity),
+             0.0f, 0.0f, 0.0f, 0.0f
+         };
+         vgColorMatrix(vgImageOpacity, vgImage, matrix);
+--- src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.h.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.h	2013-01-22 16:05:57.000000000 -0500
+@@ -176,7 +176,7 @@
+             // Node::emitCode assumes that dst, if provided, is either a local or a referenced temporary.
+             ASSERT(!dst || dst == ignoredResult() || !dst->isTemporary() || dst->refCount());
+             if (!m_codeBlock->numberOfLineInfos() || m_codeBlock->lastLineInfo().lineNumber != n->lineNo()) {
+-                LineInfo info = { instructions().size(), n->lineNo() };
++	      LineInfo info = { uint32_t(instructions().size()), int32_t(n->lineNo()) };
+                 m_codeBlock->addLineInfo(info);
+             }
+             if (m_emitNodeDepth >= s_maxEmitNodeDepth)
+@@ -195,7 +195,7 @@
+         void emitNodeInConditionContext(ExpressionNode* n, Label* trueTarget, Label* falseTarget, bool fallThroughMeansTrue)
+         {
+             if (!m_codeBlock->numberOfLineInfos() || m_codeBlock->lastLineInfo().lineNumber != n->lineNo()) {
+-                LineInfo info = { instructions().size(), n->lineNo() };
++	      LineInfo info = { uint32_t(instructions().size()), int32_t(n->lineNo()) };
+                 m_codeBlock->addLineInfo(info);
+             }
+             if (m_emitNodeDepth >= s_maxEmitNodeDepth)
+--- src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/javascriptcore/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -1835,7 +1835,7 @@
+ RegisterID* BytecodeGenerator::emitCatch(RegisterID* targetRegister, Label* start, Label* end)
+ {
+ #if ENABLE(JIT)
+-    HandlerInfo info = { start->bind(0, 0), end->bind(0, 0), instructions().size(), m_dynamicScopeDepth + m_baseScopeDepth, CodeLocationLabel() };
++  HandlerInfo info = { uint32_t(start->bind(0, 0)), uint32_t(end->bind(0, 0)), uint32_t(instructions().size()), uint32_t(m_dynamicScopeDepth + m_baseScopeDepth), CodeLocationLabel() };
+ #else
+     HandlerInfo info = { start->bind(0, 0), end->bind(0, 0), instructions().size(), m_dynamicScopeDepth + m_baseScopeDepth };
+ #endif
+@@ -1889,7 +1889,7 @@
+ 
+ void BytecodeGenerator::beginSwitch(RegisterID* scrutineeRegister, SwitchInfo::SwitchType type)
+ {
+-    SwitchInfo info = { instructions().size(), type };
++  SwitchInfo info = { uint32_t(instructions().size()), type };
+     switch (type) {
+         case SwitchInfo::SwitchImmediate:
+             emitOpcode(op_switch_imm);
+--- src/3rdparty/javascriptcore/JavaScriptCore/runtime/Identifier.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/javascriptcore/JavaScriptCore/runtime/Identifier.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -195,7 +195,7 @@
+         UString::Rep::empty().hash();
+         return &UString::Rep::empty();
+     }
+-    UCharBuffer buf = {s, length}; 
++    UCharBuffer buf = {s, (unsigned int) length}; 
+     pair<HashSet<UString::Rep*>::iterator, bool> addResult = globalData->identifierTable->add<UCharBuffer, UCharBufferTranslator>(buf);
+ 
+     // If the string is newly-translated, then we need to adopt it.
+--- src/3rdparty/javascriptcore/JavaScriptCore/runtime/JSONObject.cpp.orig	2014-05-01 10:03:45.000000000 -0400
++++ src/3rdparty/javascriptcore/JavaScriptCore/runtime/JSONObject.cpp	2014-05-01 10:06:59.000000000 -0400
+@@ -320,7 +320,7 @@
+             default:
+                 static const char hexDigits[] = "0123456789abcdef";
+                 UChar ch = data[i];
+-                UChar hex[] = { '\\', 'u', hexDigits[(ch >> 12) & 0xF], hexDigits[(ch >> 8) & 0xF], hexDigits[(ch >> 4) & 0xF], hexDigits[ch & 0xF] };
++                UChar hex[] = { '\\', 'u', (UChar) hexDigits[(ch >> 12) & 0xF], (UChar) hexDigits[(ch >> 8) & 0xF], (UChar) hexDigits[(ch >> 4) & 0xF], (UChar) hexDigits[ch & 0xF] };
+                 builder.append(hex, sizeof(hex) / sizeof(UChar));
+                 break;
+         }
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/NullPtr.h.orig	2014-04-10 14:37:11.000000000 -0400
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/NullPtr.h	2014-05-01 10:22:02.000000000 -0400
+@@ -31,16 +31,22 @@
+ // nullptr_t type and nullptr object. They are defined in the same namespaces they
+ // would be in compiler and library that had the support.
+ 
+-#ifndef __has_feature
+-    #define __has_feature(feature) 0
+-#endif
++#if (__cplusplus >= 201103L) || defined(__GXX_EXPERIMENTAL_CXX0X__)
++
++#include <cstddef>
+ 
+-#if __has_feature(cxx_nullptr) || (GCC_VERSION_AT_LEAST(4, 6, 0) && defined(__GXX_EXPERIMENTAL_CXX0X__)) || (defined(_MSC_VER) && _MSC_VER >= 1600 && !COMPILER(INTEL)) || defined(_LIBCPP_VERSION)
++// libstdc++ supports nullptr_t starting with gcc 4.6.
++#if defined(__GLIBCXX__) && __GLIBCXX__ < 20110325
++namespace std {
++typedef decltype(nullptr) nullptr_t;
++}
++#endif
+ 
+ #define HAVE_NULLPTR 1
+ 
+ #else
+ 
++#warning "reverting to non NULLPTR"
+ namespace std {
+     class nullptr_t { };
+ }
+--- src/3rdparty/webkit/Source/JavaScriptCore/wtf/text/AtomicString.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/webkit/Source/JavaScriptCore/wtf/text/AtomicString.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -301,7 +301,7 @@
+     if (!length)
+         return StringImpl::empty();
+ 
+-    UCharBuffer buffer = { s, length };
++    UCharBuffer buffer = { s, (unsigned int) length };
+     return addToStringTable<UCharBuffer, UCharBufferTranslator>(buffer);
+ }
+ 
+--- src/3rdparty/webkit/Source/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/webkit/Source/JavaScriptCore/bytecompiler/BytecodeGenerator.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -2058,7 +2058,7 @@
+ {
+     m_usesExceptions = true;
+ #if ENABLE(JIT)
+-    HandlerInfo info = { start->bind(0, 0), end->bind(0, 0), instructions().size(), m_dynamicScopeDepth + m_baseScopeDepth, CodeLocationLabel() };
++    HandlerInfo info = { uint32_t(start->bind(0, 0)), uint32_t(end->bind(0, 0)), uint32_t(instructions().size()), uint32_t(m_dynamicScopeDepth + m_baseScopeDepth), CodeLocationLabel() };
+ #else
+     HandlerInfo info = { start->bind(0, 0), end->bind(0, 0), instructions().size(), m_dynamicScopeDepth + m_baseScopeDepth };
+ #endif
+@@ -2107,7 +2107,7 @@
+ 
+ void BytecodeGenerator::beginSwitch(RegisterID* scrutineeRegister, SwitchInfo::SwitchType type)
+ {
+-    SwitchInfo info = { instructions().size(), type };
++    SwitchInfo info = { uint32_t(instructions().size()), type };
+     switch (type) {
+         case SwitchInfo::SwitchImmediate:
+             emitOpcode(op_switch_imm);
+--- src/3rdparty/webkit/Source/JavaScriptCore/runtime/Identifier.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/webkit/Source/JavaScriptCore/runtime/Identifier.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -222,7 +222,7 @@
+     }
+     if (!length)
+         return StringImpl::empty();
+-    UCharBuffer buf = {s, length}; 
++    UCharBuffer buf = {s, (unsigned int) length}; 
+     pair<HashSet<StringImpl*>::iterator, bool> addResult = globalData->identifierTable->add<UCharBuffer, IdentifierUCharBufferTranslator>(buf);
+ 
+     // If the string is newly-translated, then we need to adopt it.
+--- src/3rdparty/webkit/Source/JavaScriptCore/runtime/StringPrototype.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/webkit/Source/JavaScriptCore/runtime/StringPrototype.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -463,7 +463,7 @@
+     }
+     
+     size_t matchEnd = matchPos + matchLen;
+-    int ovector[2] = { matchPos, matchEnd };
++    int ovector[2] = { int (matchPos), int (matchEnd) };
+     return JSValue::encode(jsString(exec, source.substringSharingImpl(0, matchPos), substituteBackreferences(replacementString, source, ovector, 0), source.substringSharingImpl(matchEnd)));
+ }
+ 
+--- src/3rdparty/webkit/Source/JavaScriptCore/runtime/JSONObject.cpp.orig	2014-05-01 10:33:20.000000000 -0400
++++ src/3rdparty/webkit/Source/JavaScriptCore/runtime/JSONObject.cpp	2014-05-01 10:34:03.000000000 -0400
+@@ -335,7 +335,7 @@
+             default:
+                 static const char hexDigits[] = "0123456789abcdef";
+                 UChar ch = data[i];
+-                UChar hex[] = { '\\', 'u', hexDigits[(ch >> 12) & 0xF], hexDigits[(ch >> 8) & 0xF], hexDigits[(ch >> 4) & 0xF], hexDigits[ch & 0xF] };
++                UChar hex[] = { '\\', 'u', (UChar) hexDigits[(ch >> 12) & 0xF], (UChar) hexDigits[(ch >> 8) & 0xF], (UChar) hexDigits[(ch >> 4) & 0xF], (UChar) hexDigits[ch & 0xF] };
+                 builder.append(hex, WTF_ARRAY_LENGTH(hex));
+                 break;
+         }
+--- src/3rdparty/webkit/Source/WebCore/dom/DocumentMarkerController.cpp.orig	2013-01-22 16:04:44.000000000 -0500
++++ src/3rdparty/webkit/Source/WebCore/dom/DocumentMarkerController.cpp	2013-01-22 16:05:57.000000000 -0500
+@@ -59,7 +59,7 @@
+     for (TextIterator markedText(range); !markedText.atEnd(); markedText.advance()) {
+         RefPtr<Range> textPiece = markedText.range();
+         int exception = 0;
+-        DocumentMarker marker = {type, textPiece->startOffset(exception), textPiece->endOffset(exception), description, false};
++        DocumentMarker marker = {type, (unsigned int) textPiece->startOffset(exception), (unsigned int) textPiece->endOffset(exception), description, false};
+         addMarker(textPiece->startContainer(exception), marker);
+     }
+ }
+--- src/3rdparty/webkit/Source/WebCore/dom/Element.cpp.orig	2014-05-01 10:46:05.000000000 -0400
++++ src/3rdparty/webkit/Source/WebCore/dom/Element.cpp	2014-05-01 10:52:18.000000000 -0400
+@@ -1080,7 +1080,7 @@
+ {
+     // Ref currentStyle in case it would otherwise be deleted when setRenderStyle() is called.
+     RefPtr<RenderStyle> currentStyle(renderStyle());
+-    bool hasParentStyle = parentNodeForRenderingAndStyle() ? parentNodeForRenderingAndStyle()->renderStyle() : false;
++    bool hasParentStyle = parentNodeForRenderingAndStyle() ? (parentNodeForRenderingAndStyle()->renderStyle() != NULL) : false;
+     bool hasDirectAdjacentRules = currentStyle && currentStyle->childrenAffectedByDirectAdjacentRules();
+     bool hasIndirectAdjacentRules = currentStyle && currentStyle->childrenAffectedByForwardPositionalRules();
+ 
+--- src/plugins/accessible/widgets/itemviews.cpp.orig	2014-05-01 12:08:45.000000000 -0400
++++ src/plugins/accessible/widgets/itemviews.cpp	2014-05-01 12:28:22.000000000 -0400
+@@ -393,7 +393,7 @@
+     QModelIndex index = view()->model()->index(0, column, view()->rootIndex());
+     if (!index.isValid() || view()->selectionMode() & QAbstractItemView::NoSelection)
+         return false;
+-    view()->selectionModel()->select(index, QItemSelectionModel::Columns & QItemSelectionModel::Deselect);
++    view()->selectionModel()->select(index, QItemSelectionModel::SelectionFlags(QItemSelectionModel::Columns & QItemSelectionModel::Deselect));
+     return true;
+ }
+ 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package>
+    <DisplayName>Color Configurations</DisplayName>
+    <Description>Color configurations for use with OpenColorIO.</Description>
+    <Version>_VERSION_</Version>
+    <ReleaseDate>_DATE_</ReleaseDate>
+<RequiresAdminRights>true</RequiresAdminRights>
+    <Name>fr.inria.natron.color</Name>
+    <SortingPriority>123</SortingPriority>
+    <Default>script</Default>
+    <Script>installscript.qs</Script>
+</Package>

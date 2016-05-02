@@ -1,0 +1,21 @@
+#!/bin/sh
+
+CXX11_SUPPORT=no
+COMPILER=$1
+VERBOSE=$2
+WORKDIR=$3
+
+cd $3
+
+if "$COMPILER" -std=c++11 -c c++11_test.cpp 2>/dev/null 1>&2; then
+    CXX11_SUPPORT=yes
+fi
+rm -f c++11_test.o
+
+if [ "$CXX11_SUPPORT" != "yes" ]; then
+    [ "$VERBOSE" = "yes" ] && echo "C++11 support not detected"
+    exit 0
+else
+    [ "$VERBOSE" = "yes" ] && echo "C++11 support detected"
+    exit 1
+fi

@@ -1,0 +1,22 @@
+--- Portfile.orig	2016-01-08 13:20:26.000000000 +0100
++++ Portfile	2016-01-08 13:20:12.000000000 +0100
+@@ -3,7 +3,7 @@
+ PortSystem      1.0
+ 
+ name            libzip
+-version         0.11.1
++version         1.0.1
+ categories      archivers
+ license         BSD
+ platforms       darwin
+@@ -17,8 +17,8 @@
+ master_sites    ${homepage}
+ use_xz          yes
+ 
+-checksums       rmd160  debf91c79b7aa39c1de8ed65b311ded2bb1b3201 \
+-                sha256  65338688f157784c80824d222f779505416d066c701409f6aef6b886bcd856a4
++checksums       rmd160  fc7b4aa1f43bf11c83e7b9a2a3b7ad53ca98b7c5 \
++                sha256  f948d597afbb471de8d528d0e35ed977de85b2f4d76fdd74abbb985550e5d840
+ 
+ depends_lib     port:zlib
+ 

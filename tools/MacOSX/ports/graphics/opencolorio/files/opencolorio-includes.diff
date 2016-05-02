@@ -1,0 +1,69 @@
+diff --git a/src/core/CMakeLists.txt b/src/core/CMakeLists.txt
+index 50194f3..71d9f9c 100644
+--- a/src/core/CMakeLists.txt
++++ b/src/core/CMakeLists.txt
+@@ -4,8 +4,8 @@
+ include_directories(
+     ${CMAKE_SOURCE_DIR}/export/
+     ${CMAKE_BINARY_DIR}/export/
+-    ${EXTERNAL_INCLUDE_DIRS}
+     ${CMAKE_SOURCE_DIR}/ext/oiio/src/include
++    ${EXTERNAL_INCLUDE_DIRS}
+ )
+ 
+ file(GLOB_RECURSE core_src_files "${CMAKE_SOURCE_DIR}/src/core/*.cpp")
+diff --git a/src/core_tests/CMakeLists.txt b/src/core_tests/CMakeLists.txt
+index 5ba33d6..c1a2d5d 100644
+--- a/src/core_tests/CMakeLists.txt
++++ b/src/core_tests/CMakeLists.txt
+@@ -7,8 +7,8 @@ add_definitions("-DOCIO_SOURCE_DIR=${CMAKE_SOURCE_DIR}")
+ include_directories(
+     ${CMAKE_SOURCE_DIR}/export/
+     ${CMAKE_BINARY_DIR}/export/
+-    ${EXTERNAL_INCLUDE_DIRS}
+     ${CMAKE_SOURCE_DIR}/ext/oiio/src/include
++    ${EXTERNAL_INCLUDE_DIRS}
+     )
+ 
+ file( GLOB_RECURSE core_test_src_files "${CMAKE_SOURCE_DIR}/src/core/*.cpp" )
+diff --git a/src/jniglue/CMakeLists.txt b/src/jniglue/CMakeLists.txt
+index aab38ba..b544f50 100644
+--- a/src/jniglue/CMakeLists.txt
++++ b/src/jniglue/CMakeLists.txt
+@@ -1,9 +1,9 @@
+ 
+ include_directories(
+-  ${JNI_INCLUDE_DIRS}
+   ${CMAKE_CURRENT_BINARY_DIR}
+   ${CMAKE_SOURCE_DIR}/export/
+   ${CMAKE_BINARY_DIR}/export/
++  ${JNI_INCLUDE_DIRS}
+ )
+ 
+ set(JNIOCIO_CLASSES
+diff --git a/src/pyglue/CMakeLists.txt b/src/pyglue/CMakeLists.txt
+index 07429dc..331939f 100644
+--- a/src/pyglue/CMakeLists.txt
++++ b/src/pyglue/CMakeLists.txt
+@@ -31,18 +31,18 @@ add_library(PyOpenColorIO MODULE ${pyglue_src_files} ${CMAKE_BINARY_DIR}/src/pyg
+ 
+ if(OCIO_USE_BOOST_PTR)
+     include_directories(
+-        ${PYTHON_INCLUDE}
+-        ${Boost_INCLUDE_DIR}
+         ${CMAKE_SOURCE_DIR}/export/
+         ${CMAKE_BINARY_DIR}/export/
+         ${CMAKE_CURRENT_BINARY_DIR}
++        ${PYTHON_INCLUDE}
++        ${Boost_INCLUDE_DIR}
+     )
+ else()
+     include_directories(
+-        ${PYTHON_INCLUDE}
+         ${CMAKE_SOURCE_DIR}/export/
+         ${CMAKE_BINARY_DIR}/export/
+         ${CMAKE_CURRENT_BINARY_DIR}
++        ${PYTHON_INCLUDE}
+     )
+ endif()
+ 

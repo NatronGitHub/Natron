@@ -1,0 +1,28 @@
+--- Portfile.orig	2015-06-11 01:27:25.000000000 -0700
++++ Portfile	2015-06-11 01:27:31.000000000 -0700
+@@ -34,6 +34,9 @@
+ 
+ patchfiles          patch-base_unix-dll.mak.diff \
+                     patch-base_stdpre.h.diff \
++                    patch-bigendian-9.10.diff \
++                    ghostscript-9.10-cross.patch \
++                    ghostscript-9.05-cross-so.patch \
+                     no-werror.diff
+ 
+ checksums           ${distname}.tar.gz \
+@@ -118,6 +121,15 @@
+ build.target        so
+ use_parallel_build  yes
+ 
++if {[variant_isset universal]} {
++        build.target-delete so
++        build.target-append cross_prepare so
++        lappend merger_build_env(i386) ARCH=i386
++        lappend merger_build_env(x86_64) ARCH=x86_64
++        lappend merger_build_env(ppc) ARCH=ppc
++        lappend merger_build_env(ppc64) ARCH=ppc64
++}
++
+ destroot.target     soinstall
+ post-destroot {
+     ln -s gsc ${destroot}${prefix}/bin/gs

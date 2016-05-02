@@ -1,0 +1,188 @@
+--- CMakeLists.txt.orig	2015-02-25 03:10:30.000000000 +0100
++++ CMakeLists.txt	2015-08-24 12:19:32.675353600 +0200
+@@ -111,19 +111,7 @@
+   endif()
+ endif()
+ 
+-# Add these standard paths to the search paths for FIND_PATH
+-# to find include files from these locations first
+-if(MINGW)
+-  if(EXISTS /mingw)
+-      list(APPEND CMAKE_INCLUDE_PATH /mingw)
+-  endif()
+-  if(EXISTS /mingw32)
+-      list(APPEND CMAKE_INCLUDE_PATH /mingw32)
+-  endif()
+-  if(EXISTS /mingw64)
+-      list(APPEND CMAKE_INCLUDE_PATH /mingw64)
+-  endif()
+-endif()
++
+ 
+ # ----------------------------------------------------------------------------
+ # OpenCV cmake options
+@@ -146,7 +134,7 @@
+ OCV_OPTION(WITH_GSTREAMER_0_10 "Enable Gstreamer 0.10 support (instead of 1.x)"   OFF )
+ OCV_OPTION(WITH_GTK            "Include GTK support"                         ON   IF (UNIX AND NOT APPLE AND NOT ANDROID) )
+ OCV_OPTION(WITH_IMAGEIO        "ImageIO support for OS X"                    OFF  IF APPLE )
+-OCV_OPTION(WITH_IPP            "Include Intel IPP support"                   OFF  IF (MSVC OR X86 OR X86_64) )
++OCV_OPTION(WITH_IPP            "Include Intel IPP support"                   ON   IF (X86_64 OR X86) AND NOT WINRT AND NOT MINGW)
+ OCV_OPTION(WITH_JASPER         "Include JPEG2K support"                      ON   IF (NOT IOS) )
+ OCV_OPTION(WITH_JPEG           "Include JPEG support"                        ON)
+ OCV_OPTION(WITH_OPENEXR        "Include ILM support via OpenEXR"             ON   IF (NOT IOS) )
+@@ -191,12 +179,12 @@
+ OCV_OPTION(BUILD_ANDROID_PACKAGE    "Build platform-specific package for Google Play" OFF IF ANDROID )
+ 
+ # 3rd party libs
+-OCV_OPTION(BUILD_ZLIB               "Build zlib from source"             WIN32 OR APPLE )
+-OCV_OPTION(BUILD_TIFF               "Build libtiff from source"          WIN32 OR ANDROID OR APPLE )
+-OCV_OPTION(BUILD_JASPER             "Build libjasper from source"        WIN32 OR ANDROID OR APPLE )
+-OCV_OPTION(BUILD_JPEG               "Build libjpeg from source"          WIN32 OR ANDROID OR APPLE )
+-OCV_OPTION(BUILD_PNG                "Build libpng from source"           WIN32 OR ANDROID OR APPLE )
+-OCV_OPTION(BUILD_OPENEXR            "Build openexr from source"          WIN32 OR ANDROID OR APPLE )
++OCV_OPTION(BUILD_ZLIB               "Build zlib from source"             WIN32 AND NOT MINGW OR APPLE )
++OCV_OPTION(BUILD_TIFF               "Build libtiff from source"          WIN32 AND NOT MINGW OR ANDROID OR APPLE )
++OCV_OPTION(BUILD_JASPER             "Build libjasper from source"        WIN32 AND NOT MINGW OR ANDROID OR APPLE )
++OCV_OPTION(BUILD_JPEG               "Build libjpeg from source"          WIN32 AND NOT MINGW OR ANDROID OR APPLE )
++OCV_OPTION(BUILD_PNG                "Build libpng from source"           WIN32 AND NOT MINGW OR ANDROID OR APPLE )
++OCV_OPTION(BUILD_OPENEXR            "Build openexr from source"          (WIN32 OR ANDROID OR APPLE) AND NOT WINRT AND NOT MINGW )
+ OCV_OPTION(BUILD_TBB                "Download and build TBB from source" ANDROID )
+ 
+ # OpenCV installation options
+@@ -268,7 +256,7 @@
+   endif()
+ endif()
+ 
+-if(ANDROID OR WIN32)
++if((ANDROID OR WIN32) AND NOT MINGW)
+   set(OPENCV_DOC_INSTALL_PATH doc)
+ elseif(INSTALL_TO_MANGLED_PATHS)
+   set(OPENCV_DOC_INSTALL_PATH share/OpenCV-${OPENCV_VERSION}/doc)
+@@ -276,7 +264,7 @@
+   set(OPENCV_DOC_INSTALL_PATH share/OpenCV/doc)
+ endif()
+ 
+-if(WIN32)
++if(WIN32 AND NOT MINGW)
+   if(DEFINED OpenCV_RUNTIME AND DEFINED OpenCV_ARCH)
+     set(OpenCV_INSTALL_BINARIES_PREFIX "${OpenCV_ARCH}/${OpenCV_RUNTIME}/")
+   else()
+@@ -292,7 +280,7 @@
+ if(ANDROID)
+   set(OPENCV_SAMPLES_BIN_INSTALL_PATH "${OpenCV_INSTALL_BINARIES_PREFIX}samples/${ANDROID_NDK_ABI_NAME}")
+ else()
+-  set(OPENCV_SAMPLES_BIN_INSTALL_PATH "${OpenCV_INSTALL_BINARIES_PREFIX}samples")
++  set(OPENCV_SAMPLES_BIN_INSTALL_PATH "${OpenCV_INSTALL_BINARIES_PREFIX}share/OpenCV/samples")
+ endif()
+ 
+ if(ANDROID)
+@@ -316,7 +304,7 @@
+ else()
+   set(LIBRARY_OUTPUT_PATH         "${OpenCV_BINARY_DIR}/lib")
+   set(3P_LIBRARY_OUTPUT_PATH      "${OpenCV_BINARY_DIR}/3rdparty/lib${LIB_SUFFIX}")
+-  if(WIN32)
++  if(WIN32 AND NOT MINGW)
+     if(OpenCV_STATIC)
+       set(OPENCV_LIB_INSTALL_PATH   "${OpenCV_INSTALL_BINARIES_PREFIX}staticlib${LIB_SUFFIX}")
+     else()
+@@ -652,7 +640,7 @@
+ endif()
+ 
+ # for UNIX it does not make sense as LICENSE and readme will be part of the package automatically
+-if(ANDROID OR NOT UNIX)
++if((ANDROID OR NOT UNIX) AND NOT MINGW)
+   install(FILES ${OPENCV_LICENSE_FILE}
+         PERMISSIONS OWNER_READ GROUP_READ WORLD_READ
+         DESTINATION . COMPONENT libs)
+--- cmake/templates/OpenCVConfig.cmake.in.orig	2015-02-25 03:10:30.000000000 +0100
++++ cmake/templates/OpenCVConfig.cmake.in	2015-08-24 12:15:29.610451100 +0200
+@@ -97,7 +97,7 @@
+ # Extract the directory where *this* file has been installed (determined at cmake run-time)
+ get_filename_component(OpenCV_CONFIG_PATH "${CMAKE_CURRENT_LIST_FILE}" PATH CACHE)
+ 
+-if(NOT WIN32 OR ANDROID)
++if(NOT WIN32 OR MINGW OR ANDROID)
+   if(ANDROID)
+     set(OpenCV_INSTALL_PATH "${OpenCV_CONFIG_PATH}/../../..")
+   else()
+--- cmake/OpenCVModule.cmake.orig	2015-02-25 03:10:30.000000000 +0100
++++ cmake/OpenCVModule.cmake	2015-08-24 12:14:18.347375100 +0200
+@@ -584,7 +584,9 @@
+   endif()
+ 
+   set_target_properties(${the_module} PROPERTIES
+-    OUTPUT_NAME "${the_module}${OPENCV_DLLVERSION}"
++    OUTPUT_NAME "${the_module}"
++    RUNTIME_OUTPUT_NAME "${the_module}${OPENCV_DLLVERSION}"
++    ARCHIVE_OUTPUT_NAME "${the_module}"
+     DEBUG_POSTFIX "${OPENCV_DEBUG_POSTFIX}"
+     ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
+     LIBRARY_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
+--- cmake/OpenCVGenPkgconfig.cmake.orig	2015-02-25 03:10:30.000000000 +0100
++++ cmake/OpenCVGenPkgconfig.cmake	2015-08-24 12:13:23.179219600 +0200
+@@ -100,6 +100,6 @@
+                "${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME}"
+                @ONLY)
+ 
+-if(UNIX AND NOT ANDROID)
++if((UNIX AND NOT ANDROID) OR MINGW)
+   install(FILES ${CMAKE_BINARY_DIR}/unix-install/${OPENCV_PC_FILE_NAME} DESTINATION ${OPENCV_LIB_INSTALL_PATH}/pkgconfig COMPONENT dev)
+ endif()
+--- cmake/OpenCVGenConfig.cmake.orig	2015-02-25 03:10:30.000000000 +0100
++++ cmake/OpenCVGenConfig.cmake	2015-08-24 12:12:34.667444900 +0200
+@@ -101,7 +101,7 @@
+ configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/OpenCVConfig.cmake.in" "${CMAKE_BINARY_DIR}/unix-install/OpenCVConfig.cmake" @ONLY)
+ configure_file("${OpenCV_SOURCE_DIR}/cmake/templates/OpenCVConfig-version.cmake.in" "${CMAKE_BINARY_DIR}/unix-install/OpenCVConfig-version.cmake" @ONLY)
+ 
+-if(UNIX) # ANDROID configuration is created here also
++if(UNIX OR MINGW) # ANDROID configuration is created here also
+   #http://www.vtk.org/Wiki/CMake/Tutorials/Packaging reference
+   # For a command "find_package(<name> [major[.minor]] [EXACT] [REQUIRED|QUIET])"
+   # cmake will look in the following dir on unix:
+@@ -126,7 +126,7 @@
+ # --------------------------------------------------------------------------------------------
+ #  Part 3/3: ${BIN_DIR}/win-install/OpenCVConfig.cmake  -> For use within binary installers/packages
+ # --------------------------------------------------------------------------------------------
+-if(WIN32)
++if(WIN32 AND NOT MINGW)
+   set(OpenCV_INCLUDE_DIRS_CONFIGCMAKE "\"\${OpenCV_CONFIG_PATH}/include\" \"\${OpenCV_CONFIG_PATH}/include/opencv\"")
+   set(OpenCV2_INCLUDE_DIRS_CONFIGCMAKE "\"\"")
+ 
+--- cmake/OpenCVFindOpenEXR.cmake.orig	2015-02-25 03:10:30.000000000 +0100
++++ cmake/OpenCVFindOpenEXR.cmake	2015-08-24 12:11:06.643410200 +0200
+@@ -13,7 +13,7 @@
+ SET(OPENEXR_LIBSEARCH_SUFFIXES "")
+ file(TO_CMAKE_PATH "$ENV{ProgramFiles}" ProgramFiles_ENV_PATH)
+ 
+-if(WIN32)
++if(WIN32 AND NOT MINGW)
+     SET(OPENEXR_ROOT "C:/Deploy" CACHE STRING "Path to the OpenEXR \"Deploy\" folder")
+     if(CMAKE_CL_64)
+         SET(OPENEXR_LIBSEARCH_SUFFIXES x64/Release x64 x64/Debug)
+--- cmake/OpenCVDetectPython.cmake.orig	2015-02-25 03:10:30.000000000 +0100
++++ cmake/OpenCVDetectPython.cmake	2015-08-24 12:11:41.483403000 +0200
+@@ -52,7 +52,7 @@
+   endif()
+ 
+   if(NOT ANDROID AND NOT IOS)
+-    if(CMAKE_HOST_UNIX)
++    if(CMAKE_HOST_UNIX OR MINGW)
+       execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "from distutils.sysconfig import *; print get_python_lib()"
+                       RESULT_VARIABLE PYTHON_CVPY_PROCESS
+                       OUTPUT_VARIABLE PYTHON_STD_PACKAGES_PATH
+--- cmake/OpenCVPCHSupport.cmake.orig	2015-08-24 16:15:13.394211000 +0200
++++ cmake/OpenCVPCHSupport.cmake	2015-08-24 16:15:53.072480500 +0200
+@@ -112,11 +112,11 @@
+             STRING(REGEX REPLACE "^ +" "" pchsupport_compiler_cxx_arg1 ${CMAKE_CXX_COMPILER_ARG1})
+ 
+             SET(${out_command}
+-              ${CMAKE_CXX_COMPILER} ${pchsupport_compiler_cxx_arg1} ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
++              ${CMAKE_CXX_COMPILER} -I${OPENCV_CONFIG_FILE_INCLUDE_DIR} ${pchsupport_compiler_cxx_arg1} ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
+               )
+         ELSE(CMAKE_CXX_COMPILER_ARG1)
+             SET(${out_command}
+-              ${CMAKE_CXX_COMPILER}  ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
++              ${CMAKE_CXX_COMPILER} -I${OPENCV_CONFIG_FILE_INCLUDE_DIR} ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
+               )
+         ENDIF(CMAKE_CXX_COMPILER_ARG1)
+     ELSE(CMAKE_COMPILER_IS_GNUCXX)

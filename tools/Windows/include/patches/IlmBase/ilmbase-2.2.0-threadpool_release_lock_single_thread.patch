@@ -1,0 +1,25 @@
+From 51046a110296a5c95b5c52ce6d9798f6fc9884d3 Mon Sep 17 00:00:00 2001
+From: Larry Gritz <lg@larrygritz.com>
+Date: Wed, 28 Oct 2015 10:38:14 -0700
+Subject: [PATCH] Bug fix in ThreadPool -- holding lock when not needed
+
+ThreadPool::addTask should not keep holding the lock when executing the
+task with the calling thread. This inadvertently will block any other
+threads reading or writing exr files concurrently.
+---
+ IlmBase/IlmThread/IlmThreadPool.cpp | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/IlmBase/IlmThread/IlmThreadPool.cpp b/IlmBase/IlmThread/IlmThreadPool.cpp
+index 0a889f8..1e34a5a 100644
+--- a/IlmBase/IlmThread/IlmThreadPool.cpp
++++ b/IlmBase/IlmThread/IlmThreadPool.cpp
+@@ -430,6 +430,8 @@ ThreadPool::addTask (Task* task)
+ 
+     if (_data->numThreads == 0)
+     {
++        // run the task ourselves, don't keep holding the threadMutex
++        lock.release ();
+         task->execute ();
+         delete task;
+     }
