@@ -21,7 +21,7 @@ TEMPLATE = subdirs
 # build things in the order we give
 CONFIG += ordered
 
-breakpad {
+enable-breakpad {
     include(breakpadpro.pri)
 }
 

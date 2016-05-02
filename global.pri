@@ -65,7 +65,7 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
-breakpad {
+enable-breakpad {
     include(breakpadclient.pri)
 }
 
