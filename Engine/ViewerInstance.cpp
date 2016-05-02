@@ -2680,6 +2680,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         if (!originalImage) {
             depth = originalImage->getBitDepth();
         } else {
+            assert(params->cachedFrame);
             depth = (ImageBitDepthEnum)params->cachedFrame->getKey().getBitDepth();
         }
 
