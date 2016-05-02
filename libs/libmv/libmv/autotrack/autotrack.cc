@@ -202,7 +202,7 @@ bool AutoTrack::TrackMarker(Marker* tracked_marker,
   frame_accessor_->ReleaseImage(tracked_key);
 
   // Update the kalman filter with the new measurement
-  if (predictionState) {
+  if (predictionState && result->is_usable()) {
     predictionState->Update(*tracked_marker);
   }
     
