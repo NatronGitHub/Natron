@@ -1,0 +1,37 @@
+--- qmake/project.cpp.orig	2012-04-23 14:49:04.000000000 -0400
++++ qmake/project.cpp	2012-04-17 14:38:16.000000000 -0400
+@@ -596,14 +596,17 @@
+             }
+         }
+     }
+-    for(QStringList::Iterator concat_it = concat.begin();
+-        concat_it != concat.end(); ++concat_it)
++    QByteArray qmake_no_defaults = qgetenv("QMAKE_NO_DEFAULTS");
++    if (qmake_no_defaults.isNull()) {
++      for(QStringList::Iterator concat_it = concat.begin();
++	  concat_it != concat.end(); ++concat_it)
+         feature_roots << (QLibraryInfo::location(QLibraryInfo::PrefixPath) +
+                           mkspecs_concat + (*concat_it));
+-    for(QStringList::Iterator concat_it = concat.begin();
+-        concat_it != concat.end(); ++concat_it)
++      for(QStringList::Iterator concat_it = concat.begin();
++	  concat_it != concat.end(); ++concat_it)
+         feature_roots << (QLibraryInfo::location(QLibraryInfo::DataPath) +
+                           mkspecs_concat + (*concat_it));
++    }
+     return feature_roots;
+ }
+ 
+@@ -617,8 +620,10 @@
+         for(QStringList::ConstIterator it = lst.begin(); it != lst.end(); ++it)
+             ret << ((*it) + concat);
+     }
+-    ret << QLibraryInfo::location(QLibraryInfo::DataPath) + concat;
+-
++    QByteArray qmake_no_defaults = qgetenv("QMAKE_NO_DEFAULTS");
++    if (qmake_no_defaults.isNull()) {
++      ret << QLibraryInfo::location(QLibraryInfo::DataPath) + concat;
++    }
+     return ret;
+ }
+ 

@@ -1,0 +1,27 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem          1.0
+PortGroup           github 1.0
+PortGroup           cmake 1.0
+
+name		ctl
+#revision	1
+categories	graphics
+license         AMPAS
+maintainers	openmaintainer
+use_parallel_build	yes
+description	AMPAS' Color Transformation Language
+long_description	${description}
+
+homepage	http://ampasctl.sourceforge.net/
+#checksums           md5     11e215aea6c6380833ade3b576660638 \
+#                    sha1    4e31de8e8da144bbc840d97014a8f45e20e398ac \
+#                    rmd160  0069e2f132cc9261a65beaa2db4d952409f622b1
+#master_sites	sourceforge:ampasctl
+fetch.type          git
+#git.url             https://github.com/ampas/CTL.git
+github.setup     ampas CTL 1.5.2 tags/ctl-
+
+depends_lib	port:ilmbase port:openexr
+

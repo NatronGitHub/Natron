@@ -1,0 +1,11 @@
+--- tools/build/src/engine/build.jam.orig	2014-06-19 12:15:38.000000000 -0500
++++ tools/build/src/engine/build.jam	2014-08-14 07:43:48.000000000 -0500
+@@ -199,7 +199,7 @@
+     -I$(--python-include) -I$(--extra-include)
+     : -L$(--python-lib[1]) -l$(--python-lib[2]) ;
+ ## MacOSX Darwin, using GCC 2.9.x, 3.x
+-toolset darwin cc :  "-o " : -D
++toolset darwin %%CONFIGURE.CC%% :  "-o " : -D
+     :
+     [ opt --release : -Wl,-x -O3 -finline-functions ]
+     [ opt --debug : -g -O0 -fno-inline -pg ]
