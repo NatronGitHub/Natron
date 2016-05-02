@@ -1,0 +1,147 @@
+--- Portfile.orig	2016-02-22 10:17:13.000000000 +0100
++++ Portfile	2016-02-22 10:16:57.000000000 +0100
+@@ -7,7 +7,8 @@
+ # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
+ 
+ name                        ImageMagick
+-version                     6.9.3-4
++version                     6.9.2-10
++revision                    2
+ set reasonable_version      [lindex [split ${version} -] 0]
+ homepage                    http://www.imagemagick.org/
+ categories                  graphics devel
+@@ -39,8 +40,8 @@
+                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
+                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
+ 
+-checksums                   rmd160  8db13b61f2409d4349e6f191881a19f79c5536f8 \
+-                            sha256  0d4266940d27afb617fc8b3481ffdf63dd02ca13806d581ac5cb28638725c275
++checksums           rmd160  2189e2afddba54d5c1165c87786716d4c7172c74 \
++                    sha256  da2f6fba43d69f20ddb11783f13f77782b0b57783dde9cda39c9e5e733c2013c
+ 
+ depends_lib                 port:bzip2 \
+                             port:djvulibre \
+@@ -63,6 +64,8 @@
+                             port:expat \
+                             port:libxml2
+ 
++patchfiles noclparser.patch
++
+ # Magick-config etc. use pkg-config
+ depends_lib-append          port:pkgconfig
+ 
+@@ -89,11 +92,14 @@
+                             --with-dps \
+                             --with-bzlib \
+                             --with-djvu \
++                            --with-fftw \
+                             --with-fontconfig \
+                             --with-gslib \
+                             --with-jbig \
+                             --with-jpeg \
+-                            --with-lcms \
++                            --without-lcms \
++                            --with-lcms2 \
++                            --without-lzma \
+                             --with-openjp2 \
+                             --with-png \
+                             --with-tiff \
+@@ -111,6 +117,71 @@
+                             --without-x \
+                             --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
+ 
++variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
++    patchfiles-append pango-align-hack.diff
++    patchfiles-append xcf-layername.diff
++    depends_lib-delete      port:ghostscript
++    configure.args-replace  --with-dps --without-dps
++    configure.args-replace  --with-gslib --without-gslib
++    depends_lib-delete       port:djvulibre
++    configure.args-replace  --with-djvu --without-djvu
++    depends_lib-delete       port:fftw-3
++    configure.args-replace  --with-fftw --without-fftw
++    depends_lib-delete       port:jbigkit
++    configure.args-replace  --with-jbig --without-jbig
++    depends_lib-delete       port:jbigkit
++    configure.args-replace  --with-jbig --without-jbig
++    depends_lib-delete       port:jpeg
++    configure.args-replace  --with-jpeg --without-jpeg
++    # PNG is required for povray,openraster,krita plugin, see https://github.com/olear/openfx-arena/commit/48064135604d1c2d07362bc16cecc7a16a640d3e#commitcomment-14356716
++    # depends_lib-delete       port:png
++    # configure.args-replace  --with-png --without-png
++    # [FD] why LCMS and not LCMS2? because IM now only supports one LCMS (v2), so they removed the 'lcms2' option in favour of 'lcms'.
++    depends_lib-delete       port:lcms2
++    configure.args-replace  --with-lcms2 --without-lcms2
++    depends_lib-append       port:lcms
++    configure.args-replace  --without-lcms --with-lcms
++    depends_lib-delete       port:openjpeg
++    configure.args-replace  --with-openjp2 --without-openjp2
++    depends_lib-delete       port:openexr
++    configure.args-replace  --with-openexr --without-openexr
++    depends_lib-delete       port:tiff
++    configure.args-replace  --with-tiff --without-tiff
++    depends_lib-delete       port:webp
++    configure.args-replace  --with-webp --without-webp
++    # zlib is required by PNG
++    #depends_lib-delete       port:zlib
++    #configure.args-replace  --with-zlib --without-zlib
++    depends_lib-delete       port:bzip2
++    configure.args-replace  --with-bzlib --without-bzlib
++    configure.args-replace  --enable-shared --disable-shared
++    configure.args-replace  --with-modules --without-modules
++    pre-extract {
++        if {${version} != "6.9.2-10"} {
++            ui_msg "Natron variant requires ImageMagick version 6.9.2-10 (this is ${version}), please modify the Portfile."
++            return -code error "incompatible ImageMagick version"
++        }
++    }
++}
++
++# OpenMP support seems to be broken in gcc 4.2.1 and llvm-gcc-4.2 (OpenMP can only be used in the main thread):
++# http://sourceforge.net/tracker/index.php?func=detail&aid=1964341&group_id=170962&atid=856209
++# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36242
++# clang has proper OpenMP support
++#   -- Frederic.Devernay@inria.fr
++if {${configure.compiler} == "llvm-gcc-4.2" || ${configure.compiler} == "gcc-4.2" || ${configure.compiler} == "gcc-4.0"} {
++    configure.args-append --disable-openmp
++}
++
++post-configure {
++    reinplace -E {s|-arch [a-z0-9_]+||g} \
++        ${worksrcpath}/magick/Magick-config \
++        ${worksrcpath}/magick/MagickCore-config \
++        ${worksrcpath}/Magick++/bin/Magick++-config \
++        ${worksrcpath}/wand/MagickWand-config \
++        ${worksrcpath}/wand/Wand-config
++}
++
+ test.run                    yes
+ test.target                 check
+ test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
+@@ -118,6 +189,14 @@
+ # ImageMagick uses .la files at runtime to find its coder modules.
+ destroot.delete_la_files    no
+ 
++variant q32 description {Use Q32 quantum depth} {
++    configure.args-append   --with-quantum-depth=32
++}
++
++variant hdri description {High Dynamic Range Imagery} {
++    configure.args-replace  --disable-hdri --enable-hdri
++}
++
+ variant graphviz description {Support Graphviz} {
+     depends_lib-append      path:bin/dot:graphviz
+     configure.args-replace  --without-gvc --with-gvc
+@@ -152,6 +231,11 @@
+ 
+ default_variants            +x11
+ 
++variant xquartz {
++    configure.args-append   --with-x --x-includes=/opt/X11/include --x-librari=/opt/X11/lib
++    configure.args-delete   --without-x
++}
++
+ livecheck.version           ${reasonable_version}
+ livecheck.type              regex
+ livecheck.url               [lindex ${master_sites} 0]

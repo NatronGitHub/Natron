@@ -1,0 +1,17 @@
+--- src/gui/kernel/qcursor_mac.mm.orig
++++ src/gui/kernel/qcursor_mac.mm
+@@ -319,9 +319,11 @@
+     pos.x = x;
+     pos.y = y;
+ 
+-    CGEventRef e = CGEventCreateMouseEvent(0, kCGEventMouseMoved, pos, 0);
+-    CGEventPost(kCGHIDEventTap, e);
+-    CFRelease(e);
++    CGEventRef e = CGEventCreateMouseEvent(NULL, kCGEventMouseMoved, pos, kCGMouseButtonLeft);
++    if (e != NULL) {
++        CGEventPost(kCGHIDEventTap, e);
++        CFRelease(e);
++    }
+ #else
+     CGWarpMouseCursorPosition(CGPointMake(x, y));
+ 

@@ -1,0 +1,174 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 147287 2016-04-01 15:47:32Z cal@macports.org $
+
+PortSystem          1.0
+PortGroup           muniversal 1.0
+
+name                ghostscript
+version             9.19
+categories          print
+license             AGPL-3 BSD
+maintainers         nomaintainer
+description         GPL Ghostscript, An interpreter for PostScript and PDF
+long_description    Ghostscript is the well-known PostScript interpreter which \
+                    is available for all common and most esoteric platforms and \
+                    supports many different printers and some displays.
+platforms           darwin
+homepage            http://www.ghostscript.com/
+master_sites        https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs919:source \
+                    sourceforge:gs-fonts:fonts \
+                    https://github.com/adobe-type-tools/mapping-resources-pdf/archive/:misc
+
+# Note: this needs to be manually updated for new upstream commits
+set mappingresources_commit \
+                    0bdcfbe5e394d4519e5969918c34d4eebf76a386
+
+distfiles           ${distname}.tar.gz:source \
+                    ghostscript-fonts-other-6.0.tar.gz:fonts \
+                    ghostscript-fonts-std-8.11.tar.gz:fonts \
+                    ${mappingresources_commit}.zip:misc
+
+patchfiles          patch-base_unix-dll.mak.diff \
+                    ghostscript-9.10-cross.patch \
+                    ghostscript-9.05-cross-so.patch \
+                    no-werror.diff
+
+checksums           ${distname}.tar.gz \
+                    rmd160  26acb114f30cbfa8f0e4912829a4ac38a35f5ea0 \
+                    sha256  cf3c0dce67db1557a87366969945f9c5235887989c0b585e037af366dc035989 \
+                    ghostscript-fonts-other-6.0.tar.gz \
+                    rmd160  ab60dbf71e7d91283a106c3df381cadfe173082f \
+                    sha256  4fa051e341167008d37fe34c19d241060cd17b13909932cd7ca7fe759243c2de \
+                    ghostscript-fonts-std-8.11.tar.gz \
+                    rmd160  10a19a10d0388bc084a7c1d3da845068d7169054 \
+                    sha256  0eb6f356119f2e49b2563210852e17f57f9dcc5755f350a69a46a0d641a0c401 \
+                    ${mappingresources_commit}.zip \
+                    rmd160  ee0acf3e8a37c75db1a22af0248a0be25b31de93 \
+                    sha256  64b1a28060fe04518ee152d1d479a5e8989519db756c35848257d29478936d1c
+
+depends_lib         port:expat \
+                    port:fontconfig \
+                    port:freetype \
+                    port:jbig2dec \
+                    port:jpeg \
+                    port:libiconv \
+                    port:libidn \
+                    port:libpaper \
+                    port:libpng \
+                    port:tiff \
+                    port:zlib \
+                    port:lcms2
+
+depends_build       port:pkgconfig
+
+depends_run         port:perl5
+
+extract.only        ${distname}.tar.gz \
+                    ghostscript-fonts-other-6.0.tar.gz \
+                    ghostscript-fonts-std-8.11.tar.gz
+
+post-extract {
+    system -W ${workpath} "unzip '${distpath}/${mappingresources_commit}.zip'"
+
+    foreach d {freetype jbig2dec jpeg lcms2 libpng tiff zlib} {
+        move ${worksrcpath}/${d} ${worksrcpath}/${d}_local
+    }
+
+    #move ${workpath}/MappingOther/Adobe-CNS1-ETen-B5 ${workpath}/MappingOther/Adobe-CNS1-ETenms-B5
+    copy -force {*}[glob ${workpath}/mapping-resources-pdf-${mappingresources_commit}/mappingresources4pdf_2unicode/*] ${worksrcpath}/Resource/CMap
+    copy -force {*}[glob ${workpath}/mapping-resources-pdf-${mappingresources_commit}/mappingresources4pdf_other/*]    ${worksrcpath}/Resource/CMap
+}
+
+post-patch {
+    reinplace s|__PREFIX__|${prefix}| ${worksrcpath}/base/unix-dll.mak
+    reinplace s|ZLIBDIR=src|ZLIBDIR=${prefix}/include| configure.ac
+
+    # Ensure that MacPorts perl is used
+    fs-traverse f ${worksrcpath} {
+        if [string match *.pl ${f}] {
+            reinplace s|#!/usr/bin/perl|#!${prefix}/bin/perl| ${f}
+        }
+    }
+}
+
+use_autoreconf      yes
+autoreconf.args     -fv
+
+# Make included OpenJPEG uses its own headers rather than the system ones
+configure.cppflags-replace \
+                    -I${prefix}/include \
+                    -isystem${prefix}/include
+
+configure.args      --disable-compile-inits \
+                    --disable-cups \
+                    --disable-dbus \
+                    --disable-gtk \
+                    --without-x \
+                    --without-luratech \
+                    --with-system-libtiff
+
+build.target        so
+
+if {[variant_isset universal]} {
+        build.target-delete so
+        build.target-append cross_prepare so
+        lappend merger_build_env(i386) ARCH=i386
+        lappend merger_build_env(x86_64) ARCH=x86_64
+        lappend merger_build_env(ppc) ARCH=ppc
+        lappend merger_build_env(ppc64) ARCH=ppc64
+}
+
+destroot.target     soinstall
+post-destroot {
+    ln -s gsc ${destroot}${prefix}/bin/gs
+
+    # std fonts - install into FontCache-compatible directory.
+    # Check: could break on case-sensitive file systems...
+    xinstall -m 0755 -d ${destroot}${prefix}/share/fonts/Type1/gsfonts
+    xinstall -m 0644 \
+            {*}[glob -directory ${workpath}/fonts {[a-z][0-9][0-9][0-9][0-9][0-9][0-9][a-z].*} fonts.scale fonts.dir] \
+            ${destroot}${prefix}/share/fonts/Type1/gsfonts
+
+    # Delete the already copied fonts to not copy them again when installing the "other" fonts.
+    delete {*}[glob -directory ${workpath}/fonts {[a-z][0-9][0-9][0-9][0-9][0-9][0-9][a-z].*}]
+
+    # other fonts - install into private ghostscript directory.
+    xinstall -m 755 -d ${destroot}${prefix}/share/${name}/fonts
+    xinstall -m 644 {*}[glob -directory ${workpath}/fonts *.afm *.gsf *.pfa *.pfm] \
+            ${destroot}${prefix}/share/${name}/fonts
+
+    xinstall -m 755 -d ${destroot}${prefix}/share/doc
+    ln -s ../${name}/${version}/doc ${destroot}${prefix}/share/doc/${name}
+
+    # std fonts - "documentation"
+    xinstall -m 0755 -d ${destroot}${prefix}/share/doc/${name}/fonts
+    xinstall -m 0644 -W ${workpath}/fonts \
+            COPYING ChangeLog README README.tweaks TODO \
+            ${destroot}${prefix}/share/doc/${name}/fonts
+
+    # install missing header
+    xinstall -m 0644 ${worksrcpath}/base/gserrors.h \
+            ${destroot}${prefix}/include/ghostscript/
+}
+
+post-activate {
+    system "${prefix}/bin/fc-cache -v ${prefix}/share/fonts/Type1/gsfonts"
+}
+
+configure.universal_args-delete --disable-dependency-tracking
+
+variant x11 {
+    depends_lib-append      port:xorg-libXext
+    depends_lib-append      port:xorg-libXt
+    configure.args-replace  --without-x --with-x
+}
+
+variant cups description {Enable CUPS driver} {
+    configure.args-replace  --disable-cups --enable-cups
+}
+
+default_variants    +x11
+
+livecheck.type      regex
+livecheck.url       http://downloads.ghostscript.com/public/
+livecheck.regex     ${name}-(\\d+(?:\\.\\d+)*)

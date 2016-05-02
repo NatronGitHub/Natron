@@ -1,0 +1,52 @@
+--- Portfile.orig	2015-09-20 16:57:44.000000000 +0200
++++ Portfile	2015-09-20 16:57:44.000000000 +0200
+@@ -1,9 +1,10 @@
+ # $Id: Portfile 96951 2012-08-22 18:22:18Z blair@macports.org $
+ 
+ PortSystem 1.0
++PortGroup        conflicts_build 1.0
+                 
+ name            openexr
+-version         1.7.0
++version         2.2.0
+ categories      graphics
+ license         BSD
+ maintainers     blair
+@@ -14,21 +15,27 @@
+ homepage        http://www.openexr.org
+ platforms       darwin
+ master_sites    http://savannah.nongnu.org/download/openexr
+-checksums       md5     27113284f7d26a58f853c346e0851d7a \
+-                sha1    91d0d4e69f06de956ec7e0710fc58ec0d4c4dc2b \
+-                rmd160  410ae4490988067cc80324e776b52ae6a261f157
++checksums           md5     b64e931c82aa3790329c21418373db4e \
++                    sha1    d09a68c4443b7a12a0484c073adaef348b44cb92 \
++                    rmd160  a825ed42e731da3bc39f25ce2a310712a5b0f956
+ 
+-depends_build   port:libtool
+ depends_lib     port:ilmbase
++conflicts_build ${name}
+ 
+-patchfiles      patch-configure
++patchfiles 64bits-literals.patch
+ 
+-configure.args  --mandir=${prefix}/share/man \
+-                --infodir=${prefix}/share/info
++# gcc 4.2 on i386 fails with:
++# :info:build ImfSystemSpecific.cpp:51: error: can't find a register in class ‘BREG’ while reloading ‘asm’
++# llvm-g++-4.2 on i386 and x86_64 fails while compiling ImfDwaCompressor.cpp:
++# {standard input}:29:no such instruction: `vmovaps (%rsi), %ymm0'
++compiler.blacklist-append \
++                    *gcc-4.0 *gcc-4.2 {clang < 137}
++compiler.fallback macports-clang-3.4 macports-clang-3.3
+ 
+-post-configure {
+-    copy -force ${prefix}/bin/glibtool ${worksrcpath}/libtool
+-}
++configure.args  --mandir=${prefix}/share/man \
++                --infodir=${prefix}/share/info \
++                --disable-debug \
++                --disable-dependency-tracking
+ 
+ test.run        yes
+ test.target     check

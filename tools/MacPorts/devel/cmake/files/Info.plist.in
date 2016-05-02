@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+        <key>LSEnvironment</key>
+        <dict>
+                <key>PATH</key>
+                <string>@PREFIX@/bin:@PREFIX@/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        </dict>
+        <key>CFBundleDevelopmentRegion</key>
+        <string>English</string>
+        <key>CFBundleExecutable</key>
+        <string>cmake-gui</string>
+        <key>CFBundleGetInfoString</key>
+        <string>CMake - Cross Platform Makefile Generator</string>
+        <key>CFBundleIconFile</key>
+        <string>CMakeSetup.icns</string>
+        <key>CFBundleIdentifier</key>
+        <string>com.kitware.cmake</string>
+        <key>CFBundleInfoDictionaryVersion</key>
+        <string>6.0</string>
+        <key>CFBundleLongVersionString</key>
+        <string>@VERSION@</string>
+        <key>CFBundleName</key>
+        <string>CMake</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>CFBundleShortVersionString</key>
+        <string>@VERSION@</string>
+        <key>CFBundleSignature</key>
+        <string>CMakeGui</string>
+        <key>CFBundleVersion</key>
+        <string>@VERSION</string>
+        <key>CSResourcesFileMapped</key>
+        <true/>
+        <key>LSRequiresCarbon</key>
+        <true/>
+        <key>NSHumanReadableCopyright</key>
+        <string>2000-2011 Kitware, Inc., Insight Software Consortium.
+All rights reserved.</string>
+</dict>
+</plist>

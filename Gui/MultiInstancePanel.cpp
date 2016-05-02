@@ -33,14 +33,25 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QThread>
 #include <QtCore/QWaitCondition>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+
+#if QT_VERSION >= 0x050000
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QHeaderView>
+#include <QtWidgets/QCheckBox>
+#include <QtWidgets/QStyledItemDelegate>
+#include <QtWidgets/QUndoCommand>
+#include <QtWidgets/QApplication>
+#else
 #include <QtGui/QVBoxLayout>
-#include <QtGui/QPixmap>
 #include <QtGui/QHeaderView>
+#include <QtGui/QCheckBox>
 #include <QtGui/QStyledItemDelegate>
 #include <QtGui/QUndoCommand>
-#include <QtGui/QPainter>
-#include <QtGui/QCheckBox>
 #include <QtGui/QApplication>
+#endif
+
+#include <QtGui/QPixmap>
+#include <QtGui/QPainter>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

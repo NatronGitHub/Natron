@@ -698,7 +698,7 @@ NodeGui::ensurePreviewCreated()
         _previewPixmap = new NodeGraphPixmapItem(getDagGui(), this);
         //Scale the widget according to the DPI of the screen otherwise the pixmap will cover exactly as many pixels
         //as there are in the image
-        _previewPixmap->scale( appPTR->getLogicalDPIXRATIO(), appPTR->getLogicalDPIYRATIO() );
+        _previewPixmap->setTransform(QTransform::fromScale( appPTR->getLogicalDPIXRATIO(), appPTR->getLogicalDPIYRATIO() ), true);
         _previewPixmap->setPixmap(prev_pixmap);
         _previewPixmap->setZValue(getBaseDepth() + 1);
     }

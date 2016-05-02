@@ -1,0 +1,30 @@
+--- src/qbase.pri.orig	2012-04-23 14:49:04.000000000 -0400
++++ src/qbase.pri	2012-04-18 22:49:14.000000000 -0400
+@@ -137,14 +137,14 @@
+ 
+ unix|win32-g++*:!symbian {
+    CONFIG += create_pc
+-   QMAKE_PKGCONFIG_LIBDIR = $$[QT_INSTALL_LIBS]
++   QMAKE_PKGCONFIG_LIBDIR = $$target.path
+    QMAKE_PKGCONFIG_INCDIR = $$[QT_INSTALL_HEADERS]/$$TARGET
+    QMAKE_PKGCONFIG_CFLAGS = -I$$[QT_INSTALL_HEADERS]
+    QMAKE_PKGCONFIG_DESTDIR = pkgconfig
+    include_replace.match = $$QMAKE_INCDIR_QT
+    include_replace.replace = $$[QT_INSTALL_HEADERS]
+    lib_replace.match = $$QMAKE_LIBDIR_QT
+-   lib_replace.replace = $$[QT_INSTALL_LIBS]
++   lib_replace.replace = $$target.path
+    prefix_replace.match = $$QT_BUILD_TREE
+    prefix_replace.replace = $$[QT_INSTALL_PREFIX]
+    QMAKE_PKGCONFIG_INSTALL_REPLACE += include_replace lib_replace prefix_replace
+@@ -152,8 +152,8 @@
+ 
+ unix:!symbian {
+    CONFIG += create_libtool explicitlib
+-   QMAKE_LIBTOOL_LIBDIR = $$[QT_INSTALL_LIBS]
+-   QMAKE_PRL_LIBDIR = $$[QT_INSTALL_LIBS]
++   QMAKE_LIBTOOL_LIBDIR = $$target.path
++   QMAKE_PRL_LIBDIR = $$target.path
+    QMAKE_PRL_INSTALL_REPLACE += include_replace lib_replace
+    QMAKE_LIBTOOL_INSTALL_REPLACE += include_replace lib_replace
+ }

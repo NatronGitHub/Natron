@@ -1,0 +1,197 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 138013 2015-06-25 23:24:05Z ryandesign@macports.org $
+
+PortSystem 1.0
+PortGroup select 1.0
+PortGroup compiler_blacklist_versions 1.0
+
+name                gcc48
+
+# Whenever this port is bumped for version/revision, please revbump dragonegg-*-gcc-4.8
+epoch               2
+version             4.8.5
+platforms           darwin
+categories          lang
+maintainers         mww openmaintainer
+# an exception in the license allows dependents to not be GPL
+license             {GPL-3+ Permissive}
+description         The GNU compiler collection
+long_description    The GNU compiler collection, including front ends for \
+                    C, C++, Objective-C, Objective-C++, Fortran and Java.
+
+homepage            http://gcc.gnu.org/
+master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/releases/gcc-${version}/ \
+                    ftp://ftp.gwdg.de/pub/linux/gcc/releases/gcc-${version}/ \
+                    ftp://gcc.ftp.nluug.nl/mirror/languages/gcc/releases/gcc-${version}/ \
+                    ftp://gcc.gnu.org/pub/gcc/releases/gcc-${version}/ \
+                    gnu:gcc/gcc-${version}
+
+distname            gcc-${version}
+use_bzip2           yes
+
+checksums           rmd160  98e84aa59bd668c4ab58afea9c7a2d1cc0c6ef7e \
+                    sha256  22fb1e7e0f68a63cee631d85b20461d1ea6bda162f03096350e38c8d427ecf23
+
+depends_lib         port:cctools \
+                    path:lib/pkgconfig/cloog-isl.pc:cloog \
+                    port:gmp \
+                    path:lib/pkgconfig/isl.pc:isl \
+                    port:ld64 \
+                    path:lib/libgcc/libgcc_s.1.dylib:libgcc \
+                    port:libiconv \
+                    port:libmpc \
+                    port:mpfr
+depends_run         port:gcc_select
+
+depends_skip_archcheck-append gcc_select ld64 cctools
+license_noconflict  gmp mpfr ppl libmpc
+
+# Handle OS X deployment targets correctly (GCC PR target/63810
+# <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63810>).
+patchfiles-append   macosx-version-min.patch
+
+# Don't link with "-flat_namespace -undefined suppress" on Yosemite and
+# later (#45483).
+patchfiles-append   yosemite-libtool.patch
+
+set major           [join [lrange [split ${version} .-] 0 1] .]
+
+platform darwin {
+    configure.pre_args-append --build=${build_arch}-apple-darwin${os.major}
+}
+
+configure.dir       ${workpath}/build
+configure.cmd       ${worksrcpath}/configure
+configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
+                    --libdir=${prefix}/lib/${name} \
+                    --includedir=${prefix}/include/${name} \
+                    --infodir=${prefix}/share/info \
+                    --mandir=${prefix}/share/man \
+                    --datarootdir=${prefix}/share/gcc-${major} \
+                    --with-local-prefix=${prefix} \
+                    --with-system-zlib \
+                    --disable-nls \
+                    --program-suffix=-mp-${major} \
+                    --with-gxx-include-dir=${prefix}/include/${name}/c++/ \
+                    --with-gmp=${prefix} \
+                    --with-mpfr=${prefix} \
+                    --with-mpc=${prefix} \
+                    --with-isl=${prefix} --disable-isl-version-check \
+                    --with-cloog=${prefix} --disable-cloog-version-check \
+                    --enable-stage1-checking \
+                    --disable-multilib \
+                    --enable-lto \
+                    --enable-libstdcxx-time \
+                    --with-as=${prefix}/bin/as \
+                    --with-ld=${prefix}/bin/ld \
+                    --with-ar=${prefix}/bin/ar \
+                    --with-bugurl=https://trac.macports.org/newticket
+
+configure.env-append \
+                    AR_FOR_TARGET=${prefix}/bin/ar \
+                    AS_FOR_TARGET=${prefix}/bin/as \
+                    LD_FOR_TARGET=${prefix}/bin/ld \
+                    NM_FOR_TARGET=${prefix}/bin/nm \
+                    OBJDUMP_FOR_TARGET=${prefix}/bin/objdump \
+                    RANLIB_FOR_TARGET=${prefix}/bin/ranlib \
+                    STRIP_FOR_TARGET=${prefix}/bin/strip \
+                    OTOOL=${prefix}/bin/otool \
+                    OTOOL64=${prefix}/bin/otool
+
+pre-configure {
+    configure.args-append --with-pkgversion="MacPorts ${name} ${version}_${revision}${portvariants}"
+
+    # TODO: Remove when base automatically creates configure.dir (2.2.1?).
+    file mkdir ${configure.dir}
+}
+
+# http://trac.macports.org/ticket/29067
+compiler.blacklist-append gcc-4.0
+
+# http://trac.macports.org/ticket/29104
+compiler.blacklist-append {llvm-gcc-4.2 < 2336.1}
+
+# Recent versions of Clang emit inconsistent DWARF CIE version
+# information, causing bootstrap comparison failures (#47410). The
+# offending compilers are:
+#   - Apple LLVM 6.1.0 (clang-602.0.49)
+#   - clang-3.7 @3.7-r234122
+#   - clang-3.6 @3.6.0_0
+#   - clang-3.5 @3.5.1_3
+pre-configure {
+    if {(${configure.compiler} eq "clang"
+                && [compiler_blacklist_versions._version_matches clang >= 602.0.49])
+            || [string match {macports-clang-3.[567]} ${configure.compiler}]} {
+        configure.args-append --with-build-config=bootstrap-debug
+    }
+}
+
+# "-stdlib" would be passed on to the bootstrap compiler if present
+configure.cxx_stdlib
+
+build.dir           ${configure.dir}
+build.target        bootstrap
+use_parallel_build  yes
+
+destroot.target     install install-info-host
+
+post-destroot {
+    file delete ${destroot}${prefix}/share/info/dir
+
+    foreach file [glob ${destroot}${prefix}/share/{info,man/man7}/*] {
+        set extension [file extension ${file}]
+        set newfile [regsub "${extension}$" ${file} "-mp-${major}${extension}"]
+
+        file rename ${file} ${newfile}
+    }
+
+    foreach dylib {libgcc_ext.10.4.dylib libgcc_ext.10.5.dylib libgcc_s.1.dylib libgfortran.3.dylib libquadmath.0.dylib libstdc++.6.dylib libobjc-gnu.4.dylib libgomp.1.dylib libitm.1.dylib libssp.0.dylib libasan.0.dylib libatomic.1.dylib} {
+        # Different OS versions (eg: Leopard) or architectures (eg: PPC) don't produce all the dylibs
+        # https://trac.macports.org/ticket/40098
+        # https://trac.macports.org/ticket/40100
+        if {[file exists ${destroot}${prefix}/lib/${name}/${dylib}]} {
+            delete ${destroot}${prefix}/lib/${name}/${dylib}
+            ln -s ${prefix}/lib/libgcc/${dylib} ${destroot}${prefix}/lib/${name}/${dylib}
+        }
+
+        if {[variant_isset universal]} {
+            foreach archdir [glob ${destroot}${prefix}/lib/${name}/*/] {
+                if {[file exists ${archdir}/${dylib}]} {
+                    delete ${archdir}/${dylib}
+                    ln -s ${prefix}/lib/libgcc/${dylib} ${archdir}/${dylib}
+                }
+            }
+        }
+    }
+    move ${destroot}${prefix}/lib/${name}/pkgconfig/libgcj-${major}.pc ${destroot}${prefix}/lib/pkgconfig/
+}
+
+select.group        gcc
+select.file         ${filespath}/mp-${name}
+
+platform powerpc {
+    configure.universal_archs ppc ppc64
+}
+platform i386 {
+    configure.universal_archs i386 x86_64
+}
+variant universal {
+    configure.args-delete --disable-multilib
+}
+# the generated compiler doesn't accept -arch
+configure.env-append CPP="${configure.cc} -E"
+build.env-append CPP="${configure.cc} -E"
+configure.cc-append [get_canonical_archflags]
+configure.cc_archflags
+configure.cxx-append ${configure.cxx_archflags}
+configure.cxx_archflags
+configure.objc_archflags
+configure.ld_archflags
+configure.universal_cflags
+configure.universal_cxxflags
+configure.universal_ldflags
+configure.universal_args
+
+livecheck.type      regex
+livecheck.url       http://ftp.gnu.org/gnu/gcc/
+livecheck.regex     gcc-(${major}\\.\[0-9.\]+)/

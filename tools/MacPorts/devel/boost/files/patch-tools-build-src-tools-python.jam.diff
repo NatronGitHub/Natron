@@ -1,0 +1,11 @@
+--- tools/build/src/tools/python.jam.orig	2009-10-06 15:56:18.000000000 +0200
++++ tools/build/src/tools/python.jam	2009-10-06 15:53:48.000000000 +0200
+@@ -427,7 +427,7 @@
+     version ?= $(.version-countdown) ;
+ 
+     local prefix
+-      = [ GLOB /System/Library/Frameworks /Library/Frameworks
++      = [ GLOB @FRAMEWORKS_DIR@
+           : Python.framework ] ;
+ 
+     return $(prefix)/Versions/$(version)/bin/python ;

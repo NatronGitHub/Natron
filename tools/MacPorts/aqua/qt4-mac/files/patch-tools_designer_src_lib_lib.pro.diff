@@ -1,0 +1,55 @@
+--- tools/designer/src/lib/lib.pro.orig	2012-04-23 14:49:04.000000000 -0400
++++ tools/designer/src/lib/lib.pro	2012-04-22 14:41:19.000000000 -0400
+@@ -13,8 +13,6 @@
+    VERSION=$${QT_MAJOR_VERSION}.$${QT_MINOR_VERSION}.$${QT_PATCH_VERSION}
+ }
+ 
+-unix|win32-g++*:QMAKE_PKGCONFIG_REQUIRES += QtXml
+-
+ include(../../../../src/qt_targets.pri)
+ QMAKE_TARGET_PRODUCT = Designer
+ QMAKE_TARGET_DESCRIPTION = Graphical user interface designer.
+@@ -63,13 +61,42 @@
+ include(../sharedcomponents.pri)
+ include(../components/component.pri)
+ 
+-target.path=$$[QT_INSTALL_LIBS]
++# install mac frameworks differently than libraries
++mac:!static:contains(QT_CONFIG, qt_framework) {
++    target.path=$$[QT_INSTALL_FRAMEWORKS]
++} else {
++    target.path=$$[QT_INSTALL_LIBS]
++}
+ INSTALLS        += target
+ win32 {
+     dlltarget.path=$$[QT_INSTALL_BINS]
+     INSTALLS += dlltarget
+ }
+ 
++unix|win32-g++*:!symbian {
++   CONFIG += create_pc
++   QMAKE_PKGCONFIG_LIBDIR = $$target.path
++   QMAKE_PKGCONFIG_INCDIR = $$[QT_INSTALL_HEADERS]/$$TARGET
++   QMAKE_PKGCONFIG_CFLAGS = -I$$[QT_INSTALL_HEADERS]
++   QMAKE_PKGCONFIG_DESTDIR = pkgconfig
++   QMAKE_PKGCONFIG_REQUIRES += QtCore QtGui QtXml
++   contains(QT_CONFIG, script): QMAKE_PKGCONFIG_REQUIRES += QtScript
++   include_replace.match = $$QMAKE_INCDIR_QT
++   include_replace.replace = $$[QT_INSTALL_HEADERS]
++   lib_replace.match = $$QMAKE_LIBDIR_QT
++   lib_replace.replace = $$target.path
++   prefix_replace.match = $$QT_BUILD_TREE
++   prefix_replace.replace = $$[QT_INSTALL_PREFIX]
++   QMAKE_PKGCONFIG_INSTALL_REPLACE += include_replace lib_replace prefix_replace
++}
++
++unix:!symbian {
++   CONFIG += create_libtool explicitlib
++   QMAKE_LIBTOOL_LIBDIR = $$target.path
++   QMAKE_PRL_LIBDIR = $$target.path
++   QMAKE_PRL_INSTALL_REPLACE += include_replace lib_replace
++   QMAKE_LIBTOOL_INSTALL_REPLACE += include_replace lib_replace
++}
+ 
+ qt_install_headers {
+     designer_headers.files = $$SYNCQT.HEADER_FILES $$SYNCQT.HEADER_CLASSES

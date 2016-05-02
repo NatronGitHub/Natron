@@ -1,0 +1,11 @@
+--- base/stdpre.h.orig	2013-08-30 19:37:28.000000000 +0900
++++ base/stdpre.h	2013-09-10 14:14:00.000000000 +0900
+@@ -20,7 +20,7 @@
+ #  define stdpre_INCLUDED
+ 
+ /* Ghostscript uses transitional LFS functions. */
+-#define _LARGEFILE64_SOURCE 1
++/* #define _LARGEFILE64_SOURCE 1 */
+ 
+ #ifndef _FILE_OFFSET_BITS
+ #define _FILE_OFFSET_BITS 64

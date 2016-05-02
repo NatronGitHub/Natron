@@ -1,0 +1,18 @@
+--- mkspecs/features/moc.prf.orig	2012-04-24 08:27:50.000000000 -0400
++++ mkspecs/features/moc.prf	2012-04-24 08:27:55.000000000 -0400
+@@ -83,8 +83,13 @@
+ #make sure we can include these files
+ moc_dir_short = $$MOC_DIR
+ contains(QMAKE_HOST.os,Windows):moc_dir_short ~= s,^.:,/,
+-contains(moc_dir_short, ^[/\\\\].*):INCLUDEPATH += $$MOC_DIR
+-else:INCLUDEPATH += $$OUT_PWD/$$MOC_DIR
++
++# order the local moc path -before- the others, since its headers
++# should -always be found locally so we want that path first.
++contains(moc_dir_short, ^[/\\\\].*):INCLUDEPATH = $$MOC_DIR $$INCLUDEPATH
++else:INCLUDEPATH = $$OUT_PWD/$$MOC_DIR $$INCLUDEPATH
++
++# message(MOC_DIR is $$MOC_DIR)
+ 
+ # Backwards compatibility: Make shadow builds with default MOC_DIR work
+ # if the user did not add the source dir explicitly.

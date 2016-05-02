@@ -36,8 +36,15 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+
+#if QT_VERSION >= 0x050000
+#include <QtWidgets/QTreeWidget>
+#include <QtWidgets/QStyledItemDelegate>
+#else
 #include <QtGui/QTreeWidget>
 #include <QtGui/QStyledItemDelegate>
+#endif
+
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

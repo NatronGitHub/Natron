@@ -94,6 +94,8 @@
 #include "Engine/ViewerInstance.h" // RenderStatsMap
 #include "Engine/WriteNode.h"
 
+#include "sbkversion.h" // shiboken/pyside version
+
 #if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 #endif
@@ -1389,7 +1391,13 @@ AppManager::loadPythonGroups()
 
     ///Also import Pyside.QtCore and Pyside.QtGui (the later only in non background mode)
     {
-        std::string s = "import PySide\nimport PySide.QtCore as QtCore";
+        std::string s;
+        if (SHIBOKEN_MAJOR_VERSION == 2) {
+            s = "import PySide2\nimport PySide2.QtCore as QtCore";
+        }
+        else {
+            s = "import PySide\nimport PySide.QtCore as QtCore";
+        }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
             std::string message = QObject::tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
@@ -1401,7 +1409,13 @@ AppManager::loadPythonGroups()
     }
 
     if ( !isBackground() ) {
-        std::string s = "import PySide.QtGui as QtGui";
+        std::string s;
+        if (SHIBOKEN_MAJOR_VERSION == 2) {
+            s = "import PySide2.QtGui as QtGui";
+        }
+        else {
+            s = "import PySide.QtGui as QtGui";
+        }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
             std::string message = QObject::tr("Failed to import PySide.QtGui").toStdString();

@@ -2186,7 +2186,7 @@ KnobTable::decodeFromKnobTableFormat(const std::string& value,
 
             std::string value;
             while (lastFoundIndex < endNamePos) {
-                value.push_back( raw[lastFoundIndex].toAscii() );
+                value.push_back( raw[lastFoundIndex].toLatin1() );
                 ++lastFoundIndex;
             }
 

@@ -1,0 +1,531 @@
+diff -u -r libs/serialization/src/basic_text_iprimitive.cpp libs/serialization/src.new/basic_text_iprimitive.cpp
+--- libs/serialization/src/basic_text_iprimitive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/basic_text_iprimitive.cpp	2015-09-19 15:12:10.000000000 +0200
+@@ -12,7 +12,9 @@
+ #  pragma warning (disable : 4786) // too long name, harmless warning
+ #endif
+ 
++#pragma GCC visibility push(default)
+ #include <istream>
++#pragma GCC visibility pop
+ 
+ #define BOOST_ARCHIVE_SOURCE
+ #include <boost/archive/detail/auto_link_archive.hpp>
+@@ -22,7 +24,7 @@
+ namespace archive {
+ 
+ // explicitly instantiate for this type of text stream
+-template class basic_text_iprimitive<std::istream> ;
++template class BOOST_SYMBOL_VISIBLE basic_text_iprimitive<std::istream> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/basic_text_oprimitive.cpp libs/serialization/src.new/basic_text_oprimitive.cpp
+--- libs/serialization/src/basic_text_oprimitive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/basic_text_oprimitive.cpp	2015-09-19 15:12:10.000000000 +0200
+@@ -12,7 +12,9 @@
+ #  pragma warning (disable : 4786) // too long name, harmless warning
+ #endif
+ 
++#pragma GCC visibility push(default)
+ #include <ostream>
++#pragma GCC visibility pop
+ 
+ #define BOOST_ARCHIVE_SOURCE
+ #include <boost/archive/detail/auto_link_archive.hpp>
+@@ -22,7 +24,7 @@
+ namespace archive {
+ 
+ // explicitly instantiate for this type of text stream
+-template class basic_text_oprimitive<std::ostream> ;
++template class BOOST_SYMBOL_VISIBLE basic_text_oprimitive<std::ostream> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/basic_text_wiprimitive.cpp libs/serialization/src.new/basic_text_wiprimitive.cpp
+--- libs/serialization/src/basic_text_wiprimitive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/basic_text_wiprimitive.cpp	2015-09-19 15:12:10.000000000 +0200
+@@ -18,7 +18,9 @@
+ #  pragma warning (disable : 4786) // too long name, harmless warning
+ #endif
+ 
++#pragma GCC visibility push(default)
+ #include <istream>
++#pragma GCC visibility pop
+ 
+ #define BOOST_WARCHIVE_SOURCE
+ #include <boost/archive/detail/auto_link_warchive.hpp>
+@@ -27,7 +29,7 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class basic_text_iprimitive<std::wistream> ;
++template class BOOST_SYMBOL_VISIBLE basic_text_iprimitive<std::wistream> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/basic_text_woprimitive.cpp libs/serialization/src.new/basic_text_woprimitive.cpp
+--- libs/serialization/src/basic_text_woprimitive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/basic_text_woprimitive.cpp	2015-09-19 15:12:10.000000000 +0200
+@@ -18,7 +18,9 @@
+ #  pragma warning (disable : 4786) // too long name, harmless warning
+ #endif
+ 
++#pragma GCC visibility push(default)
+ #include <ostream>
++#pragma GCC visibility pop
+ 
+ #define BOOST_WARCHIVE_SOURCE
+ #include <boost/archive/detail/auto_link_warchive.hpp>
+@@ -27,7 +29,7 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class basic_text_oprimitive<std::wostream> ;
++template class BOOST_SYMBOL_VISIBLE basic_text_oprimitive<std::wostream> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/basic_xml_grammar.ipp libs/serialization/src.new/basic_xml_grammar.ipp
+--- libs/serialization/src/basic_xml_grammar.ipp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/basic_xml_grammar.ipp	2015-09-19 15:12:10.000000000 +0200
+@@ -12,7 +12,9 @@
+ #  pragma warning (disable : 4786) // too long name, harmless warning
+ #endif
+ 
++#pragma GCC visibility push(default)
+ #include <istream>
++#pragma GCC visibility pop
+ #include <algorithm>
+ #include <boost/config.hpp> // typename
+ 
+diff -u -r libs/serialization/src/binary_iarchive.cpp libs/serialization/src.new/binary_iarchive.cpp
+--- libs/serialization/src/binary_iarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/binary_iarchive.cpp	2015-09-20 16:01:09.000000000 +0200
+@@ -8,10 +8,14 @@
+ 
+ //  See http://www.boost.org for updates, documentation, and revision history.
+ 
++#pragma GCC visibility push(default)
+ #include <istream>
++#pragma GCC visibility pop
+ 
+ #define BOOST_ARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/binary_iarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ #include <boost/archive/impl/archive_serializer_map.ipp>
+@@ -22,14 +26,14 @@
+ namespace archive {
+ 
+ // explicitly instantiate for this type of stream
+-template class detail::archive_serializer_map<binary_iarchive>;
+-template class basic_binary_iprimitive<
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<binary_iarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_binary_iprimitive<
+     binary_iarchive,
+     std::istream::char_type, 
+     std::istream::traits_type
+ >;
+-template class basic_binary_iarchive<binary_iarchive> ;
+-template class binary_iarchive_impl<
++template class BOOST_SYMBOL_VISIBLE basic_binary_iarchive<binary_iarchive> ;
++template class BOOST_SYMBOL_VISIBLE binary_iarchive_impl<
+     binary_iarchive, 
+     std::istream::char_type, 
+     std::istream::traits_type
+diff -u -r libs/serialization/src/binary_oarchive.cpp libs/serialization/src.new/binary_oarchive.cpp
+--- libs/serialization/src/binary_oarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/binary_oarchive.cpp	2015-09-20 16:01:24.000000000 +0200
+@@ -8,10 +8,14 @@
+ 
+ //  See http://www.boost.org for updates, documentation, and revision history.
+ 
++#pragma GCC visibility push(default)
+ #include <ostream>
++#pragma GCC visibility pop
+ 
+ #define BOOST_ARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/binary_oarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of binary stream
+@@ -22,14 +26,14 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<binary_oarchive>;
+-template class basic_binary_oprimitive<
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<binary_oarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_binary_oprimitive<
+     binary_oarchive, 
+     std::ostream::char_type, 
+     std::ostream::traits_type
+ >;
+-template class basic_binary_oarchive<binary_oarchive> ;
+-template class binary_oarchive_impl<
++template class BOOST_SYMBOL_VISIBLE basic_binary_oarchive<binary_oarchive> ;
++template class BOOST_SYMBOL_VISIBLE binary_oarchive_impl<
+     binary_oarchive, 
+     std::ostream::char_type, 
+     std::ostream::traits_type
+diff -u -r libs/serialization/src/binary_wiarchive.cpp libs/serialization/src.new/binary_wiarchive.cpp
+--- libs/serialization/src/binary_wiarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/binary_wiarchive.cpp	2015-09-20 16:01:37.000000000 +0200
+@@ -15,7 +15,9 @@
+ #else
+ 
+ #define BOOST_WARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/binary_wiarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of text stream
+@@ -27,14 +29,14 @@
+ namespace archive {
+ 
+ // explicitly instantiate for this type of text stream
+-template class detail::archive_serializer_map<binary_wiarchive>;
+-template class basic_binary_iprimitive<
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<binary_wiarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_binary_iprimitive<
+     binary_wiarchive,
+     wchar_t, 
+     std::char_traits<wchar_t> 
+ >;
+-template class basic_binary_iarchive<binary_wiarchive> ;
+-template class binary_iarchive_impl<
++template class BOOST_SYMBOL_VISIBLE basic_binary_iarchive<binary_wiarchive> ;
++template class BOOST_SYMBOL_VISIBLE binary_iarchive_impl<
+     binary_wiarchive, 
+     wchar_t, 
+     std::char_traits<wchar_t> 
+diff -u -r libs/serialization/src/binary_woarchive.cpp libs/serialization/src.new/binary_woarchive.cpp
+--- libs/serialization/src/binary_woarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/binary_woarchive.cpp	2015-09-20 16:01:49.000000000 +0200
+@@ -15,7 +15,9 @@
+ #else
+ 
+ #define BOOST_WARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/binary_woarchive.hpp>
++#pragma GCC visibility pop
+ 
+ // explicitly instantiate for this type of text stream
+ #include <boost/archive/impl/archive_serializer_map.ipp>
+@@ -25,14 +27,14 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<binary_woarchive>;
+-template class basic_binary_oprimitive<
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<binary_woarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_binary_oprimitive<
+     binary_woarchive, 
+     wchar_t, 
+     std::char_traits<wchar_t> 
+ >;
+-template class basic_binary_oarchive<binary_woarchive> ;
+-template class binary_oarchive_impl<
++template class BOOST_SYMBOL_VISIBLE basic_binary_oarchive<binary_woarchive> ;
++template class BOOST_SYMBOL_VISIBLE binary_oarchive_impl<
+     binary_woarchive, 
+     wchar_t, 
+     std::char_traits<wchar_t> 
+diff -u -r libs/serialization/src/polymorphic_iarchive.cpp libs/serialization/src.new/polymorphic_iarchive.cpp
+--- libs/serialization/src/polymorphic_iarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/polymorphic_iarchive.cpp	2015-09-20 16:00:36.000000000 +0200
+@@ -16,13 +16,15 @@
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ #include <boost/archive/impl/archive_serializer_map.ipp>
++#pragma GCC visibility push(default)
+ #include <boost/archive/polymorphic_iarchive.hpp>
++#pragma GCC visibility pop
+ 
+ namespace boost {
+ namespace archive {
+ namespace detail {
+ 
+-template class archive_serializer_map<polymorphic_iarchive>;
++template class BOOST_SYMBOL_VISIBLE archive_serializer_map<polymorphic_iarchive>;
+ 
+ } // detail
+ } // archive
+diff -u -r libs/serialization/src/polymorphic_oarchive.cpp libs/serialization/src.new/polymorphic_oarchive.cpp
+--- libs/serialization/src/polymorphic_oarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/polymorphic_oarchive.cpp	2015-09-20 16:00:50.000000000 +0200
+@@ -16,13 +16,15 @@
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ #include <boost/archive/impl/archive_serializer_map.ipp>
++#pragma GCC visibility push(default)
+ #include <boost/archive/polymorphic_oarchive.hpp>
++#pragma GCC visibility pop
+ 
+ namespace boost {
+ namespace archive {
+ namespace detail {
+ 
+-template class archive_serializer_map<polymorphic_oarchive>;
++template class BOOST_SYMBOL_VISIBLE archive_serializer_map<polymorphic_oarchive>;
+ 
+ } // detail
+ } // archive
+diff -u -r libs/serialization/src/text_iarchive.cpp libs/serialization/src.new/text_iarchive.cpp
+--- libs/serialization/src/text_iarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/text_iarchive.cpp	2015-09-20 16:00:00.000000000 +0200
+@@ -13,7 +13,9 @@
+ #endif
+ 
+ #define BOOST_ARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/text_iarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of text stream
+@@ -24,9 +26,9 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<text_iarchive>;
+-template class basic_text_iarchive<text_iarchive> ;
+-template class text_iarchive_impl<text_iarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<text_iarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_text_iarchive<text_iarchive> ;
++template class BOOST_SYMBOL_VISIBLE text_iarchive_impl<text_iarchive> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/text_oarchive.cpp libs/serialization/src.new/text_oarchive.cpp
+--- libs/serialization/src/text_oarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/text_oarchive.cpp	2015-09-20 16:00:13.000000000 +0200
+@@ -13,7 +13,9 @@
+ #endif
+ 
+ #define BOOST_ARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/text_oarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of text stream
+@@ -25,9 +27,9 @@
+ namespace archive {
+ 
+ //template class basic_text_oprimitive<std::ostream> ;
+-template class detail::archive_serializer_map<text_oarchive>;
+-template class basic_text_oarchive<text_oarchive> ;
+-template class text_oarchive_impl<text_oarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<text_oarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_text_oarchive<text_oarchive> ;
++template class BOOST_SYMBOL_VISIBLE text_oarchive_impl<text_oarchive> ;
+ 
+ } // namespace serialization
+ } // namespace boost
+diff -u -r libs/serialization/src/text_wiarchive.cpp libs/serialization/src.new/text_wiarchive.cpp
+--- libs/serialization/src/text_wiarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/text_wiarchive.cpp	2015-09-20 16:03:37.000000000 +0200
+@@ -15,7 +15,9 @@
+ #else
+ 
+ #define BOOST_WARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/text_wiarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of text stream
+@@ -26,9 +28,9 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<text_wiarchive>;
+-template class basic_text_iarchive<text_wiarchive> ;
+-template class text_wiarchive_impl<text_wiarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<text_wiarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_text_iarchive<text_wiarchive> ;
++template class BOOST_SYMBOL_VISIBLE text_wiarchive_impl<text_wiarchive> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/text_woarchive.cpp libs/serialization/src.new/text_woarchive.cpp
+--- libs/serialization/src/text_woarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/text_woarchive.cpp	2015-09-20 16:03:49.000000000 +0200
+@@ -14,7 +14,9 @@
+ #else
+ 
+ #define BOOST_WARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/text_woarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of text stream
+@@ -25,9 +27,9 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<text_woarchive>;
+-template class basic_text_oarchive<text_woarchive> ;
+-template class text_woarchive_impl<text_woarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<text_woarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_text_oarchive<text_woarchive> ;
++template class BOOST_SYMBOL_VISIBLE text_woarchive_impl<text_woarchive> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/xml_grammar.cpp libs/serialization/src.new/xml_grammar.cpp
+--- libs/serialization/src/xml_grammar.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/xml_grammar.cpp	2015-09-20 16:04:22.000000000 +0200
+@@ -13,7 +13,9 @@
+ #endif
+ 
+ #define BOOST_ARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/impl/basic_xml_grammar.hpp>
++#pragma GCC visibility pop
+ 
+ using namespace boost::spirit::classic;
+ 
+@@ -66,7 +68,7 @@
+ namespace archive {
+ 
+ // explicit instantiation of xml for 8 bit characters
+-template class basic_xml_grammar<char>;
++template class BOOST_SYMBOL_VISIBLE basic_xml_grammar<char>;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/xml_iarchive.cpp libs/serialization/src.new/xml_iarchive.cpp
+--- libs/serialization/src/xml_iarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/xml_iarchive.cpp	2015-09-19 18:33:04.000000000 +0200
+@@ -17,7 +17,9 @@
+ #include <boost/config.hpp>
+ #include <boost/detail/workaround.hpp>
+ 
++#pragma GCC visibility push(default)
+ #include <boost/archive/xml_iarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of xml stream
+@@ -28,9 +30,9 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<xml_iarchive>;
+-template class basic_xml_iarchive<xml_iarchive> ;
+-template class xml_iarchive_impl<xml_iarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<xml_iarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_xml_iarchive<xml_iarchive> ;
++template class BOOST_SYMBOL_VISIBLE xml_iarchive_impl<xml_iarchive> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/xml_oarchive.cpp libs/serialization/src.new/xml_oarchive.cpp
+--- libs/serialization/src/xml_oarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/xml_oarchive.cpp	2015-09-20 15:58:51.000000000 +0200
+@@ -13,7 +13,9 @@
+ #endif
+ 
+ #define BOOST_ARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/xml_oarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of xml stream
+@@ -24,9 +26,9 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<xml_oarchive>;
+-template class basic_xml_oarchive<xml_oarchive> ;
+-template class xml_oarchive_impl<xml_oarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<xml_oarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_xml_oarchive<xml_oarchive> ;
++template class BOOST_SYMBOL_VISIBLE xml_oarchive_impl<xml_oarchive> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/xml_wgrammar.cpp libs/serialization/src.new/xml_wgrammar.cpp
+--- libs/serialization/src/xml_wgrammar.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/xml_wgrammar.cpp	2015-09-20 16:04:46.000000000 +0200
+@@ -15,7 +15,9 @@
+ #else
+ 
+ #define BOOST_WARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/impl/basic_xml_grammar.hpp>
++#pragma GCC visibility pop
+ 
+ using namespace boost::spirit::classic;
+ 
+@@ -149,7 +151,7 @@
+ namespace archive {
+ 
+ // explicit instantiation of xml for wide characters
+-template class basic_xml_grammar<wchar_t>;
++template class BOOST_SYMBOL_VISIBLE basic_xml_grammar<wchar_t>;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/xml_wiarchive.cpp libs/serialization/src.new/xml_wiarchive.cpp
+--- libs/serialization/src/xml_wiarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/xml_wiarchive.cpp	2015-09-20 15:57:23.000000000 +0200
+@@ -21,7 +21,9 @@
+ 
+ #define BOOST_WARCHIVE_SOURCE
+ 
++#pragma GCC visibility push(default)
+ #include <boost/archive/xml_wiarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of xml stream
+@@ -32,9 +34,9 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<xml_wiarchive>;
+-template class basic_xml_iarchive<xml_wiarchive> ;
+-template class xml_wiarchive_impl<xml_wiarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<xml_wiarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_xml_iarchive<xml_wiarchive> ;
++template class BOOST_SYMBOL_VISIBLE xml_wiarchive_impl<xml_wiarchive> ;
+ 
+ } // namespace archive
+ } // namespace boost
+diff -u -r libs/serialization/src/xml_woarchive.cpp libs/serialization/src.new/xml_woarchive.cpp
+--- libs/serialization/src/xml_woarchive.cpp	2015-05-23 20:51:06.000000000 +0200
++++ libs/serialization/src.new/xml_woarchive.cpp	2015-09-20 15:57:49.000000000 +0200
+@@ -14,7 +14,9 @@
+ #else
+ 
+ #define BOOST_WARCHIVE_SOURCE
++#pragma GCC visibility push(default)
+ #include <boost/archive/xml_woarchive.hpp>
++#pragma GCC visibility pop
+ #include <boost/archive/detail/archive_serializer_map.hpp>
+ 
+ // explicitly instantiate for this type of text stream
+@@ -25,9 +27,9 @@
+ namespace boost {
+ namespace archive {
+ 
+-template class detail::archive_serializer_map<xml_woarchive>;
+-template class basic_xml_oarchive<xml_woarchive> ;
+-template class xml_woarchive_impl<xml_woarchive> ;
++template class BOOST_SYMBOL_VISIBLE detail::archive_serializer_map<xml_woarchive>;
++template class BOOST_SYMBOL_VISIBLE basic_xml_oarchive<xml_woarchive> ;
++template class BOOST_SYMBOL_VISIBLE xml_woarchive_impl<xml_woarchive> ;
+ 
+ } // namespace archive
+ } // namespace boost

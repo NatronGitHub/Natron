@@ -1,0 +1,22 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id$
+
+PortSystem       1.0
+PortGroup        qt4 1.0
+PortGroup        qmake 1.0
+
+epoch        	 1
+
+name             qt4-quick-controls
+version          0.1.20121231
+categories       aqua
+platforms        macosx
+license          GPL-3
+maintainers      openmaintainer
+description      A Desktop Qt Quick Component
+long_description ${description}
+homepage         https://qt-project.org/wiki/QtDesktopComponents
+
+fetch.type       git
+git.url          git://gitorious.org/qt/qtquickcontrols.git
+git.branch       d41f99efdb99b337761f0575ad28434f6aaa07ba

@@ -1,0 +1,11 @@
+--- src/libopts/Makefile.am.orig	2014-10-12 08:25:14.000000000 +1100
++++ src/libopts/Makefile.am	2014-10-14 20:59:28.000000000 +1100
+@@ -10,7 +10,7 @@
+ BUILT_SOURCES		=
+ MOSTLYCLEANFILES	=
+ 
+-+_NORETURN_H=$(srcdir)/compat/_Noreturn.h
++_NORETURN_H=$(srcdir)/compat/_Noreturn.h
+ EXTRA_DIST += $(srcdir)/compat/_Noreturn.h
+ BUILT_SOURCES += $(STDNORETURN_H)
+ if GL_GENERATE_STDNORETURN_H

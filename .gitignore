@@ -236,9 +236,6 @@ PortIndex
 PortIndex.quick
 *.7z*
 *.exe*
-tools/Windows/src/*
-tools/linux/src/*
-tools/MacOSX/local.sh
 allfileshas.txt
 bigobjects.txt
 bigtosmall.txt

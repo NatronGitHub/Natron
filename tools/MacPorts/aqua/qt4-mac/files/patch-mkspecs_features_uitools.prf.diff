@@ -1,0 +1,29 @@
+--- mkspecs/features/uitools.prf.orig	2012-04-26 11:40:22.000000000 -0400
++++ mkspecs/features/uitools.prf	2012-04-26 11:42:42.000000000 -0400
+@@ -2,13 +2,21 @@
+ qt:load(qt)
+ 
+ # Include the correct version of the UiLoader library
+-symbian: QTUITOOLS_LINKAGE = -lQtUiTools.lib
+-else: QTUITOOLS_LINKAGE = -lQtUiTools$${QT_LIBINFIX}
+ 
+-CONFIG(debug, debug|release) {
+-    mac: QTUITOOLS_LINKAGE = -lQtUiTools$${QT_LIBINFIX}_debug
+-    win32: QTUITOOLS_LINKAGE = -lQtUiTools$${QT_LIBINFIX}d
++#mac frameworks, for both debug and release
++mac:!static:contains(QT_CONFIG, qt_framework) {
++   QTUITOOLS_LINKAGE = -framework QtUiTools
++} else {
++
++  symbian: QTUITOOLS_LINKAGE = -lQtUiTools.lib
++  else: QTUITOOLS_LINKAGE = -lQtUiTools$${QT_LIBINFIX}
++
++  CONFIG(debug, debug|release) {
++      mac: QTUITOOLS_LINKAGE = -lQtUiTools$${QT_LIBINFIX}_debug
++      win32: QTUITOOLS_LINKAGE = -lQtUiTools$${QT_LIBINFIX}d
++  }
+ }
++
+ LIBS += $$QTUITOOLS_LINKAGE
+ 
+ INCLUDEPATH = $$QMAKE_INCDIR_QT/QtUiTools $$INCLUDEPATH
