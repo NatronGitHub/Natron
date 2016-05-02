@@ -22,7 +22,6 @@
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
 				1E12F4BD1CC6594E00105A34 /* PBXTargetDependency */,
 				1E5F8F5A18AA913D0045A477 /* PBXTargetDependency */,
-				1EA307F71C4E7DF800B77270 /* PBXTargetDependency */,
 			);
 			name = libs;
 			productName = libs;
@@ -237,20 +236,6 @@
 			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
 			remoteInfo = libs;
 		};
-		1E8132FD1BA31D6D006845CF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1E8132FA1BA31D6D006845CF;
-			remoteInfo = BreakpadClient;
-		};
-		1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 79F5A65F5B69CA741078AAA0;
-			remoteInfo = BreakpadClient;
-		};
 		1EADE5CE18AA403700EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
@@ -313,7 +298,6 @@
 		1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronCrashReporter.xcodeproj; path = CrashReporter/NatronCrashReporter.xcodeproj; sourceTree = "<group>"; };
 		1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRendererCrashReporter.xcodeproj; path = CrashReporterCLI/NatronRendererCrashReporter.xcodeproj; sourceTree = "<group>"; };
 		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
-		1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = BreakpadClient.xcodeproj; path = BreakpadClient/BreakpadClient.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
@@ -401,14 +385,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		1E8132F81BA31D6D006845CF /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1E8132FE1BA31D6D006845CF /* libBreakpadClient.a */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		1EADE5B718AA400B00EF3180 = {
 			isa = PBXGroup;
 			children = (
@@ -423,7 +399,6 @@
 				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
 				1EADE5C118AA403700EF3180 /* Engine.xcodeproj */,
 				1EADE5C418AA403700EF3180 /* Gui.xcodeproj */,
-				1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */,
 				1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */,
 				1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */,
 				1EADE5C718AA403700EF3180 /* Tests.xcodeproj */,
@@ -485,10 +460,6 @@
 			mainGroup = 1EADE5B718AA400B00EF3180;
 			projectDirPath = "";
 			projectReferences = (
-				{
-					ProductGroup = 1E8132F81BA31D6D006845CF /* Products */;
-					ProjectRef = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
-				},
 				{
 					ProductGroup = 1E1524F41CA9CCA60056C506 /* Products */;
 					ProjectRef = 1E1524F31CA9CCA60056C506 /* ceres.xcodeproj */;
@@ -627,13 +598,6 @@
 			remoteRef = 1E306DF91C49497200BAC6E3 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		1E8132FE1BA31D6D006845CF /* libBreakpadClient.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libBreakpadClient.a;
-			remoteRef = 1E8132FD1BA31D6D006845CF /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		1EADE5CF18AA403700EF3180 /* libEngine.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -751,11 +715,6 @@
 			isa = PBXTargetDependency;
 			target = 1E5F8F5118AA91330045A477 /* libs */;
 			targetProxy = 1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */;
-		};
-		1EA307F71C4E7DF800B77270 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = BreakpadClient;
-			targetProxy = 1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */;
 		};
 		1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

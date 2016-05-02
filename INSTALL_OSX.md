@@ -1,7 +1,9 @@
 Developer installation on OS X
 =================================
 
-This file is supposed to guide you step by step to have working (compiling) version of Natron on mac osx ( >= 10.6 ). 
+These are step-by-step instructions to compile Natron on OS X.
+
+OS X 10.6 (a.k.a. Snow Leopard) and newer are supported when building with MacPorts, and Homebrew can be used to compile it on the latest OS X.
 
 ## Checkout sources
 
@@ -27,18 +29,18 @@ Homebrew is easier to set up than MacPorts, but cannot build universal binaries.
 
 ### MacPorts
 
-You need an up to date macports version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
+You need an up to date MacPorts version. Just download it and install it from <http://www.macports.org>, and execute the following commands in a terminal:
 
 	sudo port selfupdate
 	sudo port upgrade outdated
 
 Then, you should add the "ports" provided by Natron. Edit as root the file `/opt/local/etc/macports/sources.conf` (as in `sudo nano /opt/local/etc/macports/sources.conf`) and add the following line at the beginning, with the path to the Natron sources (yes, there are three slashes after `file:`):
 
-    file:///Users/your_username/path_to_sources/Natron/tools/MacOSX/ports
+    file:///Users/your_username/path_to_sources/Natron/tools/MacPorts
 
 Then, create the index file:
 
-    (cd /Users/your_username/path_to_sources/Natron/tools/MacOSX/ports; portindex)
+    (cd /Users/your_username/path_to_sources/Natron/tools/MacPorts; portindex)
 
 It is also recommended to add the  following line to `/opt/local/etc/macports/variants.conf`:
 
@@ -54,7 +56,7 @@ And finally install the required packages:
 	sudo port install py27-pyside py27-sphinx
 	sudo ln -s python2.7-config /opt/local/bin/python2-config
 
-create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
+Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
 configuration, for example using the following comands:
 
 ```Shell
@@ -154,14 +156,14 @@ And install (after making sure `/opt/qt4` is user-writable) using:
     make install
 
 
-###Download OpenColorIO-Configs
+### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron source tree:
 
-    curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz | tar zxf -
-    mv OpenColorIO-Configs-Natron-v2.0 OpenColorIO-Configs
+    curl -k -L https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz | tar zxf -
+    mv OpenColorIO-Configs-Natron-v2.1 OpenColorIO-Configs
 
 
 ## Add the config.pri file

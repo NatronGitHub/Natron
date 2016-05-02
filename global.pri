@@ -65,11 +65,8 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
-#Always enable breakpad, to disable just launch Natron-bin and not Natron
-#Commenting this will prevent Natron from even using breakpad
-
-!disable-breakpad {
-    DEFINES += NATRON_USE_BREAKPAD
+breakpad {
+    include(breakpadclient.pri)
 }
 
 CONFIG(noassertions) {
