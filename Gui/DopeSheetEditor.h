@@ -34,7 +34,13 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+
+#if QT_VERSION >= 0x050000
+#include <QtWidgets/QWidget>
+#else
 #include <QtGui/QWidget>
+#endif
+
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

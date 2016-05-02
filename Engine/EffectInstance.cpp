@@ -45,7 +45,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
+
+#if QT_VERSION >= 0x050000
+#include <QtConcurrent/QtConcurrentRun>
+#else
 #include <QtCore/QtConcurrentRun>
+#endif
 
 #include <SequenceParsing.h>
 
