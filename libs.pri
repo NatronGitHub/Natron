@@ -60,8 +60,6 @@ INCLUDEPATH += $$PWD/libs/flann/src/cpp
 
 }
 
-include(breakpadclient.pri)
-
 ceres-flags {
 CONFIG += glog-flags
 DEFINES += CERES_HAVE_PTHREAD CERES_NO_SUITESPARSE CERES_NO_CXSPARSE CERES_HAVE_RWLOCK

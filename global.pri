@@ -65,7 +65,9 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
-include(breakpadclient.pri)
+breakpad {
+    include(breakpadclient.pri)
+}
 
 CONFIG(noassertions) {
 #See http://doc.qt.io/qt-4.8/debug.html

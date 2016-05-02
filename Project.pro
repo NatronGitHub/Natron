@@ -21,7 +21,9 @@ TEMPLATE = subdirs
 # build things in the order we give
 CONFIG += ordered
 
-include(breakpadpro.pri)
+breakpad {
+    include(breakpadpro.pri)
+}
 
 SUBDIRS += \
     HostSupport \
