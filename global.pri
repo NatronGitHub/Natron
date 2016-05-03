@@ -27,8 +27,11 @@ DEFINES += OFX_SUPPORTS_DIALOG
 #for QString(const char*) assumes ASCII strings, we may run into troubles
 DEFINES += QT_NO_CAST_FROM_ASCII
 
-#Uncomment to run Natron without Python functionnalities (for debug purposes)
-#DEFINES += NATRON_RUN_WITHOUT_PYTHON
+# To run Natron without Python functionnalities (for debug purposes)
+run-without-python {
+    message("Natron will run (not build) without Python")
+    DEFINES += NATRON_RUN_WITHOUT_PYTHON
+}
 
 *g++* | *clang* {
 #See https://bugreports.qt.io/browse/QTBUG-35776 we cannot use
@@ -62,11 +65,8 @@ CONFIG(debug, debug|release){
     DEFINES *= NDEBUG
 }
 
-#Always enable breakpad, to disable just launch Natron-bin and not Natron
-#Commenting this will prevent Natron from even using breakpad
-
-!disable-breakpad {
-    DEFINES += NATRON_USE_BREAKPAD
+enable-breakpad {
+    include(breakpadclient.pri)
 }
 
 CONFIG(noassertions) {

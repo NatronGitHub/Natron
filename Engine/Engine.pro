@@ -26,11 +26,12 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 !noexpat: CONFIG += expat
 
-# Don't uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
+# Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
 #QT -= gui
 
 include(../global.pri)
 include(../config.pri)
+include(../libs.pri)
 
 log {
     DEFINES += NATRON_LOG
@@ -62,14 +63,6 @@ INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
-
-win32-msvc* {
-	CONFIG(64bit) {
-                QMAKE_LFLAGS += /MACHINE:X64
-        } else {
-                QMAKE_LFLAGS += /MACHINE:X86
-	}
-}
 
 SOURCES += \
     AppInstance.cpp \

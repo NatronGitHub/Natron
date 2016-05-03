@@ -21,8 +21,8 @@ TEMPLATE = subdirs
 # build things in the order we give
 CONFIG += ordered
 
-!disable-breakpad {
-SUBDIRS += BreakpadClient CrashReporter CrashReporterCLI
+enable-breakpad {
+    include(breakpadpro.pri)
 }
 
 SUBDIRS += \
@@ -47,6 +47,7 @@ OTHER_FILES += \
 
 include(global.pri)
 include(config.pri)
+include(libs.pri)
 
 *-xcode {
   # Qt 4.8.5's XCode generator has a bug and places moc_*.cpp files next to the sources instead of inside the build dir

@@ -16,7 +16,6 @@
 				D7A1964818B2242E00F412DA /* PBXTargetDependency */,
 				1E5F8F5818AA913D0045A477 /* PBXTargetDependency */,
 				1E5F8F5A18AA913D0045A477 /* PBXTargetDependency */,
-				1EA307F71C4E7DF800B77270 /* PBXTargetDependency */,
 			);
 			name = libs;
 			productName = libs;
@@ -70,13 +69,6 @@
 			remoteGlobalIDString = 1E189EBD1C49475600F1FD20;
 			remoteInfo = Natron;
 		};
-		1E306DA91C49482C00BAC6E3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1E306DA61C49482B00BAC6E3;
-			remoteInfo = NatronCrashReporter;
-		};
 		1E306DF61C49497200BAC6E3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
@@ -84,18 +76,11 @@
 			remoteGlobalIDString = 1E306DF01C49497200BAC6E3;
 			remoteInfo = NatronRenderer;
 		};
-		1E306DF91C49497200BAC6E3 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1E306DEB1C49497200BAC6E3;
-			remoteInfo = NatronRendererCrashReporter;
-		};
 		1E306DFC1C4949AB00BAC6E3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C718AA403700EF3180 /* Tests.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = F12D8C51B57F7F1E47A72359;
+			remoteGlobalIDString = 31B0C8B2223E93B56C139099;
 			remoteInfo = Tests;
 		};
 		1E306DFE1C4949BA00BAC6E3 /* PBXContainerItemProxy */ = {
@@ -116,28 +101,28 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 13BADAA649B67C9FC35E6FE9;
+			remoteGlobalIDString = F8C4EFD3130DE4B97EE709A7;
 			remoteInfo = NatronRenderer;
 		};
 		1E306E041C4949D700BAC6E3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = C8FF770CD7E56008C592D099;
+			remoteGlobalIDString = 23016D447B15CA526EFAFB4A;
 			remoteInfo = Natron;
 		};
 		1E5F8F5718AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 7BB33893F3B80C45B63FE717;
+			remoteGlobalIDString = A4C2A40386E0AA83B317D7DF;
 			remoteInfo = Engine;
 		};
 		1E5F8F5918AA913D0045A477 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 1EADE5C418AA403700EF3180 /* Gui.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = E083742C179E125FCDE255B9;
+			remoteGlobalIDString = 2FAAA5420CFE5CAE1FA1CB89;
 			remoteInfo = Gui;
 		};
 		1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */ = {
@@ -146,20 +131,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 1E5F8F5118AA91330045A477;
 			remoteInfo = libs;
-		};
-		1E8132FD1BA31D6D006845CF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 1E8132FA1BA31D6D006845CF;
-			remoteInfo = BreakpadClient;
-		};
-		1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 65774DC7A62568D1EB649B0B;
-			remoteInfo = BreakpadClient;
 		};
 		1EADE5CE18AA403700EF3180 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -207,17 +178,14 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 74504E5181365BE248F0EF8B;
+			remoteGlobalIDString = 2957AC755C2E4743AD528913;
 			remoteInfo = HostSupport;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
-		1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronCrashReporter.xcodeproj; path = CrashReporter/NatronCrashReporter.xcodeproj; sourceTree = "<group>"; };
-		1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRendererCrashReporter.xcodeproj; path = CrashReporterCLI/NatronRendererCrashReporter.xcodeproj; sourceTree = "<group>"; };
 		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
-		1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = BreakpadClient.xcodeproj; path = BreakpadClient/BreakpadClient.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
@@ -233,34 +201,10 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		1E306DA41C49482B00BAC6E3 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		1E306DE91C49497200BAC6E3 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1E306DFA1C49497200BAC6E3 /* NatronRendererCrashReporter */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		1E306DEE1C49497200BAC6E3 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				1E306DF71C49497200BAC6E3 /* NatronRenderer */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		1E8132F81BA31D6D006845CF /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				1E8132FE1BA31D6D006845CF /* libBreakpadClient.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -273,9 +217,6 @@
 				D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */,
 				1EADE5C118AA403700EF3180 /* Engine.xcodeproj */,
 				1EADE5C418AA403700EF3180 /* Gui.xcodeproj */,
-				1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */,
-				1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */,
-				1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */,
 				1EADE5C718AA403700EF3180 /* Tests.xcodeproj */,
 			);
 			sourceTree = "<group>";
@@ -336,10 +277,6 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 1E8132F81BA31D6D006845CF /* Products */;
-					ProjectRef = 1E8132F71BA31D6D006845CF /* BreakpadClient.xcodeproj */;
-				},
-				{
 					ProductGroup = 1EADE5C218AA403700EF3180 /* Products */;
 					ProjectRef = 1EADE5C118AA403700EF3180 /* Engine.xcodeproj */;
 				},
@@ -356,16 +293,8 @@
 					ProjectRef = 1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */;
 				},
 				{
-					ProductGroup = 1E306DA41C49482B00BAC6E3 /* Products */;
-					ProjectRef = 1E306DA31C49482B00BAC6E3 /* NatronCrashReporter.xcodeproj */;
-				},
-				{
 					ProductGroup = 1E306DEE1C49497200BAC6E3 /* Products */;
 					ProjectRef = 1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */;
-				},
-				{
-					ProductGroup = 1E306DE91C49497200BAC6E3 /* Products */;
-					ProjectRef = 1E306DE81C49497200BAC6E3 /* NatronRendererCrashReporter.xcodeproj */;
 				},
 				{
 					ProductGroup = 1EADE5C818AA403700EF3180 /* Products */;
@@ -390,32 +319,11 @@
 			remoteRef = 1E189EC31C49475E00F1FD20 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		1E306DAA1C49482C00BAC6E3 /* NatronCrashReporter.app */ = {
-			isa = PBXReferenceProxy;
-			fileType = wrapper.application;
-			path = NatronCrashReporter.app;
-			remoteRef = 1E306DA91C49482C00BAC6E3 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
 		1E306DF71C49497200BAC6E3 /* NatronRenderer */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
 			path = NatronRenderer;
 			remoteRef = 1E306DF61C49497200BAC6E3 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		1E306DFA1C49497200BAC6E3 /* NatronRendererCrashReporter */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = NatronRendererCrashReporter;
-			remoteRef = 1E306DF91C49497200BAC6E3 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		1E8132FE1BA31D6D006845CF /* libBreakpadClient.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libBreakpadClient.a;
-			remoteRef = 1E8132FD1BA31D6D006845CF /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		1EADE5CF18AA403700EF3180 /* libEngine.a */ = {
@@ -505,11 +413,6 @@
 			isa = PBXTargetDependency;
 			target = 1E5F8F5118AA91330045A477 /* libs */;
 			targetProxy = 1E5F8F5B18AA91430045A477 /* PBXContainerItemProxy */;
-		};
-		1EA307F71C4E7DF800B77270 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = BreakpadClient;
-			targetProxy = 1EA307F61C4E7DF800B77270 /* PBXContainerItemProxy */;
 		};
 		1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

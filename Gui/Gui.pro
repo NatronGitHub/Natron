@@ -26,6 +26,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 include(../global.pri)
 include(../config.pri)
+include(../libs.pri)
 
 precompile_header {
   # Use Precompiled headers (PCH)
