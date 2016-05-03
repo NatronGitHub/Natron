@@ -22,7 +22,6 @@ CONFIG += staticlib
 CONFIG -= qt
 
 include(../global.pri)
-include(../config.pri)
 
 !noexpat: CONFIG += expat
  

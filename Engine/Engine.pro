@@ -30,8 +30,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 #QT -= gui
 
 include(../global.pri)
-include(../config.pri)
-include(../libs.pri)
 
 log {
     DEFINES += NATRON_LOG

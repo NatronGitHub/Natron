@@ -166,7 +166,6 @@ win32-msvc*{
 } # !disable-breakpad
         
 include(../global.pri)
-include(../config.pri)
 
 SOURCES += \
     NatronRenderer_main.cpp
