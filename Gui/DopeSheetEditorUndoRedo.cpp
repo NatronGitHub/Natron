@@ -28,6 +28,9 @@
 
 #include <QDebug>
 
+#ifndef NATRON_ENABLE_IO_META_NODES
+#include "Engine/AppInstance.h"
+#endif
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -106,11 +109,10 @@ moveGroupNode(DopeSheetEditor* model,
 
         // Move readers
 #ifndef NATRON_ENABLE_IO_META_NODES
-        if ( ReadNode::isBundledReader(pluginID) )
+        if ( ReadNode::isBundledReader( pluginID, node->getApp()->wasProjectCreatedWithLowerCaseIDs() ) ) {
 #else
-        if (pluginID == PLUGINID_NATRON_READ)
+        if (pluginID == PLUGINID_NATRON_READ) {
 #endif
-        {
             moveReader(*it, dt);
         } else if (pluginID == PLUGINID_OFX_TIMEOFFSET) {
             moveTimeOffset(*it, dt);
