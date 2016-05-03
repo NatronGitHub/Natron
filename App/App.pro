@@ -17,7 +17,7 @@
 # ***** END LICENSE BLOCK *****
 
 TARGET = Natron
-VERSION = 2.0.0
+VERSION = 2.1.0
 TEMPLATE = app
 win32 {
 	CONFIG += console
@@ -56,10 +56,10 @@ win32-msvc* {
 }
 
 
-include(../libs.pri)
 include(../OpenColorIO-Configs.pri)
 include(../global.pri)
 include(../config.pri)
+include(../libs.pri)
 
 macx {
     Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns

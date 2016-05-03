@@ -32,8 +32,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 CONFIG += libmv-flags openmvg-flags
 
 include(../global.pri)
-include(../libs.pri)
 include(../config.pri)
+include(../libs.pri)
 
 log {
     DEFINES += NATRON_LOG
