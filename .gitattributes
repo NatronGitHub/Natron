@@ -52,7 +52,7 @@ CMakeLists.txt text whitespace=tab-in-indent,trail,space
 *.dll binary
 
 *.pdf binary
-*.pbxproj binary
+*.pbxproj text eol=lf
 *.vec binary
 *.doc binary
 
