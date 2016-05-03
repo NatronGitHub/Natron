@@ -58,8 +58,6 @@ win32-msvc* {
 
 include(../OpenColorIO-Configs.pri)
 include(../global.pri)
-include(../config.pri)
-include(../libs.pri)
 
 macx {
     Resources.files += $$PWD/../Gui/Resources/Images/natronProjectIcon_osx.icns

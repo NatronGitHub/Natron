@@ -35,10 +35,7 @@ win32 {
 	RC_FILE += ../Natron.rc
 }
 
-
-include(../libs.pri)
 include(../global.pri)
-include(../config.pri)
 
 SOURCES += \
     NatronRenderer_main.cpp

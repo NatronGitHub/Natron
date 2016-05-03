@@ -37,10 +37,7 @@ INCLUDEPATH += google-mock
 
 QMAKE_CLEAN += ofxTestLog.txt test_dot_generator0.jpg
 
-
-include(../libs.pri)
 include(../global.pri)
-include(../config.pri)
 
 SOURCES += \
     google-test/src/gtest-all.cc \

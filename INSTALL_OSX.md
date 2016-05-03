@@ -93,7 +93,7 @@ Patch the qt4 recipe to fix the stack overflow issue (see [QTBUG-49607](https://
 
 Patching a homebrew recipe is explained in the [homebrew FAQ](https://github.com/Homebrew/homebrew/blob/master/share/doc/homebrew/FAQ.md).
 
-    brew edit qt4
+    brew edit qt
 
 and before the line that starts with `head`, add the following code:
 

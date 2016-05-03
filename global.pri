@@ -16,6 +16,9 @@
 # along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
 # ***** END LICENSE BLOCK *****
 
+# libs may modify the config (eg openmp), so it must be included before
+include(libs.pri)
+
 CONFIG += warn_on no_keywords
 DEFINES += OFX_EXTENSIONS_NUKE OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_VEGAS OFX_SUPPORTS_PARAMETRIC OFX_EXTENSIONS_TUTTLE OFX_EXTENSIONS_NATRON OFX_SUPPORTS_OPENGLRENDER
 DEFINES += OFX_SUPPORTS_MULTITHREAD
@@ -376,4 +379,5 @@ coverage {
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
 
-
+# and finally...
+include(config.pri)
