@@ -99,7 +99,7 @@ Q_INIT_RESOURCE_EXTERN(GuiResources);
 
 //Increment this when making change to default shortcuts or changes that would break expected default shortcuts
 //in a way. This way the user will get prompted to restore default shortcuts on next launch
-#define NATRON_SHORTCUTS_DEFAULT_VERSION 7
+#define NATRON_SHORTCUTS_DEFAULT_VERSION 8
 
 NATRON_NAMESPACE_ENTER;
 
@@ -971,10 +971,10 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, kShortcutDescActionGraphRenameNode, Qt::NoModifier, Qt::Key_N);
     registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, kShortcutDescActionGraphExtractNode, Qt::ControlModifier | Qt::ShiftModifier,
                     Qt::Key_X);
-    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, kShortcutDescActionGraphMakeGroup, Qt::ControlModifier | Qt::ShiftModifier,
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, kShortcutDescActionGraphMakeGroup, Qt::ControlModifier,
                     Qt::Key_G);
-    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, kShortcutDescActionGraphExpandGroup, Qt::ControlModifier | Qt::ShiftModifier,
-                    Qt::Key_E);
+    registerKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, kShortcutDescActionGraphExpandGroup, Qt::ControlModifier | Qt::AltModifier,
+                    Qt::Key_G);
 
     ///CurveEditor
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys, kShortcutDescActionCurveEditorRemoveKeys, Qt::NoModifier, Qt::Key_Backspace);

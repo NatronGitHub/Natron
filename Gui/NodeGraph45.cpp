@@ -551,13 +551,17 @@ NodeGraph::onNodeNameEditDialogFinished()
 void
 NodeGraph::extractSelectedNode()
 {
-    pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
+    if (!_imp->_selection.empty()) {
+        pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
+    }
 }
 
 void
 NodeGraph::createGroupFromSelection()
 {
-    pushUndoCommand( new GroupFromSelectionCommand(this, _imp->_selection) );
+    if (!_imp->_selection.empty()) {
+        pushUndoCommand( new GroupFromSelectionCommand(this, _imp->_selection) );
+    }
 }
 
 void

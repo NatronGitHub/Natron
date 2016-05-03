@@ -1516,6 +1516,8 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,
     , _firstRedoCalled(false)
     , _isRedone(false)
 {
+    setText( QObject::tr("Group from selection") );
+
     assert( !nodes.empty() );
 
     QPointF groupPosition;
@@ -1655,10 +1657,15 @@ GroupFromSelectionCommand::~GroupFromSelectionCommand()
 void
 GroupFromSelectionCommand::undo()
 {
+    std::list<NodeGuiPtr> nodesToSelect;
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
-        node->getNode()->activate(NodesList(), true, false);
+        if (node) {
+            node->getNode()->activate(NodesList(), true, false);
+            nodesToSelect.push_back(node);
+        }
     }
+    _graph->setSelection(nodesToSelect);
     _group.lock()->getNode()->deactivate(NodesList(),
                                          true,
                                          false,
@@ -1666,12 +1673,12 @@ GroupFromSelectionCommand::undo()
                                          true);
 
     _isRedone = false;
-    setText( QObject::tr("Group from selection") );
 }
 
 void
 GroupFromSelectionCommand::redo()
 {
+    
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
         node->getNode()->deactivate(NodesList(),
@@ -1681,9 +1688,16 @@ GroupFromSelectionCommand::redo()
                                     false);
     }
 
-    if (_firstRedoCalled) {
-        _group.lock()->getNode()->activate(NodesList(), true, false);
+    std::list<NodeGuiPtr> nodesToSelect;
+    NodeGuiPtr nodeGroup = _group.lock();
+    if (_firstRedoCalled && nodeGroup) {
+        nodeGroup->getNode()->activate(NodesList(), true, false);
     }
+    if (nodeGroup) {
+        nodesToSelect.push_back(nodeGroup);
+    }
+    _graph->setSelection(nodesToSelect);
+    
 
     std::list<ViewerInstance*> viewers;
     _graph->getGroup()->getViewers(&viewers);
@@ -1701,7 +1715,6 @@ GroupFromSelectionCommand::redo()
     }
     _firstRedoCalled = true;
     _isRedone = true;
-    setText( QObject::tr("Group from selection") );
 }
 
 InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
@@ -1711,11 +1724,19 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
     , _groupNodes()
     , _firstRedoCalled(false)
 {
+    setText( QObject::tr("Inline group(s)") );
+
     for (std::list<NodeGuiPtr >::const_iterator it = groupNodes.begin(); it != groupNodes.end(); ++it) {
         NodeGroup* group = (*it)->getNode()->isEffectGroup();
         assert(group);
-
+        if (!group) {
+            continue;
+        }
         InlinedGroup expandedGroup;
+        
+        /*
+         * First-off copy all the nodes within the group, except the Inputs and Ouput nodes
+         */
         NodeClipBoard cb;
         NodesList nodes = group->getNodes();
         std::vector<NodePtr> groupInputs;
@@ -1754,21 +1775,28 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
         assert(groupGui);
         expandedGroup.group = groupGui;
+        
+        QPointF groupNodePos = groupGui->mapToScene(groupGui->mapFromParent(groupGui->getPos_mt_safe()));
 
         //This is the BBox of the new inlined nodes
-        double b = INT_MAX, l = INT_MAX, r = INT_MIN, t = INT_MIN;
+        RectD bbox;
+        bbox.setupInfinity();
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
              it2 != newNodes.end(); ++it2) {
             QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->getPos_mt_safe() ) );
-            l = std::min( l, p.x() );
-            r = std::max( r, p.x() );
+            bbox.x1 = std::min( bbox.x1, p.x() );
+            bbox.x2 = std::max( bbox.x2, p.x() );
 
             //Qt coord system is top down
-            b = std::min( b, p.y() );
-            t = std::max( t, p.y() );
+            bbox.y1 = std::min( bbox.y1, p.y() );
+            bbox.y2 = std::max( bbox.y2, p.y() );
             expandedGroup.inlinedNodes.push_back(it2->second);
         }
 
+        QPointF bboxCenter((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2.);
+        // Remember the links from the Group node we are expending to its inputs and outputs
+        
+        // This is the y coord. of the bottom-most input
         double inputY = INT_MIN;
         int maxInputs = group->getNode()->getMaxInputCount();
         assert( maxInputs == (int)groupInputs.size() );
@@ -1811,7 +1839,9 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
         std::list<NodeGuiPtr > outputsConnectedToGroup;
         QPointF firstInputPos;
-        double outputY = INT_MIN;
+        
+        // This is the y coord of the top most output
+        double outputY = INT_MAX;
         if (groupOutput) {
             NodePtr groupOutputInput = groupOutput->getInput(0);
             if (groupOutputInput) {
@@ -1825,7 +1855,9 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                     }
                 }
 
-                assert(inputGui);
+                if (!inputGui) {
+                    continue;
+                }
                 firstInputPos = inputGui->mapToScene( inputGui->mapFromParent( inputGui->getPos_mt_safe() ) );
                 outputConnection.input = inputGui;
 
@@ -1839,7 +1871,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                     outputsConnectedToGroup.push_back(outputGui);
 
                     QPointF p = outputGui->mapToScene( outputGui->mapFromParent( outputGui->getPos_mt_safe() ) );
-                    if (p.y() > outputY) {
+                    if (p.y() < outputY) {
                         outputY = p.y();
                     }
                     outputConnection.outputs.insert( std::make_pair(outputGui, it2->second) );
@@ -1848,35 +1880,28 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             }
         }
 
-        //If there is no output to the group, the output is considered to be infinite (so we don't move any node)
+        // If there is no output to the group, the output is considered to be infinite (so we don't move any node)
         if (outputY == INT_MIN) {
             outputY = INT_MAX;
         }
 
-        double ySpaceAvailable = outputY  - inputY;
-        double ySpaceNeeded = t - b + 100;
+        const double ySpaceAvailable = outputY  - inputY;
+        const double ySpaceNeeded = bbox.y2 - bbox.y1 + TO_DPIX(100);
 
-        //We are going to move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
-        QRectF rectToClear(l, b, r - l, ySpaceNeeded - ySpaceAvailable);
-        QPointF avgOutputPos(0., 0.);
+        //  Move recursively the outputs of the group nodes so that it does not overlap the inlining of the group
+        QRectF rectToClear(bbox.x1, bbox.y1, bbox.x2 - bbox.x1, ySpaceNeeded - ySpaceAvailable);
         for (std::list<NodeGuiPtr >::iterator it2 = outputsConnectedToGroup.begin();
              it2 != outputsConnectedToGroup.end(); ++it2) {
             (*it2)->moveBelowPositionRecursively(rectToClear);
-            QPointF p = (*it2)->mapToScene( (*it2)->mapFromParent( (*it2)->getPos_mt_safe() ) );
-            avgOutputPos += p;
         }
-        int n = (int)outputsConnectedToGroup.size();
-        if (n) {
-            avgOutputPos /= n;
-        }
-        avgOutputPos.ry() -= 100;
-
-        ///Move all created nodes by this delta to fit in the space we've just made
-        QPointF delta = avgOutputPos - firstInputPos;
+     
+        
+        // Move all created nodes by this delta to fit in the space we've just made
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
              it2 != newNodes.end(); ++it2) {
             QPointF p = it2->second->mapToScene( it2->second->mapFromParent( it2->second->getPos_mt_safe() ) );
-            p += delta;
+            QPointF delta = p - bboxCenter;
+            p = groupNodePos + delta;
             p = it2->second->mapToParent( it2->second->mapFromScene(p) );
             it2->second->setPosition( p.x(), p.y() );
         }
@@ -1895,6 +1920,7 @@ InlineGroupCommand::undo()
 {
     std::set<ViewerInstance*> viewers;
 
+    std::list<NodeGuiPtr> nodesToSelect;
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
@@ -1912,13 +1938,14 @@ InlineGroupCommand::undo()
                 }
             }
         }
+        nodesToSelect.push_back(groupNode);
     }
+    _graph->setSelection(nodesToSelect);
     for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( QObject::tr("Inline group(s)") );
 }
 
 void
@@ -1926,6 +1953,7 @@ InlineGroupCommand::redo()
 {
     std::set<ViewerInstance*> viewers;
 
+    std::list<NodeGuiPtr> nodesToSelect;
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
@@ -1935,15 +1963,17 @@ InlineGroupCommand::redo()
                 viewers.insert(*it2);
             }
             groupNode->getNode()->deactivate(NodesList(), true, false, true, false);
-            if  (_firstRedoCalled) {
-                for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
-                     it2 != it->inlinedNodes.end(); ++it2) {
-                    NodeGuiPtr node = (*it2).lock();
-                    if (node) {
+            for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
+                 it2 != it->inlinedNodes.end(); ++it2) {
+                NodeGuiPtr node = (*it2).lock();
+                if (node) {
+                    if  (_firstRedoCalled) {
                         node->getNode()->activate(NodesList(), false, false);
                     }
+                    nodesToSelect.push_back(node);
                 }
             }
+            
             for (std::map<int, NodeToConnect>::iterator it2 = it->connections.begin(); it2 != it->connections.end(); ++it2) {
                 NodeGuiPtr input = it2->second.input.lock();
                 if (!input) {
@@ -1958,13 +1988,15 @@ InlineGroupCommand::redo()
                     }
                 }
             }
+      
         }
     }
+    _graph->setSelection(nodesToSelect);
+    
     for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( QObject::tr("Inline group(s)") );
     _firstRedoCalled = true;
 }
 
