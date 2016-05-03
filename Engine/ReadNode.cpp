@@ -904,6 +904,7 @@ ReadNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& ser
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization
     _imp->createReadNode(false, filename, serialization);
+    _imp->refreshPluginSelectorKnob();
 }
 
 void

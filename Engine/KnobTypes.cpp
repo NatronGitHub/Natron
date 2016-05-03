@@ -671,11 +671,12 @@ KnobChoice::cloneExtraData(KnobI* other,
 #pragma message WARN("When enabling multi-view knobs, make this multi-view too")
 #endif
 void
-KnobChoice::onInternalValueChanged(int /*dimension*/,
+KnobChoice::onInternalValueChanged(int dimension,
                                    double time,
-                                   ViewSpec /*view*/)
+                                   ViewSpec view)
 {
-    int index = getValueAtTime(time, 0);
+    // by-pass any master/slave link here
+    int index = getValueAtTime(time, dimension, view, true, true);
     QMutexLocker k(&_entriesMutex);
 
     if ( (index >= 0) && ( index < (int)_mergedEntries.size() ) ) {
@@ -940,6 +941,13 @@ KnobChoice::getEntriesHelp_mt_safe() const
 std::string
 KnobChoice::getActiveEntryText_mt_safe()
 {
+    std::pair<int,KnobPtr> master = getMaster(0);
+    if (master.second) {
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(master.second.get());
+        if (isChoice) {
+            return isChoice->getActiveEntryText_mt_safe();
+        }
+    }
     QMutexLocker l(&_entriesMutex);
 
     if ( !_currentEntryLabel.empty() ) {

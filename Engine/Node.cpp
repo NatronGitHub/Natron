@@ -2175,8 +2175,10 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             if (isChoice) {
                 const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
                 assert(data);
-                if (data) {
-                    isChoice->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
+                KnobChoice* createdKnob = dynamic_cast<KnobChoice*>(knob.get());
+                assert(createdKnob);
+                if (data && createdKnob) {
+                    createdKnob->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
                 }
             } else {
                 knob->clone( sKnob.get() );

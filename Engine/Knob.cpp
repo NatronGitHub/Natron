@@ -4065,7 +4065,7 @@ KnobHelper::setKnobAsAliasOfThis(const KnobPtr& master,
             unSlave(i, false);
         }
         if (doAlias) {
-            master->clone(this, i);
+            //master->clone(this, i);
             bool ok = slaveToInternal(i, master, i, eValueChangedReasonNatronInternalEdited, false);
             assert(ok);
             Q_UNUSED(ok);

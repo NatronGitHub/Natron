@@ -841,7 +841,7 @@ Knob<T>::getValueAtTime(double time,
 
     /*if the knob as no keys at this dimension, return the value
        at the requested dimension.*/
-    if (master.second) {
+    if (master.second && !byPassMaster) {
         return getValueFromMaster(view, master.first, master.second.get(), clamp);
     }
     QMutexLocker l(&_valueMutex);
