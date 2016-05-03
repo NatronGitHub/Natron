@@ -65,6 +65,8 @@ public Q_SLOTS:
 
     void onSettingChanged(KnobI* knob);
 
+    void openHelp();
+
 private:
 
     virtual void showEvent(QShowEvent* e) OVERRIDE;
@@ -77,6 +79,7 @@ private:
     DockablePanel* _panel;
     QDialogButtonBox* _buttonBox;
     Button* _restoreDefaultsB;
+    Button* _prefsHelp;
     Button* _cancelB;
     Button* _okB;
     boost::shared_ptr<Settings> _settings;

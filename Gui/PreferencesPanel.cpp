@@ -33,6 +33,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QDialogButtonBox>
 #include <QKeyEvent>
+#include <QDesktopServices>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -69,11 +70,16 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
     _buttonBox = new QDialogButtonBox(Qt::Horizontal);
     _restoreDefaultsB = new Button( tr("Restore defaults") );
     _restoreDefaultsB->setToolTip( GuiUtils::convertFromPlainText(tr("Restore default values for all preferences."), Qt::WhiteSpaceNormal) );
+
+    _prefsHelp = new Button( tr("Help") );
+    _prefsHelp->setToolTip( tr("Show help for preference") );
+
     _cancelB = new Button( tr("Discard") );
     _cancelB->setToolTip( GuiUtils::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), Qt::WhiteSpaceNormal) );
     _okB = new Button( tr("Save") );
     _okB->setToolTip( GuiUtils::convertFromPlainText(tr("Save changes on disk and close the window."), Qt::WhiteSpaceNormal) );
     _buttonBox->addButton(_restoreDefaultsB, QDialogButtonBox::ResetRole);
+    _buttonBox->addButton(_prefsHelp, QDialogButtonBox::ResetRole);
     _buttonBox->addButton(_cancelB, QDialogButtonBox::RejectRole);
     _buttonBox->addButton(_okB, QDialogButtonBox::AcceptRole);
 
@@ -81,6 +87,7 @@ PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
     _mainLayout->addWidget(_buttonBox);
 
     QObject::connect( _restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
+    QObject::connect( _prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
     QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
     QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
     QObject::connect( _settings.get(), SIGNAL(settingChanged(KnobI*)), this, SLOT(onSettingChanged(KnobI*)) );
@@ -99,6 +106,26 @@ PreferencesPanel::onSettingChanged(KnobI* knob)
         }
     }
     _changedKnobs.push_back(knob);
+}
+
+void PreferencesPanel::openHelp()
+{
+    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+    int serverPort = appPTR->getCurrentSettings()->getServerPort();
+    QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_prefs.html");
+    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
+
+    switch (docSource) {
+    case 0:
+        QDesktopServices::openUrl( QUrl(localUrl) );
+        break;
+    case 1:
+        QDesktopServices::openUrl( QUrl(remoteUrl) );
+        break;
+    case 2:
+        Dialogs::informationDialog(tr("Missing documentation").toStdString(), QObject::tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
+        break;
+    }
 }
 
 void
