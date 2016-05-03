@@ -1715,19 +1715,22 @@ AppManager::getPluginBinary(const QString & pluginId,
     PluginsMap::const_iterator foundID = _imp->_plugins.end();
 
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
+        QString pID = QString::fromUtf8( it->first.c_str() );
         if ( convertToLowerCase &&
              !pluginId.startsWith( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.") ) ) {
-            QString lowerCase = QString::fromUtf8( it->first.c_str() ).toLower();
+            
+            QString lowerCase = pID.toLower();
             if (lowerCase == pluginId) {
                 foundID = it;
                 break;
             }
-        } else {
-            if (QString::fromUtf8( it->first.c_str() ) == pluginId) {
-                foundID = it;
-                break;
-            }
         }
+        
+        if (pID == pluginId) {
+            foundID = it;
+            break;
+        }
+        
     }
 
 
