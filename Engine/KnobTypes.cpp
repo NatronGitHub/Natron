@@ -619,7 +619,7 @@ KnobChoice::typeName() const
 void
 KnobChoice::cloneExtraData(KnobI* other,
                            int /*dimension*/,
-                          int /*otherDimension*/)
+                           int /*otherDimension*/)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
 
@@ -658,7 +658,7 @@ KnobChoice::cloneExtraData(KnobI* other,
                            double /*offset*/,
                            const RangeD* /*range*/,
                            int /*dimension*/,
-                            int /*otherDimension*/)
+                           int /*otherDimension*/)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
 

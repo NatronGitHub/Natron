@@ -1903,13 +1903,13 @@ Knob<T>::getValueForEachDimension_mt_safe_vector() const
 }
 
 template<typename T>
-T Knob<T>::getRawValue(int dimension) const
+T
+Knob<T>::getRawValue(int dimension) const
 {
-    assert(dimension >= 0 && dimension < getDimension());
+    assert( dimension >= 0 && dimension < getDimension() );
     QMutexLocker l(&_valueMutex);
-    
-    return _values[dimension];
 
+    return _values[dimension];
 }
 
 template<typename T>
@@ -2331,41 +2331,40 @@ Knob<double>::resetToDefaultValue(int dimension)
 template<typename T>
 template<typename OTHERTYPE>
 void
-Knob<T>::copyValueForType(Knob<OTHERTYPE>* other, int dimension, int otherDimension)
+Knob<T>::copyValueForType(Knob<OTHERTYPE>* other,
+                          int dimension,
+                          int otherDimension)
 {
-    assert((dimension == otherDimension) || (dimension != -1));
+    assert( (dimension == otherDimension) || (dimension != -1) );
     QMutexLocker k(&_valueMutex);
     if (dimension == -1) {
-        
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
             _values[i] = v[i];
             _guiValues[i] = v[i];
-            
         }
     } else {
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert(dimension >= 0 && dimension < getDimension() &&
-               otherDimension >= 0 && otherDimension < other->getDimension());
-        _values[dimension] = _guiValues[dimension] = T(other->getRawValue(otherDimension));
+        assert( dimension >= 0 && dimension < getDimension() &&
+                otherDimension >= 0 && otherDimension < other->getDimension() );
+        _values[dimension] = _guiValues[dimension] = T( other->getRawValue(otherDimension) );
     }
-    
-    
 }
 
 template<typename T>
 template<typename OTHERTYPE>
 bool
-Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other, int dimension, int otherDimension)
+Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other,
+                                           int dimension,
+                                           int otherDimension)
 {
-    assert((dimension == otherDimension) || (dimension != -1));
+    assert( (dimension == otherDimension) || (dimension != -1) );
     bool ret = false;
     QMutexLocker k(&_valueMutex);
     if (dimension == -1) {
-        
         int dimMin = std::min( getDimension(), other->getDimension() );
         std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
@@ -2374,25 +2373,23 @@ Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other, int dimension
                 _guiValues[i] = v[i];
                 ret = true;
             }
-            
         }
     } else {
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert(dimension >= 0 && dimension < getDimension() &&
-               otherDimension >= 0 && otherDimension < other->getDimension());
-        
+        assert( dimension >= 0 && dimension < getDimension() &&
+                otherDimension >= 0 && otherDimension < other->getDimension() );
+
         T otherValue = (T)other->getRawValue(otherDimension);
         if (otherValue != _values[dimension]) {
             _values[dimension] = _guiValues[dimension] = otherValue;
             ret = true;
         }
     }
-    return ret;
-    
-}
 
+    return ret;
+}
 
 template<>
 void
@@ -2411,14 +2408,14 @@ Knob<std::string>::cloneValues(KnobI* other,
 template<typename T>
 void
 Knob<T>::cloneValues(KnobI* other,
-                       int dimension,
-                       int otherDimension)
+                     int dimension,
+                     int otherDimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     assert(isInt || isBool || isDouble);
-    
+
     QMutexLocker k(&_valueMutex);
     if (isInt) {
         copyValueForType<int>(isInt, dimension, otherDimension);
@@ -2429,9 +2426,6 @@ Knob<T>::cloneValues(KnobI* other,
     }
 }
 
-
-
-
 template<>
 bool
 Knob<std::string>::cloneValuesAndCheckIfChanged(KnobI* other,
@@ -2440,27 +2434,27 @@ Knob<std::string>::cloneValuesAndCheckIfChanged(KnobI* other,
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
     int dimMin = std::min( getDimension(), other->getDimension() );
-    assert((dimension == otherDimension) || (dimension != -1));
+    assert( (dimension == otherDimension) || (dimension != -1) );
     ///Can only clone strings
     assert(isString);
     if (isString) {
         return copyValueForTypeAndCheckIfChanged<std::string>(isString, dimension, otherDimension);
     }
+
     return false;
 }
-
 
 template<typename T>
 bool
 Knob<T>::cloneValuesAndCheckIfChanged(KnobI* other,
-                                        int dimension,
-                                        int otherDimension)
+                                      int dimension,
+                                      int otherDimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     assert(isInt || isBool || isDouble);
-    
+
     QMutexLocker k(&_valueMutex);
     if (isInt) {
         return copyValueForTypeAndCheckIfChanged<int>(isInt, dimension, otherDimension);
@@ -2469,10 +2463,9 @@ Knob<T>::cloneValuesAndCheckIfChanged(KnobI* other,
     } else if (isDouble) {
         return copyValueForTypeAndCheckIfChanged<double>(isDouble, dimension, otherDimension);
     }
+
     return false;
 }
-
-
 
 template <typename T>
 void
@@ -2480,7 +2473,7 @@ Knob<T>::cloneExpressionsResults(KnobI* other,
                                  int dimension,
                                  int otherDimension)
 {
-    assert((dimension == otherDimension) || (dimension != -1));
+    assert( (dimension == otherDimension) || (dimension != -1) );
     Knob<T>* otherKnob = dynamic_cast<Knob<T>* >(other);
 
     //Only clone expr results of the same type
@@ -2519,14 +2512,14 @@ Knob<T>::clone(KnobI* other,
     cloneExpressions(other, dimension, otherDimension);
     cloneCurves(other, 0, 0, dimension, otherDimension);
 
-    if (!isValueChangesBlocked()) {
+    if ( !isValueChangesBlocked() ) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
     }
     if ( !isListenersNotificationBlocked() ) {
         refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
 
-    
+
     cloneExtraData(other, dimension, otherDimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
@@ -2579,8 +2572,8 @@ Knob<T>::clone(KnobI* other,
     cloneValues(other, dimension, otherDimension);
     cloneExpressions(other, dimension, otherDimension);
     cloneCurves(other, offset, range, dimension, otherDimension);
-    
-    cloneExtraData(other, offset, range, dimension,otherDimension);
+
+    cloneExtraData(other, offset, range, dimension, otherDimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
     }
@@ -2599,11 +2592,11 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
     if (other == this) {
         return;
     }
-    
+
     bool hasChanged = cloneValuesAndCheckIfChanged(other, dimension, otherDimension);
     hasChanged |= cloneExpressionsAndCheckIfChanged(other, dimension, otherDimension);
     hasChanged |= cloneCurvesAndCheckIfChanged(other, true, dimension, otherDimension);
-    
+
     hasChanged |= cloneExtraDataAndCheckIfChanged(other, dimension, otherDimension);
 
     if (hasChanged) {

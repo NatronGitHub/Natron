@@ -777,8 +777,8 @@ TrackerContext::exportTrackDataFromExportOptions()
                 }
             }
         }
+        break;
     }
-    break;
     case eTrackerTransformNodeTransform: {
         KnobPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
         if (translateKnob) {
@@ -824,8 +824,8 @@ TrackerContext::exportTrackDataFromExportOptions()
                 isDbl->cloneAndUpdateGui( _imp->center.lock().get() );
             }
         }
+        break;
     }
-    break;
     } // switch
 
     KnobPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);

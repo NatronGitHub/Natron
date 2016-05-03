@@ -1721,17 +1721,16 @@ Node::loadKnob(const KnobPtr & knob,
                     }
                 }
             } else {
-                
                 // There is a case where the dimension of a parameter might have changed between versions, e.g:
                 // the size parameter of the Blur node was previously a Double1D and has become a Double2D to control
                 // both dimensions.
                 // For compatibility, we do not load only the first dimension, otherwise the result wouldn't be the same,
                 // instead we replicate the last dimension of the serialized knob to all other remaining dimensions to fit the
                 // knob's dimensions.
-                if (serializedKnob->getDimension() < knob->getDimension()) {
+                if ( serializedKnob->getDimension() < knob->getDimension() ) {
                     int nSerDims = serializedKnob->getDimension();
                     for (int i = 0; i < nSerDims; ++i) {
-                        knob->clone(serializedKnob.get(),i);
+                        knob->clone(serializedKnob.get(), i);
                     }
                     for (int i = nSerDims; i < knob->getDimension(); ++i) {
                         knob->clone(serializedKnob.get(), i, nSerDims - 1);

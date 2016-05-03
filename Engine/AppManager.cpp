@@ -1400,7 +1400,7 @@ AppManager::loadPythonGroups()
         std::string s;
         if (SHIBOKEN_MAJOR_VERSION == 2) {
             s = "import PySide2\nimport PySide2.QtCore as QtCore";
-        } else   {
+        } else {
             s = "import PySide\nimport PySide.QtCore as QtCore";
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
@@ -1417,7 +1417,7 @@ AppManager::loadPythonGroups()
         std::string s;
         if (SHIBOKEN_MAJOR_VERSION == 2) {
             s = "import PySide2.QtGui as QtGui";
-        } else   {
+        } else {
             s = "import PySide.QtGui as QtGui";
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
@@ -1718,19 +1718,17 @@ AppManager::getPluginBinary(const QString & pluginId,
         QString pID = QString::fromUtf8( it->first.c_str() );
         if ( convertToLowerCase &&
              !pluginId.startsWith( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.") ) ) {
-            
             QString lowerCase = pID.toLower();
             if (lowerCase == pluginId) {
                 foundID = it;
                 break;
             }
         }
-        
+
         if (pID == pluginId) {
             foundID = it;
             break;
         }
-        
     }
 
 

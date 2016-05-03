@@ -1037,7 +1037,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     QString findId;
 
     //Roto has moved to a built-in plugin
-    if ( (args.reason == eCreateNodeReasonUserCreate || args.reason == eCreateNodeReasonInternal || args.reason == eCreateNodeReasonProjectLoad) &&
+    if ( ( (args.reason == eCreateNodeReasonUserCreate) || (args.reason == eCreateNodeReasonInternal) || (args.reason == eCreateNodeReasonProjectLoad) ) &&
          ( ( !_imp->_projectCreatedWithLowerCaseIDs && ( args.pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( _imp->_projectCreatedWithLowerCaseIDs && ( args.pluginID == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) ) ) {
         findId = QString::fromUtf8(PLUGINID_NATRON_ROTO);
     } else {

@@ -1400,8 +1400,8 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                             node->getApp()->redrawAllViewers();
                         }
                     }
+                    break;
                 }
-                break;
                 }
             }
         }

@@ -486,7 +486,7 @@ public:
     /**
      * @brief Performs the same as clone but also refresh any gui it has.
      **/
-    virtual void cloneAndUpdateGui(KnobI* other, int dimension = -1,int otherDimension = -1) = 0;
+    virtual void cloneAndUpdateGui(KnobI* other, int dimension = -1, int otherDimension = -1) = 0;
     virtual void cloneDefaultValues(KnobI* other) = 0;
 
     /**
@@ -1504,10 +1504,11 @@ protected:
 
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* /*other*/,
                                                  int dimension = -1,
-                                                int otherDimension = -1)
+                                                 int otherDimension = -1)
     {
         Q_UNUSED(dimension);
         Q_UNUSED(otherDimension);
+
         return false;
     }
 
@@ -1526,14 +1527,13 @@ protected:
 
     virtual void cloneExpressionsResults(KnobI* /*other*/,
                                          int /*dimension = -1*/,
-                                        int /*otherDimension = -1*/) {}
-    
+                                         int /*otherDimension = -1*/) {}
+
     void cloneOneCurve(KnobI* other, int offset, const RangeD* range, int dimension, int otherDimension);
     bool cloneOneCurveAndCheckIfChanged(KnobI* other, bool updateGui, int dimension, int otherDimension);
-    
+
     void cloneCurves(KnobI* other, int offset, const RangeD* range, int dimension = -1, int otherDimension = -1);
     bool cloneCurvesAndCheckIfChanged(KnobI* other, bool updateGui, int dimension = -1, int otherDimension = -1);
-
 
 
     /**
@@ -1818,7 +1818,7 @@ public:
      **/
     std::vector<T> getValueForEachDimension_mt_safe_vector() const WARN_UNUSED_RETURN;
     std::list<T> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
-    
+
     T getRawValue(int dimension) const WARN_UNUSED_RETURN;
 
     /**
@@ -1921,13 +1921,13 @@ private:
 
     template <typename OTHERTYPE>
     void copyValueForType(Knob<OTHERTYPE>* other, int dimension, int otherDimension);
-    
+
     template <typename OTHERTYPE>
     bool copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other, int dimension, int otherDimension);
-    
-    void cloneValues(KnobI* other, int dimension,int otherDimension);
-    
-    bool cloneValuesAndCheckIfChanged(KnobI* other, int dimension,int otherDimension);
+
+    void cloneValues(KnobI* other, int dimension, int otherDimension);
+
+    bool cloneValuesAndCheckIfChanged(KnobI* other, int dimension, int otherDimension);
 
     virtual void cloneExpressionsResults(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
 
