@@ -991,7 +991,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     }
 
     // If the RoI does not fall into the visible portion on the viewer, just clear the viewer to black
-    if ( outArgs->params->roi.isNull() ) {
+    if ( outArgs->params->roi.isNull() || tiles.size() == 0 ) {
         return eViewerRenderRetCodeBlack;
     }
 
@@ -2793,8 +2793,8 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     }
     if (doUpdate) {
         assert(!params->tiles.empty());
-        RectI bounds;
-        params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);
+        /*RectI bounds;
+        params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);*/
         
         assert(params->isPartialRect && params->tiles.size() == 1 || !params->isPartialRect);
         
@@ -2802,7 +2802,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         bool isFirstTile = true;
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = params->tiles.begin(); it!=params->tiles.end(); ++it) {
             assert(it->ramBuffer);
-            uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, bounds, it->rect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
+            uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, params->roi, it->rect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
             isFirstTile = false;
         }
         

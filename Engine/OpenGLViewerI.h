@@ -139,7 +139,7 @@ public:
      **/
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             size_t bytesCount,
-                                            const RectI &bounds,
+                                            const RectI &roiRoundedToTileSize,
                                             const TextureRect & region,
                                             int textureIndex,
                                             bool isPartialRect,

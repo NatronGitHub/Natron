@@ -1481,7 +1481,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      size_t bytesCount,
-                                     const RectI &bounds,
+                                     const RectI &roiRoundedToTileSize,
                                      const TextureRect & region,
                                      int textureIndex,
                                      bool isPartialRect,
@@ -1528,9 +1528,9 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     } else {
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
-        textureRectangle = bounds;
-        textureRectangle.w = bounds.width();
-        textureRectangle.h = bounds.height();
+        textureRectangle = roiRoundedToTileSize;
+        textureRectangle.w = roiRoundedToTileSize.width();
+        textureRectangle.h = roiRoundedToTileSize.height();
         textureRectangle.par = region.par;
         if (isFirstTile) {
             tex->ensureTextureHasSize(textureRectangle, dataType);
@@ -2558,7 +2558,12 @@ ViewerGL::checkIfViewPortRoIValidOrRender()
     for (int i = 0; i< 2; ++i) {
         if (!checkIfViewPortRoIValidOrRenderForInput(i)) {
             if ( !getViewerTab()->getGui()->getApp()->getProject()->isLoadingProject() ) {
-                getInternalNode()->renderCurrentFrame(true);
+                ViewerInstance* viewer = getInternalNode();
+                assert(viewer);
+                if (viewer) {
+                    viewer->getRenderEngine()->abortRendering(true, false);
+                    viewer->renderCurrentFrame(true);
+                }
             }
             break;
         }
