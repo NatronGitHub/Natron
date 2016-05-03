@@ -52,23 +52,25 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
     {
         QWriteLocker k(&perThreadDataMutex);
         ThreadDataMap::iterator found = perThreadData.find(fromThread);
-        
+
         if ( found == perThreadData.end() ) {
             ///No TLS for fromThread
             return boost::shared_ptr<EffectInstance::EffectTLSData>();
         } else {
             fromThreadData = found->second.value;
             ThreadData& newData = perThreadData[toThread];
-            newData.value.reset( new EffectInstance::EffectTLSData());
+            newData.value.reset( new EffectInstance::EffectTLSData() );
             toThreadData = newData.value;
         }
     }
+
     assert(fromThreadData && toThreadData);
     {
         // Copy the actual data under the read lock to let other threads running
         QReadLocker k(&perThreadDataMutex);
         *toThreadData = *fromThreadData;
     }
+
     return toThreadData;
 }
 
@@ -100,7 +102,8 @@ bool
 TLSHolder<T>::canCleanupPerThreadData(const QThread* curThread) const
 {
     QReadLocker k(&perThreadDataMutex);
-    if (perThreadData.empty()) {
+
+    if ( perThreadData.empty() ) {
         return true;
     }
     if (perThreadData.size() > 1) {
@@ -109,9 +112,9 @@ TLSHolder<T>::canCleanupPerThreadData(const QThread* curThread) const
     if (perThreadData.begin()->first == curThread) {
         return true;
     }
+
     return false;
 }
-
 
 template <typename T>
 bool
@@ -215,8 +218,8 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
         foundThread = foundSpawned->second;
         _spawns.erase(foundThread);
     }
+
     return copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
-    
 }
 
 template <typename T>
@@ -225,9 +228,9 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                          const QThread* curThread,
                                          const QThread* spawnerThread)
 {
-
     boost::shared_ptr<T> tls;
     QReadLocker k(&_objectMutex);
+
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
     for (TLSObjects::iterator it = _object->objects.begin();
          it != _object->objects.end(); ++it) {

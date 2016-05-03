@@ -106,7 +106,7 @@ AppTLS::cleanupTLSForThread()
 #endif
 
     //Cleanup any cached data on the TLSHolder
-    
+
     // Find once with only a Read locker to keep other threads running, if found erase
     const QThread* foundSpawnerThreadOnce = 0;
     {
@@ -120,11 +120,12 @@ AppTLS::cleanupTLSForThread()
     }
     if (foundSpawnerThreadOnce) {
         QWriteLocker k(&_spawnsMutex);
-        
+
         //This thread was spawned, but TLS not used, do not bother to clean-up
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
         if ( foundSpawned != _spawns.end() ) {
             _spawns.erase(foundSpawned);
+
             return;
         }
     }
@@ -141,19 +142,19 @@ AppTLS::cleanupTLSForThread()
             }
         }
     }
-    if (!objectsToClean.empty()) {
+    if ( !objectsToClean.empty() ) {
         TLSObjects newObjects;
         QWriteLocker k (&_objectMutex);
-        for (std::list<boost::shared_ptr<const TLSHolderBase> >::iterator it = objectsToClean.begin(); it!=objectsToClean.end(); ++it) {
-            if ((*it)->cleanupPerThreadData(curThread)) {
+        for (std::list<boost::shared_ptr<const TLSHolderBase> >::iterator it = objectsToClean.begin(); it != objectsToClean.end(); ++it) {
+            if ( (*it)->cleanupPerThreadData(curThread) ) {
                 TLSObjects::iterator found = _object->objects.find(*it);
-                if (found != _object->objects.end()) {
+                if ( found != _object->objects.end() ) {
                     _object->objects.erase(found);
                 }
             }
         }
     }
-}
+} // AppTLS::cleanupTLSForThread
 
 template class TLSHolder<EffectInstance::EffectTLSData>;
 template class TLSHolder<NATRON_NAMESPACE::OfxHost::OfxHostTLSData>;

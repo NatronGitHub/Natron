@@ -455,11 +455,10 @@ public:
     virtual void blockValueChanges() = 0;
     virtual void unblockValueChanges() = 0;
     virtual bool isValueChangesBlocked() const = 0;
-    
     virtual void blockListenersNotification() = 0;
     virtual void unblockListenersNotification() = 0;
     virtual bool isListenersNotificationBlocked() const = 0;
-    
+
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
@@ -1228,9 +1227,8 @@ public:
     virtual void unblockValueChanges() OVERRIDE FINAL;
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void blockListenersNotification() OVERRIDE FINAL;
-    virtual void unblockListenersNotification()OVERRIDE FINAL;
+    virtual void unblockListenersNotification() OVERRIDE FINAL;
     virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual void evaluateValueChange(int dimension, double time, ViewSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 protected:

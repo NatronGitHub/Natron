@@ -28,6 +28,12 @@
 
 #include "Global/QtCompat.h"
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp> // iequals
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <QCoreApplication>
 #include <QProcess>
 
@@ -145,8 +151,21 @@ isGenericKnob(const std::string& knobName,
 }
 
 bool
-ReadNode::isBundledReader(const std::string& pluginID)
+ReadNode::isBundledReader(const std::string& pluginID,
+                          bool wasProjectCreatedWithLowerCaseIDs)
 {
+    if (wasProjectCreatedWithLowerCaseIDs) {
+        // Natron 1.x has plugin ids stored in lowercase
+        return boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READORA);
+    }
+
     return pluginID == PLUGINID_OFX_READOIIO ||
            pluginID == PLUGINID_OFX_READFFMPEG ||
            pluginID == PLUGINID_OFX_READPFM ||
@@ -155,6 +174,12 @@ ReadNode::isBundledReader(const std::string& pluginID)
            pluginID == PLUGINID_OFX_READSVG ||
            pluginID == PLUGINID_OFX_READMISC ||
            pluginID == PLUGINID_OFX_READORA;
+}
+
+bool
+ReadNode::isBundledReader(const std::string& pluginID)
+{
+    return isBundledReader( pluginID, getApp()->wasProjectCreatedWithLowerCaseIDs() );
 }
 
 struct ReadNodePrivate

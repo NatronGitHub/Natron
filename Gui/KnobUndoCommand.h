@@ -116,6 +116,7 @@ private:
         bool modifiedKeyFrame = false;
         int i = 0;
         KnobGuiPtr knobUI = _knob.lock();
+
         if (!knobUI) {
             return;
         }
@@ -178,6 +179,7 @@ private:
     {
         double time = 0;
         KnobGuiPtr knobUI = _knob.lock();
+
         if (!knobUI) {
             return;
         }

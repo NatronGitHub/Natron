@@ -557,7 +557,7 @@ TrackerContext::selectAll(TrackSelectionReason reason)
     }
     int time = getNode()->getApp()->getTimeLine()->currentFrame();
     for (std::vector<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-        if ((*it)->isEnabled(time)) {
+        if ( (*it)->isEnabled(time) ) {
             addTrackToSelection(*it, reason);
         }
     }
@@ -771,13 +771,14 @@ TrackerContext::exportTrackDataFromExportOptions()
         {
             KnobPtr knob = createdNode->getKnobByName(kCornerPinParamMatrix);
             if (knob) {
-                KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+                KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
                 if (isType) {
-                    isType->cloneAndUpdateGui(_imp->cornerPinMatrix.lock().get());
+                    isType->cloneAndUpdateGui( _imp->cornerPinMatrix.lock().get() );
                 }
             }
         }
-    }   break;
+    }
+    break;
     case eTrackerTransformNodeTransform: {
         KnobPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
         if (translateKnob) {
@@ -818,14 +819,13 @@ TrackerContext::exportTrackDataFromExportOptions()
         }
         KnobPtr centerKnob = createdNode->getKnobByName(kTransformParamCenter);
         if (centerKnob) {
-            KnobDouble* isDbl = dynamic_cast<KnobDouble*>(centerKnob.get());
+            KnobDouble* isDbl = dynamic_cast<KnobDouble*>( centerKnob.get() );
             if (isDbl) {
-                isDbl->cloneAndUpdateGui(_imp->center.lock().get());
-               
+                isDbl->cloneAndUpdateGui( _imp->center.lock().get() );
             }
         }
-
-    }   break;
+    }
+    break;
     } // switch
 
     KnobPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);
@@ -839,46 +839,44 @@ TrackerContext::exportTrackDataFromExportOptions()
             }
         }
     }
-    
+
     {
         KnobPtr knob = createdNode->getKnobByName(kTransformParamMotionBlur);
         if (knob) {
-            KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+            KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
             if (isType) {
-                isType->cloneAndUpdateGui(_imp->motionBlur.lock().get());
+                isType->cloneAndUpdateGui( _imp->motionBlur.lock().get() );
             }
         }
     }
     {
         KnobPtr knob = createdNode->getKnobByName(kTransformParamShutter);
         if (knob) {
-            KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+            KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
             if (isType) {
-                isType->cloneAndUpdateGui(_imp->shutter.lock().get());
+                isType->cloneAndUpdateGui( _imp->shutter.lock().get() );
             }
         }
     }
     {
         KnobPtr knob = createdNode->getKnobByName(kTransformParamShutterOffset);
         if (knob) {
-            KnobChoice* isType = dynamic_cast<KnobChoice*>(knob.get());
+            KnobChoice* isType = dynamic_cast<KnobChoice*>( knob.get() );
             if (isType) {
-                isType->cloneAndUpdateGui(_imp->shutterOffset.lock().get());
+                isType->cloneAndUpdateGui( _imp->shutterOffset.lock().get() );
             }
         }
     }
     {
         KnobPtr knob = createdNode->getKnobByName(kTransformParamCustomShutterOffset);
         if (knob) {
-            KnobDouble* isType = dynamic_cast<KnobDouble*>(knob.get());
+            KnobDouble* isType = dynamic_cast<KnobDouble*>( knob.get() );
             if (isType) {
-                isType->cloneAndUpdateGui(_imp->customShutterOffset.lock().get());
+                isType->cloneAndUpdateGui( _imp->customShutterOffset.lock().get() );
             }
         }
     }
 } // TrackerContext::exportTrackDataFromExportOptions
-
-
 
 void
 TrackerContext::onMarkerEnabledChanged(int reason)
@@ -888,7 +886,7 @@ TrackerContext::onMarkerEnabledChanged(int reason)
     if (!m) {
         return;
     }
-    
+
     Q_EMIT enabledChanged(m->shared_from_this(), reason);
 }
 
@@ -932,7 +930,7 @@ TrackerContext::knobChanged(KnobI* k,
         solveTransformParams();
     } else if ( k == _imp->autoGenerateTransform.lock().get() ) {
         solveTransformParams();
-       _imp->refreshVisibilityFromTransformType();
+        _imp->refreshVisibilityFromTransformType();
     }
 }
 
@@ -1015,7 +1013,7 @@ TrackerContext::resetTransformCenter()
 void
 TrackerContext::solveTransformParamsIfAutomatic()
 {
-    if (_imp->isTransformAutoGenerationEnabled()) {
+    if ( _imp->isTransformAutoGenerationEnabled() ) {
         solveTransformParams();
     } else {
         _imp->setTransformOutOfDate(true);
@@ -1025,18 +1023,17 @@ TrackerContext::solveTransformParamsIfAutomatic()
 void
 TrackerContext::solveTransformParams()
 {
-    
     _imp->setTransformOutOfDate(false);
-    
+
     std::vector<TrackMarkerPtr> markers;
 
     getAllMarkers(&markers);
     if ( markers.empty() ) {
         return;
     }
-   
+
     _imp->resetTransformParamsAnimation();
-    
+
     boost::shared_ptr<KnobChoice> motionTypeKnob = _imp->motionType.lock();
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)motionType_i;
@@ -1045,6 +1042,7 @@ TrackerContext::solveTransformParams()
     bool jitterAdd = false;
     switch (type) {
     case eTrackerMotionTypeNone:
+
         return;
     case eTrackerMotionTypeMatchMove:
     case eTrackerMotionTypeStabilize:
@@ -1106,8 +1104,8 @@ TrackerContext::solveTransformParams()
 
     bool robustModel;
     robustModel = _imp->robustModel.lock()->getValue();
-    
-    node->getApp()->progressStart(node, QObject::tr("Solving transform parameters...").toStdString(), std::string());
+
+    node->getApp()->progressStart( node, QObject::tr("Solving transform parameters...").toStdString(), std::string() );
 
     _imp->lastSolveRequest.refTime = refTime;
     _imp->lastSolveRequest.jitterPeriod = jitterPeriod;
@@ -1538,7 +1536,7 @@ TrackScheduler<TrackArgsType>::run()
             }
 
             bool allTrackFailed = false;
-            
+
             while (cur != end) {
                 ///Launch parallel thread for each track using the global thread pool
                 QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
@@ -1550,12 +1548,12 @@ TrackScheduler<TrackArgsType>::run()
 
                 allTrackFailed = true;
                 for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
-                    if ((*it)) {
+                    if ( (*it) ) {
                         allTrackFailed = false;
                         break;
                     }
                 }
-                
+
                 // We don't have any successful track, stop
                 if (allTrackFailed) {
                     break;

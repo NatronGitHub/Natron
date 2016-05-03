@@ -1300,19 +1300,20 @@ ViewerGL::getImageRectangleDisplayedRoundedToTileSize(const RectD & rod,
     // Make sure the bounds of the area to render in the texture lies in the bounds
     texRect.intersect(bounds, &texRect);
     if (tiles) {
-        for (int y = texRect.y1; y < texRect.y2; y+=tileSize) {
+        for (int y = texRect.y1; y < texRect.y2; y += tileSize) {
             int y2 = std::min(y + (int)tileSize, texRect.y2);
-            for (int x = texRect.x1; x < texRect.x2; x+=tileSize) {
+            for (int x = texRect.x1; x < texRect.x2; x += tileSize) {
                 tiles->resize(tiles->size() + 1);
                 RectI& tile = tiles->back();
                 tile.x1 = x;
                 tile.x2 = std::min(x + (int)tileSize, texRect.x2);
                 tile.y1 = y;
                 tile.y2 = y2;
-                assert(texRect.contains(tile));
+                assert( texRect.contains(tile) );
             }
         }
     }
+
     return texRect;
 }
 
@@ -1412,7 +1413,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         double curCenterY = ( _imp->zoomCtx.bottom() + _imp->zoomCtx.top() ) / 2.;
         _imp->zoomCtx.translate(viewportCenter.x - curCenterX, viewportCenter.y - curCenterY);
     }
-    
+
     _imp->lastTextureTransferMipMapLevel[textureIndex] = mipMapLevel;
     _imp->lastTextureTransferRoI[textureIndex] = viewerRoI;
 
@@ -1433,7 +1434,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->displayTextures[1].time = time;
     } else {
         ViewerInstance* internalNode = getInternalNode();
-        
+
         _imp->activeTextures[textureIndex] = _imp->displayTextures[textureIndex].texture;
         _imp->displayTextures[textureIndex].gain = gain;
         _imp->displayTextures[textureIndex].gamma = gamma;
@@ -1442,13 +1443,13 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
         _imp->displayTextures[textureIndex].premult = premult;
         _imp->displayTextures[textureIndex].time = time;
-        
+
         if (_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages > 0) {
             internalNode->unregisterPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
         }
-        
-        
+
+
         if (image) {
             _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
             RectI pixelRoD;
@@ -1463,7 +1464,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
             }
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
             _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages += image->size();
-            
+
             internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
@@ -1475,8 +1476,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         }
         setRegionOfDefinition(rod, par, textureIndex);
     }
-
-}
+} // ViewerGL::endTransferBufferFromRAMToGPU
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
@@ -1488,9 +1488,6 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      bool isFirstTile,
                                      boost::shared_ptr<OpenGLTextureI>* texture)
 {
-    
-    
-  
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
@@ -1506,7 +1503,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
 
     // We use 2 PBOs to make use of asynchronous data uploading
     GLuint pboId = getPboID(_imp->updateViewerPboIndex);
-    
+
     // The bitdepth of the texture
     ImageBitDepthEnum bd = getBitDepth();
     Texture::DataTypeEnum dataType;
@@ -1519,7 +1516,6 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     assert(textureIndex == 0 || textureIndex == 1);
 
     GLTexturePtr tex;
-    
     TextureRect textureRectangle;
     if (isPartialRect) {
         // For small partial updates overlays, we make new textures
@@ -1535,7 +1531,6 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         if (isFirstTile) {
             tex->ensureTextureHasSize(textureRectangle, dataType);
         }
-
     }
 
     glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
@@ -1556,7 +1551,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glCheckError();
 
     *texture = tex;
-    
+
     _imp->updateViewerPboIndex = (_imp->updateViewerPboIndex + 1) % 2;
 } // ViewerGL::transferBufferFromRAMtoGPU
 
@@ -2542,6 +2537,7 @@ bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
     unsigned int mipMapLevel = getInternalNode()->getViewerMipMapLevel();
+
     if (mipMapLevel != _imp->lastTextureTransferMipMapLevel[texIndex]) {
         return false;
     }
@@ -2549,14 +2545,15 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
     if (roi != _imp->lastTextureTransferRoI[texIndex]) {
         return false;
     }
+
     return true;
 }
 
 void
 ViewerGL::checkIfViewPortRoIValidOrRender()
 {
-    for (int i = 0; i< 2; ++i) {
-        if (!checkIfViewPortRoIValidOrRenderForInput(i)) {
+    for (int i = 0; i < 2; ++i) {
+        if ( !checkIfViewPortRoIValidOrRenderForInput(i) ) {
             if ( !getViewerTab()->getGui()->getApp()->getProject()->isLoadingProject() ) {
                 ViewerInstance* viewer = getInternalNode();
                 assert(viewer);
@@ -3931,10 +3928,11 @@ ViewerGL::getLastRenderedImage(int textureIndex) const
     QMutexLocker l(&_imp->lastRenderedImageMutex);
     for (U32 i = 0; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
         ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
-        if ( mipmap ) {
+        if (mipmap) {
             return mipmap;
         }
     }
+
     return ImagePtr();
 }
 
@@ -3951,9 +3949,9 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
 
     QMutexLocker l(&_imp->lastRenderedImageMutex);
     assert(_imp->displayTextures[textureIndex].lastRenderedTiles.size() > mipMapLevel);
-    
+
     ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel].lock();
-    if ( mipmap) {
+    if (mipmap) {
         return mipmap;
     }
 
@@ -3961,7 +3959,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     if (mipMapLevel > 0) {
         for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
             mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
-            if ( mipmap ) {
+            if (mipmap) {
                 return mipmap;
             }
         }
@@ -3970,10 +3968,11 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     //Find an image at lower scale
     for (U32 i = mipMapLevel + 1; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
         mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
-        if ( mipmap ) {
+        if (mipmap) {
             return mipmap;
         }
     }
+
     return ImagePtr();
 }
 
@@ -4017,11 +4016,11 @@ getColorAtInternal(const ImagePtr& image,
     if ( image->getBounds().contains(x, y) ) {
         Image::ReadAccess racc( image.get() );
         const PIX* pix = (const PIX*)racc.pixelAt(x, y);
-        
+
         if (!pix) {
             return false;
         }
-        
+
         int nComps = image->getComponents().getNumComponents();
         if (nComps >= 4) {
             *r = pix[0] / (float)maxValue;
@@ -4041,15 +4040,15 @@ getColorAtInternal(const ImagePtr& image,
         } else {
             *r = *g = *b = *a = pix[0] / (float)maxValue;
         }
-        
-        
+
+
         ///convert to linear
         if (srcColorSpace) {
             *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
             *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
             *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
         }
-        
+
         if (!forceLinear && dstColorSpace) {
             ///convert to dst color space
             float from[3];
@@ -4062,11 +4061,11 @@ getColorAtInternal(const ImagePtr& image,
             *g = to[1];
             *b = to[2];
         }
-        
+
         return true;
     }
-    
-    
+
+
     return false;
 } // getColorAtInternal
 
@@ -4091,7 +4090,7 @@ ViewerGL::getColorAt(double x,
     ImagePtr image = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
 
 
-    if ( !image ) {
+    if (!image) {
         return false;
         ///Don't do this as this is 8bit data
         /*double colorGPU[4];
@@ -4205,7 +4204,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
     double gSum = 0.;
     double bSum = 0.;
     double aSum = 0.;
-    if ( !image ) {
+    if (!image) {
         return false;
         //don't do this as this is 8 bit
         /*

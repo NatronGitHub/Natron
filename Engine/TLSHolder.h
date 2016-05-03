@@ -68,7 +68,7 @@ protected:
      * @returns True if this object no longer holds any per-thread data
      **/
     virtual bool cleanupPerThreadData(const QThread* curThread) const = 0;
-    
+
     /**
      * @brief Same as cleanupPerThreadData except that it actually does not clean-up but
      * whether it should clean-up or not, this is much faster than cleanupPerThreadData as

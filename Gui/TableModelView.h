@@ -251,46 +251,46 @@ TableItem::setFont(const QFont &afont)
     setData(Qt::FontRole, afont);
 }
 
-class TableItemEditorFactory : public QItemEditorFactory
+class TableItemEditorFactory
+    : public QItemEditorFactory
 {
 public:
-    
-    TableItemEditorFactory(): QItemEditorFactory() {}
-    
+
+    TableItemEditorFactory() : QItemEditorFactory() {}
+
     virtual ~TableItemEditorFactory()
     {
-        
     }
-    
-    virtual QWidget *createEditor(QVariant::Type type, QWidget *parent) const OVERRIDE FINAL;
-    
+
+    virtual QWidget * createEditor(QVariant::Type type, QWidget *parent) const OVERRIDE FINAL;
     virtual QByteArray valuePropertyName(QVariant::Type type) const OVERRIDE FINAL;
 };
 
 
-class ExpandingLineEdit : public LineEdit
+class ExpandingLineEdit
+    : public LineEdit
 {
     Q_OBJECT
-    
+
 public:
     ExpandingLineEdit(QWidget *parent);
-    
+
     virtual ~ExpandingLineEdit() {}
-    
+
     void setWidgetOwnsGeometry(bool value)
     {
         widgetOwnsGeometry = value;
     }
-    
+
 protected:
     void changeEvent(QEvent *e);
-    
-    public Q_SLOTS:
+
+public Q_SLOTS:
     void resizeToContents();
-    
+
 private:
     void updateMinimumWidth();
-    
+
     int originalWidth;
     bool widgetOwnsGeometry;
 };

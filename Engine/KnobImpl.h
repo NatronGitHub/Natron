@@ -2249,7 +2249,7 @@ Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
         QMutexLocker l(&_valueMutex);
         defaultV = _defaultValues[dimension];
     }
-    
+
     clearExpression(dimension, true);
     resetExtraToDefaultValue(dimension);
     ignore_result( setValue(defaultV, ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault, NULL) );
@@ -2522,10 +2522,10 @@ Knob<T>::clone(KnobI* other,
     if (!isValueChangesBlocked()) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
     }
-    if (!isListenersNotificationBlocked()) {
+    if ( !isListenersNotificationBlocked() ) {
         refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
-    
+
     
     cloneExtraData(other, dimension, otherDimension);
     if ( getHolder() ) {
@@ -2557,10 +2557,9 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,
     }
     if (hasChanged) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-        if (!isListenersNotificationBlocked()) {
+        if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
         }
-        
     }
 
     return hasChanged;
@@ -2586,10 +2585,9 @@ Knob<T>::clone(KnobI* other,
         getHolder()->updateHasAnimation();
     }
     _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-    if (!isListenersNotificationBlocked()) {
+    if ( !isListenersNotificationBlocked() ) {
         refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
-    
 }
 
 template<typename T>
@@ -2598,7 +2596,6 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
                            int dimension,
                            int otherDimension)
 {
-    
     if (other == this) {
         return;
     }
@@ -2608,6 +2605,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
     hasChanged |= cloneCurvesAndCheckIfChanged(other, true, dimension, otherDimension);
     
     hasChanged |= cloneExtraDataAndCheckIfChanged(other, dimension, otherDimension);
+
     if (hasChanged) {
         if ( getHolder() ) {
             getHolder()->updateHasAnimation();
@@ -2616,12 +2614,10 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
     }
     if (hasChanged) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-        if (!isListenersNotificationBlocked()) {
+        if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
         }
-        
     }
-    
 } // >::cloneAndUpdateGui
 
 template <typename T>

@@ -61,7 +61,8 @@ public:
      * @brief Returns if the given plug-in is compatible with this WriteNode container.
      * by default all nodes which inherits GenericWriter in OpenFX are.
      **/
-    static bool isBundledWriter(const std::string& pluginID);
+    static bool isBundledWriter(const std::string& pluginID, bool wasProjectCreatedWithLowerCaseIDs);
+    bool isBundledWriter(const std::string& pluginID);
 
     WriteNode(NodePtr n);
 

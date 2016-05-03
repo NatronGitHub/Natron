@@ -132,7 +132,7 @@ public:
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & imageRoD, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
     virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel,std::vector<RectI>* tiles) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel, std::vector<RectI>* tiles) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      * of the ViewerGL.
@@ -176,7 +176,6 @@ public:
                                             bool isPartialRect,
                                             bool isFirstTile,
                                             boost::shared_ptr<OpenGLTextureI>* texture) OVERRIDE FINAL;
-    
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
                                                const boost::shared_ptr<OpenGLTextureI>& texture,
                                                const ImagePtr& image,
@@ -194,7 +193,6 @@ public:
                                                bool recenterViewer,
                                                const Point& viewportCenter,
                                                bool isPartialRect) OVERRIDE FINAL;
-    
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
     /**
@@ -443,9 +441,9 @@ private:
 
 private:
 
-    
+
     bool checkIfViewPortRoIValidOrRenderForInput(int texIndex);
-    
+
     bool penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* event);
 
     /**

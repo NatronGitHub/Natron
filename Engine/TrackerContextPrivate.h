@@ -153,7 +153,7 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamRobustModel "robustModel"
 #define kTrackerParamRobustModelLabel "Robust Model"
 #define kTrackerParamRobustModelHint "When checked, the solver will assume that the model generated (i.e: the Transform or the CornerPin) is possible given the motion of the video and will eliminate points that do not match the model to compute the resulting parameters. " \
-"When unchecked, the solver assumes that all points that are enabled and have a keyframe are valid and fit the model: this may in some situations work better if you are trying to find a model that is just not correct for the given motion of the video."
+    "When unchecked, the solver assumes that all points that are enabled and have a keyframe are valid and fit the model: this may in some situations work better if you are trying to find a model that is just not correct for the given motion of the video."
 
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
@@ -178,12 +178,12 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamAutoGenerateTransform "autoComputeransform"
 #define kTrackerParamAutoGenerateTransformLabel "Compute Transform Automatically"
 #define kTrackerParamAutoGenerateTransformHint "When checked, whenever changing a parameter controlling the Transform Generation (such as Motion Type, Transform Type, Reference Frame, etc...) or changing the Enabled parameter of a track, the transform parameters will be re-computed automatically. " \
-"When unchecked, you must press the Compute button to compute it."
+    "When unchecked, you must press the Compute button to compute it."
 
 #define kTrackerParamGenerateTransform "computeTransform"
 #define kTrackerParamGenerateTransformLabel "Compute"
 #define kTrackerParamGenerateTransformHint "Click to compute the parameters of the Transform Controls or CornerPin Controls (depending on the Transform Type) from the data acquired on the tracks during the tracking. This should be done after the tracking is finished and when you feel the results are satisfying. " \
-"For each frame, the resulting parameter is computed from the tracks that are enabled at this frame and that have a keyframe on the center point (e.g: are valid)."
+    "For each frame, the resulting parameter is computed from the tracks that are enabled at this frame and that have a keyframe on the center point (e.g: are valid)."
 
 #define kTrackerParamTransformOutOfDate "transformOutOfDate"
 #define kTrackerParamTransformOutOfDateHint "The Transform parameters are out of date because parameters that control their generation have been changed, please click the Compute button to refresh them"
@@ -431,7 +431,6 @@ public:
     boost::weak_ptr<KnobBool> autoGenerateTransform;
     boost::weak_ptr<KnobButton> generateTransformButton;
     boost::weak_ptr<KnobString> transformOutOfDateLabel;
-    
     boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobDouble> translate;
     boost::weak_ptr<KnobDouble> rotate;
@@ -669,9 +668,9 @@ public:
     void setSolverParamsEnabled(bool enabled);
 
     void endSolve();
-    
+
     bool isTransformAutoGenerationEnabled() const;
-    
+
     void setTransformOutOfDate(bool outdated);
 
 public Q_SLOTS:

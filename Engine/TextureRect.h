@@ -40,7 +40,8 @@ NATRON_NAMESPACE_ENTER;
  * and likewise y2 - y1 != h , this is because a texture might not contain all the lines/columns
  * of the image in the portion defined.
  **/
-class TextureRect : public RectI
+class TextureRect
+    : public RectI
 {
 public:
     double par; // the par of the associated image
@@ -82,6 +83,7 @@ public:
              double par_)
     {
         RectI::set(x1_, y1_, x2_, y2_);
+
         w = w_;
         h = h_;
         closestPo2 = closestPo2_;
@@ -96,7 +98,6 @@ public:
     void operator=(const RectI& other);
 
     bool contains(const TextureRect& other) const;
-    
 };
 
 inline bool

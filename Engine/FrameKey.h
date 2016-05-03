@@ -126,7 +126,7 @@ private:
     int _lut;  // The lut on the viewer (if we don't apply it through GLSL shaders)
     int _bitDepth;  // The bitdepth of the texture (i.e: 8bit or 32bit fp)
     int _channels; // The display channels, as requested by the user. Note that this will make a new cache entry whenever the user
-                  // picks a new value in dropdown on the GUI
+                   // picks a new value in dropdown on the GUI
     int /*ViewIdx*/ _view; // The view of the frame, store it locally as an int for easier serialization
     TextureRect _textureRect;     // texture rectangle definition (bounds in the original image + width and height)
     unsigned int _mipMapLevel; // The scale of the image from which this texture was made

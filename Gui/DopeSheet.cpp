@@ -34,6 +34,9 @@
 #include <QUndoStack>
 
 // Natron includes
+#ifndef NATRON_ENABLE_IO_META_NODES
+#include "Engine/AppInstance.h"
+#endif
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Knob.h"
@@ -233,11 +236,11 @@ DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,
 
         std::string pluginID = input->getPluginID();
 #ifndef NATRON_ENABLE_IO_META_NODES
-        if ( ReadNode::isBundledReader(pluginID) )
+        if ( ReadNode::isBundledReader( pluginID, input->getApp()->wasProjectCreatedWithLowerCaseIDs() ) ) {
 #else
-        if (pluginID == PLUGINID_NATRON_READ)
+        if (pluginID == PLUGINID_NATRON_READ) {
 #endif
-        {
+
             return input.get();
         } else {
             Node* ret = getNearestReaderFromInputs_recursive(input.get(), markedNodes);
@@ -317,7 +320,7 @@ DopeSheet::addNode(NodeGuiPtr nodeGui)
     std::string pluginID = node->getPluginID();
 
 #ifndef NATRON_ENABLE_IO_META_NODES
-    if ( ReadNode::isBundledReader(pluginID) ) {
+    if ( ReadNode::isBundledReader( pluginID, node->getApp()->wasProjectCreatedWithLowerCaseIDs() ) ) {
 #else
     if (pluginID == PLUGINID_NATRON_READ) {
 #endif

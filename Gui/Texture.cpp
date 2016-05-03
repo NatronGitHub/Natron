@@ -50,22 +50,23 @@ Texture::Texture(U32 target,
 }
 
 bool
-Texture::ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type)
+Texture::ensureTextureHasSize(const TextureRect& texRect,
+                              DataTypeEnum type)
 {
     if ( (texRect == _textureRect) && (_type == type) ) {
         return false;
     }
-    
+
     GLProtectAttrib a(GL_ENABLE_BIT);
     glEnable(_target);
     glBindTexture (_target, _texID);
     _textureRect = texRect;
     _type = type;
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-    
+
     glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
     glTexParameteri (_target, GL_TEXTURE_MAG_FILTER, _magFilter);
-    
+
     glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
     glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
     if (type == eDataTypeByte) {
@@ -89,9 +90,8 @@ Texture::ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type)
     }
     glBindTexture(_target, 0);
     glCheckError();
+
     return true;
-    
-    
 }
 
 void
@@ -103,14 +103,13 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
     //GLuint savedTexture;
     //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
-       
         GLProtectAttrib a(GL_ENABLE_BIT);
         int width = updateOnlyRoi ? roi.width() : w();
         int height = updateOnlyRoi ? roi.height() : h();
         int x1 = updateOnlyRoi ? roi.x1 - texRect.x1 : 0;
         int y1 = updateOnlyRoi ? roi.y1 - texRect.y1 : 0;
 
-        if (!ensureTextureHasSize(texRect, type)) {
+        if ( !ensureTextureHasSize(texRect, type) ) {
             glEnable(_target);
             glBindTexture (_target, _texID);
             if (_type == Texture::eDataTypeByte) {
@@ -133,7 +132,6 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
             glBindTexture (_target, 0);
             glCheckError();
         }
-       
     } // GLProtectAttrib a(GL_ENABLE_BIT);
 } // fillOrAllocateTexture
 

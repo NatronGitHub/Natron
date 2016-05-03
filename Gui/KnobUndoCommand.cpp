@@ -358,7 +358,7 @@ MultipleKnobEditsUndoCommand::undo()
                         knobUI->setValue<double>(it2->dimension, it2->oldValue.toDouble(), &k, true, _reason);
                     } else if (isString) {
                         knobUI->setValue<std::string>(it2->dimension, it2->oldValue.toString().toStdString(),
-                                                         &k, true, _reason);
+                                                      &k, true, _reason);
                     } else {
                         assert(false);
                     }
@@ -425,7 +425,7 @@ MultipleKnobEditsUndoCommand::redo()
                     keyAdded = knobUI->setValueAtTime<double>(it2->dimension, it2->newValue.toDouble(), it2->time, ViewIdx(0), &k, refreshGui, _reason);
                 } else if (isString) {
                     keyAdded = knobUI->setValueAtTime<std::string>(it2->dimension, it2->newValue.toString().toStdString(), it2->time,
-                                                                      ViewIdx(0), &k, refreshGui, _reason);
+                                                                   ViewIdx(0), &k, refreshGui, _reason);
                 } else {
                     assert(false);
                 }
@@ -439,7 +439,7 @@ MultipleKnobEditsUndoCommand::redo()
                     it2->setValueRetCode = knobUI->setValue<double>(it2->dimension, it2->newValue.toDouble(), &k, true, _reason);
                 } else if (isString) {
                     it2->setValueRetCode = knobUI->setValue<std::string>(it2->dimension, it2->newValue.toString().toStdString(),
-                                                                            &k, true, _reason);
+                                                                         &k, true, _reason);
                 } else {
                     assert(false);
                 }
@@ -484,7 +484,7 @@ MultipleKnobEditsUndoCommand::mergeWith(const QUndoCommand *command)
         ParamsMap::const_iterator otherIt = knobCommand->knobs.begin();
         bool oneDifferent = false;
         for (; thisIt != knobs.end(); ++thisIt, ++otherIt) {
-            if (thisIt->first.lock() != otherIt->first.lock()) {
+            if ( thisIt->first.lock() != otherIt->first.lock() ) {
                 oneDifferent = true;
                 break;
             }
@@ -547,7 +547,7 @@ RestoreDefaultsCommand::undo()
         if (!itCloneKnob) {
             continue;
         }
-        itKnob->cloneAndUpdateGui(itCloneKnob.get());
+        itKnob->cloneAndUpdateGui( itCloneKnob.get() );
 
         if ( itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();
@@ -578,7 +578,7 @@ void
 RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
-    KnobPtr  first = _knobs.front().lock();
+    KnobPtr first = _knobs.front().lock();
     AppInstance* app = 0;
     KnobHolder* holder = first->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
@@ -692,6 +692,7 @@ void
 SetExpressionCommand::undo()
 {
     KnobPtr knob = _knob.lock();
+
     if (!knob) {
         return;
     }
@@ -712,6 +713,7 @@ void
 SetExpressionCommand::redo()
 {
     KnobPtr knob = _knob.lock();
+
     if (!knob) {
         return;
     }

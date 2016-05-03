@@ -276,7 +276,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     preBlurSigmaKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(preBlurSigmaKnob);
     preBlurSigma = preBlurSigmaKnob;
-    
+
     boost::shared_ptr<KnobSeparator>  perTrackSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), kTrackerParamPerTrackParamsSeparatorLabel, 3);
     perTrackSeparatorKnob->setName(kTrackerParamPerTrackParamsSeparator);
     settingsPage->addKnob(perTrackSeparatorKnob);
@@ -309,7 +309,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     motionModel = motionModelKnob;
     settingsPage->addKnob(motionModelKnob);
 
-    
 
     boost::shared_ptr<KnobSeparator>  transformGenerationSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Generation", 3);
     transformPage->addKnob(transformGenerationSeparatorKnob);
@@ -353,7 +352,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformType = transformTypeKnob;
     transformPage->addKnob(transformTypeKnob);
 
-    
+
     boost::shared_ptr<KnobBool>  robustModelKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamRobustModelLabel, 1);
     robustModelKnob->setName(kTrackerParamRobustModel);
     robustModelKnob->setHintToolTip(kTrackerParamRobustModelHint);
@@ -414,7 +413,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     smoothCornerPinKnob->setSecret(true);
     transformPage->addKnob(smoothCornerPinKnob);
     smoothCornerPin = smoothCornerPinKnob;
-    
+
     boost::shared_ptr<KnobBool>  autoGenerateTransformKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamAutoGenerateTransformLabel, 1);
     autoGenerateTransformKnob->setName(kTrackerParamAutoGenerateTransform);
     autoGenerateTransformKnob->setHintToolTip(kTrackerParamAutoGenerateTransformHint);
@@ -425,7 +424,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(autoGenerateTransformKnob);
     autoGenerateTransform = autoGenerateTransformKnob;
 
-    
+
     boost::shared_ptr<KnobButton> computeTransformKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamGenerateTransformLabel, 1);
     computeTransformKnob->setName(kTrackerParamGenerateTransform);
     computeTransformKnob->setHintToolTip(kTrackerParamGenerateTransformHint);
@@ -435,7 +434,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(computeTransformKnob);
     generateTransformButton = computeTransformKnob;
 
-    
+
     boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), "", 1);
     transformOutOfDateLabelKnob->setName(kTrackerParamTransformOutOfDate);
     transformOutOfDateLabelKnob->setHintToolTip(kTrackerParamTransformOutOfDateHint);
@@ -445,13 +444,12 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformOutOfDateLabelKnob->setSecret(true);
     transformPage->addKnob(transformOutOfDateLabelKnob);
     transformOutOfDateLabel = transformOutOfDateLabelKnob;
-    
-    
+
+
     boost::shared_ptr<KnobSeparator>  transformSeparator = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Controls", 3);
     transformPage->addKnob(transformSeparator);
     transformSeparator->setSecret(true);
     transformControlsSeparator = transformSeparator;
-
 
 
     NodePtr tNode = transformNode.lock();
@@ -931,11 +929,11 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
     bool enabledChans[3];
     args.getEnabledChannels(&enabledChans[0], &enabledChans[1], &enabledChans[2]);
 
-    
+
     {
         // Add a marker to the auto-track at the tracked time: the mv::Marker struct is filled with the values of the Natron TrackMarker at the trackTime
         QMutexLocker k(autoTrackMutex);
-        if (trackTime == args.getStart()) {
+        if ( trackTime == args.getStart() ) {
             bool foundStartMarker = autoTrack->GetMarker(0, trackTime, trackIndex, &track->mvMarker);
             assert(foundStartMarker);
             track->mvMarker.source = mv::Marker::MANUAL;
@@ -943,9 +941,6 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
             natronTrackerToLibMVTracker(false, enabledChans, *track->natronMarker, trackIndex, trackTime, args.getStep(), args.getFormatHeight(), &track->mvMarker);
             autoTrack->AddMarker(track->mvMarker);
         }
-
-        
-        
     }
 
     if (track->mvMarker.source == mv::Marker::MANUAL) {
@@ -956,12 +951,11 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
 #endif
         setKnobKeyframesFromMarker(track->mvMarker, args.getFormatHeight(), 0, track->natronMarker);
     } else {
-
         // Make sure the reference frame is in the auto-track: the mv::Marker struct is filled with the values of the Natron TrackMarker at the reference_frame
         {
             QMutexLocker k(autoTrackMutex);
             mv::Marker m;
-            if (!autoTrack->GetMarker(0, track->mvMarker.reference_frame, trackIndex, &m)) {
+            if ( !autoTrack->GetMarker(0, track->mvMarker.reference_frame, trackIndex, &m) ) {
                 natronTrackerToLibMVTracker(true, enabledChans, *track->natronMarker, track->mvMarker.track, track->mvMarker.reference_frame, args.getStep(), args.getFormatHeight(), &m);
                 autoTrack->AddMarker(m);
             }
@@ -1009,27 +1003,27 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
     return true;
 } // TrackerContextPrivate::trackStepLibMV
 
-
 struct PreviouslyComputedTrackFrame
 {
     int frame;
     bool isUserKey;
-    
-    PreviouslyComputedTrackFrame() : frame(0), isUserKey(false) {}
-    
-    PreviouslyComputedTrackFrame(int f, bool b) : frame(f), isUserKey(b) {}
-};
 
+    PreviouslyComputedTrackFrame() : frame(0), isUserKey(false) {}
+
+    PreviouslyComputedTrackFrame(int f,
+                                 bool b) : frame(f), isUserKey(b) {}
+};
 
 struct PreviouslyComputedTrackFrameCompareLess
 {
-    
-    bool operator() (const PreviouslyComputedTrackFrame& lhs, const PreviouslyComputedTrackFrame& rhs) const {
+    bool operator() (const PreviouslyComputedTrackFrame& lhs,
+                     const PreviouslyComputedTrackFrame& rhs) const
+    {
         return lhs.frame < rhs.frame;
     }
 };
 
-typedef std::set<PreviouslyComputedTrackFrame,PreviouslyComputedTrackFrameCompareLess> PreviouslyTrackedFrameSet;
+typedef std::set<PreviouslyComputedTrackFrame, PreviouslyComputedTrackFrameCompareLess> PreviouslyTrackedFrameSet;
 
 void
 TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
@@ -1077,8 +1071,8 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
         // Set a keyframe on the marker to initialize its position
         (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
-        
-        
+
+
         PreviouslyTrackedFrameSet previousFramesOrdered;
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
@@ -1086,42 +1080,39 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         // Make sure to create a marker at the start time
         userKeys.insert(start);
 
-        
+
         // Add a libmv marker for all keyframes
         for (std::set<int>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
-           
             mv::Marker marker;
             TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
             trackContext->AddMarker(marker);
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
-            if ((frameStep > 0 && *it2 <= start) || (frameStep < 0 && *it2 >= start)) {
-                previousFramesOrdered.insert(PreviouslyComputedTrackFrame(*it2, true));
+            if ( ( (frameStep > 0) && (*it2 <= start) ) || ( (frameStep < 0) && (*it2 >= start) ) ) {
+                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, true) );
             }
-            
         }
 
 
         //For all already tracked frames which are not keyframes, add them to the AutoTrack too
         std::set<double> centerKeys;
         t->natronMarker->getCenterKeyframes(&centerKeys);
-        
-        
+
+
         for (std::set<double>::iterator it2 = centerKeys.begin(); it2 != centerKeys.end(); ++it2) {
             if ( userKeys.find(*it2) != userKeys.end() ) {
                 continue;
             }
-            
+
             mv::Marker marker;
             TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
             assert(marker.source == mv::Marker::TRACKED);
             trackContext->AddMarker(marker);
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
-            if (((frameStep > 0 && *it2 < start) || (frameStep < 0 && *it2 > start))) {
-                previousFramesOrdered.insert(PreviouslyComputedTrackFrame(*it2, false));
+            if ( ( ( (frameStep > 0) && (*it2 < start) ) || ( (frameStep < 0) && (*it2 > start) ) ) ) {
+                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, false) );
             }
-            
         }
-        
+
         // Taken from libmv, only initialize the filter to this amount of frames (max)
         const int max_frames_to_predict_from = 20;
         std::list<mv::Marker> previouslyComputedMarkersOrdered;
@@ -1132,29 +1123,27 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                     break;
                 }
                 mv::Marker m;
-                if (trackContext->GetMarker(0, it->frame, trackIndex, &m)) {
+                if ( trackContext->GetMarker(0, it->frame, trackIndex, &m) ) {
                     previouslyComputedMarkersOrdered.push_front(m);
                 } else {
                     assert(false);
                 }
-                
             }
         }
-        
-        
-        
+
+
         // There must be at least 1 marker at the start time
-        assert(!previouslyComputedMarkersOrdered.empty());
-        
+        assert( !previouslyComputedMarkersOrdered.empty() );
+
         // Initialise the kalman state with the marker at the position
-        
+
         if (frameStep > 0) {
             std::list<mv::Marker>::iterator mIt = previouslyComputedMarkersOrdered.begin();
             t->mvState.Init(*mIt, frameStep);
             ++mIt;
             for (; mIt != previouslyComputedMarkersOrdered.end(); ++mIt) {
                 mv::Marker predictedMarker;
-                if (!t->mvState.PredictForward(mIt->frame, &predictedMarker)) {
+                if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
                     break;
                 } else {
                     t->mvState.Update(*mIt);
@@ -1166,14 +1155,14 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
             ++mIt;
             for (; mIt != previouslyComputedMarkersOrdered.rend(); ++mIt) {
                 mv::Marker predictedMarker;
-                if (!t->mvState.PredictForward(mIt->frame, &predictedMarker)) {
+                if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
                     break;
                 } else {
                     t->mvState.Update(*mIt);
                 }
             }
         }
-        
+
 
         t->mvOptions = mvOptions;
         _imp->endLibMVOptionsForTrack(*t->natronMarker, &t->mvOptions);
@@ -1243,7 +1232,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
                                      _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
                 QObject::disconnect( (*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
                                      _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
-            } else {
+               } else {
                 QObject::connect( (*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
                                   _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
                 QObject::connect( (*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
@@ -1256,7 +1245,7 @@ TrackerContextPrivate::linkMarkerKnobsToGuiKnobs(const std::list<TrackMarkerPtr 
                                   _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
                 QObject::connect( (*it2)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
                                   _publicInterface, SLOT(onSelectedKnobCurveChanged()) );
-            }*/
+               }*/
         }
         if ( next != markers.end() ) {
             ++next;
@@ -1317,12 +1306,10 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     shutter.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     shutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     customShutterOffset.lock()->setSecret(motionType == eTrackerMotionTypeNone);
-    
+
     exportLink.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
     exportButton.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
-    
-}
-
+} // TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal
 
 void
 TrackerContextPrivate::refreshVisibilityFromTransformType()
@@ -1422,7 +1409,7 @@ throwProsacError(ProsacReturnCodeEnum c,
 }
 
 /*
- * @brief Search for the best model that fits the correspondences x1 to x2. 
+ * @brief Search for the best model that fits the correspondences x1 to x2.
  * @param dataSetIsManual If true, this indicates that the x1 points were placed manually by the user
  * in which case we expect the vector to have less than 10% outliers
  * @param robustModel When dataSetIsManual is true, if this parameter is true then the solver will run a MEsimator on the data
@@ -1441,9 +1428,10 @@ searchForModel(const bool dataSetIsManual,
                int h2,
                typename MODELTYPE::Model* foundModel
 #ifdef DEBUG
-               ,std::vector<bool>* inliers = 0
+               ,
+               std::vector<bool>* inliers = 0
 #endif
-)
+               )
 {
     typedef ProsacKernelAdaptor<MODELTYPE> KernelType;
 
@@ -1459,26 +1447,23 @@ searchForModel(const bool dataSetIsManual,
 
     KernelType kernel(M1, w1, h1, M2, w2, h2);
     if (dataSetIsManual) {
-        
         if (robustModel) {
             double sigmaMAD;
-            if (!searchModelWithMEstimator(kernel, 3, foundModel, &sigmaMAD)) {
+            if ( !searchModelWithMEstimator(kernel, 3, foundModel, &sigmaMAD) ) {
                 throw std::runtime_error("MEstimator failed to run a successful iteration");
             }
         } else {
-            if (!searchModelLS(kernel, foundModel)) {
+            if ( !searchModelLS(kernel, foundModel) ) {
                 throw std::runtime_error("Least-squares solver failed to find a model");
             }
         }
     } else {
-        
         ProsacReturnCodeEnum ret = prosac(kernel, foundModel
 #ifdef DEBUG
                                           , inliers
 #endif
                                           );
         throwProsacError( ret, KernelType::MinimumSamples() );
-
     }
 }
 
@@ -1494,7 +1479,7 @@ TrackerContextPrivate::computeTranslationFromNPoints(const bool dataSetIsManual,
                                                      Point* translation)
 {
     openMVG::Vec2 model;
-    
+
     searchForModel<openMVG::robust::Translation2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
     translation->x = model(0);
     translation->y = model(1);
@@ -1514,7 +1499,7 @@ TrackerContextPrivate::computeSimilarityFromNPoints(const bool dataSetIsManual,
                                                     double* scale)
 {
     openMVG::Vec4 model;
-    
+
     searchForModel<openMVG::robust::Similarity2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
     openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
     *rotate = Transform::toDegrees(*rotate);
@@ -1532,30 +1517,30 @@ TrackerContextPrivate::computeHomographyFromNPoints(const bool dataSetIsManual,
                                                     Transform::Matrix3x3* homog)
 {
     openMVG::Mat3 model;
-    
+
 #ifdef DEBUG
     std::vector<bool> inliers;
 #endif
-    
+
     searchForModel<openMVG::robust::Homography2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model
 #ifdef DEBUG
-                                                           , &inliers
+                                                        , &inliers
 #endif
-                                                           );
-    
+                                                        );
+
     *homog = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
-                                  model(1, 0), model(1, 1), model(1, 2),
-                                  model(2, 0), model(2, 1), model(2, 2) );
-    
+                                   model(1, 0), model(1, 1), model(1, 2),
+                                   model(2, 0), model(2, 1), model(2, 2) );
+
 #ifdef DEBUG
     // Check that the warped x1 points match x2
-    assert(x1.size() == x2.size());
+    assert( x1.size() == x2.size() );
     for (std::size_t i = 0; i < x1.size(); ++i) {
         if (!dataSetIsManual && inliers[i]) {
             Point p2 = applyHomography(x1[i], *homog);
-            if (std::abs(p2.x - x2[i].x) >  0.02 ||
-                std::abs(p2.y - x2[i].y) > 0.02) {
-                qDebug() << "[BUG]: Inlier for Homography2DSolver failed to fit the found model: X1 ("<<x1[i].x<<','<<x1[i].y<<')' << "X2 ("<<x2[i].x<<','<<x2[i].y<<')'  << "P2 ("<<p2.x<<','<<p2.y<<')';
+            if ( (std::abs(p2.x - x2[i].x) >  0.02) ||
+                 ( std::abs(p2.y - x2[i].y) > 0.02) ) {
+                qDebug() << "[BUG]: Inlier for Homography2DSolver failed to fit the found model: X1 (" << x1[i].x << ',' << x1[i].y << ')' << "X2 (" << x2[i].x << ',' << x2[i].y << ')'  << "P2 (" << p2.x << ',' << p2.y << ')';
             }
         }
     }
@@ -1574,9 +1559,9 @@ TrackerContextPrivate::computeFundamentalFromNPoints(const bool dataSetIsManual,
                                                      Transform::Matrix3x3* fundamental)
 {
     openMVG::Mat3 model;
-    
+
     searchForModel<openMVG::robust::FundamentalSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
-    
+
     *fundamental = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
                                          model(1, 0), model(1, 1), model(1, 2),
                                          model(2, 0), model(2, 1), model(2, 2) );
@@ -1740,9 +1725,8 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
     int h1 = rodRef.height();
     int w2 = rodTime.width();
     int h2 = rodTime.height();
-    
     const bool dataSetIsUserManual = false;
-    
+
     try {
         if (x1.size() == 1) {
             data.hasRotationAndScale = false;
@@ -1990,10 +1974,10 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.tWatcher.reset();
-    lastSolveRequest.cpWatcher.reset(new QFutureWatcher<TrackerContextPrivate::CornerPinData>());
-    QObject::connect(lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()));
-    QObject::connect(lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)));
-    lastSolveRequest.cpWatcher->setFuture(QtConcurrent::mapped(lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers)));
+    lastSolveRequest.cpWatcher.reset( new QFutureWatcher<TrackerContextPrivate::CornerPinData>() );
+    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
+    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
+    lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
 #else
     NodePtr thisNode = node.lock();
     QList<CornerPinData> validResults;
@@ -2037,6 +2021,7 @@ TrackerContextPrivate::resetTransformParamsAnimation()
         }
     }
     boost::shared_ptr<KnobDouble> centerKnob = center.lock();
+
     centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
     centerKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
     {
@@ -2044,13 +2029,13 @@ TrackerContextPrivate::resetTransformParamsAnimation()
         boost::shared_ptr<KnobDouble> translationKnob = translate.lock();
         boost::shared_ptr<KnobDouble> scaleKnob = scale.lock();
         boost::shared_ptr<KnobDouble> rotationKnob = rotate.lock();
-        
+
         translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
         translationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
-        
+
         scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
         scaleKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
-        
+
         rotationKnob->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
     }
 }
@@ -2086,9 +2071,9 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     animatedKnobsChanged.push_back(translationKnob);
     animatedKnobsChanged.push_back(scaleKnob);
     animatedKnobsChanged.push_back(rotationKnob);
-    
-    
-    Curve tmpTXCurve,tmpTYCurve,tmpRotateCurve,tmpScaleCurve;
+
+
+    Curve tmpTXCurve, tmpTYCurve, tmpRotateCurve, tmpScaleCurve;
 
     for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const TransformData& dataAtTime = *itResults;
@@ -2307,10 +2292,10 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
 {
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.cpWatcher.reset();
-    lastSolveRequest.tWatcher.reset(new QFutureWatcher<TrackerContextPrivate::TransformData>());
-    QObject::connect(lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()));
-    QObject::connect(lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)));
-    lastSolveRequest.tWatcher->setFuture(QtConcurrent::mapped(lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers)));
+    lastSolveRequest.tWatcher.reset( new QFutureWatcher<TrackerContextPrivate::TransformData>() );
+    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
+    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
+    lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
 #else
     NodePtr thisNode = node.lock();
     QList<TransformData> validResults;

@@ -315,9 +315,12 @@ OfxParamToKnob::getKnobHolder() const
     /*
        For readers and writers
      */
-    if ( ReadNode::isBundledReader(pluginID) || WriteNode::isBundledWriter(pluginID) ) {
+    bool wasProjectCreatedWithLowerCaseIDs = node->getApp()->wasProjectCreatedWithLowerCaseIDs();
+    if ( ReadNode::isBundledReader(pluginID, wasProjectCreatedWithLowerCaseIDs) ||
+         WriteNode::isBundledWriter(pluginID, wasProjectCreatedWithLowerCaseIDs) ) {
         NodePtr iocontainer = node->getIOContainer();
         assert(iocontainer);
+
         return iocontainer->getEffectInstance();
     }
 #endif

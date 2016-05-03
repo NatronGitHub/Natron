@@ -40,36 +40,27 @@ NATRON_NAMESPACE_ENTER;
 
 class OpenGLTextureI
 {
-    
 public:
-    
-   
-    
+
+
     OpenGLTextureI()
-    : _texID(0)
+        : _texID(0)
     {
-        
     }
-    
+
     U32 getTexID() const
     {
         return _texID;
     }
 
-    
-    virtual ~OpenGLTextureI() {
-
+    virtual ~OpenGLTextureI()
+    {
     }
-    
-    
-    
+
 protected:
-   
-    
-    
+
+
     U32 _texID;
-
-
 };
 
 class OpenGLViewerI
@@ -145,7 +136,6 @@ public:
                                             bool isPartialRect,
                                             bool isFirstTile,
                                             boost::shared_ptr<OpenGLTextureI>* texture) = 0;
-
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
                                                const boost::shared_ptr<OpenGLTextureI>& texture,
                                                const ImagePtr& image,
@@ -163,7 +153,7 @@ public:
                                                bool recenterViewer,
                                                const Point& viewportCenter,
                                                bool isPartialRect) = 0;
-    
+
     /**
      * @brief Called when the input of a viewer should render black.
      **/

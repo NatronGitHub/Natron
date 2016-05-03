@@ -107,10 +107,10 @@ public:
     void unlock()
     {
         if (!_entries.empty() && _manager) {
-            for (typename std::list<boost::shared_ptr<EntryType> >::iterator it = _entries.begin(); it!=_entries.end(); ++it) {
+            for (typename std::list<boost::shared_ptr<EntryType> >::iterator it = _entries.begin(); it != _entries.end(); ++it) {
                 _manager->unlock(*it);
             }
-            
+
             _entries.clear();
         }
     }

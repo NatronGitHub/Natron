@@ -2851,7 +2851,7 @@ TrackerGui::penMotion(double time,
             cur.y -= (center.y + offset.y);
 
             patternCorners[index]->setValuesAtTime(time, cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
-            
+
             if ( _imp->createKeyOnMoveButton->isChecked() ) {
                 _imp->interactMarker->setUserKeyframe(time);
             }
@@ -4095,7 +4095,7 @@ TrackerGuiPrivate::refreshSelectedMarkerTexture()
     }
 
     selectedMarkerImg.reset();
-    
+
     imageGetterWatcher.reset( new TrackWatcher() );
     QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), _publicInterface, SLOT(onTrackImageRenderingFinished()) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );

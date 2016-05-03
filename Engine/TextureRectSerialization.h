@@ -54,13 +54,13 @@ serialize(Archive & ar,
           const unsigned int /*version*/)
 {
     ar &
-    ::boost::serialization::make_nvp("x1",t.x1) &
-    ::boost::serialization::make_nvp("x2",t.x2) &
-    ::boost::serialization::make_nvp("y1",t.y1) &
-    ::boost::serialization::make_nvp("y2",t.y2) &
-    ::boost::serialization::make_nvp("w",t.w) &
-    ::boost::serialization::make_nvp("h",t.h) &
-    ::boost::serialization::make_nvp("po2",t.closestPo2) &
+    ::boost::serialization::make_nvp("x1", t.x1) &
+    ::boost::serialization::make_nvp("x2", t.x2) &
+    ::boost::serialization::make_nvp("y1", t.y1) &
+    ::boost::serialization::make_nvp("y2", t.y2) &
+    ::boost::serialization::make_nvp("w", t.w) &
+    ::boost::serialization::make_nvp("h", t.h) &
+    ::boost::serialization::make_nvp("po2", t.closestPo2) &
     ::boost::serialization::make_nvp("par", t.par);
 }
 }

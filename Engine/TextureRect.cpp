@@ -40,13 +40,13 @@ TextureRect::operator=(const RectI& other)
     y2 = other.y2;
 }
 
-
 bool
 TextureRect::contains(const TextureRect& other) const
 {
     return other.x1 >= x1 &&
-    other.y1 >= y1 &&
-    other.x2 <= x2 &&
-    other.y2 <= y2;
+           other.y1 >= y1 &&
+           other.x2 <= x2 &&
+           other.y2 <= y2;
 }
+
 NATRON_NAMESPACE_EXIT;
