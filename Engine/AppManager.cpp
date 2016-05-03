@@ -1400,8 +1400,7 @@ AppManager::loadPythonGroups()
         std::string s;
         if (SHIBOKEN_MAJOR_VERSION == 2) {
             s = "import PySide2\nimport PySide2.QtCore as QtCore";
-        }
-        else {
+        } else   {
             s = "import PySide\nimport PySide.QtCore as QtCore";
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
@@ -1418,8 +1417,7 @@ AppManager::loadPythonGroups()
         std::string s;
         if (SHIBOKEN_MAJOR_VERSION == 2) {
             s = "import PySide2.QtGui as QtGui";
-        }
-        else {
+        } else   {
             s = "import PySide.QtGui as QtGui";
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
@@ -1914,7 +1912,9 @@ AppManager::getTexture(const FrameKey & key,
 {
     std::list<FrameEntryPtr > retList;
     bool ret =  _imp->_viewerCache->get(key, &retList);
+
     *returnValue = retList;
+
     return ret;
 }
 

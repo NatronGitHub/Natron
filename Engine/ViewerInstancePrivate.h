@@ -103,7 +103,6 @@ struct RenderViewerArgs
     const Color::Lut* srcColorSpace;
     const Color::Lut* colorSpace;
     int alphaChannelIndex;
-    
 };
 
 struct ViewerInstance::ViewerInstancePrivate

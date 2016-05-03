@@ -941,9 +941,10 @@ KnobChoice::getEntriesHelp_mt_safe() const
 std::string
 KnobChoice::getActiveEntryText_mt_safe()
 {
-    std::pair<int,KnobPtr> master = getMaster(0);
+    std::pair<int, KnobPtr> master = getMaster(0);
+
     if (master.second) {
-        KnobChoice* isChoice = dynamic_cast<KnobChoice*>(master.second.get());
+        KnobChoice* isChoice = dynamic_cast<KnobChoice*>( master.second.get() );
         if (isChoice) {
             return isChoice->getActiveEntryText_mt_safe();
         }

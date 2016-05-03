@@ -498,7 +498,7 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
 
     ImagePtr image;
     if (viewer) {
-        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel(textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor());
+        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor() );
     }
 
     return image;

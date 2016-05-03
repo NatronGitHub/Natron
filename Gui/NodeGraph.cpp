@@ -369,7 +369,6 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     NodeGroup* isGrp = dynamic_cast<NodeGroup*>( node->getEffectInstance().get() );
 
 
-
     if (isDot) {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
     } else if (isBd) {
@@ -412,10 +411,10 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     //NodeGroup* parentIsGroup = dynamic_cast<NodeGroup*>(node->getGroup().get());;
     const std::list<NodePtr>& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
     bool isTopLevelNodeBeingCreated = false;
-    if (!nodesBeingCreated.empty() && nodesBeingCreated.front() == node) {
+    if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {
         isTopLevelNodeBeingCreated = true;
     }
-    if ( (args.reason != eCreateNodeReasonProjectLoad) && (args.reason != eCreateNodeReasonCopyPaste) && isTopLevelNodeBeingCreated) {
+    if ( (args.reason != eCreateNodeReasonProjectLoad) && (args.reason != eCreateNodeReasonCopyPaste) && isTopLevelNodeBeingCreated ) {
         node_ui->ensurePanelCreated();
     }
 

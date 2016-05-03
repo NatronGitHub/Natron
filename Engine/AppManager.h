@@ -519,7 +519,7 @@ public Q_SLOTS:
     void toggleAutoHideGraphInputs();
 
     void clearPlaybackCache();
-    
+
     void clearViewerCache();
 
     void clearDiskCache();

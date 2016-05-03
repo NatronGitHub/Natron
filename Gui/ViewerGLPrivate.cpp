@@ -221,7 +221,7 @@ static const GLubyte triangleStrip[28] = {
    ASCII art of the vertices used to render.
    The actual texture seen on the viewport is the rect (5,9,10,6).
    We draw  3*6 strips
-*/
+ */
 
 // 0___1___2___3
 // |  /|  /|  /|

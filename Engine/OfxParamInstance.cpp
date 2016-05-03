@@ -320,6 +320,7 @@ OfxParamToKnob::getKnobHolder() const
          WriteNode::isBundledWriter(pluginID, wasProjectCreatedWithLowerCaseIDs) ) {
         NodePtr iocontainer = node->getIOContainer();
         assert(iocontainer);
+
         return iocontainer->getEffectInstance();
     }
 #endif

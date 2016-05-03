@@ -2992,8 +2992,8 @@ private:
             return;
         } else {
             for (int i = 0; i < 2; ++i) {
-                if ( args[i] && args[i]->params ) {
-                    if ((args[i]->params->nbCachedTile > 0 && args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size()) || args[i]->params->isViewerPaused) {
+                if (args[i] && args[i]->params) {
+                    if ( ( (args[i]->params->nbCachedTile > 0) && ( args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size() ) ) || args[i]->params->isViewerPaused ) {
                         toAppend.push_back(args[i]->params);
                         args[i].reset();
                     }
@@ -3015,8 +3015,8 @@ private:
             _imp->scheduler->notifyRenderFailure( std::string() );
         } else {
             for (int i = 0; i < 2; ++i) {
-                if ( args[i] && args[i]->params ) {
-                    if ((!args[i]->params->tiles.empty()) || args[i]->params->isViewerPaused) {
+                if (args[i] && args[i]->params) {
+                    if ( ( !args[i]->params->tiles.empty() ) || args[i]->params->isViewerPaused ) {
                         toAppend.push_back(args[i]->params);
                         args[i].reset();
                     }
@@ -3618,7 +3618,7 @@ public:
             ret.clear();
         } else {
             for (int i = 0; i < 2; ++i) {
-                if ( _args->args[i] && _args->args[i]->params ) {
+                if (_args->args[i] && _args->args[i]->params) {
                     if (_args->args[i]->params->tiles.size() > 0) {
                         ret.push_back(_args->args[i]->params);
                     }
@@ -3629,13 +3629,12 @@ public:
         if (_args->request) {
 #ifdef DEBUG
             for (BufferableObjectList::iterator it = ret.begin(); it != ret.end(); ++it) {
-                UpdateViewerParams* isParams = dynamic_cast<UpdateViewerParams*>(it->get());
+                UpdateViewerParams* isParams = dynamic_cast<UpdateViewerParams*>( it->get() );
                 assert(isParams);
-                assert(!isParams->tiles.empty());
+                assert( !isParams->tiles.empty() );
                 for (std::list<UpdateViewerParams::CachedTile>::iterator it2 = isParams->tiles.begin(); it2 != isParams->tiles.end(); ++it2) {
                     assert(it2->ramBuffer);
                 }
-                
             }
 #endif
             _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request, true);
@@ -3649,7 +3648,7 @@ public:
 
 
         _args->scheduler->removeRunnableTask(this);
-    }
+    } // run
 };
 
 
@@ -3776,7 +3775,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
         assert(*it2);
         boost::shared_ptr<UpdateViewerParams> params = boost::dynamic_pointer_cast<UpdateViewerParams>(*it2);
         assert(params);
-        if (params && params->tiles.size() >= 1) {
+        if ( params && (params->tiles.size() >= 1) ) {
             if (stats) {
                 double timeSpent;
                 std::map<NodePtr, NodeRenderStats > ret = stats->getStats(&timeSpent);
@@ -3912,7 +3911,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
     };
 
-    if (!_imp->viewer->getUiContext()) {
+    if ( !_imp->viewer->getUiContext() ) {
         return;
     }
 
@@ -3980,7 +3979,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
 
         bool hasTextureCached = false;
         for (int i = 0; i < 2; ++i) {
-            if (args[i]->params && args[i]->params->nbCachedTile > 0 && args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size()) {
+            if ( args[i]->params && (args[i]->params->nbCachedTile > 0) && ( args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size() ) ) {
                 hasTextureCached = true;
                 break;
             }
@@ -3990,7 +3989,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         }
 
         for (int i = 0; i < 2; ++i) {
-            if (args[i]->params && args[i]->params->nbCachedTile > 0 && args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size()) {
+            if ( args[i]->params && (args[i]->params->nbCachedTile > 0) && ( args[i]->params->nbCachedTile == (int)args[i]->params->tiles.size() ) ) {
                 /*
                    The texture was cached
                  */

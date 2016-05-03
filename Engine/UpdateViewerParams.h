@@ -45,25 +45,22 @@ class UpdateViewerParams
     : public BufferableObject
 {
 public:
-    
+
     struct CachedTile
     {
         TextureRect rect;
-        
+
         // This is a pointer to the data held in the cache. If this is set the ramBuffer is no more than cachedFrame->data()
         // use a shared_ptr here, so that the cache entry is never released before the end of updateViewer()
         FrameEntryPtr cachedData;
-        
         bool isCached;
-        
         unsigned char* ramBuffer; // a pointer to the RAM buffer held either by the cached frame or allocated by malloc()
-        
         std::size_t bytesCount; // number of bytes in the texture
 
-        
+
         CachedTile() : rect(), cachedData(), isCached(false), ramBuffer(0), bytesCount(0) {}
     };
-    
+
     UpdateViewerParams()
         : mustFreeRamBuffer(false)
         , textureIndex(0)
@@ -104,9 +101,11 @@ public:
     virtual std::size_t sizeInRAM() const OVERRIDE FINAL
     {
         std::size_t ret = 0;
-        for (std::list<CachedTile>::const_iterator it = tiles.begin(); it!=tiles.end(); ++it) {
+
+        for (std::list<CachedTile>::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
             ret += it->bytesCount;
         }
+
         return ret;
     }
 
@@ -124,36 +123,33 @@ public:
     ImageComponents layer; // the image layer
     ImageComponents alphaLayer; // the alpha layer
     std::string alphaChannelName; // the alpha channel name
-
-   
     std::list<CachedTile> tiles;
-    
     int nbCachedTile;
-    
+
     // The image which was used to make the texture
     ImagePtr colorImage;
-    
+
     // The RoD of the src image
     RectD rod;
-    
+
     // The RoI of the viewer
     RectI roi;
-    
+
     // The Par of the input image
     double pixelAspectRatio;
-    
+
     // Abort data held so that we know if this frame is aborted
     AbortableRenderInfoPtr abortInfo;
-    
+
     // Is this during playback ?
     bool isSequential;
-    
+
     // Is this a marker overlay used when tracking ?
     bool isPartialRect;
-    
+
     // Is the viewer paused ?
     bool isViewerPaused;
-    
+
     // Should we center the viewer on the viewportCenter
     bool recenterViewport;
     Point viewportCenter;

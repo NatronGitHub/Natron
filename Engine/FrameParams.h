@@ -64,7 +64,6 @@ public:
         , _image(originalImage)
         , _rod(rod)
     {
-        
     }
 
     virtual ~FrameParams()
@@ -98,7 +97,7 @@ private:
 
     // The image used to make this frame entry
     boost::weak_ptr<Image>  _image;
-    
+
     // The RoD of the image used to make this frame entry
     RectI _rod;
 };

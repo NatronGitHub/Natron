@@ -2239,7 +2239,7 @@ Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
         QMutexLocker l(&_valueMutex);
         defaultV = _defaultValues[dimension];
     }
-    
+
     clearExpression(dimension, true);
     resetExtraToDefaultValue(dimension);
     ignore_result( setValue(defaultV, ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault, NULL) );
@@ -2465,9 +2465,9 @@ Knob<int>::cloneValuesAndCheckIfChanged(KnobI* other,
     QMutexLocker k(&_valueMutex);
     if (isInt) {
         std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-        
+
         for (unsigned i = 0; i < v.size(); ++i) {
-            if ( ((int)i == dimension) || (dimension == -1) ) {
+            if ( ( (int)i == dimension ) || (dimension == -1) ) {
                 _guiValues[i] = v[i];
                 if (_values[i] != v[i]) {
                     _values[i] = v[i];
@@ -2530,7 +2530,7 @@ Knob<bool>::cloneValuesAndCheckIfChanged(KnobI* other,
         }
     } else if (isBool) {
         std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        
+
         for (int i = 0; i < dimMin; ++i) {
             if ( (i == dimension) || (dimension == -1) ) {
                 _guiValues[i] = v[i];
@@ -2688,14 +2688,14 @@ Knob<T>::clone(KnobI* other,
             checkAnimationLevel(ViewIdx(0), i);
         }
     }
-    if (!isValueChangesBlocked()) {
+    if ( !isValueChangesBlocked() ) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
     }
-    if (!isListenersNotificationBlocked()) {
+    if ( !isListenersNotificationBlocked() ) {
         refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
-    
-    
+
+
     cloneExtraData(other, dimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
@@ -2738,7 +2738,7 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,
             }
         }
     }
-    
+
     hasChanged |= cloneExtraDataAndCheckIfChanged(other);
     if (hasChanged) {
         if ( getHolder() ) {
@@ -2748,10 +2748,9 @@ Knob<T>::cloneAndCheckIfChanged(KnobI* other,
     }
     if (hasChanged) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-        if (!isListenersNotificationBlocked()) {
+        if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
         }
-        
     }
 
     return hasChanged;
@@ -2781,24 +2780,23 @@ Knob<T>::clone(KnobI* other,
             boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i, true);
             if (guiCurve) {
                 if (otherGuiCurve) {
-                    guiCurve->clone(*otherGuiCurve,offset,range);
+                    guiCurve->clone(*otherGuiCurve, offset, range);
                 } else {
-                    guiCurve->clone(*otherCurve,offset,range);
+                    guiCurve->clone(*otherCurve, offset, range);
                 }
             }
             checkAnimationLevel(ViewSpec::all(), i);
         }
     }
-    
+
     cloneExtraData(other, offset, range, dimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
     }
     _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-    if (!isListenersNotificationBlocked()) {
+    if ( !isListenersNotificationBlocked() ) {
         refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
     }
-    
 }
 
 template<typename T>
@@ -2806,25 +2804,22 @@ void
 Knob<T>::cloneAndUpdateGui(KnobI* other,
                            int dimension)
 {
-    
     if (other == this) {
         return;
     }
-    
+
     bool hasChanged = cloneValuesAndCheckIfChanged(other, dimension);
     hasChanged |= cloneExpressionsAndCheckIfChanged(other, dimension);
-    
+
     int dimMin = std::min( getDimension(), other->getDimension() );
     for (int i = 0; i < dimMin; ++i) {
         if ( (dimension == -1) || (i == dimension) ) {
             boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), i, true);
-            
-            
             KeyFrameSet oldKeys;
             if (thisCurve) {
                 oldKeys = thisCurve->getKeyFrames_mt_safe();
             }
-            
+
 
             boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), i, true);
             bool cloningCurveChanged = false;
@@ -2840,7 +2835,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
                     cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherCurve);
                 }
             }
-            
+
             if (cloningCurveChanged) {
                 // Indicate that old keyframes are removed
 
@@ -2851,7 +2846,7 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
                 if ( !oldKeysList.empty() ) {
                     _signalSlotHandler->s_multipleKeyFramesRemoved(oldKeysList, ViewSpec::all(), i, (int)eValueChangedReasonNatronInternalEdited);
                 }
-                
+
                 // Indicate new keyframes
 
                 std::list<double> keysList;
@@ -2866,9 +2861,9 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
                     _signalSlotHandler->s_multipleKeyFramesSet(keysList, ViewSpec::all(), i, (int)eValueChangedReasonNatronInternalEdited);
                 }
             }
-            
+
             hasChanged |= cloningCurveChanged;
-        
+
             if (hasChanged) {
                 checkAnimationLevel(ViewSpec::all(), i);
             }
@@ -2883,12 +2878,10 @@ Knob<T>::cloneAndUpdateGui(KnobI* other,
     }
     if (hasChanged) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
-        if (!isListenersNotificationBlocked()) {
+        if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(ViewSpec::all(), eValueChangedReasonNatronInternalEdited, dimension);
         }
-        
     }
-    
 } // >::cloneAndUpdateGui
 
 template <typename T>

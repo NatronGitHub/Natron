@@ -1612,27 +1612,24 @@ void
 KnobHelper::blockListenersNotification()
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    
-    ++_imp->listenersNotificationBlocked;
 
+    ++_imp->listenersNotificationBlocked;
 }
 
 void
 KnobHelper::unblockListenersNotification()
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    
-    --_imp->listenersNotificationBlocked;
 
+    --_imp->listenersNotificationBlocked;
 }
 
 bool
 KnobHelper::isListenersNotificationBlocked() const
 {
     QMutexLocker k(&_imp->valueChangedBlockedMutex);
-    
-    return _imp->listenersNotificationBlocked > 0;
 
+    return _imp->listenersNotificationBlocked > 0;
 }
 
 void
@@ -1666,7 +1663,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         if (refreshWidget) {
             _signalSlotHandler->s_valueChanged(view, dimension, (int)reason);
         }
-        if (!isListenersNotificationBlocked()) {
+        if ( !isListenersNotificationBlocked() ) {
             refreshListenersAfterValueChange(view, originalReason, dimension);
         }
         checkAnimationLevel(view, dimension);
@@ -3526,7 +3523,7 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
         slaveKnob->evaluateValueChangeInternal(dimChanged, time, view, eValueChangedReasonSlaveRefresh, reason);
 
         //call recursively
-        if (!slaveKnob->isListenersNotificationBlocked()) {
+        if ( !slaveKnob->isListenersNotificationBlocked() ) {
             slaveKnob->refreshListenersAfterValueChange(view, reason, dimChanged);
         }
     } // for all listeners
@@ -4991,7 +4988,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->checkAnimationLevel(it->view, dimension);
         }
 
-        if (!it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked()) {
+        if ( !it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked() ) {
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }

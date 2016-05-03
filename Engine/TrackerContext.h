@@ -326,7 +326,7 @@ public:
 
 
     void solveTransformParams();
-    
+
     void solveTransformParamsIfAutomatic();
 
 

@@ -395,9 +395,7 @@ public:
     virtual void closeLoadPRojectSplashScreen() {}
 
     std::string getAppIDString() const;
-
     const std::list<NodePtr>& getNodesBeingCreated() const;
-
     virtual bool isDraftRenderEnabled() const { return false; }
 
     virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,

@@ -201,7 +201,6 @@ struct ViewerGL::Implementation
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
     bool isUpdatingTexture;
     bool renderOnPenUp;
-    
     int updateViewerPboIndex;  // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
 
     // These are the last parameters of the texture that was uploaded in transferBufferFromRAMToGPU

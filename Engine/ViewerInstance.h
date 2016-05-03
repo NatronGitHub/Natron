@@ -326,7 +326,7 @@ public:
     void setViewerPaused(bool paused, bool allInputs);
 
     bool isViewerPaused(int texIndex) const;
-    
+
     unsigned int getViewerMipMapLevel() const;
 
 public Q_SLOTS:

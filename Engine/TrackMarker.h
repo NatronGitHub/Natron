@@ -152,7 +152,7 @@ public:
     AnimationLevelEnum getEnabledNessAnimationLevel() const;
 
     void setEnabledFromGui(double time, bool enabled);
-    
+
     void setMotionModelFromGui(int index);
 
     void resetCenter();
@@ -160,7 +160,7 @@ public:
     void resetOffset();
 
     void resetTrack();
-    
+
     void setKeyFrameOnCenterAndPatternAtTime(int time);
 
     void setUserKeyframe(int time);

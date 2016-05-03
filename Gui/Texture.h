@@ -35,11 +35,11 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class Texture : public OpenGLTextureI
+class Texture
+    : public OpenGLTextureI
 {
-  
 public:
-    
+
     enum DataTypeEnum
     {
         eDataTypeNone,
@@ -53,7 +53,7 @@ public:
             int minFilter,
             int magFilter,
             int clamp);
- 
+
     int w() const
     {
         return _textureRect.w;
@@ -74,7 +74,7 @@ public:
      * @returns True if something changed, false otherwise
      */
     bool ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type);
-    
+
     /*allocates the texture*/
     void fillOrAllocateTexture(const TextureRect & texRect, DataTypeEnum type, const RectI& roi, bool updateOnlyRoi);
 
@@ -91,7 +91,6 @@ private:
     int _minFilter, _magFilter, _clamp;
     TextureRect _textureRect;
     DataTypeEnum _type;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

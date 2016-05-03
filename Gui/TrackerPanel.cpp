@@ -297,7 +297,7 @@ struct TrackerPanelPrivate
     void makeTrackRowItems(const TrackMarker& marker, int row, TrackDatas& data);
 
     void markersToSelection(const std::list<TrackMarkerPtr >& markers, QItemSelection* selection);
-    
+
     void selectionFromIndexList(const QModelIndexList& indexes, std::list<TrackMarkerPtr >* markers);
 
     void selectionToMarkers(const QItemSelection& selection, std::list<TrackMarkerPtr >* markers);
@@ -442,7 +442,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
     TrackerTableItemDelegate* delegate = new TrackerTableItemDelegate(_imp->view, this);
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
-    delegate->setItemEditorFactory(_imp->itemEditorFactory.get());
+    delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
     _imp->view->setItemDelegate(delegate);
 
     _imp->model = new TableModel(0, 0, _imp->view);
@@ -964,7 +964,6 @@ TrackerPanel::onResetButtonClicked()
     context->beginEditSelection();
     context->addTracksToSelection(markers, TrackerContext::eTrackSelectionInternal);
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
-
 }
 
 TrackMarkerPtr
@@ -1132,15 +1131,16 @@ TrackerPanelPrivate::markersToSelection(const std::list<TrackMarkerPtr >& marker
 }
 
 void
-TrackerPanelPrivate::selectionFromIndexList(const QModelIndexList& indexes, std::list<TrackMarkerPtr >* markers)
+TrackerPanelPrivate::selectionFromIndexList(const QModelIndexList& indexes,
+                                            std::list<TrackMarkerPtr >* markers)
 {
     for (int i = 0; i < indexes.size(); ++i) {
         //Check that the item is valid
         assert(indexes[i].isValid() && indexes[i].row() >= 0 && indexes[i].row() < (int)items.size() && indexes[i].column() >= 0 && indexes[i].column() < NUM_COLS);
-        
+
         //Check that the items vector is in sync with the model
         assert( items[indexes[i].row()].items[indexes[i].column()].item == model->item(indexes[i]) );
-        
+
         TrackMarkerPtr marker = items[indexes[i].row()].marker.lock();
         if (marker) {
             if ( std::find(markers->begin(), markers->end(), marker) == markers->end() ) {
@@ -1155,8 +1155,8 @@ TrackerPanelPrivate::selectionToMarkers(const QItemSelection& selection,
                                         std::list<TrackMarkerPtr >* markers)
 {
     QModelIndexList indexes = selection.indexes();
+
     selectionFromIndexList(indexes, markers);
-    
 }
 
 void
@@ -1266,7 +1266,7 @@ TrackerPanel::onContextSelectionChanged(int reason)
 }
 
 void
-TrackerPanel::onModelSelectionChanged(const QItemSelection &/*addedToSelection*/,
+TrackerPanel::onModelSelectionChanged(const QItemSelection & /*addedToSelection*/,
                                       const QItemSelection & /*removedFromSelection*/)
 {
     if (_imp->selectionRecursion > 0) {
@@ -1387,7 +1387,6 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                     boost::shared_ptr<KnobDouble> knob = boost::dynamic_pointer_cast<KnobDouble>( _imp->items[it].items[i].knob.lock() );
                     assert(knob);
                     int dim = _imp->items[it].items[i].dimension;
-                  
                     double value = item->data(Qt::DisplayRole).toDouble();
                     if ( knob->isAnimationEnabled() && knob->isAnimated(dim) ) {
                         KeyFrame kf;
@@ -1401,8 +1400,8 @@ TrackerPanel::onItemDataChanged(TableItem* item)
                             node->getApp()->redrawAllViewers();
                         }
                     }
-
-                }   break;
+                }
+                break;
                 }
             }
         }
@@ -1427,7 +1426,7 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
             context->addTrackToSelection(marker, TrackerContext::eTrackSelectionInternal);
             context->endEditSelection(TrackerContext::eTrackSelectionInternal);
             marker->setEnabledFromGui(marker->getCurrentTime(), checked);
-            widget->setAnimation(marker->getEnabledNessAnimationLevel());
+            widget->setAnimation( marker->getEnabledNessAnimationLevel() );
             break;
         }
     }
@@ -1828,7 +1827,7 @@ TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,
         AnimatedCheckBox* isCheckbox = dynamic_cast<AnimatedCheckBox*>(*it);
         if (isCheckbox) {
             isCheckbox->setChecked( marker->isEnabled( marker->getCurrentTime() ) );
-            isCheckbox->setAnimation((int)marker->getEnabledNessAnimationLevel());
+            isCheckbox->setAnimation( (int)marker->getEnabledNessAnimationLevel() );
             getNode()->getNode()->getApp()->redrawAllViewers();
             break;
         }

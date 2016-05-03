@@ -240,6 +240,7 @@ DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,
 #else
         if (pluginID == PLUGINID_NATRON_READ) {
 #endif
+
             return input.get();
         } else {
             Node* ret = getNearestReaderFromInputs_recursive(input.get(), markedNodes);
