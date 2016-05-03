@@ -7865,8 +7865,8 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
         boost::shared_ptr<KnobBool> alpha = _imp->enabledChan[3].lock();
         alpha->setSecret(false);
         alpha->setLabel(channels[0]);
+        break;
     }
-    break;
     case 2: {
         for (int i = 2; i < 4; ++i) {
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
@@ -7877,8 +7877,8 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
+        break;
     }
-    break;
     case 3: {
         for (int i = 3; i < 4; ++i) {
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
@@ -7889,16 +7889,16 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
+        break;
     }
-    break;
     case 4: {
         for (int i = 0; i < 4; ++i) {
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(false);
             enabled->setLabel(channels[i]);
         }
+        break;
     }
-    break;
 
     case 0:
     default: {
@@ -7906,8 +7906,8 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& comp)
             boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
             enabled->setSecret(true);
         }
+        break;
     }
-    break;
     } // switch
 } // Node::refreshEnabledKnobsLabel
 
