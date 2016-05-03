@@ -1524,7 +1524,8 @@ AppManager::registerPlugin(const QStringList & groups,
     std::string stdID = pluginID.toStdString();
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-    if ( ReadNode::isBundledReader(stdID) || WriteNode::isBundledWriter(stdID) ) {
+    if ( ReadNode::isBundledReader( stdID, wasProjectCreatedWithLowerCaseIDs() ) ||
+         WriteNode::isBundledWriter( stdID, wasProjectCreatedWithLowerCaseIDs() ) ) {
         plugin->setForInternalUseOnly(true);
     }
 #endif

@@ -1508,8 +1508,8 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         std::string defValue = defaultStr->text().toStdString();
         k->setDefaultValue(defValue);
         knob = k;
+        break;
     }
-    break;
     case eParamDataTypeGroup: {
         boost::shared_ptr<KnobGroup> k = AppManager::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
         if ( groupAsTab->isChecked() ) {
@@ -1517,23 +1517,23 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         }
         k->setDefaultValue(true);     //< default to opened
         knob = k;
+        break;
     }
-    break;
     case eParamDataTypePage: {
         boost::shared_ptr<KnobPage> k = AppManager::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
         knob = k;
+        break;
     }
-    break;
     case eParamDataTypeButton: {
         boost::shared_ptr<KnobButton> k = AppManager::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
         knob = k;
+        break;
     }
-    break;
     case eParamDataTypeSeparator: {
         boost::shared_ptr<KnobSeparator> k = AppManager::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
         knob = k;
+        break;
     }
-    break;
     default:
         break;
     } // switch

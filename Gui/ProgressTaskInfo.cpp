@@ -673,8 +673,8 @@ ProgressTaskInfoPrivate::refreshButtons()
         if (effect) {
             restartTasksButton->setEnabled( effect->isOutput() );
         }
+        break;
     }
-    break;
     case ProgressTaskInfo::eProgressTaskStatusCanceled:
         pauseTasksButton->setEnabled(false);
         restartTasksButton->setEnabled(false);

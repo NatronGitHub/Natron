@@ -182,8 +182,8 @@ SpinBox::setValue_internal(double d,
         if (d != toDouble) {
             str.setNum(d, 'g', 8);
         }
+        break;
     }
-    break;
     case eSpinBoxTypeInt:
         str.setNum( (int)d );
         break;

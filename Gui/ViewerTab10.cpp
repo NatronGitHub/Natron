@@ -700,7 +700,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         onEnableViewerRoIButtonToggle( !_imp->enableViewerRoI->isDown() );
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionNewROI, modifiers, key) ) {
         onCreateNewRoIPressed();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) )  {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyEnabled, modifiers, key) ) {
         onRenderScaleButtonClicked(!_imp->renderScaleActive);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionProxyLevel2, modifiers, key) ) {
         _imp->renderScaleCombo->setCurrentIndex(0);

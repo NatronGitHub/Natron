@@ -28,6 +28,9 @@
 
 #include <QDebug>
 
+#ifndef NATRON_ENABLE_IO_META_NODES
+#include "Engine/AppInstance.h"
+#endif
 #include "Engine/Knob.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -104,7 +107,7 @@ moveGroupNode(DopeSheetEditor* model,
 
         // Move readers
 #ifndef NATRON_ENABLE_IO_META_NODES
-        if ( ReadNode::isBundledReader(pluginID) ) {
+        if ( ReadNode::isBundledReader( pluginID, node->getApp()->wasProjectCreatedWithLowerCaseIDs() ) ) {
 #else
         if (pluginID == PLUGINID_NATRON_READ) {
 #endif
@@ -811,7 +814,7 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
         assert(knobGui);
         if (add) {
             knobGui->setKeyframe( selected.key.getTime(), selected.key, knobContext->getDimension(), ViewIdx(0) );
-        } else   {
+        } else {
             knobGui->removeKeyFrame( selected.key.getTime(), knobContext->getDimension(), ViewIdx(0) );
             knobContext->getTreeItem()->setSelected(false);
         }
@@ -947,7 +950,7 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
                     knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
                 }
             }
-        } else   {
+        } else {
             for (int j = 0; j < knob->getDimension(); ++j) {
                 if ( (dim == -1) || (j == dim) ) {
                     knob->deleteValueAtTime(eCurveChangeReasonDopeSheet, setTime, ViewSpec::all(), j);

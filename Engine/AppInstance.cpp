@@ -1017,12 +1017,14 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
 #ifdef NATRON_ENABLE_IO_META_NODES
     //If it is a reader or writer, create a ReadNode or WriteNode
-    if ( !args.ioContainer && ReadNode::isBundledReader( args.pluginID.toStdString() ) ) {
-        args.paramValues.push_back( createDefaultValueForParam( kNatronReadNodeParamDecodingPluginID, args.pluginID.toStdString() ) );
-        findId = QString::fromUtf8(PLUGINID_NATRON_READ);
-    } else if ( !args.ioContainer && WriteNode::isBundledWriter( args.pluginID.toStdString() ) ) {
-        args.paramValues.push_back( createDefaultValueForParam( kNatronWriteNodeParamEncodingPluginID, args.pluginID.toStdString() ) );
-        findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
+    if (!args.ioContainer) {
+        if ( ReadNode::isBundledReader( args.pluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
+            args.paramValues.push_back( createDefaultValueForParam( kNatronReadNodeParamDecodingPluginID, args.pluginID.toStdString() ) );
+            findId = QString::fromUtf8(PLUGINID_NATRON_READ);
+        } else if ( WriteNode::isBundledWriter( args.pluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
+            args.paramValues.push_back( createDefaultValueForParam( kNatronWriteNodeParamEncodingPluginID, args.pluginID.toStdString() ) );
+            findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
+        }
     }
 #endif
 

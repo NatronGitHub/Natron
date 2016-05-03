@@ -661,7 +661,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::sh
                 if (dim == -1) {
                     QTreeWidgetItem *childItem = dsKnob->findDimTreeItem(i);
                     context = model->mapNameItemToDSKnob(childItem);
-                } else   {
+                } else {
                     context = dsKnob;
                 }
 
@@ -1046,7 +1046,7 @@ DopeSheetViewPrivate::drawKnobRow(const boost::shared_ptr<DSKnob> dsKnob) const
     double bkR, bkG, bkB, bkA;
     if ( dsKnob->isMultiDimRoot() ) {
         settings->getDopeSheetEditorRootRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
-    } else   {
+    } else {
         settings->getDopeSheetEditorKnobRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
     }
 
@@ -1286,7 +1286,7 @@ DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) con
 
                         if (!knobTimeExists) {
                             knobsKeytimes[rootDSKnob.get()][keyTime] = kfSelected;
-                        } else   {
+                        } else {
                             bool knobTimeIsSelected = knobsKeytimes[rootDSKnob.get()][keyTime];
 
                             if (!knobTimeIsSelected && kfSelected) {
@@ -1301,7 +1301,7 @@ DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) con
 
                 if (!nodeTimeExists) {
                     nodeKeytimes[keyTime] = kfSelected;
-                } else   {
+                } else {
                     bool nodeTimeIsSelected = nodeKeytimes[keyTime];
 
                     if (!nodeTimeIsSelected && kfSelected) {
@@ -1937,7 +1937,7 @@ DopeSheetViewPrivate::computeRetimeRange(DSNode *retimer)
         }
 
         nodeRanges[retimer] = range;
-    } else   {
+    } else {
         nodeRanges[retimer] = FrameRange();
     }
 
@@ -2073,7 +2073,7 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
 
             if ( !knob->isAnimationEnabled() || !knob->hasAnimation() ) {
                 continue;
-            } else   {
+            } else {
                 for (int i = 0; i < knob->getDimension(); ++i) {
                     KeyFrameSet keyframes = knob->getCurve(ViewIdx(0), i)->getKeyFrames_mt_safe();
 
@@ -2091,7 +2091,7 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
     if (times.size() <= 1) {
         range.first = 0;
         range.second = 0;
-    } else   {
+    } else {
         range.first = *times.begin();
         range.second = *times.rbegin();
     }
@@ -2160,8 +2160,8 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
 
         Transform::Matrix3x3 transform = Transform::matTransformCanonical( tx, ty, sx, sy, 0, 0, true, 0, center.x(), center.y() );
         model->transformSelectedKeys(transform);
+        break;
     }
-    break;
     case DopeSheetView::esMoveCurrentFrameIndicator: {
         if ( (dt >= 1.0f) || (dt <= -1.0f) ) {
             if (gui) {
@@ -2571,7 +2571,7 @@ std::pair<double, double> DopeSheetView::getKeyframeRange() const
     if ( dimFirstKeys.empty() || dimLastKeys.empty() ) {
         ret.first = 0;
         ret.second = 0;
-    } else   {
+    } else {
         ret.first = *std::min_element( dimFirstKeys.begin(), dimFirstKeys.end() );
         ret.second = *std::max_element( dimLastKeys.begin(), dimLastKeys.end() );
     }
@@ -2882,7 +2882,7 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
         }
 
         mustComputeNodeRange = false;
-    } else if (nodeType == eDopeSheetItemTypeReader)   {
+    } else if (nodeType == eDopeSheetItemTypeReader) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
         KnobPtr lastFrameKnob = node->getKnobByName(kReaderParamNameLastFrame);
@@ -2903,19 +2903,19 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
         // We don't make the connection for the first frame knob, because the
         // starting time is updated when it's modified. Thus we avoid two
         // refreshes of the view.
-    } else if (nodeType == eDopeSheetItemTypeRetime)   {
+    } else if (nodeType == eDopeSheetItemTypeRetime) {
         boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
         assert(speedKnob);
 
         connect( speedKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
                  this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
-    } else if (nodeType == eDopeSheetItemTypeTimeOffset)   {
+    } else if (nodeType == eDopeSheetItemTypeTimeOffset) {
         boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
         assert(timeOffsetKnob);
 
         connect( timeOffsetKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
                  this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
-    } else if (nodeType == eDopeSheetItemTypeFrameRange)   {
+    } else if (nodeType == eDopeSheetItemTypeFrameRange) {
         boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
         assert(frameRangeKnob);
 
@@ -3271,7 +3271,7 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
                             _imp->eventState = DopeSheetView::esReaderLeftTrim;
                             didSomething = true;
                             break;
-                        } else if ( _imp->isNearByClipRectRight(clickZoomCoords, nodeClipRect) )   {
+                        } else if ( _imp->isNearByClipRectRight(clickZoomCoords, nodeClipRect) ) {
                             std::vector<DopeSheetKey> keysUnderMouse;
                             std::vector<boost::shared_ptr<DSNode> > selectedNodes;
                             selectedNodes.push_back(it->second);
@@ -3280,7 +3280,7 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
                             _imp->eventState = DopeSheetView::esReaderRightTrim;
                             didSomething = true;
                             break;
-                        } else if ( _imp->model->canSlipReader(it->second) && _imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect) )   {
+                        } else if ( _imp->model->canSlipReader(it->second) && _imp->isNearByClipRectBottom(clickZoomCoords, nodeClipRect) ) {
                             std::vector<DopeSheetKey> keysUnderMouse;
                             std::vector<boost::shared_ptr<DSNode> > selectedNodes;
                             selectedNodes.push_back(it->second);
@@ -3364,7 +3364,7 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
 
     if (e->buttons() == Qt::NoButton) {
         setCursor( _imp->getCursorDuringHover( e->pos() ) );
-    } else if (_imp->eventState == DopeSheetView::esZoomingView)   {
+    } else if (_imp->eventState == DopeSheetView::esZoomingView) {
         _imp->zoomOrPannedSinceLastFit = true;
 
         int deltaX = 2 * ( e->x() - _imp->lastPosOnMouseMove.x() );
@@ -3392,9 +3392,9 @@ DopeSheetView::mouseMoveEvent(QMouseEvent *e)
             _imp->updateCurveWidgetFrameRange();
             _imp->gui->centerOpenedViewersOn( _imp->zoomContext.left(), _imp->zoomContext.right() );
         }
-    } else if ( buttonDownIsLeft(e) )   {
+    } else if ( buttonDownIsLeft(e) ) {
         _imp->onMouseLeftButtonDrag(e);
-    } else if ( buttonDownIsMiddle(e) )   {
+    } else if ( buttonDownIsMiddle(e) ) {
         double dx = _imp->zoomContext.toZoomCoordinates( _imp->lastPosOnMouseMove.x(),
                                                          _imp->lastPosOnMouseMove.y() ).x() - mouseZoomCoords.x();
         _imp->zoomContext.translate(dx, 0);
@@ -3539,7 +3539,7 @@ DopeSheetView::wheelEvent(QWheelEvent *e)
     if (par <= par_min) {
         par = par_min;
         scaleFactor = par / _imp->zoomContext.aspectRatio();
-    } else if (par > par_max)   {
+    } else if (par > par_max) {
         par = par_max;
         scaleFactor = 1;
     }

@@ -276,7 +276,8 @@ OfxParamToKnob::getKnobHolder() const
     /*
        For readers and writers
      */
-    if ( ReadNode::isBundledReader(pluginID) || WriteNode::isBundledWriter(pluginID) ) {
+    if ( ReadNode::isBundledReader( pluginID, wasProjectCreatedWithLowerCaseIDs() ) ||
+         WriteNode::isBundledWriter( pluginID, wasProjectCreatedWithLowerCaseIDs() ) ) {
         return effect->getNode()->getIOContainer()->getEffectInstance();
     }
 #endif

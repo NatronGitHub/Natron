@@ -783,8 +783,8 @@ KnobGuiColor::reflectAnimationLevel(int dimension,
             assert(false && "Dimension out of range");
             break;
         }
+        break;
     }
-    break;
     case eAnimationLevelInterpolatedValue: {
         switch (dimension) {
         case 0:
@@ -803,8 +803,8 @@ KnobGuiColor::reflectAnimationLevel(int dimension,
             assert(false && "Dimension out of range");
             break;
         }
+        break;
     }
-    break;
     case eAnimationLevelOnKeyframe: {
         switch (dimension) {
         case 0:
@@ -823,8 +823,8 @@ KnobGuiColor::reflectAnimationLevel(int dimension,
             assert(false && "Dimension out of range");
             break;
         }
+        break;
     }
-    break;
 
     default:
         break;

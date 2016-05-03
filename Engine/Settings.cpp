@@ -2094,7 +2094,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onQueueRendersChanged( _queueRenders->getValue() );
     } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    }  else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) )       {
+    }  else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );

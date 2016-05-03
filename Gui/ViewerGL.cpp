@@ -1910,21 +1910,21 @@ ViewerGL::tabletEvent(QTabletEvent* e)
         _imp->pressureOnPress = e->pressure();
         _imp->subsequentMousePressIsTablet = true;
         QGLWidget::tabletEvent(e);
+        break;
     }
-    break;
     case QEvent::TabletRelease: {
         _imp->pressureOnRelease = e->pressure();
         QGLWidget::tabletEvent(e);
+        break;
     }
-    break;
     case QEvent::TabletMove: {
         if ( !penMotionInternal(e->x(), e->y(), e->pressure(), currentTimeForEvent(e), e) ) {
             QGLWidget::tabletEvent(e);
         } else {
             e->accept();
         }
+        break;
     }
-    break;
     default:
         break;
     }

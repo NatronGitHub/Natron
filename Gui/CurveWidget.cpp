@@ -1217,8 +1217,8 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
             _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
         }
         refreshDisplayedTangents();
+        break;
     }
-    break;
     case eEventStateNone:
         assert(0);
         break;

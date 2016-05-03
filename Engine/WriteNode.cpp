@@ -28,6 +28,12 @@
 
 #include "Global/QtCompat.h"
 
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp> // iequals
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
 #include <ofxNatron.h>
 
 #include "Engine/AppInstance.h"
@@ -135,11 +141,25 @@ isGenericKnob(const std::string& knobName,
 }
 
 bool
-WriteNode::isBundledWriter(const std::string& pluginID)
+WriteNode::isBundledWriter(const std::string& pluginID,
+                           bool wasProjectCreatedWithLowerCaseIDs)
 {
+    if (wasProjectCreatedWithLowerCaseIDs) {
+        // Natron 1.x has plugin ids stored in lowercase
+        return boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
+               boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+               boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM);
+    }
+
     return pluginID == PLUGINID_OFX_WRITEOIIO ||
            pluginID == PLUGINID_OFX_WRITEFFMPEG ||
            pluginID == PLUGINID_OFX_WRITEPFM;
+}
+
+bool
+WriteNode::isBundledWriter(const std::string& pluginID)
+{
+    return isBundledWriter( pluginID, getApp()->wasProjectCreatedWithLowerCaseIDs() );
 }
 
 struct WriteNodePrivate

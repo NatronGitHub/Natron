@@ -3537,7 +3537,7 @@ RotoContextPrivate::renderInternalShape(double time,
              |               |
              |  P0       P3  |
              |               |
-             |+---------------+
+             ||+---------------+
                C0     Side 3   C3
 
                In the above drawing, C0 is p0, P0 is p0p1, P1 is p1p0, C1 is p1 and so on...

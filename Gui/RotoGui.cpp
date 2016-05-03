@@ -3196,16 +3196,16 @@ RotoGui::penMotion(double time,
         _imp->rotoData->cloneOffset.first -= dx;
         _imp->rotoData->cloneOffset.second -= dy;
         onBreakMultiStrokeTriggered();
+        break;
     }
-    break;
     case eEventStateDraggingBrushSize: {
         double size = _imp->sizeSpinbox->value();
         size += ( (dx + dy) / 2. );
         _imp->sizeSpinbox->setValue( std::max(1., size) );
         onBreakMultiStrokeTriggered();
         didSomething = true;
+        break;
     }
-    break;
     case eEventStateDraggingBrushOpacity: {
         double opa = _imp->opacitySpinbox->value();
         double newOpa = opa + ( (dx + dy) / 2. );
@@ -3218,8 +3218,8 @@ RotoGui::penMotion(double time,
         _imp->opacitySpinbox->setValue(newOpa);
         onBreakMultiStrokeTriggered();
         didSomething = true;
+        break;
     }
-    break;
     case eEventStateNone:
     default:
         break;

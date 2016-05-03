@@ -55,7 +55,8 @@ public:
      * @brief Returns if the given plug-in is compatible with this ReadNode container.
      * by default all nodes which inherits GenericReader in OpenFX are.
      **/
-    static bool isBundledReader(const std::string& pluginID);
+    static bool isBundledReader(const std::string& pluginID, bool wasProjectCreatedWithLowerCaseIDs);
+    bool isBundledReader(const std::string& pluginID);
 
     ReadNode(NodePtr n);
 

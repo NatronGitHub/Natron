@@ -1465,8 +1465,8 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
             _imp->editedItemName = it->rotoItem->getLabel();
             _imp->tree->openPersistentEditor(item);
+            break;
         }
-        break;
         case COL_OVERLAY: {
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             if (drawable) {

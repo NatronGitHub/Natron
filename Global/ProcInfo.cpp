@@ -50,10 +50,14 @@ class NatronCFType
 public:
     inline NatronCFType(const T &t = 0) : type(t) {}
 
-    inline NatronCFType(const NatronCFType &helper) : type(helper.type) { if (type) {CFRetain(type); }
+    inline NatronCFType(const NatronCFType &helper) : type(helper.type)
+    {
+        if (type) {CFRetain(type); }
     }
 
-    inline ~NatronCFType() { if (type) {CFRelease(type); }
+    inline ~NatronCFType()
+    {
+        if (type) {CFRelease(type); }
     }
 
     inline operator T() { return type; }
