@@ -618,7 +618,8 @@ KnobChoice::typeName() const
 
 void
 KnobChoice::cloneExtraData(KnobI* other,
-                           int /*dimension*/)
+                           int /*dimension*/,
+                          int /*otherDimension*/)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
 
@@ -632,7 +633,8 @@ KnobChoice::cloneExtraData(KnobI* other,
 
 bool
 KnobChoice::cloneExtraDataAndCheckIfChanged(KnobI* other,
-                                            int /*dimension*/)
+                                            int /*dimension*/,
+                                            int /*otherDimension*/)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
 
@@ -655,7 +657,8 @@ void
 KnobChoice::cloneExtraData(KnobI* other,
                            double /*offset*/,
                            const RangeD* /*range*/,
-                           int /*dimension*/)
+                           int /*dimension*/,
+                            int /*otherDimension*/)
 {
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>(other);
 
@@ -673,10 +676,10 @@ KnobChoice::cloneExtraData(KnobI* other,
 void
 KnobChoice::onInternalValueChanged(int dimension,
                                    double time,
-                                   ViewSpec view)
+                                   ViewSpec /*view*/)
 {
     // by-pass any master/slave link here
-    int index = getValueAtTime(time, dimension, view, true, true);
+    int index = getValueAtTime(time, dimension, ViewSpec::current(), true, true);
     QMutexLocker k(&_entriesMutex);
 
     if ( (index >= 0) && ( index < (int)_mergedEntries.size() ) ) {
@@ -1996,7 +1999,8 @@ KnobParametric::deleteAllControlPoints(int dimension)
 
 void
 KnobParametric::cloneExtraData(KnobI* other,
-                               int dimension )
+                               int dimension,
+                               int otherDimension)
 {
     ///Mt-safe as Curve is MT-safe
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
@@ -2012,7 +2016,8 @@ KnobParametric::cloneExtraData(KnobI* other,
 
 bool
 KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
-                                                int dimension)
+                                                int dimension,
+                                                int otherDimension)
 {
     bool hasChanged = false;
     ///Mt-safe as Curve is MT-safe
@@ -2033,7 +2038,8 @@ void
 KnobParametric::cloneExtraData(KnobI* other,
                                double offset,
                                const RangeD* range,
-                               int dimension)
+                               int dimension,
+                               int otherDimension)
 {
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
 

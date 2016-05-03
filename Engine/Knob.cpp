@@ -3534,21 +3534,37 @@ KnobHelper::refreshListenersAfterValueChange(ViewSpec view,
 
 void
 KnobHelper::cloneExpressions(KnobI* other,
-                             int dimension)
+                             int dimension,
+                             int otherDimension)
 {
     assert( (int)_imp->expressions.size() == getDimension() );
+    assert((dimension == otherDimension) || (dimension != -1));
     try {
-        int dims = std::min( getDimension(), other->getDimension() );
-        for (int i = 0; i < dims; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
+        if (dimension == -1) {
+            int dims = std::min( getDimension(), other->getDimension() );
+            for (int i = 0; i < dims; ++i) {
                 std::string expr = other->getExpression(i);
                 bool hasRet = other->isExpressionUsingRetVariable(i);
                 if ( !expr.empty() ) {
                     setExpression(i, expr, hasRet, false);
-                    cloneExpressionsResults(other, i);
+                    cloneExpressionsResults(other, i, i);
                 }
+                
+            }
+        } else {
+            if (otherDimension == -1) {
+                otherDimension = dimension;
+            }
+            assert(dimension >= 0 && dimension < getDimension() &&
+                   otherDimension >= 0 && otherDimension < other->getDimension());
+            std::string expr = other->getExpression(otherDimension);
+            bool hasRet = other->isExpressionUsingRetVariable(otherDimension);
+            if ( !expr.empty() ) {
+                setExpression(dimension, expr, hasRet, false);
+                cloneExpressionsResults(other, dimension, otherDimension);
             }
         }
+        
     } catch (...) {
         ///ignore errors
     }
@@ -3556,9 +3572,12 @@ KnobHelper::cloneExpressions(KnobI* other,
 
 bool
 KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,
-                                              int dimension)
+                                              int dimension,
+                                              int otherDimension)
 {
     assert( (int)_imp->expressions.size() == getDimension() );
+    assert((dimension == otherDimension) || (dimension != -1));
+    assert(other);
     bool ret = false;
     try {
         int dims = std::min( getDimension(), other->getDimension() );
@@ -3568,7 +3587,7 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,
                 bool hasRet = other->isExpressionUsingRetVariable(i);
                 if ( !expr.empty() && ( (expr != _imp->expressions[i].originalExpression) || (hasRet != _imp->expressions[i].hasRet) ) ) {
                     setExpression(i, expr, hasRet, false);
-                    cloneExpressionsResults(other, i);
+                    cloneExpressionsResults(other, i, otherDimension);
                     ret = true;
                 }
             }
@@ -3578,6 +3597,145 @@ KnobHelper::cloneExpressionsAndCheckIfChanged(KnobI* other,
     }
 
     return ret;
+}
+
+void
+KnobHelper::cloneOneCurve(KnobI* other, int offset, const RangeD* range, int dimension, int otherDimension)
+{
+    assert(dimension >= 0 && dimension < getDimension() &&
+           otherDimension >= 0 && otherDimension < getDimension());
+    boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
+    boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
+    if (thisCurve && otherCurve) {
+        if (!range) {
+            thisCurve->clone(*otherCurve);
+        } else {
+            thisCurve->clone(*otherCurve, offset, range);
+        }
+    }
+    boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), dimension);
+    boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
+    if (guiCurve) {
+        if (otherGuiCurve) {
+            if (!range) {
+                guiCurve->clone(*otherGuiCurve);
+            } else {
+                guiCurve->clone(*otherGuiCurve, offset, range);
+            }
+        } else {
+            if (!range) {
+                guiCurve->clone(*otherCurve);
+            } else {
+                guiCurve->clone(*otherCurve, offset, range);
+            }
+        }
+    }
+    checkAnimationLevel(ViewIdx(0), dimension);
+}
+
+void
+KnobHelper::cloneCurves(KnobI* other, int offset, const RangeD* range, int dimension, int otherDimension)
+{
+    assert((dimension == otherDimension) || (dimension != -1));
+    assert(other);
+    if (dimension == -1) {
+        int dimMin = std::min(getDimension(), other->getDimension());
+        for (int i = 0; i < dimMin; ++i) {
+            cloneOneCurve(other, offset, range, i, i);
+        }
+        
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        cloneOneCurve(other, offset, range, dimension, otherDimension);
+
+    }
+    
+}
+
+bool
+KnobHelper::cloneOneCurveAndCheckIfChanged(KnobI* other, bool updateGui, int dimension, int otherDimension)
+{
+    assert(dimension >= 0 && dimension < getDimension() &&
+           otherDimension >= 0 && otherDimension < getDimension());
+    bool cloningCurveChanged = false;
+    
+    boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), dimension, true);
+    boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), otherDimension, true);
+    KeyFrameSet oldKeys;
+    if (thisCurve && otherCurve) {
+        if (updateGui) {
+            oldKeys = thisCurve->getKeyFrames_mt_safe();
+        }
+        cloningCurveChanged |= thisCurve->cloneAndCheckIfChanged(*otherCurve);
+    }
+    
+    boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), dimension);
+    boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), otherDimension);
+    if (guiCurve) {
+        if (otherGuiCurve) {
+            cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
+        } else {
+            cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherCurve);
+        }
+    }
+    
+    if (updateGui && cloningCurveChanged) {
+        // Indicate that old keyframes are removed
+        
+        std::list<double> oldKeysList;
+        for (KeyFrameSet::iterator it = oldKeys.begin(); it != oldKeys.end(); ++it) {
+            oldKeysList.push_back( it->getTime() );
+        }
+        if ( !oldKeysList.empty() ) {
+            _signalSlotHandler->s_multipleKeyFramesRemoved(oldKeysList, ViewSpec::all(), dimension, (int)eValueChangedReasonNatronInternalEdited);
+        }
+        
+        // Indicate new keyframes
+        
+        std::list<double> keysList;
+        KeyFrameSet keys;
+        if (thisCurve) {
+            keys = thisCurve->getKeyFrames_mt_safe();
+        }
+        for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
+            keysList.push_back( it->getTime() );
+        }
+        if ( !keysList.empty() ) {
+            _signalSlotHandler->s_multipleKeyFramesSet(keysList, ViewSpec::all(), dimension, (int)eValueChangedReasonNatronInternalEdited);
+        }
+        checkAnimationLevel(ViewIdx(0), dimension);
+    } else if (!updateGui) {
+        checkAnimationLevel(ViewIdx(0), dimension);
+    }
+    return cloningCurveChanged;
+}
+
+bool
+KnobHelper::cloneCurvesAndCheckIfChanged(KnobI* other, bool updateGui, int dimension, int otherDimension)
+{
+    assert((dimension == otherDimension) || (dimension != -1));
+    assert(other);
+    assert((dimension == otherDimension) || (dimension != -1));
+    assert(other);
+    bool hasChanged = false;
+    if (dimension == -1) {
+        int dimMin = std::min(getDimension(), other->getDimension());
+        for (int i = 0; i < dimMin; ++i) {
+            hasChanged |= cloneOneCurveAndCheckIfChanged(other, updateGui, i ,i);
+        }
+        
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        assert(dimension >= 0 && dimension < getDimension() &&
+               otherDimension >= 0 && otherDimension < getDimension());
+        hasChanged |= cloneOneCurveAndCheckIfChanged(other, updateGui, dimension ,otherDimension);
+        
+    }
+    return hasChanged;
 }
 
 //The knob in parameter will "listen" to this knob. Hence this knob is a dependency of the knob in parameter.
@@ -5585,7 +5743,8 @@ KnobHolder::updateHasAnimation()
 /***************************STRING ANIMATION******************************************/
 void
 AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
-                                          int /*dimension*/ )
+                                          int /*dimension*/,
+                                          int /*otherDimension*/)
 {
     AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
 
@@ -5596,7 +5755,8 @@ AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
 
 bool
 AnimatingKnobStringHelper::cloneExtraDataAndCheckIfChanged(KnobI* other,
-                                                           int /*dimension*/)
+                                                           int /*dimension*/,
+                                                            int /*otherDimension*/)
 {
     AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
 
@@ -5611,7 +5771,8 @@ void
 AnimatingKnobStringHelper::cloneExtraData(KnobI* other,
                                           double offset,
                                           const RangeD* range,
-                                          int /*dimension*/)
+                                          int /*dimension*/,
+                                          int /*otherDimension*/)
 {
     AnimatingKnobStringHelper* isAnimatedString = dynamic_cast<AnimatingKnobStringHelper*>(other);
 

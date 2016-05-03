@@ -476,23 +476,24 @@ public:
      *
      * WARNING: This knob and 'other' MUST have the same dimension as well as the same type.
      **/
-    virtual void clone(KnobI* other, int dimension = -1) = 0;
+    virtual void clone(KnobI* other, int dimension = -1, int otherDimension = -1) = 0;
     virtual void clone(const KnobPtr & other,
-                       int dimension = -1)
+                       int dimension = -1,
+                       int otherDimension = -1)
     {
-        clone( other.get(), dimension );
+        clone( other.get(), dimension, otherDimension );
     }
 
     /**
      * @brief Performs the same as clone but also refresh any gui it has.
      **/
-    virtual void cloneAndUpdateGui(KnobI* other, int dimension = -1) = 0;
+    virtual void cloneAndUpdateGui(KnobI* other, int dimension = -1,int otherDimension = -1) = 0;
     virtual void cloneDefaultValues(KnobI* other) = 0;
 
     /**
      * @brief Same as clone but returns whether the knob state changed as the result of the clone operation
      **/
-    virtual bool cloneAndCheckIfChanged(KnobI* other, int dimension = -1) = 0;
+    virtual bool cloneAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) = 0;
 
     /**
      * @brief Same as clone(const KnobPtr& ) except that the given offset is applied
@@ -503,13 +504,14 @@ public:
      * with different dimensions, but only the intersection of the dimension of the 2 parameters will be copied.
      * The restriction on types still apply.
      **/
-    virtual void clone(KnobI* other, double offset, const RangeD* range, int dimension = -1) = 0;
+    virtual void clone(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) = 0;
     virtual void clone(const KnobPtr & other,
                        double offset,
                        const RangeD* range,
-                       int dimension = -1)
+                       int dimension = -1,
+                       int otherDimension = -1)
     {
-        clone(other.get(), offset, range, dimension);
+        clone(other.get(), offset, range, dimension, otherDimension);
     }
 
     /**
@@ -1495,32 +1497,45 @@ protected:
      * The other knob is guaranteed to be of the same type.
      **/
     virtual void cloneExtraData(KnobI* /*other*/,
-                                int dimension = -1)
+                                int dimension = -1,
+                                int otherDimension = -1)
     {
         Q_UNUSED(dimension);
+        Q_UNUSED(otherDimension);
     }
 
     virtual bool cloneExtraDataAndCheckIfChanged(KnobI* /*other*/,
-                                                 int dimension = -1)
+                                                 int dimension = -1,
+                                                int otherDimension = -1)
     {
         Q_UNUSED(dimension);
-
+        Q_UNUSED(otherDimension);
         return false;
     }
 
     virtual void cloneExtraData(KnobI* /*other*/,
                                 double /*offset*/,
                                 const RangeD* /*range*/,
-                                int dimension = -1)
+                                int dimension = -1,
+                                int otherDimension = -1)
     {
         Q_UNUSED(dimension);
+        Q_UNUSED(otherDimension);
     }
 
-    void cloneExpressions(KnobI* other, int dimension = -1);
-    bool cloneExpressionsAndCheckIfChanged(KnobI* other, int dimension = -1);
+    void cloneExpressions(KnobI* other, int dimension = -1, int otherDimension = -1);
+    bool cloneExpressionsAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1);
 
     virtual void cloneExpressionsResults(KnobI* /*other*/,
-                                         int /*dimension = -1*/) {}
+                                         int /*dimension = -1*/,
+                                        int /*otherDimension = -1*/) {}
+    
+    void cloneOneCurve(KnobI* other, int offset, const RangeD* range, int dimension, int otherDimension);
+    bool cloneOneCurveAndCheckIfChanged(KnobI* other, bool updateGui, int dimension, int otherDimension);
+    
+    void cloneCurves(KnobI* other, int offset, const RangeD* range, int dimension = -1, int otherDimension = -1);
+    bool cloneCurvesAndCheckIfChanged(KnobI* other, bool updateGui, int dimension = -1, int otherDimension = -1);
+
 
 
     /**
@@ -1805,6 +1820,8 @@ public:
      **/
     std::vector<T> getValueForEachDimension_mt_safe_vector() const WARN_UNUSED_RETURN;
     std::list<T> getValueForEachDimension_mt_safe() const WARN_UNUSED_RETURN;
+    
+    T getRawValue(int dimension) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Get Default values
@@ -1850,11 +1867,11 @@ public:
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual void resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension) OVERRIDE FINAL;
-    virtual void clone(KnobI* other, int dimension = -1)  OVERRIDE FINAL;
-    virtual void clone(KnobI* other, double offset, const RangeD* range, int dimension = -1) OVERRIDE FINAL;
-    virtual void cloneAndUpdateGui(KnobI* other, int dimension = -1) OVERRIDE FINAL;
+    virtual void clone(KnobI* other, int dimension = -1, int otherDimension = -1)  OVERRIDE FINAL;
+    virtual void clone(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
+    virtual void cloneAndUpdateGui(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     virtual void cloneDefaultValues(KnobI* other) OVERRIDE FINAL;
-    virtual bool cloneAndCheckIfChanged(KnobI* other, int dimension = -1) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool cloneAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool dequeueValuesSet(bool disableEvaluation) OVERRIDE FINAL;
 
     ///MT-safe
@@ -1904,10 +1921,17 @@ private:
     void signalMinMaxChanged(const T& mini, const T& maxi, int dimension);
     void signalDisplayMinMaxChanged(const T& mini, const T& maxi, int dimension);
 
-    void cloneValues(KnobI* other, int dimension);
-    bool cloneValuesAndCheckIfChanged(KnobI* other, int dimension);
+    template <typename OTHERTYPE>
+    void copyValueForType(Knob<OTHERTYPE>* other, int dimension, int otherDimension);
+    
+    template <typename OTHERTYPE>
+    bool copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other, int dimension, int otherDimension);
+    
+    void cloneValues(KnobI* other, int dimension,int otherDimension);
+    
+    bool cloneValuesAndCheckIfChanged(KnobI* other, int dimension,int otherDimension);
 
-    virtual void cloneExpressionsResults(KnobI* other, int dimension = -1) OVERRIDE FINAL;
+    virtual void cloneExpressionsResults(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
 
     void valueToVariant(const T & v, Variant* vari);
 
@@ -2036,9 +2060,9 @@ public:
 
 protected:
 
-    virtual void cloneExtraData(KnobI* other, int dimension = -1) OVERRIDE;
-    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1) OVERRIDE;
-    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE;
+    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE;
+    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE;
     virtual void keyframeRemoved_virtual(int dimension, double time) OVERRIDE;
     virtual void animationRemoved_virtual(int dimension) OVERRIDE;
 

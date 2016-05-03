@@ -1713,7 +1713,7 @@ Knob<T>::unSlaveInternal(int dimension,
     setEnabled(dimension, true);
     if (copyState) {
         ///clone the master
-        hasChanged |= cloneAndCheckIfChanged( master.second.get() );
+        hasChanged |= cloneAndCheckIfChanged( master.second.get(), dimension, master.first );
     }
 
     if (_signalSlotHandler) {
@@ -1900,6 +1900,16 @@ Knob<T>::getValueForEachDimension_mt_safe_vector() const
     QMutexLocker l(&_valueMutex);
 
     return _values;
+}
+
+template<typename T>
+T Knob<T>::getRawValue(int dimension) const
+{
+    assert(dimension >= 0 && dimension < getDimension());
+    QMutexLocker l(&_valueMutex);
+    
+    return _values[dimension];
+
 }
 
 template<typename T>
@@ -2318,376 +2328,197 @@ Knob<double>::resetToDefaultValue(int dimension)
     setEnabled( dimension, isDefaultEnabled(dimension) );
 }
 
-template<>
+template<typename T>
+template<typename OTHERTYPE>
 void
-Knob<int>::cloneValues(KnobI* other,
-                       int dimension)
+Knob<T>::copyValueForType(Knob<OTHERTYPE>* other, int dimension, int otherDimension)
 {
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
-    assert(isInt || isBool || isDouble);
+    assert((dimension == otherDimension) || (dimension != -1));
     QMutexLocker k(&_valueMutex);
-    if (isInt) {
-        _values = isInt->getValueForEachDimension_mt_safe_vector();
-        _guiValues = _values;
-    } else if (isBool) {
-        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (unsigned i = 0; i < v.size(); ++i) {
-            if ( ( (int)i == dimension ) || (dimension == -1) ) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
-            }
-        }
-    } else if (isDouble) {
-        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (unsigned i = 0; i < v.size(); ++i) {
-            if ( ( (int)i == dimension ) || (dimension == -1) ) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
-            }
-        }
-    }
-}
-
-template<>
-void
-Knob<bool>::cloneValues(KnobI* other,
-                        int dimension)
-{
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
-
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    assert( other->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
-    QMutexLocker k(&_valueMutex);
-    if (isInt) {
-        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
-            }
-        }
-    } else if (isBool) {
-        _values = isBool->getValueForEachDimension_mt_safe_vector();
-        _guiValues = _values;
-    } else if (isDouble) {
-        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
-
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
-            }
-        }
-    }
-}
-
-template<>
-void
-Knob<double>::cloneValues(KnobI* other,
-                          int dimension)
-{
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
-
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    ///can only clone pod
-    assert( other->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
-    QMutexLocker k(&_valueMutex);
-    if (isInt) {
-        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
-            }
-        }
-    } else if (isBool) {
-        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
+    if (dimension == -1) {
+        
         int dimMin = std::min( getDimension(), other->getDimension() );
+        std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
-            }
+            _values[i] = v[i];
+            _guiValues[i] = v[i];
+            
         }
-    } else if (isDouble) {
-        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        assert(dimension >= 0 && dimension < getDimension() &&
+               otherDimension >= 0 && otherDimension < other->getDimension());
+        _values[dimension] = _guiValues[dimension] = T(other->getRawValue(otherDimension));
+    }
+    
+    
+}
 
+template<typename T>
+template<typename OTHERTYPE>
+bool
+Knob<T>::copyValueForTypeAndCheckIfChanged(Knob<OTHERTYPE>* other, int dimension, int otherDimension)
+{
+    assert((dimension == otherDimension) || (dimension != -1));
+    bool ret = false;
+    QMutexLocker k(&_valueMutex);
+    if (dimension == -1) {
+        
+        int dimMin = std::min( getDimension(), other->getDimension() );
+        std::vector<OTHERTYPE> v = other->getValueForEachDimension_mt_safe_vector();
         for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
+            if (_values[i] != v[i]) {
                 _values[i] = v[i];
                 _guiValues[i] = v[i];
+                ret = true;
             }
+            
+        }
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        assert(dimension >= 0 && dimension < getDimension() &&
+               otherDimension >= 0 && otherDimension < other->getDimension());
+        
+        T otherValue = (T)other->getRawValue(otherDimension);
+        if (otherValue != _values[dimension]) {
+            _values[dimension] = _guiValues[dimension] = otherValue;
+            ret = true;
         }
     }
+    return ret;
+    
 }
+
 
 template<>
 void
 Knob<std::string>::cloneValues(KnobI* other,
-                               int dimension)
+                               int dimension,
+                               int otherDimension)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
-    int dimMin = std::min( getDimension(), other->getDimension() );
     ///Can only clone strings
     assert(isString);
     if (isString) {
-        QMutexLocker k(&_valueMutex);
-        std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _values[i] = v[i];
-                _guiValues[i] = v[i];
-            }
-        }
+        copyValueForType<std::string>(isString, dimension, otherDimension);
     }
 }
 
-template<>
-bool
-Knob<int>::cloneValuesAndCheckIfChanged(KnobI* other,
-                                        int dimension)
+template<typename T>
+void
+Knob<T>::cloneValues(KnobI* other,
+                       int dimension,
+                       int otherDimension)
 {
     Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
     Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
     Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
     assert(isInt || isBool || isDouble);
-    bool ret = false;
+    
     QMutexLocker k(&_valueMutex);
     if (isInt) {
-        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-        
-        for (unsigned i = 0; i < v.size(); ++i) {
-            if ( ((int)i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
+        copyValueForType<int>(isInt, dimension, otherDimension);
     } else if (isBool) {
-        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (unsigned i = 0; i < v.size(); ++i) {
-            if ( ( (int)i == dimension ) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
+        copyValueForType<bool>(isBool, dimension, otherDimension);
     } else if (isDouble) {
-        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
-        assert( v.size() == _values.size() );
-        for (unsigned i = 0; i < v.size(); ++i) {
-            if ( ( (int)i == dimension ) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
+        copyValueForType<double>(isDouble, dimension, otherDimension);
     }
-
-    return ret;
 }
 
-template<>
-bool
-Knob<bool>::cloneValuesAndCheckIfChanged(KnobI* other,
-                                         int dimension)
-{
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
-    bool ret = false;
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    assert( other->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
-    QMutexLocker k(&_valueMutex);
-    if (isInt) {
-        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
 
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
-    } else if (isBool) {
-        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
-    } else if (isDouble) {
-        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
 
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
-    }
-
-    return ret;
-}
-
-template<>
-bool
-Knob<double>::cloneValuesAndCheckIfChanged(KnobI* other,
-                                           int dimension)
-{
-    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
-    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
-
-    bool ret = false;
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    ///can only clone pod
-    assert( other->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
-    QMutexLocker k(&_valueMutex);
-    if (isInt) {
-        std::vector<int> v = isInt->getValueForEachDimension_mt_safe_vector();
-
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
-    } else if (isBool) {
-        std::vector<bool> v = isBool->getValueForEachDimension_mt_safe_vector();
-        int dimMin = std::min( getDimension(), other->getDimension() );
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
-    } else if (isDouble) {
-        std::vector<double> v = isDouble->getValueForEachDimension_mt_safe_vector();
-
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
-    }
-
-    return ret;
-} // >::cloneValuesAndCheckIfChanged
 
 template<>
 bool
 Knob<std::string>::cloneValuesAndCheckIfChanged(KnobI* other,
-                                                int dimension)
+                                                int dimension,
+                                                int otherDimension)
 {
     Knob<std::string>* isString = dynamic_cast<Knob<std::string>* >(other);
     int dimMin = std::min( getDimension(), other->getDimension() );
+    assert((dimension == otherDimension) || (dimension != -1));
     ///Can only clone strings
-    bool ret = false;
     assert(isString);
     if (isString) {
-        QMutexLocker k(&_valueMutex);
-        std::vector<std::string> v = isString->getValueForEachDimension_mt_safe_vector();
-        for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _guiValues[i] = v[i];
-                if (_values[i] != v[i]) {
-                    _values[i] = v[i];
-                    ret = true;
-                }
-            }
-        }
+        return copyValueForTypeAndCheckIfChanged<std::string>(isString, dimension, otherDimension);
     }
-
-    return ret;
+    return false;
 }
+
+
+template<typename T>
+bool
+Knob<T>::cloneValuesAndCheckIfChanged(KnobI* other,
+                                        int dimension,
+                                        int otherDimension)
+{
+    Knob<int>* isInt = dynamic_cast<Knob<int>* >(other);
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>* >(other);
+    Knob<double>* isDouble = dynamic_cast<Knob<double>* >(other);
+    assert(isInt || isBool || isDouble);
+    
+    QMutexLocker k(&_valueMutex);
+    if (isInt) {
+        return copyValueForTypeAndCheckIfChanged<int>(isInt, dimension, otherDimension);
+    } else if (isBool) {
+        return copyValueForTypeAndCheckIfChanged<bool>(isBool, dimension, otherDimension);
+    } else if (isDouble) {
+        return copyValueForTypeAndCheckIfChanged<double>(isDouble, dimension, otherDimension);
+    }
+    return false;
+}
+
+
 
 template <typename T>
 void
 Knob<T>::cloneExpressionsResults(KnobI* other,
-                                 int dimension)
+                                 int dimension,
+                                 int otherDimension)
 {
-    Knob<T>* knob = dynamic_cast<Knob<T>* >(other);
+    assert((dimension == otherDimension) || (dimension != -1));
+    Knob<T>* otherKnob = dynamic_cast<Knob<T>* >(other);
 
     //Only clone expr results of the same type
-    if (!knob) {
+    if (!otherKnob) {
         return;
     }
-
-    FrameValueMap results;
-    knob->getExpressionResults(dimension, results);
-    QMutexLocker k(&_valueMutex);
-    _exprRes[dimension] = results;
+    if (dimension == -1) {
+        int dimMin = std::min( getDimension(), other->getDimension() );
+        for (int i = 0; i < dimMin; ++i) {
+            FrameValueMap results;
+            otherKnob->getExpressionResults(i, results);
+            QMutexLocker k(&_valueMutex);
+            _exprRes[i] = results;
+        }
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        FrameValueMap results;
+        otherKnob->getExpressionResults(otherDimension, results);
+        QMutexLocker k(&_valueMutex);
+        _exprRes[dimension] = results;
+    }
 }
 
 template<typename T>
 void
 Knob<T>::clone(KnobI* other,
-               int dimension)
+               int dimension,
+               int otherDimension)
 {
     if (other == this) {
         return;
     }
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    cloneValues(other, dimension);
-    cloneExpressions(other, dimension);
-    for (int i = 0; i < dimMin; ++i) {
-        if ( (i == dimension) || (dimension == -1) ) {
-            boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), i, true);
-            boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), i, true);
-            if (thisCurve && otherCurve) {
-                thisCurve->clone(*otherCurve);
-            }
+    cloneValues(other, dimension, otherDimension);
+    cloneExpressions(other, dimension, otherDimension);
+    cloneCurves(other, 0, 0, dimension, otherDimension);
 
-            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i);
-            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i);
-            if (guiCurve) {
-                if (otherGuiCurve) {
-                    guiCurve->clone(*otherGuiCurve);
-                } else {
-                    guiCurve->clone(*otherCurve);
-                }
-            }
-            checkAnimationLevel(ViewIdx(0), i);
-        }
-    }
     if (!isValueChangesBlocked()) {
         _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonNatronInternalEdited);
     }
@@ -2696,7 +2527,7 @@ Knob<T>::clone(KnobI* other,
     }
     
     
-    cloneExtraData(other, dimension);
+    cloneExtraData(other, dimension, otherDimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
     }
@@ -2706,40 +2537,18 @@ Knob<T>::clone(KnobI* other,
 template <typename T>
 bool
 Knob<T>::cloneAndCheckIfChanged(KnobI* other,
-                                int dimension)
+                                int dimension,
+                                int otherDimension)
 {
     if (other == this) {
         return false;
     }
 
-    bool hasChanged = cloneValuesAndCheckIfChanged(other, dimension);
-    hasChanged |= cloneExpressionsAndCheckIfChanged(other, dimension);
+    bool hasChanged = cloneValuesAndCheckIfChanged(other, dimension, otherDimension);
+    hasChanged |= cloneExpressionsAndCheckIfChanged(other, dimension, otherDimension);
+    hasChanged |= cloneCurvesAndCheckIfChanged(other, false, dimension, otherDimension);
 
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    for (int i = 0; i < dimMin; ++i) {
-        if ( (dimension == -1) || (i == dimension) ) {
-            boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), i, true);
-            boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), i, true);
-            if (thisCurve && otherCurve) {
-                hasChanged |= thisCurve->cloneAndCheckIfChanged(*otherCurve);
-            }
-            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i, true);
-            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i, true);
-            if (guiCurve) {
-                if (otherGuiCurve) {
-                    hasChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
-                } else {
-                    hasChanged |= guiCurve->cloneAndCheckIfChanged(*otherCurve);
-                }
-            }
-
-            if (hasChanged) {
-                checkAnimationLevel(ViewSpec::all(), i);
-            }
-        }
-    }
-    
-    hasChanged |= cloneExtraDataAndCheckIfChanged(other);
+    hasChanged |= cloneExtraDataAndCheckIfChanged(other, dimension, otherDimension);
     if (hasChanged) {
         if ( getHolder() ) {
             getHolder()->updateHasAnimation();
@@ -2762,35 +2571,17 @@ void
 Knob<T>::clone(KnobI* other,
                double offset,
                const RangeD* range,
-               int dimension)
+               int dimension,
+               int otherDimension)
 {
     if (other == this) {
         return;
     }
-    cloneValues(other, dimension);
-    cloneExpressions(other, dimension);
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    for (int i = 0; i < dimMin; ++i) {
-        if ( (dimension == -1) || (i == dimension) ) {
-            boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), i, true);
-            boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), i, true);
-            if (thisCurve && otherCurve) {
-                thisCurve->clone(*otherCurve, offset, range);
-            }
-            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i, true);
-            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i, true);
-            if (guiCurve) {
-                if (otherGuiCurve) {
-                    guiCurve->clone(*otherGuiCurve,offset,range);
-                } else {
-                    guiCurve->clone(*otherCurve,offset,range);
-                }
-            }
-            checkAnimationLevel(ViewSpec::all(), i);
-        }
-    }
+    cloneValues(other, dimension, otherDimension);
+    cloneExpressions(other, dimension, otherDimension);
+    cloneCurves(other, offset, range, dimension, otherDimension);
     
-    cloneExtraData(other, offset, range, dimension);
+    cloneExtraData(other, offset, range, dimension,otherDimension);
     if ( getHolder() ) {
         getHolder()->updateHasAnimation();
     }
@@ -2804,77 +2595,19 @@ Knob<T>::clone(KnobI* other,
 template<typename T>
 void
 Knob<T>::cloneAndUpdateGui(KnobI* other,
-                           int dimension)
+                           int dimension,
+                           int otherDimension)
 {
     
     if (other == this) {
         return;
     }
     
-    bool hasChanged = cloneValuesAndCheckIfChanged(other, dimension);
-    hasChanged |= cloneExpressionsAndCheckIfChanged(other, dimension);
+    bool hasChanged = cloneValuesAndCheckIfChanged(other, dimension, otherDimension);
+    hasChanged |= cloneExpressionsAndCheckIfChanged(other, dimension, otherDimension);
+    hasChanged |= cloneCurvesAndCheckIfChanged(other, true, dimension, otherDimension);
     
-    int dimMin = std::min( getDimension(), other->getDimension() );
-    for (int i = 0; i < dimMin; ++i) {
-        if ( (dimension == -1) || (i == dimension) ) {
-            boost::shared_ptr<Curve> thisCurve = getCurve(ViewIdx(0), i, true);
-            
-            
-            KeyFrameSet oldKeys;
-            if (thisCurve) {
-                oldKeys = thisCurve->getKeyFrames_mt_safe();
-            }
-            
-
-            boost::shared_ptr<Curve> otherCurve = other->getCurve(ViewIdx(0), i, true);
-            bool cloningCurveChanged = false;
-            if (thisCurve && otherCurve) {
-                cloningCurveChanged |= thisCurve->cloneAndCheckIfChanged(*otherCurve);
-            }
-            boost::shared_ptr<Curve> guiCurve = getGuiCurve(ViewIdx(0), i, true);
-            boost::shared_ptr<Curve> otherGuiCurve = other->getGuiCurve(ViewIdx(0), i, true);
-            if (guiCurve) {
-                if (otherGuiCurve) {
-                    cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherGuiCurve);
-                } else {
-                    cloningCurveChanged |= guiCurve->cloneAndCheckIfChanged(*otherCurve);
-                }
-            }
-            
-            if (cloningCurveChanged) {
-                // Indicate that old keyframes are removed
-
-                std::list<double> oldKeysList;
-                for (KeyFrameSet::iterator it = oldKeys.begin(); it != oldKeys.end(); ++it) {
-                    oldKeysList.push_back( it->getTime() );
-                }
-                if ( !oldKeysList.empty() ) {
-                    _signalSlotHandler->s_multipleKeyFramesRemoved(oldKeysList, ViewSpec::all(), i, (int)eValueChangedReasonNatronInternalEdited);
-                }
-                
-                // Indicate new keyframes
-
-                std::list<double> keysList;
-                KeyFrameSet keys;
-                if (thisCurve) {
-                    keys = thisCurve->getKeyFrames_mt_safe();
-                }
-                for (KeyFrameSet::iterator it = keys.begin(); it != keys.end(); ++it) {
-                    keysList.push_back( it->getTime() );
-                }
-                if ( !keysList.empty() ) {
-                    _signalSlotHandler->s_multipleKeyFramesSet(keysList, ViewSpec::all(), i, (int)eValueChangedReasonNatronInternalEdited);
-                }
-            }
-            
-            hasChanged |= cloningCurveChanged;
-        
-            if (hasChanged) {
-                checkAnimationLevel(ViewSpec::all(), i);
-            }
-        }
-    }
-    hasChanged |= cloneExtraDataAndCheckIfChanged(other);
+    hasChanged |= cloneExtraDataAndCheckIfChanged(other, dimension, otherDimension);
     if (hasChanged) {
         if ( getHolder() ) {
             getHolder()->updateHasAnimation();
