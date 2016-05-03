@@ -236,11 +236,10 @@ DopeSheetPrivate::getNearestReaderFromInputs_recursive(Node *node,
 
         std::string pluginID = input->getPluginID();
 #ifndef NATRON_ENABLE_IO_META_NODES
-        if ( ReadNode::isBundledReader( pluginID, input->getApp()->wasProjectCreatedWithLowerCaseIDs() ) )
+        if ( ReadNode::isBundledReader( pluginID, input->getApp()->wasProjectCreatedWithLowerCaseIDs() ) ) {
 #else
-        if (pluginID == PLUGINID_NATRON_READ)
+        if (pluginID == PLUGINID_NATRON_READ) {
 #endif
-        {
             return input.get();
         } else {
             Node* ret = getNearestReaderFromInputs_recursive(input.get(), markedNodes);
