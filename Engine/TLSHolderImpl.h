@@ -208,7 +208,18 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
 
 
     const QThread* foundThread = 0;
+    // Find first under a read lock to enable better concurrency
     {
+        QReadLocker k(&_spawnsMutex);
+        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        if ( foundSpawned == _spawns.end() ) {
+            //This is not a spawned thread and it did not have TLS already
+            return boost::shared_ptr<T>();
+        }
+        foundThread = foundSpawned->second;
+    }
+
+    if (foundThread) {
         QWriteLocker k(&_spawnsMutex);
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
         if ( foundSpawned == _spawns.end() ) {
