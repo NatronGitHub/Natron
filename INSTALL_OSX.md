@@ -1,5 +1,5 @@
-Developer installation on OS X
-=================================
+Instructions for installing Natron from sources on OS X
+=======================================================
 
 These are step-by-step instructions to compile Natron on OS X.
 
