@@ -40,6 +40,7 @@
 #include <QApplication> // qApp
 #include <QGridLayout>
 #include <QCheckBox>
+#include <QLabel>
 #include <QTextEdit>
 #include <QUndoGroup>
 #include <QUndoStack>
@@ -292,6 +293,28 @@ Gui::informationDialog(const std::string & title,
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
+static void setQMessageBoxAppropriateFont(QMessageBox* widget)
+{
+    QGridLayout* grid = dynamic_cast<QGridLayout*>(widget->layout());
+    assert(grid);
+    if (!grid) {
+        return;
+    }
+    int count = grid->count();
+    for (int i = 0; i < count; ++i) {
+        QLayoutItem* item = grid->itemAt(i);
+        if (item) {
+            QWidget* w = item->widget();
+            if (w) {
+                QLabel* isLabel = dynamic_cast<QLabel*>(w);
+                if (isLabel) {
+                    isLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
+                }
+            }
+        }
+    }
+}
+
 void
 Gui::onDoDialog(int type,
                 const QString & title,
@@ -311,17 +334,20 @@ Gui::onDoDialog(int type,
 
     if (type == 0) { // error dialog
         QMessageBox critical(QMessageBox::Critical, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        setQMessageBoxAppropriateFont(&critical);
         critical.setWindowFlags(critical.windowFlags() | Qt::WindowStaysOnTopHint);
         critical.setTextFormat(Qt::RichText);   //this is what makes the links clickable
         ignore_result( critical.exec() );
     } else if (type == 1) { // warning dialog
         QMessageBox warning(QMessageBox::Warning, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        setQMessageBoxAppropriateFont(&warning);
         warning.setTextFormat(Qt::RichText);
         warning.setWindowFlags(warning.windowFlags() | Qt::WindowStaysOnTopHint);
         ignore_result( warning.exec() );
     } else if (type == 2) { // information dialog
         if (msg.count() < 1000) {
             QMessageBox info(QMessageBox::Information, title, msg, QMessageBox::NoButton, this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+            setQMessageBoxAppropriateFont(&info);
             info.setTextFormat(Qt::RichText);
             info.setWindowFlags(info.windowFlags() | Qt::WindowStaysOnTopHint);
             ignore_result( info.exec() );
@@ -345,6 +371,7 @@ Gui::onDoDialog(int type,
         assert(type == 3);
         QMessageBox ques(QMessageBox::Question, title, msg, QtEnumConvert::toQtStandarButtons(buttons),
                          this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+        setQMessageBoxAppropriateFont(&ques);
         ques.setDefaultButton( QtEnumConvert::toQtStandardButton( (StandardButtonEnum)defaultB ) );
         ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
         if ( ques.exec() ) {
