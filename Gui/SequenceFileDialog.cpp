@@ -1577,8 +1577,19 @@ SequenceFileDialog::openSelectedFiles()
                         text.append(str);
                         text.append( tr(" already exists.\n Would you like to replace it ?") );
                     }
-                    QMessageBox::StandardButton ret = QMessageBox::question(this, tr("Existing file"), text,
-                                                                            QMessageBox::Yes | QMessageBox::No);
+                    
+                    QMessageBox ques(QMessageBox::Question, tr("Existing file"), text, QMessageBox::Yes | QMessageBox::No,
+                                     this, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint);
+                    Gui::setQMessageBoxAppropriateFont(&ques);
+                    ques.setDefaultButton(QMessageBox::Yes);
+                    ques.setWindowFlags(ques.windowFlags() | Qt::WindowStaysOnTopHint);
+                    QMessageBox::StandardButton ret = QMessageBox::No;
+                    if ( ques.exec() ) {
+                        ret = ques.standardButton(ques.clickedButton());
+                    }
+
+                    
+                    
                     if (ret != QMessageBox::Yes) {
                         return;
                     }

@@ -65,6 +65,7 @@ class QLinearGradient;
 class QListView;
 class QMenu;
 class QMenuBar;
+class QMessageBox;
 class QModelIndex;
 class QMouseEvent;
 class QMutex;

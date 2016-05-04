@@ -293,7 +293,8 @@ Gui::informationDialog(const std::string & title,
     *stopAsking = _imp->_lastStopAskingAnswer;
 }
 
-static void setQMessageBoxAppropriateFont(QMessageBox* widget)
+void
+Gui::setQMessageBoxAppropriateFont(QMessageBox* widget)
 {
     QGridLayout* grid = dynamic_cast<QGridLayout*>(widget->layout());
     assert(grid);
