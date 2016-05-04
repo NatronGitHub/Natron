@@ -47,31 +47,20 @@ boost::shared_ptr<EffectInstance::EffectTLSData>
 TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread,
                                                               const QThread* toThread) const
 {
-    boost::shared_ptr<EffectInstance::EffectTLSData> fromThreadData;
-    boost::shared_ptr<EffectInstance::EffectTLSData> toThreadData;
-    {
-        QWriteLocker k(&perThreadDataMutex);
-        ThreadDataMap::iterator found = perThreadData.find(fromThread);
+    QWriteLocker k(&perThreadDataMutex);
+    ThreadDataMap::iterator found = perThreadData.find(fromThread);
 
-        if ( found == perThreadData.end() ) {
-            ///No TLS for fromThread
-            return boost::shared_ptr<EffectInstance::EffectTLSData>();
-        } else {
-            fromThreadData = found->second.value;
-            ThreadData& newData = perThreadData[toThread];
-            newData.value.reset( new EffectInstance::EffectTLSData() );
-            toThreadData = newData.value;
-        }
+    if ( found == perThreadData.end() ) {
+        ///No TLS for fromThread
+        return boost::shared_ptr<EffectInstance::EffectTLSData>();
     }
 
-    assert(fromThreadData && toThreadData);
-    {
-        // Copy the actual data under the read lock to let other threads running
-        QReadLocker k(&perThreadDataMutex);
-        *toThreadData = *fromThreadData;
-    }
+    ThreadData data;
+    //Copy constructor
+    data.value.reset( new EffectInstance::EffectTLSData( *(found->second.value) ) );
+    perThreadData[toThread] = data;
 
-    return toThreadData;
+    return data.value;
 }
 
 template <>
@@ -147,7 +136,7 @@ TLSHolder<T>::getTLSData() const
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     {
         QReadLocker k(&perThreadDataMutex);
-        typename ThreadDataMap::iterator found = perThreadData.find(curThread);
+        typename ThreadDataMap::const_iterator found = perThreadData.find(curThread);
         if ( found != perThreadData.end() ) {
             ret = found->second.value;
         }
@@ -173,7 +162,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     //Note that if present, this call is extremely fast as we do not block other threads
     {
         QReadLocker k(&perThreadDataMutex);
-        typename ThreadDataMap::iterator found = perThreadData.find(curThread);
+        typename ThreadDataMap::const_iterator found = perThreadData.find(curThread);
         if ( found != perThreadData.end() ) {
             assert(found->second.value);
 
@@ -232,7 +221,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
     QReadLocker k(&_objectMutex);
 
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
-    for (TLSObjects::iterator it = _object->objects.begin();
+    for (TLSObjects::const_iterator it = _object->objects.begin();
          it != _object->objects.end(); ++it) {
         boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
         if (p) {

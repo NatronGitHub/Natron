@@ -113,7 +113,7 @@ AppTLS::cleanupTLSForThread()
         QReadLocker k(&_spawnsMutex);
 
         //This thread was spawned, but TLS not used, do not bother to clean-up
-        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        ThreadSpawnMap::const_iterator foundSpawned = _spawns.find(curThread);
         if ( foundSpawned != _spawns.end() ) {
             foundSpawnerThreadOnce = foundSpawned->second;
         }
@@ -132,7 +132,7 @@ AppTLS::cleanupTLSForThread()
     std::list<boost::shared_ptr<const TLSHolderBase> > objectsToClean;
     {
         QReadLocker k (&_objectMutex);
-        for (TLSObjects::iterator it = _object->objects.begin();
+        for (TLSObjects::const_iterator it = _object->objects.begin();
              it != _object->objects.end(); ++it) {
             boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
             if (p) {
