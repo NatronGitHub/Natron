@@ -125,8 +125,6 @@ AppTLS::cleanupTLSForThread()
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
         if ( foundSpawned != _spawns.end() ) {
             _spawns.erase(foundSpawned);
-
-            return;
         }
     }
     std::list<boost::shared_ptr<const TLSHolderBase> > objectsToClean;
