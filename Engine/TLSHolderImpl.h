@@ -180,20 +180,26 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
 
 
     {
-        QReadLocker k(&_spawnsMutex);
+        QWriteLocker k(&_spawnsMutex);
         const ThreadSpawnMap& spawnsCRef = _spawns; // take a const ref, since it's a read lock
         ThreadSpawnMap::const_iterator foundSpawned = spawnsCRef.find(curThread);
         if ( foundSpawned == spawnsCRef.end() ) {
             //This is not a spawned thread and it did not have TLS already
             return boost::shared_ptr<T>();
         }
-        // could we release the read lock on _spawns here and use a QThread*
-        // instead of an iterator as last argument of copyTLSFromSpawnerThreadInternal?
+        const QThread* foundThread = foundSpawned->second;
+
+        // could we release the lock on _spawns here after erasing foundSpawned from _spawns?
         // That's what was done in 1a0712b, but it may have broken TLS
         {
             QWriteLocker k(&_objectMutex);
 
-            return copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundSpawned);
+            boost::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
+
+            //Erase the thread from the spawn map
+            _spawns.erase(foundSpawned);
+
+            return retval;
         }
     }
 }
@@ -202,11 +208,10 @@ template <typename T>
 boost::shared_ptr<T>
 AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                          const QThread* curThread,
-                                         ThreadSpawnMap::const_iterator foundSpawned)
+                                         const QThread* spawnerThread)
 {
     //Private - should be locked
     assert( !_objectMutex.tryLockForWrite() );
-    assert( !_spawnsMutex.tryLockForWrite() );
 
     boost::shared_ptr<T> tls;
 
@@ -221,20 +226,16 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                 //the TLS data from the spawner thread and mark it to 'tls'.
                 foundHolder = dynamic_cast<const TLSHolder<T>*>( p.get() );
                 if (foundHolder) {
-                    tls = foundHolder->copyAndReturnNewTLS(foundSpawned->second, curThread);
+                    tls = foundHolder->copyAndReturnNewTLS(spawnerThread, curThread);
                 }
             }
 
             if (!foundHolder) {
                 //Copy anyway
-                p->copyTLS(foundSpawned->second, curThread);
+                p->copyTLS(spawnerThread, curThread);
             }
         }
     }
-
-
-    //Erase the thread from the spawn map
-    _spawns.erase(foundSpawned);
 
     return tls;
 }
