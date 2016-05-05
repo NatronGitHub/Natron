@@ -70,13 +70,6 @@ protected:
     virtual bool cleanupPerThreadData(const QThread* curThread) const = 0;
 
     /**
-     * @brief Same as cleanupPerThreadData except that it actually does not clean-up but
-     * whether it should clean-up or not, this is much faster than cleanupPerThreadData as
-     * it does not take any write lock.
-     **/
-    virtual bool canCleanupPerThreadData(const QThread* curThread) const = 0;
-
-    /**
      * @brief Copy all the TLS from fromThread to toThread
      **/
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const = 0;
@@ -151,7 +144,7 @@ private:
     template <typename T>
     boost::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                                           const QThread* curThread,
-                                                          const QThread* spawnerThread);
+                                                          ThreadSpawnMap::iterator foundSpawned);
 
 
     //This is the "TLS" object: it stores a set of all TLSHolder's who used the TLS to clean it up afterwards
@@ -160,7 +153,6 @@ private:
 
     //if a thread is a spawned thread, then copy the tls from the spawner thread instead
     //of creating a new object and no longer mark it as spawned
-    mutable QReadWriteLock _spawnsMutex;
     ThreadSpawnMap _spawns;
 };
 
@@ -196,7 +188,6 @@ public:
 
 private:
 
-    virtual bool canCleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const OVERRIDE FINAL;
     boost::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;

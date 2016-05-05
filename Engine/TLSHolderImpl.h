@@ -88,25 +88,6 @@ TLSHolder<T>::copyAndReturnNewTLS(const QThread* /*fromThread*/,
 
 template <typename T>
 bool
-TLSHolder<T>::canCleanupPerThreadData(const QThread* curThread) const
-{
-    QReadLocker k(&perThreadDataMutex);
-
-    if ( perThreadData.empty() ) {
-        return true;
-    }
-    if (perThreadData.size() > 1) {
-        return false;
-    }
-    if (perThreadData.begin()->first == curThread) {
-        return true;
-    }
-
-    return false;
-}
-
-template <typename T>
-bool
 TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 {
     QWriteLocker k(&perThreadDataMutex);
@@ -136,7 +117,7 @@ TLSHolder<T>::getTLSData() const
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     {
         QReadLocker k(&perThreadDataMutex);
-        typename ThreadDataMap::const_iterator found = perThreadData.find(curThread);
+        typename ThreadDataMap::iterator found = perThreadData.find(curThread);
         if ( found != perThreadData.end() ) {
             ret = found->second.value;
         }
@@ -162,7 +143,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     //Note that if present, this call is extremely fast as we do not block other threads
     {
         QReadLocker k(&perThreadDataMutex);
-        typename ThreadDataMap::const_iterator found = perThreadData.find(curThread);
+        typename ThreadDataMap::iterator found = perThreadData.find(curThread);
         if ( found != perThreadData.end() ) {
             assert(found->second.value);
 
@@ -196,32 +177,35 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     // Either way: return a new object
 
 
-    const QThread* foundThread = 0;
+    ThreadSpawnMap::iterator foundSpawned;
     {
-        QWriteLocker k(&_spawnsMutex);
-        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        QReadLocker k(&_objectMutex);
+        foundSpawned = _spawns.find(curThread);
         if ( foundSpawned == _spawns.end() ) {
             //This is not a spawned thread and it did not have TLS already
             return boost::shared_ptr<T>();
         }
-        foundThread = foundSpawned->second;
-        _spawns.erase(foundThread);
     }
+    {
+        QWriteLocker k(&_objectMutex);
 
-    return copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
+        return copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundSpawned);
+    }
 }
 
 template <typename T>
 boost::shared_ptr<T>
 AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                          const QThread* curThread,
-                                         const QThread* spawnerThread)
+                                         ThreadSpawnMap::iterator foundSpawned)
 {
+    //Private - should be locked
+    assert( !_objectMutex.tryLockForWrite() );
+
     boost::shared_ptr<T> tls;
-    QReadLocker k(&_objectMutex);
 
     //This is a spawned thread and the first time we need the TLS for this thread, copy the whole TLS on all objects
-    for (TLSObjects::const_iterator it = _object->objects.begin();
+    for (TLSObjects::iterator it = _object->objects.begin();
          it != _object->objects.end(); ++it) {
         boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
         if (p) {
@@ -231,16 +215,20 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                 //the TLS data from the spawner thread and mark it to 'tls'.
                 foundHolder = dynamic_cast<const TLSHolder<T>*>( p.get() );
                 if (foundHolder) {
-                    tls = foundHolder->copyAndReturnNewTLS(spawnerThread, curThread);
+                    tls = foundHolder->copyAndReturnNewTLS(foundSpawned->second, curThread);
                 }
             }
 
             if (!foundHolder) {
                 //Copy anyway
-                p->copyTLS(spawnerThread, curThread);
+                p->copyTLS(foundSpawned->second, curThread);
             }
         }
     }
+
+
+    //Erase the thread from the spawn map
+    _spawns.erase(foundSpawned);
 
     return tls;
 }
