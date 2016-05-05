@@ -33,6 +33,8 @@
 #define kNatronReadNodeParamDecodingPluginChoice "decodingPluginChoice"
 #define kNatronReadNodeParamDecodingPluginID "decodingPluginID"
 
+#define kNatronReadNodeOCIOParamInputSpace "ocioInputSpace"
+
 NATRON_NAMESPACE_ENTER;
 
 /**

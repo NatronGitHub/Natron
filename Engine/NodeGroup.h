@@ -355,6 +355,8 @@ public:
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
+    virtual void purgeCaches() OVERRIDE FINAL;
+
     NodePtr getOutputNode(bool useGuiConnexions) const;
 
     NodePtr getOutputNodeInput(bool useGuiConnexions) const;

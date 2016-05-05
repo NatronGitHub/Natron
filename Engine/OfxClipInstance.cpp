@@ -1376,12 +1376,14 @@ OfxClipInstance::getEffectHolder() const
         return effect;
     }
 #ifdef NATRON_ENABLE_IO_META_NODES
-    NodePtr ioContainer = effect->getNode()->getIOContainer();
-    if (ioContainer) {
-        return ioContainer->getEffectInstance();
+    if (effect->isReader()) {
+        NodePtr ioContainer = effect->getNode()->getIOContainer();
+        if (ioContainer) {
+            return ioContainer->getEffectInstance();
+        }
     }
 #endif
-
+    
     return effect;
 }
 

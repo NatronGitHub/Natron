@@ -571,7 +571,7 @@ NodeGraph::expandSelectedGroups()
 
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         NodeGroup* isGroup = (*it)->getNode()->isEffectGroup();
-        if (isGroup) {
+        if (isGroup && isGroup->getPluginID() == PLUGINID_NATRON_GROUP) {
             nodes.push_back(*it);
         }
     }

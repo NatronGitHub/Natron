@@ -2673,29 +2673,7 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
 {
-    KnobButton* button = dynamic_cast<KnobButton*>(knob);
-
-    if (button) {
-        if ( isWriter() ) {
-            /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
-            if ( button->isRenderButton() ) {
-                AppInstance::RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>(this);
-                w.firstFrame = INT_MIN;
-                w.lastFrame = INT_MAX;
-                w.frameStep = INT_MIN;
-                w.useRenderStats = getApp()->isRenderStatsActionChecked();
-                std::list<AppInstance::RenderWork> works;
-                works.push_back(w);
-                getApp()->startWritersRendering(false, works);
-
-                return;
-            }
-        }
-
-
-        return;
-    }
+    
     //We changed, abort any ongoing current render to refresh them with a newer version
     abortAnyEvaluation();
 
@@ -2779,7 +2757,10 @@ EffectInstance::hasPersistentMessage()
 void
 EffectInstance::clearPersistentMessage(bool recurse)
 {
-    getNode()->clearPersistentMessage(recurse);
+    NodePtr node = getNode();
+    if (node) {
+        node->clearPersistentMessage(recurse);
+    }
 }
 
 int

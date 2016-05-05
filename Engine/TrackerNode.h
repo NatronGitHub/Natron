@@ -123,13 +123,6 @@ public:
 
 private:
 
-    /*virtual bool isIdentity(double time,
-                            const RenderScale & scale,
-                            const RectI & roi,
-                            ViewIdx view,
-                            double* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;*/
 
     virtual void knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
