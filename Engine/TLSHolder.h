@@ -144,7 +144,7 @@ private:
     template <typename T>
     boost::shared_ptr<T> copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                                           const QThread* curThread,
-                                                          ThreadSpawnMap::iterator foundSpawned);
+                                                          ThreadSpawnMap::const_iterator foundSpawned);
 
 
     //This is the "TLS" object: it stores a set of all TLSHolder's who used the TLS to clean it up afterwards
@@ -153,6 +153,7 @@ private:
 
     //if a thread is a spawned thread, then copy the tls from the spawner thread instead
     //of creating a new object and no longer mark it as spawned
+    mutable QReadWriteLock _spawnsMutex;
     ThreadSpawnMap _spawns;
 };
 

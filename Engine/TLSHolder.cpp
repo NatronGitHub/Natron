@@ -44,6 +44,7 @@ NATRON_NAMESPACE_ENTER;
 AppTLS::AppTLS()
     : _objectMutex()
     , _object( new GLobalTLSObject() )
+    , _spawnsMutex()
     , _spawns()
 {
 }
@@ -72,8 +73,9 @@ AppTLS::copyTLS(const QThread* fromThread,
         return;
     }
     QReadLocker k(&_objectMutex);
-    for (TLSObjects::iterator it = _object->objects.begin();
-         it != _object->objects.end(); ++it) {
+    const TLSObjects& objectsCRef = _object->objects; // take a const ref, since it's a read lock
+    for (TLSObjects::const_iterator it = objectsCRef.begin();
+         it != objectsCRef.end(); ++it) {
         boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
         if (p) {
             p->copyTLS(fromThread, toThread);
@@ -88,7 +90,7 @@ AppTLS::softCopy(const QThread* fromThread,
     if ( (fromThread == toThread) || !fromThread || !toThread ) {
         return;
     }
-    QWriteLocker k(&_objectMutex);
+    QWriteLocker k(&_spawnsMutex);
     _spawns[toThread] = fromThread;
 }
 
@@ -106,7 +108,7 @@ AppTLS::cleanupTLSForThread()
 
     //Cleanup any cached data on the TLSHolder
     {
-        QWriteLocker k(&_objectMutex);
+        QWriteLocker l(&_spawnsMutex);
 
         //This thread was spawned, but TLS not used, do not bother to clean-up
         ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
@@ -115,6 +117,9 @@ AppTLS::cleanupTLSForThread()
 
             return;
         }
+    }
+    {
+        QWriteLocker k(&_objectMutex);
 
         TLSObjects newObjects;
         for (TLSObjects::iterator it = _object->objects.begin();

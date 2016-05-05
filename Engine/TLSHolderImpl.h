@@ -117,8 +117,9 @@ TLSHolder<T>::getTLSData() const
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     {
         QReadLocker k(&perThreadDataMutex);
-        typename ThreadDataMap::iterator found = perThreadData.find(curThread);
-        if ( found != perThreadData.end() ) {
+        const ThreadDataMap& perThreadDataCRef = perThreadData; // take a const ref, since it's a read lock
+        typename ThreadDataMap::const_iterator found = perThreadDataCRef.find(curThread);
+        if ( found != perThreadDataCRef.end() ) {
             ret = found->second.value;
         }
     }
@@ -143,8 +144,9 @@ TLSHolder<T>::getOrCreateTLSData() const
     //Note that if present, this call is extremely fast as we do not block other threads
     {
         QReadLocker k(&perThreadDataMutex);
-        typename ThreadDataMap::iterator found = perThreadData.find(curThread);
-        if ( found != perThreadData.end() ) {
+        const ThreadDataMap& perThreadDataCRef = perThreadData; // take a const ref, since it's a read lock
+        typename ThreadDataMap::const_iterator found = perThreadDataCRef.find(curThread);
+        if ( found != perThreadDataCRef.end() ) {
             assert(found->second.value);
 
             return found->second.value;
@@ -177,19 +179,22 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     // Either way: return a new object
 
 
-    ThreadSpawnMap::iterator foundSpawned;
     {
-        QReadLocker k(&_objectMutex);
-        foundSpawned = _spawns.find(curThread);
-        if ( foundSpawned == _spawns.end() ) {
+        QReadLocker k(&_spawnsMutex);
+        const ThreadSpawnMap& spawnsCRef = _spawns; // take a const ref, since it's a read lock
+        ThreadSpawnMap::const_iterator foundSpawned = spawnsCRef.find(curThread);
+        if ( foundSpawned == spawnsCRef.end() ) {
             //This is not a spawned thread and it did not have TLS already
             return boost::shared_ptr<T>();
         }
-    }
-    {
-        QWriteLocker k(&_objectMutex);
+        // could we release the read lock on _spawns here and use a QThread*
+        // instead of an iterator as last argument of copyTLSFromSpawnerThreadInternal?
+        // That's what was done in 1a0712b, but it may have broken TLS
+        {
+            QWriteLocker k(&_objectMutex);
 
-        return copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundSpawned);
+            return copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundSpawned);
+        }
     }
 }
 
@@ -197,10 +202,11 @@ template <typename T>
 boost::shared_ptr<T>
 AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
                                          const QThread* curThread,
-                                         ThreadSpawnMap::iterator foundSpawned)
+                                         ThreadSpawnMap::const_iterator foundSpawned)
 {
     //Private - should be locked
     assert( !_objectMutex.tryLockForWrite() );
+    assert( !_spawnsMutex.tryLockForWrite() );
 
     boost::shared_ptr<T> tls;
 
