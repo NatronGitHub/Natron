@@ -179,28 +179,35 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     // Either way: return a new object
 
 
+    // first pass with a read lock to exit early without taking the write lock
     {
-        QWriteLocker k(&_spawnsMutex);
+        QReadLocker k(&_spawnsMutex);
         const ThreadSpawnMap& spawnsCRef = _spawns; // take a const ref, since it's a read lock
         ThreadSpawnMap::const_iterator foundSpawned = spawnsCRef.find(curThread);
         if ( foundSpawned == spawnsCRef.end() ) {
             //This is not a spawned thread and it did not have TLS already
             return boost::shared_ptr<T>();
         }
-        const QThread* foundThread = foundSpawned->second;
-
-        // could we release the lock on _spawns here after erasing foundSpawned from _spawns?
-        // That's what was done in 1a0712b, but it may have broken TLS
-        {
-            QWriteLocker k(&_objectMutex);
-
-            boost::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
-
-            //Erase the thread from the spawn map
-            _spawns.erase(foundSpawned);
-
-            return retval;
+    }
+    const QThread* foundThread = 0;
+    {
+        QWriteLocker k(&_spawnsMutex);
+        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+        if ( foundSpawned == _spawns.end() ) {
+            //This is not a spawned thread and it did not have TLS already
+            return boost::shared_ptr<T>();
         }
+        foundThread = foundSpawned->second;
+        //Erase the thread from the spawn map
+        _spawns.erase(foundSpawned);
+    }
+    {
+        QWriteLocker k(&_objectMutex);
+
+        boost::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
+
+
+        return retval;
     }
 }
 
