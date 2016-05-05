@@ -88,6 +88,21 @@ TLSHolder<T>::copyAndReturnNewTLS(const QThread* /*fromThread*/,
 
 template <typename T>
 bool
+TLSHolder<T>::canCleanupPerThreadData(const QThread* curThread) const
+{
+    QReadLocker k(&perThreadDataMutex);
+    if (perThreadData.empty()) {
+        return true; // cleanup would return true
+    }
+    typename ThreadDataMap::iterator found = perThreadData.find(curThread);
+    if ( found != perThreadData.end() ) {
+        return true; // cleanup would do something
+    }
+    return false;
+}
+
+template <typename T>
+bool
 TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 {
     QWriteLocker k(&perThreadDataMutex);

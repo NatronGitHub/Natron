@@ -118,10 +118,40 @@ AppTLS::cleanupTLSForThread()
             return;
         }
     }
+    std::list<boost::shared_ptr<const TLSHolderBase> > objectsToClean;
     {
-        QWriteLocker k(&_objectMutex);
-
+        QReadLocker k (&_objectMutex);
+        const TLSObjects& objectsCRef = _object->objects;
+        for (TLSObjects::iterator it = objectsCRef.begin();
+             it != objectsCRef.end();
+             ++it) {
+            boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
+            if (p) {
+                if ( p->canCleanupPerThreadData(curThread) ) {
+                    objectsToClean.push_back(p);
+                }
+            }
+        }
+    }
+    if (!objectsToClean.empty()) {
+#if 1
+        // version from 1a0712b
+        // should be OK, since the bug in 1a0712b was in canCleanupPerThreadData
+        QWriteLocker k (&_objectMutex);
+        for (std::list<boost::shared_ptr<const TLSHolderBase> >::iterator it = objectsToClean.begin();
+             it!=objectsToClean.end();
+             ++it) {
+            if ((*it)->cleanupPerThreadData(curThread)) {
+                TLSObjects::iterator found = _object->objects.find(*it);
+                if (found != _object->objects.end()) {
+                    _object->objects.erase(found);
+                }
+            }
+        }
+#else
+        // original version
         TLSObjects newObjects;
+        QWriteLocker k (&_objectMutex);
         for (TLSObjects::iterator it = _object->objects.begin();
              it != _object->objects.end(); ++it) {
             boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
@@ -134,6 +164,7 @@ AppTLS::cleanupTLSForThread()
             }
         }
         _object->objects = newObjects;
+#endif
     }
 }
 

@@ -64,6 +64,14 @@ public:
 protected:
 
     /**
+     * @brief Returns true if cleanupPerThreadData would do anything OR would return true.
+     * It does not return the same value as cleanupPerThreadData, since cleanupPerThreadData
+     * may do something and return false.
+     * This is much faster than cleanupPerThreadData as it does not take any write lock.
+     **/
+    virtual bool canCleanupPerThreadData(const QThread* curThread) const = 0;
+
+    /**
      * @brief Must clean-up any data stored for the given thread 'curThread'
      * @returns True if this object no longer holds any per-thread data
      **/
@@ -189,6 +197,7 @@ public:
 
 private:
 
+    virtual bool canCleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const OVERRIDE FINAL;
     boost::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
