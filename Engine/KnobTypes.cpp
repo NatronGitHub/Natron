@@ -642,8 +642,8 @@ KnobChoice::cloneExtraDataAndCheckIfChanged(KnobI* other,
         return false;
     }
 
-    QMutexLocker k(&_entriesMutex);
     std::string otherEntry = isChoice->getActiveEntryText_mt_safe();
+    QMutexLocker k(&_entriesMutex);
     if (_currentEntryLabel != otherEntry) {
         _currentEntryLabel = otherEntry;
 
