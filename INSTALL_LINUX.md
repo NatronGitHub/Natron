@@ -1,5 +1,5 @@
-Developer installation for GNU/Linux
-====================================
+Instructions for installing Natron from sources on GNU/Linux
+============================================================
 
 This file is supposed to guide you step by step to have working (compiling) version of
 Natron on GNU/Linux.
@@ -35,7 +35,7 @@ and build Natron and the standard set of plugins on Ubuntu
 
 In order to have Natron compiling, first you need to install the required libraries.
 
-### Qt 4.8.6
+### Qt 4.8.7
 
 You'll need to install Qt4 libraries, usually you can get them from your package manager (depends on your distribution).
 
@@ -54,8 +54,6 @@ Alternatively you can install boost from [boost download](http://www.boost.org/u
 
 You can download it with your package manager.
 The package depends on your distribution.
-
-
 
 ### GLEW
 
@@ -84,7 +82,6 @@ Natron uses pyside for python 2
 Natron uses shiboken for python 2
 
 
-
 # Configuration
 
 ### OpenFX
@@ -100,7 +97,7 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.0.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron repository.
 
 ***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.0` rename it to `OpenColorIO-Configs`*

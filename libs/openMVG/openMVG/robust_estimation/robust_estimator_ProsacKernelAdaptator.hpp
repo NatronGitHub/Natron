@@ -970,9 +970,13 @@ namespace openMVG {
                                                        Vec4 *similarity)
             {
                 assert(x1.rows() == 2 && x2.rows() == 2 && x1.cols() == x2.cols() && weights.rows() == x1.cols());
-                
-                
-                const int m = x1.rows(); // dimension
+                if ( x1.rows() != 2 ||
+                     x2.rows() != 2 ||
+                     x1.cols() != x2.cols() ||
+                     x1.cols() != weights.cols() ) {
+                    return 0;
+                }
+
                 const int n = x1.cols(); // number of measurements
                 
                 if (n < 2) {
@@ -984,13 +988,9 @@ namespace openMVG {
                     return 0;
                 }
 
-                
-                // required for demeaning ...
-                const double one_over_n = 1. / (double)n;
-                
                 // computation of mean
-                const Vec2 src_mean = (x1 * weights).rowwise().sum() * one_over_n;
-                const Vec2 dst_mean = (x2 * weights).rowwise().sum() * one_over_n;
+                const Vec2 src_mean = (x1 * weights).rowwise().sum() / sumW;
+                const Vec2 dst_mean = (x2 * weights).rowwise().sum() / sumW;
                 
                 // demeaning of src and dst points
                 const Mat src_demean = x1.colwise() - src_mean;
@@ -1070,6 +1070,11 @@ namespace openMVG {
                                                Vec4 *similarity)
             {
                 assert(x1.rows() == 2 && x2.rows() == 2 && x1.cols() == x2.cols());
+                if (x1.rows() != 2 ||
+                    x2.rows() != 2 ||
+                    x1.cols() != x2.cols()) {
+                    return 0;
+                }
                 Mat3 Rt = Eigen::umeyama(x1, x2);
                                 
                 // S = (tx, ty, c.sin(alpha), c.cos(alpha))
