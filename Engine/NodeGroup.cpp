@@ -1523,6 +1523,15 @@ NodeGroup::getInputs(std::vector<NodePtr >* inputs,
 }
 
 void
+NodeGroup::purgeCaches()
+{
+    NodesList nodes = getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        (*it)->getEffectInstance()->purgeCaches();
+    }
+}
+
+void
 NodeGroup::knobChanged(KnobI* k,
                        ValueChangedReasonEnum /*reason*/,
                        ViewSpec /*view*/,

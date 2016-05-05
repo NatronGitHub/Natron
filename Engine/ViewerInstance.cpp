@@ -1207,8 +1207,12 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         QMutexLocker l(&_imp->activeInputsMutex);
         outArgs->activeInputIndex =  _imp->activeInputs[0];
     } else {
-        QMutexLocker l(&_imp->activeInputsMutex);
-        outArgs->activeInputIndex =  _imp->activeInputs[1];
+        if (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) {
+            outArgs->activeInputIndex = -1;
+        } else {
+            QMutexLocker l(&_imp->activeInputsMutex);
+            outArgs->activeInputIndex =  _imp->activeInputs[1];
+        }
     }
 
 

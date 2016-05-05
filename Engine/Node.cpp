@@ -3622,9 +3622,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
 {
     //Readers and Writers don't have default knobs since these knobs are on the ReadNode/WriteNode itself
 #ifdef NATRON_ENABLE_IO_META_NODES
-    if ( _imp->ioContainer.lock() ) {
-        return;
-    }
+    NodePtr ioContainer = getIOContainer();
 #endif
 
     //Add the "Node" page
@@ -3743,21 +3741,27 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
 
     createNodePage(settingsPage, renderScaleSupportPref);
     createInfoPage();
-
+    
     if ( _imp->effect->isWriter() ) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
 #ifndef NATRON_ENABLE_IO_META_NODES
-        createWriterFrameStepKnob(mainPage);
+            createWriterFrameStepKnob(mainPage);
+#else
+        if (!ioContainer) {
 #endif
-
-        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), "Render", 1, false);
-        renderButton->setHintToolTip("Starts rendering the specified frame range.");
-        renderButton->setAsRenderButton();
-        renderButton->setName("startRender");
-        _imp->renderButton = renderButton;
-        mainPage->addKnob(renderButton);
-
-        createPythonPage();
+        
+            boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), "Render", 1, false);
+            renderButton->setHintToolTip("Starts rendering the specified frame range.");
+            renderButton->setAsRenderButton();
+            renderButton->setName("startRender");
+            renderButton->setEvaluateOnChange(false);
+            _imp->renderButton = renderButton;
+            mainPage->addKnob(renderButton);
+            
+            createPythonPage();
+#ifdef NATRON_ENABLE_IO_META_NODES
+        }
+#endif
     }
 } // Node::initializeDefaultKnobs
 
@@ -3774,7 +3778,7 @@ Node::initializeKnobs(int renderScaleSupportPref,
     assert(!_imp->knobsInitialized);
 
     ///For groups, declare the plugin knobs after the node knobs because we want to use the Node page
-    bool effectIsGroup = isEffectGroup();
+    bool effectIsGroup = getPluginID() == PLUGINID_NATRON_GROUP;
 
     if (!effectIsGroup) {
         //Initialize plug-in knobs
@@ -4119,7 +4123,8 @@ Node::makeHTMLDocumentation(bool offline) const
 bool
 Node::isForceCachingEnabled() const
 {
-    return _imp->forceCaching.lock()->getValue();
+    boost::shared_ptr<KnobBool> b = _imp->forceCaching.lock();
+    return b ? b->getValue() : false;
 }
 
 void
@@ -4137,7 +4142,8 @@ Node::onSetSupportRenderScaleMaybeSet(int support)
 bool
 Node::useScaleOneImagesWhenRenderScaleSupportIsDisabled() const
 {
-    return _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock()->getValue();
+    boost::shared_ptr<KnobBool> b =  _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
+    return b ? b->getValue() : false;
 }
 
 void
@@ -6362,6 +6368,14 @@ Node::setPersistentMessage(MessageTypeEnum type,
             return;
         }
 #endif
+        // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
+        if (!isPartOfProject() && getGroup()) {
+            NodeGroup* isGroup = dynamic_cast<NodeGroup*>(getGroup().get());
+            if (isGroup) {
+                isGroup->setPersistentMessage(type, content);
+            }
+        }
+        
         if (type == eMessageTypeInfo) {
             message(type, content);
 
@@ -7890,9 +7904,27 @@ Node::onEffectKnobValueChanged(KnobI* what,
         if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
             Q_EMIT previewKnobToggled();
         }
+    } else if ( what == _imp->renderButton.lock().get()) {
+        
+        if ( getEffectInstance()->isWriter() ) {
+            /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
+            AppInstance::RenderWork w;
+            w.writer = dynamic_cast<OutputEffectInstance*>(_imp->effect.get());
+            w.firstFrame = INT_MIN;
+            w.lastFrame = INT_MAX;
+            w.frameStep = INT_MIN;
+            w.useRenderStats = getApp()->isRenderStatsActionChecked();
+            std::list<AppInstance::RenderWork> works;
+            works.push_back(w);
+            getApp()->startWritersRendering(false, works);
+                        
+        }
+   
     } else if ( ( what == _imp->disableNodeKnob.lock().get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
-        getApp()->redrawAllViewers();
+        if (QThread::currentThread() == qApp->thread()) {
+            getApp()->redrawAllViewers();
+        }
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
         if (isGroup) {
             ///When a group is disabled we have to force a hash change of all nodes inside otherwise the image will stay cached
@@ -8321,6 +8353,9 @@ Node::setNodeDisabled(bool disabled)
 
     if (b) {
         b->setValue(disabled);
+        
+        // Clear the actions cache because if this function is called from another thread, the hash will not be incremented
+        _imp->effect->clearActionsCache();
     }
 }
 
@@ -8793,16 +8828,11 @@ addIdentityNodesRecursively(const Node* caller,
 
             renderHash = node->getEffectInstance()->getRenderHash();
 
-            RectD rod;
-            bool isProj;
-            StatusEnum stat = node->getEffectInstance()->getRegionOfDefinition_public(renderHash, time, scale, view, &rod, &isProj);
-            if (stat == eStatusFailed) {
-                isIdentity = false;
-            } else {
-                RectI pixelRod;
-                rod.toPixelEnclosing(scale, node->getEffectInstance()->getAspectRatio(-1), &pixelRod);
-                isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, pixelRod, view, &inputTimeId, &identityView, &inputNbId);
-            }
+            Format f;
+            node->getEffectInstance()->getRenderFormat(&f);
+            
+            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, f, view, &inputTimeId, &identityView, &inputNbId);
+            
         }
 
 
