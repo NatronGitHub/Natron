@@ -949,6 +949,7 @@ TrackerContext::removeItemAsPythonField(const TrackMarkerPtr& item)
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
+    
 }
 
 void
@@ -958,9 +959,18 @@ TrackerContext::declareItemAsPythonField(const TrackMarkerPtr& item)
     std::string nodeName = getNode()->getFullyQualifiedName();
     std::string nodeFullName = appID + "." + nodeName;
     std::string err;
-    std::string script = (nodeFullName + ".tracker." + item->getScriptName_mt_safe() + " = " +
-                          nodeFullName + ".tracker.getTrackByName(\"" + item->getScriptName_mt_safe() + "\")\n");
+    std::string itemName = item->getScriptName_mt_safe();
+    std::stringstream ss;
+    ss << nodeFullName << ".tracker." << itemName << " = ";
+    ss << nodeFullName << ".tracker.getTrackByName(\"" << itemName + "\")\n";
 
+    
+    const KnobsVec& knobs = item->getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        ss << nodeFullName << ".tracker." << itemName << "." << (*it)->getName() << " = ";
+        ss << nodeFullName << ".tracker." << itemName << ".getParam(\"" << (*it)->getName() << "\")\n";
+    }
+    std::string script = ss.str();
     if ( !appPTR->isBackground() ) {
         getNode()->getApp()->printAutoDeclaredVariable(script);
     }

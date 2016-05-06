@@ -323,10 +323,15 @@ TrackMarker::setScriptName(const std::string& name)
         return false;
     }
 
+    TrackMarkerPtr thisShared = shared_from_this();
+    getContext()->removeItemAsPythonField(thisShared);
+    
     {
         QMutexLocker l(&_imp->trackMutex);
         _imp->trackScriptName = cpy;
     }
+    
+    getContext()->declareItemAsPythonField(thisShared);
 
     return true;
 }

@@ -328,7 +328,7 @@ ProjectPrivate::runOnProjectSaveCallback(const std::string& filename,
             if (appID != "app") {
                 ss << "app = " << appID << "\n";
             }
-            ss << "ret = " << onProjectSave << "(" << filename << "," << appID << ",";
+            ss << "ret = " << onProjectSave << "(\"" << filename << "\"," << appID << ",";
             if (autoSave) {
                 ss << "True)\n";
             } else {

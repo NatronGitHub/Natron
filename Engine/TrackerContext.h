@@ -345,6 +345,9 @@ public:
 
     void declarePythonFields();
 
+    void removeItemAsPythonField(const TrackMarkerPtr& item);
+    
+    void declareItemAsPythonField(const TrackMarkerPtr& item);
 
     /*boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
        boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
@@ -468,9 +471,7 @@ Q_SIGNALS:
 
 private:
 
-    void removeItemAsPythonField(const TrackMarkerPtr& item);
-
-    void declareItemAsPythonField(const TrackMarkerPtr& item);
+    
 
     void endSelection(TrackSelectionReason reason);
 
