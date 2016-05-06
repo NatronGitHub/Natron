@@ -3089,6 +3089,12 @@ Node::makeInfoForInput(int inputNumber) const
 } // Node::makeInfoForInput
 
 void
+Node::findPluginFormatKnobs()
+{
+    findPluginFormatKnobs(getKnobs(), true);
+}
+
+void
 Node::findPluginFormatKnobs(const KnobsVec & knobs,
                             bool loadingSerialization)
 {

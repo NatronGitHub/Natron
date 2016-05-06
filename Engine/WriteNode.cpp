@@ -706,7 +706,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         }
     }
     
-   
+    _publicInterface->getNode()->findPluginFormatKnobs();
 
     //Clone the old values of the generic knobs
     cloneGenericKnobs();

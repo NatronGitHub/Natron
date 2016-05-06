@@ -1653,7 +1653,9 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
 
     if ( ( (originalReason != eValueChangedReasonTimeChanged) || evaluateValueChangeOnTimeChange() ) && _imp->holder ) {
         _imp->holder->beginChanges();
-        _imp->holder->appendValueChange(shared_from_this(), dimension, refreshWidget, time, view, originalReason, reason);
+        KnobPtr thisShared = shared_from_this();
+        assert(thisShared);
+        _imp->holder->appendValueChange(thisShared, dimension, refreshWidget, time, view, originalReason, reason);
         _imp->holder->endChanges();
     }
 
