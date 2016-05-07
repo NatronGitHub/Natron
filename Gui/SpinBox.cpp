@@ -643,8 +643,12 @@ SpinBox::focusInEvent(QFocusEvent* e)
             return;
         }
     } else if ( (e->reason() == Qt::OtherFocusReason) || (e->reason() == Qt::TabFocusReason) ) {
-        //If the user tabbed into it or hovered it, select all text
-        selectAll();
+        // If the user tabbed into it or hovered it, select all text
+        //selectAll(); // moves the cursor to the end
+        int l = text().length();
+        // selects and moves the cursor to the start
+        // (to show the first part of large numbers)
+        setSelection(l, -l);
     }
     _imp->valueWhenEnteringFocus = text();
     LineEdit::focusInEvent(e);
