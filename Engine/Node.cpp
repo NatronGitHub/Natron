@@ -3656,7 +3656,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
                     if ( !dynamic_cast<KnobSeparator*>( prev->get() ) ) {
                         boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), "", 1, false);
                         sep->setName("advancedSep");
-                        mainPage->insertKnob(i - 1, sep);
+                        mainPage->insertKnob(i, sep);
                     }
                 }
 
