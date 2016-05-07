@@ -190,6 +190,9 @@ KnobGuiGroup::setCheckedInternal(bool checked,
             }
         }
     }
+    if (_tabGroup) {
+        _tabGroup->setVisible(checked);
+    }
     //getGui()->getPropertiesBin()->setUpdatesEnabled(true);
 }
 
