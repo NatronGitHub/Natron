@@ -746,7 +746,14 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
 
             const bool labelOnSameColumn = ret->isLabelOnSameColumn();
 
-
+            
+            Qt::Alignment labelAlignment;
+            if (isGroup) {
+                labelAlignment = Qt::AlignLeft;
+            } else {
+                labelAlignment = Qt::AlignRight;
+            }
+            
             if (!hasLabel) {
                 layout->addWidget(fieldContainer, rowIndex, 0, 1, 2);
             } else {
@@ -755,7 +762,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                         labelLayout->addWidget(fieldContainer);
                         layout->addWidget(labelContainer, rowIndex, 0, 1, 2);
                     } else {
-                        layout->addWidget(labelContainer, rowIndex, 0, 1, 1, Qt::AlignRight);
+                        layout->addWidget(labelContainer, rowIndex, 0, 1, 1, labelAlignment);
                         layout->addWidget(fieldContainer, rowIndex, 1, 1, 1);
                     }
                 }
