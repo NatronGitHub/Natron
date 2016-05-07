@@ -766,6 +766,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
                         layout->addWidget(fieldContainer, rowIndex, 1, 1, 1);
                     }
                 }
+
             }
 
 
