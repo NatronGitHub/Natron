@@ -71,7 +71,7 @@ TabGroup::TabGroup(QWidget* parent)
     , _imp( new TabGroupPrivate() )
 {
     setFrameShadow(QFrame::Raised);
-    setFrameShape(QFrame::Box);
+    setFrameShape(QFrame::NoFrame);
     QHBoxLayout* frameLayout = new QHBoxLayout(this);
     _imp->tabWidget = new QTabWidget(this);
     frameLayout->addWidget(_imp->tabWidget);
