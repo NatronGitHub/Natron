@@ -528,18 +528,19 @@ AppManager::loadInternal(const CLArgs& cl)
 #endif
 
 
-#ifdef __NATRON_UNIX__
+# ifdef __NATRON_UNIX__
     if (mustSetSignalsHandlers) {
         setShutDownSignal(SIGINT);   // shut down on ctrl-c
         setShutDownSignal(SIGTERM);   // shut down on killall
-#if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
+#     if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
         //Catch SIGSEGV only when google-breakpad is not active
         setSigSegvSignal();
-#endif
+#     endif
     }
-#endif
+# else
+    Q_UNUSED(mustSetSignalsHandlers);
+# endif
 
-    (void)mustSetSignalsHandlers;
 
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();

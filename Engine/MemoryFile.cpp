@@ -380,7 +380,7 @@ MemoryFile::remove()
             _imp->closeMapping();
         }
         int ok = ::remove( _imp->path.c_str() );
-        (void)ok;
+        Q_UNUSED(ok);
         _imp->path.clear();
         _imp->data = 0;
     }

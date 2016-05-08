@@ -182,7 +182,8 @@ PreviewThread::run()
 #endif
             NodePtr internalNode = front.node->getNode();
             if (internalNode) {
-                (void)internalNode->makePreviewImage( front.time, &w, &h, &_imp->data.front() );
+                bool ok = internalNode->makePreviewImage( front.time, &w, &h, &_imp->data.front() );
+                Q_UNUSED(ok);
                 front.node->copyPreviewImageBuffer(_imp->data, w, h);
             }
 

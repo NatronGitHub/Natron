@@ -1114,7 +1114,8 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
         outArgs->mustComputeRoDAndLookupCache = false;
 
-        (void)ifInfiniteclipRectToProjectDefault(&rod);
+        bool isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
+        Q_UNUSED(isRodProjectFormat);
 
         // Ok we go the RoD, we can actually compute the RoI and look-up the cache
         ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipMapLevel, stats, outArgs);

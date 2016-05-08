@@ -1252,6 +1252,7 @@ TableView::dropEvent(QDropEvent* e)
         rowMoved[(*it)->row()][(*it)->column()] = *it;
         TableItem* taken = _imp->model->takeItem( (*it)->row(), (*it)->column() );
         assert(taken == *it);
+        Q_UNUSED(taken);
     }
     /// remove the rows in reverse order so that indexes are still valid
     for (std::map<int, std::map<int, TableItem*> >::reverse_iterator it = rowMoved.rbegin(); it != rowMoved.rend(); ++it) {

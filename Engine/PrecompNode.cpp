@@ -333,7 +333,8 @@ PrecompNode::knobChanged(KnobI* k,
         _imp->reloadProject(true);
     } else if ( k == _imp->editProjectKnob.lock().get() ) {
         std::string filename = _imp->projectFileNameKnob.lock()->getValue();
-        (void)getApp()->loadProject(filename);
+        AppInstance* appInstance = getApp()->loadProject(filename);
+        Q_UNUSED(appInstance);
     } else if ( k == _imp->preRenderKnob.lock().get() ) {
         _imp->launchPreRender();
     } else if ( k == _imp->outputNodeNameKnob.lock().get() ) {

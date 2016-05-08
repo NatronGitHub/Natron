@@ -259,10 +259,10 @@ currentPath()
 
 #endif
 
+#if defined( Q_OS_UNIX )
 static QString
 applicationFilePath_fromArgv(const char* argv0Param)
 {
-#if defined( Q_OS_UNIX )
     QString argv0 = QString::fromUtf8(argv0Param);
     QString absPath;
 
@@ -310,8 +310,8 @@ applicationFilePath_fromArgv(const char* argv0Param)
     absPath = QDir::cleanPath(absPath);
 
     return absPath;
-#endif
 } // applicationFilePath_fromArgv
+#endif
 } // anon namespace
 
 QString

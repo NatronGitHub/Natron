@@ -2783,7 +2783,8 @@ Node::setNameInternal(const std::string& name,
     if ( !newName.empty() ) {
         bool isAttrDefined = false;
         std::string newPotentialQualifiedName = getApp()->getAppIDString() + "." + getFullyQualifiedNameInternal(newName);
-        (void)Python::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+        PyObject* obj = Python::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+        Q_UNUSED(obj);
         if (isAttrDefined) {
             std::stringstream ss;
             ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
@@ -5815,7 +5816,8 @@ public:
     {
         _imp->setComputingPreview(false);
 
-        (void)_imp->checkForExitPreview();
+        bool mustQuitPreview = _imp->checkForExitPreview();
+        Q_UNUSED(mustQuitPreview);
     }
 };
 

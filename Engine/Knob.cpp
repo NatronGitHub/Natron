@@ -2712,7 +2712,8 @@ KnobHelper::setName(const std::string & name,
             newPotentialQualifiedName += finalName;
 
             bool isAttrDefined = false;
-            (void)Python::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+            PyObject* obj = Python::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+            Q_UNUSED(obj);
             if (isAttrDefined) {
                 std::stringstream ss;
                 ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";

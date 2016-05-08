@@ -2982,7 +2982,7 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
     if (_preview->readerNode) {
         return _preview->readerNode;
     }
-    (void)filetype;
+    Q_UNUSED(filetype);
     CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_READ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
     args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     args.createGui = false;

@@ -195,7 +195,8 @@ DockablePanelPrivate::initializeKnobVector(const KnobsVec& knobs,
     }
     for (std::list<boost::shared_ptr<KnobPage> >::iterator it = pages.begin(); it != pages.end(); ++it) {
         //create page
-        (void)findKnobGuiOrCreate( *it, true, 0, KnobsVec() );
+        KnobGuiPtr knobGui = findKnobGuiOrCreate( *it, true, 0, KnobsVec() );
+        Q_UNUSED(knobGui);
 
         KnobsVec children = (*it)->getChildren();
         KnobsVec::iterator prev = children.end();

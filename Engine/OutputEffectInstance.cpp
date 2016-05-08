@@ -124,25 +124,25 @@ OutputEffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
     // BE CAREFUL:
     // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
     // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()
-    bool isRodProjctFormat = false;
+    bool isRodProjectFormat = false;
     if (rod->left() <= kOfxFlagInfiniteMin) {
         rod->set_left( projectDefault.left() );
-        isRodProjctFormat = true;
+        isRodProjectFormat = true;
     }
     if (rod->bottom() <= kOfxFlagInfiniteMin) {
         rod->set_bottom( projectDefault.bottom() );
-        isRodProjctFormat = true;
+        isRodProjectFormat = true;
     }
     if (rod->right() >= kOfxFlagInfiniteMax) {
         rod->set_right( projectDefault.right() );
-        isRodProjctFormat = true;
+        isRodProjectFormat = true;
     }
     if (rod->top() >= kOfxFlagInfiniteMax) {
         rod->set_top( projectDefault.top() );
-        isRodProjctFormat = true;
+        isRodProjectFormat = true;
     }
 
-    return isRodProjctFormat;
+    return isRodProjectFormat;
 }
 
 void

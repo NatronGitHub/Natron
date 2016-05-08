@@ -51,6 +51,9 @@
 namespace NATRON_NAMESPACE { }
 #endif
 
+#define NATRON_NAMESPACE_ANONYMOUS_ENTER namespace {
+#define NATRON_NAMESPACE_ANONYMOUS_EXIT }
+
 #define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
 #define NATRON_COPYRIGHT "Copyright (C) 2016 the Natron developers."
 #define NATRON_ORGANIZATION_NAME "INRIA"

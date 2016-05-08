@@ -488,11 +488,13 @@ KnobGui::createAnimationMenu(QMenu* menu,
         }
 
         if ( (knob->getDimension() > 1) && !hasDimensionSlaved ) {
-            (void)createInterpolationMenu(menu, -1, isEnabled);
+            Menu* interpMenu = createInterpolationMenu(menu, -1, isEnabled);
+            Q_UNUSED(interpMenu);
         }
         if (dimensionHasAnimation && !dimensionIsSlaved) {
             if ( (dimension != -1) || (knob->getDimension() == 1) ) {
-                (void)createInterpolationMenu(menu, dimension != -1 ? dimension : 0, isEnabled);
+                Menu* interpMenu = createInterpolationMenu(menu, dimension != -1 ? dimension : 0, isEnabled);
+                Q_UNUSED(interpMenu);
             }
         }
     }

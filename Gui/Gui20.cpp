@@ -1017,7 +1017,8 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = QString::fromUtf8( path.c_str() );
-        (void)openProjectInternal(selectedFile, true);
+        AppInstance* appInstance = openProjectInternal(selectedFile, true);
+        Q_UNUSED(appInstance);
     }
 }
 

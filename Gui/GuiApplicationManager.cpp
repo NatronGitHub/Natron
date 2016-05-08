@@ -882,7 +882,8 @@ GuiApplicationManager::onFontconfigCacheUpdateFinished()
     _imp->updateSplashscreenTimer.stop();
 
     ///Ignore return value here, the user will have an error dialog if loading failed anyway.
-    (void)loadInternalAfterInitGui(_imp->startupArgs);
+    bool ret = loadInternalAfterInitGui(_imp->startupArgs);
+    Q_UNUSED(ret);
 }
 
 void
