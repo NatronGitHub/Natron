@@ -73,7 +73,7 @@ FrameKey::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("ScaleX", _scale.x);
     ar & ::boost::serialization::make_nvp("ScaleY", _scale.y);
 
-    if (version >= FRAME_KEY_VERSION) {
+    if (version >= FRAME_KEY_INTRODUCES_INPUT_NAME) {
         ar & ::boost::serialization::make_nvp("InputName", _inputName);
     }
 
