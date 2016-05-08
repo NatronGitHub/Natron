@@ -1885,6 +1885,13 @@ ViewerInstance::aboutToUpdateTextures()
     _imp->uiContext->clearPartialUpdateTextures();
 }
 
+bool
+ViewerInstance::isViewerUIVisible() const
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    return _imp->uiContext ? _imp->uiContext->isViewerUIVisible() : false;
+}
+
 void
 ViewerInstance::updateViewer(boost::shared_ptr<UpdateViewerParams> & frame)
 {

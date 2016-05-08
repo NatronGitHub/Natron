@@ -158,6 +158,8 @@ public:
     void turnOffOverlay();
 
     virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
+    
+    virtual bool isViewerUIVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      *@brief Copies the data stored in the  RAM buffer into the currently

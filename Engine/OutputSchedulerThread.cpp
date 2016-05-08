@@ -4079,7 +4079,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         ViewerInstance::eViewerRenderRetCodeFail, ViewerInstance::eViewerRenderRetCodeFail
     };
 
-    if ( !_imp->viewer->getUiContext() ) {
+    // Do not render viewer that are not made visible by the user
+    if ( !_imp->viewer->isViewerUIVisible() ) {
         return;
     }
 

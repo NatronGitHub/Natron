@@ -1260,6 +1260,7 @@ TabWidget::makeCurrentTab(int index)
     if (hadFocus) {
         curWidget->takeClickFocus();
     }
+    tab->onPanelMadeCurrent();
 }
 
 void

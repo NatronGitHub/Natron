@@ -78,6 +78,8 @@ public:
     void seek(SequenceTime time);
 
     virtual void notifyGuiClosing() OVERRIDE FINAL;
+    
+    virtual void onPanelMadeCurrent() OVERRIDE FINAL;
 
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays

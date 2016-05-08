@@ -76,6 +76,8 @@ public:
     virtual ~OpenGLViewerI()
     {
     }
+    
+    virtual bool isViewerUIVisible() const = 0;
 
     /**
      * @brief Must return the current scale factor applied to the viewport. (Screen pixels / image pixels)

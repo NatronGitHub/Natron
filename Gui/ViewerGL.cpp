@@ -74,8 +74,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Shaders.h"
+#include "Gui/TabWidget.h"
 #include "Gui/Texture.h"
 #include "Gui/ViewerTab.h"
+
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -1386,6 +1388,24 @@ void
 ViewerGL::clearPartialUpdateTextures()
 {
     _imp->partialUpdateTextures.clear();
+}
+
+bool
+ViewerGL::isViewerUIVisible() const
+{
+    if (!_imp->viewerTab) {
+        return false;
+    }
+    TabWidget* tabWidget = _imp->viewerTab->getParentPane();
+    if (!tabWidget) {
+        return false;
+    }
+
+    if (tabWidget->currentWidget() != _imp->viewerTab) {
+        return false;
+    }
+    
+    return true;
 }
 
 void

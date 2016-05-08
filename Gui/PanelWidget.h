@@ -80,6 +80,11 @@ public:
     void handleUnCaughtKeyUpEvent(QKeyEvent* e);
 
     virtual void pushUndoCommand(QUndoCommand* command);
+    
+    /*
+     * @brief Called whenever this panel is made the current tab in the parent tab widget
+     */
+    virtual void onPanelMadeCurrent() {}
 
 protected:
 
