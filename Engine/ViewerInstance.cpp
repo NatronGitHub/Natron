@@ -1859,15 +1859,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         return eViewerRenderRetCodeRedraw;
     }
 
-<<<<<<< HEAD
-=======
-        unsigned char* dstPixels = tmpBuffer;
-        for (int y = it->y1; y < it->y2; ++y, dstPixels += dstRowSize) {
-            const unsigned char* srcPixels = params->cachedFrame->pixelAt(it->x1, y);
-            std::memcpy(dstPixels, srcPixels, dstRowSize);
-        }
->>>>>>> RB-2.0
-
     return eViewerRenderRetCodeRender;
 } // renderViewer_internal
 
