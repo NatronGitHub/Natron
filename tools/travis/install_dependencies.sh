@@ -137,15 +137,19 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # sudo install_xquartz &
     # XQ_INSTALL_PID=$!
 
+    echo "* Brew update"
     brew update
+    echo "* Adding brew taps"
     brew tap homebrew/python
     brew tap homebrew/science
-    brew upgrade
-    brew cleanup
+    #brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
+    #brew upgrade --cleanup
+    echo "* Brew doctor"
+    brew doctor
     
-    echo "Install Natron dependencies"
+    echo "* Install Natron dependencies"
     echo " - pip install numpy"
-    pip install numpy
+    pip install --upgrade numpy
     # brew install numpy  # Compilation errors with gfortran
     echo " - install brew packages"
     # TuttleOFX's dependencies:
