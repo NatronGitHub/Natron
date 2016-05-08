@@ -139,11 +139,12 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 
     echo "* Brew update"
     brew update
+    brew upgrade xctool || true
     echo "* Adding brew taps"
     brew tap homebrew/python
     brew tap homebrew/science
-    #brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
-    #brew upgrade --cleanup
+    # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
+    # brew upgrade --cleanup
     echo "* Brew doctor"
     brew doctor
     

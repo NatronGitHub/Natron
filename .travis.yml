@@ -108,8 +108,8 @@ matrix:
 
 cache:
   apt: true
-  directories:
-  - /usr/local/Cellar
+#  directories:
+#  - /usr/local/Cellar
 
 # Travis CI has 1.5 cores per VM, take advantage of it
 before_install:
