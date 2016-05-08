@@ -18,7 +18,7 @@
 # ***** END LICENSE BLOCK *****
 
 # Exit immediately if a command exits with a non-zero status
-set -e
+#set -e
 # Print commands and their arguments as they are executed.
 #set -x
 
@@ -146,7 +146,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # brew list -1 | while read line; do brew unlink $line; brew link --force $line; done
     # brew upgrade --cleanup
     echo "* Brew doctor"
-    brew doctor
+    brew doctor || true
     
     echo "* Install Natron dependencies"
     echo " - pip install numpy"
