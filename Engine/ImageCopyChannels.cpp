@@ -215,6 +215,8 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
     const bool doA = !processChannels[3] && (dstNComps == 1 || dstNComps == 4);
     assert(srcNComps == 4 || !originalPremult); // only RGBA can be premult
     assert(dstNComps == 4 || !premult); // only RGBA can be premult
+    Q_UNUSED(premult);
+    Q_UNUSED(originalPremult);
 
     for ( int y = roi.y1; y < roi.y2; ++y, dst_pixels += (dstRowElements - (roi.x2 - roi.x1) * dstNComps) ) {
         for (int x = roi.x1; x < roi.x2; ++x, dst_pixels += dstNComps) {
@@ -226,12 +228,16 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
 #             endif
                 srcA = src_pixels[srcNComps - 1];
             }
+#         ifdef NATRON_COPY_CHANNELS_UNPREMULT
             PIX dstAorig = maxValue;
+#         endif
             if ( (dstNComps == 1) || (dstNComps == 4) ) {
 #             ifdef DEBUG
                 assert(dst_pixels[dstNComps - 1] == dst_pixels[dstNComps - 1]); // check for NaN
 #             endif
+#             ifdef NATRON_COPY_CHANNELS_UNPREMULT
                 dstAorig = dst_pixels[dstNComps - 1];
+#             endif
             }
             if (doR) {
 #             ifdef DEBUG
