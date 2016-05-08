@@ -90,7 +90,10 @@ public Q_SLOTS:
     void onIncrementChanged(double incr, int index = 0);
     void onDecimalsChanged(int deci, int index = 0);
 
+    void onResetToDefaultRequested();
+
     void onDimensionSwitchClicked();
+
 
 private:
     void expandAllDimensions();

@@ -98,7 +98,8 @@ public:
 Q_SIGNALS:
     void editingFinished(bool hasMovedOnce);
     void positionChanged(double);
-
+    void resetToDefaultRequested();
+    
 public Q_SLOTS:
 
     void seekScalePosition(double v);

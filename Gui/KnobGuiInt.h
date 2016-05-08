@@ -97,6 +97,8 @@ public Q_SLOTS:
     void onIncrementChanged(int incr, int index = 0);
 
     void onDimensionSwitchClicked();
+    
+    void onResetToDefaultRequested();
 
 private:
     void expandAllDimensions();

@@ -179,12 +179,15 @@ void
 ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 {
     if (!_imp->readOnly) {
-        QPoint newClick =  e->pos();
-
-        _imp->oldClick = newClick;
-        QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(), newClick.y() );
-        double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
-        seekInternal(v);
+        if (modifierHasControl(e)) {
+            Q_EMIT resetToDefaultRequested();
+        } else {
+            QPoint newClick =  e->pos();
+            _imp->oldClick = newClick;
+            QPointF newClick_opengl = _imp->zoomCtx.toZoomCoordinates( newClick.x(), newClick.y() );
+            double v = _imp->dataType == eDataTypeInt ? std::floor(newClick_opengl.x() + 0.5) : newClick_opengl.x();
+            seekInternal(v);
+        }
     }
     QWidget::mousePressEvent(e);
 }

@@ -287,6 +287,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
+        QObject::connect(_slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()));
         QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
         QObject::connect( _slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
         containerLayout->addWidget(_slider);
@@ -357,6 +358,19 @@ KnobGuiDouble::getDimensionForSpinBox(const SpinBox* spinbox) const
     }
 
     return -1;
+}
+
+void
+KnobGuiDouble::onResetToDefaultRequested()
+{
+    KnobPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
+    for (int i = 0; i < nDims; ++i) {
+        knob->resetToDefaultValue(i);
+    }
 }
 
 void

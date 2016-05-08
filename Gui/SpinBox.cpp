@@ -59,10 +59,20 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
+
 struct SpinBoxPrivate
 {
+    
+    enum SpinBoxMouseState
+    {
+        eSpinBoxMouseStateIdle,
+        eSpinBoxMouseStateDragging
+    };
+    
     SpinBox::SpinBoxTypeEnum type;
 
+    SpinBoxMouseState ms;
+    
     /*the precision represents the number of digits after the decimal point.
        For the 'g' and 'G' formats, the precision represents the maximum number
        of significant digits (trailing zeroes are omitted)*/
@@ -79,9 +89,12 @@ struct SpinBoxPrivate
     bool useLineColor;
     QColor lineColor;
     SpinBoxValidator* customValidator;
+    QPoint lastMousePos;
 
+    
     SpinBoxPrivate(SpinBox::SpinBoxTypeEnum type)
         : type(type)
+        , ms(eSpinBoxMouseStateIdle)
         , decimals(2)
         , increment(1.0)
         , currentDelta(0)
@@ -784,6 +797,78 @@ SpinBox::validateInternal()
 
         return true;
     }
+}
+
+void
+SpinBox::mousePressEvent(QMouseEvent *e)
+{
+    _imp->lastMousePos = e->pos();
+    _imp->ms = SpinBoxPrivate::eSpinBoxMouseStateDragging;
+    QLineEdit::mousePressEvent(e);
+}
+
+void
+SpinBox::mouseReleaseEvent(QMouseEvent* e)
+{
+    _imp->ms = SpinBoxPrivate::eSpinBoxMouseStateIdle;
+    QLineEdit::mouseReleaseEvent(e);
+}
+
+void
+SpinBox::mouseMoveEvent(QMouseEvent *e)
+{
+    
+    if (modCASIsAlt(e) && _imp->ms ==  SpinBoxPrivate::eSpinBoxMouseStateDragging) {
+        if (isEnabled() ||
+            isReadOnly() ||
+            !hasFocus()) {
+            // Multiply by some amount to ressemble a wheel event
+            int delta = (e->x() - _imp->lastMousePos.x()) * 3;
+            int shift = 0;
+            if ( modCASIsShift(e) ) {
+                shift = 1;
+            }
+            if ( modCASIsControl(e) ) {
+                shift = -1;
+            }
+            increment(delta, shift);
+        }
+        /*QString str = text();
+        int pos = cursorPosition();
+        if (pos < 0) {
+            pos = 0;
+        } else if (pos >= str.size()) {
+            pos = str.size() - 1;
+        }
+        // There is a decimal, check if we increment after the decimal point or before
+        int decimalPtPos = str.indexOf( QLatin1Char('.') );
+        double incr = 0;
+        if (decimalPtPos != -1) {
+            if (pos == decimalPtPos) {
+                ++pos;
+            }
+            if (pos < decimalPtPos) {
+                incr = (decimalPtPos - pos) * 10.;
+            } else {
+                assert(pos > decimalPtPos);
+                incr = 1. / ((pos - decimalPtPos) * 10.);
+            }
+        } else {
+            incr = (str.size() - pos) * 10.;
+        }
+        
+        double dx = e->x() - _imp->lastMousePos.x();
+        if (dx < 0) {
+            incr = -incr;
+        }
+        
+        double val = value();
+        val += incr;
+        setValue_internal(val, false);*/
+    } else {
+        QLineEdit::mouseMoveEvent(e);
+    }
+    _imp->lastMousePos = e->pos();
 }
 
 bool

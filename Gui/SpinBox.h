@@ -111,6 +111,9 @@ protected:
 
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE;
+    virtual void mouseMoveEvent(QMouseEvent* e) OVERRIDE;
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE;
     virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;

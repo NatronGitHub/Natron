@@ -322,6 +322,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0), knob->getEvaluateOnChange(),
                                      ScaleSliderQWidget::eDataTypeDouble, getGui(), eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    QObject::connect(_slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()));
     QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
     QObject::connect( _slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
     _slider->hide();
@@ -413,6 +414,19 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(_colorLabel, -1);
     }
 } // createWidget
+
+void
+KnobGuiColor::onResetToDefaultRequested()
+{
+    KnobPtr knob = _knob.lock();
+    if (!knob) {
+        return;
+    }
+    int nDims = knob->getDimension();
+    for (int i = 0; i < nDims; ++i) {
+        knob->resetToDefaultValue(i);
+    }
+}
 
 void
 KnobGuiColor::onMustShowAllDimension()
