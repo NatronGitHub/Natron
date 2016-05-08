@@ -348,19 +348,8 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         transformTypeKnob->populateChoices(choices, helps);
     }
-    transformTypeKnob->setAddNewLine(false);
     transformType = transformTypeKnob;
     transformPage->addKnob(transformTypeKnob);
-
-
-    boost::shared_ptr<KnobBool>  robustModelKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamRobustModelLabel, 1);
-    robustModelKnob->setName(kTrackerParamRobustModel);
-    robustModelKnob->setHintToolTip(kTrackerParamRobustModelHint);
-    robustModelKnob->setAnimationEnabled(false);
-    robustModelKnob->setEvaluateOnChange(false);
-    robustModelKnob->setDefaultValue(true);
-    transformPage->addKnob(robustModelKnob);
-    robustModel = robustModelKnob;
 
     boost::shared_ptr<KnobInt> referenceFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamReferenceFrameLabel, 1);
     referenceFrameKnob->setName(kTrackerParamReferenceFrame);
@@ -429,11 +418,19 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     computeTransformKnob->setName(kTrackerParamGenerateTransform);
     computeTransformKnob->setHintToolTip(kTrackerParamGenerateTransformHint);
     computeTransformKnob->setEvaluateOnChange(false);
-    computeTransformKnob->setAddNewLine(false);
     //computeTransformKnob->setAddNewLine(false);
     transformPage->addKnob(computeTransformKnob);
     generateTransformButton = computeTransformKnob;
 
+    boost::shared_ptr<KnobBool>  robustModelKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamRobustModelLabel, 1);
+    robustModelKnob->setName(kTrackerParamRobustModel);
+    robustModelKnob->setHintToolTip(kTrackerParamRobustModelHint);
+    robustModelKnob->setAnimationEnabled(false);
+    robustModelKnob->setEvaluateOnChange(false);
+    robustModelKnob->setDefaultValue(true);
+    transformPage->addKnob(robustModelKnob);
+    robustModel = robustModelKnob;
+    
 
     boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), "", 1);
     transformOutOfDateLabelKnob->setName(kTrackerParamTransformOutOfDate);
@@ -1725,7 +1722,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
     int h1 = rodRef.height();
     int w2 = rodTime.width();
     int h2 = rodTime.height();
-    const bool dataSetIsUserManual = false;
+    const bool dataSetIsUserManual = true;
 
     try {
         if (x1.size() == 1) {

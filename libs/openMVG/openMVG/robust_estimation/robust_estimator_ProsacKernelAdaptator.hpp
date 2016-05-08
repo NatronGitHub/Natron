@@ -973,7 +973,7 @@ namespace openMVG {
                 if ( x1.rows() != 2 ||
                      x2.rows() != 2 ||
                      x1.cols() != x2.cols() ||
-                     x1.cols() != weights.cols() ) {
+                     x1.cols() != weights.rows() ) {
                     return 0;
                 }
 
@@ -992,10 +992,6 @@ namespace openMVG {
                 const Vec2 src_mean = (x1 * weights).rowwise().sum() / sumW;
                 const Vec2 dst_mean = (x2 * weights).rowwise().sum() / sumW;
                 
-                // demeaning of src and dst points
-                const Mat src_demean = x1.colwise() - src_mean;
-                const Mat dst_demean = x2.colwise() - dst_mean;
-                
                 // Eq. (36)-(37)
                 double src_var = 0;
                 Mat2 sigma;
@@ -1012,8 +1008,6 @@ namespace openMVG {
                         ++nbInliers;
                     }
                 }
-                
-                //const double src_var = src_demean.rowwise().squaredNorm().sum() * one_over_n;
                 
                 if (src_var == 0) {
                     return 0; // there must be at least 2 distinct points
@@ -1069,23 +1063,9 @@ namespace openMVG {
                                                const Mat &x2,
                                                Vec4 *similarity)
             {
-                assert(x1.rows() == 2 && x2.rows() == 2 && x1.cols() == x2.cols());
-                if (x1.rows() != 2 ||
-                    x2.rows() != 2 ||
-                    x1.cols() != x2.cols()) {
-                    return 0;
-                }
-                Mat3 Rt = Eigen::umeyama(x1, x2);
-                                
-                // S = (tx, ty, c.sin(alpha), c.cos(alpha))
-                (*similarity)(0) =  Rt(0, 2);
-                (*similarity)(1) =  Rt(1, 2);
-                (*similarity)(2) =  Rt(1, 0);
-                (*similarity)(3) =  Rt(0, 0);
-                
-                return 1;
-
-                
+                Vec weights(x1.cols());
+                weights.setOnes();
+                return Similarity2DFromNPointsWeighted(x1,x2, weights, similarity);
             }
             
            
