@@ -110,6 +110,7 @@ AppManagerPrivate::AppManagerPrivate()
     , breakpadAliveThread()
 #endif
     , natronPythonGIL(QMutex::Recursive)
+    , pluginsUseInputImageCopyToRender(false)
 {
     setMaxCacheFiles();
 

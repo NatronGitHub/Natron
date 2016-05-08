@@ -1307,6 +1307,24 @@ Image::pixelAt(int x,
     }
 }
 
+unsigned char*
+Image::pixelAtStatic(int x, int y, const RectI& bounds, int nComps, int dataSizeOf, unsigned char* buf)
+{
+    if ( ( x < bounds.x1 ) || ( x >= bounds.x2 ) || ( y < bounds.y1 ) || ( y >= bounds.y2 ) ) {
+        return NULL;
+    } else {
+        unsigned char* ret = buf;
+        if (!ret) {
+            return 0;
+        }
+        int compDataSize = dataSizeOf * nComps;
+        ret = ret + (qint64)( y - bounds.y1 ) * compDataSize * bounds.width()
+        + (qint64)( x - bounds.x1 ) * compDataSize;
+        
+        return ret;
+    }
+}
+
 const unsigned char*
 Image::pixelAt(int x,
                int y) const

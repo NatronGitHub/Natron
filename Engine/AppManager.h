@@ -508,6 +508,9 @@ public:
     bool isSpawnedFromCrashReporter() const;
 
     virtual void reloadScriptEditorFonts() {}
+    
+    void setPluginsUseInputImageCopyToRender(bool b);
+    bool isCopyInputImageForPluginRenderEnabled() const;
 
 public Q_SLOTS:
 

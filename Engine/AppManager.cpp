@@ -564,6 +564,18 @@ AppManager::isSpawnedFromCrashReporter() const
 #endif
 }
 
+void
+AppManager::setPluginsUseInputImageCopyToRender(bool b)
+{
+    _imp->pluginsUseInputImageCopyToRender = b;
+}
+
+bool
+AppManager::isCopyInputImageForPluginRenderEnabled() const
+{
+    return _imp->pluginsUseInputImageCopyToRender;
+}
+
 bool
 AppManager::initGui(const CLArgs& cl)
 {

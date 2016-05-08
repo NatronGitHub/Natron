@@ -461,6 +461,9 @@ public:
     {
         return WriteAccess(this);
     }
+    
+    static unsigned char* pixelAtStatic(int x, int y, const RectI& bounds, int nComps, int dataSizeOf, unsigned char* buf);
+
 
 private:
 

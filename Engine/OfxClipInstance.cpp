@@ -36,6 +36,7 @@
 
 #include "Global/Macros.h"
 
+#include "Engine/CacheEntry.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
@@ -678,10 +679,25 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                                        const std::string* ofxPlane)
 {
     assert( !isOutput() );
+    
+    ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
+    boost::shared_ptr<RenderActionData> renderData;
+    
+    //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
+    //otherwise use the param sent by the plug-in call of clipGetImagePlane
+    if (tls) {
+        if ( !tls->renderData.empty() ) {
+            renderData = tls->renderData.back();
+            assert(renderData);
+        }
+    }
+
 
     EffectInstPtr effect = getEffectHolder();
     assert(effect);
     int inputnb = getInputNb();
+    const std::string& thisClipComponents = getComponents();
+
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
 
@@ -698,7 +714,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                     ///We are in the case of a multi-plane effect who did not specify correctly the needed components for an input
                     //fallback on the basic components indicated on the clip
                     //This could be the case for example for the Mask Input
-                    comp = ofxComponentsToNatronComponents( getComponents() );
+                    comp = ofxComponentsToNatronComponents( thisClipComponents );
                     assert( !comp.isPairedComponents() );
                     foundCompsInTLS = true;
                     //qDebug() << _imp->nodeInstance->getScriptName_mt_safe().c_str() << " didn't specify any needed components via getClipComponents for clip " << getName().c_str();
@@ -716,7 +732,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             bool hasUserComps = effect->getNode()->getSelectedLayer(inputnb, &processChannels, &isAll, &comp);
             if (!hasUserComps) {
                 //There's no selector...fallback on the basic components indicated on the clip
-                comp = ofxComponentsToNatronComponents( getComponents() );
+                comp = ofxComponentsToNatronComponents( thisClipComponents );
                 assert( !comp.isPairedComponents() );
             }
         }
@@ -735,7 +751,6 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     unsigned int mipMapLevel = 0;
     // Get mipmaplevel and view from the TLS
-    ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
 #ifdef DEBUG
     if ( !tls || tls->view.empty() ) {
         if ( QThread::currentThread() != qApp->thread() ) {
@@ -765,6 +780,26 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     } else {
         view = ViewIdx( viewParam.value() );
     }
+    
+    // If the plug-in is requesting the colour plane, it is expected that we return
+    // an image mapped to the clip components
+    const bool mapImageToClipPref = !ofxPlane || *ofxPlane == kFnOfxImagePlaneColour;
+    
+    //Check if the plug-in already called clipGetImage on this image, in which case we may already have an OfxImage laying around
+    //so we try to re-use it.
+    if (renderData) {
+        for (std::list<OfxImage*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
+            ImagePtr internalImage = (*it)->getInternalImage();
+            
+            bool sameComponents = (mapImageToClipPref && (*it)->getComponentsString() == thisClipComponents) ||
+            (!mapImageToClipPref && (*it)->getComponentsString() == *ofxPlane);
+            if (sameComponents && internalImage->getMipMapLevel() == mipMapLevel) {
+                (*it)->addReference();
+                return *it;
+            }
+        }
+    }
+
 
 
     RenderScale renderScale( Image::getScaleFromMipMapLevel(mipMapLevel) );
@@ -780,9 +815,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     RectI renderWindow;
     boost::shared_ptr<Transform::Matrix3x3> transform;
 
-    //If the plug-in used fetchImage and not fetchImagePlane it is expected that we return
-    //an image mapped to the clip components
-    const bool mapImageToClipPref = !ofxPlane || *ofxPlane == kFnOfxImagePlaneColour;
+   
     ImagePtr image = effect->getImage(inputnb, time, renderScale, view,
                                       optionalBounds ? &bounds : NULL,
                                       &comp,
@@ -803,21 +836,26 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         components = OfxClipInstance::natronsComponentsToOfxComponents( image->getComponents() );
         nComps = image->getComponents().getNumComponents();
     } else {
-        components = getComponents();
+        components = thisClipComponents;
         ImageComponents natronComps = OfxClipInstance::ofxComponentsToNatronComponents(components);
         nComps = natronComps.getNumComponents();
-        //assert(nComps == image->getComponents().getNumComponents());
     }
 
 
-    // this will dump the image as seen from the plug-in
+#ifdef DEBUG
+    // This will dump the image as seen from the plug-in
     /*QString filename;
        QTextStream ts(&filename);
        QDateTime now = QDateTime::currentDateTime();
        ts << "img_" << time << "_"  << now.toMSecsSinceEpoch() << ".png";
        appPTR->debugImage(image.get(), renderWindow, filename);*/
-
-    return new OfxImage(boost::shared_ptr<OfxClipInstance::RenderActionData>(), image, true, renderWindow, transform, components, nComps);
+#endif
+    
+    OfxImage* ret = new OfxImage(boost::shared_ptr<OfxClipInstance::RenderActionData>(), image, true, renderWindow, transform, components, nComps);
+    if (renderData) {
+        renderData->imagesBeingRendered.push_back(ret);
+    }
+    return ret;
 } // OfxClipInstance::getInputImageInternal
 
 OFX::Host::ImageEffect::Image*
@@ -1236,12 +1274,17 @@ struct OfxImagePrivate
     ImagePtr natronImage;
     boost::shared_ptr<GenericAccess> access;
     boost::shared_ptr<OfxClipInstance::RenderActionData> tls;
+    std::string components;
+    
+    boost::scoped_ptr<RamBuffer<unsigned char> > localBuffer;
 
     OfxImagePrivate(const ImagePtr& image,
                     const boost::shared_ptr<OfxClipInstance::RenderActionData>& tls)
         : natronImage(image)
         , access()
         , tls(tls)
+        , components()
+        , localBuffer()
     {
     }
 };
@@ -1250,6 +1293,12 @@ ImagePtr
 OfxImage::getInternalImage() const
 {
     return _imp->natronImage;
+}
+
+const std::string&
+OfxImage::getComponentsString() const
+{
+    return _imp->components;
 }
 
 OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
@@ -1262,6 +1311,8 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
     : OFX::Host::ImageEffect::Image()
     , _imp( new OfxImagePrivate(internalImage, renderData) )
 {
+    _imp->components = components;
+    
     assert(internalImage);
 
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
@@ -1270,31 +1321,66 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
     setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
 
 
-    // data ptr
-    RectI bounds = internalImage->getBounds();
-
-    ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
-    ///in which case it is just clipped to the RoD.
-    //assert(bounds.contains(renderWindow));
-    RectI pluginsSeenBounds;
-    renderWindow.intersect(bounds, &pluginsSeenBounds);
-
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Image::getRoD() is in *CANONICAL* coordinates
-
+    
+    // The bounds of the image at the moment we peak the rowBytes and the internal buffer pointer.
+    // Note that when the ReadAccess, or WriteAccess object is released, the image may be resized afterwards (only bigger)
+    RectI bounds;
+    RectI pluginsSeenBounds;
+    
+    
     if (isSrcImage) {
+        
+        // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
+        // and if it does so, it may modify the cached output of the node from which this input image comes from.
+        // To circumvent this, we copy the source image into a local temporary buffer only used by the plug-in which is released
+        // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
+        // in the preferences and check "Use input image copy for plug-ins rendering"
+        const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
+        
         boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
+        
+        // data ptr
+        bounds = internalImage->getBounds();
+        renderWindow.intersect(bounds, &pluginsSeenBounds);
+        
         const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
-        setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );
-        _imp->access = access;
+        
+        if (!copySrcToPluginLocalData) {
+            setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );
+            _imp->access = access;
+        } else {
+            int dataSizeOf = getSizeOfForBitDepth(internalImage->getBitDepth());
+            std::size_t bufferSize = bounds.area() * dataSizeOf * nComps;
+            _imp->localBuffer.reset(new RamBuffer<unsigned char>());
+            _imp->localBuffer->resize(bufferSize);
+            unsigned char* localBufferData = _imp->localBuffer->getData();
+            assert(localBufferData);
+            if (localBufferData) {
+                std::memcpy(localBufferData, ptr, bufferSize);
+            }
+            unsigned char* bufferStart = NATRON_NAMESPACE::Image::pixelAtStatic(pluginsSeenBounds.left(), pluginsSeenBounds.bottom(), bounds, nComps, dataSizeOf, localBufferData);
+            setPointerProperty( kOfxImagePropData, bufferStart );
+        }
     } else {
+        
+        bounds = internalImage->getBounds();
         boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
+        
+        // data ptr
+        renderWindow.intersect(bounds, &pluginsSeenBounds);
+        
         unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
         assert(ptr);
         setPointerProperty( kOfxImagePropData, ptr);
         _imp->access = access;
     }
 
+    ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
+    ///in which case it is just clipped to the RoD.
+    //assert(bounds.contains(renderWindow));
+    
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
     ///so we're sure the plug-in doesn't attempt to access outside pixels.
     setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.left(), 0);

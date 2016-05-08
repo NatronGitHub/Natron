@@ -34,7 +34,6 @@
 #include <QCheckBox>
 #include <QToolBar>
 
-#include "Engine/AppInstance.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodePtr
@@ -53,6 +52,7 @@
 #include "Gui/Gui.h"
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/LineEdit.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/RenderStatsDialog.h"
 #include "Gui/RotoGui.h"

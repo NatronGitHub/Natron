@@ -354,6 +354,8 @@ public:
     unsigned int getAutoProxyMipMapLevel() const;
 
     bool isNaNHandlingEnabled() const;
+    
+    bool isCopyInputImageForPluginRenderEnabled() const;
 
     bool isDefaultAppearanceOutdated() const;
     void restoreDefaultAppearance();
@@ -424,6 +426,7 @@ private:
 
     boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
     boost::shared_ptr<KnobBool> _convertNaNValues;
+    boost::shared_ptr<KnobBool> _pluginUseImageCopyForSource;
     boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
     boost::shared_ptr<KnobBool> _renderOnEditingFinished;

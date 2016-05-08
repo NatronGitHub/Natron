@@ -404,11 +404,23 @@ Settings::initializeKnobsGeneral()
     _convertNaNValues = AppManager::createKnob<KnobBool>(this, "Convert NaN values");
     _convertNaNValues->setName("convertNaNs");
     _convertNaNValues->setAnimationEnabled(false);
+    _convertNaNValues->setAddNewLine(false);
     _convertNaNValues->setHintToolTip("When activated, any pixel that is a Not-a-Number will be converted to 1 to avoid potential crashes from "
                                       "downstream nodes. These values can be produced by faulty plug-ins when they use wrong arithmetic such as "
                                       "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
                                       "undefined behavior.");
     _generalTab->addKnob(_convertNaNValues);
+    
+    _pluginUseImageCopyForSource = AppManager::createKnob<KnobBool>(this, "Copy input image before rendering any plug-in");
+    _pluginUseImageCopyForSource->setName("copyInputImage");
+    _pluginUseImageCopyForSource->setAnimationEnabled(false);
+    _pluginUseImageCopyForSource->setHintToolTip("If checked, when before rendering any node, " NATRON_APPLICATION_NAME " will copy "
+                                                 "the input image to a local temporary image. This is to work-around some plug-ins "
+                                                 "that write to the source image, thus modifying the output of the node upstream in "
+                                                 "the cache. This is a known bug of an old version of RevisionFX REMap for instance. "
+                                                 "By default, this parameter should be leaved unchecked, as this will require an extra "
+                                                 "image allocation and copy before rendering any plug-in.");
+    _generalTab->addKnob(_pluginUseImageCopyForSource);
 
 
     _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>(this, "Auto-preview enabled by default for new projects");
@@ -1441,6 +1453,7 @@ Settings::setDefaultValues()
     _maxUndoRedoNodeGraph->setDefaultValue(20, 0);
     _linearPickers->setDefaultValue(true, 0);
     _convertNaNValues->setDefaultValue(true);
+    _pluginUseImageCopyForSource->setDefaultValue(false);
     _snapNodesToConnections->setDefaultValue(true);
     _useBWIcons->setDefaultValue(false);
     _loadProjectsWorkspace->setDefaultValue(false);
@@ -1937,6 +1950,7 @@ Settings::restoreSettings()
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
         appPTR->setNThreadsToRender( getNumberOfThreads() );
         appPTR->setUseThreadPool( _useThreadPool->getValue() );
+        appPTR->setPluginsUseInputImageCopyToRender(_pluginUseImageCopyForSource->getValue());
     } catch (std::logic_error) {
         // ignore
     }
@@ -2167,6 +2181,8 @@ Settings::onKnobValueChanged(KnobI* k,
         }
     } else if ( ( k == _scriptEditorFontChoice.get() ) || ( k == _scriptEditorFontSize.get() ) ) {
         appPTR->reloadScriptEditorFonts();
+    } else if (k == _pluginUseImageCopyForSource.get()) {
+        appPTR->setPluginsUseInputImageCopyToRender(_pluginUseImageCopyForSource->getValue());
     }
     if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
         Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
@@ -3746,6 +3762,12 @@ bool
 Settings::isNaNHandlingEnabled() const
 {
     return _convertNaNValues->getValue();
+}
+
+bool
+Settings::isCopyInputImageForPluginRenderEnabled() const
+{
+    return _pluginUseImageCopyForSource->getValue();
 }
 
 void

@@ -128,6 +128,9 @@ struct AppManagerPrivate
     //from UNC path to path with drive letter.
     std::map<QChar, QString> uncPathMapping;
 #endif
+    
+    // Copy of the setting knob for faster access from OfxImage constructor
+    bool pluginsUseInputImageCopyToRender;
 
     AppManagerPrivate();
 
