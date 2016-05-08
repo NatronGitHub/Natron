@@ -24,7 +24,7 @@
 
 #include "Lut.h"
 
-#include <cstring> // for memcpy
+#include <cstring> // for std::memcpy
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
@@ -838,7 +838,7 @@ from_float_planar(float *to,
                   int outDelta)
 {
     if ( ( inDelta == 1) && ( outDelta == 1) ) {
-        memcpy( to, from, W * sizeof(float) );
+        std::memcpy( to, from, W * sizeof(float) );
     } else {
         for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
             to[t] = from[f];
@@ -961,7 +961,7 @@ from_float_packed(float *to,
         const float *src_pixels = from + (srcY * (srcBounds.x2 - srcBounds.x1) * inPackingSize);
         float *dst_pixels = to + (y * (dstBounds.x2 - dstBounds.x1) * outPackingSize);
         if (inputPacking == outputPacking) {
-            memcpy( dst_pixels, src_pixels, (rect.x2 - rect.x1) * sizeof(float) );
+            std::memcpy( dst_pixels, src_pixels, (rect.x2 - rect.x1) * sizeof(float) );
         } else {
             for (int x = rect.x1; x < rect.x2; ++x) {
                 int inCol = x * inPackingSize;
@@ -1099,7 +1099,7 @@ to_float_planar(float *to,
 {
     if (!alpha) {
         if ( ( inDelta == 1) && ( outDelta == 1) ) {
-            memcpy( to, from, W * sizeof(float) );
+            std::memcpy( to, from, W * sizeof(float) );
         } else {
             for (int f = 0, t = 0; f < W; f += inDelta, t += outDelta) {
                 to[t] = from[f];
@@ -1267,7 +1267,7 @@ to_float_packed(float* to,
         const float *src_pixels = from + (srcY * (srcBounds.x2 - srcBounds.x1) * inPackingSize);
         float *dst_pixels = to + (y * (dstBounds.x2 - dstBounds.x1) * outPackingSize);
         if ( ( inputPacking == outputPacking) && !premult ) {
-            memcpy( dst_pixels, src_pixels, (rect.x2 - rect.x1) * sizeof(float) );
+            std::memcpy( dst_pixels, src_pixels, (rect.x2 - rect.x1) * sizeof(float) );
         } else {
             for (int x = rect.x1; x < conversionRect.x2; ++x) {
                 int inCol = x * inPackingSize;

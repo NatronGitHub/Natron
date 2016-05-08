@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
 
 #include "Global/Macros.h"
@@ -1288,7 +1289,7 @@ ViewerGL::isExtensionSupported(const char *extension)
     const GLubyte *extensions = NULL;
     const GLubyte *start;
     GLubyte *where, *terminator;
-    where = (GLubyte *) strchr(extension, ' ');
+    where = (GLubyte *) std::strchr(extension, ' ');
     if ( where || (*extension == '\0') ) {
         return 0;
     }
@@ -1408,7 +1409,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
             GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
             glCheckError();
             assert(ret);
-            memset(ret, 0, bytesToInit);
+            std::memset(ret, 0, bytesToInit);
             glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
             glCheckError();
             _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, type, roi, false);
@@ -1429,7 +1430,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glCheckError();
     assert(ret);
 
-    memcpy(ret, (void*)ramBuffer, bytesCount);
+    std::memcpy(ret, (void*)ramBuffer, bytesCount);
 
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();

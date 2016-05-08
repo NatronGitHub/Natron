@@ -30,6 +30,7 @@
 #include <cstddef>
 #include <cassert>
 #include <stdexcept>
+#include <cstring> // for std::memcpy
 
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>
@@ -2429,7 +2430,7 @@ char2wchar(char* arg)
     }
     in = (unsigned char*)arg;
     out = res;
-    memset(&mbs, 0, sizeof mbs);
+    std::memset(&mbs, 0, sizeof mbs);
     while (argsize) {
         size_t converted = mbrtowc(out, (char*)in, argsize, &mbs);
         if (converted == 0) {
@@ -2451,7 +2452,7 @@ char2wchar(char* arg)
                in the initial shift state. */
             *out++ = 0xdc00 + *in++;
             argsize--;
-            memset(&mbs, 0, sizeof mbs);
+            std::memset(&mbs, 0, sizeof mbs);
             continue;
         }
         if ( (*out >= 0xd800) && (*out <= 0xdfff) ) {

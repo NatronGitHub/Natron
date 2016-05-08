@@ -33,6 +33,7 @@
 #include <cctype> // tolower
 #include <algorithm> // transform, min, max
 #include <string>
+#include <cstring> // for std::memcpy, std::memset, std::strcmp
 
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QtCore/QDir>
@@ -981,7 +982,7 @@ const void*
 OfxHost::fetchSuite(const char *suiteName,
                     int suiteVersion)
 {
-    if ( (strcmp(suiteName, kOfxParametricParameterSuite) == 0) && (suiteVersion == 1) ) {
+    if ( (std::strcmp(suiteName, kOfxParametricParameterSuite) == 0) && (suiteVersion == 1) ) {
         return OFX::Host::ParametricParam::GetSuite(suiteVersion);
     } else {
         return OFX::Host::ImageEffect::Host::fetchSuite(suiteName, suiteVersion);

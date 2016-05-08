@@ -30,6 +30,7 @@
 #include <limits>
 #include <cassert>
 #include <stdexcept>
+#include <cstring> // for std::memcpy, std::memset
 
 #include <boost/scoped_ptr.hpp>
 
@@ -2561,7 +2562,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
         std::size_t stride = cairo_format_stride_for_width( cairoImgFormat, pixelPointsBbox.width() );
         std::size_t memSize = stride * pixelPointsBbox.height();
         buf.resize(memSize);
-        memset(&buf.front(), 0, sizeof(unsigned char) * memSize);
+        std::memset(&buf.front(), 0, sizeof(unsigned char) * memSize);
         convertNatronImageToCairoImage<float, 1>(&buf.front(), srcNComps, stride, source.get(), pixelPointsBbox, pixelPointsBbox, shapeColor);
         imgWrapper.cairoImg = cairo_image_surface_create_for_data(&buf.front(), cairoImgFormat, pixelPointsBbox.width(), pixelPointsBbox.height(),
                                                                   stride);

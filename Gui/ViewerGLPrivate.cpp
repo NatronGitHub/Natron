@@ -27,6 +27,7 @@
 #include <cassert>
 #include <algorithm> // min, max
 #include <cmath> // sin, cos
+#include <cstring> // for std::memcpy
 #include <stdexcept>
 
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
@@ -966,8 +967,8 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
             checkerboardTexture[i + 4] = Color::floatToInt<256>(color2[i]);
         }
         ///Copy the first line to the second line
-        memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
-        memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
+        std::memcpy(&checkerboardTexture[8], &checkerboardTexture[4], sizeof(unsigned char) * 4);
+        std::memcpy(&checkerboardTexture[12], &checkerboardTexture[0], sizeof(unsigned char) * 4);
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, (void*)checkerboardTexture);
     } // GLProtectAttrib a(GL_ENABLE_BIT);

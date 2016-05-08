@@ -31,6 +31,7 @@
 #include <map>
 #include <locale>
 #include <stdexcept>
+#include <cstring> // for std::memcpy, std::memset, std::strcmp
 
 #include <QDebug>
 
@@ -187,11 +188,11 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     assert(format);
     std::string message = string_format(format, args);
 
-    if (strcmp(type, kOfxMessageError) == 0) {
+    if (std::strcmp(type, kOfxMessageError) == 0) {
         _ofxEffectInstance.lock()->setPersistentMessage(eMessageTypeError, message);
-    } else if (strcmp(type, kOfxMessageWarning) == 0) {
+    } else if (std::strcmp(type, kOfxMessageWarning) == 0) {
         _ofxEffectInstance.lock()->setPersistentMessage(eMessageTypeWarning, message);
-    } else if (strcmp(type, kOfxMessageMessage) == 0) {
+    } else if (std::strcmp(type, kOfxMessageMessage) == 0) {
         _ofxEffectInstance.lock()->setPersistentMessage(eMessageTypeInfo, message);
     }
 
@@ -1222,7 +1223,7 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
 
     props.addProperties(hostOverlaysProps);
 
-    if (strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
+    if (std::strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         const std::string& type = ret->getDoubleType();
         // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
         if ( //type == kOfxParamDoubleTypePlain ||
