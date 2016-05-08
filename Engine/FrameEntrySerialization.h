@@ -72,7 +72,7 @@ FrameKey::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("TextureRect", _textureRect);
     ar & ::boost::serialization::make_nvp("LoD", _mipMapLevel);
 
-    if (version >= FRAME_KEY_VERSION) {
+    if (version >= FRAME_KEY_INTRODUCES_INPUT_NAME) {
         ar & ::boost::serialization::make_nvp("InputName", _inputName);
     }
 
