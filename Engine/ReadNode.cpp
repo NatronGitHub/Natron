@@ -78,6 +78,7 @@ NATRON_NAMESPACE_ENTER;
 
 //Generic OCIO
 #define kOCIOParamConfigFile "ocioConfigFile"
+#define kOCIOParamInputSpace "ocioInputSpace"
 #define kOCIOParamOutputSpace "ocioOutputSpace"
 #define kOCIOParamInputSpaceChoice "ocioInputSpaceIndex"
 #define kOCIOParamOutputSpaceChoice "ocioOutputSpaceIndex"
@@ -122,6 +123,7 @@ static GenericKnob genericReaderKnobNames[] =
 
     {kOCIOParamConfigFile, true},
     {kNatronReadNodeOCIOParamInputSpace, false},
+    {kOCIOParamInputSpace, false}, 
     {kOCIOParamOutputSpace, false},
     {kOCIOParamInputSpaceChoice, false},
     {kOCIOParamOutputSpaceChoice, false},

@@ -712,6 +712,21 @@ Node::load(const CreateNodeArgs& args)
          */
         _imp->effect.reset( func.second(thisShared) );
         assert(_imp->effect);
+        
+        
+#ifdef NATRON_ENABLE_IO_META_NODES
+        if (args.ioContainer) {
+            ReadNode* isReader = dynamic_cast<ReadNode*>( args.ioContainer->getEffectInstance().get() );
+            if (isReader) {
+                isReader->setEmbeddedReader(thisShared);
+            } else {
+                WriteNode* isWriter = dynamic_cast<WriteNode*>( args.ioContainer->getEffectInstance().get() );
+                assert(isWriter);
+                isWriter->setEmbeddedWriter(thisShared);
+            }
+        }
+#endif
+        
         _imp->effect->initializeData();
 
         createRotoContextConditionnally();
@@ -766,20 +781,6 @@ Node::load(const CreateNodeArgs& args)
 #endif
         assert(_imp->effect);
     }
-
-
-#ifdef NATRON_ENABLE_IO_META_NODES
-    if (args.ioContainer) {
-        ReadNode* isReader = dynamic_cast<ReadNode*>( args.ioContainer->getEffectInstance().get() );
-        if (isReader) {
-            isReader->setEmbeddedReader(thisShared);
-        } else {
-            WriteNode* isWriter = dynamic_cast<WriteNode*>( args.ioContainer->getEffectInstance().get() );
-            assert(isWriter);
-            isWriter->setEmbeddedWriter(thisShared);
-        }
-    }
-#endif
 
 
     // For readers, set their original frame range when creating them
@@ -881,12 +882,13 @@ Node::load(const CreateNodeArgs& args)
     _imp->pluginSafety = _imp->effect->renderThreadSafety();
     _imp->currentThreadSafety = _imp->pluginSafety;
 
-    _imp->nodeCreated = true;
 
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
 
     _imp->effect->onEffectCreated(canOpenFileDialog, args.paramValues);
 
+    _imp->nodeCreated = true;
+    
     if ( !getApp()->isCreatingNodeTree() ) {
         refreshAllInputRelatedData(!args.serialization);
     }
@@ -894,30 +896,6 @@ Node::load(const CreateNodeArgs& args)
 
     _imp->runOnNodeCreatedCB(!args.serialization && !isLoadingPyPlug);
 
-
-    ///Now that the instance is created, make sure instanceChangedActino is called for all extra default values
-    ///that we set
-    /* double time = getEffectInstance()->getCurrentTime();
-       for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = args.paramValues.begin(); it != args.paramValues.end(); ++it) {
-         KnobPtr knob = getKnobByName((*it)->getName());
-         if (knob) {
-             for (int i = 0; i < knob->getDimension(); ++i) {
-                 knob->evaluateValueChange(i, time, ViewIdx(0), eValueChangedReasonUserEdited);
-             }
-         } else {
-             qDebug() << "WARNING: No such parameter " << (*it)->getName().c_str();
-         }
-       }
-
-       #ifndef NATRON_ENABLE_IO_META_NODES
-       if (hasUsedFileDialog) {
-         KnobPtr fileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
-         if (fileNameKnob) {
-             fileNameKnob->evaluateValueChange(0, time, ViewIdx(0),eValueChangedReasonUserEdited);
-         }
-       }
-       #endif
-     */
 } // load
 
 bool
@@ -4165,6 +4143,22 @@ Node::setEffect(const EffectInstPtr& effect)
     assert( QThread::currentThread() == qApp->thread() );
     _imp->effect = effect;
     _imp->effect->initializeData();
+    
+    
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr thisShared = shared_from_this();
+    NodePtr ioContainer = _imp->ioContainer.lock();
+    if (ioContainer) {
+        ReadNode* isReader = dynamic_cast<ReadNode*>( ioContainer->getEffectInstance().get() );
+        if (isReader) {
+            isReader->setEmbeddedReader(thisShared);
+        } else {
+            WriteNode* isWriter = dynamic_cast<WriteNode*>( ioContainer->getEffectInstance().get() );
+            assert(isWriter);
+            isWriter->setEmbeddedWriter(thisShared);
+        }
+    }
+#endif
 }
 
 EffectInstPtr

@@ -1358,7 +1358,7 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
             unsigned char* localBufferData = _imp->localBuffer->getData();
             assert(localBufferData);
             if (localBufferData) {
-                std::memcpy(localBufferData, ptr, bufferSize);
+                memcpy(localBufferData, ptr, bufferSize);
             }
             unsigned char* bufferStart = NATRON_NAMESPACE::Image::pixelAtStatic(pluginsSeenBounds.left(), pluginsSeenBounds.bottom(), bounds, nComps, dataSizeOf, localBufferData);
             setPointerProperty( kOfxImagePropData, bufferStart );
