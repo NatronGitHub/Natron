@@ -28,6 +28,7 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 #include <cassert>
+#include <cstring> // for std::memcpy
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -802,7 +803,7 @@ copyAndSwap(const TextureRect& srcRect,
 
     for (int y = srcRect.y1; y < srcRect.y2;
          ++y, srcPixels += srcRowSize, dstPixels += dstRowSize) {
-        memcpy(dstPixels, srcPixels, srcRowSize);
+        std::memcpy(dstPixels, srcPixels, srcRowSize);
     }
     *dstBuf = tmpBuf;
 
@@ -1858,6 +1859,14 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         return eViewerRenderRetCodeRedraw;
     }
 
+<<<<<<< HEAD
+=======
+        unsigned char* dstPixels = tmpBuffer;
+        for (int y = it->y1; y < it->y2; ++y, dstPixels += dstRowSize) {
+            const unsigned char* srcPixels = params->cachedFrame->pixelAt(it->x1, y);
+            std::memcpy(dstPixels, srcPixels, dstRowSize);
+        }
+>>>>>>> RB-2.0
 
     return eViewerRenderRetCodeRender;
 } // renderViewer_internal

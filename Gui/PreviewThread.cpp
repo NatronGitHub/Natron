@@ -27,6 +27,7 @@
 #include <list>
 #include <vector>
 #include <stdexcept>
+#include <cstring> // for std::memcpy, std::memset
 
 #include <QWaitCondition>
 #include <QMutex>
@@ -173,7 +174,7 @@ PreviewThread::run()
 
             //set buffer to 0
 #ifndef __NATRON_WIN32__
-            memset( &_imp->data.front(), 0, _imp->data.size() * sizeof(unsigned int) );
+            std::memset( &_imp->data.front(), 0, _imp->data.size() * sizeof(unsigned int) );
 #else
             for (std::size_t i = 0; i < _imp->data.size(); ++i) {
                 _imp->data[i] = qRgba(0, 0, 0, 255);

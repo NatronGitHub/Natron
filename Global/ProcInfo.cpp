@@ -21,6 +21,7 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <cstring> // for std::memcpy, std::memset, std::strcmp
 
 #include <QDir>
 #include <QStringList>
@@ -393,7 +394,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     if (readlink(procFile.c_str(), buf, bufSize) != -1) {
         //the file in /proc/ exists for the given PID
         //check that the path is the same than the given file path
-        if (strcmp(buf, processAbsoluteFilePath) != 0) {
+        if (std::strcmp(buf, processAbsoluteFilePath) != 0) {
             return false;
         }
     } else {
@@ -434,7 +435,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
         //Process exist and is running, now check that it's actual path is the given one
         char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
         if ( proc_pidpath ( pid, pathbuf, (sizeof(pathbuf) > 0) ) ) {
-            return !strcmp(pathbuf, processAbsoluteFilePath);
+            return !std::strcmp(pathbuf, processAbsoluteFilePath);
         }
 
         if ( (process.kp_proc.p_stat != SRUN) && (process.kp_proc.p_stat != SIDL) ) {

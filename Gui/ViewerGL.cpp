@@ -27,6 +27,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
+#include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
 
 #include "Global/Macros.h"
@@ -1327,7 +1328,7 @@ ViewerGL::isExtensionSupported(const char *extension)
     const GLubyte *extensions = NULL;
     const GLubyte *start;
     GLubyte *where, *terminator;
-    where = (GLubyte *) strchr(extension, ' ');
+    where = (GLubyte *) std::strchr(extension, ' ');
     if ( where || (*extension == '\0') ) {
         return 0;
     }
@@ -1535,6 +1536,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     }
     assert(textureIndex == 0 || textureIndex == 1);
 
+<<<<<<< HEAD
     GLTexturePtr tex;
     TextureRect textureRectangle;
     if (isPartialRect) {
@@ -1550,6 +1552,41 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         textureRectangle.par = region.par;
         if (isFirstTile) {
             tex->ensureTextureHasSize(textureRectangle, dataType);
+=======
+    if (updateOnlyRoi) {
+        //Make sure the texture is allocated on the full portion
+        Texture::DataTypeEnum type = Texture::eDataTypeNone;
+        switch (bd) {
+        case eImageBitDepthByte: {
+            type = Texture::eDataTypeByte;
+            break;
+        }
+        case eImageBitDepthFloat: {
+            type = Texture::eDataTypeFloat;
+            //do 32bit fp textures either way, don't bother with half float. We might support it one day.
+            break;
+        }
+        default:
+            throw std::logic_error("ViewerGL::transferBufferFromRAMtoGPU(): unknown texture type");
+        }
+        if ( _imp->displayTextures[textureIndex]->mustAllocTexture(region) ) {
+            ///Initialize with black and transparant
+            std::size_t bytesToInit = region.w * region.h * 4;
+            if (depth == eImageBitDepthFloat) {
+                bytesToInit *= sizeof(float);
+            }
+            glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
+            glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesToInit, NULL, GL_DYNAMIC_DRAW_ARB);
+            GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+            glCheckError();
+            assert(ret);
+            std::memset(ret, 0, bytesToInit);
+            glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+            glCheckError();
+            _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, type, roi, false);
+            glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
+            glCheckError();
+>>>>>>> RB-2.0
         }
     }
 
@@ -1558,8 +1595,13 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError();
     assert(ret);
+<<<<<<< HEAD
     assert(ramBuffer);
     memcpy(ret, (void*)ramBuffer, bytesCount);
+=======
+
+    std::memcpy(ret, (void*)ramBuffer, bytesCount);
+>>>>>>> RB-2.0
 
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();

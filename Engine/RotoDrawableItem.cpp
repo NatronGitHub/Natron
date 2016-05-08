@@ -29,6 +29,7 @@
 #include <locale>
 #include <limits>
 #include <cassert>
+#include <cstring> // for std::memcpy
 #include <stdexcept>
 
 #include <QLineF>
@@ -873,7 +874,7 @@ RotoDrawableItem::clone(const RotoItem* other)
     }
     {
         QMutexLocker l(&itemMutex);
-        memcpy(_imp->overlayColor, otherDrawable->_imp->overlayColor, sizeof(double) * 4);
+        std::memcpy(_imp->overlayColor, otherDrawable->_imp->overlayColor, sizeof(double) * 4);
     }
     RotoItem::clone(other);
 }
@@ -907,7 +908,7 @@ RotoDrawableItem::save(RotoItemSerialization *obj) const
     }
     {
         QMutexLocker l(&itemMutex);
-        memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
+        std::memcpy(s->_overlayColor, _imp->overlayColor, sizeof(double) * 4);
     }
     RotoItem::save(obj);
 }
@@ -931,7 +932,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
     }
     {
         QMutexLocker l(&itemMutex);
-        memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
+        std::memcpy(_imp->overlayColor, s._overlayColor, sizeof(double) * 4);
     }
 
     RotoStrokeType type;
@@ -1157,7 +1158,7 @@ RotoDrawableItem::getOverlayColor(double* color) const
 {
     QMutexLocker l(&itemMutex);
 
-    memcpy(color, _imp->overlayColor, sizeof(double) * 4);
+    std::memcpy(color, _imp->overlayColor, sizeof(double) * 4);
 }
 
 void
@@ -1167,7 +1168,7 @@ RotoDrawableItem::setOverlayColor(const double *color)
     assert( QThread::currentThread() == qApp->thread() );
     {
         QMutexLocker l(&itemMutex);
-        memcpy(_imp->overlayColor, color, sizeof(double) * 4);
+        std::memcpy(_imp->overlayColor, color, sizeof(double) * 4);
     }
     Q_EMIT overlayColorChanged();
 }

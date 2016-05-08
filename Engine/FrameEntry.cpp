@@ -25,6 +25,7 @@
 #include "FrameEntry.h"
 
 #include <cassert>
+#include <cstring> // for std::memcpy, std::memset
 #include <stdexcept>
 
 #include "Engine/RectI.h"
@@ -90,12 +91,12 @@ FrameEntry::copy(const FrameEntry& other)
     //Fill with black and transparant because src might be smaller
     bool filledZero = false;
     if ( !srcBounds.contains(dstBounds) ) {
-        memset(dstPixels, 0, dstRowSize * dstBounds.h);
+        std::memset(dstPixels, 0, dstRowSize * dstBounds.h);
         filledZero = true;
     }
     if ( other.getKey().getBitDepth() != _key.getBitDepth() ) {
         if (!filledZero) {
-            memset(dstPixels, 0, dstRowSize * dstBounds.h);
+            std::memset(dstPixels, 0, dstRowSize * dstBounds.h);
         }
 
         return;
@@ -121,7 +122,7 @@ FrameEntry::copy(const FrameEntry& other)
     for (int y = roi.y1; y < roi.y2; ++y,
          srcPixels += srcRowSize,
          dstPixels += dstRowSize) {
-        memcpy(dstPixels, srcPixels, roiRowSize);
+        std::memcpy(dstPixels, srcPixels, roiRowSize);
     }
 } // FrameEntry::copy
 

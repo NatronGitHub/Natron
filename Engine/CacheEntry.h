@@ -30,6 +30,7 @@
 #include <iostream>
 #include <cassert>
 #include <cstdio> // for std::remove
+#include <cstring> // for std::memcpy
 #include <stdexcept>
 #include <vector>
 #include <fstream>
@@ -233,7 +234,7 @@ public:
                 _buffer.resize( other._backingFile->size() / sizeof(DataType) );
                 const char* src = other._backingFile->data();
                 char* dst = (char*)_buffer.getData();
-                memcpy( dst, src, other._backingFile->size() );
+                std::memcpy( dst, src, other._backingFile->size() );
             }
         } else if (_storageMode == eStorageModeDisk) {
             if (other._storageMode == eStorageModeDisk) {
@@ -245,7 +246,7 @@ public:
                 assert( _backingFile->data() );
                 const char* src = (const char*)other._buffer.getData();
                 char* dst = (char*)_backingFile->data();
-                memcpy( dst, src, other._buffer.size() * sizeof(DataType) );
+                std::memcpy( dst, src, other._buffer.size() * sizeof(DataType) );
             }
         }
     }

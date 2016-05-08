@@ -26,6 +26,7 @@
 
 #include <algorithm> // min, max
 #include <cassert>
+#include <cstring> // for std::memcpy, std::memset
 #include <stdexcept>
 
 #include <QDebug>
@@ -531,7 +532,7 @@ Bitmap::markForRendered(const RectI & roi)
     int roiw = roi.width();
 
     for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        memset( buf, 1, roiw);
+        std::memset( buf, 1, roiw);
     }
 }
 
@@ -544,7 +545,7 @@ Bitmap::markForRendering(const RectI & roi)
     int roiw = roi.width();
 
     for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        memset( buf, PIXEL_UNAVAILABLE, roiw );
+        std::memset( buf, PIXEL_UNAVAILABLE, roiw );
     }
 }
 
@@ -558,7 +559,7 @@ Bitmap::clear(const RectI& roi)
     int roiw = roi.width();
 
     for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        memset( buf, 0, roiw );
+        std::memset( buf, 0, roiw );
     }
 }
 
@@ -895,7 +896,7 @@ Image::pasteFromForDepth(const Image & srcImg,
          ++y,
          src += srcRowElements,
          dst += dstRowElements) {
-        memcpy(dst, src, roi.width() * sizeof(PIX) * _nbComponents);
+        std::memcpy(dst, src, roi.width() * sizeof(PIX) * _nbComponents);
     }
 } // Image::pasteFromForDepth
 
@@ -981,11 +982,11 @@ Image::resizeInternal(const Image* srcImg,
             assert(pix);
             double a = aRect.area();
             std::size_t memsize = a * pixelSize;
-            memset(pix, 0, memsize);
+            std::memset(pix, 0, memsize);
             if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
                 char* bm = wacc.bitmapAt(aRect.x1, aRect.y1);
                 assert(bm);
-                memset(bm, 1, a);
+                std::memset(bm, 1, a);
             }
         }
         if ( !cRect.isNull() ) {
@@ -993,11 +994,11 @@ Image::resizeInternal(const Image* srcImg,
             assert(pix);
             double a = cRect.area();
             std::size_t memsize = a * pixelSize;
-            memset(pix, 0, memsize);
+            std::memset(pix, 0, memsize);
             if ( setBitmapTo1 && (*outputImage)->usesBitMap() ) {
                 char* bm = (char*)wacc.bitmapAt(cRect.x1, cRect.y1);
                 assert(bm);
-                memset(bm, 1, a);
+                std::memset(bm, 1, a);
             }
         }
         if ( !bRect.isNull() ) {
@@ -1009,9 +1010,9 @@ Image::resizeInternal(const Image* srcImg,
             std::size_t rectRowSize = bw * pixelSize;
             char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(bRect.x1, bRect.y1) : 0;
             for (int y = bRect.y1; y < bRect.y2; ++y, pix += rowsize) {
-                memset(pix, 0, rectRowSize);
+                std::memset(pix, 0, rectRowSize);
                 if (bm) {
-                    memset(bm, 1, bw);
+                    std::memset(bm, 1, bw);
                     bm += mw;
                 }
             }
@@ -1025,9 +1026,9 @@ Image::resizeInternal(const Image* srcImg,
             std::size_t rectRowSize = dw * pixelSize;
             char* bm = ( setBitmapTo1 && (*outputImage)->usesBitMap() ) ? wacc.bitmapAt(dRect.x1, dRect.y1) : 0;
             for (int y = dRect.y1; y < dRect.y2; ++y, pix += rowsize) {
-                memset(pix, 0, rectRowSize);
+                std::memset(pix, 0, rectRowSize);
                 if (bm) {
-                    memset(bm, 1, dw);
+                    std::memset(bm, 1, dw);
                     bm += mw;
                 }
             }
@@ -1255,7 +1256,7 @@ Image::fillZero(const RectI& roi)
     char* dstPixels = (char*)pixelAt(intersection.x1, intersection.y1);
     assert(dstPixels);
     for (int y = intersection.y1; y < intersection.y2; ++y, dstPixels += rowSize) {
-        memset(dstPixels, 0, roiMemSize);
+        std::memset(dstPixels, 0, roiMemSize);
     }
 }
 
@@ -1285,7 +1286,7 @@ Image::fillBoundsZero()
 
     std::size_t roiMemSize = rowSize * _bounds.width() * _bounds.height();
     char* dstPixels = (char*)pixelAt(_bounds.x1, _bounds.y1);
-    memset(dstPixels, 0, roiMemSize);
+    std::memset(dstPixels, 0, roiMemSize);
 }
 
 unsigned char*
