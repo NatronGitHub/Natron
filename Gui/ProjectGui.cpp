@@ -483,6 +483,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         assert(bd);
         if (bd) {
             bd->setVisibleSettingsPanel(false);
+            bd->setPos(x, y);
             bd->resize(w, h);
             KnobString* iStr = dynamic_cast<KnobString*>( labelSerialization.get() );
             assert(iStr);
