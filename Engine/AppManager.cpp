@@ -531,18 +531,19 @@ AppManager::loadInternal(const CLArgs& cl)
 #endif
 
 
-#ifdef __NATRON_UNIX__
+# ifdef __NATRON_UNIX__
     if (mustSetSignalsHandlers) {
         setShutDownSignal(SIGINT);   // shut down on ctrl-c
         setShutDownSignal(SIGTERM);   // shut down on killall
-#if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
+#     if defined(__NATRON_LINUX__) && !defined(__FreeBSD__)
         //Catch SIGSEGV only when google-breakpad is not active
         setSigSegvSignal();
-#endif
+#     endif
     }
-#endif
+# else
+    Q_UNUSED(mustSetSignalsHandlers);
+# endif
 
-    (void)mustSetSignalsHandlers;
 
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
@@ -1213,7 +1214,7 @@ findAndRunScriptFile(const QString& path,
                 if (outCatcher) {
                     outObj = PyObject_GetAttrString(outCatcher, "value"); //get the stdout from our catchOut object, new ref
                     assert(outObj);
-                    output = Python::PyStringToStdString(outObj);
+                    output = NATRON_PYTHON_NAMESPACE::PyStringToStdString(outObj);
                     PyObject* unicode = PyUnicode_FromString("");
                     PyObject_SetAttrString(outCatcher, "value", unicode);
                     Py_DECREF(outObj);

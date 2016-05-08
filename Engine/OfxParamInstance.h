@@ -156,7 +156,7 @@ public:
             return isType;
         }
 #else
-        (void)scriptName;
+        Q_UNUSED(scriptName);
 #endif
         boost::shared_ptr<TYPE> ret = AppManager::createKnob<TYPE>(holder.get(), getParamLabel(param), dimension);
         ret->setName(scriptName);

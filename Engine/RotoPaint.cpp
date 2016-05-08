@@ -195,7 +195,9 @@ RotoPaint::initializeKnobs()
     std::string channelNames[4] = {"doRed", "doGreen", "doBlue", "doAlpha"};
     std::string channelLabels[4] = {"R", "G", "B", "A"};
     bool defaultValues[4];
-    (void)isHostChannelSelectorSupported(&defaultValues[0], &defaultValues[1], &defaultValues[2], &defaultValues[3]);
+    bool channelSelectorSupported = isHostChannelSelectorSupported(&defaultValues[0], &defaultValues[1], &defaultValues[2], &defaultValues[3]);
+    Q_UNUSED(channelSelectorSupported);
+
     for (int i = 0; i < 4; ++i) {
         boost::shared_ptr<KnobBool> enabled =  AppManager::createKnob<KnobBool>(this, channelLabels[i], 1, false);
         enabled->setName(channelNames[i]);

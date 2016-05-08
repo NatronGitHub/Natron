@@ -1163,7 +1163,8 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
         outArgs->mustComputeRoDAndLookupCache = false;
 
-        (void)ifInfiniteclipRectToProjectDefault(&rod);
+        bool isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
+        Q_UNUSED(isRodProjectFormat);
 
         // Ok we go the RoD, we can actually compute the RoI and look-up the cache
         ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, viewerHash, useTextureCache, lookup == 1, mipMapLevel, stats, outArgs);
@@ -2055,6 +2056,7 @@ scaleToTexture8bits_generic(const RectI& roi,
     const RectI srcImgBounds = args.inputImage->getBounds();
 
     assert(tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2);
+    Q_UNUSED(roi);
     assert(tile.rect.x2 > tile.rect.x1);
 
     U32* dst_pixels = tileBuffer; // output + (roi.y1 - args.texRect.y1) * args.texRect.w + (roi.x1 - args.texRect.x1);

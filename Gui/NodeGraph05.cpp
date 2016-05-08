@@ -194,7 +194,8 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
 
             int selectedInput = selectedNodeInternal->getPreferredInputForConnection();
             if (selectedInput != -1) {
-                (void)proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal, true);
+                bool ok = proj->connectNodes(selectedInput, createdNodeInternal, selectedNodeInternal, true);
+                Q_UNUSED(ok);
             }
         } else {
             //ViewerInstance* isSelectedViewer = selectedNodeInternal->isEffectViewer();
@@ -215,7 +216,8 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
 
             int index = selectedNodeInternal->getPreferredInputForConnection();
             if (index != -1) {
-                (void)proj->connectNodes(index, createdNodeInternal, selectedNodeInternal, true);
+                bool ok = proj->connectNodes(index, createdNodeInternal, selectedNodeInternal, true);
+                Q_UNUSED(ok);
             }
             //} // if (isSelectedViewer) {*/
         } // if (nbConnectedInput == 0) {
@@ -302,7 +304,8 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
             //Don't pop a dot, it will most likely annoy the user, just fallback on behavior 0
 
             int index = createdNodeInternal->getPreferredInputForConnection();
-            (void)proj->connectNodes(index, selectedNodeInternal, createdNodeInternal, true);
+            bool ok = proj->connectNodes(index, selectedNodeInternal, createdNodeInternal, true);
+            Q_UNUSED(ok);
         }
     }
     position = node->mapFromScene(position);

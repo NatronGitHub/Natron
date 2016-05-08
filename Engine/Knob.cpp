@@ -2815,7 +2815,8 @@ KnobHelper::setName(const std::string & name,
             newPotentialQualifiedName += finalName;
 
             bool isAttrDefined = false;
-            (void)NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+            PyObject* obj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+            Q_UNUSED(obj);
             if (isAttrDefined) {
                 std::stringstream ss;
                 ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";

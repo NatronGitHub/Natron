@@ -183,8 +183,8 @@ Gui::reloadProject()
         return;
     }
 
-    AppInstance* app = openProjectInternal(projectPath.toStdString(), false);
-    Q_UNUSED(app);
+    AppInstance* appInstance = openProjectInternal(projectPath.toStdString(), false);
+    Q_UNUSED(appInstance);
 }
 
 void

@@ -677,7 +677,8 @@ SpinBox::focusOutEvent(QFocusEvent* e)
         }
     } else {
         bool ok;
-        (void)str.toDouble(&ok);
+        double v = str.toDouble(&ok);
+        Q_UNUSED(v);
         if (!ok) {
             QLineEdit::setText(_imp->valueWhenEnteringFocus);
         }

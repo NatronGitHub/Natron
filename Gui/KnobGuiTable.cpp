@@ -724,7 +724,7 @@ KnobGuiLayers::tableChanged(int row,
     if ( row < (int)table.size() ) {
         std::list<std::vector<std::string> >::iterator it = table.begin();
         std::advance(it, row);
-        std::string copy = Python::makeNameScriptFriendlyWithDots( (*it)[0] );
+        std::string copy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots( (*it)[0] );
         if (copy != (*it)[0]) {
             (*it)[0] = copy;
             *newEncodedValue = knob->encodeToKnobTableFormat(table);

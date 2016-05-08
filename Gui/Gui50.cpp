@@ -428,7 +428,7 @@ Gui::keyPressEvent(QKeyEvent* e)
                 handleOpenFilesFromUrls( urls, QCursor::pos() );
             } else {
                 std::string error, output;
-                if ( !Python::interpretPythonScript(str.toStdString(), &error, &output) ) {
+                if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(str.toStdString(), &error, &output) ) {
                     _imp->_scriptEditor->appendToScriptEditor( QString::fromUtf8( error.c_str() ) );
                     ensureScriptEditorVisible();
                 } else if ( !output.empty() ) {
@@ -1132,8 +1132,8 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
-            AppInstance* app = openProject( content.begin()->second.absoluteFileName() );
-            Q_UNUSED(app);
+            AppInstance* appInstance = openProject( content.begin()->second.absoluteFileName() );
+            Q_UNUSED(appInstance);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );

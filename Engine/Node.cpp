@@ -2836,7 +2836,8 @@ Node::setNameInternal(const std::string& name,
     if ( !newName.empty() ) {
         bool isAttrDefined = false;
         std::string newPotentialQualifiedName = getApp()->getAppIDString() + "." + getFullyQualifiedNameInternal(newName);
-        (void)NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+        PyObject* obj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
+        Q_UNUSED(obj);
         if (isAttrDefined) {
             std::stringstream ss;
             ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
@@ -5936,7 +5937,8 @@ public:
     {
         _imp->setComputingPreview(false);
 
-        (void)_imp->checkForExitPreview();
+        bool mustQuitPreview = _imp->checkForExitPreview();
+        Q_UNUSED(mustQuitPreview);
     }
 };
 
@@ -9528,7 +9530,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     QString appID = QString::fromUtf8( getApp()->getAppIDString().c_str() );
     std::string nodeFullName = appID.toStdString() + "." + nodeName;
     bool alreadyDefined = false;
-    PyObject* nodeObj = Python::getAttrRecursive(nodeFullName, appPTR->getMainModule(), &alreadyDefined);
+    PyObject* nodeObj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(nodeFullName, appPTR->getMainModule(), &alreadyDefined);
     assert(nodeObj);
     Q_UNUSED(nodeObj);
     if (alreadyDefined) {
