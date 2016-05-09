@@ -72,6 +72,11 @@ public:
         return _time;
     }
 
+    ViewIdx getView() const
+    {
+        return ViewIdx(_view);
+    }
+    
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
 };

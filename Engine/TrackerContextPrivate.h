@@ -50,14 +50,46 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TrackMarker.h"
+#include "Engine/TrackerFrameAccessor.h"
+
 
 
 #define kTrackBaseName "track"
+
+
+#ifdef DEBUG
+// Enable usage of markers that track using TrackerPM internally
+#define NATRON_TRACKER_ENABLE_TRACKER_PM
+#endif
+
 #define TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE 8
 
 /// Parameters definitions
 
 //////// Global to all tracks
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+
+#define kTrackerParamUsePatternMatching "usePatternMatching"
+#define kTrackerParamUsePatternMatchingLabel "Use Pattern Matching"
+#define kTrackerParamUsePatternMatchingHint "When enabled, the tracker will internally make use of the TrackerPM OpenFX plug-in to track the marker instead of LibMV. TrackerPM is using a patter-matching method. " \
+"Note that this is only applied to markers created after changing this parameter. Markers that existed prior to any change will continue using the method they were using when created"
+
+#define kTrackerParamPatternMatchingScoreType "pmScoreType"
+#define kTrackerParamPatternMatchingScoreTypeLabel "Score Type"
+#define kTrackerParamPatternMatchingScoreTypeHint "Correlation score computation method"
+
+#define kTrackerParamPatternMatchingScoreOptionSSD "SSD"
+#define kTrackerParamPatternMatchingScoreOptionSSDHint "Sum of Squared Differences"
+#define kTrackerParamPatternMatchingScoreOptionSAD "SAD"
+#define kTrackerParamPatternMatchingScoreOptionSADHint "Sum of Absolute Differences, more robust to occlusions"
+#define kTrackerParamPatternMatchingScoreOptionNCC "NCC"
+#define kTrackerParamPatternMatchingScoreOptionNCCHint "Normalized Cross-Correlation"
+#define kTrackerParamPatternMatchingScoreOptionZNCC "ZNCC"
+#define kTrackerParamPatternMatchingScoreOptionZNCCHint "Zero-mean Normalized Cross-Correlation, less sensitive to illumination changes"
+
+#endif // NATRON_TRACKER_ENABLE_TRACKER_PM
+
+
 #define kTrackerParamTrackRed "trackRed"
 #define kTrackerParamTrackRedLabel "Track Red"
 #define kTrackerParamTrackRedHint "Enable tracking on the red channel"
@@ -263,137 +295,6 @@ struct TrackMarkerAndOptions
 };
 
 
-class TrackArgsLibMV
-{
-    int _start, _end;
-    int _step;
-    boost::shared_ptr<TimeLine> _timeline;
-    ViewerInstance* _viewer;
-    boost::shared_ptr<mv::AutoTrack> _libmvAutotrack;
-    boost::shared_ptr<TrackerFrameAccessor> _fa;
-    std::vector<boost::shared_ptr<TrackMarkerAndOptions> > _tracks;
-
-    //Store the format size because LibMV internally has a top-down Y axis
-    double _formatWidth, _formatHeight;
-    mutable QMutex _autoTrackMutex;
-
-public:
-
-    TrackArgsLibMV()
-        : _start(0)
-        , _end(0)
-        , _step(1)
-        , _timeline()
-        , _viewer(0)
-        , _libmvAutotrack()
-        , _fa()
-        , _tracks()
-        , _formatWidth(0)
-        , _formatHeight(0)
-    {
-    }
-
-    TrackArgsLibMV(int start,
-                   int end,
-                   int step,
-                   const boost::shared_ptr<TimeLine>& timeline,
-                   ViewerInstance* viewer,
-                   const boost::shared_ptr<mv::AutoTrack>& autoTrack,
-                   const boost::shared_ptr<TrackerFrameAccessor>& fa,
-                   const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
-                   double formatWidth,
-                   double formatHeight)
-        : _start(start)
-        , _end(end)
-        , _step(step)
-        , _timeline(timeline)
-        , _viewer(viewer)
-        , _libmvAutotrack(autoTrack)
-        , _fa(fa)
-        , _tracks(tracks)
-        , _formatWidth(formatWidth)
-        , _formatHeight(formatHeight)
-    {
-    }
-
-    TrackArgsLibMV(const TrackArgsLibMV& other)
-    {
-        *this = other;
-    }
-
-    void operator=(const TrackArgsLibMV& other)
-    {
-        _start = other._start;
-        _end = other._end;
-        _step = other._step;
-        _timeline = other._timeline;
-        _viewer = other._viewer;
-        _libmvAutotrack = other._libmvAutotrack;
-        _fa = other._fa;
-        _tracks = other._tracks;
-        _formatWidth = other._formatWidth;
-        _formatHeight = other._formatHeight;
-    }
-
-    double getFormatHeight() const
-    {
-        return _formatHeight;
-    }
-
-    double getFormatWidth() const
-    {
-        return _formatWidth;
-    }
-
-    QMutex* getAutoTrackMutex() const
-    {
-        return &_autoTrackMutex;
-    }
-
-    int getStart() const
-    {
-        return _start;
-    }
-
-    int getEnd() const
-    {
-        return _end;
-    }
-
-    int getStep() const
-    {
-        return _step;
-    }
-
-    boost::shared_ptr<TimeLine> getTimeLine() const
-    {
-        return _timeline;
-    }
-
-    ViewerInstance* getViewer() const
-    {
-        return _viewer;
-    }
-
-    int getNumTracks() const
-    {
-        return (int)_tracks.size();
-    }
-
-    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& getTracks() const
-    {
-        return _tracks;
-    }
-
-    boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const
-    {
-        return _libmvAutotrack;
-    }
-
-    void getEnabledChannels(bool* r, bool* g, bool* b) const;
-
-    void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
-};
 
 
 class TrackerContextPrivate
@@ -407,6 +308,12 @@ public:
     TrackerContext * _publicInterface;
     boost::weak_ptr<Node> node;
     std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
+    
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    boost::weak_ptr<KnobBool> usePatternMatching;
+    boost::weak_ptr<KnobChoice> patternMatchingScore;
+#endif
+    
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
@@ -459,7 +366,7 @@ public:
     int beginSelectionCounter;
     int selectionRecursion;
 
-    TrackScheduler<TrackArgsLibMV> scheduler;
+    TrackScheduler scheduler;
 
 
     struct TransformData
@@ -568,7 +475,9 @@ public:
                                            int formatHeight,
                                            const libmv::TrackRegionResult* result,
                                            const TrackMarkerPtr& natronMarker);
-    static bool trackStepLibMV(int trackIndex, const TrackArgsLibMV& args, int time);
+    
+    static bool trackStepLibMV(int trackIndex, const TrackArgs& args, int time);
+    static bool trackStepTrackerPM(TrackMarkerPM* tracker, const TrackArgs& args, int time);
 
 
     /**

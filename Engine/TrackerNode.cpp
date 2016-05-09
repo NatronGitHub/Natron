@@ -119,7 +119,7 @@ TrackerNode::onInputChanged(int inputNb)
 {
     boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
 
-    ctx->s_onNodeInputChanged(inputNb);
+    ctx->inputChanged(inputNb);
 }
 
 NATRON_NAMESPACE_EXIT;

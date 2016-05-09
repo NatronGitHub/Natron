@@ -793,7 +793,9 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             
             bool sameComponents = (mapImageToClipPref && (*it)->getComponentsString() == thisClipComponents) ||
             (!mapImageToClipPref && (*it)->getComponentsString() == *ofxPlane);
-            if (sameComponents && internalImage->getMipMapLevel() == mipMapLevel) {
+            if (sameComponents && internalImage->getMipMapLevel() == mipMapLevel &&
+                time == internalImage->getTime() &&
+                view == internalImage->getKey().getView()) {
                 (*it)->addReference();
                 return *it;
             }

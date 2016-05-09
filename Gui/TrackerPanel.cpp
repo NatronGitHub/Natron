@@ -1119,7 +1119,6 @@ TrackerPanelPrivate::markersToSelection(const std::list<TrackMarkerPtr >& marker
     for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {
         int row = _publicInterface->getMarkerRow(*it);
         if (row == -1) {
-            qDebug() << "Attempt to select invalid marker" << (*it)->getScriptName_mt_safe().c_str();
             continue;
         }
         QModelIndex left = model->index(row, 0);

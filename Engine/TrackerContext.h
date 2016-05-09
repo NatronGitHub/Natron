@@ -48,98 +48,13 @@
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
-NATRON_NAMESPACE_ENTER;
-
-
-class TrackArgsV1
+namespace mv
 {
-    int _start, _end;
-    int _step;
-    boost::shared_ptr<TimeLine> _timeline;
-    ViewerInstance* _viewer;
-    std::vector<KnobButton*> _buttonInstances;
+    class AutoTrack;
+}
 
-public:
 
-    TrackArgsV1()
-        : _start(0)
-        , _end(0)
-        , _step(1)
-        , _timeline()
-        , _viewer(0)
-        , _buttonInstances()
-    {
-    }
-
-    TrackArgsV1(const TrackArgsV1& other)
-    {
-        *this = other;
-    }
-
-    TrackArgsV1(int start,
-                int end,
-                int step,
-                const boost::shared_ptr<TimeLine>& timeline,
-                ViewerInstance* viewer,
-                const std::vector<KnobButton*>& instances)
-        : _start(start)
-        , _end(end)
-        , _step(step)
-        , _timeline(timeline)
-        , _viewer(viewer)
-        , _buttonInstances(instances)
-    {
-    }
-
-    ~TrackArgsV1() {}
-
-    void operator=(const TrackArgsV1& other)
-    {
-        _start = other._start;
-        _end = other._end;
-        _step = other._step;
-        _timeline = other._timeline;
-        _viewer = other._viewer;
-        _buttonInstances = other._buttonInstances;
-    }
-
-    int getStart() const
-    {
-        return _start;
-    }
-
-    int getEnd() const
-    {
-        return _end;
-    }
-
-    int getStep() const
-    {
-        return _step;
-    }
-
-    boost::shared_ptr<TimeLine> getTimeLine() const
-    {
-        return _timeline;
-    }
-
-    ViewerInstance* getViewer() const
-    {
-        return _viewer;
-    }
-
-    const std::vector<KnobButton*>& getInstances() const
-    {
-        return _buttonInstances;
-    }
-
-    int getNumTracks() const
-    {
-        return (int)_buttonInstances.size();
-    }
-
-    void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
-};
+NATRON_NAMESPACE_ENTER;
 
 class TrackerParamsProvider
 {
@@ -215,6 +130,10 @@ public:
 
 
     boost::shared_ptr<Node> getNode() const;
+    
+    boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
+    
+    bool isTrackerPMEnabled() const;
 
     TrackMarkerPtr createMarker();
 
@@ -334,6 +253,8 @@ public:
 
 
     void onKnobsLoaded();
+    
+    void inputChanged(int inputNb);
 
     void knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
@@ -341,7 +262,6 @@ public:
                      double time,
                      bool originatedFromMainThread);
 
-    static bool trackStepV1(int trackIndex, const TrackArgsV1& args, int time);
 
     void declarePythonFields();
 
@@ -517,22 +437,66 @@ Q_SIGNALS:
     void renderCurrentFrameForViewer(ViewerInstance* viewer);
 };
 
+struct TrackArgsPrivate;
+class TrackArgs
+{
+
+public:
+    
+    TrackArgs();
+    
+    TrackArgs(int start,
+              int end,
+              int step,
+              const boost::shared_ptr<TimeLine>& timeline,
+              ViewerInstance* viewer,
+              const boost::shared_ptr<mv::AutoTrack>& autoTrack,
+              const boost::shared_ptr<TrackerFrameAccessor>& fa,
+              const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
+              double formatWidth,
+              double formatHeight);
+    
+    TrackArgs(const TrackArgs& other);
+    void operator=(const TrackArgs& other);
+    
+    ~TrackArgs();
+    
+    double getFormatHeight() const;
+    double getFormatWidth() const;
+    
+    QMutex* getAutoTrackMutex() const;
+    int getStart() const;
+    
+    int getEnd() const;
+    
+    int getStep() const;
+    
+    boost::shared_ptr<TimeLine> getTimeLine() const;
+    
+    ViewerInstance* getViewer() const;
+    
+    int getNumTracks() const;
+    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& getTracks() const;
+    boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const;
+    
+    void getEnabledChannels(bool* r, bool* g, bool* b) const;
+    
+    void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
+    
+private:
+    
+    boost::scoped_ptr<TrackArgsPrivate> _imp;
+};
 
 struct TrackSchedulerPrivate;
-template <class TrackArgsType>
 class TrackScheduler
     : public TrackSchedulerBase
 {
 public:
 
-    /*
-     * @brief A pointer to a function that will be called concurrently for each Track marker to track.
-     * @param index Identifies the track in args, which is supposed to hold the tracks vector.
-     * @param time The time at which to track. The reference frame is held in the args and can be different for each track
-     */
-    typedef bool (*TrackStepFunctor)(int trackIndex, const TrackArgsType& args, int time);
+  
 
-    TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node, TrackStepFunctor functor);
+    TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node);
 
     virtual ~TrackScheduler();
 
@@ -542,7 +506,7 @@ public:
      * @param start the first frame to track, if forward is true then start < end otherwise start > end
      * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
      **/
-    void track(const TrackArgsType& args);
+    void track(const TrackArgs& args);
 
     void abortTracking();
 
@@ -554,9 +518,7 @@ private:
 
     virtual void run() OVERRIDE FINAL;
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;
-    QMutex argsMutex;
-    TrackArgsType curArgs, requestedArgs;
-    TrackStepFunctor _functor;
+    
 };
 
 NATRON_NAMESPACE_EXIT;

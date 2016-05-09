@@ -9704,6 +9704,10 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
     }
 
     std::string appID = _publicInterface->getApp()->getAppIDString();
+    std::string scriptName = _publicInterface->getScriptName_mt_safe();
+    if (scriptName.empty()) {
+        return;
+    }
     std::stringstream ss;
     ss << cb << "(" << appID << "." << _publicInterface->getFullyQualifiedName() << "," << appID << ",";
     if (userEdited) {

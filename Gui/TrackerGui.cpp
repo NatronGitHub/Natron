@@ -3864,8 +3864,6 @@ TrackerGui::onContextSelectionChanged(int reason)
                 _imp->makeMarkerKeyTexture(*it2, selectionFront);
             }
 
-            //Don't update in this case, the refresh of the texture will do it for us
-            return;
         } else {
             if (selectionFront) {
                 _imp->showMarkerTexture = true;

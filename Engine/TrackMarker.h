@@ -106,8 +106,8 @@ public:
 
     TrackMarker(const boost::shared_ptr<TrackerContext>& context);
 
-    ~TrackMarker();
-
+    virtual ~TrackMarker();
+    
     void clone(const TrackMarker& other);
 
     void load(const TrackSerialization& serialization);
@@ -183,6 +183,10 @@ public:
     virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
+    
+protected:
+    
+    virtual void initializeKnobs() OVERRIDE;
 
 public Q_SLOTS:
 
@@ -216,9 +220,43 @@ Q_SIGNALS:
 
 private:
 
-    virtual void initializeKnobs() OVERRIDE FINAL {}
 
     boost::scoped_ptr<TrackMarkerPrivate> _imp;
+};
+
+
+class TrackMarkerPM : public TrackMarker
+{
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    
+    NodePtr trackerNode;
+    
+    // These are knobs that live in the trackerPM node, we control them directly
+    boost::weak_ptr<KnobButton> trackPrevButton, trackNextButton;
+    boost::weak_ptr<KnobDouble> centerKnob, offsetKnob;
+    boost::weak_ptr<KnobInt> refFrameKnob;
+    boost::weak_ptr<KnobChoice> scoreTypeKnob;
+    boost::weak_ptr<KnobDouble> correlationScoreKnob;
+    boost::weak_ptr<KnobDouble> patternBtmLeftKnob,patternTopRightKnob;
+    boost::weak_ptr<KnobDouble> searchWindowBtmLeftKnob, searchWindowTopRightKnob;
+    
+public:
+    
+    TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context);
+    
+    virtual ~TrackMarkerPM();
+    
+    bool trackMarker(bool forward, int refFrame, int trackedFrame);
+    
+public Q_SLOTS:
+    
+    void onTrackerNodeInputChanged(int inputNb);
+    
+private:
+    
+    virtual void initializeKnobs() OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -32,7 +32,6 @@
 #include "Engine/Node.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/TrackMarker.h"
-#include "Engine/TrackerFrameAccessor.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
 
@@ -100,7 +99,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     , markersToUnslave()
     , beginSelectionCounter(0)
     , selectionRecursion(0)
-    , scheduler(_publicInterface, node, &TrackerContextPrivate::trackStepLibMV)
+    , scheduler(_publicInterface, node)
 {
     EffectInstPtr effect = node->getEffectInstance();
     //needs to be blocking, otherwise the progressUpdate() call could be made before startProgress
@@ -196,6 +195,40 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1, false);
     transformPageKnob = transformPage;
 
+    
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    boost::shared_ptr<KnobBool> enablePatternMatching = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamUsePatternMatchingLabel, 1);
+    enablePatternMatching->setName(kTrackerParamUsePatternMatching);
+    enablePatternMatching->setHintToolTip(kTrackerParamUsePatternMatchingHint);
+    enablePatternMatching->setDefaultValue(false);
+    enablePatternMatching->setAnimationEnabled(false);
+    enablePatternMatching->setAddNewLine(false);
+    enablePatternMatching->setEvaluateOnChange(false);
+    settingsPage->addKnob(enablePatternMatching);
+    usePatternMatching = enablePatternMatching;
+    
+    boost::shared_ptr<KnobChoice> patternMatchingScoreKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamPatternMatchingScoreTypeLabel, 1, false);
+    patternMatchingScoreKnob->setName(kTrackerParamPatternMatchingScoreType);
+    patternMatchingScoreKnob->setHintToolTip(kTrackerParamPatternMatchingScoreTypeHint);
+    {
+        std::vector<std::string> choices, helps;
+        choices.push_back(kTrackerParamPatternMatchingScoreOptionSSD);
+        helps.push_back(kTrackerParamPatternMatchingScoreOptionSSDHint);
+        choices.push_back(kTrackerParamPatternMatchingScoreOptionSAD);
+        helps.push_back(kTrackerParamPatternMatchingScoreOptionSADHint);
+        choices.push_back(kTrackerParamPatternMatchingScoreOptionNCC);
+        helps.push_back(kTrackerParamPatternMatchingScoreOptionNCCHint);
+        choices.push_back(kTrackerParamPatternMatchingScoreOptionZNCC);
+        helps.push_back(kTrackerParamPatternMatchingScoreOptionZNCCHint);
+        patternMatchingScoreKnob->populateChoices(choices, helps);
+    }
+    patternMatchingScoreKnob->setDefaultValue(1); // SAD
+    patternMatchingScoreKnob->setAnimationEnabled(false);
+    patternMatchingScoreKnob->setEvaluateOnChange(false);
+    settingsPage->addKnob(patternMatchingScoreKnob);
+    patternMatchingScore = patternMatchingScoreKnob;
+#endif
+    
     boost::shared_ptr<KnobBool> enableTrackRedKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackRedLabel, 1, false);
     enableTrackRedKnob->setName(kTrackerParamTrackRed);
     enableTrackRedKnob->setHintToolTip(kTrackerParamTrackRedHint);
@@ -583,44 +616,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     exportButton = exportButtonKnob;
 }
 
-void
-TrackArgsLibMV::getEnabledChannels(bool* r,
-                                   bool* g,
-                                   bool* b) const
-{
-    _fa->getEnabledChannels(r, g, b);
-}
-
-void
-TrackArgsLibMV::getRedrawAreasNeeded(int time,
-                                     std::list<RectD>* canonicalRects) const
-{
-    for (std::vector<boost::shared_ptr<TrackMarkerAndOptions> >::const_iterator it = _tracks.begin(); it != _tracks.end(); ++it) {
-        boost::shared_ptr<KnobDouble> searchBtmLeft = (*it)->natronMarker->getSearchWindowBottomLeftKnob();
-        boost::shared_ptr<KnobDouble> searchTopRight = (*it)->natronMarker->getSearchWindowTopRightKnob();
-        boost::shared_ptr<KnobDouble> centerKnob = (*it)->natronMarker->getCenterKnob();
-        boost::shared_ptr<KnobDouble> offsetKnob = (*it)->natronMarker->getOffsetKnob();
-        Point offset, center, btmLeft, topRight;
-        offset.x = offsetKnob->getValueAtTime(time, 0);
-        offset.y = offsetKnob->getValueAtTime(time, 1);
-
-        center.x = centerKnob->getValueAtTime(time, 0);
-        center.y = centerKnob->getValueAtTime(time, 1);
-
-        btmLeft.x = searchBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
-        btmLeft.y = searchBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
-
-        topRight.x = searchTopRight->getValueAtTime(time, 0) + center.x + offset.x;
-        topRight.y = searchTopRight->getValueAtTime(time, 1) + center.y + offset.y;
-
-        RectD rect;
-        rect.x1 = btmLeft.x;
-        rect.y1 = btmLeft.y;
-        rect.x2 = topRight.x;
-        rect.y2 = topRight.y;
-        canonicalRects->push_back(rect);
-    }
-}
 
 /**
  * @brief Set keyframes on knobs from Marker data
@@ -907,6 +902,21 @@ TrackerContextPrivate::endLibMVOptionsForTrack(const TrackMarker& marker,
 }
 
 /*
+ * @brief This is the internal tracking function that makes use of TrackerPM to do 1 track step
+ * @param trackingIndex This is the index of the Marker we should track in the args
+ * @param args Multiple arguments global to the whole track, not just this step
+ * @param trackTime The search frame time, that is, the frame to track
+ */
+bool
+TrackerContextPrivate::trackStepTrackerPM(TrackMarkerPM* track, const TrackArgs& args, int trackTime)
+{
+
+    int frameStep = args.getStep();
+    int refTime = track->getReferenceFrame(trackTime, frameStep);
+    return track->trackMarker(frameStep > 0, refTime, trackTime);
+}
+
+/*
  * @brief This is the internal tracking function that makes use of LivMV to do 1 track step
  * @param trackingIndex This is the index of the Marker we should track in the args
  * @param args Multiple arguments global to the whole track, not just this step
@@ -914,7 +924,7 @@ TrackerContextPrivate::endLibMVOptionsForTrack(const TrackMarker& marker,
  */
 bool
 TrackerContextPrivate::trackStepLibMV(int trackIndex,
-                                      const TrackArgsLibMV& args,
+                                      const TrackArgs& args,
                                       int trackTime)
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
@@ -995,7 +1005,6 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
            }*/
     } // if (track->mvMarker.source == mv::Marker::MANUAL) {
 
-    appPTR->getAppTLS()->cleanupTLSForThread();
 
     return true;
 } // TrackerContextPrivate::trackStepLibMV
@@ -1170,7 +1179,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
        Launch tracking in the scheduler thread.
      */
-    TrackArgsLibMV args(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight);
+    TrackArgs args(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight);
     _imp->scheduler.track(args);
 } // TrackerContext::trackMarkers
 
@@ -1306,6 +1315,21 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
 
     exportLink.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
     exportButton.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
+    
+#ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+    bool usePM = usePatternMatching.lock()->getValue();
+    enableTrackRed.lock()->setSecret(usePM);
+    enableTrackGreen.lock()->setSecret(usePM);
+    enableTrackBlue.lock()->setSecret(usePM);
+    maxError.lock()->setSecret(usePM);
+    maxIterations.lock()->setSecret(usePM);
+    bruteForcePreTrack.lock()->setSecret(usePM);
+    useNormalizedIntensities.lock()->setSecret(usePM);
+    preBlurSigma.lock()->setSecret(usePM);
+    
+    patternMatchingScore.lock()->setSecret(!usePM);
+    
+#endif
 } // TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal
 
 void

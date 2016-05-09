@@ -482,7 +482,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         _imp->_gui->createNewRotoInterface( nodegui.get() );
     }
 
-    if ( ( node->isTrackerNodePlugin() || node->getEffectInstance()->isBuiltinTrackerNode() ) && !parentMultiInstance ) {
+    if (node->getEffectInstance()->isBuiltinTrackerNode()) {
         _imp->_gui->createNewTrackerInterface( nodegui.get() );
     }
 

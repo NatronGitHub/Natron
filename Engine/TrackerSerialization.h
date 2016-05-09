@@ -44,7 +44,8 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/TrackerContext.h"
 
 
-#define TRACK_SERIALIZATION_VERSION 1
+#define TRACK_SERIALIZATION_ADD_TRACKER_PM 2
+#define TRACK_SERIALIZATION_VERSION TRACK_SERIALIZATION_ADD_TRACKER_PM
 #define TRACKER_CONTEXT_SERIALIZATION_VERSION 1
 
 NATRON_NAMESPACE_ENTER;
@@ -58,11 +59,17 @@ public:
 
     TrackSerialization()
         : _enabled(true)
+        , _isPM(false)
         , _label()
         , _scriptName()
         , _knobs()
         , _userKeys()
     {
+    }
+    
+    bool usePatternMatching() const
+    {
+        return _isPM;
     }
 
 private:
@@ -72,6 +79,8 @@ private:
               const unsigned int version) const
     {
         (void)version;
+        
+        ar & boost::serialization::make_nvp("IsTrackerPM", _isPM);
         ar & boost::serialization::make_nvp("Enabled", _enabled);
         ar & boost::serialization::make_nvp("ScriptName", _scriptName);
         ar & boost::serialization::make_nvp("Label", _label);
@@ -93,6 +102,10 @@ private:
               const unsigned int version)
     {
         (void)version;
+        if (version >= TRACK_SERIALIZATION_ADD_TRACKER_PM) {
+            ar & boost::serialization::make_nvp("IsTrackerPM", _isPM);
+        }
+        
         ar & boost::serialization::make_nvp("Enabled", _enabled);
         ar & boost::serialization::make_nvp("ScriptName", _scriptName);
         ar & boost::serialization::make_nvp("Label", _label);
@@ -116,6 +129,7 @@ private:
 
 
     bool _enabled;
+    bool _isPM;
     std::string _label, _scriptName;
     std::list<boost::shared_ptr<KnobSerialization> > _knobs;
     std::list<int> _userKeys;
