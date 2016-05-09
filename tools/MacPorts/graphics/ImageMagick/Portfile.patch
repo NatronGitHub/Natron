@@ -1,26 +1,6 @@
---- Portfile.orig	2016-04-04 12:30:31.000000000 +0200
-+++ Portfile	2016-04-04 12:34:28.000000000 +0200
-@@ -7,7 +7,7 @@
- # Keep relevant lines in sync between ImageMagick and p5-perlmagick.
- 
- name                        ImageMagick
--version                     6.9.3-4
-+version                     6.9.3-5
- revision                    1
- set reasonable_version      [lindex [split ${version} -] 0]
- homepage                    http://www.imagemagick.org/
-@@ -40,8 +40,8 @@
-                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
-                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
- 
--checksums                   rmd160  8db13b61f2409d4349e6f191881a19f79c5536f8 \
--                            sha256  0d4266940d27afb617fc8b3481ffdf63dd02ca13806d581ac5cb28638725c275
-+checksums           rmd160  5a03b372443db3d498dd66ccaa4709879f6158af \
-+                    sha256  1546ae5717eaab221e0613393d78a0862e6d37869b1d1d54ccee3c62275837bf
- 
- depends_lib                 port:bzip2 \
-                             port:djvulibre \
-@@ -64,6 +64,8 @@
+--- Portfile.orig	2016-05-09 09:54:35.000000000 +0200
++++ Portfile	2016-05-09 09:54:40.000000000 +0200
+@@ -63,6 +63,8 @@
                              port:expat \
                              port:libxml2
  
@@ -29,7 +9,7 @@
  # Magick-config etc. use pkg-config
  depends_lib-append          port:pkgconfig
  
-@@ -90,11 +92,13 @@
+@@ -89,11 +91,13 @@
                              --with-dps \
                              --with-bzlib \
                              --with-djvu \
@@ -43,7 +23,7 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -112,6 +116,65 @@
+@@ -111,6 +115,65 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
@@ -109,7 +89,7 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -119,6 +182,14 @@
+@@ -118,6 +181,14 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
@@ -124,7 +104,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -153,6 +224,11 @@
+@@ -152,6 +223,11 @@
  
  default_variants            +x11
  
