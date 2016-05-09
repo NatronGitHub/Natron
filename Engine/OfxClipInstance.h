@@ -299,10 +299,7 @@ public:
     typedef boost::shared_ptr<ClipTLSData> ClipDataTLSPtr;
 
 private:
-
-
     EffectInstPtr getEffectHolder() const;
-
 
     void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel, EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
@@ -311,6 +308,8 @@ private:
                                                          const std::string* ofxPlane);
     OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
     OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
+
+private:
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 
@@ -320,8 +319,6 @@ class OfxImage
     : public OFX::Host::ImageEffect::Image
 {
 public:
-
-
     explicit OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
                       const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
                       bool isSrcImage,

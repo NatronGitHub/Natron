@@ -49,8 +49,6 @@ struct NodeCollectionPrivate;
 class NodeCollection
 {
 public:
-
-
     NodeCollection(AppInstance* app);
 
     virtual ~NodeCollection();

@@ -168,7 +168,6 @@ struct OfxHostPrivate
 
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
-
 {
     _imp->imageEffectPluginCache.reset( new OFX::Host::ImageEffect::PluginCache(*this) );
 }

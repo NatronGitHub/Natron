@@ -47,8 +47,6 @@ struct NodeMetadataPrivate;
 class NodeMetadata
 {
 public:
-
-
     NodeMetadata();
 
     NodeMetadata(const NodeMetadata& other);
