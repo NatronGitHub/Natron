@@ -30,6 +30,11 @@
 
 #include <list>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Engine/AppManager.h"
 #include "Engine/Variant.h"
 #include "Engine/EngineFwd.h"

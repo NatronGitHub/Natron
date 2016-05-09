@@ -5914,16 +5914,15 @@ Node::makePreviewImage(SequenceTime time,
         // but any exception in renderROI is probably fatal.
         std::map<ImageComponents, ImagePtr> planes;
         try {
-            boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-            renderArgs.reset( new EffectInstance::RenderRoIArgs(time,
-                                                                scale,
-                                                                mipMapLevel,
-                                                                ViewIdx(0), //< preview only renders view 0 (left)
-                                                                false,
-                                                                renderWindow,
-                                                                rod,
-                                                                requestedComps, //< preview is always rgb...
-                                                                depth, false, effect) );
+            boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time,
+                                                                                                           scale,
+                                                                                                           mipMapLevel,
+                                                                                                           ViewIdx(0), //< preview only renders view 0 (left)
+                                                                                                           false,
+                                                                                                           renderWindow,
+                                                                                                           rod,
+                                                                                                           requestedComps, //< preview is always rgb...
+                                                                                                           depth, false, effect) );
             EffectInstance::RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);
             if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
