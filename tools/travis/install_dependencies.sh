@@ -149,14 +149,14 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     brew doctor || true
     
     echo "* Install Natron dependencies"
-    echo " - pip install numpy"
-    pip install --upgrade numpy
+    #echo " - pip install numpy" # installed via brew install numpy (see below)
+    #pip install --upgrade numpy
     # brew install numpy  # Compilation errors with gfortran
     echo " - install brew packages"
     # TuttleOFX's dependencies:
     #brew install scons swig ilmbase openexr jasper little-cms2 glew freetype fontconfig ffmpeg imagemagick libcaca aces_container ctl jpeg-turbo libraw seexpr openjpeg opencolorio openimageio
     # Natron's dependencies only
-    brew install qt expat cairo glew
+    brew install qt expat cairo glew numpy
     # pyside/shiboken with python3 support take a long time to compile, see https://github.com/travis-ci/travis-ci/issues/1961
     #brew install pyside --with-python3 --without-python &
     #while true; do
