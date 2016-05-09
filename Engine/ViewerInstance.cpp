@@ -1163,6 +1163,8 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
         outArgs->mustComputeRoDAndLookupCache = false;
 
+        //assert(outArgs->params->tiles.size() > 0);
+
         bool isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
         Q_UNUSED(isRodProjectFormat);
 
@@ -1292,7 +1294,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     // Flag that we are going to render
     inArgs.isRenderingFlag.reset( new RenderingFlagSetter( getNode().get() ) );
 
-    assert( inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
+    assert( !inArgs.params->nbCachedTile || inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
 
     /*
      * There are 3 types of renders:

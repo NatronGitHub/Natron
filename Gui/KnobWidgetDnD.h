@@ -26,6 +26,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#endif
+
 #include "Gui/GuiFwd.h"
 
 #define KNOB_DND_MIME_DATA_KEY "KnobLink"

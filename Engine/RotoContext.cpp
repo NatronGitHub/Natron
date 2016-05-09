@@ -2687,9 +2687,14 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
         rotoHash = hash.value();
         assert(mergeNodeHash != rotoHash);
     }
-    boost::scoped_ptr<ImageKey> key;
-
-    key.reset( new ImageKey(this, rotoHash, /*frameVaryingOrAnimated=*/ true, time, view, /*pixelAspect=*/ 1., /*draftMode=*/ false, /*fullScaleWithDownscaleInputs=*/ false) );
+    boost::scoped_ptr<ImageKey> key( new ImageKey(this,
+                                                  rotoHash,
+                                                  /*frameVaryingOrAnimated=*/ true,
+                                                  time,
+                                                  view,
+                                                  /*pixelAspect=*/ 1.,
+                                                  /*draftMode=*/ false,
+                                                  /*fullScaleWithDownscaleInputs=*/ false) );
 
     {
         QMutexLocker k(&_imp->cacheAccessMutex);

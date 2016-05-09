@@ -2003,6 +2003,8 @@ KnobParametric::cloneExtraData(KnobI* other,
                                int dimension,
                                int otherDimension)
 {
+    assert(dimension == otherDimension);
+    Q_UNUSED(otherDimension);
     ///Mt-safe as Curve is MT-safe
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
 
@@ -2020,6 +2022,8 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
                                                 int dimension,
                                                 int otherDimension)
 {
+    assert(dimension == otherDimension);
+    Q_UNUSED(otherDimension);
     bool hasChanged = false;
     ///Mt-safe as Curve is MT-safe
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
@@ -2042,6 +2046,8 @@ KnobParametric::cloneExtraData(KnobI* other,
                                int dimension,
                                int otherDimension)
 {
+    assert(dimension == otherDimension);
+    Q_UNUSED(otherDimension);
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
 
     if (isParametric) {

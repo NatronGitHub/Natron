@@ -141,8 +141,6 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector<
     grouping.push_back( QString::fromUtf8(PLUGIN_GROUP_IMAGE) );
 
 # ifdef NATRON_ENABLE_QT_IO_NODES
-
-
     {
         QStringList pgrp = grouping;
         pgrp.push_back("Readers");

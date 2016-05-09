@@ -1207,8 +1207,6 @@ OutputSchedulerThread::stopRender()
 {
     _imp->timer->playState = ePlayStatePause;
 
-    _imp->renderTimer.reset();
-
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
     QMutexLocker k(&_imp->lastRecordedFPSMutex);
     _imp->lastRecordedFPS = _imp->timer->getActualFrameRate();
@@ -1230,7 +1228,6 @@ OutputSchedulerThread::stopRender()
     stopRenderThreads(0);
 #endif
     _imp->waitForRenderThreadsToQuit();
-
 
     /*{
         QMutexLocker l(&_imp->renderThreadsMutex);
@@ -1308,6 +1305,8 @@ OutputSchedulerThread::stopRender()
         ///We got the request, reset it back to 0
         _imp->startRequests = 0;
     }
+
+    _imp->renderTimer.reset();
 } // OutputSchedulerThread::stopRender
 
 void
@@ -1730,7 +1729,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     if (nbTotalFrames != 0) {
         percentage = (double)_imp->nFramesRendered / nbTotalFrames;
     }
-
+    assert(_imp->renderTimer);
     double timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
     double estimatedFps = (double)nbFramesRendered / timeSpentSinceStartSec;
     double timeRemaining = timeSpentSinceStartSec * (1. - percentage);
@@ -2647,18 +2646,17 @@ private:
                 }
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode().get() );
                 std::map<ImageComponents, ImagePtr> planes;
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-                renderArgs.reset( new EffectInstance::RenderRoIArgs( time, //< the time at which to render
-                                                                     scale, //< the scale at which to render
-                                                                     mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                     viewsToRender[view], //< the view to render
-                                                                     false,
-                                                                     renderWindow, //< the region of interest (in pixel coordinates)
-                                                                     rod, // < any precomputed rod ? in canonical coordinates
-                                                                     components,
-                                                                     imageDepth,
-                                                                     false,
-                                                                     activeInputToRender.get() ) );
+                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs( time, //< the time at which to render
+                                                                                                               scale, //< the scale at which to render
+                                                                                                               mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                                                               viewsToRender[view], //< the view to render
+                                                                                                               false,
+                                                                                                               renderWindow, //< the region of interest (in pixel coordinates)
+                                                                                                               rod, // < any precomputed rod ? in canonical coordinates
+                                                                                                               components,
+                                                                                                               imageDepth,
+                                                                                                               false,
+                                                                                                               activeInputToRender.get() ) );
                 EffectInstance::RenderRoIRetCode retCode;
                 retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
@@ -2758,18 +2756,17 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
 
         EffectInstance::InputImagesMap inputImages;
         inputImages[0].push_back(inputImage);
-        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-        renderArgs.reset( new EffectInstance::RenderRoIArgs(frame.time,
-                                                            scale, 0,
-                                                            it->view,
-                                                            true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
-                                                            roi,
-                                                            rod,
-                                                            components,
-                                                            imageDepth,
-                                                            false,
-                                                            effect.get(),
-                                                            inputImages) );
+        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(frame.time,
+                                                                                                       scale, 0,
+                                                                                                       it->view,
+                                                                                                       true, // for writers, always by-pass cache for the write node only @see renderRoiInternal
+                                                                                                       roi,
+                                                                                                       rod,
+                                                                                                       components,
+                                                                                                       imageDepth,
+                                                                                                       false,
+                                                                                                       effect.get(),
+                                                                                                       inputImages) );
         try {
             std::map<ImageComponents, ImagePtr> planes;
             EffectInstance::RenderRoIRetCode retCode;

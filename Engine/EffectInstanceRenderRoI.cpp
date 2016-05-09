@@ -726,23 +726,22 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             renderScaleOneUpstreamIfRenderScaleSupportDisabled = true;
         }
     }
-    boost::scoped_ptr<ImageKey> key, nonDraftKey;
-    key.reset( new ImageKey(getNode().get(),
-                            nodeHash,
-                            isFrameVaryingOrAnimated,
-                            args.time,
-                            args.view,
-                            1.,
-                            draftModeSupported && frameArgs->draftMode,
-                            renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
-    nonDraftKey.reset( new ImageKey(getNode().get(),
-                                    nodeHash,
-                                    isFrameVaryingOrAnimated,
-                                    args.time,
-                                    args.view,
-                                    1.,
-                                    false,
-                                    renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+    boost::scoped_ptr<ImageKey> key( new ImageKey(getNode().get(),
+                                                  nodeHash,
+                                                  isFrameVaryingOrAnimated,
+                                                  args.time,
+                                                  args.view,
+                                                  1.,
+                                                  draftModeSupported && frameArgs->draftMode,
+                                                  renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
+    boost::scoped_ptr<ImageKey> nonDraftKey( new ImageKey(getNode().get(),
+                                                          nodeHash,
+                                                          isFrameVaryingOrAnimated,
+                                                          args.time,
+                                                          args.view,
+                                                          1.,
+                                                          false,
+                                                          renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
 
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
 
@@ -1436,6 +1435,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 const Plugin* p = getNode()->getPlugin();
                 assert(p);
                 locker.reset( new QMutexLocker( p->getPluginLock() ) );
+            } else {
+                // no need to lock
+                Q_UNUSED(locker);
             }
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
