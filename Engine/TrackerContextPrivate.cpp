@@ -461,8 +461,18 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     robustModelKnob->setAnimationEnabled(false);
     robustModelKnob->setEvaluateOnChange(false);
     robustModelKnob->setDefaultValue(true);
+    robustModelKnob->setAddNewLine(false);
     transformPage->addKnob(robustModelKnob);
     robustModel = robustModelKnob;
+    
+    boost::shared_ptr<KnobString>  fittingErrorKnob = AppManager::createKnob<KnobString>(effect.get(), kTrackerParamFittingErrorLabel, 1);
+    fittingErrorKnob->setName(kTrackerParamFittingError);
+    fittingErrorKnob->setHintToolTip(kTrackerParamFittingErrorHint);
+    fittingErrorKnob->setAnimationEnabled(false);
+    fittingErrorKnob->setEvaluateOnChange(false);
+    fittingErrorKnob->setAsLabel();
+    transformPage->addKnob(fittingErrorKnob);
+    fittingError = fittingErrorKnob;
     
 
     boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), "", 1);
@@ -1447,7 +1457,8 @@ searchForModel(const bool dataSetIsManual,
                int h1,
                int w2,
                int h2,
-               typename MODELTYPE::Model* foundModel
+               typename MODELTYPE::Model* foundModel,
+               double *RMS = 0
 #ifdef DEBUG
                ,
                std::vector<bool>* inliers = 0
@@ -1468,15 +1479,14 @@ searchForModel(const bool dataSetIsManual,
 
     KernelType kernel(M1, w1, h1, M2, w2, h2);
     
-    double rms = 0;
     if (dataSetIsManual) {
         if (robustModel) {
             double sigmaMAD;
-            if ( !searchModelWithMEstimator(kernel, 3, foundModel, &rms, &sigmaMAD) ) {
+            if ( !searchModelWithMEstimator(kernel, 3, foundModel, RMS, &sigmaMAD) ) {
                 throw std::runtime_error("MEstimator failed to run a successful iteration");
             }
         } else {
-            if ( !searchModelLS(kernel, foundModel, &rms) ) {
+            if ( !searchModelLS(kernel, foundModel, RMS) ) {
                 throw std::runtime_error("Least-squares solver failed to find a model");
             }
         }
@@ -1487,7 +1497,7 @@ searchForModel(const bool dataSetIsManual,
 #else
                                           , 0
 #endif
-                                          , &rms);
+                                          , RMS);
         throwProsacError( ret, KernelType::MinimumSamples() );
     }
 }
@@ -1501,11 +1511,12 @@ TrackerContextPrivate::computeTranslationFromNPoints(const bool dataSetIsManual,
                                                      int h1,
                                                      int w2,
                                                      int h2,
-                                                     Point* translation)
+                                                     Point* translation,
+                                                     double *RMS)
 {
     openMVG::Vec2 model;
 
-    searchForModel<openMVG::robust::Translation2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
+    searchForModel<openMVG::robust::Translation2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
     translation->x = model(0);
     translation->y = model(1);
 }
@@ -1521,11 +1532,12 @@ TrackerContextPrivate::computeSimilarityFromNPoints(const bool dataSetIsManual,
                                                     int h2,
                                                     Point* translation,
                                                     double* rotate,
-                                                    double* scale)
+                                                    double* scale,
+                                                    double *RMS)
 {
     openMVG::Vec4 model;
 
-    searchForModel<openMVG::robust::Similarity2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
+    searchForModel<openMVG::robust::Similarity2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
     openMVG::robust::Similarity2DSolver::rtsFromVec4(model, &translation->x, &translation->y, scale, rotate);
     *rotate = Transform::toDegrees(*rotate);
 }
@@ -1539,7 +1551,8 @@ TrackerContextPrivate::computeHomographyFromNPoints(const bool dataSetIsManual,
                                                     int h1,
                                                     int w2,
                                                     int h2,
-                                                    Transform::Matrix3x3* homog)
+                                                    Transform::Matrix3x3* homog,
+                                                    double *RMS)
 {
     openMVG::Mat3 model;
 
@@ -1547,7 +1560,7 @@ TrackerContextPrivate::computeHomographyFromNPoints(const bool dataSetIsManual,
     std::vector<bool> inliers;
 #endif
 
-    searchForModel<openMVG::robust::Homography2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model
+    searchForModel<openMVG::robust::Homography2DSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS
 #ifdef DEBUG
                                                         , &inliers
 #endif
@@ -1581,11 +1594,12 @@ TrackerContextPrivate::computeFundamentalFromNPoints(const bool dataSetIsManual,
                                                      int h1,
                                                      int w2,
                                                      int h2,
-                                                     Transform::Matrix3x3* fundamental)
+                                                     Transform::Matrix3x3* fundamental,
+                                                     double *RMS)
 {
     openMVG::Mat3 model;
 
-    searchForModel<openMVG::robust::FundamentalSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model);
+    searchForModel<openMVG::robust::FundamentalSolver>(dataSetIsManual, robustModel, x1, x2, w1, h1, w2, h2, &model, RMS);
 
     *fundamental = Transform::Matrix3x3( model(0, 0), model(0, 1), model(0, 2),
                                          model(1, 0), model(1, 1), model(1, 2),
@@ -1725,6 +1739,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
         }
     }
     TrackerContextPrivate::TransformData data;
+    data.rms = 0.;
     data.time = time;
     data.valid = true;
     assert( !markers.empty() );
@@ -1758,7 +1773,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksAtTime(double refTime,
             computeTranslationFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.translation);
         } else {
             data.hasRotationAndScale = true;
-            computeSimilarityFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.translation, &data.rotation, &data.scale);
+            computeSimilarityFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.translation, &data.rotation, &data.scale, &data.rms);
         }
     } catch (...) {
         data.valid = false;
@@ -1783,6 +1798,7 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
         }
     }
     TrackerContextPrivate::CornerPinData data;
+    data.rms = 0.;
     data.time = time;
     data.valid = true;
     assert( !markers.empty() );
@@ -1820,7 +1836,7 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
     } else {
         const bool dataSetIsUserManual = true;
         try {
-            computeHomographyFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.h);
+            computeHomographyFromNPoints(dataSetIsUserManual, robustModel, x1, x2, w1, h1, w2, h2, &data.h, &data.rms);
             data.nbEnabledPoints = 4;
         } catch (...) {
             data.valid = false;
@@ -1844,6 +1860,8 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     boost::shared_ptr<KnobInt> smoothCornerPinKnob = smoothCornerPin.lock();
     int smoothJitter = smoothCornerPinKnob->getValue();
     RectD rodRef = getInputRoDAtTime(refTime);
+    
+    boost::shared_ptr<KnobString> fittingErrorKnob = fittingError.lock();
     boost::shared_ptr<KnobDouble> fromPointsKnob[4];
     boost::shared_ptr<KnobDouble> toPointsKnob[4];
     boost::shared_ptr<KnobBool> enabledPointsKnob[4];
@@ -1855,7 +1873,9 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
 
     std::list<KnobPtr> animatedKnobsChanged;
 
-
+    fittingErrorKnob->blockValueChanges();
+    animatedKnobsChanged.push_back(fittingErrorKnob);
+    
     for (int i = 0; i < 4; ++i) {
         toPointsKnob[i]->blockValueChanges();
         animatedKnobsChanged.push_back(toPointsKnob[i]);
@@ -1881,9 +1901,16 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
     // signals to create keyframes in keyframeSet
     Curve tmpToPointsCurveX[4], tmpToPointsCurveY[4];
-
+    boost::shared_ptr<KnobString> tmpFitErrorKnob(new KnobString(0, "", 1, false));
+    tmpFitErrorKnob->populate();
+    
+    QString rmsErrorPrefix = QLatin1String("Fitting Error: ");
+    QString rmsErrorSuffix = QLatin1String(" px");
     for (QList<CornerPinData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const CornerPinData& dataAtTime = *itResults;
+
+        QString rmsStr = rmsErrorPrefix + QString::number(dataAtTime.rms, 'f', 3) + rmsErrorSuffix;
+        tmpFitErrorKnob->setValueAtTime(dataAtTime.time, rmsStr.toStdString(), ViewSpec::all(), 0);
 
         if (smoothJitter > 1) {
             int halfJitter = smoothJitter / 2;
@@ -1978,7 +2005,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
             }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-
+    fittingErrorKnob->clone(tmpFitErrorKnob.get());
     for (int c = 0; c < 4; ++c) {
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 0, tmpToPointsCurveX[c]);
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 1, tmpToPointsCurveY[c]);
@@ -2086,22 +2113,33 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     boost::shared_ptr<KnobDouble> translationKnob = translate.lock();
     boost::shared_ptr<KnobDouble> scaleKnob = scale.lock();
     boost::shared_ptr<KnobDouble> rotationKnob = rotate.lock();
+    boost::shared_ptr<KnobString> fittingErrorKnob = fittingError.lock();
 
     translationKnob->blockValueChanges();
     scaleKnob->blockValueChanges();
     rotationKnob->blockValueChanges();
-
+    fittingErrorKnob->blockValueChanges();
 
     std::list<KnobPtr> animatedKnobsChanged;
     animatedKnobsChanged.push_back(translationKnob);
     animatedKnobsChanged.push_back(scaleKnob);
     animatedKnobsChanged.push_back(rotationKnob);
+    animatedKnobsChanged.push_back(fittingErrorKnob);
 
 
     Curve tmpTXCurve, tmpTYCurve, tmpRotateCurve, tmpScaleCurve;
+    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, "", 1, false));
+    tmpFitErrorKnob->populate();
+
+    QString rmsErrorPrefix = QLatin1String("Fitting Error: ");
+    QString rmsErrorSuffix = QLatin1String(" px");
 
     for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const TransformData& dataAtTime = *itResults;
+
+        QString rmsStr = rmsErrorPrefix + QString::number(dataAtTime.rms, 'f', 3) + rmsErrorSuffix;
+        tmpFitErrorKnob->setValueAtTime(dataAtTime.time, rmsStr.toStdString(), ViewSpec::all(), 0);
+        
         if (smoothTJitter > 1) {
             int halfJitter = smoothTJitter / 2;
             Point avgT = {0, 0};
@@ -2296,6 +2334,8 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
             }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
+    
+    fittingErrorKnob->clone(tmpFitErrorKnob.get());
     translationKnob->cloneCurve(ViewSpec::all(), 0, tmpTXCurve);
     translationKnob->cloneCurve(ViewSpec::all(), 1, tmpTYCurve);
     rotationKnob->cloneCurve(ViewSpec::all(), 0, tmpRotateCurve);

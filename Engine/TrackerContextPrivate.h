@@ -187,6 +187,11 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamRobustModelHint "When checked, the solver will assume that the model generated (i.e: the Transform or the CornerPin) is possible given the motion of the video and will eliminate points that do not match the model to compute the resulting parameters. " \
     "When unchecked, the solver assumes that all points that are enabled and have a keyframe are valid and fit the model: this may in some situations work better if you are trying to find a model that is just not correct for the given motion of the video."
 
+#define kTrackerParamFittingError "fittingError"
+#define kTrackerParamFittingErrorLabel "Fitting Error"
+#define kTrackerParamFittingErrorHint "This parameter indicates the error for each frame of the fitting of the model (i.e: Transform / CornerPin) to the tracks data. This value is in pixels and represents the rooted weighted sum of squared errors for each track. The error is " \
+"essentially the difference between the point position computed from the original point onto which is applied the fitted model and the original tracked point. "
+
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
 #define kTrackerParamReferenceFrameHint "When exporting tracks to a CornerPin or Transform, this will be the frame number at which the transform will be an identity."
@@ -330,6 +335,7 @@ public:
     boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
     boost::weak_ptr<KnobChoice> transformType, motionType;
     boost::weak_ptr<KnobBool> robustModel;
+    boost::weak_ptr<KnobString> fittingError;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
@@ -377,6 +383,7 @@ public:
         bool hasRotationAndScale;
         double time;
         bool valid;
+        double rms;
     };
 
     struct CornerPinData
@@ -385,6 +392,7 @@ public:
         int nbEnabledPoints;
         double time;
         bool valid;
+        double rms;
     };
 
     typedef boost::shared_ptr<QFutureWatcher<CornerPinData> > CornerPinSolverWatcher;
@@ -490,7 +498,8 @@ public:
                                               const std::vector<Point>& x1,
                                               const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
-                                              Point* translation);
+                                              Point* translation,
+                                              double *RMS = 0);
 
     /**
      * @brief Computes the translation, rotation and scale that best fit the set of correspondences x1 and x2.
@@ -504,7 +513,8 @@ public:
                                              int w1, int h1, int w2, int h2,
                                              Point* translation,
                                              double* rotate,
-                                             double* scale);
+                                             double* scale,
+                                             double *RMS = 0);
     /**
      * @brief Computes the homography that best fit the set of correspondences x1 and x2.
      * Requires at least 4 point. x1 and x2 must have the same size.
@@ -515,7 +525,8 @@ public:
                                              const std::vector<Point>& x1,
                                              const std::vector<Point>& x2,
                                              int w1, int h1, int w2, int h2,
-                                             Transform::Matrix3x3* homog);
+                                             Transform::Matrix3x3* homog,
+                                             double *RMS = 0);
 
     /**
      * @brief Computes the fundamental matrix that best fit the set of correspondences x1 and x2.
@@ -527,7 +538,8 @@ public:
                                               const std::vector<Point>& x1,
                                               const std::vector<Point>& x2,
                                               int w1, int h1, int w2, int h2,
-                                              Transform::Matrix3x3* fundamental);
+                                              Transform::Matrix3x3* fundamental,
+                                              double *RMS = 0);
 
     /**
      * @brief Extracts the values of the center point of the given markers at x1Time and x2Time.
