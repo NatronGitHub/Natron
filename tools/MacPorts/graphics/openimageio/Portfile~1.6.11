@@ -36,7 +36,7 @@ homepage         http://sites.google.com/site/openimageio/
 #checksums           rmd160  94c6e2274be01e82cfe8bc4bf11677593d33f299 \
 #                    sha256  4cf3b373e56694ce9e3896a356b68a2ed92978e76be653a5b5e45b17937faae8
 
-depends_lib      port:boost port:jpeg port:tiff port:libpng port:openexr port:glew port:ilmbase port:libraw port:giflib port:webp
+depends_lib      port:boost path:lib/libjpeg.dylib:jpeg port:tiff port:libpng port:openexr port:glew port:ilmbase port:libraw port:giflib port:webp
 
 # can't compile openimageio when another version is installed, because the include path is wrong
 conflicts_build  ${name}
