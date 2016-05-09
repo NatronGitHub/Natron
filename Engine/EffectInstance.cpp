@@ -1107,6 +1107,10 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
     assert( !projectDefault.isNull() );
 
     assert(rod);
+    if (rod->isNull()) {
+        // if the RoD is empty, set it to a "standard" empty RoD (0,0,0,0)
+        rod->clear();
+    }
     assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
     bool x1Infinite = rod->x1 <= kOfxFlagInfiniteMin;
     bool y1Infinite = rod->y1 <= kOfxFlagInfiniteMin;
@@ -2173,18 +2177,17 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         }
         assert( !comps.empty() );
         std::map<ImageComponents, ImagePtr> identityPlanes;
-        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-        renderArgs.reset( new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
-                                                            actionArgs.originalScale,
-                                                            mipMapLevel,
-                                                            view,
-                                                            false,
-                                                            downscaledRectToRender,
-                                                            RectD(),
-                                                            comps,
-                                                            outputClipPrefDepth,
-                                                            false,
-                                                            _publicInterface) );
+        boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(tls->currentRenderArgs.identityTime,
+                                                                                                       actionArgs.originalScale,
+                                                                                                       mipMapLevel,
+                                                                                                       view,
+                                                                                                       false,
+                                                                                                       downscaledRectToRender,
+                                                                                                       RectD(),
+                                                                                                       comps,
+                                                                                                       outputClipPrefDepth,
+                                                                                                       false,
+                                                                                                       _publicInterface) );
         if (!tls->currentRenderArgs.identityInput) {
             for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
                 it->second.renderMappedImage->fillZero(renderMappedRectToRender);
