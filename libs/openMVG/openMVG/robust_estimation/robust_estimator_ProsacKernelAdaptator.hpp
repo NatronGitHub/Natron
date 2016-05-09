@@ -1616,9 +1616,7 @@ namespace openMVG {
                     *RMS = 0;
                     int nSamples = weights.rows();
                     for (int i = 0; i < nSamples; ++i) {
-                        if (weights(i) > 0.) {
-                            *RMS += (errors(i) * errors(i));
-                        }
+                        *RMS += (errors(i) * errors(i)) * weights(i);
                     }
                     *RMS = std::sqrt(*RMS / nSamples);
                     

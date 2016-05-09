@@ -116,7 +116,8 @@ enum ProsacReturnCodeEnum
 template<typename Kernel>
 bool searchModel_minimalSamples(const Kernel &kernel,
                                 typename Kernel::Model* bestModel,
-                                InliersVec *bestInliers = 0)
+                                InliersVec *bestInliers = 0,
+                                double *bestRMS = 0)
 {
     assert(kernel.NumSamples() == Kernel::MinimumSamples());
     
@@ -126,8 +127,13 @@ bool searchModel_minimalSamples(const Kernel &kernel,
     std::vector<typename Kernel::Model> possibleModels;
     kernel.ComputeModelFromMinimumSamples(&possibleModels);
     for (std::size_t i = 0; i < possibleModels.size(); ++i) {
-        int model_score = kernel.ComputeInliersForModel(possibleModels[i], &isInlier);
+        
+        double rms;
+        int model_score = kernel.ComputeInliersForModel(possibleModels[i], &isInlier, bestRMS ? &rms : 0);
         if (model_score > best_score) {
+            if (bestRMS) {
+                *bestRMS = rms;
+            }
             best_score = model_score;
             *bestModel = possibleModels[i];
             bestModelFound = true;
@@ -163,7 +169,7 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
     if (N < m) {
         return eProsacReturnCodeNotEnoughPoints;
     } else if (N == m) {
-        bool ok = searchModel_minimalSamples(kernel, bestModel, bestInliers);
+        bool ok = searchModel_minimalSamples(kernel, bestModel, bestInliers, bestRMS);
         return ok ? eProsacReturnCodeFoundModel : eProsacReturnCodeNoModelFound;
     }
     
@@ -418,7 +424,8 @@ This will give an average result that fits all correspondences but that is not n
 */
 template<typename Kernel>
 bool searchModelLS(const Kernel &kernel,
-                  typename Kernel::Model* bestModel)
+                  typename Kernel::Model* bestModel,
+                   double *RMS = 0)
 {
     assert(bestModel);
     const int N = (int)kernel.NumSamples();
@@ -428,10 +435,17 @@ bool searchModelLS(const Kernel &kernel,
     if (N < m) {
         return 0;
     } else if (N == m) {
-        return searchModel_minimalSamples(kernel, bestModel, 0);
+        return searchModel_minimalSamples(kernel, bestModel, 0, RMS);
     }
     
     bool ok = kernel.ComputeModelFromAllSamples(bestModel);
+    if (RMS) {
+        InliersVec isInlier(N);
+        int nInliers = kernel.ComputeInliersForModel(*bestModel, &isInlier, RMS);
+        (void)nInliers;
+    }
+
+    
     kernel.Unnormalize(bestModel);
     return ok;
     
@@ -459,7 +473,7 @@ int searchModelWithMEstimator(const Kernel &kernel,
     if (N < m) {
         return 0;
     } else if (N == m) {
-        bool ok = searchModel_minimalSamples(kernel, bestModel, 0);
+        bool ok = searchModel_minimalSamples(kernel, bestModel, 0, RMS);
         return ok ? 1 : 0;
     }
 
