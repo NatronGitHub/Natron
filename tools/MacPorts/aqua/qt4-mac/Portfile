@@ -45,7 +45,7 @@ depends_lib-append  port:zlib \
                     port:tiff \
                     port:libpng \
                     port:libmng \
-                    port:jpeg
+                    path:lib/libjpeg.dylib:jpeg 
 
 # find a way to specify the OS MINOR version.  For OSX 10.X, this
 # value will be X.  The type is this variable is integer, so we can

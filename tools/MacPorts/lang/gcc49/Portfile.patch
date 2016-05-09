@@ -1,14 +1,6 @@
---- Portfile.orig	2015-11-23 11:28:32.000000000 +0100
-+++ Portfile	2015-12-14 10:31:28.000000000 +0100
-@@ -64,7 +64,6 @@
- configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
-                     --libdir=${prefix}/lib/${name} \
-                     --includedir=${prefix}/include/${name} \
--                    --with-sysroot=${configure.sdkroot} \
-                     --infodir=${prefix}/share/info \
-                     --mandir=${prefix}/share/man \
-                     --datarootdir=${prefix}/share/gcc-${major} \
-@@ -88,6 +87,10 @@
+--- Portfile.orig	2016-05-09 09:33:42.000000000 +0200
++++ Portfile	2016-05-09 09:35:38.000000000 +0200
+@@ -87,6 +87,10 @@
                      --with-ar=${prefix}/bin/ar \
                      --with-bugurl=https://trac.macports.org/newticket
  

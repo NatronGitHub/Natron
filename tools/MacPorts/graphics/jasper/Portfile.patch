@@ -1,0 +1,11 @@
+--- Portfile.orig	2016-05-09 10:07:08.000000000 +0200
++++ Portfile	2016-05-09 10:07:18.000000000 +0200
+@@ -24,7 +24,7 @@
+                 sha1    9c5735f773922e580bf98c7c7dfda9bbed4c5191 \
+                 rmd160  fb2c188abf5b8c297078ac1f913101734f72db5c
+ 
+-depends_lib     port:jpeg
++depends_lib     path:lib/libjpeg.dylib:jpeg
+ 
+ patchfiles      patch-src_libjasper_base_jas_cm.c.diff \
+                 patch-src_libjasper_jpc_jpc_dec.c.diff

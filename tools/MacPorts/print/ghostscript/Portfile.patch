@@ -1,5 +1,5 @@
---- Portfile.orig	2016-04-04 12:25:31.000000000 +0200
-+++ Portfile	2016-04-05 09:04:59.000000000 +0200
+--- Portfile.orig	2016-04-15 12:14:31.000000000 +0200
++++ Portfile	2016-05-09 13:03:34.000000000 +0200
 @@ -29,6 +29,8 @@
                      ${mappingresources_commit}.zip:misc
  
@@ -9,6 +9,15 @@
                      no-werror.diff
  
  checksums           ${distname}.tar.gz \
+@@ -48,7 +50,7 @@
+                     port:fontconfig \
+                     port:freetype \
+                     port:jbig2dec \
+-                    port:jpeg \
++                    path:lib/libjpeg.dylib:jpeg \
+                     port:libiconv \
+                     port:libidn \
+                     port:libpaper \
 @@ -107,6 +109,15 @@
  
  build.target        so

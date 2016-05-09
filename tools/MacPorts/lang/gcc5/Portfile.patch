@@ -1,6 +1,6 @@
---- Portfile.orig	2015-11-23 11:28:32.000000000 +0100
-+++ Portfile	2015-12-14 10:29:24.000000000 +0100
-@@ -80,6 +80,10 @@
+--- Portfile.orig	2016-05-09 09:36:14.000000000 +0200
++++ Portfile	2016-05-09 09:36:24.000000000 +0200
+@@ -84,6 +84,10 @@
                      --with-ar=${prefix}/bin/ar \
                      --with-bugurl=https://trac.macports.org/newticket
  

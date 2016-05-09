@@ -1,0 +1,11 @@
+--- Portfile.orig	2016-05-09 10:05:09.000000000 +0200
++++ Portfile	2016-05-09 10:05:47.000000000 +0200
+@@ -33,7 +33,7 @@
+ 
+ depends_lib             port:zlib \
+                         port:libpng \
+-                        port:jpeg \
++                        path:lib/libjpeg.dylib:jpeg \
+                         port:tiff
+ 
+ distname                libwebp-${version}

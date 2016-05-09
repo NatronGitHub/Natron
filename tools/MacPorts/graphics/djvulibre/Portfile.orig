@@ -1,0 +1,48 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 133777 2015-03-11 12:36:23Z nicos@macports.org $
+
+PortSystem          1.0
+
+name                djvulibre
+version             3.5.27
+categories          graphics www
+license             GPL-2+
+platforms           darwin
+maintainers         nicos openmaintainer
+
+description         Web centric format and software platform for distributing \
+                    documents and images.
+long_description    DjVu can advantageously replace PDF, PS, TIFF, JPEG, and GIF for \
+                    distributing scanned documents, digital documents, or high-\
+                    resolution pictures. DjVu content downloads faster, displays \
+                    and renders faster, looks nicer onscreen and consumes fewer \
+                    client resources than competing formats.
+
+homepage            http://djvu.sourceforge.net/
+master_sites        sourceforge:project/djvu/DjVuLibre/${version}
+
+#Upstream patch for handling UTF8 paths on Mac (ticket #34827)
+#patchfiles          patch-ByteStream.diff
+
+checksums           rmd160  4ebfef0e402ee621f0080243f362510754ea8333 \
+                    sha256  e69668252565603875fb88500cde02bf93d12d48a3884e472696c896e81f505f
+
+depends_lib         port:libiconv \
+                    port:jpeg \
+                    port:tiff
+
+depends_build       port:librsvg
+license_noconflict  librsvg
+
+# Teach glibtool about -stdlib=libc++
+use_autoreconf  yes
+autoreconf.args -fvi
+
+configure.args      --mandir=${prefix}/share/man \
+                    --enable-threads \
+                    --enable-shared \
+                    --enable-xmltools \
+                    --disable-desktopfiles
+
+livecheck.name      djvu
+livecheck.distname  DjVuLibre

@@ -1,0 +1,55 @@
+# $Id: Portfile 136995 2015-06-02 06:41:52Z jmr@macports.org $
+
+PortSystem      1.0
+
+name            jasper
+version         1.900.1
+revision        10
+categories      graphics
+platforms       darwin
+license         JasPer-2
+maintainers     jmr openmaintainer
+description     Library for manipulating JPEG-2000 images
+
+long_description \
+    The JasPer Project is an open-source initiative to provide a free \
+    software-based reference implementation of the codec specified in the \
+    JPEG-2000 Part-1 standard (i.e., ISO/IEC 15444-1).
+
+homepage        http://www.ece.uvic.ca/~mdadams/jasper/
+master_sites    ${homepage}software/
+use_zip         yes
+
+checksums       md5     a342b2b4495b3e1394e161eb5d85d754 \
+                sha1    9c5735f773922e580bf98c7c7dfda9bbed4c5191 \
+                rmd160  fb2c188abf5b8c297078ac1f913101734f72db5c
+
+depends_lib     port:jpeg
+
+patchfiles      patch-src_libjasper_base_jas_cm.c.diff \
+                patch-src_libjasper_jpc_jpc_dec.c.diff
+
+configure.args  --enable-shared \
+                --enable-static \
+                --disable-opengl \
+                --mandir=${prefix}/share/man \
+                --infodir=${prefix}/share/info
+
+test.run        yes
+test.target     check
+
+post-destroot {
+    set docdir ${prefix}/share/doc/${name}
+    xinstall -m 755 -d ${destroot}${docdir}
+    xinstall -m 644 {*}[glob ${worksrcpath}/doc/*] ${destroot}${docdir}
+}
+
+variant jiv description {build a basic viewer as well} {
+    depends_lib-append          port:mesa
+
+    configure.args-delete       --disable-opengl
+    configure.args-append       --enable-opengl
+}
+
+livecheck.type   regex
+livecheck.regex  "JasPer version (.*) source distribution \\\(current version\\\)."

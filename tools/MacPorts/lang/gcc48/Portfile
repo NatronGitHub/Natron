@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 138013 2015-06-25 23:24:05Z ryandesign@macports.org $
+# $Id: Portfile 148394 2016-05-07 00:56:38Z ryandesign@macports.org $
 
 PortSystem 1.0
 PortGroup select 1.0
@@ -82,6 +82,7 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --disable-multilib \
                     --enable-lto \
                     --enable-libstdcxx-time \
+                    --with-build-config=bootstrap-debug \
                     --with-as=${prefix}/bin/as \
                     --with-ld=${prefix}/bin/ld \
                     --with-ar=${prefix}/bin/ar \
@@ -134,7 +135,7 @@ pre-configure {
 configure.cxx_stdlib
 
 build.dir           ${configure.dir}
-build.target        bootstrap
+build.target        bootstrap-lean
 use_parallel_build  yes
 
 destroot.target     install install-info-host

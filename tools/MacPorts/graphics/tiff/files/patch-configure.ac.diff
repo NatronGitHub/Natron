@@ -1,0 +1,47 @@
+--- configure.ac.orig	2012-09-22 09:05:24.000000000 -0700
++++ configure.ac	2014-05-25 07:13:21.000000000 -0700
+@@ -288,13 +288,13 @@
+ AC_MSG_CHECKING(for signed 64-bit type)
+ INT64_T='none'
+ INT64_FORMAT='none'
+-if test $ac_cv_sizeof_signed_long -eq 8
++if test $ac_cv_sizeof_signed_long_long -eq 8
+ then
+-  INT64_T='signed long'
++  INT64_T='signed long long'
+   INT64_FORMAT='"%ld"'
+-elif test $ac_cv_sizeof_signed_long_long -eq 8
++elif test $ac_cv_sizeof_signed_long -eq 8
+ then
+-  INT64_T='signed long long'
++  INT64_T='signed long'
+   case "${host_os}" in
+     mingw32*)
+       # MinGW32 understands 'long long', but uses printf from WIN32 CRT
+@@ -314,13 +314,13 @@
+ AC_MSG_CHECKING(for unsigned 64-bit type)
+ UINT64_T='none'
+ UINT64_FORMAT='none'
+-if test $ac_cv_sizeof_unsigned_long -eq 8
++if test $ac_cv_sizeof_unsigned_long_long -eq 8
+ then
+-  UINT64_T='unsigned long'
++  UINT64_T='unsigned long long'
+   UINT64_FORMAT='"%lu"'
+-elif test $ac_cv_sizeof_unsigned_long_long -eq 8
++elif test $ac_cv_sizeof_unsigned_long -eq 8
+ then
+-  UINT64_T='unsigned long long'
++  UINT64_T='unsigned long'
+   case "${host_os}" in
+     mingw32*)
+       # MinGW32 understands 'unsigned long long', but uses printf from WIN32 CRT
+@@ -893,7 +893,7 @@
+ dnl AX_CHECK_GLUT sets GLUT_CFLAGS & GLUT_LIBS
+ AX_CHECK_GLUT
+ 
+-if test "$no_x" != "yes" -a "$no_gl" != "yes" \
++if test "$no_gl" != "yes" \
+ 	-a "$no_glu" != "yes" -a "$no_glut" != "yes" ; then
+   HAVE_OPENGL=yes
+ fi
