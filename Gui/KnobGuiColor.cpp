@@ -419,13 +419,9 @@ void
 KnobGuiColor::onResetToDefaultRequested()
 {
     KnobPtr knob = _knob.lock();
-    if (!knob) {
-        return;
-    }
-    int nDims = knob->getDimension();
-    for (int i = 0; i < nDims; ++i) {
-        knob->resetToDefaultValue(i);
-    }
+    std::list<KnobPtr> knobsList;
+    knobsList.push_back(knob);
+    pushUndoCommand(new RestoreDefaultsCommand(false, knobsList, -1));
 }
 
 void
