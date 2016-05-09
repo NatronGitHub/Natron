@@ -2003,17 +2003,22 @@ KnobParametric::cloneExtraData(KnobI* other,
                                int dimension,
                                int otherDimension)
 {
-    assert(dimension == otherDimension);
-    Q_UNUSED(otherDimension);
-    ///Mt-safe as Curve is MT-safe
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
-
-    if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
-        for (int i = 0; i < getDimension(); ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _curves[i]->clone(*isParametric->_curves[i]);
-            }
+    
+    if (!isParametric) {
+        return;
+    }
+    if (dimension == -1) {
+        int dimMin = std::min( getDimension(), isParametric->getDimension() );
+        for (int i = 0; i < dimMin; ++i) {
+            _curves[i]->clone(*isParametric->_curves[i]);
         }
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        assert(dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension());
+        _curves[dimension]->clone(*isParametric->_curves[otherDimension]);
     }
 }
 
@@ -2022,18 +2027,24 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
                                                 int dimension,
                                                 int otherDimension)
 {
-    assert(dimension == otherDimension);
-    Q_UNUSED(otherDimension);
-    bool hasChanged = false;
     ///Mt-safe as Curve is MT-safe
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
 
-    if ( isParametric && ( isParametric->getDimension() == getDimension() ) ) {
-        for (int i = 0; i < getDimension(); ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                hasChanged |= _curves[i]->cloneAndCheckIfChanged( *isParametric->_curves[i]);
-            }
+    if (!isParametric) {
+        return false;
+    }
+    bool hasChanged = false;
+    if (dimension == -1) {
+        int dimMin = std::min( getDimension(), isParametric->getDimension() );
+        for (int i = 0; i < dimMin; ++i) {
+            hasChanged |= _curves[i]->cloneAndCheckIfChanged(*isParametric->_curves[i]);
         }
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        assert(dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension());
+        hasChanged |= _curves[dimension]->cloneAndCheckIfChanged(*isParametric->_curves[otherDimension]);
     }
 
     return hasChanged;
@@ -2046,18 +2057,24 @@ KnobParametric::cloneExtraData(KnobI* other,
                                int dimension,
                                int otherDimension)
 {
-    assert(dimension == otherDimension);
-    Q_UNUSED(otherDimension);
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
 
-    if (isParametric) {
+    if (!isParametric) {
+        return;
+    }
+    if (dimension == -1) {
         int dimMin = std::min( getDimension(), isParametric->getDimension() );
         for (int i = 0; i < dimMin; ++i) {
-            if ( (i == dimension) || (dimension == -1) ) {
-                _curves[i]->clone(*isParametric->_curves[i], offset, range);
-            }
+            _curves[i]->clone(*isParametric->_curves[i], offset, range);
         }
+    } else {
+        if (otherDimension == -1) {
+            otherDimension = dimension;
+        }
+        assert(dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension());
+       _curves[dimension]->clone(*isParametric->_curves[otherDimension], offset, range);
     }
+    
 }
 
 void
