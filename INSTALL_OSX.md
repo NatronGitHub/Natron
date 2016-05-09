@@ -34,11 +34,11 @@ You need an up to date macports version. Just download it and install it from <h
 
 Then, you should add the "ports" provided by Natron. Edit as root the file `/opt/local/etc/macports/sources.conf` (as in `sudo nano /opt/local/etc/macports/sources.conf`) and add the following line at the beginning, with the path to the Natron sources (yes, there are three slashes after `file:`):
 
-    file:///Users/your_username/path_to_sources/Natron/tools/MacOSX/ports
+    file:///Users/your_username/path_to_sources/Natron/tools/MacPorts
 
 Then, create the index file:
 
-    (cd /Users/your_username/path_to_sources/Natron/tools/MacOSX/ports; portindex)
+    (cd /Users/your_username/path_to_sources/Natron/tools/MacPorts; portindex)
 
 It is also recommended to add the  following line to `/opt/local/etc/macports/variants.conf`:
 

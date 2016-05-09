@@ -1,0 +1,36 @@
+--- Portfile.orig	2016-04-15 12:14:31.000000000 +0200
++++ Portfile	2016-05-09 13:03:34.000000000 +0200
+@@ -29,6 +29,8 @@
+                     ${mappingresources_commit}.zip:misc
+ 
+ patchfiles          patch-base_unix-dll.mak.diff \
++                    ghostscript-9.10-cross.patch \
++                    ghostscript-9.05-cross-so.patch \
+                     no-werror.diff
+ 
+ checksums           ${distname}.tar.gz \
+@@ -48,7 +50,7 @@
+                     port:fontconfig \
+                     port:freetype \
+                     port:jbig2dec \
+-                    port:jpeg \
++                    path:lib/libjpeg.dylib:jpeg \
+                     port:libiconv \
+                     port:libidn \
+                     port:libpaper \
+@@ -107,6 +109,15 @@
+ 
+ build.target        so
+ 
++if {[variant_isset universal]} {
++        build.target-delete so
++        build.target-append cross_prepare so
++        lappend merger_build_env(i386) ARCH=i386
++        lappend merger_build_env(x86_64) ARCH=x86_64
++        lappend merger_build_env(ppc) ARCH=ppc
++        lappend merger_build_env(ppc64) ARCH=ppc64
++}
++
+ destroot.target     soinstall
+ post-destroot {
+     ln -s gsc ${destroot}${prefix}/bin/gs

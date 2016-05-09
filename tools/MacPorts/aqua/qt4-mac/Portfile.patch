@@ -1,0 +1,33 @@
+--- Portfile.orig	2016-04-15 12:14:31.000000000 +0200
++++ Portfile	2016-05-09 10:12:09.000000000 +0200
+@@ -16,7 +16,7 @@
+ #conflicts           qt3 qt3-mac qt4-mac-devel
+ conflicts           qt3 qt3-mac
+ version             4.8.7
+-revision            4
++revision            106
+ set branch          [join [lrange [split ${version} .] 0 1] .]
+ 
+ categories          aqua
+@@ -45,7 +45,7 @@
+                     port:tiff \
+                     port:libpng \
+                     port:libmng \
+-                    port:jpeg
++                    path:lib/libjpeg.dylib:jpeg 
+ 
+ # find a way to specify the OS MINOR version.  For OSX 10.X, this
+ # value will be X.  The type is this variable is integer, so we can
+@@ -271,6 +271,12 @@
+ patchfiles-append   \
+     patch-src_gui_dialogs_qfiledialog_mac.mm.diff
+ 
++# fix default thread stack size
++patchfiles-append patch-qthread-stacksize.diff
++
++# Add possibility to set a custom global thread pool
++patchfiles-append patch-qt-custom-threadpool.diff
++
+ # error out if trying to build on a new OSX version (> 10.11).
+ 
+ platform darwin {

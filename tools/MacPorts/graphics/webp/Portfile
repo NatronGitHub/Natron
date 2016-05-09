@@ -1,0 +1,62 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 144197 2016-01-04 17:14:39Z ryandesign@macports.org $
+
+PortSystem              1.0
+
+name                    webp
+version                 0.5.0
+categories              graphics science devel
+platforms               darwin
+maintainers             ryandesign openmaintainer
+license                 BSD
+
+description             image format library providing lossy compression \
+                        for photographic images
+
+long_description        WebP is a new image format that provides lossy \
+                        compression for photographic images. In a large \
+                        scale study of 900,000 web images, WebP images \
+                        were 39.8% smaller than jpeg images of similar \
+                        quality. \
+                        \
+                        A WebP file consists of VP8 image data, and a \
+                        container based on RIFF. Webmasters, web developers \
+                        and browser developers can use the WebP format \
+                        to create smaller, better-looking images that can \
+                        help make the web faster.
+
+homepage                https://developers.google.com/speed/webp/
+master_sites            http://downloads.webmproject.org/releases/webp/
+
+checksums               rmd160  911edb98dbd65d593320a0b01c4d6492e9b91587 \
+                        sha256  5cd3bb7b623aff1f4e70bd611dc8dbabbf7688fd5eb225b32e02e09e37dfb274
+
+depends_lib             port:zlib \
+                        port:libpng \
+                        path:lib/libjpeg.dylib:jpeg \
+                        port:tiff
+
+distname                libwebp-${version}
+
+post-destroot {
+    set docdir ${destroot}${prefix}/share/doc/${name}
+    xinstall -d ${docdir}
+    xinstall -m 644 -W ${worksrcpath} \
+        AUTHORS \
+        ChangeLog \
+        COPYING \
+        NEWS \
+        PATENTS \
+        README \
+        ${docdir}
+}
+
+variant debug description {Compile with debugging information and reduce optimization level} {
+    configure.optflags -O1
+    configure.cflags-append -ggdb
+    configure.cxxflags-append -ggdb
+}
+
+livecheck.type          regex
+livecheck.url           ${homepage}download
+livecheck.regex         /libwebp-(\[0-9.\]+)${extract.suffix}

@@ -1,0 +1,89 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 145689 2016-02-12 23:42:11Z cal@macports.org $
+
+PortSystem          1.0
+PortGroup           xcodeversion 1.0
+PortGroup           muniversal 1.0
+
+name                tiff
+version             4.0.6
+revision            1
+categories          graphics
+platforms           darwin
+maintainers         ryandesign openmaintainer
+license             BSD
+
+description         Library and tools for dealing with Tag Image File Format
+long_description    \
+    This software provides support for the Tag Image File       \
+    Format (TIFF), a widely used format for storing image       \
+    data.  Included in this software distribution is a          \
+    library, libtiff, for reading and writing TIFF, a small     \
+    collection of tools for doing simple manipulations of       \
+    TIFF images on UNIX systems, documentation on the library   \
+    and tools.  A small assortment of TIFF-related software     \
+    for UNIX that has been contributed by others is also        \
+    included.  The library is capable of dealing with images    \
+    that are written to follow the 5.0 or 6.0 TIFF spec.        \
+    There is also considerable support for some of the more     \
+    esoteric portions of the 6.0 TIFF spec.
+
+homepage            http://www.remotesensing.org/libtiff
+master_sites        http://download.osgeo.org/libtiff/ \
+                    ftp://ftp.remotesensing.org/pub/libtiff/ \
+                    http://dl.maptools.org/dl/libtiff/ \
+                    freebsd
+
+checksums           rmd160  3d5d6951a36baf32ab0e0958d3b4a9413b7f2e07 \
+                    sha256  4d57a50907b510e3049a4bba0d7888930fdfc16ce49f1bf693e5b6247370d68c
+
+depends_lib         path:lib/libjpeg.dylib:jpeg \
+                    port:xz \
+                    port:zlib
+
+test.run            yes
+test.target         check
+
+use_autoreconf      yes
+autoreconf.args     -fvi
+
+# first patch fixes two problems
+#     have typedefs be consistent with OSX headers (see http://trac.macports.org/ticket/41280)
+#     prevent configure script from assuming that if we don't want X11, then we don't want OpenGL either
+# prevent configure script from finding X11 OpenGL (e.g. mesa & freeglut)
+patchfiles          patch-configure.ac.diff \
+                    patch-acinclude.m4.diff \
+                    f94a29a822f5528d2334592760fbb7938f15eb55.patch \
+                    aaab5c3c9d2a2c6984f23ccbc79702610439bc65.patch \
+                    b18012dae552f85dcc5c57d3bf4e997a15b1cc1c.patch
+
+
+configure.args      --disable-jbig \
+                    --with-x=no \
+                    --with-docdir=${prefix}/share/doc/${name} \
+                    --with-jpeg-include-dir=${prefix}/include \
+                    --with-jpeg-lib-dir=${prefix}/lib \
+                    --with-lzma-include-dir=${prefix}/include \
+                    --with-lzma-lib-dir=${prefix}/lib \
+                    --with-zlib-include-dir=${prefix}/include \
+                    --with-zlib-lib-dir=${prefix}/lib
+
+use_parallel_build  yes
+
+minimum_xcodeversions {9 3.1}
+
+# tools/tiffgt.c incorrectly uses HAVE_APPLE_OPENGL_FRAMEWORK rather than HAVE_OPENGL_GL_H
+# see http://bugzilla.maptools.org/show_bug.cgi?id=2363
+configure.cppflags-append \
+                    -DHAVE_APPLE_OPENGL_FRAMEWORK
+
+set merger_dont_diff ${prefix}/include/tiffconf.h
+
+variant jbig description {Enable JBIG support} {
+    depends_lib-append      port:jbigkit
+    configure.args-replace  --disable-jbig --enable-jbig
+}
+
+livecheck.type  regex
+livecheck.url   http://download.osgeo.org/libtiff/
+livecheck.regex "${name}-(\\d+(?:\\.\\d+)*)${extract.suffix}"

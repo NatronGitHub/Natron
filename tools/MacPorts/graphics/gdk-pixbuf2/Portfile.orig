@@ -1,0 +1,69 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 147243 2016-03-31 23:35:30Z devans@macports.org $
+
+PortSystem          1.0
+PortGroup           gobject_introspection 1.0
+
+name                gdk-pixbuf2
+set my_name         gdk-pixbuf
+epoch               2
+version             2.34.0
+license             LGPL
+set branch          [join [lrange [split ${version} .] 0 1] .]
+categories          graphics
+maintainers         devans openmaintainer
+homepage            http://www.gtk.org/
+platforms           darwin
+distname            ${my_name}-${version}
+use_xz              yes
+
+description         The gdk-pixbuf-2.0 library
+
+long_description    ${description}
+
+master_sites        gnome:sources/${my_name}/${branch}/
+
+checksums           rmd160  7e20f674b07387a052500564a1a9749e91eabaf2 \
+                    sha256  d55e5b383ee219bd0e23bf6ed4427d56a7db5379729a6e3e0a0e0eba9a8d8879
+
+depends_build       port:pkgconfig
+
+depends_lib         path:lib/pkgconfig/glib-2.0.pc:glib2 \
+                    port:shared-mime-info \
+                    port:libpng \
+                    port:jasper \
+                    port:jpeg \
+                    port:tiff
+
+patchfiles          patch-tests-pixbuf-readonly-to-mutable.c.diff
+
+gobject_introspection yes
+
+use_autoreconf      yes
+autoreconf.args     -fvi
+
+configure.args      --with-libjasper \
+                    --disable-silent-rules
+
+test.run            yes
+test.target         check
+
+post-activate {
+        system "${prefix}/bin/gdk-pixbuf-query-loaders --update-cache"
+}
+
+variant bundle description {Enable application bundle relocation support} {
+    configure.args-append   --enable-relocations
+}
+
+variant x11 {
+    depends_lib-append      port:xorg-libX11
+    configure.args-append   --with-x11
+}
+
+if {![variant_isset quartz]} {
+    default_variants    +x11
+}
+
+livecheck.type      gnome
+livecheck.name      ${my_name}

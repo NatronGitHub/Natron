@@ -1,0 +1,46 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 115643 2014-01-07 19:30:07Z ryandesign@macports.org $
+
+PortSystem              1.0
+PortGroup               muniversal 1.0
+
+name                    lcms
+version                 1.19
+revision                5
+categories              graphics
+platforms               darwin
+maintainers             nomaintainer
+license                 MIT
+
+description             Little Color Management System, a color matching \
+                        method library
+long_description        LCMS is the Little Color Management System, a portable \
+                        Color Matching Method (CMM) library which implements \
+                        fast transforms between ICC profiles. \
+                        Color management refers to techniques that ensure \
+                        consistent color as images are transferred from \
+                        scanners or cameras to monitors and printers.
+
+homepage                http://www.littlecms.com/
+
+master_sites            sourceforge:lcms
+
+checksums               md5     8af94611baf20d9646c7c2c285859818 \
+                        sha1    d5b075ccffc0068015f74f78e4bc39138bcfe2d4 \
+                        rmd160  530615c061dccdcb64d75c6fab148dd565bb6c91
+
+depends_lib             port:tiff port:jpeg port:zlib
+
+patchfiles              lp64.patch
+
+test.run                yes
+test.target             check
+
+platform darwin 8 {
+    depends_build-append port:ld64
+}
+
+# Only need to worry about 1.x; lcms 2.x is in port lcms2
+livecheck.type           regex
+livecheck.url            http://sourceforge.net/projects/${name}/files/${name}
+livecheck.regex          "<a href=\"/projects/${name}/files/${name}/(1(?:\\.\\d+)+)/\""
