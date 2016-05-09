@@ -1369,7 +1369,7 @@ namespace openMVG {
                 
                 assert(w1 != 0 && h1 != 0 && w2 != 0 && h2 != 0);
                 
-                double normalizedSigma = sigma * 2 / (double)(w1);
+                double normalizedSigma = ScalarNormalize(sigma);
                 
                 inlierThreshold = InlierThreshold<Solver::CODIMENSION>(normalizedSigma);
                 beta = Solver::Beta(inlierThreshold, w1, h1);
@@ -1379,6 +1379,16 @@ namespace openMVG {
             
             static std::size_t MaximumModels() { return Solver::MinimumSamples(); }
  
+            
+            double ScalarNormalize(double v) const
+            {
+                return v * 2. / (double)_w1;
+            }
+            
+            double ScalarUnormalize(double v) const
+            {
+                return v * ((double)_w1 / 2.);
+            }
             
             void Unnormalize(Model* model) const {
                 // Unnormalize model from the computed conditioning.
@@ -1614,11 +1624,13 @@ namespace openMVG {
                 bool ok = (Solver::ComputeModelFromNSamples(x1Inlier, x2Inlier, weights, optimizedModel) == 1);
                 if (ok && RMS) {
                     *RMS = 0;
+                    double sumW = 0.;
                     int nSamples = weights.rows();
                     for (int i = 0; i < nSamples; ++i) {
+                        sumW += weights(i);
                         *RMS += (errors(i) * errors(i)) * weights(i);
                     }
-                    *RMS = std::sqrt(*RMS / nSamples);
+                    *RMS = std::sqrt(*RMS / (nSamples * sumW));
                     
                 }
                 return ok;

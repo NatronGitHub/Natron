@@ -145,6 +145,9 @@ bool searchModel_minimalSamples(const Kernel &kernel,
     if (bestInliers) {
         *bestInliers = isInlier;
     }
+    if (bestRMS) {
+        *bestRMS = kernel.ScalarUnormalize(*bestRMS);
+    }
     kernel.Unnormalize(bestModel);
     return true;
 }
@@ -395,6 +398,10 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
         return eProsacReturnCodeNoModelFound;
     }
     
+    if (bestRMS) {
+        *bestRMS = kernel.ScalarUnormalize(*bestRMS);
+    }
+    
     kernel.Unnormalize(bestModel);
 
     
@@ -444,7 +451,9 @@ bool searchModelLS(const Kernel &kernel,
         int nInliers = kernel.ComputeInliersForModel(*bestModel, &isInlier, RMS);
         (void)nInliers;
     }
-
+    if (RMS) {
+        *RMS = kernel.ScalarUnormalize(*RMS);
+    }
     
     kernel.Unnormalize(bestModel);
     return ok;
@@ -486,6 +495,9 @@ int searchModelWithMEstimator(const Kernel &kernel,
     InliersVec isInlier(N, true);
     
     int nbSuccessfulIterations = kernel.MEstimator(*bestModel, isInlier, maxNbIterations, bestModel, RMS, sigmaMAD_p);
+    if (RMS) {
+        *RMS = kernel.ScalarUnormalize(*RMS);
+    }
     kernel.Unnormalize(bestModel);
     return nbSuccessfulIterations;
 

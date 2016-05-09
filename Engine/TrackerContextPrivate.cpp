@@ -37,7 +37,7 @@
 
 
 #ifdef DEBUG
-//#define TRACKER_GENERATE_DATA_SEQUENTIALLY
+#define TRACKER_GENERATE_DATA_SEQUENTIALLY
 #endif
 
 
@@ -1468,7 +1468,7 @@ searchForModel(const bool dataSetIsManual,
 
     KernelType kernel(M1, w1, h1, M2, w2, h2);
     
-    double rms;
+    double rms = 0;
     if (dataSetIsManual) {
         if (robustModel) {
             double sigmaMAD;
@@ -1476,7 +1476,7 @@ searchForModel(const bool dataSetIsManual,
                 throw std::runtime_error("MEstimator failed to run a successful iteration");
             }
         } else {
-            if ( !searchModelLS(kernel, foundModel) ) {
+            if ( !searchModelLS(kernel, foundModel, &rms) ) {
                 throw std::runtime_error("Least-squares solver failed to find a model");
             }
         }
@@ -1484,6 +1484,8 @@ searchForModel(const bool dataSetIsManual,
         ProsacReturnCodeEnum ret = prosac(kernel, foundModel
 #ifdef DEBUG
                                           , inliers
+#else
+                                          , 0
 #endif
                                           , &rms);
         throwProsacError( ret, KernelType::MinimumSamples() );
@@ -2008,7 +2010,7 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
         int nKeys = (int)lastSolveRequest.keyframes.size();
         int keyIndex = 0;
         for (std::set<double>::const_iterator it = lastSolveRequest.keyframes.begin(); it != lastSolveRequest.keyframes.end(); ++it, ++keyIndex) {
-            CornerPinData data = computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.allMarkers);
+            CornerPinData data = computeCornerPinParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers);
             if (data.valid) {
                 validResults.push_back(data);
             }
@@ -2326,7 +2328,7 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
         int nKeys = lastSolveRequest.keyframes.size();
         int keyIndex = 0;
         for (std::set<double>::const_iterator it = lastSolveRequest.keyframes.begin(); it != lastSolveRequest.keyframes.end(); ++it, ++keyIndex) {
-            TransformData data = computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.allMarkers);
+            TransformData data = computeTransformParamsFromTracksAtTime(lastSolveRequest.refTime, *it, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers);
             if (data.valid) {
                 validResults.push_back(data);
             }
