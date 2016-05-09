@@ -1895,22 +1895,37 @@ private:
     /////////////////////////////////// End implementation of KnobI
     //////////////////////////////////////////////////////////////////////
     struct QueuedSetValuePrivate;
-    struct QueuedSetValue
+    class QueuedSetValue
     {
-        boost::scoped_ptr<QueuedSetValuePrivate> _imp;
-
-
+    public:
         QueuedSetValue(ViewSpec view, int dimension, const T& value, const KeyFrame& key, bool useKey, ValueChangedReasonEnum reason, bool valueChangesBlocked);
+
         virtual bool isSetValueAtTime() const { return false; }
 
         virtual ~QueuedSetValue();
+
+        int dimension() const;
+
+        ViewSpec view() const;
+
+        const T& value() const;
+
+        const KeyFrame& key() const;
+
+        bool useKey() const;
+        
+        ValueChangedReasonEnum reason() const;
+
+        bool valueChangesBlocked() const;
+
+    private:
+        boost::scoped_ptr<QueuedSetValuePrivate> _imp;
     };
 
-    struct QueuedSetValueAtTime
+    class QueuedSetValueAtTime
         : public QueuedSetValue
     {
-        double time;
-
+    public:
         QueuedSetValueAtTime(double time,
                              ViewSpec view,
                              int dimension,
@@ -1919,13 +1934,18 @@ private:
                              ValueChangedReasonEnum reason,
                              bool valueChangesBlocked)
             : QueuedSetValue(view, dimension, value, key, true, reason, valueChangesBlocked)
-            , time(time)
+            , _time(time)
         {
         }
 
         virtual bool isSetValueAtTime() const { return true; }
 
         virtual ~QueuedSetValueAtTime() {}
+
+        double time() const { return _time; };
+
+    private:
+        double _time;
     };
 
 

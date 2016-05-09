@@ -977,6 +977,56 @@ Knob<T>::QueuedSetValue::~QueuedSetValue()
 {
 }
 
+template<typename T>
+int
+Knob<T>::QueuedSetValue::dimension() const
+{
+    return _imp->dimension;
+}
+
+template<typename T>
+ViewSpec
+Knob<T>::QueuedSetValue::view() const
+{
+    return _imp->view;
+}
+
+template<typename T>
+const T&
+Knob<T>::QueuedSetValue::value() const
+{
+    return _imp->value;
+}
+
+template<typename T>
+const KeyFrame&
+Knob<T>::QueuedSetValue::key() const
+{
+    return _imp->key;
+}
+
+template<typename T>
+bool
+Knob<T>::QueuedSetValue::useKey() const
+{
+    return _imp->useKey;
+}
+
+
+template<typename T>
+ValueChangedReasonEnum
+Knob<T>::QueuedSetValue::reason() const
+{
+    return _imp->reason;
+}
+
+template<typename T>
+bool
+Knob<T>::QueuedSetValue::valueChangesBlocked() const
+{
+    return _imp->valueChangesBlocked;
+}
+
 template <typename T>
 KnobHelper::ValueChangedReturnCodeEnum
 Knob<T>::setValue(const T & v,
@@ -2773,41 +2823,42 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
     {
         QMutexLocker kql(&_setValuesQueueMutex);
         QMutexLocker k(&_valueMutex);
-        for (typename std::list<boost::shared_ptr<QueuedSetValue> >::iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
+        for (typename std::list<boost::shared_ptr<QueuedSetValue> >::const_iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
             QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>( it->get() );
-            bool blockValueChanges = (*it)->_imp->valueChangesBlocked;
+            bool blockValueChanges = (*it)->valueChangesBlocked();
 
             if (!isAtTime) {
-                if ( (*it)->_imp->useKey ) {
-                    boost::shared_ptr<Curve> curve = getCurve( (*it)->_imp->view, (*it)->_imp->dimension );
+                if ( (*it)->useKey() ) {
+                    boost::shared_ptr<Curve> curve = getCurve( (*it)->view(), (*it)->dimension() );
                     if (curve) {
-                        curve->addKeyFrame( (*it)->_imp->key );
+                        curve->addKeyFrame( (*it)->key() );
                     }
 
                     if ( getHolder() ) {
                         getHolder()->setHasAnimation(true);
                     }
                 } else {
-                    if (_values[(*it)->_imp->dimension] != (*it)->_imp->value) {
-                        _values[(*it)->_imp->dimension] = (*it)->_imp->value;
-                        _guiValues[(*it)->_imp->dimension] = (*it)->_imp->value;
+                    if (_values[(*it)->dimension()] != (*it)->value()) {
+                        _values[(*it)->dimension()] = (*it)->value();
+                        _guiValues[(*it)->dimension()] = (*it)->value();
                         if (!blockValueChanges) {
-                            dimensionChanged.insert( std::make_pair( (*it)->_imp->dimension, (*it)->_imp->reason ) );
+                            dimensionChanged.insert( std::make_pair( (*it)->dimension(), (*it)->reason() ) );
                         }
                     }
                 }
             } else {
-                boost::shared_ptr<Curve> curve = getCurve( (*it)->_imp->view, (*it)->_imp->dimension );
+                boost::shared_ptr<Curve> curve = getCurve( (*it)->view(), (*it)->dimension() );
                 if (curve) {
                     KeyFrame existingKey;
-                    bool hasKey = curve->getKeyFrameWithTime( (*it)->_imp->key.getTime(), &existingKey );
-                    if ( !hasKey || ( existingKey.getTime() != (*it)->_imp->key.getTime() ) || ( existingKey.getValue() != (*it)->_imp->key.getValue() ) ||
-                         ( existingKey.getLeftDerivative() != (*it)->_imp->key.getLeftDerivative() ) ||
-                         ( existingKey.getRightDerivative() != (*it)->_imp->key.getRightDerivative() ) ) {
+                    const KeyFrame& key = (*it)->key();
+                    bool hasKey = curve->getKeyFrameWithTime( key.getTime(), &existingKey );
+                    if ( !hasKey || ( existingKey.getTime() != key.getTime() ) || ( existingKey.getValue() != key.getValue() ) ||
+                         ( existingKey.getLeftDerivative() != key.getLeftDerivative() ) ||
+                         ( existingKey.getRightDerivative() != key.getRightDerivative() ) ) {
                         if (!blockValueChanges) {
-                            dimensionChanged.insert( std::make_pair( (*it)->_imp->dimension, (*it)->_imp->reason ) );
+                            dimensionChanged.insert( std::make_pair( (*it)->dimension(), (*it)->reason() ) );
                         }
-                        curve->addKeyFrame( (*it)->_imp->key );
+                        curve->addKeyFrame( key );
                     }
                 }
 
