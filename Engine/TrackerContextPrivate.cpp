@@ -1467,10 +1467,12 @@ searchForModel(const bool dataSetIsManual,
     }
 
     KernelType kernel(M1, w1, h1, M2, w2, h2);
+    
+    double rms;
     if (dataSetIsManual) {
         if (robustModel) {
             double sigmaMAD;
-            if ( !searchModelWithMEstimator(kernel, 3, foundModel, &sigmaMAD) ) {
+            if ( !searchModelWithMEstimator(kernel, 3, foundModel, &rms, &sigmaMAD) ) {
                 throw std::runtime_error("MEstimator failed to run a successful iteration");
             }
         } else {
@@ -1483,7 +1485,7 @@ searchForModel(const bool dataSetIsManual,
 #ifdef DEBUG
                                           , inliers
 #endif
-                                          );
+                                          , &rms);
         throwProsacError( ret, KernelType::MinimumSamples() );
     }
 }

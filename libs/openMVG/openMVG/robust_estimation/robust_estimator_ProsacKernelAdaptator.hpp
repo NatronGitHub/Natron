@@ -1437,19 +1437,28 @@ namespace openMVG {
             /**
              * @brief Computes the inliers over all samples for the given model that has been previously computed with ComputeModelFromMinimumSamples()
              **/
-            int ComputeInliersForModel(const Model & model, InliersVec* isInlier) const
+            int ComputeInliersForModel(const Model & model, InliersVec* isInlier, double* RMS = 0) const
             {
                 assert((int)isInlier->size() == _x1.cols());
                 
                 int nbInliers = 0;
+                if (RMS) {
+                    *RMS = 0.;
+                }
                 for (std::size_t j = 0; j < isInlier->size(); ++j) {
                     double error = Solver::Error(model, _x1.col(j), _x2.col(j));
                     if (error < inlierThreshold) {
                         ++nbInliers;
                         (*isInlier)[j] = true;
+                        if (RMS) {
+                            *RMS += error * error;
+                        }
                     } else {
                         (*isInlier)[j] = false;
                     }
+                }
+                if (RMS) {
+                    *RMS = std::sqrt(*RMS / nbInliers);
                 }
                 return nbInliers;
             }
@@ -1485,14 +1494,14 @@ namespace openMVG {
              - In LO step, estimate the full model from 9 (or more!) points 
              
              */
-            bool OptimizeModel(const Model& model, const InliersVec& inliers, Model* optimizedModel) const
+            bool OptimizeModel(const Model& model, const InliersVec& inliers, Model* optimizedModel, double *RMS = 0) const
             {
-                return MEstimatorIteration(model, inliers, optimizedModel);
+                return MEstimatorIteration(model, inliers, optimizedModel, RMS, 0 /*sigmaMAD_p*/);
             }
             
             /// full Mestimator
             /// returns the number of successful iterations
-            int MEstimator(const Model &model, const InliersVec &inliers, int maxNbIterations, Model* optimizedModel, double *sigmaMAD_p = 0) const
+            int MEstimator(const Model &model, const InliersVec &inliers, int maxNbIterations, Model* optimizedModel, double *RMS = 0, double *sigmaMAD_p = 0) const
             {
                 const size_t n = inliers.size(); // the dataset size
                 Vec errors(n);
@@ -1512,7 +1521,7 @@ namespace openMVG {
                 *optimizedModel = model;
                 do {
                     if (sigmaMAD > 0.) {
-                        succeeded = MEstimatorIterationFromErrors(*optimizedModel, errors, inliers, sigmaMAD, optimizedModel);
+                        succeeded = MEstimatorIterationFromErrors(*optimizedModel, errors, inliers, sigmaMAD, optimizedModel, RMS);
                     } else {
                         succeeded = false;
                         ++i; // sigmaMAD is 0: mark the model as optimized, although we didn't compute anything
@@ -1594,7 +1603,7 @@ namespace openMVG {
             /// The cost function is the Pseudo-Huber cost function, which behaves like d^2
             /// for small d, and abs(d) for large d.
             /// Reference: Hartley & Zisserman sec. A6.8
-            bool MEstimatorIterationFromErrors(const Model &model, const Vec& errors, const InliersVec &inliers, double sigmaMAD, Model* optimizedModel) const
+            bool MEstimatorIterationFromErrors(const Model &model, const Vec& errors, const InliersVec &inliers, double sigmaMAD, Model* optimizedModel, double *RMS = 0) const
             {
                 // Iterating over it does iteratively reweighted least squares (IRLS)
                 Vec weights;
@@ -1602,11 +1611,22 @@ namespace openMVG {
                 WeightsPseudoHuberFromErrors(_x1, _x2, errors, inliers, sigmaMAD, &weights, &x1Inlier, &x2Inlier);
                 assert(weights.rows() == x1Inlier.cols() && x1Inlier.cols() == x2Inlier.cols());
                 *optimizedModel = model; //initialize model in case it needs a starting point
-                int res = Solver::ComputeModelFromNSamples(x1Inlier, x2Inlier, weights, optimizedModel);
-                return (res == 1);
+                bool ok = (Solver::ComputeModelFromNSamples(x1Inlier, x2Inlier, weights, optimizedModel) == 1);
+                if (ok && RMS) {
+                    *RMS = 0;
+                    int nSamples = weights.rows();
+                    for (int i = 0; i < nSamples; ++i) {
+                        if (weights(i) > 0.) {
+                            *RMS += (errors(i) * errors(i));
+                        }
+                    }
+                    *RMS = std::sqrt(*RMS / nSamples);
+                    
+                }
+                return ok;
             }
             
-            bool MEstimatorIteration(const Model &model, const InliersVec &inliers, Model* optimizedModel, double *sigmaMAD_p = 0) const
+            bool MEstimatorIteration(const Model &model, const InliersVec &inliers, Model* optimizedModel, double *RMS = 0, double *sigmaMAD_p = 0) const
             {
                 const size_t n = inliers.size(); // the dataset size
                 Vec errors(n);
@@ -1624,7 +1644,7 @@ namespace openMVG {
                 }
                 // if sigmaMAD = 0. the model is already optimal
                 if (sigmaMAD > 0.) {
-                    return MEstimatorIterationFromErrors(model, errors, inliers, sigmaMAD, optimizedModel);
+                    return MEstimatorIterationFromErrors(model, errors, inliers, sigmaMAD, optimizedModel, RMS);
                 }
                 *optimizedModel = model;
                 return false;

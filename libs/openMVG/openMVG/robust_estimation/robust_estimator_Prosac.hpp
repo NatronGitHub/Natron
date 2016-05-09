@@ -147,7 +147,8 @@ bool searchModel_minimalSamples(const Kernel &kernel,
 template<typename Kernel>
 ProsacReturnCodeEnum prosac(const Kernel &kernel,
                             typename Kernel::Model* bestModel,
-                            InliersVec *bestInliers = 0)
+                            InliersVec *bestInliers = 0,
+                            double *bestRMS = 0)
 {
     assert(bestModel);
     
@@ -256,7 +257,9 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
             
             // Find support of the model with parameters p_t
             // From first paragraph of section 2: "The hypotheses are veriﬁed against all data"
-            I_N = kernel.ComputeInliersForModel(possibleModels[modelNb], &isInlier);
+            
+            double RMS;
+            I_N = kernel.ComputeInliersForModel(possibleModels[modelNb], &isInlier, bestRMS ? &RMS : 0);
             
             
             if (I_N > I_N_best) {
@@ -278,6 +281,9 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
                 // Store the best model
                 *bestModel = possibleModels[modelNb];
                 bestModelFound = true;
+                if (bestRMS) {
+                    *bestRMS = RMS;
+                }
                 
 #ifndef PROSAC_DISABLE_LO_RANSAC
                 int loransac_iter = 0;
@@ -288,14 +294,18 @@ ProsacReturnCodeEnum prosac(const Kernel &kernel,
                         
                         // Continue while LO-ransac finds a better support
                         typename Kernel::Model modelLO;
+                        double RMS_L0;
                         bool modelOptimized = kernel.OptimizeModel(*bestModel, isInlier, &modelLO);
                         
                         if (modelOptimized) {
                             // IN = findSupport(/* model, sample, */ N, isInlier);
-                            int I_N_LO = kernel.ComputeInliersForModel(modelLO, &isInlierLO);
+                            int I_N_LO = kernel.ComputeInliersForModel(modelLO, &isInlierLO, bestRMS ? &RMS_L0 : 0);
                             if (I_N_LO > I_N_best) {
                                 isInlier = isInlierLO;
                                 *bestModel = modelLO;
+                                if (bestRMS) {
+                                    *bestRMS = RMS_L0;
+                                }
                                 I_N = I_N_LO;
                             }
                         }
@@ -438,6 +448,7 @@ template<typename Kernel>
 int searchModelWithMEstimator(const Kernel &kernel,
                               int maxNbIterations,
                               typename Kernel::Model* bestModel,
+                              double *RMS = 0,
                               double *sigmaMAD_p = 0)
 {
     assert(bestModel);
@@ -460,7 +471,7 @@ int searchModelWithMEstimator(const Kernel &kernel,
 
     InliersVec isInlier(N, true);
     
-    int nbSuccessfulIterations = kernel.MEstimator(*bestModel, isInlier, maxNbIterations, bestModel, sigmaMAD_p);
+    int nbSuccessfulIterations = kernel.MEstimator(*bestModel, isInlier, maxNbIterations, bestModel, RMS, sigmaMAD_p);
     kernel.Unnormalize(bestModel);
     return nbSuccessfulIterations;
 
