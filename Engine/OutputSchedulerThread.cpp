@@ -1109,8 +1109,6 @@ OutputSchedulerThread::stopRender()
 {
     _imp->timer->playState = ePlayStatePause;
 
-    _imp->renderTimer.reset();
-
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
     QMutexLocker k(&_imp->lastRecordedFPSMutex);
     _imp->lastRecordedFPS = _imp->timer->getActualFrameRate();
@@ -1132,7 +1130,6 @@ OutputSchedulerThread::stopRender()
     stopRenderThreads(0);
 #endif
     _imp->waitForRenderThreadsToQuit();
-
 
     /*{
         QMutexLocker l(&_imp->renderThreadsMutex);
@@ -1210,6 +1207,8 @@ OutputSchedulerThread::stopRender()
         ///We got the request, reset it back to 0
         _imp->startRequests = 0;
     }
+
+    _imp->renderTimer.reset();
 } // OutputSchedulerThread::stopRender
 
 void
