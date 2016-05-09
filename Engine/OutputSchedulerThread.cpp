@@ -1155,7 +1155,14 @@ OutputSchedulerThread::startRender()
 
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    boost::shared_ptr<OutputEffectInstance> effect = _imp->outputEffect.lock();
+    EffectInstPtr effect = _imp->outputEffect.lock();
+    WriteNode* isWriteNode = dynamic_cast<WriteNode*>(effect.get());
+    if (isWriteNode) {
+        NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
+        if (embeddedWriter) {
+            effect = embeddedWriter->getEffectInstance();
+        }
+    }
     SequentialPreferenceEnum pref = effect->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
         RenderScale scaleOne(1.);
@@ -1238,7 +1245,14 @@ OutputSchedulerThread::stopRender()
 
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    boost::shared_ptr<OutputEffectInstance> effect = _imp->outputEffect.lock();
+    EffectInstPtr effect = _imp->outputEffect.lock();
+    WriteNode* isWriteNode = dynamic_cast<WriteNode*>(effect.get());
+    if (isWriteNode) {
+        NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
+        if (embeddedWriter) {
+            effect = embeddedWriter->getEffectInstance();
+        }
+    }
     SequentialPreferenceEnum pref = effect->getSequentialPreference();
     if ( (pref == eSequentialPreferenceOnlySequential) || (pref == eSequentialPreferencePreferSequential) ) {
         int firstFrame, lastFrame;
