@@ -839,21 +839,20 @@ Project::initializeKnobs()
     {
         //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
         int i = 3;
-        while (ImageComponents::defaultComponents[i][0]) {
+        for (int i = 3; ImageComponents::defaultComponents[i][0] != NULL; ++i) {
             std::vector<std::string> row(2);
             row[0] = ImageComponents::defaultComponents[i][1];
             const ImageComponents& comps = ImageComponents::getDefaultComponent(ImageComponents::defaultComponents[i][0]);
             std::string channelsStr;
             const std::vector<std::string>& channels = comps.getComponentsNames();
-            for (std::size_t i = 0; i < channels.size(); ++i) {
-                channelsStr += channels[i];
+            for (std::size_t c = 0; c < channels.size(); ++c) {
+                channelsStr += channels[c];
                 if ( i < (channels.size() - 1) ) {
                     channelsStr += ' ';
                 }
             }
             row[1] = channelsStr;
             defaultLayers.push_back(row);
-            ++i;
         }
     }
     std::string encodedDefaultLayers = _imp->defaultLayersList->encodeToKnobTableFormat(defaultLayers);
