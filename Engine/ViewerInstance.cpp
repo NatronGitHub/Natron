@@ -1011,6 +1011,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
         tile.rect.w = it->width();
         tile.rect.h = it->height();
         tile.rect.closestPo2 = 1 << mipmapLevel;
+        tile.rect.par = outArgs->params->pixelAspectRatio;
         tile.bytesCount = tile.rect.w * tile.rect.h * 4; // RGBA
         assert( outArgs->params->roi.contains(tile.rect) );
         // If we are using floating point textures, multiply by size of float
@@ -1163,7 +1164,6 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
         outArgs->mustComputeRoDAndLookupCache = false;
 
-        //assert(outArgs->params->tiles.size() > 0);
 
         bool isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
         Q_UNUSED(isRodProjectFormat);
@@ -1173,6 +1173,9 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         if (retCode != eViewerRenderRetCodeRender) {
             return retCode;
         }
+        
+        assert(outArgs->params->tiles.size() > 0);
+
 
         // We found something in the cache, stop now
         if (outArgs->params->nbCachedTile > 0) {
