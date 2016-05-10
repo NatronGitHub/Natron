@@ -838,7 +838,6 @@ Project::initializeKnobs()
     std::list<std::vector<std::string> > defaultLayers;
     {
         //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
-        int i = 3;
         for (int i = 3; ImageComponents::defaultComponents[i][0] != NULL; ++i) {
             std::vector<std::string> row(2);
             row[0] = ImageComponents::defaultComponents[i][1];
