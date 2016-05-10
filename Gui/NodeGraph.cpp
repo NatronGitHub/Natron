@@ -134,6 +134,9 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_cacheSizeText->setBrush( QColor(200, 200, 200) );
     _imp->_cacheSizeText->setVisible(false);
 
+    QObject::connect(&_imp->refreshRenderStateTimer, SIGNAL(timeout()), this, SLOT(onRefreshNodesRenderStateTimerTimeout()));
+    _imp->refreshRenderStateTimer.start(NATRON_NODES_RENDER_STATE_REFRESH_INTERVAL_MS);
+
     QObject::connect( &_imp->_refreshCacheTextTimer, SIGNAL(timeout()), this, SLOT(updateCacheSizeText()) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
 

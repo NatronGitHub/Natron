@@ -397,9 +397,7 @@ public Q_SLOTS:
     void onEngineStopped();
     void onEngineStarted(bool forward);
 
-    void onViewerRenderingStarted();
-
-    void onViewerRenderingStopped();
+    void refreshViewerRenderingState();
 
     void setTurboButtonDown(bool down);
 

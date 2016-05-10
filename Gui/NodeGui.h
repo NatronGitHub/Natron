@@ -475,13 +475,7 @@ public Q_SLOTS:
 
     void setVisibleSettingsPanel(bool b);
 
-    void onRenderingStarted();
-
-    void onRenderingFinished();
-
-    void onInputNRenderingStarted(int input);
-
-    void onInputNRenderingFinished(int input);
+    void refreshRenderingIndicator();
 
     void beginEditKnobs();
 

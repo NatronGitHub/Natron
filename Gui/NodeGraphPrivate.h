@@ -51,7 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 #define NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS 1000
-
+#define NATRON_NODES_RENDER_STATE_REFRESH_INTERVAL_MS 300
 
 #define NATRON_NODE_DUPLICATE_X_OFFSET 50
 
@@ -204,6 +204,9 @@ public:
     ///True when the graph is rendered from the getFullSceneScreenShot() function
     bool isDoingPreviewRender;
     QTimer autoScrollTimer;
+
+    QTimer refreshRenderStateTimer;
+
 
     NodeGraphPrivate(NodeGraph* p,
                      const boost::shared_ptr<NodeCollection>& group);

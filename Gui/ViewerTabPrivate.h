@@ -89,7 +89,6 @@ struct ViewerTabPrivate
     Button* refreshButton;
     Button* pauseButton;
     QIcon iconRefreshOff, iconRefreshOn;
-    int ongoingRenderCount;
     Button* activateRenderScale;
     bool renderScaleActive;
     ComboBox* renderScaleCombo;

@@ -1011,8 +1011,6 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     QObject::connect( _imp->autoContrast, SIGNAL(clicked(bool)), this, SLOT(onAutoContrastChanged(bool)) );
     QObject::connect( _imp->renderScaleCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onRenderScaleComboIndexChanged(int)) );
     QObject::connect( _imp->activateRenderScale, SIGNAL(toggled(bool)), this, SLOT(onRenderScaleButtonClicked(bool)) );
-    QObject::connect( _imp->viewerNode, SIGNAL(viewerRenderingStarted()), this, SLOT(onViewerRenderingStarted()) );
-    QObject::connect( _imp->viewerNode, SIGNAL(viewerRenderingEnded()), this, SLOT(onViewerRenderingStopped()) );
 
     connectToViewerCache();
 

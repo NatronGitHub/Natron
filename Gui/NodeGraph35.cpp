@@ -265,6 +265,14 @@ NodeGraph::updateCacheSizeText()
 }
 
 void
+NodeGraph::onRefreshNodesRenderStateTimerTimeout()
+{
+    for (NodesGuiList::const_iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
+        (*it)->refreshRenderingIndicator();
+    }
+}
+
+void
 NodeGraph::toggleCacheInfo()
 {
     _imp->cacheSizeHidden = !_imp->cacheSizeHidden;

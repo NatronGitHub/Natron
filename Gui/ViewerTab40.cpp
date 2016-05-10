@@ -771,22 +771,17 @@ ViewerTab::setProjection(double zoomLeft,
 }
 
 void
-ViewerTab::onViewerRenderingStarted()
+ViewerTab::refreshViewerRenderingState()
 {
-    if (!_imp->ongoingRenderCount) {
+    int value = _imp->viewerNode->getNode()->getIsNodeRenderingCounter();
+    if (value >= 1) {
         _imp->refreshButton->setIcon(_imp->iconRefreshOn);
-    }
-    ++_imp->ongoingRenderCount;
-}
-
-void
-ViewerTab::onViewerRenderingStopped()
-{
-    --_imp->ongoingRenderCount;
-    if (!_imp->ongoingRenderCount) {
+    } else {
         _imp->refreshButton->setIcon(_imp->iconRefreshOff);
     }
 }
+
+
 
 void
 ViewerTab::setTurboButtonDown(bool down)

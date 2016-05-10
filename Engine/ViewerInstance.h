@@ -338,10 +338,6 @@ public:
 
 public Q_SLOTS:
 
-    void s_viewerRenderingStarted() { Q_EMIT viewerRenderingStarted(); }
-
-    void s_viewerRenderingEnded() { Q_EMIT viewerRenderingEnded(); }
-
 
     void onMipMapLevelChanged(int level);
 
