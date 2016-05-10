@@ -56,11 +56,6 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     else
         qmake -r -spec unsupported/linux-clang CONFIG+="nopch debug $BREAKPAD $SILENT";
     fi
-    # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
-    if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
-        # compiling Natron overrides the 3GB limit on travis if building parallel
-        J='-j1'
-    fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C libs/gflags
     make $J -C libs/glog
@@ -69,6 +64,12 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $J -C libs/openMVG
     make $J -C libs/qhttpserver
     make $J -C HostSupport;
+    # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
+    if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
+        # compiling Natron overrides the 3GB limit on travis if building parallel
+        J='-j1'
+    fi
+    export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C Engine;
     make $J -C Gui;
     make -C App; # linking Natron may break the 3Gb limit
