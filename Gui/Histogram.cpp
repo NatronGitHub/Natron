@@ -501,6 +501,24 @@ boost::shared_ptr<Image> HistogramPrivate::getHistogramImage(RectI* imagePortion
         image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getInternalNode()->getMipMapLevelFromZoomFactor() );
     }
 
+    if (!useImageRoD) {
+        if (viewer) {
+            RectI bounds;
+            double par = 1.;
+            unsigned int mipMapLevel = 0;
+            if (image) {
+                bounds = image->getBounds();
+                par = image->getPixelAspectRatio();
+                mipMapLevel = image->getMipMapLevel();
+            }
+            *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds, par, mipMapLevel);
+        }
+    } else {
+        if (image) {
+            *imagePortion = image->getBounds();
+        }
+    }
+
     return image;
 } // getHistogramImage
 
