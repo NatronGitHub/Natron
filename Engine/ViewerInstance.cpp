@@ -1163,7 +1163,6 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
 
         outArgs->mustComputeRoDAndLookupCache = false;
 
-        //assert(outArgs->params->tiles.size() > 0);
 
         bool isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
         Q_UNUSED(isRodProjectFormat);
@@ -1173,6 +1172,9 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         if (retCode != eViewerRenderRetCodeRender) {
             return retCode;
         }
+        
+        assert(outArgs->params->tiles.size() > 0);
+
 
         // We found something in the cache, stop now
         if (outArgs->params->nbCachedTile > 0) {
