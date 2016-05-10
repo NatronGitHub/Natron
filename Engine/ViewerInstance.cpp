@@ -1011,6 +1011,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
         tile.rect.w = it->width();
         tile.rect.h = it->height();
         tile.rect.closestPo2 = 1 << mipmapLevel;
+        tile.rect.par = outArgs->params->pixelAspectRatio;
         tile.bytesCount = tile.rect.w * tile.rect.h * 4; // RGBA
         assert( outArgs->params->roi.contains(tile.rect) );
         // If we are using floating point textures, multiply by size of float
