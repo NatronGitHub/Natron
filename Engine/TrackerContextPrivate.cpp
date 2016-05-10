@@ -953,6 +953,7 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
         if ( trackTime == args.getStart() ) {
             bool foundStartMarker = autoTrack->GetMarker(0, trackTime, trackIndex, &track->mvMarker);
             assert(foundStartMarker);
+            Q_UNUSED(foundStartMarker);
             track->mvMarker.source = mv::Marker::MANUAL;
         } else {
             natronTrackerToLibMVTracker(false, enabledChans, *track->natronMarker, trackIndex, trackTime, args.getStep(), args.getFormatHeight(), &track->mvMarker);

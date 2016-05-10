@@ -194,8 +194,9 @@ public:
 
                 return;
             }
+
             assert(_backingFile);
-            
+
             if ( !path.empty() && (count != 0) ) {
                 //if the backing file has already the good size and we just wanted to re-open the mapping
                 _backingFile->resize(count);

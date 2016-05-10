@@ -3397,8 +3397,8 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
         const ImageComponents& rgba = ImageComponents::getRGBAComponents();
         const std::string& rgbaCompname = rgba.getComponentsGlobalName();
         const std::vector<std::string>& rgbaChannels = rgba.getComponentsNames();
-        for (std::size_t i = 0; i < rgbaChannels.size(); ++i) {
-            std::string option = rgbaCompname + '.' + rgbaChannels[i];
+        for (std::size_t c = 0; c < rgbaChannels.size(); ++c) {
+            std::string option = rgbaCompname + '.' + rgbaChannels[c];
             choices.push_back(option);
         }
         /*const ImageComponents& rgba = ImageComponents::getRGBAComponents();

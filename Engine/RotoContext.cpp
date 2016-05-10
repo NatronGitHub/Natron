@@ -2700,6 +2700,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
         QMutexLocker k(&_imp->cacheAccessMutex);
         node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
+
     if (image) {
         return image;
     }

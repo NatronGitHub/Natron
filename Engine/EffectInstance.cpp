@@ -1128,7 +1128,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
     assert( !projectDefault.isNull() );
 
     assert(rod);
-    if (rod->isNull()) {
+    if ( rod->isNull() ) {
         // if the RoD is empty, set it to a "standard" empty RoD (0,0,0,0)
         rod->clear();
     }

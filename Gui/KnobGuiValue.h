@@ -134,7 +134,6 @@ protected:
     {
     }
 
-
 private:
 
     /**

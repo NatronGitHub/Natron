@@ -2786,7 +2786,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         /*RectI bounds;
            params->rod.toPixelEnclosing(params->mipMapLevel, params->pixelAspectRatio, &bounds);*/
 
-        assert(params->isPartialRect && params->tiles.size() == 1 || !params->isPartialRect);
+        assert((params->isPartialRect && params->tiles.size() == 1) || !params->isPartialRect);
 
         boost::shared_ptr<OpenGLTextureI> texture;
         bool isFirstTile = true;

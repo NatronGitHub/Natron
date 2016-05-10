@@ -1971,7 +1971,7 @@ private:
     struct QueuedSetValuePrivate;
     class QueuedSetValue
     {
-    public:
+public:
         QueuedSetValue(ViewSpec view, int dimension, const T& value, const KeyFrame& key, bool useKey, ValueChangedReasonEnum reason, bool valueChangesBlocked);
 
         virtual bool isSetValueAtTime() const { return false; }
@@ -1983,23 +1983,22 @@ private:
         ViewSpec view() const;
 
         const T& value() const;
-
         const KeyFrame& key() const;
 
         bool useKey() const;
-        
+
         ValueChangedReasonEnum reason() const;
 
         bool valueChangesBlocked() const;
 
-    private:
+private:
         boost::scoped_ptr<QueuedSetValuePrivate> _imp;
     };
 
     class QueuedSetValueAtTime
         : public QueuedSetValue
     {
-    public:
+public:
         QueuedSetValueAtTime(double time,
                              ViewSpec view,
                              int dimension,
@@ -2018,7 +2017,7 @@ private:
 
         double time() const { return _time; };
 
-    private:
+private:
         double _time;
     };
 

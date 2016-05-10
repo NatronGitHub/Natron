@@ -125,8 +125,8 @@ public:
 
     virtual ~KnobGuiColor() {}
 
+    
 public Q_SLOTS:
-
 
     void showColorDialog();
 
@@ -137,6 +137,7 @@ public Q_SLOTS:
     void onMustShowAllDimension();
 
     void onDialogCurrentColorChanged(const QColor & color);
+
 
 Q_SIGNALS:
 
