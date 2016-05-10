@@ -2461,7 +2461,8 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     assert(tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2);
     assert(tile.rect.x2 > tile.rect.x1);
     assert(tile.rect.w == tile.rect.x2 - tile.rect.x1);
-
+    Q_UNUSED(roi)
+    
     const int srcRowElements = (const int)args.inputImage->getRowElements();
 
     for (int y = tile.rect.y1; y < tile.rect.y2;
