@@ -967,7 +967,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     // do not round it to Viewer tiles.
     std::vector<RectI> tiles;
 
-    if (!useCache) {
+    if (!useCache || outArgs->forceRender) {
         outArgs->params->roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
         if (outArgs->isDoingPartialUpdates) {
             std::list<RectD> partialRects;
@@ -1293,6 +1293,12 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             return eViewerRenderRetCodeRender;
         }
     }
+#ifdef QT_CUSTOM_THREADPOOL
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+    if (isAbortable) {
+        isAbortable->setAbortInfo(!isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance());
+    }
+#endif
 
     // Flag that we are going to render
     inArgs.isRenderingFlag.reset( new RenderingFlagSetter( getNode().get() ) );

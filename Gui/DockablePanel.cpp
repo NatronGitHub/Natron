@@ -38,6 +38,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QFile>
 #include <QTextStream>
 #include <QDesktopServices>
+#include <QTextDocument>
 
 #include <ofxNatron.h>
 
@@ -868,7 +869,12 @@ QString
 DockablePanel::helpString() const
 {
     //Base help
-    QString tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
+    QString tt;
+    if (Qt::mightBeRichText(_imp->_helpToolTip)) {
+        tt = _imp->_helpToolTip;
+    } else {
+        tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
+    }
     EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
 
     if (iseffect) {

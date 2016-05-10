@@ -34,16 +34,19 @@ NATRON_NAMESPACE_ENTER;
 
 struct AbortableThreadPrivate
 {
+    mutable QMutex abortInfoMutex;
+
     bool isRenderResponseToUserInteraction;
     AbortableRenderInfoPtr abortInfo;
     EffectInstWPtr treeRoot;
     bool abortInfoValid;
 
     AbortableThreadPrivate()
-        : isRenderResponseToUserInteraction(false)
-        , abortInfo()
-        , treeRoot()
-        , abortInfoValid(false)
+    : abortInfoMutex()
+    , isRenderResponseToUserInteraction(false)
+    , abortInfo()
+    , treeRoot()
+    , abortInfoValid(false)
     {
     }
 };
@@ -62,6 +65,7 @@ AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,
                               const AbortableRenderInfoPtr& abortInfo,
                               const EffectInstPtr& treeRoot)
 {
+    QMutexLocker k(&_imp->abortInfoMutex);
     _imp->isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
     _imp->abortInfo = abortInfo;
     _imp->treeRoot = treeRoot;
@@ -71,6 +75,7 @@ AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,
 void
 AbortableThread::clearAbortInfo()
 {
+    QMutexLocker k(&_imp->abortInfoMutex);
     _imp->abortInfo.reset();
     _imp->treeRoot.reset();
     _imp->abortInfoValid = false;
@@ -81,6 +86,7 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
                               AbortableRenderInfoPtr* abortInfo,
                               EffectInstPtr* treeRoot) const
 {
+    QMutexLocker k(&_imp->abortInfoMutex);
     if (!_imp->abortInfoValid) {
         return false;
     }

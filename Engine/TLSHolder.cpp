@@ -65,13 +65,32 @@ AppTLS::registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder)
     }
 }
 
+static void copyAbortInfo(QThread* fromThread,
+                          QThread* toThread)
+{
+#ifdef QT_CUSTOM_THREADPOOL
+    AbortableThread* fromAbortable = dynamic_cast<AbortableThread*>(fromThread);
+    AbortableThread* toAbortable = dynamic_cast<AbortableThread*>(toThread);
+    if (fromAbortable && toAbortable) {
+        bool isRenderResponseToUserInteraction;
+        AbortableRenderInfoPtr abortInfo;
+        EffectInstPtr treeRoot;
+        fromAbortable->getAbortInfo(&isRenderResponseToUserInteraction, &abortInfo, &treeRoot);
+        toAbortable->setAbortInfo(isRenderResponseToUserInteraction, abortInfo, treeRoot);
+    }
+#endif
+}
+
 void
-AppTLS::copyTLS(const QThread* fromThread,
-                const QThread* toThread)
+AppTLS::copyTLS(QThread* fromThread,
+                QThread* toThread)
 {
     if ( (fromThread == toThread) || !fromThread || !toThread ) {
         return;
     }
+
+    copyAbortInfo(fromThread, toThread);
+
     QReadLocker k(&_objectMutex);
     const TLSObjects& objectsCRef = _object->objects; // take a const ref, since it's a read lock
     for (TLSObjects::const_iterator it = objectsCRef.begin();
@@ -84,12 +103,15 @@ AppTLS::copyTLS(const QThread* fromThread,
 }
 
 void
-AppTLS::softCopy(const QThread* fromThread,
-                 const QThread* toThread)
+AppTLS::softCopy(QThread* fromThread,
+                 QThread* toThread)
 {
     if ( (fromThread == toThread) || !fromThread || !toThread ) {
         return;
     }
+
+    copyAbortInfo(fromThread, toThread);
+    
     QWriteLocker k(&_spawnsMutex);
     _spawns[toThread] = fromThread;
 }

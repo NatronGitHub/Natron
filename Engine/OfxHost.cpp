@@ -1040,7 +1040,7 @@ static OfxStatus
 threadFunctionWrapper(OfxThreadFunctionV1 func,
                       unsigned int threadIndex,
                       unsigned int threadMax,
-                      const QThread* spawnerThread,
+                      QThread* spawnerThread,
                       void *customArg)
 {
     assert(threadIndex < threadMax);
@@ -1081,7 +1081,7 @@ public:
     OfxThread(OfxThreadFunctionV1 func,
               unsigned int threadIndex,
               unsigned int threadMax,
-              const QThread* spawnerThread,
+              QThread* spawnerThread,
               void *customArg,
               OfxStatus *stat)
         : _func(func)
@@ -1121,7 +1121,7 @@ private:
     OfxThreadFunctionV1 *_func;
     unsigned int _threadIndex;
     unsigned int _threadMax;
-    const QThread* _spawnerThread;
+    QThread* _spawnerThread;
     void *_customArg;
     OfxStatus *_stat;
 };

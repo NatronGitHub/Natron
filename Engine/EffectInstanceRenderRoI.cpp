@@ -1783,7 +1783,7 @@ EffectInstance::renderRoIInternal(double time,
 
     if (renderStatus != eRenderingFunctorRetFailed) {
         if ( (safety == eRenderSafetyFullySafeFrame) && (planesToRender->rectsToRender.size() > 1) ) {
-            const QThread* currentThread = QThread::currentThread();
+            QThread* currentThread = QThread::currentThread();
             boost::scoped_ptr<Implementation::TiledRenderingFunctorArgs> tiledArgs(new Implementation::TiledRenderingFunctorArgs);
             tiledArgs->renderFullScaleThenDownscale = renderFullScaleThenDownscale;
             tiledArgs->isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
