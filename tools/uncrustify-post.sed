@@ -23,7 +23,7 @@
 # - fix the output of uncrustify using this script
 #  sed -f tools/uncrustify-post.sed -i .bak */*.cpp */*.h
 # - run Qt's normalize utility to fix signals/slots
-#  for d in Gui Engine App CrashReporter Global Renderer Tests; do tools/normalize/normalize --modify $d; done
+#  for d in Gui Engine App Global Renderer Tests; do tools/normalize/normalize --modify $d; done
 
 # arguments to CLANG_DIAG_ON, CLANG_DIAG_OFF, GCC_DIAG_ON, GCC_DIAG_OFF should have no spaces around "-"
 /CLANG_DIAG_ON/ s/ - /-/g
