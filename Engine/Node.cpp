@@ -271,8 +271,10 @@ struct Node::Implementation
         , children()
         , multiInstanceParentName()
         , keyframesDisplayedOnTimeline(false)
-        , timersMutex()
+        , lastRenderStartedMutex()
         , lastRenderStartedSlotCallTime()
+        , renderStartedCounter(0)
+        , inputIsRenderingCounter(0)
         , lastInputNRenderStartedSlotCallTime()
         , nodeIsDequeuing(false)
         , nodeIsDequeuingMutex()
@@ -475,8 +477,10 @@ struct Node::Implementation
     bool keyframesDisplayedOnTimeline;
 
     ///This is to avoid the slots connected to the main-thread to be called too much
-    QMutex timersMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
+    QMutex lastRenderStartedMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
     timeval lastRenderStartedSlotCallTime;
+    int renderStartedCounter;
+    std::vector<int> inputIsRenderingCounter;
     timeval lastInputNRenderStartedSlotCallTime;
 
     ///True when the node is dequeuing the connectionQueue and no render should be started 'til it is empty
@@ -4400,9 +4404,13 @@ Node::initializeInputs()
         }
     }
     {
+        QMutexLocker l(&_imp->lastRenderStartedMutex);
+        _imp->inputIsRenderingCounter.resize(inputCount);
+    }
+    {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
-
+        _imp->inputIsRenderingCounter.resize(inputCount);
         _imp->inputs.resize(inputCount);
         _imp->guiInputs.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
@@ -6498,7 +6506,9 @@ Node::notifyInputNIsRendering(int inputNb)
 
     gettimeofday(&now, 0);
 
-    QMutexLocker l(&_imp->timersMutex);
+    QMutexLocker l(&_imp->lastRenderStartedMutex);
+    assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
+    ++_imp->inputIsRenderingCounter[inputNb];
     double t =  now.tv_sec  - _imp->lastInputNRenderStartedSlotCallTime.tv_sec +
                (now.tv_usec - _imp->lastInputNRenderStartedSlotCallTime.tv_usec) * 1e-6f;
 
@@ -6519,6 +6529,11 @@ Node::notifyInputNIsRendering(int inputNb)
 void
 Node::notifyInputNIsFinishedRendering(int inputNb)
 {
+    {
+        QMutexLocker l(&_imp->lastRenderStartedMutex);
+        assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
+        ++_imp->inputIsRenderingCounter[inputNb];
+    }
     Q_EMIT inputNIsFinishedRendering(inputNb);
 }
 
@@ -6533,7 +6548,9 @@ Node::notifyRenderingStarted()
 
     gettimeofday(&now, 0);
 
-    QMutexLocker l(&_imp->timersMutex);
+    
+    QMutexLocker l(&_imp->lastRenderStartedMutex);
+    ++_imp->renderStartedCounter;
     double t =  now.tv_sec  - _imp->lastRenderStartedSlotCallTime.tv_sec +
                (now.tv_usec - _imp->lastRenderStartedSlotCallTime.tv_usec) * 1e-6f;
 
@@ -6553,7 +6570,26 @@ Node::notifyRenderingStarted()
 void
 Node::notifyRenderingEnded()
 {
+    {
+        QMutexLocker l(&_imp->lastRenderStartedMutex);
+        --_imp->renderStartedCounter;
+    }
     Q_EMIT renderingEnded();
+}
+
+int
+Node::getIsInputNRenderingCounter(int inputNb) const
+{
+    QMutexLocker l(&_imp->lastRenderStartedMutex);
+    assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
+    return _imp->inputIsRenderingCounter[inputNb];
+}
+
+int
+Node::getIsNodeRenderingCounter() const
+{
+    QMutexLocker l(&_imp->lastRenderStartedMutex);
+    return _imp->renderStartedCounter;
 }
 
 void

@@ -789,6 +789,10 @@ public:
 
     void notifyRenderingEnded();
 
+    int getIsInputNRenderingCounter(int inputNb) const;
+
+    int getIsNodeRenderingCounter() const;
+
     /**
      * @brief forwarded to the live instance
      **/

@@ -649,8 +649,6 @@ private:
     QString _nodeLabel;
     QString _channelsExtraLabel;
     boost::weak_ptr<NodeGui> _parentMultiInstance;
-    int _renderingStartedCount;
-    std::map<int, int> _inputNRenderingStartedCount;
 
     ///For the serialization thread
     mutable QMutex _mtSafeSizeMutex;
