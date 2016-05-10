@@ -1727,8 +1727,6 @@ struct TrackerPanelPrivateV1
     Button* exportButton;
     boost::shared_ptr<KnobPage> transformPage;
     boost::shared_ptr<KnobInt> referenceFrame;
-
-
     TrackScheduler scheduler;
 
 
@@ -1743,7 +1741,7 @@ struct TrackerPanelPrivateV1
         , exportButton(0)
         , transformPage()
         , referenceFrame()
-        , scheduler(publicInterface, node->getNode())
+        , scheduler( publicInterface, node->getNode() )
     {
     }
 
@@ -2059,7 +2057,8 @@ TrackerPanelPrivateV1::getTrackInstancesForButton(std::vector<KnobButton*>* trac
 bool
 TrackerPanelV1::trackBackward(ViewerInstance* /*viewer*/)
 {
-    Dialogs::errorDialog(tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString());
+    Dialogs::errorDialog( tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString() );
+
     return false;
 #if 0
     assert( QThread::currentThread() == qApp->thread() );
@@ -2084,7 +2083,8 @@ TrackerPanelV1::trackBackward(ViewerInstance* /*viewer*/)
 bool
 TrackerPanelV1::trackForward(ViewerInstance* /*viewer*/)
 {
-    Dialogs::errorDialog(tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString());
+    Dialogs::errorDialog( tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString() );
+
     return false;
 #if 0
     assert( QThread::currentThread() == qApp->thread() );
@@ -2122,7 +2122,8 @@ TrackerPanelV1::isTracking() const
 bool
 TrackerPanelV1::trackPrevious(ViewerInstance* /*viewer*/)
 {
-    Dialogs::errorDialog(tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString());
+    Dialogs::errorDialog( tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString() );
+
     return false;
 #if 0
     std::list<Node*> selectedInstances;
@@ -2151,7 +2152,8 @@ TrackerPanelV1::trackPrevious(ViewerInstance* /*viewer*/)
 bool
 TrackerPanelV1::trackNext(ViewerInstance* /*viewer*/)
 {
-    Dialogs::errorDialog(tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString());
+    Dialogs::errorDialog( tr("Tracker").toStdString(), tr("TrackerPM is now depecrated and can only be used to retrieve animation tracked from older projects, please use the Tracker node from now on.").toStdString() );
+
     return false;
 #if 0
     std::list<Node*> selectedInstances;

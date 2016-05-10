@@ -712,8 +712,8 @@ Node::load(const CreateNodeArgs& args)
          */
         _imp->effect.reset( func.second(thisShared) );
         assert(_imp->effect);
-        
-        
+
+
 #ifdef NATRON_ENABLE_IO_META_NODES
         if (args.ioContainer) {
             ReadNode* isReader = dynamic_cast<ReadNode*>( args.ioContainer->getEffectInstance().get() );
@@ -726,7 +726,7 @@ Node::load(const CreateNodeArgs& args)
             }
         }
 #endif
-        
+
         _imp->effect->initializeData();
 
         createRotoContextConditionnally();
@@ -888,14 +888,13 @@ Node::load(const CreateNodeArgs& args)
     _imp->effect->onEffectCreated(canOpenFileDialog, args.paramValues);
 
     _imp->nodeCreated = true;
-    
+
     if ( !getApp()->isCreatingNodeTree() ) {
         refreshAllInputRelatedData(!args.serialization);
     }
 
 
     _imp->runOnNodeCreatedCB(!args.serialization && !isLoadingPyPlug);
-
 } // load
 
 bool
@@ -3726,26 +3725,26 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
 
     createNodePage(settingsPage, renderScaleSupportPref);
     createInfoPage();
-    
+
     if ( _imp->effect->isWriter() ) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
 #ifndef NATRON_ENABLE_IO_META_NODES
-            createWriterFrameStepKnob(mainPage);
+        createWriterFrameStepKnob(mainPage);
 #else
         if (!ioContainer) {
 #endif
-        
-            boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), "Render", 1, false);
-            renderButton->setHintToolTip("Starts rendering the specified frame range.");
-            renderButton->setAsRenderButton();
-            renderButton->setName("startRender");
-            renderButton->setEvaluateOnChange(false);
-            _imp->renderButton = renderButton;
-            mainPage->addKnob(renderButton);
-            
-            createPythonPage();
+
+        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), "Render", 1, false);
+        renderButton->setHintToolTip("Starts rendering the specified frame range.");
+        renderButton->setAsRenderButton();
+        renderButton->setName("startRender");
+        renderButton->setEvaluateOnChange(false);
+        _imp->renderButton = renderButton;
+        mainPage->addKnob(renderButton);
+
+        createPythonPage();
 #ifdef NATRON_ENABLE_IO_META_NODES
-        }
+    }
 #endif
     }
 } // Node::initializeDefaultKnobs
@@ -4109,6 +4108,7 @@ bool
 Node::isForceCachingEnabled() const
 {
     boost::shared_ptr<KnobBool> b = _imp->forceCaching.lock();
+
     return b ? b->getValue() : false;
 }
 
@@ -4128,6 +4128,7 @@ bool
 Node::useScaleOneImagesWhenRenderScaleSupportIsDisabled() const
 {
     boost::shared_ptr<KnobBool> b =  _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
+
     return b ? b->getValue() : false;
 }
 
@@ -4144,8 +4145,8 @@ Node::setEffect(const EffectInstPtr& effect)
     assert( QThread::currentThread() == qApp->thread() );
     _imp->effect = effect;
     _imp->effect->initializeData();
-    
-    
+
+
 #ifdef NATRON_ENABLE_IO_META_NODES
     NodePtr thisShared = shared_from_this();
     NodePtr ioContainer = _imp->ioContainer.lock();
@@ -6370,13 +6371,13 @@ Node::setPersistentMessage(MessageTypeEnum type,
         }
 #endif
         // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
-        if (!isPartOfProject() && getGroup()) {
-            NodeGroup* isGroup = dynamic_cast<NodeGroup*>(getGroup().get());
+        if ( !isPartOfProject() && getGroup() ) {
+            NodeGroup* isGroup = dynamic_cast<NodeGroup*>( getGroup().get() );
             if (isGroup) {
                 isGroup->setPersistentMessage(type, content);
             }
         }
-        
+
         if (type == eMessageTypeInfo) {
             message(type, content);
 
@@ -7905,12 +7906,11 @@ Node::onEffectKnobValueChanged(KnobI* what,
         if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
             Q_EMIT previewKnobToggled();
         }
-    } else if ( what == _imp->renderButton.lock().get()) {
-        
+    } else if ( what == _imp->renderButton.lock().get() ) {
         if ( getEffectInstance()->isWriter() ) {
             /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
             AppInstance::RenderWork w;
-            w.writer = dynamic_cast<OutputEffectInstance*>(_imp->effect.get());
+            w.writer = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
             w.firstFrame = INT_MIN;
             w.lastFrame = INT_MAX;
             w.frameStep = INT_MIN;
@@ -7918,12 +7918,10 @@ Node::onEffectKnobValueChanged(KnobI* what,
             std::list<AppInstance::RenderWork> works;
             works.push_back(w);
             getApp()->startWritersRendering(false, works);
-                        
         }
-   
     } else if ( ( what == _imp->disableNodeKnob.lock().get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
-        if (QThread::currentThread() == qApp->thread()) {
+        if ( QThread::currentThread() == qApp->thread() ) {
             getApp()->redrawAllViewers();
         }
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
@@ -8354,7 +8352,7 @@ Node::setNodeDisabled(bool disabled)
 
     if (b) {
         b->setValue(disabled);
-        
+
         // Clear the actions cache because if this function is called from another thread, the hash will not be incremented
         _imp->effect->clearActionsCache();
     }
@@ -8831,9 +8829,8 @@ addIdentityNodesRecursively(const Node* caller,
 
             Format f;
             node->getEffectInstance()->getRenderFormat(&f);
-            
+
             isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, f, view, &inputTimeId, &identityView, &inputNbId);
-            
         }
 
 
@@ -9704,7 +9701,7 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
 
     std::string appID = _publicInterface->getApp()->getAppIDString();
     std::string scriptName = _publicInterface->getScriptName_mt_safe();
-    if (scriptName.empty()) {
+    if ( scriptName.empty() ) {
         return;
     }
     std::stringstream ss;

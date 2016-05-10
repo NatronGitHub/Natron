@@ -53,7 +53,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/TrackerFrameAccessor.h"
 
 
-
 #define kTrackBaseName "track"
 
 
@@ -72,7 +71,7 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamUsePatternMatching "usePatternMatching"
 #define kTrackerParamUsePatternMatchingLabel "Use Pattern Matching"
 #define kTrackerParamUsePatternMatchingHint "When enabled, the tracker will internally make use of the TrackerPM OpenFX plug-in to track the marker instead of LibMV. TrackerPM is using a patter-matching method. " \
-"Note that this is only applied to markers created after changing this parameter. Markers that existed prior to any change will continue using the method they were using when created"
+    "Note that this is only applied to markers created after changing this parameter. Markers that existed prior to any change will continue using the method they were using when created"
 
 #define kTrackerParamPatternMatchingScoreType "pmScoreType"
 #define kTrackerParamPatternMatchingScoreTypeLabel "Score Type"
@@ -190,7 +189,7 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamFittingError "fittingError"
 #define kTrackerParamFittingErrorLabel "Fitting Error"
 #define kTrackerParamFittingErrorHint "This parameter indicates the error for each frame of the fitting of the model (i.e: Transform / CornerPin) to the tracks data. This value is in pixels and represents the rooted weighted sum of squared errors for each track. The error is " \
-"essentially the difference between the point position computed from the original point onto which is applied the fitted model and the original tracked point. "
+    "essentially the difference between the point position computed from the original point onto which is applied the fitted model and the original tracked point. "
 
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
@@ -300,8 +299,6 @@ struct TrackMarkerAndOptions
 };
 
 
-
-
 class TrackerContextPrivate
     : public QObject
 {
@@ -313,12 +310,12 @@ public:
     TrackerContext * _publicInterface;
     boost::weak_ptr<Node> node;
     std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
-    
+
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     boost::weak_ptr<KnobBool> usePatternMatching;
     boost::weak_ptr<KnobChoice> patternMatchingScore;
 #endif
-    
+
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
@@ -371,10 +368,7 @@ public:
     std::list<TrackMarkerPtr > selectedMarkers, markersToSlave, markersToUnslave;
     int beginSelectionCounter;
     int selectionRecursion;
-
     TrackScheduler scheduler;
-
-
     struct TransformData
     {
         Point translation;
@@ -483,7 +477,6 @@ public:
                                            int formatHeight,
                                            const libmv::TrackRegionResult* result,
                                            const TrackMarkerPtr& natronMarker);
-    
     static bool trackStepLibMV(int trackIndex, const TrackArgs& args, int time);
     static bool trackStepTrackerPM(TrackMarkerPM* tracker, const TrackArgs& args, int time);
 

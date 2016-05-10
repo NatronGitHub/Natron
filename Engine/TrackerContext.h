@@ -48,9 +48,8 @@
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
-namespace mv
-{
-    class AutoTrack;
+namespace mv {
+class AutoTrack;
 }
 
 
@@ -130,9 +129,8 @@ public:
 
 
     boost::shared_ptr<Node> getNode() const;
-    
     boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
-    
+
     bool isTrackerPMEnabled() const;
 
     TrackMarkerPtr createMarker();
@@ -253,7 +251,7 @@ public:
 
 
     void onKnobsLoaded();
-    
+
     void inputChanged(int inputNb);
 
     void knobChanged(KnobI* k,
@@ -266,7 +264,7 @@ public:
     void declarePythonFields();
 
     void removeItemAsPythonField(const TrackMarkerPtr& item);
-    
+
     void declareItemAsPythonField(const TrackMarkerPtr& item);
 
     /*boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
@@ -391,7 +389,6 @@ Q_SIGNALS:
 
 private:
 
-    
 
     void endSelection(TrackSelectionReason reason);
 
@@ -440,11 +437,10 @@ Q_SIGNALS:
 struct TrackArgsPrivate;
 class TrackArgs
 {
-
 public:
-    
+
     TrackArgs();
-    
+
     TrackArgs(int start,
               int end,
               int step,
@@ -455,36 +451,35 @@ public:
               const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
               double formatWidth,
               double formatHeight);
-    
+
     TrackArgs(const TrackArgs& other);
     void operator=(const TrackArgs& other);
-    
+
     ~TrackArgs();
-    
+
     double getFormatHeight() const;
     double getFormatWidth() const;
-    
+
     QMutex* getAutoTrackMutex() const;
     int getStart() const;
-    
+
     int getEnd() const;
-    
+
     int getStep() const;
-    
+
     boost::shared_ptr<TimeLine> getTimeLine() const;
-    
     ViewerInstance* getViewer() const;
-    
+
     int getNumTracks() const;
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& getTracks() const;
     boost::shared_ptr<mv::AutoTrack> getLibMVAutoTrack() const;
-    
+
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
-    
+
     void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
-    
+
 private:
-    
+
     boost::scoped_ptr<TrackArgsPrivate> _imp;
 };
 
@@ -494,7 +489,6 @@ class TrackScheduler
 {
 public:
 
-  
 
     TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node);
 
@@ -518,7 +512,6 @@ private:
 
     virtual void run() OVERRIDE FINAL;
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;
-    
 };
 
 NATRON_NAMESPACE_EXIT;

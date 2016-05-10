@@ -51,7 +51,6 @@
 NATRON_NAMESPACE_ENTER;
 
 
-
 void
 TrackerContext::getMotionModelsAndHelps(bool addPerspective,
                                         std::vector<std::string>* models,
@@ -73,7 +72,6 @@ TrackerContext::getMotionModelsAndHelps(bool addPerspective,
     }
 }
 
-
 TrackerContext::TrackerContext(const boost::shared_ptr<Node> &node)
     : boost::enable_shared_from_this<TrackerContext>()
     , _imp( new TrackerContextPrivate(this, node) )
@@ -92,7 +90,7 @@ TrackerContext::load(const TrackerContextSerialization& serialization)
 
     for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
         TrackMarkerPtr marker;
-        if (it->usePatternMatching()) {
+        if ( it->usePatternMatching() ) {
             marker.reset( new TrackMarkerPM(thisShared) );
         } else {
             marker.reset( new TrackMarker(thisShared) );
@@ -208,6 +206,7 @@ TrackMarkerPtr
 TrackerContext::createMarker()
 {
     TrackMarkerPtr track;
+
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     bool usePM = isTrackerPMEnabled();
     if (!usePM) {
@@ -218,10 +217,10 @@ TrackerContext::createMarker()
 #else
     track.reset( new TrackMarker( shared_from_this() ) );
 #endif
-    
+
     track->initializeKnobsPublic();
     std::string name = generateUniqueTrackName(kTrackBaseName);
-    
+
     track->setScriptName(name);
     track->setLabel(name);
     track->resetCenter();
@@ -349,8 +348,10 @@ boost::shared_ptr<KnobChoice>
 TrackerContext::getCorrelationScoreTypeKnob() const
 {
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+
     return _imp->patternMatchingScore.lock();
 #else
+
     return boost::shared_ptr<KnobChoice>();
 #endif
 }
@@ -359,8 +360,10 @@ bool
 TrackerContext::isTrackerPMEnabled() const
 {
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
+
     return _imp->usePatternMatching.lock()->getValue();
 #else
+
     return false;
 #endif
 }
@@ -931,7 +934,7 @@ TrackerContext::knobChanged(KnobI* k,
         _imp->refreshVisibilityFromTransformType();
     }
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
-    else if (k == _imp->usePatternMatching.lock().get()) {
+    else if ( k == _imp->usePatternMatching.lock().get() ) {
         _imp->refreshVisibilityFromTransformType();
     }
 #endif
@@ -952,7 +955,6 @@ TrackerContext::removeItemAsPythonField(const TrackMarkerPtr& item)
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
         getNode()->getApp()->appendToScriptEditor(err);
     }
-    
 }
 
 void
@@ -964,10 +966,11 @@ TrackerContext::declareItemAsPythonField(const TrackMarkerPtr& item)
     std::string err;
     std::string itemName = item->getScriptName_mt_safe();
     std::stringstream ss;
+
     ss << nodeFullName << ".tracker." << itemName << " = ";
     ss << nodeFullName << ".tracker.getTrackByName(\"" << itemName + "\")\n";
 
-    
+
     const KnobsVec& knobs = item->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss << nodeFullName << ".tracker." << itemName << "." << (*it)->getName() << " = ";
@@ -1369,31 +1372,29 @@ struct TrackArgsPrivate
     boost::shared_ptr<mv::AutoTrack> libmvAutotrack;
     boost::shared_ptr<TrackerFrameAccessor> fa;
     std::vector<boost::shared_ptr<TrackMarkerAndOptions> > tracks;
-    
+
     //Store the format size because LibMV internally has a top-down Y axis
     double formatWidth, formatHeight;
     mutable QMutex autoTrackMutex;
-    
+
     TrackArgsPrivate()
-    : start(0)
-    , end(0)
-    , step(1)
-    , timeline()
-    , viewer(0)
-    , libmvAutotrack()
-    , fa()
-    , tracks()
-    , formatWidth(0)
-    , formatHeight(0)
+        : start(0)
+        , end(0)
+        , step(1)
+        , timeline()
+        , viewer(0)
+        , libmvAutotrack()
+        , fa()
+        , tracks()
+        , formatWidth(0)
+        , formatHeight(0)
     {
-        
     }
 };
 
 TrackArgs::TrackArgs()
-: _imp(new TrackArgsPrivate())
+    : _imp( new TrackArgsPrivate() )
 {
-    
 }
 
 TrackArgs::TrackArgs(int start,
@@ -1406,7 +1407,7 @@ TrackArgs::TrackArgs(int start,
                      const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
                      double formatWidth,
                      double formatHeight)
-: _imp(new TrackArgsPrivate())
+    : _imp( new TrackArgsPrivate() )
 {
     _imp->start = start;
     _imp->end = end;
@@ -1422,11 +1423,10 @@ TrackArgs::TrackArgs(int start,
 
 TrackArgs::~TrackArgs()
 {
-    
 }
 
 TrackArgs::TrackArgs(const TrackArgs& other)
-: _imp(new TrackArgsPrivate())
+    : _imp( new TrackArgsPrivate() )
 {
     *this = other;
 }
@@ -1513,14 +1513,16 @@ TrackArgs::getLibMVAutoTrack() const
 }
 
 void
-TrackArgs::getEnabledChannels(bool* r, bool* g, bool* b) const
+TrackArgs::getEnabledChannels(bool* r,
+                              bool* g,
+                              bool* b) const
 {
     _imp->fa->getEnabledChannels(r, g, b);
-
 }
 
 void
-TrackArgs::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const
+TrackArgs::getRedrawAreasNeeded(int time,
+                                std::list<RectD>* canonicalRects) const
 {
     for (std::vector<boost::shared_ptr<TrackMarkerAndOptions> >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
         boost::shared_ptr<KnobDouble> searchBtmLeft = (*it)->natronMarker->getSearchWindowBottomLeftKnob();
@@ -1530,16 +1532,16 @@ TrackArgs::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) cons
         Point offset, center, btmLeft, topRight;
         offset.x = offsetKnob->getValueAtTime(time, 0);
         offset.y = offsetKnob->getValueAtTime(time, 1);
-        
+
         center.x = centerKnob->getValueAtTime(time, 0);
         center.y = centerKnob->getValueAtTime(time, 1);
-        
+
         btmLeft.x = searchBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
         btmLeft.y = searchBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
-        
+
         topRight.x = searchTopRight->getValueAtTime(time, 0) + center.x + offset.x;
         topRight.y = searchTopRight->getValueAtTime(time, 1) + center.y + offset.y;
-        
+
         RectD rect;
         rect.x1 = btmLeft.x;
         rect.y1 = btmLeft.y;
@@ -1548,8 +1550,6 @@ TrackArgs::getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) cons
         canonicalRects->push_back(rect);
     }
 }
-
-
 
 struct TrackSchedulerPrivate
 {
@@ -1566,7 +1566,6 @@ struct TrackSchedulerPrivate
     QWaitCondition startRequestsCond;
     mutable QMutex isWorkingMutex;
     bool isWorking;
-    
     QMutex argsMutex;
     TrackArgs curArgs, requestedArgs;
 
@@ -1610,7 +1609,7 @@ struct TrackSchedulerPrivate
 
         return false;
     }
-    
+
     /*
      * @brief A pointer to a function that will be called concurrently for each Track marker to track.
      * @param index Identifies the track in args, which is supposed to hold the tracks vector.
@@ -1627,7 +1626,7 @@ TrackSchedulerBase::TrackSchedulerBase()
 
 TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
                                const NodeWPtr& node)
-: TrackSchedulerBase()
+    : TrackSchedulerBase()
     , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
 {
     setObjectName( QString::fromUtf8("TrackScheduler") );
@@ -1638,14 +1637,14 @@ TrackScheduler::~TrackScheduler()
 }
 
 bool
-TrackSchedulerPrivate::trackStepFunctor(int trackIndex, const TrackArgs& args, int time)
+TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
+                                        const TrackArgs& args,
+                                        int time)
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
     const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];
-    
-    TrackMarkerPM* isTrackerPM = dynamic_cast<TrackMarkerPM*>(track->natronMarker.get());
-    
+    TrackMarkerPM* isTrackerPM = dynamic_cast<TrackMarkerPM*>( track->natronMarker.get() );
     bool ret;
     if (isTrackerPM) {
         ret = TrackerContextPrivate::trackStepTrackerPM(isTrackerPM, args, time);
@@ -1768,12 +1767,12 @@ TrackScheduler::run()
             while (cur != end) {
                 ///Launch parallel thread for each track using the global thread pool
                 QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
-                                                            boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
-                                                                        _1,
-                                                                        _imp->curArgs,
-                                                                        cur) );
+                                                             boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
+                                                                         _1,
+                                                                         _imp->curArgs,
+                                                                         cur) );
                 future.waitForFinished();
-                
+
                 allTrackFailed = true;
                 for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
                     if ( (*it) ) {
@@ -1945,7 +1944,6 @@ TrackScheduler::quitThread()
 
     wait();
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

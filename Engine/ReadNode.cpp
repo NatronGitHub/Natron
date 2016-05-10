@@ -123,7 +123,7 @@ static GenericKnob genericReaderKnobNames[] =
 
     {kOCIOParamConfigFile, true},
     {kNatronReadNodeOCIOParamInputSpace, false},
-    {kOCIOParamInputSpace, false}, 
+    {kOCIOParamInputSpace, false},
     {kOCIOParamOutputSpace, false},
     {kOCIOParamInputSpaceChoice, false},
     {kOCIOParamOutputSpaceChoice, false},

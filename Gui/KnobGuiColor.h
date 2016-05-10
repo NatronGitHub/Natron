@@ -125,7 +125,6 @@ public:
 
     virtual ~KnobGuiColor() {}
 
-    
 public Q_SLOTS:
 
     void showColorDialog();

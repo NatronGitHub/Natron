@@ -78,7 +78,6 @@ public:
     void seek(SequenceTime time);
 
     virtual void notifyGuiClosing() OVERRIDE FINAL;
-    
     virtual void onPanelMadeCurrent() OVERRIDE FINAL;
 
     /**

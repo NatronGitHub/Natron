@@ -158,7 +158,6 @@ public:
     void turnOffOverlay();
 
     virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
-    
     virtual bool isViewerUIVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**

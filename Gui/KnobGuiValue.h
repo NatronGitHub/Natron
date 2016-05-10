@@ -90,6 +90,7 @@ public Q_SLOTS:
     void onRectangleFormatButtonClicked();
 
     void onResetToDefaultRequested();
+
 protected:
 
     void getSpinBox(int dim, SpinBox** spinbox, Label** label = 0) const;

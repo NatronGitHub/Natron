@@ -943,7 +943,7 @@ public:
     void checkForPremultWarningAndCheckboxes();
 
     void findPluginFormatKnobs();
-    
+
 private:
 
     void initializeDefaultKnobs(int renderScaleSupportPref, bool loadingSerialization);

@@ -2676,7 +2676,6 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
 {
-    
     //We changed, abort any ongoing current render to refresh them with a newer version
     abortAnyEvaluation();
 
@@ -2761,6 +2760,7 @@ void
 EffectInstance::clearPersistentMessage(bool recurse)
 {
     NodePtr node = getNode();
+
     if (node) {
         node->clearPersistentMessage(recurse);
     }

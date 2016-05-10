@@ -87,7 +87,6 @@ TrackerNode::initializeKnobs()
 {
 }
 
-
 void
 TrackerNode::knobChanged(KnobI* k,
                          ValueChangedReasonEnum reason,

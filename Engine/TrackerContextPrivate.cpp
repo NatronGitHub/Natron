@@ -195,7 +195,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1, false);
     transformPageKnob = transformPage;
 
-    
+
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     boost::shared_ptr<KnobBool> enablePatternMatching = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamUsePatternMatchingLabel, 1);
     enablePatternMatching->setName(kTrackerParamUsePatternMatching);
@@ -206,7 +206,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     enablePatternMatching->setEvaluateOnChange(false);
     settingsPage->addKnob(enablePatternMatching);
     usePatternMatching = enablePatternMatching;
-    
+
     boost::shared_ptr<KnobChoice> patternMatchingScoreKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamPatternMatchingScoreTypeLabel, 1, false);
     patternMatchingScoreKnob->setName(kTrackerParamPatternMatchingScoreType);
     patternMatchingScoreKnob->setHintToolTip(kTrackerParamPatternMatchingScoreTypeHint);
@@ -228,7 +228,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(patternMatchingScoreKnob);
     patternMatchingScore = patternMatchingScoreKnob;
 #endif
-    
+
     boost::shared_ptr<KnobBool> enableTrackRedKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackRedLabel, 1, false);
     enableTrackRedKnob->setName(kTrackerParamTrackRed);
     enableTrackRedKnob->setHintToolTip(kTrackerParamTrackRedHint);
@@ -464,7 +464,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     robustModelKnob->setAddNewLine(false);
     transformPage->addKnob(robustModelKnob);
     robustModel = robustModelKnob;
-    
+
     boost::shared_ptr<KnobString>  fittingErrorKnob = AppManager::createKnob<KnobString>(effect.get(), kTrackerParamFittingErrorLabel, 1);
     fittingErrorKnob->setName(kTrackerParamFittingError);
     fittingErrorKnob->setHintToolTip(kTrackerParamFittingErrorHint);
@@ -473,7 +473,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     fittingErrorKnob->setAsLabel();
     transformPage->addKnob(fittingErrorKnob);
     fittingError = fittingErrorKnob;
-    
+
 
     boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), "", 1);
     transformOutOfDateLabelKnob->setName(kTrackerParamTransformOutOfDate);
@@ -625,7 +625,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(exportButtonKnob);
     exportButton = exportButtonKnob;
 }
-
 
 /**
  * @brief Set keyframes on knobs from Marker data
@@ -918,11 +917,13 @@ TrackerContextPrivate::endLibMVOptionsForTrack(const TrackMarker& marker,
  * @param trackTime The search frame time, that is, the frame to track
  */
 bool
-TrackerContextPrivate::trackStepTrackerPM(TrackMarkerPM* track, const TrackArgs& args, int trackTime)
+TrackerContextPrivate::trackStepTrackerPM(TrackMarkerPM* track,
+                                          const TrackArgs& args,
+                                          int trackTime)
 {
-
     int frameStep = args.getStep();
     int refTime = track->getReferenceFrame(trackTime, frameStep);
+
     return track->trackMarker(frameStep > 0, refTime, trackTime);
 }
 
@@ -1326,7 +1327,7 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
 
     exportLink.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
     exportButton.lock()->setAllDimensionsEnabled(motionType != eTrackerMotionTypeNone);
-    
+
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     bool usePM = usePatternMatching.lock()->getValue();
     enableTrackRed.lock()->setSecret(usePM);
@@ -1337,9 +1338,9 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     bruteForcePreTrack.lock()->setSecret(usePM);
     useNormalizedIntensities.lock()->setSecret(usePM);
     preBlurSigma.lock()->setSecret(usePM);
-    
+
     patternMatchingScore.lock()->setSecret(!usePM);
-    
+
 #endif
 } // TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal
 
@@ -1479,7 +1480,7 @@ searchForModel(const bool dataSetIsManual,
     }
 
     KernelType kernel(M1, w1, h1, M2, w2, h2);
-    
+
     if (dataSetIsManual) {
         if (robustModel) {
             double sigmaMAD;
@@ -1861,7 +1862,6 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     boost::shared_ptr<KnobInt> smoothCornerPinKnob = smoothCornerPin.lock();
     int smoothJitter = smoothCornerPinKnob->getValue();
     RectD rodRef = getInputRoDAtTime(refTime);
-    
     boost::shared_ptr<KnobString> fittingErrorKnob = fittingError.lock();
     boost::shared_ptr<KnobDouble> fromPointsKnob[4];
     boost::shared_ptr<KnobDouble> toPointsKnob[4];
@@ -1876,7 +1876,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
 
     fittingErrorKnob->blockValueChanges();
     animatedKnobsChanged.push_back(fittingErrorKnob);
-    
+
     for (int i = 0; i < 4; ++i) {
         toPointsKnob[i]->blockValueChanges();
         animatedKnobsChanged.push_back(toPointsKnob[i]);
@@ -1902,14 +1902,13 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
     // signals to create keyframes in keyframeSet
     Curve tmpToPointsCurveX[4], tmpToPointsCurveY[4];
-    boost::shared_ptr<KnobString> tmpFitErrorKnob(new KnobString(0, "", 1, false));
+    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, "", 1, false) );
     tmpFitErrorKnob->populate();
-    
+
     QString rmsErrorPrefix = QLatin1String("Fitting Error: ");
     QString rmsErrorSuffix = QLatin1String(" px");
     for (QList<CornerPinData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const CornerPinData& dataAtTime = *itResults;
-
         QString rmsStr = rmsErrorPrefix + QString::number(dataAtTime.rms, 'f', 3) + rmsErrorSuffix;
         tmpFitErrorKnob->setValueAtTime(dataAtTime.time, rmsStr.toStdString(), ViewSpec::all(), 0);
 
@@ -2006,7 +2005,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
             }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-    fittingErrorKnob->clone(tmpFitErrorKnob.get());
+    fittingErrorKnob->clone( tmpFitErrorKnob.get() );
     for (int c = 0; c < 4; ++c) {
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 0, tmpToPointsCurveX[c]);
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 1, tmpToPointsCurveY[c]);
@@ -2129,7 +2128,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
 
 
     Curve tmpTXCurve, tmpTYCurve, tmpRotateCurve, tmpScaleCurve;
-    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, "", 1, false));
+    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, "", 1, false) );
     tmpFitErrorKnob->populate();
 
     QString rmsErrorPrefix = QLatin1String("Fitting Error: ");
@@ -2137,10 +2136,9 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
 
     for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const TransformData& dataAtTime = *itResults;
-
         QString rmsStr = rmsErrorPrefix + QString::number(dataAtTime.rms, 'f', 3) + rmsErrorSuffix;
         tmpFitErrorKnob->setValueAtTime(dataAtTime.time, rmsStr.toStdString(), ViewSpec::all(), 0);
-        
+
         if (smoothTJitter > 1) {
             int halfJitter = smoothTJitter / 2;
             Point avgT = {0, 0};
@@ -2335,8 +2333,8 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
             }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-    
-    fittingErrorKnob->clone(tmpFitErrorKnob.get());
+
+    fittingErrorKnob->clone( tmpFitErrorKnob.get() );
     translationKnob->cloneCurve(ViewSpec::all(), 0, tmpTXCurve);
     translationKnob->cloneCurve(ViewSpec::all(), 1, tmpTYCurve);
     rotationKnob->cloneCurve(ViewSpec::all(), 0, tmpRotateCurve);

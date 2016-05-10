@@ -108,7 +108,8 @@ PreferencesPanel::onSettingChanged(KnobI* knob)
     _changedKnobs.push_back(knob);
 }
 
-void PreferencesPanel::openHelp()
+void
+PreferencesPanel::openHelp()
 {
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     int serverPort = appPTR->getCurrentSettings()->getServerPort();

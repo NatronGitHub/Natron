@@ -1261,7 +1261,7 @@ TabWidget::makeCurrentTab(int index)
         curWidget->takeClickFocus();
     }
     tab->onPanelMadeCurrent();
-}
+} // TabWidget::makeCurrentTab
 
 void
 TabWidget::onCurrentTabDeleted()

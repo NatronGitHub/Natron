@@ -3863,7 +3863,6 @@ TrackerGui::onContextSelectionChanged(int reason)
             for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
                 _imp->makeMarkerKeyTexture(*it2, selectionFront);
             }
-
         } else {
             if (selectionFront) {
                 _imp->showMarkerTexture = true;

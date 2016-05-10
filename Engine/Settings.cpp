@@ -410,7 +410,7 @@ Settings::initializeKnobsGeneral()
                                       "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
                                       "undefined behavior.");
     _generalTab->addKnob(_convertNaNValues);
-    
+
     _pluginUseImageCopyForSource = AppManager::createKnob<KnobBool>(this, "Copy input image before rendering any plug-in");
     _pluginUseImageCopyForSource->setName("copyInputImage");
     _pluginUseImageCopyForSource->setAnimationEnabled(false);
@@ -1950,7 +1950,7 @@ Settings::restoreSettings()
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
         appPTR->setNThreadsToRender( getNumberOfThreads() );
         appPTR->setUseThreadPool( _useThreadPool->getValue() );
-        appPTR->setPluginsUseInputImageCopyToRender(_pluginUseImageCopyForSource->getValue());
+        appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
     } catch (std::logic_error) {
         // ignore
     }
@@ -2181,8 +2181,8 @@ Settings::onKnobValueChanged(KnobI* k,
         }
     } else if ( ( k == _scriptEditorFontChoice.get() ) || ( k == _scriptEditorFontSize.get() ) ) {
         appPTR->reloadScriptEditorFonts();
-    } else if (k == _pluginUseImageCopyForSource.get()) {
-        appPTR->setPluginsUseInputImageCopyToRender(_pluginUseImageCopyForSource->getValue());
+    } else if ( k == _pluginUseImageCopyForSource.get() ) {
+        appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
     }
     if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
         Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME

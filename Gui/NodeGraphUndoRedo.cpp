@@ -1658,6 +1658,7 @@ void
 GroupFromSelectionCommand::undo()
 {
     std::list<NodeGuiPtr> nodesToSelect;
+
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
         if (node) {
@@ -1678,7 +1679,6 @@ GroupFromSelectionCommand::undo()
 void
 GroupFromSelectionCommand::redo()
 {
-    
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _originalNodes.begin(); it != _originalNodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
         node->getNode()->deactivate(NodesList(),
@@ -1697,7 +1697,7 @@ GroupFromSelectionCommand::redo()
         nodesToSelect.push_back(nodeGroup);
     }
     _graph->setSelection(nodesToSelect);
-    
+
 
     std::list<ViewerInstance*> viewers;
     _graph->getGroup()->getViewers(&viewers);
@@ -1733,7 +1733,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             continue;
         }
         InlinedGroup expandedGroup;
-        
+
         /*
          * First-off copy all the nodes within the group, except the Inputs and Ouput nodes
          */
@@ -1775,8 +1775,8 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
         assert(groupGui);
         expandedGroup.group = groupGui;
-        
-        QPointF groupNodePos = groupGui->mapToScene(groupGui->mapFromParent(groupGui->getPos_mt_safe()));
+
+        QPointF groupNodePos = groupGui->mapToScene( groupGui->mapFromParent( groupGui->getPos_mt_safe() ) );
 
         //This is the BBox of the new inlined nodes
         RectD bbox;
@@ -1793,9 +1793,9 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             expandedGroup.inlinedNodes.push_back(it2->second);
         }
 
-        QPointF bboxCenter((bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2.);
+        QPointF bboxCenter( (bbox.x1 + bbox.x2) / 2., (bbox.y1 + bbox.y2) / 2. );
         // Remember the links from the Group node we are expending to its inputs and outputs
-        
+
         // This is the y coord. of the bottom-most input
         double inputY = INT_MIN;
         int maxInputs = group->getNode()->getMaxInputCount();
@@ -1839,7 +1839,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
         std::list<NodeGuiPtr > outputsConnectedToGroup;
         QPointF firstInputPos;
-        
+
         // This is the y coord of the top most output
         double outputY = INT_MAX;
         if (groupOutput) {
@@ -1894,8 +1894,8 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
              it2 != outputsConnectedToGroup.end(); ++it2) {
             (*it2)->moveBelowPositionRecursively(rectToClear);
         }
-     
-        
+
+
         // Move all created nodes by this delta to fit in the space we've just made
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it2 = newNodes.begin();
              it2 != newNodes.end(); ++it2) {
@@ -1919,8 +1919,8 @@ void
 InlineGroupCommand::undo()
 {
     std::set<ViewerInstance*> viewers;
-
     std::list<NodeGuiPtr> nodesToSelect;
+
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
@@ -1952,8 +1952,8 @@ void
 InlineGroupCommand::redo()
 {
     std::set<ViewerInstance*> viewers;
-
     std::list<NodeGuiPtr> nodesToSelect;
+
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
@@ -1973,7 +1973,7 @@ InlineGroupCommand::redo()
                     nodesToSelect.push_back(node);
                 }
             }
-            
+
             for (std::map<int, NodeToConnect>::iterator it2 = it->connections.begin(); it2 != it->connections.end(); ++it2) {
                 NodeGuiPtr input = it2->second.input.lock();
                 if (!input) {
@@ -1988,11 +1988,10 @@ InlineGroupCommand::redo()
                     }
                 }
             }
-      
         }
     }
     _graph->setSelection(nodesToSelect);
-    
+
     for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }

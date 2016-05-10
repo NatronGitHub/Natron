@@ -76,7 +76,7 @@ public:
     virtual ~OpenGLViewerI()
     {
     }
-    
+
     virtual bool isViewerUIVisible() const = 0;
 
     /**
