@@ -967,7 +967,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     // do not round it to Viewer tiles.
     std::vector<RectI> tiles;
 
-    if (!useCache) {
+    if (!useCache || outArgs->forceRender) {
         outArgs->params->roi = _imp->uiContext->getExactImageRectangleDisplayed(rod, outArgs->params->pixelAspectRatio, mipmapLevel);
         if (outArgs->isDoingPartialUpdates) {
             std::list<RectD> partialRects;
