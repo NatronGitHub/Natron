@@ -22,8 +22,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+
 #include "ThreadPool.h"
 #include <QAtomicInt>
+#include "Engine/AbortableRenderInfo.h"
+
 
 NATRON_NAMESPACE_ENTER;
 

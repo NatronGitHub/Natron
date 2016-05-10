@@ -57,6 +57,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 
+#include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/BlockingBackgroundRender.h"
@@ -354,7 +355,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 {
     if (!isRenderResponseToUserInteraction) {
         // Rendering is playback or render on disk
-        if (  abortInfo && (int)abortInfo->aborted > 0 ) {
+        if (  abortInfo && abortInfo->isAborted()) {
             return true;
         }
 
@@ -370,12 +371,12 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
     } else {
         // This is a render issued to refresh the image on the Viewer
 
-        if (!abortInfo || !abortInfo->canAbort) {
+        if (!abortInfo || !abortInfo->canAbort()) {
             return false;
         }
 
 
-        if ( (int)abortInfo->aborted > 0 ) {
+        if ( (int)abortInfo->isAborted() ) {
             return true;
         }
 

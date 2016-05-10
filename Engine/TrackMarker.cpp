@@ -26,6 +26,7 @@
 
 #include <QCoreApplication>
 
+#include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"

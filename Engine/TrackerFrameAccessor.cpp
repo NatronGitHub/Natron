@@ -36,6 +36,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include <QDebug>
 
+#include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"

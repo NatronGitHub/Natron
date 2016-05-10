@@ -46,6 +46,7 @@
 
 #include "Global/MemoryInfo.h"
 
+#include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
@@ -1953,6 +1954,25 @@ OutputSchedulerThread::abortRendering(bool autoRestart,
             ///This function (abortRendering) was probably called from a user event that was posted earlier in the
             ///event-loop, we just flag that the next event that will process the frame should NOT process it by
             ///reseting the processRunning flag
+#ifdef QT_CUSTOM_THREADPOOL
+            // Flag directly all threads that they are aborted, this enables each thread to have a shorter code-path
+            // when checking for abortion and will generally abort faster
+            {
+                QMutexLocker l(&_imp->renderThreadsMutex);
+                for (RenderThreads::iterator it = _imp->renderThreads.begin(); it != _imp->renderThreads.end(); ++it) {
+                    AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(it->thread);
+                    if (isAbortableThread) {
+                        bool userInteraction;
+                        AbortableRenderInfoPtr abortInfo;
+                        EffectInstPtr treeRoot;
+                        isAbortableThread->getAbortInfo(&userInteraction, &abortInfo, &treeRoot);
+                        if (abortInfo) {
+                            abortInfo->setAborted();
+                        }
+                    }
+                }
+            }
+#endif
             {
                 QMutexLocker l2(&_imp->processMutex);
 

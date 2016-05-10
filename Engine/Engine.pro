@@ -65,6 +65,7 @@ DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
 
 SOURCES += \
+    AbortableRenderInfo.cpp \
     AppInstance.cpp \
     AppManager.cpp \
     AppManagerPrivate.cpp \
@@ -221,6 +222,7 @@ SOURCES += \
     NatronEngine/separatorparam_wrapper.cpp
 
 HEADERS += \
+    AbortableRenderInfo.h \
     AppInstance.h \
     AppManager.h \
     AppManagerPrivate.h \

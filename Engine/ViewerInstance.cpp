@@ -566,9 +566,9 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 
             if (args[i] && args[i]->params) {
                 if ( (status[i] == eViewerRenderRetCodeFail) || (status[i] == eViewerRenderRetCodeBlack) ) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex, abortInfo->age);
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex, abortInfo->getRenderAge());
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, abortInfo->age);
+                _imp->removeOngoingRender(args[i]->params->textureIndex, abortInfo->getRenderAge());
             }
 
 
@@ -656,9 +656,9 @@ ViewerInstance::renderViewer(ViewIdx view,
 
             if (!isSequentialRender && args[i] && args[i]->params) {
                 if ( (ret[i] == eViewerRenderRetCodeFail) || (ret[i] == eViewerRenderRetCodeBlack) ) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex, args[i]->params->abortInfo->age);
+                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex, args[i]->params->abortInfo->getRenderAge());
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->abortInfo->age);
+                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->abortInfo->getRenderAge());
             }
 
             if (ret[i] == eViewerRenderRetCodeBlack) {
@@ -800,7 +800,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
     ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, abortInfo, stats, outArgs);
 
     if ( (stat == eViewerRenderRetCodeFail) || (stat == eViewerRenderRetCodeBlack) ) {
-        _imp->checkAndUpdateDisplayAge(textureIndex, abortInfo->age);
+        _imp->checkAndUpdateDisplayAge(textureIndex, abortInfo->getRenderAge());
     }
 
     return stat;
@@ -1507,7 +1507,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
         ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
         ///refresh the viewer.
-        if ( !_imp->checkAgeNoUpdate(inArgs.params->textureIndex, inArgs.params->abortInfo->age) ) {
+        if ( !_imp->checkAgeNoUpdate(inArgs.params->textureIndex, inArgs.params->abortInfo->getRenderAge()) ) {
             return eViewerRenderRetCodeRedraw;
         }
 
@@ -2430,7 +2430,7 @@ ViewerInstance::markAllOnGoingRendersAsAborted()
         }
 
         for (; it != _imp->currentRenderAges[i].end(); ++it) {
-            (*it)->aborted = 1;
+            (*it)->setAborted();
         }
     }
 }
@@ -2764,7 +2764,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     uiContext->makeOpenGLcontextCurrent();
 
     bool doUpdate = true;
-    if ( !params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex, params->abortInfo->age) ) {
+    if ( !params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex, params->abortInfo->getRenderAge()) ) {
         doUpdate = false;
     }
     if (doUpdate) {

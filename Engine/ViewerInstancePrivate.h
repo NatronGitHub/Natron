@@ -40,6 +40,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 
+#include "Engine/AbortableRenderInfo.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/FrameEntry.h"
@@ -58,7 +59,7 @@ struct AbortableRenderInfo_CompareAge
     bool operator() (const AbortableRenderInfoPtr & lhs,
                      const AbortableRenderInfoPtr & rhs) const
     {
-        return lhs->age < rhs->age;
+        return lhs->getRenderAge() < rhs->getRenderAge();
     }
 };
 
@@ -239,7 +240,7 @@ public:
     {
         QMutexLocker k(&renderAgeMutex);
 
-        return !currentRenderAges[texIndex].empty() && ( *currentRenderAges[texIndex].rbegin() )->age == age;
+        return !currentRenderAges[texIndex].empty() && ( *currentRenderAges[texIndex].rbegin() )->getRenderAge() == age;
     }
 
     /**
@@ -286,7 +287,7 @@ public:
     {
         QMutexLocker k(&renderAgeMutex);
 
-        if ( !currentRenderAges[texIndex].empty() && ( ( *currentRenderAges[texIndex].rbegin() )->age >= abortInfo->age ) ) {
+        if ( !currentRenderAges[texIndex].empty() && ( ( *currentRenderAges[texIndex].rbegin() )->getRenderAge() >= abortInfo->getRenderAge() ) ) {
             return false;
         }
         currentRenderAges[texIndex].insert(abortInfo);
@@ -300,7 +301,7 @@ public:
         QMutexLocker k(&renderAgeMutex);
 
         for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it != currentRenderAges[texIndex].end(); ++it) {
-            if ( (*it)->age == age ) {
+            if ( (*it)->getRenderAge() == age ) {
                 currentRenderAges[texIndex].erase(it);
 
                 return true;

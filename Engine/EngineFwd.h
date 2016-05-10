@@ -96,7 +96,7 @@ class SequenceFromFiles;
 // Natron Engine
 
 NATRON_NAMESPACE_ENTER;
-struct AbortableRenderInfo;
+class AbortableRenderInfo;
 class AbstractOfxEffectInstance;
 class AppInstance;
 class AppTLS;

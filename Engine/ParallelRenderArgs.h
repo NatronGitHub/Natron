@@ -29,7 +29,6 @@
 #include <map>
 #include <list>
 
-#include <QAtomicInt>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -61,21 +60,7 @@ struct InputMatrix
 
 typedef std::map<int, InputMatrix> InputMatrixMap;
 
-struct AbortableRenderInfo
-{
-    bool canAbort;
-    QAtomicInt aborted;
-    U64 age;
 
-    AbortableRenderInfo(bool canAbort,
-                        U64 age)
-        : canAbort(canAbort)
-        , aborted()
-        , age(age)
-    {
-        aborted.fetchAndStoreAcquire(0);
-    }
-};
 
 struct NodeFrameRequest;
 
@@ -156,33 +141,9 @@ struct ParallelRenderArgs
     bool viewerProgressReportEnabled : 1;
 
 
-    ParallelRenderArgs()
-        : time(0)
-        , timeline(0)
-        , nodeHash(0)
-        , request()
-        , view(0)
-        , abortInfo()
-        , treeRoot()
-        , rotoPaintNodes()
-        , stats()
-        , textureIndex(0)
-        , currentThreadSafety(eRenderSafetyInstanceSafe)
-        , isRenderResponseToUserInteraction(false)
-        , isSequentialRender(false)
-        , isAnalysis(false)
-        , isDuringPaintStrokeCreation(false)
-        , doNansHandling(true)
-        , draftMode(false)
-        , tilesSupported(false)
-        , viewerProgressReportEnabled(false)
-    {
-    }
-
-    bool isCurrentFrameRenderNotAbortable() const
-    {
-        return isRenderResponseToUserInteraction && (!abortInfo || !abortInfo->canAbort);
-    }
+    ParallelRenderArgs();
+    
+    bool isCurrentFrameRenderNotAbortable() const;
 };
 
 struct FrameViewPair
