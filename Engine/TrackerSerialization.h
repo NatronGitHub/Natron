@@ -66,7 +66,7 @@ public:
         , _userKeys()
     {
     }
-    
+
     bool usePatternMatching() const
     {
         return _isPM;
@@ -79,7 +79,7 @@ private:
               const unsigned int version) const
     {
         (void)version;
-        
+
         ar & boost::serialization::make_nvp("IsTrackerPM", _isPM);
         ar & boost::serialization::make_nvp("Enabled", _enabled);
         ar & boost::serialization::make_nvp("ScriptName", _scriptName);
@@ -105,7 +105,7 @@ private:
         if (version >= TRACK_SERIALIZATION_ADD_TRACKER_PM) {
             ar & boost::serialization::make_nvp("IsTrackerPM", _isPM);
         }
-        
+
         ar & boost::serialization::make_nvp("Enabled", _enabled);
         ar & boost::serialization::make_nvp("ScriptName", _scriptName);
         ar & boost::serialization::make_nvp("Label", _label);

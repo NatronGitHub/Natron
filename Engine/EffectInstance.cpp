@@ -1128,7 +1128,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
     assert( !projectDefault.isNull() );
 
     assert(rod);
-    if (rod->isNull()) {
+    if ( rod->isNull() ) {
         // if the RoD is empty, set it to a "standard" empty RoD (0,0,0,0)
         rod->clear();
     }
@@ -2676,7 +2676,6 @@ EffectInstance::openImageFileKnob()
 void
 EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
 {
-    
     //We changed, abort any ongoing current render to refresh them with a newer version
     abortAnyEvaluation();
 
@@ -2761,6 +2760,7 @@ void
 EffectInstance::clearPersistentMessage(bool recurse)
 {
     NodePtr node = getNode();
+
     if (node) {
         node->clearPersistentMessage(recurse);
     }

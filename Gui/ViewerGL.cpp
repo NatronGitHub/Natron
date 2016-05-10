@@ -1405,7 +1405,7 @@ ViewerGL::isViewerUIVisible() const
     if (tabWidget->currentWidget() != _imp->viewerTab) {
         return false;
     }
-    
+
     return true;
 }
 

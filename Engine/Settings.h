@@ -354,7 +354,7 @@ public:
     unsigned int getAutoProxyMipMapLevel() const;
 
     bool isNaNHandlingEnabled() const;
-    
+
     bool isCopyInputImageForPluginRenderEnabled() const;
 
     bool isDefaultAppearanceOutdated() const;

@@ -328,9 +328,8 @@ public:
                       int nComps);
 
     virtual ~OfxImage();
-    
-    const std::string& getComponentsString() const;
 
+    const std::string& getComponentsString() const;
     boost::shared_ptr<NATRON_NAMESPACE::Image> getInternalImage() const;
 
 private:

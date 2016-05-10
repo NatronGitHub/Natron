@@ -296,7 +296,8 @@ Gui::informationDialog(const std::string & title,
 void
 Gui::setQMessageBoxAppropriateFont(QMessageBox* widget)
 {
-    QGridLayout* grid = dynamic_cast<QGridLayout*>(widget->layout());
+    QGridLayout* grid = dynamic_cast<QGridLayout*>( widget->layout() );
+
     assert(grid);
     if (!grid) {
         return;

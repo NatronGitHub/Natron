@@ -84,7 +84,6 @@ public:
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -94,17 +93,16 @@ public:
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getPluginGrouping(std::list<std::string>* grouping) const OVERRIDE FINAL;
     virtual void onEffectCreated(bool mayCreateFileDialog, const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues) OVERRIDE FINAL;
-
     virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return false;
     }
-    
+
     void renderSequenceStarted();
     void renderSequenceEnd();
-    
+
 private:
-  
+
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& serialization) OVERRIDE FINAL;
@@ -113,8 +111,6 @@ private:
                              ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-
-
     boost::scoped_ptr<WriteNodePrivate> _imp;
 };
 

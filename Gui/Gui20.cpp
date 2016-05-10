@@ -825,10 +825,10 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         int menuSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
         int toolButtonSize = !plugin->hasParent() ? TO_DPIX(NATRON_TOOL_BUTTON_ICON_SIZE) : TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
         QPixmap menuPix = pix, toolbuttonPix = pix;
-        if (std::max( menuPix.width(), menuPix.height() ) != menuSize && !menuPix.isNull()) {
+        if ( (std::max( menuPix.width(), menuPix.height() ) != menuSize) && !menuPix.isNull() ) {
             menuPix = menuPix.scaled(menuSize, menuSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
-        if (std::max( toolbuttonPix.width(), toolbuttonPix.height() ) != toolButtonSize && !toolbuttonPix.isNull()) {
+        if ( (std::max( toolbuttonPix.width(), toolbuttonPix.height() ) != toolButtonSize) && !toolbuttonPix.isNull() ) {
             toolbuttonPix = toolbuttonPix.scaled(toolButtonSize, toolButtonSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
         menuIcon.addPixmap(menuPix);

@@ -69,6 +69,7 @@ TLSHolder<EffectInstance::EffectTLSData>::copyTLS(const QThread* fromThread,
                                                   const QThread* toThread) const
 {
     boost::shared_ptr<EffectInstance::EffectTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
+
     Q_UNUSED(tlsDataPtr);
 }
 
@@ -88,6 +89,7 @@ TLSHolder<T>::copyAndReturnNewTLS(const QThread* fromThread,
 {
     Q_UNUSED(fromThread);
     Q_UNUSED(toThread);
+
     return boost::shared_ptr<T>();
 }
 
@@ -96,13 +98,15 @@ bool
 TLSHolder<T>::canCleanupPerThreadData(const QThread* curThread) const
 {
     QReadLocker k(&perThreadDataMutex);
-    if (perThreadData.empty()) {
+
+    if ( perThreadData.empty() ) {
         return true; // cleanup would return true
     }
     typename ThreadDataMap::iterator found = perThreadData.find(curThread);
     if ( found != perThreadData.end() ) {
         return true; // cleanup would do something
     }
+
     return false;
 }
 
@@ -234,13 +238,12 @@ AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
     }
     {
         QWriteLocker k(&_objectMutex);
-
         boost::shared_ptr<T> retval = copyTLSFromSpawnerThreadInternal<T>(holder, curThread, foundThread);
 
 
         return retval;
     }
-}
+} // AppTLS::copyTLSFromSpawnerThread
 
 template <typename T>
 boost::shared_ptr<T>

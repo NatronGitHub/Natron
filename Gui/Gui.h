@@ -565,7 +565,7 @@ public:
     void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
 
     static void setQMessageBoxAppropriateFont(QMessageBox* widget);
-    
+
 protected:
     // Reimplemented Protected Functions
 

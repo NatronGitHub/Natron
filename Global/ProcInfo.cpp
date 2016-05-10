@@ -313,6 +313,7 @@ applicationFilePath_fromArgv(const char* argv0Param)
 
     return absPath;
 } // applicationFilePath_fromArgv
+
 #endif // Q_OS_UNIX
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT

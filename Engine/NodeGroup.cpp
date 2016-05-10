@@ -1526,6 +1526,7 @@ void
 NodeGroup::purgeCaches()
 {
     NodesList nodes = getNodes();
+
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->getEffectInstance()->purgeCaches();
     }

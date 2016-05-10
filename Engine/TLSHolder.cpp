@@ -133,17 +133,17 @@ AppTLS::cleanupTLSForThread()
             }
         }
     }
-    if (!objectsToClean.empty()) {
+    if ( !objectsToClean.empty() ) {
 #if 1
         // version from 1a0712b
         // should be OK, since the bug in 1a0712b was in canCleanupPerThreadData
         QWriteLocker k (&_objectMutex);
         for (std::list<boost::shared_ptr<const TLSHolderBase> >::iterator it = objectsToClean.begin();
-             it!=objectsToClean.end();
+             it != objectsToClean.end();
              ++it) {
-            if ((*it)->cleanupPerThreadData(curThread)) {
+            if ( (*it)->cleanupPerThreadData(curThread) ) {
                 TLSObjects::iterator found = _object->objects.find(*it);
-                if (found != _object->objects.end()) {
+                if ( found != _object->objects.end() ) {
                     _object->objects.erase(found);
                 }
             }
@@ -166,7 +166,7 @@ AppTLS::cleanupTLSForThread()
         _object->objects = newObjects;
 #endif
     }
-}
+} // AppTLS::cleanupTLSForThread
 
 template class TLSHolder<EffectInstance::EffectTLSData>;
 template class TLSHolder<NATRON_NAMESPACE::OfxHost::OfxHostTLSData>;

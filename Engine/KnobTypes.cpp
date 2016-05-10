@@ -2004,7 +2004,7 @@ KnobParametric::cloneExtraData(KnobI* other,
                                int otherDimension)
 {
     KnobParametric* isParametric = dynamic_cast<KnobParametric*>(other);
-    
+
     if (!isParametric) {
         return;
     }
@@ -2017,7 +2017,7 @@ KnobParametric::cloneExtraData(KnobI* other,
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert(dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension());
+        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
         _curves[dimension]->clone(*isParametric->_curves[otherDimension]);
     }
 }
@@ -2043,7 +2043,7 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert(dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension());
+        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
         hasChanged |= _curves[dimension]->cloneAndCheckIfChanged(*isParametric->_curves[otherDimension]);
     }
 
@@ -2071,10 +2071,9 @@ KnobParametric::cloneExtraData(KnobI* other,
         if (otherDimension == -1) {
             otherDimension = dimension;
         }
-        assert(dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension());
-       _curves[dimension]->clone(*isParametric->_curves[otherDimension], offset, range);
+        assert( dimension >= 0 && dimension < getDimension() && otherDimension >= 0 && otherDimension < getDimension() );
+        _curves[dimension]->clone(*isParametric->_curves[otherDimension], offset, range);
     }
-    
 }
 
 void

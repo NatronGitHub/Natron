@@ -551,7 +551,7 @@ NodeGraph::onNodeNameEditDialogFinished()
 void
 NodeGraph::extractSelectedNode()
 {
-    if (!_imp->_selection.empty()) {
+    if ( !_imp->_selection.empty() ) {
         pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
     }
 }
@@ -559,7 +559,7 @@ NodeGraph::extractSelectedNode()
 void
 NodeGraph::createGroupFromSelection()
 {
-    if (!_imp->_selection.empty()) {
+    if ( !_imp->_selection.empty() ) {
         pushUndoCommand( new GroupFromSelectionCommand(this, _imp->_selection) );
     }
 }
@@ -571,7 +571,7 @@ NodeGraph::expandSelectedGroups()
 
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         NodeGroup* isGroup = (*it)->getNode()->isEffectGroup();
-        if (isGroup && isGroup->getPluginID() == PLUGINID_NATRON_GROUP) {
+        if ( isGroup && (isGroup->getPluginID() == PLUGINID_NATRON_GROUP) ) {
             nodes.push_back(*it);
         }
     }

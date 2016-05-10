@@ -127,7 +127,6 @@ public:
 
 public Q_SLOTS:
 
-
     void showColorDialog();
 
     void setPickingEnabled(bool enabled);
@@ -137,6 +136,7 @@ public Q_SLOTS:
     void onMustShowAllDimension();
 
     void onDialogCurrentColorChanged(const QColor & color);
+
 
 Q_SIGNALS:
 

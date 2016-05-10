@@ -429,12 +429,12 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
 
         _imp->slider = new ScaleSliderQWidget( dispminGui, dispmaxGui, value0, knob->getEvaluateOnChange(),
                                                sliderType, getGui(), eScaleTypeLinear, layout->parentWidget() );
-        
+
         _imp->slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         if ( hasToolTip() ) {
             _imp->slider->setToolTip( toolTip() );
         }
-        QObject::connect(_imp->slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()));
+        QObject::connect( _imp->slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()) );
         QObject::connect( _imp->slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
         QObject::connect( _imp->slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
         containerLayout->addWidget(_imp->slider);
@@ -510,8 +510,9 @@ KnobGuiValue::onResetToDefaultRequested()
 {
     KnobPtr knob = _imp->knob.lock();
     std::list<KnobPtr> knobsList;
+
     knobsList.push_back(knob);
-    pushUndoCommand(new RestoreDefaultsCommand(false, knobsList, -1));
+    pushUndoCommand( new RestoreDefaultsCommand(false, knobsList, -1) );
 }
 
 void

@@ -179,7 +179,7 @@ struct WriteNodePrivate
     boost::weak_ptr<KnobSeparator> separatorKnob;
     boost::weak_ptr<KnobButton> renderButtonKnob;
     std::list<boost::weak_ptr<KnobI> > writeNodeKnobs;
-    
+
     //MT only
     int creatingWriteNode;
 
@@ -203,7 +203,7 @@ struct WriteNodePrivate
     }
 
     void placeWriteNodeKnobsInPage();
-    
+
     void createReadNodeAndConnectGraph(const std::string& filename);
 
     void createWriteNode(bool throwErrors, const std::string& filename, const boost::shared_ptr<NodeSerialization>& serialization);
@@ -217,7 +217,7 @@ struct WriteNodePrivate
     void createDefaultWriteNode();
 
     bool checkEncoderCreated(double time, ViewIdx view);
-    
+
     void setReadNodeOriginalFrameRange();
 };
 
@@ -379,16 +379,15 @@ WriteNodePrivate::destroyWriteNode()
 
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
-    
+
     embeddedPlugin.reset();
     readBackNode.reset();
-    
 } // WriteNodePrivate::destroyWriteNode
 
 void
 WriteNodePrivate::createDefaultWriteNode()
 {
-    boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>(_publicInterface->shared_from_this());
+    boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
     CreateNodeArgs args( QString::fromUtf8(WRITE_NODE_DEFAULT_WRITER), eCreateNodeReasonInternal, isNodeGroup );
 
     args.createGui = false;
@@ -398,7 +397,7 @@ WriteNodePrivate::createDefaultWriteNode()
     //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
 
-    if (!embeddedPlugin.lock()) {
+    if ( !embeddedPlugin.lock() ) {
         QString error = QObject::tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
         throw std::runtime_error( error.toStdString() );
     }
@@ -426,7 +425,7 @@ WriteNodePrivate::checkEncoderCreated(double time,
 
         return false;
     }
-    if (!embeddedPlugin.lock()) {
+    if ( !embeddedPlugin.lock() ) {
         std::stringstream ss;
         ss << QObject::tr("Encoder was not created for ").toStdString() << pattern;
         ss << QObject::tr(" check that the file exists and its format is supported").toStdString();
@@ -461,6 +460,7 @@ void
 WriteNodePrivate::setReadNodeOriginalFrameRange()
 {
     NodePtr readNode = readBackNode.lock();
+
     if (!readNode) {
         return;
     }
@@ -468,13 +468,13 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     if (!writeNode) {
         return;
     }
-    double first,last;
+    double first, last;
     writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last);
-    
+
     {
         KnobPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
         assert(originalFrameRangeKnob);
-        KnobInt* originalFrameRange = dynamic_cast<KnobInt*>(originalFrameRangeKnob.get());
+        KnobInt* originalFrameRange = dynamic_cast<KnobInt*>( originalFrameRangeKnob.get() );
         if (originalFrameRange) {
             originalFrameRange->setValues(first, last, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
         }
@@ -482,7 +482,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobPtr firstFrameKnob = readNode->getKnobByName(kParamFirstFrame);
         assert(firstFrameKnob);
-        KnobInt* firstFrame = dynamic_cast<KnobInt*>(firstFrameKnob.get());
+        KnobInt* firstFrame = dynamic_cast<KnobInt*>( firstFrameKnob.get() );
         if (firstFrame) {
             firstFrame->setValue(first);
         }
@@ -490,7 +490,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     {
         KnobPtr lastFrameKnob = readNode->getKnobByName(kParamLastFrame);
         assert(lastFrameKnob);
-        KnobInt* lastFrame = dynamic_cast<KnobInt*>(lastFrameKnob.get());
+        KnobInt* lastFrame = dynamic_cast<KnobInt*>( lastFrameKnob.get() );
         if (lastFrame) {
             lastFrame->setValue(last);
         }
@@ -502,48 +502,42 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 {
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    
-    boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>(_publicInterface->shared_from_this());
-    
+    boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
     std::string readerPluginID;
     std::map<std::string, std::string> readersForFormat;
+
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::map<std::string, std::string>::iterator foundReaderForFormat = readersForFormat.find(ext);
     if ( foundReaderForFormat != readersForFormat.end() ) {
         readerPluginID = foundReaderForFormat->second;
     }
-    
+
     NodePtr writeNode = embeddedPlugin.lock();
 
     readBackNode.reset();
-    if (!readerPluginID.empty()) {
-        
-        
-       
-        
+    if ( !readerPluginID.empty() ) {
         CreateNodeArgs args( QString::fromUtf8( readerPluginID.c_str() ),  eCreateNodeReasonInternal, isNodeGroup );
         args.createGui = false;
         args.addToProject = false;
         args.fixedName = QString::fromUtf8("internalDecoderNode");
-        
+
         //Set a pre-value for the inputfile knob only if it did not exist
-        if (!filename.empty()) {
+        if ( !filename.empty() ) {
             args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
         }
-        
+
         if (writeNode) {
-            double first,last;
+            double first, last;
             writeNode->getEffectInstance()->getFrameRange_public(writeNode->getEffectInstance()->getHash(), &first, &last);
             args.paramValues.push_back( createDefaultValueForParam<int>(kReaderParamNameOriginalFrameRange, (int)first, (int)last) );
             args.paramValues.push_back( createDefaultValueForParam<int>(kParamFirstFrame, (int)first) );
             args.paramValues.push_back( createDefaultValueForParam<int>(kParamLastFrame, (int)last) );
         }
-    
-        
+
+
         readBackNode = _publicInterface->getApp()->createNode(args);
-        
     }
-    
+
     NodePtr input = inputNode.lock(), output = outputNode.lock();
     assert(input && output);
     if (writeNode) {
@@ -553,22 +547,19 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             output->replaceInput(readNode, 0);
             readNode->replaceInput(writeNode, 0);
             // sync the output colorspace of the reader from input colorspace of the writer
-            
+
             KnobPtr outputWriteColorSpace = writeNode->getKnobByName(kOCIOParamOutputSpace);
             KnobPtr inputReadColorSpace = readNode->getKnobByName(kNatronReadNodeOCIOParamInputSpace);
             if (inputReadColorSpace && outputWriteColorSpace) {
                 inputReadColorSpace->slaveTo(0, outputWriteColorSpace, 0);
             }
-            
         } else {
             output->replaceInput(writeNode, 0);
         }
-        
     } else {
         output->replaceInput(input, 0);
     }
-
-}
+} // WriteNodePrivate::createReadNodeAndConnectGraph
 
 void
 WriteNodePrivate::createWriteNode(bool throwErrors,
@@ -579,11 +570,10 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         return;
     }
 
-    boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>(_publicInterface->shared_from_this());
-    
+    boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
     NodePtr input = inputNode.lock(), output = outputNode.lock();
     //NodePtr maskInput;
-    assert((input && output) || (!input && !output));
+    assert( (input && output) || (!input && !output) );
     if (!output) {
         CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isNodeGroup);
         args.createGui = false;
@@ -593,7 +583,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             output->setScriptName("Output");
         } catch (...) {
         }
-        
+
         assert(output);
         outputNode = output;
     }
@@ -631,8 +621,8 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             }
         }
     }
-    
- 
+
+
     //Destroy any previous reader
     //This will store the serialization of the generic knobs
     destroyWriteNode();
@@ -676,23 +666,22 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
         _publicInterface->getNode()->declarePythonFields();
     }
-    
 
-    
-    if (!embeddedPlugin.lock()) {
+
+    if ( !embeddedPlugin.lock() ) {
         defaultFallback = true;
     }
 
     if (defaultFallback) {
         createDefaultWriteNode();
     }
-    
+
     // Make the write node be a pass-through while we do not render
     NodePtr writeNode = embeddedPlugin.lock();
     if (writeNode) {
         writeNode->setNodeDisabled(true);
     }
-    
+
     bool readFromFile = readBackKnob.lock()->getValue();
     if (readFromFile) {
         createReadNodeAndConnectGraph(filename);
@@ -705,7 +694,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             output->replaceInput(input, 0);
         }
     }
-    
+
     _publicInterface->getNode()->findPluginFormatKnobs();
 
     //Clone the old values of the generic knobs
@@ -787,6 +776,7 @@ bool
 WriteNode::isVideoWriter() const
 {
     NodePtr p = _imp->embeddedPlugin.lock();
+
     return p ? p->getPluginID() == PLUGINID_OFX_WRITEFFMPEG : false;
 }
 
@@ -801,7 +791,6 @@ WriteNode::isOutput() const
 {
     return true;
 }
-
 
 bool
 WriteNode::getCreateChannelSelectorKnob() const
@@ -877,7 +866,7 @@ WriteNode::initializeKnobs()
        }*/
     _imp->frameIncrKnob = frameIncrKnob;
     _imp->writeNodeKnobs.push_back(frameIncrKnob);
-    
+
     boost::shared_ptr<KnobBool> readBack = AppManager::createKnob<KnobBool>(this, kNatronWriteParamReadBackLabel);
     readBack->setAnimationEnabled(false);
     readBack->setName(kNatronWriteParamReadBack);
@@ -914,7 +903,7 @@ WriteNode::initializeKnobs()
     controlpage->addKnob(pluginID);
     _imp->pluginIDStringKnob = pluginID;
     _imp->writeNodeKnobs.push_back(pluginID);
-}
+} // WriteNode::initializeKnobs
 
 void
 WriteNode::onEffectCreated(bool mayCreateFileDialog,
@@ -927,7 +916,7 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
 
 
     //If we already loaded the Writer, do not do anything
-    if (_imp->embeddedPlugin.lock()) {
+    if ( _imp->embeddedPlugin.lock() ) {
         return;
     }
     bool throwErrors = false;
@@ -975,9 +964,9 @@ WriteNode::knobChanged(KnobI* k,
                        bool originatedFromMainThread)
 {
     NodePtr writer = _imp->embeddedPlugin.lock();
+
     if ( ( k == _imp->outputFileKnob.lock().get() ) && (reason != eValueChangedReasonTimeChanged) ) {
         if (_imp->creatingWriteNode) {
-            
             if (writer) {
                 writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
             }
@@ -1031,20 +1020,21 @@ WriteNode::knobChanged(KnobI* k,
                 output->replaceInput(writer, 0);
             }
         }
-    } else if (k->getName() == kParamFirstFrame ||
-               k->getName() == kParamLastFrame ||
-               k->getName() == kParamFrameRange) {
+    } else if ( (k->getName() == kParamFirstFrame) ||
+                ( k->getName() == kParamLastFrame) ||
+                ( k->getName() == kParamFrameRange) ) {
         _imp->setReadNodeOriginalFrameRange();
     }
     if (writer) {
         writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
-}
+} // WriteNode::knobChanged
 
 void
 WriteNode::renderSequenceStarted()
 {
     NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
+
     if (writerNodePlugin) {
         writerNodePlugin->setNodeDisabled(false);
     }
@@ -1060,6 +1050,7 @@ void
 WriteNode::renderSequenceEnd()
 {
     NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
+
     if (writerNodePlugin) {
         writerNodePlugin->setNodeDisabled(true);
     }
