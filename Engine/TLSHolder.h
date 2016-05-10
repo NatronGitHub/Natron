@@ -117,7 +117,7 @@ public:
     /**
      * @brief Copy all the TLS from fromThread to toThread
      **/
-    void copyTLS(const QThread* fromThread, const QThread* toThread);
+    void copyTLS(QThread* fromThread, QThread* toThread);
 
     /**
      * @brief This function registers fromThread as a thread who spawned toThread.
@@ -129,7 +129,7 @@ public:
      * the TLS that may be required for the copy to happen, in which case a new value will
      * be constructed.
      **/
-    void softCopy(const QThread* fromThread, const QThread* toThread);
+    void softCopy(QThread* fromThread, QThread* toThread);
 
     /**
      * @brief Same as copyTLS() except that if a spawner thread was register for curThread beforehand

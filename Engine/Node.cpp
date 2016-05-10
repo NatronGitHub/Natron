@@ -6016,10 +6016,18 @@ Node::makePreviewImage(SequenceTime time,
 
     {
         AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+        const bool isRenderUserInteraction = true;
+        const bool isSequentialRender = false;
+#ifdef QT_CUSTOM_THREADPOOL
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+        if (isAbortable) {
+            isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, thisNode->getEffectInstance());
+        }
+#endif
         ParallelRenderArgsSetter frameRenderArgs( time,
                                                   ViewIdx(0), //< preview only renders view 0 (left)
-                                                  true, //<isRenderUserInteraction
-                                                  false, //isSequential
+                                                  isRenderUserInteraction, //<isRenderUserInteraction
+                                                  isSequentialRender, //isSequential
                                                   abortInfo, // abort info
                                                   thisNode, // viewer requester
                                                   0, //texture index
@@ -7073,10 +7081,18 @@ Node::onInputChanged(int inputNb)
          **/
         double time = getApp()->getTimeLine()->currentFrame();
         AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+        const bool isRenderUserInteraction = true;
+        const bool isSequentialRender = false;
+#ifdef QT_CUSTOM_THREADPOOL
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+        if (isAbortable) {
+            isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, getEffectInstance());
+        }
+#endif
         ParallelRenderArgsSetter frameRenderArgs( time,
                                                   ViewIdx(0),
-                                                  true,
-                                                  false,
+                                                  isRenderUserInteraction,
+                                                  isSequentialRender,
                                                   abortInfo,
                                                   shared_from_this(),
                                                   0, //texture index

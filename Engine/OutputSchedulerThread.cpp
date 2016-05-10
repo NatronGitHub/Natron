@@ -2318,6 +2318,8 @@ struct RenderThreadTaskPrivate
     std::vector<int> viewsToRender;
 #endif
 
+
+
     RenderThreadTaskPrivate(const boost::shared_ptr<OutputEffectInstance>& output,
                             OutputSchedulerThread* scheduler
                             #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
@@ -2471,6 +2473,7 @@ DefaultScheduler::~DefaultScheduler()
 class DefaultRenderFrameRunnable
     : public RenderThreadTask
 {
+
 public:
 
 
@@ -2513,6 +2516,9 @@ private:
             return;
         }
 
+#ifdef QT_CUSTOM_THREADPOOL
+        AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(QThread::currentThread());
+#endif
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
@@ -2591,6 +2597,9 @@ private:
             U64 activeInputToRenderHash = activeInputToRender->getHash();
             const double par = activeInputToRender->getAspectRatio(-1);
 
+            const bool isRenderDueToRenderInteraction = false;
+            const bool isSequentialRender = true;
+
             for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
                 StatusEnum stat = activeInputToRender->getRegionOfDefinition_public(activeInputToRenderHash, time, scale, viewsToRender[view], &rod, &isProjectFormat);
                 if (stat == eStatusFailed) {
@@ -2624,11 +2633,19 @@ private:
                 RectI renderWindow;
                 rod.toPixelEnclosing(scale, par, &renderWindow);
 
+
+
                 AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+#ifdef QT_CUSTOM_THREADPOOL
+                if (isAbortableThread) {
+                    isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
+                }
+#endif
+
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
-                                                         false,  // is this render due to user interaction ?
-                                                         true,
+                                                         isRenderDueToRenderInteraction,  // is this render due to user interaction ?
+                                                         isSequentialRender,
                                                          abortInfo, //abortInfo
                                                          activeInputNode, // viewer requester
                                                          0, //texture index
@@ -2735,12 +2752,20 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     const double par = effect->getAspectRatio(-1);
 
 
+    const bool isRenderDueToRenderInteraction = false;
+    const bool isSequentialRender = true;
+
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+
+#ifdef QT_CUSTOM_THREADPOOL
+        setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
+#endif
+
         ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
-                                                 false,  // is this render due to user interaction ?
-                                                 true, // is this sequential ?
+                                                 isRenderDueToRenderInteraction,  // is this render due to user interaction ?
+                                                 isSequentialRender, // is this sequential ?
                                                  abortInfo, //abortInfo
                                                  effect->getNode(), //tree root
                                                  0, //texture index

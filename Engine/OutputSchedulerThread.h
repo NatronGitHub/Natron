@@ -71,6 +71,9 @@ struct RenderThreadTaskPrivate;
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
 class RenderThreadTask
     :  public QThread
+#ifdef QT_CUSTOM_THREADPOOL
+, public AbortableThread
+#endif
 #else
 class RenderThreadTask
     :  public QRunnable

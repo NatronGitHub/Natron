@@ -294,7 +294,7 @@ public:
     };
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
-                                                  const QThread* callingThread);
+                                                QThread* callingThread);
 
     RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
                                                   const bool renderFullScaleThenDownscale,

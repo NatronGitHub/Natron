@@ -241,6 +241,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
     } else {
         args->nodeHash = nodeHash;
     }
+    assert(abortInfo);
     args->abortInfo = abortInfo;
     args->treeRoot = treeRoot;
     args->textureIndex = textureIndex;
@@ -284,7 +285,7 @@ void
 EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
+    assert(args->abortInfo);
     tls->frameArgs.push_back(args);
 }
 
@@ -352,7 +353,12 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
                                         const EffectInstPtr& treeRoot) const
 {
     if (!isRenderResponseToUserInteraction) {
-        // Rendering is playback or render on disk, we rely on the flag set on the node that requested the render in OutputSchedulerThread
+        // Rendering is playback or render on disk
+        if (  abortInfo && (int)abortInfo->aborted > 0 ) {
+            return true;
+        }
+
+        // Fallback on the flag set on the node that requested the render in OutputSchedulerThread
         if (treeRoot) {
             OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( treeRoot.get() );
             assert(effect);
@@ -1838,7 +1844,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
 EffectInstance::RenderingFunctorRetEnum
 EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementation::TiledRenderingFunctorArgs & args,
                                                       const RectToRender & specificData,
-                                                      const QThread* callingThread)
+                                                       QThread* callingThread)
 {
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     QThread* curThread = QThread::currentThread();
@@ -4095,10 +4101,18 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
         if (reason != eValueChangedReasonTimeChanged) {
             AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+            const bool isRenderUserInteraction = true;
+            const bool isSequentialRender = false;
+#ifdef QT_CUSTOM_THREADPOOL
+            AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+            if (isAbortable) {
+                isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, node->getEffectInstance());
+            }
+#endif
             setter.reset( new ParallelRenderArgsSetter( time,
                                                         viewIdx, //view
-                                                        true, // isRenderUserInteraction
-                                                        false, // isSequential
+                                                        isRenderUserInteraction, // isRenderUserInteraction
+                                                        isSequentialRender, // isSequential
                                                         abortInfo, // abortInfo
                                                         node, // treeRoot
                                                         0, //texture index
