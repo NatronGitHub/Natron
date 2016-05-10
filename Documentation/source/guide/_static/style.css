@@ -101,6 +101,8 @@ div#header {
   height: 80px;
   background-color: #ffffff;
   border-bottom:2px solid #ebebeb;
+  position: fixed;
+  z-index:999;
 }
 
 #logo {
@@ -123,7 +125,7 @@ border:none;
 }
 
 div.body {
-  margin-top:10px;
+  margin-top:150px;
   margin-left:10px;
   margin-right:10px;
 }
@@ -136,18 +138,30 @@ div.documentWrapper {
 div#header span {
   width:80px;
   height:80px;
-  border:1px dashed red;
 }
 
 div.related {
   color: #7c7c7c;
-  background:none;
+  background:#ffffff;
+  padding-top:90px;
+  position:fixed;
+  z-index:998;
 }
+
 div.related li a {
   color: #7c7c7c;
 }
 
 div#search {
-  padding-top:5px;
+/*  padding-top:130px;
+  right:0;
+  position:fixed;*/
   float:right;
+  width: 150px;
+  padding-top:30px;
 }
+
+div#search input {
+  border: 1px solid #ebebeb;
+}
+

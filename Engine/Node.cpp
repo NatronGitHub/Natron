@@ -3990,7 +3990,7 @@ Node::makeHTMLDocumentation(bool offline) const
     ts << "</ul></div>";
 
 
-    ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
+    ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
     ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
     if ( !pluginIcon.isEmpty() ) {
         QFile iconFile(pluginIcon);
@@ -4090,16 +4090,15 @@ Node::makeHTMLDocumentation(bool offline) const
     } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
 
     ts << "</table>";
-    ts << "<!--ADD_MORE_HERE-->";
-    ts << "</div></div></div>";
+    //ts << "<!--ADD_MORE_HERE-->";
+    //ts << "</div></div></div>";
 
     if ( !pluginIcon.isEmpty() ) {
         QString tmp = pluginIcon;
         tmp.replace( pluginID + QString::fromUtf8(".png"), pluginID + QString::fromUtf8(".html") );
     }
 
-    ts << "</body>";
-    ts << "</html>";
+    ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
 
     return ret;
 } // Node::makeHTMLDocumentation

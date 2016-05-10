@@ -2619,16 +2619,16 @@ Settings::makeHTMLDocumentation(bool menu,
     }
 
     if (!menu) {
-        ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
-        ts << "<html><head>";
-        ts << "<title>Natron Preferences</title>";
-        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
-        ts << "</head><body>";
-        ts << "<div class=\"related\"><h3>Navigation</h3><ul>";
-        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
-        ts << "</ul></div>";
-        ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\">";
-        ts << "<h1>Preferences</h1>";
+        ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n";
+        ts << "<html>\n<head>\n";
+        ts << "<title>Natron Preferences</title>\n";
+        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />\n<script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n<script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n";
+        ts << "</head>\n<body>\n";
+        ts << "<div class=\"related\">\n<h3>Navigation</h3>\n<ul>\n";
+        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>\n";
+        ts << "</ul>\n</div>\n";
+        ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
+        ts << "<div class=\"section\">\n<h1>Preferences</h1>\n";
     } else {
         ts << "<li class=\"toctree-l1\"><a href='" << pageName << "'>Preferences</a>\n<ul>\n";
     }
@@ -2646,13 +2646,13 @@ Settings::makeHTMLDocumentation(bool menu,
 
         if (!menu) {
             if (isPage) {
-                ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>";
+                ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
             } else if (isSep) {
-                ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>";
+                ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
             } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
                 if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
-                    ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>";
-                    ts << "<p>" << knobHint << "</p>";
+                    ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
+                    ts << "<p>" << knobHint << "</p>\n";
                 }
             }
         } else {
@@ -2663,7 +2663,7 @@ Settings::makeHTMLDocumentation(bool menu,
     }
 
     if (!menu) {
-        ts << "</body></html>";
+        ts << "</div>\n</div>\n</div>\n<div class=\"clearer\"></div>\n</div>\n<div class=\"footer\"></div>\n</body>\n</html>\n";
     } else {
         ts << "</ul></li>";
     }

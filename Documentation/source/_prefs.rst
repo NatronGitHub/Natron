@@ -1,3 +1,3 @@
-Preferences Guide
-=================
+Preferences
+===========
 
