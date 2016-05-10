@@ -138,31 +138,6 @@ ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
     return lut;
 }
 
-class ViewerRenderingStarted_RAII
-{
-    ViewerInstance* _node;
-    bool _didEmit;
-
-public:
-
-    ViewerRenderingStarted_RAII(ViewerInstance* node)
-        : _node(node)
-    {
-        _didEmit = node->getNode()->notifyRenderingStarted();
-        if (_didEmit) {
-            _node->s_viewerRenderingStarted();
-        }
-    }
-
-    ~ViewerRenderingStarted_RAII()
-    {
-        if (_didEmit) {
-            _node->getNode()->notifyRenderingEnded();
-            _node->s_viewerRenderingEnded();
-        }
-    }
-};
-
 EffectInstance*
 ViewerInstance::BuildEffect(NodePtr n)
 {
@@ -1275,7 +1250,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     }
 
     ///Notify the gui we're rendering.
-    ViewerRenderingStarted_RAII renderingNotifier(this);
+    EffectInstance::NotifyRenderingStarted_RAII renderingNotifier(getNode().get());
 
     ///Don't allow different threads to write the texture entry
     FrameEntryLocker entryLocker( _imp.get() );

@@ -181,6 +181,8 @@ public Q_SLOTS:
 
     void updateCacheSizeText();
 
+    void onRefreshNodesRenderStateTimerTimeout();
+
     void showMenu(const QPoint & pos);
 
     void toggleCacheInfo();

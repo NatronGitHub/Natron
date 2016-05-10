@@ -6369,14 +6369,15 @@ Node::notifyInputNIsRendering(int inputNb)
     gettimeofday(&now, 0);
 
     QMutexLocker l(&_imp->lastRenderStartedMutex);
-    assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
-    ++_imp->inputIsRenderingCounter[inputNb];
+
     double t =  now.tv_sec  - _imp->lastInputNRenderStartedSlotCallTime.tv_sec +
                (now.tv_usec - _imp->lastInputNRenderStartedSlotCallTime.tv_usec) * 1e-6f;
 
+    assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
 
-    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS) {
+    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS || _imp->inputIsRenderingCounter[inputNb] == 0) {
         _imp->lastInputNRenderStartedSlotCallTime = now;
+        ++_imp->inputIsRenderingCounter[inputNb];
 
         l.unlock();
 
@@ -6394,7 +6395,7 @@ Node::notifyInputNIsFinishedRendering(int inputNb)
     {
         QMutexLocker l(&_imp->lastRenderStartedMutex);
         assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
-        ++_imp->inputIsRenderingCounter[inputNb];
+        --_imp->inputIsRenderingCounter[inputNb];
     }
     Q_EMIT inputNIsFinishedRendering(inputNb);
 }
@@ -6412,12 +6413,13 @@ Node::notifyRenderingStarted()
 
     
     QMutexLocker l(&_imp->lastRenderStartedMutex);
-    ++_imp->renderStartedCounter;
     double t =  now.tv_sec  - _imp->lastRenderStartedSlotCallTime.tv_sec +
                (now.tv_usec - _imp->lastRenderStartedSlotCallTime.tv_usec) * 1e-6f;
 
-    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS) {
+    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS || _imp->renderStartedCounter == 0) {
         _imp->lastRenderStartedSlotCallTime = now;
+        ++_imp->renderStartedCounter;
+
 
         l.unlock();
 

@@ -73,7 +73,6 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , pauseButton(NULL)
     , iconRefreshOff()
     , iconRefreshOn()
-    , ongoingRenderCount(0)
     , activateRenderScale(NULL)
     , renderScaleActive(false)
     , renderScaleCombo(NULL)

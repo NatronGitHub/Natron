@@ -227,10 +227,6 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(activated(bool)), this, SLOT(activate(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
     QObject::connect( internalNode.get(), SIGNAL(persistentMessageChanged()), this, SLOT(onPersistentMessageChanged()) );
-    QObject::connect( internalNode.get(), SIGNAL(renderingStarted()), this, SLOT(onRenderingStarted()) );
-    QObject::connect( internalNode.get(), SIGNAL(renderingEnded()), this, SLOT(onRenderingFinished()) );
-    QObject::connect( internalNode.get(), SIGNAL(inputNIsRendering(int)), this, SLOT(onInputNRenderingStarted(int)) );
-    QObject::connect( internalNode.get(), SIGNAL(inputNIsFinishedRendering(int)), this, SLOT(onInputNRenderingFinished(int)) );
     QObject::connect( internalNode.get(), SIGNAL(allKnobsSlaved(bool)), this, SLOT(onAllKnobsSlaved(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(knobsLinksChanged()), this, SLOT(onKnobsLinksChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(outputsChanged()), this, SLOT(refreshOutputEdgeVisibility()) );
@@ -2120,27 +2116,6 @@ NodeGui::getUndoStack() const
     return _undoStack;
 }
 
-void
-NodeGui::onRenderingStarted()
-{
-    int value = getNode()->getIsNodeRenderingCounter();
-    if (value >= 1) {
-        if ( !_stateIndicator->isVisible() ) {
-            _stateIndicator->setBrush(Qt::yellow);
-            _stateIndicator->show();
-            update();
-        }
-    }
-}
-
-void
-NodeGui::onRenderingFinished()
-{
-    int value = getNode()->getIsNodeRenderingCounter();
-    if (value <= 0) {
-        refreshStateIndicator();
-    }
-}
 
 void
 NodeGui::refreshStateIndicator()
@@ -2156,7 +2131,10 @@ NodeGui::refreshStateIndicator()
     getNode()->getPersistentMessage(&message, &type);
 
     bool showIndicator = true;
-    if (_mergeHintActive) {
+    int value = getNode()->getIsNodeRenderingCounter();
+    if (value >= 1) {
+        _stateIndicator->setBrush(Qt::yellow);
+    } else if (_mergeHintActive) {
         _stateIndicator->setBrush(Qt::green);
     } else if ( getIsSelected() ) {
         _stateIndicator->setBrush(Qt::white);
@@ -2190,25 +2168,34 @@ NodeGui::setMergeHintActive(bool active)
 }
 
 void
-NodeGui::onInputNRenderingStarted(int input)
+NodeGui::refreshRenderingIndicator()
 {
-
-    assert( input >= 0 && input < (int)_inputEdges.size() );
-    int value = getNode()->getIsInputNRenderingCounter(input);
-    if (value == 1) {
-        _inputEdges[input]->turnOnRenderingColor();
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    EffectInstPtr effect = node->getEffectInstance();
+    if (!effect) {
+        return;
+    }
+    refreshStateIndicator();
+    for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
+        int value = getNode()->getIsInputNRenderingCounter(i);
+        if (value >= 1) {
+            _inputEdges[i]->turnOnRenderingColor();
+        } else {
+            _inputEdges[i]->turnOffRenderingColor();
+        }
+    }
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(effect.get());
+    if (isViewer) {
+        ViewerGL* hasUI = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
+        if (hasUI) {
+            hasUI->getViewerTab()->refreshViewerRenderingState();
+        }
     }
 }
 
-void
-NodeGui::onInputNRenderingFinished(int input)
-{
-    assert( input >= 0 && input < (int)_inputEdges.size() );
-    int value = getNode()->getIsInputNRenderingCounter(input);
-    if (value == 0) {
-        _inputEdges[input]->turnOffRenderingColor();
-    }
-}
 
 void
 NodeGui::moveBelowPositionRecursively(const QRectF & r)
