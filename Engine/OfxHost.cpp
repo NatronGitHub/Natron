@@ -1084,14 +1084,16 @@ public:
               QThread* spawnerThread,
               void *customArg,
               OfxStatus *stat)
-        : _func(func)
+        : QThread()
+        , AbortableThread(this)
+        , _func(func)
         , _threadIndex(threadIndex)
         , _threadMax(threadMax)
         , _spawnerThread(spawnerThread)
         , _customArg(customArg)
         , _stat(stat)
     {
-        setObjectName( QString::fromUtf8("Multi-thread suite") );
+        setThreadName("Multi-thread suite");
     }
 
     void run() OVERRIDE

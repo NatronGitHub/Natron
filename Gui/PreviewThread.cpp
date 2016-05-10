@@ -70,9 +70,12 @@ struct PreviewThreadPrivate
 
 PreviewThread::PreviewThread()
     : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
+, AbortableThread(this)
+#endif
     , _imp( new PreviewThreadPrivate() )
 {
-    setObjectName( QString::fromUtf8("PreviewThread") );
+    setThreadName("PreviewThread");
 }
 
 PreviewThread::~PreviewThread()

@@ -1014,6 +1014,9 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
     {
         RECURSIVE_ACTION();
+#ifdef QT_CUSTOM_THREADPOOL
+        REPORT_CURRENT_THREAD_ACTION("kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+#endif
         SET_CAN_SET_VALUE(true);
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             ViewIdx(0),

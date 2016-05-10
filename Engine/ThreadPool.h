@@ -48,7 +48,7 @@ class AbortableThread
 {
 public:
 
-    AbortableThread();
+    AbortableThread(QThread* thread);
 
     virtual ~AbortableThread();
 
@@ -62,10 +62,30 @@ public:
                       AbortableRenderInfoPtr* abortInfo,
                       EffectInstPtr* treeRoot) const;
 
+    // For debug purposes
+    void setThreadName(const std::string& threadName);
+
+    const std::string& getThreadName() const;
+
+    void setCurrentActionInfos(const std::string& actionName, const std::string& nodeName, const std::string& pluginID);
+
+    void getCurrentActionInfos(std::string* actionName, std::string* nodeName, std::string* pluginID) const;
+
+    void killThread();
+
 private:
 
     boost::scoped_ptr<AbortableThreadPrivate> _imp;
 };
+
+#define REPORT_CURRENT_THREAD_ACTION(actionName, nodeName, pluginID) \
+{ \
+    QThread* thread = QThread::currentThread(); \
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(thread); \
+    if (isAbortable) {  \
+        isAbortable->setCurrentActionInfos(actionName, nodeName, pluginID);\
+    } \
+} \
 
 class ThreadPool
     : public QThreadPool

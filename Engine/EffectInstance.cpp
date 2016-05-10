@@ -3235,7 +3235,9 @@ StatusEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
-
+#ifdef QT_CUSTOM_THREADPOOL
+    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+#endif
     return render(args);
 }
 
@@ -3511,6 +3513,9 @@ EffectInstance::beginSequenceRender_public(double first,
                                            ViewIdx view)
 {
     NON_RECURSIVE_ACTION();
+#ifdef QT_CUSTOM_THREADPOOL
+    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionBeginSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+#endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     ++tls->beginEndRenderCount;
@@ -3531,6 +3536,9 @@ EffectInstance::endSequenceRender_public(double first,
                                          ViewIdx view)
 {
     NON_RECURSIVE_ACTION();
+#ifdef QT_CUSTOM_THREADPOOL
+    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionEndSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+#endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     --tls->beginEndRenderCount;
@@ -4126,6 +4134,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         }
         {
             RECURSIVE_ACTION();
+#ifdef QT_CUSTOM_THREADPOOL
+            REPORT_CURRENT_THREAD_ACTION("kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+#endif
             knobChanged(k, reason, view, time, originatedFromMainThread);
         }
     }

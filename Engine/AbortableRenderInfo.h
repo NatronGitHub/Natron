@@ -27,6 +27,8 @@
 
 
 #include "Engine/EngineFwd.h"
+#include "Global/GlobalDefines.h"
+#include <QObject>
 
 NATRON_NAMESPACE_ENTER;
 
@@ -34,8 +36,12 @@ NATRON_NAMESPACE_ENTER;
  * @brief Holds infos necessary to identify one render request and whether it was aborted or not.
  **/
 struct AbortableRenderInfoPrivate;
-class AbortableRenderInfo
+class AbortableRenderInfo : public QObject
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     AbortableRenderInfo();
@@ -55,6 +61,21 @@ public:
 
     // Get the render age
     U64 getRenderAge() const;
+
+#ifdef QT_CUSTOM_THREADPOOL
+    // Register the thread as part of this render request
+    void registerThreadForRender(AbortableThread* thread);
+
+    // Unregister the thread as part of this render, returns true
+    // if it was registered and found
+    // This is called whenever a thread calls cleanupTLSForThread(), i.e:
+    // when its processing is finished
+    bool unregisterThreadForRender(AbortableThread* thread);
+#endif
+
+public Q_SLOTS:
+
+    void onAbortTimerTimeout();
 
 private:
 

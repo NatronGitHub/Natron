@@ -97,6 +97,9 @@ class SequenceFromFiles;
 
 NATRON_NAMESPACE_ENTER;
 class AbortableRenderInfo;
+#ifdef QT_CUSTOM_THREADPOOL
+class AbortableThread;
+#endif
 class AbstractOfxEffectInstance;
 class AppInstance;
 class AppTLS;

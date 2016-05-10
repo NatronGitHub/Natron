@@ -594,6 +594,9 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
                                              const boost::shared_ptr<OutputEffectInstance>& effect,
                                              ProcessFrameModeEnum mode)
     : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
+    , AbortableThread(this)
+#endif
     , _imp( new OutputSchedulerThreadPrivate(engine, effect, mode) )
 {
     QObject::connect( this, SIGNAL(s_doProcessOnMainThread(BufferedFrames)), this,
@@ -606,7 +609,7 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
     QObject::connect( &_imp->threadSpawnsTimer, SIGNAL(timeout()), this, SLOT(onThreadSpawnsTimerTriggered()) );
 #endif
 
-    setObjectName( QString::fromUtf8("Scheduler thread") );
+    setThreadName("Scheduler thread");
 }
 
 OutputSchedulerThread::~OutputSchedulerThread()
@@ -2371,9 +2374,12 @@ struct RenderThreadTaskPrivate
 RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
                                    OutputSchedulerThread* scheduler)
     : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
+    , AbortableThread(this)
+#endif
     , _imp( new RenderThreadTaskPrivate(output, scheduler) )
 {
-    setObjectName( QString::fromUtf8("Parallel render thread") );
+    setThreadName("Parallel render thread");
 }
 
 #else
@@ -3869,9 +3875,12 @@ public:
 
 ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
     : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
+, AbortableThread(this)
+#endif
     , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
 {
-    setObjectName( QString::fromUtf8("ViewerCurrentFrameRequestScheduler") );
+    setThreadName("ViewerCurrentFrameRequestScheduler");
     QObject::connect( this, SIGNAL(s_processProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)), this, SLOT(doProcessProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)) );
 }
 
@@ -4312,9 +4321,12 @@ struct ViewerCurrentFrameRequestRendererBackupPrivate
 
 ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup()
     : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
+, AbortableThread(this)
+#endif
     , _imp( new ViewerCurrentFrameRequestRendererBackupPrivate() )
 {
-    setObjectName( QString::fromUtf8("ViewerCurrentFrameRequestRendererBackup") );
+    setThreadName("ViewerCurrentFrameRequestRendererBackup");
 }
 
 ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()

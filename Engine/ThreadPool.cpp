@@ -24,6 +24,9 @@
 
 
 #include "ThreadPool.h"
+
+#include <string>
+#include <sstream>
 #include <QAtomicInt>
 #include "Engine/AbortableRenderInfo.h"
 
@@ -44,18 +47,30 @@ struct AbortableThreadPrivate
     EffectInstWPtr treeRoot;
     bool abortInfoValid;
 
-    AbortableThreadPrivate()
+    QThread* thread;
+    std::string threadName;
+
+    std::string currentActionName;
+    std::string currentActionNodeName;
+    std::string currentActionPluginID;
+
+    AbortableThreadPrivate(QThread* thread)
     : abortInfoMutex()
     , isRenderResponseToUserInteraction(false)
     , abortInfo()
     , treeRoot()
     , abortInfoValid(false)
+    , thread(thread)
+    , threadName()
+    , currentActionName()
+    , currentActionNodeName()
+    , currentActionPluginID()
     {
     }
 };
 
-AbortableThread::AbortableThread()
-    : _imp( new AbortableThreadPrivate() )
+AbortableThread::AbortableThread(QThread* thread)
+    : _imp( new AbortableThreadPrivate(thread) )
 {
 }
 
@@ -64,24 +79,77 @@ AbortableThread::~AbortableThread()
 }
 
 void
+AbortableThread::setThreadName(const std::string& threadName)
+{
+    std::stringstream ss;
+    ss << threadName << " (" << this << ")";
+    _imp->threadName = ss.str();
+    _imp->thread->setObjectName(QString::fromUtf8(_imp->threadName.c_str()));
+}
+
+const std::string&
+AbortableThread::getThreadName() const
+{
+    return _imp->threadName;
+}
+
+void
+AbortableThread::setCurrentActionInfos(const std::string& actionName, const std::string& nodeName, const std::string& pluginID)
+{
+    assert(QThread::currentThread() == _imp->thread);
+
+    QMutexLocker k(&_imp->abortInfoMutex);
+    _imp->currentActionName = actionName;
+    _imp->currentActionNodeName = nodeName;
+    _imp->currentActionPluginID = pluginID;
+}
+
+void
+AbortableThread::getCurrentActionInfos(std::string* actionName, std::string* nodeName, std::string* pluginID) const
+{
+    QMutexLocker k(&_imp->abortInfoMutex);
+    *actionName = _imp->currentActionName;
+    *nodeName = _imp->currentActionNodeName;
+    *pluginID = _imp->currentActionPluginID;
+}
+
+void
+AbortableThread::killThread()
+{
+    _imp->thread->terminate();
+}
+
+void
 AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,
                               const AbortableRenderInfoPtr& abortInfo,
                               const EffectInstPtr& treeRoot)
 {
-    QMutexLocker k(&_imp->abortInfoMutex);
-    _imp->isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
-    _imp->abortInfo = abortInfo;
-    _imp->treeRoot = treeRoot;
-    _imp->abortInfoValid = true;
+    {
+        QMutexLocker k(&_imp->abortInfoMutex);
+        _imp->isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
+        _imp->abortInfo = abortInfo;
+        _imp->treeRoot = treeRoot;
+        _imp->abortInfoValid = true;
+    }
+    if (abortInfo) {
+        abortInfo->registerThreadForRender(this);
+    }
 }
 
 void
 AbortableThread::clearAbortInfo()
 {
-    QMutexLocker k(&_imp->abortInfoMutex);
-    _imp->abortInfo.reset();
-    _imp->treeRoot.reset();
-    _imp->abortInfoValid = false;
+    AbortableRenderInfoPtr abortInfo;
+    {
+        QMutexLocker k(&_imp->abortInfoMutex);
+        abortInfo = _imp->abortInfo;
+        _imp->abortInfo.reset();
+        _imp->treeRoot.reset();
+        _imp->abortInfoValid = false;
+    }
+    if (abortInfo) {
+        abortInfo->unregisterThreadForRender(this);
+    }
 }
 
 bool
@@ -103,12 +171,14 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class ThreadPoolThread
-    : public QThreadPoolThread, public AbortableThread
+    : public QThreadPoolThread
+    , public AbortableThread
 {
 public:
 
     ThreadPoolThread()
-        : QThreadPoolThread()
+    : QThreadPoolThread()
+    , AbortableThread(this)
     {
     }
 
@@ -132,7 +202,7 @@ ThreadPool::createThreadPoolThread() const
 {
     ThreadPoolThread* ret = new ThreadPoolThread();
 
-    ret->setObjectName( QLatin1String("Global Thread (Pooled)") );
+    ret->setThreadName("Global Thread (Pooled)");
 
     return ret;
 }

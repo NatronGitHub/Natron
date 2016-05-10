@@ -1620,8 +1620,13 @@ struct TrackSchedulerPrivate
 
 TrackSchedulerBase::TrackSchedulerBase()
     : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
+, AbortableThread(this)
+#endif
 {
     QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
+    setThreadName("TrackScheduler");
+
 }
 
 TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
@@ -1629,7 +1634,6 @@ TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
     : TrackSchedulerBase()
     , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
 {
-    setObjectName( QString::fromUtf8("TrackScheduler") );
 }
 
 TrackScheduler::~TrackScheduler()
