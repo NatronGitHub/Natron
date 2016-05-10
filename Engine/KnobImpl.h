@@ -992,14 +992,14 @@ Knob<T>::QueuedSetValue::view() const
 }
 
 template<typename T>
-const T&
+const T &
 Knob<T>::QueuedSetValue::value() const
 {
     return _imp->value;
 }
 
 template<typename T>
-const KeyFrame&
+const KeyFrame &
 Knob<T>::QueuedSetValue::key() const
 {
     return _imp->key;
@@ -2838,7 +2838,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
                         getHolder()->setHasAnimation(true);
                     }
                 } else {
-                    if (_values[(*it)->dimension()] != (*it)->value()) {
+                    if ( _values[(*it)->dimension()] != (*it)->value() ) {
                         _values[(*it)->dimension()] = (*it)->value();
                         _guiValues[(*it)->dimension()] = (*it)->value();
                         if (!blockValueChanges) {

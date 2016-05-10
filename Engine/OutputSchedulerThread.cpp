@@ -2487,16 +2487,16 @@ private:
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode().get() );
                 std::map<ImageComponents, ImagePtr> planes;
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs( time, //< the time at which to render
-                                                                                                               scale, //< the scale at which to render
-                                                                                                               mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                                                               viewsToRender[view], //< the view to render
-                                                                                                               false,
-                                                                                                               renderWindow, //< the region of interest (in pixel coordinates)
-                                                                                                               rod, // < any precomputed rod ? in canonical coordinates
-                                                                                                               components,
-                                                                                                               imageDepth,
-                                                                                                               false,
-                                                                                                               output.get() ) );
+                                                                                                                scale, //< the scale at which to render
+                                                                                                                mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                                                                viewsToRender[view], //< the view to render
+                                                                                                                false,
+                                                                                                                renderWindow, //< the region of interest (in pixel coordinates)
+                                                                                                                rod, // < any precomputed rod ? in canonical coordinates
+                                                                                                                components,
+                                                                                                                imageDepth,
+                                                                                                                false,
+                                                                                                                output.get() ) );
                 EffectInstance::RenderRoIRetCode retCode;
                 retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {

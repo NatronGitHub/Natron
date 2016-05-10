@@ -94,7 +94,6 @@ public Q_SLOTS:
 
     void onDimensionSwitchClicked();
 
-
 private:
     void expandAllDimensions();
     void foldAllDimensions();

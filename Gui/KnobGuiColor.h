@@ -153,7 +153,7 @@ public Q_SLOTS:
     void onMustShowAllDimension();
 
     void onDialogCurrentColorChanged(const QColor & color);
-    
+
     void onResetToDefaultRequested();
 
 Q_SIGNALS:

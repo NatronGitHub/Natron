@@ -69,6 +69,7 @@ TLSHolder<EffectInstance::EffectTLSData>::copyTLS(const QThread* fromThread,
                                                   const QThread* toThread) const
 {
     boost::shared_ptr<EffectInstance::EffectTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
+
     Q_UNUSED(tlsDataPtr);
 }
 
@@ -88,6 +89,7 @@ TLSHolder<T>::copyAndReturnNewTLS(const QThread* fromThread,
 {
     Q_UNUSED(fromThread);
     Q_UNUSED(toThread);
+
     return boost::shared_ptr<T>();
 }
 

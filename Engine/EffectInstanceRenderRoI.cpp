@@ -734,7 +734,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                           1.,
                                                           false,
                                                           renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
-
     bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
 
 

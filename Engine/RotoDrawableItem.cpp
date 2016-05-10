@@ -1134,7 +1134,6 @@ void
 RotoDrawableItem::getOverlayColor(double* color) const
 {
     QMutexLocker l(&itemMutex);
-
     std::memcpy(color, _imp->overlayColor, sizeof(double) * 4);
 }
 

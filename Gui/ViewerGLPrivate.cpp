@@ -228,21 +228,21 @@ static const GLubyte triangleStrip[28] = {
    ASCII art of the vertices used to render.
    The actual texture seen on the viewport is the rect (5,9,10,6).
    We draw  3*6 strips
-
-   0___1___2___3
- |  /|  /|  /|
- | / | / | / |
- |||/  |/  |/  |
-   4---5---6----7
- |  /|  /|  /|
- | / | / | / |
- |||/  |/  |/  |
-   8---9--10--11
- |  /|  /|  /|
- | / | / | / |
- |||/  |/  |/  |
-   12--13--14--15
  */
+
+// 0___1___2___3
+// |  /|  /|  /|
+// | / | / | / |
+// |/  |/  |/  |
+// 4---5---6----7
+// |  /|  /|  /|
+// | / | / | / |
+// |/  |/  |/  |
+// 8---9--10--11
+// |  /|  /|  /|
+// | / | / | / |
+// |/  |/  |/  |
+// 12--13--14--15
 void
 ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
                                            int textureIndex,

@@ -179,7 +179,7 @@ void
 ScaleSliderQWidget::mousePressEvent(QMouseEvent* e)
 {
     if (!_imp->readOnly) {
-        if (modifierHasControl(e)) {
+        if ( modifierHasControl(e) ) {
             Q_EMIT resetToDefaultRequested();
         } else {
             QPoint newClick =  e->pos();

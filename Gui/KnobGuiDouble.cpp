@@ -287,7 +287,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _slider->setToolTip( toolTip() );
         }
-        QObject::connect(_slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()));
+        QObject::connect( _slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()) );
         QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
         QObject::connect( _slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
         containerLayout->addWidget(_slider);
@@ -365,8 +365,9 @@ KnobGuiDouble::onResetToDefaultRequested()
 {
     KnobPtr knob = _knob.lock();
     std::list<KnobPtr> knobsList;
+
     knobsList.push_back(knob);
-    pushUndoCommand(new RestoreDefaultsCommand(false, knobsList, -1));
+    pushUndoCommand( new RestoreDefaultsCommand(false, knobsList, -1) );
 }
 
 void

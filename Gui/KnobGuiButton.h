@@ -76,12 +76,11 @@ public:
     virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual bool shouldCreateLabel() const OVERRIDE FINAL
     {
         return false;
     }
-    
+
 public Q_SLOTS:
 
     void emitValueChanged();

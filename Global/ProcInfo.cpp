@@ -311,6 +311,7 @@ applicationFilePath_fromArgv(const char* argv0Param)
 
     return absPath;
 } // applicationFilePath_fromArgv
+
 #endif
 } // anon namespace
 

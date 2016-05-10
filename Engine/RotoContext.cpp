@@ -2671,6 +2671,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
         QMutexLocker k(&_imp->cacheAccessMutex);
         node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
+
     if (image) {
         return image;
     }
@@ -3529,25 +3530,22 @@ RotoContextPrivate::renderInternalShape(double time,
             adjustToPointToScale(mipmapLevel, p3p0.x, p3p0.y);
             adjustToPointToScale(mipmapLevel, p0p3.x, p0p3.y);
 
+            // Add a Coons patch such as:
 
-            /*
-               Add a Coons patch such as:
+            //         C1  Side 1   C2
+            //        +---------------+
+            //        |               |
+            //        |  P1       P2  |
+            //        |               |
+            // Side 0 |               | Side 2
+            //        |               |
+            //        |               |
+            //        |  P0       P3  |
+            //        |               |
+            //        +---------------+
+            //        C0     Side 3   C3
 
-               C1  Side 1   C2
-               +---------------+
-             |               |
-             |  P1       P2  |
-             |               |
-               Side 0 |               | Side 2
-             |               |
-             |               |
-             |  P0       P3  |
-             |               |
-             ||+---------------+
-               C0     Side 3   C3
-
-               In the above drawing, C0 is p0, P0 is p0p1, P1 is p1p0, C1 is p1 and so on...
-             */
+            // In the above drawing, C0 is p0, P0 is p0p1, P1 is p1p0, C1 is p1 and so on...
 
             ///move to C0
             cairo_mesh_pattern_begin_patch(mesh);

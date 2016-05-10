@@ -322,7 +322,7 @@ KnobGuiColor::createWidget(QHBoxLayout* layout)
     _slider = new ScaleSliderQWidget(slidermin, slidermax, knob->getValue(0), knob->getEvaluateOnChange(),
                                      ScaleSliderQWidget::eDataTypeDouble, getGui(), eScaleTypeLinear, boxContainers);
     _slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    QObject::connect(_slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()));
+    QObject::connect( _slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()) );
     QObject::connect( _slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
     QObject::connect( _slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
     _slider->hide();
@@ -420,8 +420,9 @@ KnobGuiColor::onResetToDefaultRequested()
 {
     KnobPtr knob = _knob.lock();
     std::list<KnobPtr> knobsList;
+
     knobsList.push_back(knob);
-    pushUndoCommand(new RestoreDefaultsCommand(false, knobsList, -1));
+    pushUndoCommand( new RestoreDefaultsCommand(false, knobsList, -1) );
 }
 
 void
