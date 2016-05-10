@@ -121,7 +121,7 @@ struct GuiAppInstancePrivate
     ////like, say, overlay focus gain on the viewer. If this boolean is true we then don't do any
     ////check on the recursion level of actions. This is a limitation of using the main "qt" thread
     ////as the main "action" thread.
-    bool _showingDialog;
+    int _showingDialog;
     mutable QMutex _showingDialogMutex;
     boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
     mutable QMutex lastTimelineViewerMutex;
@@ -137,7 +137,7 @@ struct GuiAppInstancePrivate
     GuiAppInstancePrivate()
         : _gui(NULL)
         , _isClosing(false)
-        , _showingDialog(false)
+        , _showingDialog(0)
         , _showingDialogMutex()
         , _previewProvider(new FileDialogPreviewProvider)
         , lastTimelineViewerMutex()
@@ -535,12 +535,12 @@ GuiAppInstance::openImageFileDialog()
 {
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     std::string ret = _imp->_gui->openImageSequenceDialog();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 
     return ret;
@@ -551,12 +551,12 @@ GuiAppInstance::saveImageFileDialog()
 {
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     std::string ret =  _imp->_gui->saveImageSequenceDialog();
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 
     return ret;
@@ -584,7 +584,7 @@ GuiAppInstance::errorDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return;
@@ -592,7 +592,7 @@ GuiAppInstance::errorDialog(const std::string & title,
     _imp->_gui->errorDialog(title, message, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 }
 
@@ -607,7 +607,7 @@ GuiAppInstance::errorDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return;
@@ -615,7 +615,7 @@ GuiAppInstance::errorDialog(const std::string & title,
     _imp->_gui->errorDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 }
 
@@ -629,7 +629,7 @@ GuiAppInstance::warningDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return;
@@ -637,7 +637,7 @@ GuiAppInstance::warningDialog(const std::string & title,
     _imp->_gui->warningDialog(title, message, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 }
 
@@ -652,7 +652,7 @@ GuiAppInstance::warningDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return;
@@ -660,7 +660,7 @@ GuiAppInstance::warningDialog(const std::string & title,
     _imp->_gui->warningDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 }
 
@@ -674,7 +674,7 @@ GuiAppInstance::informationDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return;
@@ -682,7 +682,7 @@ GuiAppInstance::informationDialog(const std::string & title,
     _imp->_gui->informationDialog(title, message, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 }
 
@@ -697,7 +697,7 @@ GuiAppInstance::informationDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return;
@@ -705,7 +705,7 @@ GuiAppInstance::informationDialog(const std::string & title,
     _imp->_gui->informationDialog(title, message, stopAsking, useHtml);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 }
 
@@ -721,7 +721,7 @@ GuiAppInstance::questionDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return eStandardButtonIgnore;
@@ -729,7 +729,7 @@ GuiAppInstance::questionDialog(const std::string & title,
     StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message, useHtml, buttons, defaultButton);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 
     return ret;
@@ -748,7 +748,7 @@ GuiAppInstance::questionDialog(const std::string & title,
     }
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = true;
+        ++_imp->_showingDialog;
     }
     if (!_imp->_gui) {
         return eStandardButtonIgnore;
@@ -756,7 +756,7 @@ GuiAppInstance::questionDialog(const std::string & title,
     StandardButtonEnum ret =  _imp->_gui->questionDialog(title, message, useHtml, buttons, defaultButton, stopAsking);
     {
         QMutexLocker l(&_imp->_showingDialogMutex);
-        _imp->_showingDialog = false;
+        --_imp->_showingDialog;
     }
 
     return ret;
@@ -767,7 +767,7 @@ GuiAppInstance::isShowingDialog() const
 {
     QMutexLocker l(&_imp->_showingDialogMutex);
 
-    return _imp->_showingDialog;
+    return _imp->_showingDialog > 0;
 }
 
 void
