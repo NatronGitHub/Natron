@@ -1573,7 +1573,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                    as the old texture.
                  */
                 QMutexLocker k(&_imp->lastRenderParamsMutex);
-                assert(_imp->lastRenderParams[updateParams->textureIndex]->tiles.size() == 1);
+                assert(!_imp->lastRenderParams[updateParams->textureIndex] || _imp->lastRenderParams[updateParams->textureIndex]->tiles.size() == 1);
 
                 bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
                                     updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
