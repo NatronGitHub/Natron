@@ -189,7 +189,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _magnecStartingPos()
     , _nodeLabel()
     , _parentMultiInstance()
-    , _renderingStartedCount(0)
     , _mtSafeSizeMutex()
     , _mtSafeWidth(0)
     , _mtSafeHeight(0)
@@ -2124,21 +2123,21 @@ NodeGui::getUndoStack() const
 void
 NodeGui::onRenderingStarted()
 {
-    if (!_renderingStartedCount) {
+    int value = getNode()->getIsNodeRenderingCounter();
+    if (value >= 1) {
         if ( !_stateIndicator->isVisible() ) {
             _stateIndicator->setBrush(Qt::yellow);
             _stateIndicator->show();
             update();
         }
     }
-    ++_renderingStartedCount;
 }
 
 void
 NodeGui::onRenderingFinished()
 {
-    --_renderingStartedCount;
-    if (!_renderingStartedCount) {
+    int value = getNode()->getIsNodeRenderingCounter();
+    if (value <= 0) {
         refreshStateIndicator();
     }
 }
@@ -2193,25 +2192,21 @@ NodeGui::setMergeHintActive(bool active)
 void
 NodeGui::onInputNRenderingStarted(int input)
 {
+
     assert( input >= 0 && input < (int)_inputEdges.size() );
-    std::map<int, int>::iterator itC = _inputNRenderingStartedCount.find(input);
-    if ( itC == _inputNRenderingStartedCount.end() ) {
+    int value = getNode()->getIsInputNRenderingCounter(input);
+    if (value == 1) {
         _inputEdges[input]->turnOnRenderingColor();
-        _inputNRenderingStartedCount.insert( std::make_pair(input, 1) );
     }
 }
 
 void
 NodeGui::onInputNRenderingFinished(int input)
 {
-    std::map<int, int>::iterator itC = _inputNRenderingStartedCount.find(input);
-
-    if ( itC != _inputNRenderingStartedCount.end() ) {
-        --itC->second;
-        if (!itC->second) {
-            _inputEdges[input]->turnOffRenderingColor();
-            _inputNRenderingStartedCount.erase(itC);
-        }
+    assert( input >= 0 && input < (int)_inputEdges.size() );
+    int value = getNode()->getIsInputNRenderingCounter(input);
+    if (value == 0) {
+        _inputEdges[input]->turnOffRenderingColor();
     }
 }
 
