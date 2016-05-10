@@ -13,6 +13,7 @@ build64
 sed*
 *latex*
 DerivedData
+Documentation/html
 libs/ceres/ceres.xcodeproj/
 libs/openMVG/openMVG.xcodeproj/
 libs/libmv/LibMV.xcodeproj/
