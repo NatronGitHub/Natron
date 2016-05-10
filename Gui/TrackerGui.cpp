@@ -1579,10 +1579,10 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double, double>& 
                 //const double searchTop    = searchWndTopRight->getValueAtTime(time, 1) + offset.y + center.y;
 
                 const TextureRect& texRect = it2->second->getTextureRect();
-                if (texRect.h <= 0) {
+                if (texRect.height() <= 0) {
                     continue;
                 }
-                double par = texRect.w / (double)texRect.h;
+                double par = texRect.width() / (double)texRect.height();
                 RectD textureRectCanonical;
 
                 textureRectCanonical.x2 = viewer->getViewer()->toZoomCoordinates( QPointF(TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX) + xOffsetPixels, 0.) ).x();
@@ -3978,8 +3978,6 @@ TrackerGuiPrivate::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image
     region.x2 = roi.x2;
     region.y1 = roi.y1;
     region.y2 = roi.y2;
-    region.w = roi.width();
-    region.h = roi.height();
 
     GLint currentBoundPBO = 0;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);

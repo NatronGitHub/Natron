@@ -1546,8 +1546,6 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
         textureRectangle = roiRoundedToTileSize;
-        textureRectangle.w = roiRoundedToTileSize.width();
-        textureRectangle.h = roiRoundedToTileSize.height();
         textureRectangle.par = region.par;
         if (isFirstTile) {
             tex->ensureTextureHasSize(textureRectangle, dataType);

@@ -45,14 +45,11 @@ class TextureRect
 {
 public:
     double par; // the par of the associated image
-    int w, h; // the width and height of the texture. This has nothing to do with x,y,r,t
     int closestPo2; //< the closest power of 2 of the original region of interest of the image
 
     TextureRect()
         : RectI()
         , par(1.)
-        , w(0)
-        , h(0)
         , closestPo2(1)
     {
     }
@@ -61,14 +58,10 @@ public:
                 int y1_,
                 int x2_,
                 int y2_,
-                int w_,
-                int h_,
                 int closestPo2_,
                 double par_)
         : RectI(x1_, y1_, x2_, y2_)
         , par(par_)
-        , w(w_)
-        , h(h_)
         , closestPo2(closestPo2_)
     {
     }
@@ -77,22 +70,18 @@ public:
              int y1_,
              int x2_,
              int y2_,
-             int w_,
-             int h_,
              int closestPo2_,
              double par_)
     {
         RectI::set(x1_, y1_, x2_, y2_);
 
-        w = w_;
-        h = h_;
         closestPo2 = closestPo2_;
         par = par_;
     }
 
     void reset()
     {
-        set(0, 0, 0, 0, 0, 0, 1, 1.);
+        set(0, 0, 0, 0, 1, 1.);
     }
 
     void operator=(const RectI& other);
@@ -108,8 +97,6 @@ operator==(const TextureRect & first,
            first.y1 == second.y1 &&
            first.x2 == second.x2 &&
            first.y2 == second.y2 &&
-           first.w == second.w &&
-           first.h == second.h &&
            first.closestPo2 == second.closestPo2 &&
            first.par == second.par;
 }

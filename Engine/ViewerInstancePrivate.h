@@ -78,7 +78,8 @@ struct RenderViewerArgs
                      double offset_,
                      const Color::Lut* srcColorSpace_,
                      const Color::Lut* colorSpace_,
-                     int alphaChannelIndex_)
+                     int alphaChannelIndex_,
+                     bool renderOnlyRoI_)
         : inputImage(inputImage_)
         , matteImage(matteImage_)
         , channels(channels_)
@@ -90,6 +91,7 @@ struct RenderViewerArgs
         , srcColorSpace(srcColorSpace_)
         , colorSpace(colorSpace_)
         , alphaChannelIndex(alphaChannelIndex_)
+        , renderOnlyRoI(renderOnlyRoI_)
     {
     }
 
@@ -104,6 +106,7 @@ struct RenderViewerArgs
     const Color::Lut* srcColorSpace;
     const Color::Lut* colorSpace;
     int alphaChannelIndex;
+    bool renderOnlyRoI;
 };
 
 struct ViewerInstance::ViewerInstancePrivate

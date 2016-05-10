@@ -56,12 +56,12 @@ public:
 
     int w() const
     {
-        return _textureRect.w;
+        return _textureRect.width();
     }
 
     int h() const
     {
-        return _textureRect.h;
+        return _textureRect.height();
     }
 
     DataTypeEnum type() const

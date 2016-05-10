@@ -102,8 +102,6 @@ FrameKey::fillHash(Hash64* hash) const
     hash->append(_textureRect.y1);
     hash->append(_textureRect.x2);
     hash->append(_textureRect.y2);
-    hash->append(_textureRect.w);
-    hash->append(_textureRect.h);
     hash->append(_textureRect.closestPo2);
     hash->append(_mipMapLevel);
     Hash64_appendQString( hash, QString::fromUtf8( _layer.getLayerName().c_str() ) );

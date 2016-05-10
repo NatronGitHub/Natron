@@ -52,7 +52,7 @@ FrameEntry::pixelAt(int x,
     if ( (x < bounds.x1) || (x >= bounds.x2) || (y < bounds.y1) || (y > bounds.y2) ) {
         return 0;
     }
-    std::size_t rowSize = bounds.w;
+    std::size_t rowSize = bounds.width();
     unsigned int srcPixelSize = 4;
     if ( (ImageBitDepthEnum)_key.getBitDepth() == eImageBitDepthFloat ) {
         srcPixelSize *= sizeof(float);
@@ -74,14 +74,14 @@ FrameEntry::copy(const FrameEntry& other)
     const U8* srcPixels = other.data();
     const TextureRect& srcBounds = other.getKey().getTexRect();
     const TextureRect& dstBounds = _key.getTexRect();
-    std::size_t srcRowSize = srcBounds.w;
+    std::size_t srcRowSize = srcBounds.width();
     unsigned int srcPixelSize = 4;
     if ( (ImageBitDepthEnum)other.getKey().getBitDepth() == eImageBitDepthFloat ) {
         srcPixelSize *= sizeof(float);
     }
     srcRowSize *= srcPixelSize;
 
-    std::size_t dstRowSize = srcBounds.w;
+    std::size_t dstRowSize = srcBounds.width();
     unsigned int dstPixelSize = 4;
     if ( (ImageBitDepthEnum)_key.getBitDepth() == eImageBitDepthFloat ) {
         dstPixelSize *= sizeof(float);
@@ -91,12 +91,12 @@ FrameEntry::copy(const FrameEntry& other)
     //Fill with black and transparant because src might be smaller
     bool filledZero = false;
     if ( !srcBounds.contains(dstBounds) ) {
-        std::memset(dstPixels, 0, dstRowSize * dstBounds.h);
+        std::memset(dstPixels, 0, dstRowSize * dstBounds.height());
         filledZero = true;
     }
     if ( other.getKey().getBitDepth() != _key.getBitDepth() ) {
         if (!filledZero) {
-            std::memset(dstPixels, 0, dstRowSize * dstBounds.h);
+            std::memset(dstPixels, 0, dstRowSize * dstBounds.height());
         }
 
         return;

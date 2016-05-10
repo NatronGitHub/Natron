@@ -735,7 +735,7 @@ getTexPixel(int x,
         int compDataSize = pixelDepth * 4;
 
         return (unsigned char*)(bufStart)
-               + (qint64)( y - bounds.y1 ) * compDataSize * bounds.w
+               + (qint64)( y - bounds.y1 ) * compDataSize * bounds.width()
                + (qint64)( x - bounds.x1 ) * compDataSize;
     }
 }
@@ -773,8 +773,8 @@ copyAndSwap(const TextureRect& srcRect,
     const unsigned char* srcPixels = getTexPixel(srcRect.x1, srcRect.y1, srcRect, pixelDepth, srcBuf);
     assert(srcPixels);
 
-    std::size_t srcRowSize = srcRect.w * 4 * pixelDepth;
-    std::size_t dstRowSize = dstRect.w * 4 * pixelDepth;
+    std::size_t srcRowSize = srcRect.width() * 4 * pixelDepth;
+    std::size_t dstRowSize = dstRect.width() * 4 * pixelDepth;
 
     for (int y = srcRect.y1; y < srcRect.y2;
          ++y, srcPixels += srcRowSize, dstPixels += dstRowSize) {
@@ -983,11 +983,9 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
         tile.rect.x2 = it->x2;
         tile.rect.y1 = it->y1;
         tile.rect.y2 = it->y2;
-        tile.rect.w = it->width();
-        tile.rect.h = it->height();
         tile.rect.closestPo2 = 1 << mipmapLevel;
         tile.rect.par = outArgs->params->pixelAspectRatio;
-        tile.bytesCount = tile.rect.w * tile.rect.h * 4; // RGBA
+        tile.bytesCount = tile.rect.width() * tile.rect.height() * 4; // RGBA
         assert( outArgs->params->roi.contains(tile.rect) );
         // If we are using floating point textures, multiply by size of float
         assert(tile.bytesCount > 0);
@@ -1320,6 +1318,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         }
     }
 
+    assert(inArgs.activeInputToRender);
+
     ///Check that we were not aborted already
     if ( !isSequentialRender && ( (inArgs.activeInputToRender->getHash() != inArgs.activeInputHash) ||
                                   ( inArgs.params->time != getTimeline()->currentFrame() ) ) ) {
@@ -1532,9 +1532,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             tile.rect.x2 = viewerRenderRoI.x2;
             tile.rect.y1 = viewerRenderRoI.y1;
             tile.rect.y2 = viewerRenderRoI.y2;
-            tile.rect.w = viewerRenderRoI.width();
-            tile.rect.h = viewerRenderRoI.height();
-            tile.bytesCount = tile.rect.w * tile.rect.h * 4; // RGBA
+            tile.bytesCount = tile.rect.width() * tile.rect.height() * 4; // RGBA
             assert(tile.bytesCount > 0);
             if (updateParams->depth == eImageBitDepthFloat) {
                 tile.bytesCount *= sizeof(float);
@@ -1543,8 +1541,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             if (updateParams->depth == eImageBitDepthFloat) {
                 pixelSize *= sizeof(float);
             }
-            std::size_t dstRowSize = tile.rect.w * pixelSize;
-            tile.bytesCount = tile.rect.h * dstRowSize;
+            std::size_t dstRowSize = tile.rect.width() * pixelSize;
+            tile.bytesCount = tile.rect.height() * dstRowSize;
             tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
             updateParams->tiles.clear();
             updateParams->tiles.push_back(tile);
@@ -1565,6 +1563,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 QMutexLocker k(&_imp->viewerParamsMutex);
                 updateParams->recenterViewport = _imp->viewportCenterSet;
                 updateParams->viewportCenter = _imp->viewportCenter;
+                unCachedTiles.push_back(tile);
+
             }
             // If we are actively painting, re-use the last texture instead of re-drawing everything
             else if (rotoPaintNode) {
@@ -1575,6 +1575,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 QMutexLocker k(&_imp->lastRenderParamsMutex);
                 assert(!_imp->lastRenderParams[updateParams->textureIndex] || _imp->lastRenderParams[updateParams->textureIndex]->tiles.size() == 1);
 
+
+
                 bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
                                     updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
                                     tile.rect.contains(_imp->lastRenderParams[updateParams->textureIndex]->tiles.front().rect);
@@ -1583,12 +1585,16 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     //The old texture did not exist or was not usable, just make a new buffer
                     updateParams->mustFreeRamBuffer = true;
                     tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
+                    unCachedTiles.push_back(tile);
+
                 } else {
+
                     //Overwrite the RoI to only the last portion rendered
                     RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
 
 
                     lastPaintBbox.toPixelEnclosing(updateParams->mipMapLevel, par, &lastPaintBboxPixel);
+
 
                     //The last buffer must be valid
                     const UpdateViewerParams::CachedTile& lastTile = _imp->lastRenderParams[updateParams->textureIndex]->tiles.front();
@@ -1614,6 +1620,22 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     if (!tile.ramBuffer) {
                         return eViewerRenderRetCodeFail;
                     }
+
+                    /*UpdateViewerParams::CachedTile tileCopy = tile;
+                    //If we are painting, only render the portion needed
+                    if ( !lastPaintBboxPixel.isNull() ) {
+                        tileCopy.rect.intersect(lastPaintBboxPixel, &tileCopy.rect);
+                        std::size_t pixelSize = 4;
+                        if (updateParams->depth == eImageBitDepthFloat) {
+                            pixelSize *= sizeof(float);
+                        }
+                        std::size_t dstRowSize = tileCopy.rect.width() * pixelSize;
+                        tileCopy.bytesCount = tileCopy.rect.height() * dstRowSize;
+                    }
+
+                    unCachedTiles.push_back(tileCopy);*/
+                    unCachedTiles.push_back(tile);
+
                 }
                 _imp->lastRenderParams[updateParams->textureIndex] = updateParams;
             }
@@ -1623,8 +1645,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
                 updateParams->mustFreeRamBuffer = true;
                 tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
+                unCachedTiles.push_back(tile);
             }
-            unCachedTiles.push_back(tile);
+
+
         } else { // useTextureCache
             //Look up the cache for a texture or create one
             {
@@ -1663,7 +1687,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                      inArgs.params->alphaLayer.getLayerName() + inArgs.params->alphaChannelName,
                                      inArgs.params->depth == eImageBitDepthFloat && supportsGLSL(),
                                      inArgs.draftModeEnabled);
-                        boost::shared_ptr<FrameParams> cachedFrameParams = FrameEntry::makeParams( bounds, key.getBitDepth(), it->rect.w, it->rect.h, ImagePtr() );
+                        boost::shared_ptr<FrameParams> cachedFrameParams = FrameEntry::makeParams( bounds, key.getBitDepth(), it->rect.width(), it->rect.height(), ImagePtr() );
                         bool cached = AppManager::getTextureFromCacheOrCreate(key, cachedFrameParams, &it->cachedData);
                         if (!it->cachedData) {
                             std::stringstream ss;
@@ -1696,6 +1720,12 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 it->cachedData->setInternalImage(colorImage);
             }
         } // !useTextureCache
+
+        /*
+         If we are not using the texture cache, there is a unique tile which has the required texture size on the viewer, so we render the RoI instead
+         of just the tile portion in the render function
+         */
+        const bool viewerRenderRoiOnly = !useTextureCache;
 
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
 
@@ -1739,7 +1769,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(updateParams->lut),
-                                        alphaChannelIndex);
+                                        alphaChannelIndex,
+                                        viewerRenderRoiOnly);
             QReadLocker k(&_imp->gammaLookupMutex);
             for (std::list<UpdateViewerParams::CachedTile>::iterator it = unCachedTiles.begin(); it != unCachedTiles.end(); ++it) {
                 renderFunctor(viewerRenderRoI,
@@ -1806,7 +1837,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                         updateParams->offset,
                                         lutFromColorspace(srcColorSpace),
                                         lutFromColorspace(updateParams->lut),
-                                        alphaChannelIndex);
+                                        alphaChannelIndex,
+                                        viewerRenderRoiOnly);
 
             if (runInCurrentThread) {
                 QReadLocker k(&_imp->gammaLookupMutex);
@@ -2042,35 +2074,48 @@ scaleToTexture8bits_generic(const RectI& roi,
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
     const RectI srcImgBounds = args.inputImage->getBounds();
 
-    assert(tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2);
-    Q_UNUSED(roi);
+    assert((args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2));
     assert(tile.rect.x2 > tile.rect.x1);
 
-    U32* dst_pixels = tileBuffer; // output + (roi.y1 - args.texRect.y1) * args.texRect.w + (roi.x1 - args.texRect.x1);
-    const PIX* src_pixels = (const PIX*)acc.pixelAt(tile.rect.x1, tile.rect.y1);
+    U32* dst_pixels;
+    if (args.renderOnlyRoI) {
+        dst_pixels = tileBuffer + (roi.y1 - tile.rect.y1) * tile.rect.width() + (roi.x1 - tile.rect.x1);
+    } else {
+        dst_pixels = tileBuffer;
+    }
+
+    const int y1 = args.renderOnlyRoI ? roi.y1 : tile.rect.y1;
+    const int y2 = args.renderOnlyRoI ? roi.y2 : tile.rect.y2;
+    const int x1 = args.renderOnlyRoI ? roi.x1 : tile.rect.x1;
+    const int x2 = args.renderOnlyRoI ? roi.x2 : tile.rect.x2;
+
+    const PIX* src_pixels = (const PIX*)acc.pixelAt(x1, y1);
     const int srcRowElements = (int)args.inputImage->getRowElements();
     boost::shared_ptr<Image::ReadAccess> matteAcc;
     if (applyMatte) {
         matteAcc.reset( new Image::ReadAccess( args.matteImage.get() ) );
     }
 
-    for (int y = tile.rect.y1; y < tile.rect.y2;
+
+    const int tileRowElements = tile.rect.width();
+
+    for (int y = y1; y < y2;
          ++y,
-         dst_pixels += tile.rect.w) {
+         dst_pixels += tileRowElements) {
         // coverity[dont_call]
-        int start = (int)( rand() % (tile.rect.x2 - tile.rect.x1) );
+        int start = (int)( rand() % (x2 - x1) );
 
 
         for (int backward = 0; backward < 2; ++backward) {
             int index = backward ? start - 1 : start;
 
-            assert( backward == 1 || ( index >= 0 && index < (tile.rect.x2 - tile.rect.x1) ) );
+            assert( backward == 1 || ( index >= 0 && index < (x2 - x1) ) );
 
             unsigned error_r = 0x80;
             unsigned error_g = 0x80;
             unsigned error_b = 0x80;
 
-            while (index < (tile.rect.x2 - tile.rect.x1) && index >= 0) {
+            while (index < (x2 - x1) && index >= 0) {
                 double r = 0.;
                 double g = 0.;
                 double b = 0.;
@@ -2207,7 +2252,7 @@ scaleToTexture8bits_generic(const RectI& roi,
                             break;
                         }
                     } else {
-                        const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(tile.rect.x1 + index, y);
+                        const PIX* src_pixels = (const PIX*)matteAcc->pixelAt(x1 + index, y);
                         if (src_pixels) {
                             alphaMatteValue = (double)src_pixels[args.alphaChannelIndex];
                             switch (pixelSize) {
@@ -2447,7 +2492,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     const bool luminance = (args.channels == eDisplayChannelsY);
 
     ///the width of the output buffer multiplied by the channels count
-    const int dstRowElements = tile.rect.w * 4;
+    const int dstRowElements = tile.rect.width() * 4;
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
     boost::shared_ptr<Image::ReadAccess> matteAcc;
 
@@ -2455,20 +2500,29 @@ scaleToTexture32bitsGeneric(const RectI& roi,
         matteAcc.reset( new Image::ReadAccess( args.matteImage.get() ) );
     }
 
-    float* dst_pixels =  tileBuffer; //tileBuffer + (roi.y1 - args.texRect.y1) * dstRowElements + (roi.x1 - args.texRect.x1) * 4;
-    const float* src_pixels = (const float*)acc.pixelAt(tile.rect.x1, tile.rect.y1);
-
-    assert(tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2);
+    assert((args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2));
     assert(tile.rect.x2 > tile.rect.x1);
-    assert(tile.rect.w == tile.rect.x2 - tile.rect.x1);
-    Q_UNUSED(roi)
-    
+
+    float* dst_pixels;
+    if (args.renderOnlyRoI) {
+        dst_pixels = tileBuffer + (roi.y1 - tile.rect.y1) * dstRowElements + (roi.x1 - tile.rect.x1) * 4;
+    } else {
+        dst_pixels = tileBuffer;
+    }
+
+    const int y1 = args.renderOnlyRoI ? roi.y1 : tile.rect.y1;
+    const int y2 = args.renderOnlyRoI ? roi.y2 : tile.rect.y2;
+    const int x1 = args.renderOnlyRoI ? roi.x1 : tile.rect.x1;
+    const int x2 = args.renderOnlyRoI ? roi.x2 : tile.rect.x2;
+
+    const float* src_pixels = (const float*)acc.pixelAt(x1, y1);
+
     const int srcRowElements = (const int)args.inputImage->getRowElements();
 
-    for (int y = tile.rect.y1; y < tile.rect.y2;
+    for (int y = y1; y < y2;
          ++y,
          dst_pixels += dstRowElements) {
-        for (int x = 0; x < tile.rect.w;
+        for (int x = 0; x < (x2 - x1);
              ++x) {
             double r = 0.;
             double g = 0.;

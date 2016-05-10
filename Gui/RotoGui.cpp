@@ -3318,7 +3318,6 @@ RotoGui::penUp(double time,
         assert(_imp->rotoData->strokeBeingPaint);
         _imp->context->getNode()->getApp()->setUserIsPainting(_imp->context->getNode(), _imp->rotoData->strokeBeingPaint, false);
         assert( _imp->rotoData->strokeBeingPaint->getParentLayer() );
-        _imp->rotoData->strokeBeingPaint->setStrokeFinished();
         if ( !_imp->multiStrokeEnabled->isChecked() ) {
             pushUndoCommand( new AddStrokeUndoCommand(this, _imp->rotoData->strokeBeingPaint) );
             _imp->makeStroke( true, RotoPoint() );
@@ -3333,6 +3332,8 @@ RotoGui::penUp(double time,
         _imp->viewer->setCursor( QCursor(Qt::BusyCursor) );
         _imp->context->evaluateNeatStrokeRender();
         _imp->viewer->unsetCursor();
+        _imp->rotoData->strokeBeingPaint->setStrokeFinished();
+
     }
 
     _imp->state = eEventStateNone;

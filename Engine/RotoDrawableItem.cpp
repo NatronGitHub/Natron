@@ -761,7 +761,9 @@ RotoDrawableItem::refreshNodesConnections()
             revealInput = getContext()->getNode()->getInput(reveal_i - 1);
         }
         if (!revealInput && shouldUseUpstreamForReveal) {
-            revealInput = upstreamNode;
+            if (type != eRotoStrokeTypeSolid) {
+                revealInput = upstreamNode;
+            }
         }
 
         if (revealInput) {
