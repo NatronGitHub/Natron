@@ -6,6 +6,9 @@
 - Fixed a bug where a PyPlug containing another PyPlug would fail to load in some cases
 - Fixed a bug where the play button would not be pressed on all viewers during playback
 - Python: add a function to File parameters to reload the file 
+- Fixed a bug where the gui could stop giving feedback when rendering
+- CTRL + left mouse button click can now be used on sliders to reset to their default value
+- Fixed Python call to the onProjectSave callback which would not work
 
 ## Version 2.0.2
 
