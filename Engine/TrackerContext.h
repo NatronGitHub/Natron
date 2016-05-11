@@ -171,7 +171,7 @@ public:
 
     bool isCurrentlyTracking() const;
 
-    void beginEditSelection();
+    void beginEditSelection(TrackSelectionReason reason);
 
     void endEditSelection(TrackSelectionReason reason);
 

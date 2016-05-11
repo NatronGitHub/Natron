@@ -769,12 +769,6 @@ TrackerPanel::insertTableRow(const TrackMarkerPtr & node,
         _imp->items.insert(it, data);
     }
 
-    if (!_imp->selectionBlocked) {
-        ///select the new item
-        std::list<TrackMarkerPtr > markers;
-        markers.push_back(node);
-        selectInternal(markers, TrackerContext::eTrackSelectionInternal);
-    }
 }
 
 void
@@ -961,7 +955,7 @@ TrackerPanel::onResetButtonClicked()
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->resetTrack();
     }
-    context->beginEditSelection();
+    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
     context->addTracksToSelection(markers, TrackerContext::eTrackSelectionInternal);
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
 }
@@ -1328,10 +1322,10 @@ TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
 
         boost::shared_ptr<TrackerContext> context = getContext();
         assert(context);
-        context->beginEditSelection();
-        context->clearSelection(selectionReason);
-        context->addTracksToSelection(markers, selectionReason);
-        context->endEditSelection(selectionReason);
+        context->beginEditSelection(TrackerContext::eTrackSelectionSettingsPanel);
+        context->clearSelection(TrackerContext::eTrackSelectionSettingsPanel);
+        context->addTracksToSelection(markers, TrackerContext::eTrackSelectionSettingsPanel);
+        context->endEditSelection(TrackerContext::eTrackSelectionSettingsPanel);
 
         boost::shared_ptr<TimeLine> timeline = _imp->node.lock()->getNode()->getApp()->getTimeLine();
         _imp->updateTrackKeysInfoBar( timeline->currentFrame() );
@@ -1420,7 +1414,7 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
             boost::shared_ptr<TrackerContext> context = getContext();
             // Set the selection to only this marker otherwise all markers will get the enabled value
-            context->beginEditSelection();
+            context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
             context->clearSelection(TrackerContext::eTrackSelectionInternal);
             context->addTrackToSelection(marker, TrackerContext::eTrackSelectionInternal);
             context->endEditSelection(TrackerContext::eTrackSelectionInternal);
@@ -1444,7 +1438,7 @@ TrackerPanel::onItemMotionModelChanged(int index)
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
             boost::shared_ptr<TrackerContext> context = getContext();
             // Set the selection to only this marker otherwise all markers will get the enabled value
-            context->beginEditSelection();
+            context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
             context->clearSelection(TrackerContext::eTrackSelectionInternal);
             context->addTrackToSelection(marker, TrackerContext::eTrackSelectionInternal);
             context->endEditSelection(TrackerContext::eTrackSelectionInternal);

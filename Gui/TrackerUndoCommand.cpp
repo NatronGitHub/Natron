@@ -51,7 +51,7 @@ AddTrackCommand::undo()
         return;
     }
 
-    context->beginEditSelection();
+    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
     for (std::list<TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         context->removeMarker(*it);
     }
@@ -67,7 +67,7 @@ AddTrackCommand::redo()
     if (!context) {
         return;
     }
-    context->beginEditSelection();
+    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
 
     for (std::list<TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
@@ -101,7 +101,7 @@ RemoveTracksCommand::undo()
     if (!context) {
         return;
     }
-    context->beginEditSelection();
+    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
     context->clearSelection(TrackerContext::eTrackSelectionInternal);
     for (std::list<TrackToRemove>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         int prevIndex = -1;
@@ -131,7 +131,7 @@ RemoveTracksCommand::redo()
 
     TrackMarkerPtr nextMarker = context->getNextMarker(_markers.back().track, true);
 
-    context->beginEditSelection();
+    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
     for (std::list<TrackToRemove>::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
         context->removeMarker(it->track);
     }

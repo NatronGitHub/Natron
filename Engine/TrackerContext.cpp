@@ -331,11 +331,12 @@ TrackerContext::removeMarker(const TrackMarkerPtr& marker)
             }
         }
     }
+    Q_EMIT trackRemoved(marker);
+
     removeItemAsPythonField(marker);
-    beginEditSelection();
+    beginEditSelection(TrackerContext::eTrackSelectionInternal);
     removeTrackFromSelection(marker, TrackerContext::eTrackSelectionInternal);
     endEditSelection(TrackerContext::eTrackSelectionInternal);
-    Q_EMIT trackRemoved(marker);
 }
 
 boost::shared_ptr<Node>
@@ -437,10 +438,12 @@ TrackerContext::abortTracking()
 }
 
 void
-TrackerContext::beginEditSelection()
+TrackerContext::beginEditSelection(TrackSelectionReason reason)
 {
     QMutexLocker k(&_imp->trackerContextMutex);
-
+    k.unlock();
+    Q_EMIT selectionAboutToChange( (int)reason );
+    k.relock();
     _imp->incrementSelectionCounter();
 }
 
@@ -558,7 +561,7 @@ TrackerContext::clearSelection(TrackSelectionReason reason)
 void
 TrackerContext::selectAll(TrackSelectionReason reason)
 {
-    beginEditSelection();
+    beginEditSelection(reason);
     std::vector<TrackMarkerPtr > markers;
     {
         QMutexLocker k(&_imp->trackerContextMutex);

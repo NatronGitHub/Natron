@@ -2161,7 +2161,7 @@ TrackerGui::penDown(double time,
             //If we hit the interact, make sure it is selected
             if (_imp->interactMarker) {
                 if (!isSelected) {
-                    context->beginEditSelection();
+                    context->beginEditSelection(TrackerContext::eTrackSelectionViewer);
                     if ( !modCASIsShift(e) ) {
                         context->clearSelection(TrackerContext::eTrackSelectionViewer);
                     }
@@ -3473,7 +3473,7 @@ TrackerGui::updateSelectionFromSelectionRectangle(bool onRelease)
             }
         }
 
-        context->beginEditSelection();
+        context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
         context->clearSelection(TrackerContext::eTrackSelectionInternal);
         context->addTracksToSelection(selectedMarkers, TrackerContext::eTrackSelectionInternal);
         context->endEditSelection(TrackerContext::eTrackSelectionInternal);
