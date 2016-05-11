@@ -1250,7 +1250,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     }
 
     ///Notify the gui we're rendering.
-    EffectInstance::NotifyRenderingStarted_RAII renderingNotifier(getNode().get());
+    EffectInstance::NotifyRenderingStarted_RAII renderingNotifier( getNode().get() );
 
     ///Don't allow different threads to write the texture entry
     FrameEntryLocker entryLocker( _imp.get() );
@@ -3060,7 +3060,7 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
             if ( (_imp->activeInputs[0] != -1) && _imp->activateInputChangedFromViewer ) {
                 ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
                 if (op == eViewerCompositingOperatorNone) {
-                    _imp->uiContext->setCompositingOperator(eViewerCompositingOperatorWipe);
+                    _imp->uiContext->setCompositingOperator(eViewerCompositingOperatorWipeUnder);
                 }
                 _imp->activeInputs[1] = inputNbChanged;
             } else {

@@ -362,23 +362,27 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     appPTR->getIcon(NATRON_PIXMAP_MERGE_GROUPING, pixmapIconSize, &pixMerge);
     _imp->compositingOperatorLabel = new Label(QString(), _imp->firstSettingsRow);
     _imp->compositingOperatorLabel->setPixmap(pixMerge);
-    _imp->compositingOperatorLabel->setToolTip( GuiUtils::convertFromPlainText(tr("Operation applied between viewer inputs A and B."), Qt::WhiteSpaceNormal) );
+    _imp->compositingOperatorLabel->setToolTip( GuiUtils::convertFromPlainText(tr("Operation applied between viewer inputs A and B. a and b are the alpha components of each input. d is the wipe dissolve factor, controlled by the arc handle."), Qt::WhiteSpaceNormal) );
     _imp->firstRowLayout->addWidget(_imp->compositingOperatorLabel);
 
 
     _imp->compositingOperator = new ComboBox(_imp->firstSettingsRow);
     QObject::connect( _imp->compositingOperator, SIGNAL(currentIndexChanged(int)), this, SLOT(onCompositingOperatorIndexChanged(int)) );
-    _imp->compositingOperator->setFixedWidth(fm.width( QString::fromUtf8("Minus") ) + 3 * DROP_DOWN_ICON_SIZE);
+    _imp->compositingOperator->setFixedWidth(fm.width( QString::fromUtf8("W-OnionSkin") ) + 3 * DROP_DOWN_ICON_SIZE);
     _imp->compositingOperator->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->compositingOperator->setToolTip( _imp->compositingOperatorLabel->toolTip() );
-    _imp->compositingOperator->addItem( tr(" - "), QIcon(), QKeySequence(), tr("Only the A input is used.") );
-    _imp->compositingOperator->addItem( tr("Over"), QIcon(), QKeySequence(), tr("A + B(1 - Aalpha)") );
-    _imp->compositingOperator->addItem( tr("Under"), QIcon(), QKeySequence(), tr("A(1 - Balpha) + B") );
-    _imp->compositingOperator->addItem( tr("Minus"), QIcon(), QKeySequence(), tr("A - B") );
-
-    ActionWithShortcut* actionWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDToggleWipe, "Wipe", _imp->compositingOperator);
-    actionWipe->setToolTip( tr("Wipe between A and B") );
+    _imp->compositingOperator->addItem( tr(" - "), QIcon(), QKeySequence(), tr("A") );
+    ActionWithShortcut* actionWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDToggleWipe, "W-Under", _imp->compositingOperator);
+    actionWipe->setToolTip( tr("Wipe under: A(1 - d) + Bd") );
     _imp->compositingOperator->addAction(actionWipe);
+    _imp->compositingOperator->addItem( tr("W-Over"), QIcon(), QKeySequence(), tr("Wipe over: A + B(1 - a)d") );
+    _imp->compositingOperator->addItem( tr("W-Minus"), QIcon(), QKeySequence(), tr("Wipe minus: A - B") );
+    _imp->compositingOperator->addItem( tr("W-OnionSkin"), QIcon(), QKeySequence(), tr("Wipe onion skin: A + B") );
+    _imp->compositingOperator->addItem( tr("S-Under"), QIcon(), QKeySequence(), tr("Stack under: B") );
+    _imp->compositingOperator->addItem( tr("S-Over"), QIcon(), QKeySequence(), tr("Stack over: A + B(1 - a)") );
+    _imp->compositingOperator->addItem( tr("S-Minus"), QIcon(), QKeySequence(), tr("Stack minus: A - B") );
+    _imp->compositingOperator->addItem( tr("S-OnionSkin"), QIcon(), QKeySequence(), tr("Stack onion skin: A + B") );
+
     _imp->firstRowLayout->addWidget(_imp->compositingOperator);
 
     _imp->secondInputLabel = new Label(QString::fromUtf8("B:"), _imp->firstSettingsRow);
@@ -505,8 +509,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->checkerboardButton->setCheckable(true);
     _imp->checkerboardButton->setChecked(false);
     _imp->checkerboardButton->setDown(false);
-    _imp->checkerboardButton->setToolTip( GuiUtils::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under the image instead of black "
-                                                                            "(only within the project window)."), Qt::WhiteSpaceNormal) );
+    _imp->checkerboardButton->setToolTip( GuiUtils::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under input A instead of black."), Qt::WhiteSpaceNormal) );
     _imp->checkerboardButton->setFixedSize(buttonSize);
     _imp->checkerboardButton->setIconSize(buttonIconSize);
     QObject::connect( _imp->checkerboardButton, SIGNAL(clicked(bool)), this, SLOT(onCheckerboardButtonClicked()) );

@@ -731,15 +731,20 @@ void
 ViewerTab::onCompositingOperatorChangedInternal(ViewerCompositingOperatorEnum oldOp,
                                                 ViewerCompositingOperatorEnum newOp)
 {
-    if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
-        _imp->viewer->resetWipeControls();
-    }
+    // Do not reset the wipe controls, this makes "toggle wipe" impractical!
+    // instead, teh user should use the "center wipe" shortcut (Shift-F)
+    //if ( (oldOp == eViewerCompositingOperatorNone) && (newOp != eViewerCompositingOperatorNone) ) {
+    //    _imp->viewer->resetWipeControls();
+    //}
+    Q_UNUSED(oldOp);
 
     _imp->secondInputImage->setEnabled_natron(newOp != eViewerCompositingOperatorNone);
-    if (newOp == eViewerCompositingOperatorNone) {
-        _imp->secondInputImage->setCurrentIndex_no_emit(0);
-        _imp->viewerNode->setInputB(-1);
-    }
+
+    // Do not reset input B, it should only be disabled! Else "toggle wipe" becomes impractical
+    //if (newOp == eViewerCompositingOperatorNone) {
+    //    _imp->secondInputImage->setCurrentIndex_no_emit(0);
+    //    _imp->viewerNode->setInputB(-1);
+    //}
 
     if ( (newOp == eViewerCompositingOperatorNone) || !_imp->secondInputImage->getEnabled_natron()  || (_imp->secondInputImage->activeIndex() == 0) ) {
         manageSlotsForInfoWidget(1, false);
@@ -767,20 +772,34 @@ ViewerTab::onCompositingOperatorIndexChanged(int index)
             _imp->infoWidget[1]->hide();
             break;
         case 1:
-            _imp->compOperator = eViewerCompositingOperatorOver;
+            _imp->compOperator = eViewerCompositingOperatorWipeUnder;
             break;
         case 2:
-            _imp->compOperator = eViewerCompositingOperatorUnder;
+            _imp->compOperator = eViewerCompositingOperatorWipeOver;
             break;
         case 3:
-            _imp->compOperator = eViewerCompositingOperatorMinus;
+            _imp->compOperator = eViewerCompositingOperatorWipeMinus;
             break;
         case 4:
-            _imp->compOperator = eViewerCompositingOperatorWipe;
+            _imp->compOperator = eViewerCompositingOperatorWipeOnionSkin;
             break;
+        case 5:
+            _imp->compOperator = eViewerCompositingOperatorStackUnder;
+            break;
+        case 6:
+            _imp->compOperator = eViewerCompositingOperatorStackOver;
+            break;
+        case 7:
+            _imp->compOperator = eViewerCompositingOperatorStackMinus;
+            break;
+        case 8:
+            _imp->compOperator = eViewerCompositingOperatorStackOnionSkin;
+            break;
+
         default:
             break;
         }
+        assert(index == (int)_imp->compOperator);
         newOp = _imp->compOperator;
     }
 
@@ -796,27 +815,43 @@ ViewerTab::setCompositingOperator(ViewerCompositingOperatorEnum op)
     case eViewerCompositingOperatorNone:
         comboIndex = 0;
         break;
-    case eViewerCompositingOperatorOver:
+    case eViewerCompositingOperatorWipeUnder:
         comboIndex = 1;
         break;
-    case eViewerCompositingOperatorUnder:
+    case eViewerCompositingOperatorWipeOver:
         comboIndex = 2;
         break;
-    case eViewerCompositingOperatorMinus:
+    case eViewerCompositingOperatorWipeMinus:
         comboIndex = 3;
         break;
-    case eViewerCompositingOperatorWipe:
+    case eViewerCompositingOperatorWipeOnionSkin:
         comboIndex = 4;
         break;
+    case eViewerCompositingOperatorStackUnder:
+        comboIndex = 5;
+        break;
+    case eViewerCompositingOperatorStackOver:
+        comboIndex = 6;
+        break;
+    case eViewerCompositingOperatorStackMinus:
+        comboIndex = 7;
+        break;
+    case eViewerCompositingOperatorStackOnionSkin:
+        comboIndex = 8;
+        break;
+
     default:
         throw std::logic_error("ViewerTab::setCompositingOperator(): unknown operator");
         break;
     }
+    assert(comboIndex == (int)op);
+
     ViewerCompositingOperatorEnum oldOp;
     {
         QMutexLocker l(&_imp->compOperatorMutex);
         oldOp = _imp->compOperator;
         _imp->compOperator = op;
+        _imp->compOperatorPrevious = oldOp;
     }
     _imp->compositingOperator->setCurrentIndex_no_emit(comboIndex);
     onCompositingOperatorChangedInternal(oldOp, op);
@@ -828,6 +863,14 @@ ViewerTab::getCompositingOperator() const
     QMutexLocker l(&_imp->compOperatorMutex);
 
     return _imp->compOperator;
+}
+
+ViewerCompositingOperatorEnum
+ViewerTab::getCompositingOperatorPrevious() const
+{
+    QMutexLocker l(&_imp->compOperatorMutex);
+
+    return _imp->compOperatorPrevious;
 }
 
 void
@@ -978,8 +1021,8 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             manageSlotsForInfoWidget(1, true);
             _imp->secondInputImage->setEnabled_natron(true);
             if (_imp->compOperator == eViewerCompositingOperatorNone) {
-                _imp->viewer->resetWipeControls();
-                setCompositingOperator(eViewerCompositingOperatorWipe);
+                //_imp->viewer->resetWipeControls();
+                setCompositingOperator(eViewerCompositingOperatorWipeUnder);
             }
         }
     }
@@ -1046,8 +1089,8 @@ ViewerTab::onActiveInputsChanged()
        }
        else*/if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
          && (op == eViewerCompositingOperatorNone) ) {
-        _imp->viewer->resetWipeControls();
-        setCompositingOperator(eViewerCompositingOperatorWipe);
+        //_imp->viewer->resetWipeControls();
+        setCompositingOperator(eViewerCompositingOperatorWipeUnder);
     }
 }
 
