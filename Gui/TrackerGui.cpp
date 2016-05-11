@@ -83,7 +83,7 @@ CLANG_DIAG_ON(uninitialized)
 #define HANDLE_SIZE 6
 
 //Controls how many center keyframes should be displayed before and after the time displayed
-#define MAX_CENTER_POINTS_DISPLAYED 20
+#define MAX_CENTER_POINTS_DISPLAYED 50
 
 #define SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX 200
 
@@ -1030,12 +1030,22 @@ TrackerGui::drawOverlays(double time,
                         glMatrixMode(GL_MODELVIEW);
 
                         ///Draw center position
+                        glEnable(GL_LINE_SMOOTH);
+                        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+                        glBegin(GL_LINE_STRIP);
+                        glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
+                        for (std::map<int, std::pair<Point, double> >::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
+                            glVertex2d(it->second.first.x, it->second.first.y);
+                        }
+                        glEnd();
+                        glDisable(GL_LINE_SMOOTH);
 
                         glEnable(GL_POINT_SMOOTH);
                         glBegin(GL_POINTS);
                         if (!showErrorColor) {
                             glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
                         }
+
                         for (std::map<int, std::pair<Point, double> >::iterator it2 = centerPoints.begin(); it2 != centerPoints.end(); ++it2) {
                             if (showErrorColor) {
                                 if (l != 0) {
@@ -1059,12 +1069,7 @@ TrackerGui::drawOverlays(double time,
                         glEnd();
                         glDisable(GL_POINT_SMOOTH);
 
-                        glBegin(GL_LINE_STRIP);
-                        glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
-                        for (std::map<int, std::pair<Point, double> >::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
-                            glVertex2d(it->second.first.x, it->second.first.y);
-                        }
-                        glEnd();
+
 
                         glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
                         glBegin(GL_LINE_LOOP);

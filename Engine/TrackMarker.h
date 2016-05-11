@@ -149,6 +149,8 @@ public:
 
     bool isEnabled(double time) const;
 
+    void setEnabledAtTime(double time, bool enabled);
+
     AnimationLevelEnum getEnabledNessAnimationLevel() const;
 
     void setEnabledFromGui(double time, bool enabled);

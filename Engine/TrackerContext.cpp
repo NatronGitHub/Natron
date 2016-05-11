@@ -407,7 +407,9 @@ TrackerContext::trackSelectedMarkers(int start,
         QMutexLocker k(&_imp->trackerContextMutex);
         for (std::list<TrackMarkerPtr >::iterator it = _imp->selectedMarkers.begin();
              it != _imp->selectedMarkers.end(); ++it) {
-            if ( (*it)->isEnabled( (*it)->getCurrentTime() ) ) {
+            double time = (*it)->getCurrentTime();
+            if ( (*it)->isEnabled(time) ) {
+                (*it)->setEnabledAtTime(time, true);
                 markers.push_back(*it);
             }
         }
@@ -1655,6 +1657,12 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     } else {
         ret = TrackerContextPrivate::trackStepLibMV(trackIndex, args, time);
     }
+
+    // Disable the marker since it failed to track
+    if (!ret) {
+        track->natronMarker->setEnabledAtTime(time, false);
+    }
+
     appPTR->getAppTLS()->cleanupTLSForThread();
 
     return ret;

@@ -517,6 +517,25 @@ TrackMarker::isEnabled(double time) const
     return _imp->enabled.lock()->getValueAtTime(time, 0);
 }
 
+void
+TrackMarker::setEnabledAtTime(double time, bool enabled)
+{
+    boost::shared_ptr<KnobBool> knob = _imp->enabled.lock();
+
+    if (!knob) {
+        return;
+    }
+    std::pair<int, KnobPtr> master = knob->getMaster(0);
+    if (master.second) {
+        knob->unSlave(0, true);
+    }
+    knob->setValueAtTime(time, enabled, ViewSpec::all(), 0);
+    if (master.second) {
+        master.second->cloneAndUpdateGui( knob.get() );
+        knob->slaveTo(0, master.second, master.first);
+    }
+}
+
 AnimationLevelEnum
 TrackMarker::getEnabledNessAnimationLevel() const
 {
