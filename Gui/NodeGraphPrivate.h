@@ -204,7 +204,6 @@ public:
     ///True when the graph is rendered from the getFullSceneScreenShot() function
     bool isDoingPreviewRender;
     QTimer autoScrollTimer;
-
     QTimer refreshRenderStateTimer;
 
 
