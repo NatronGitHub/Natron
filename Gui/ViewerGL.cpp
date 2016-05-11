@@ -325,7 +325,7 @@ ViewerGL::paintGL()
         internalViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
         bool drawTexture[2];
         drawTexture[0] = _imp->activeTextures[0];
-        drawTexture[1] = _imp->activeTextures[1] && operatorIsWipe(compOperator);
+        drawTexture[1] = _imp->activeTextures[1] && compOperator != eViewerCompositingOperatorNone;
         if ( (activeInputs[0] == activeInputs[1]) &&
              (compOperator != eViewerCompositingOperatorWipeMinus) &&
              (compOperator != eViewerCompositingOperatorStackMinus) ) {
