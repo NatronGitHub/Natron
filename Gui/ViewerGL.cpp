@@ -359,9 +359,7 @@ ViewerGL::paintGL()
                 // draw checkerboard texture, but only on the left side if in wipe mode
                 RectD projectFormatCanonical;
                 _imp->getProjectFormatCanonical(projectFormatCanonical);
-                if ( (compOperator == eViewerCompositingOperatorNone) ||
-                     ( compOperator == eViewerCompositingOperatorWipeUnder) ||
-                     ( compOperator == eViewerCompositingOperatorStackUnder) ) {
+                if (compOperator == eViewerCompositingOperatorNone) {
                     _imp->drawCheckerboardTexture(projectFormatCanonical);
                 } else if ( operatorIsWipe(compOperator) ) {
                     QPolygonF polygonPoints;
@@ -404,7 +402,7 @@ ViewerGL::paintGL()
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, true);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     glDisable(GL_BLEND);
                 }
 
