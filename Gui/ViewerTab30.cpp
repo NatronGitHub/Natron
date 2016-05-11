@@ -965,8 +965,8 @@ ViewerTab::switchInputAAndB()
             RenderEngine* engine = viewer->getRenderEngine();
             if ( engine && engine->hasThreadsWorking() ) {
                 engine->abortRendering(true, false);
-                engine->renderCurrentFrame(false, true);
             }
+            engine->renderCurrentFrame(false, true);
         }
     }
 }
