@@ -254,8 +254,20 @@ public:
     }
 
     void setScreenSize(double screenWidth,
-                       double screenHeight)
+                       double screenHeight,
+                       bool alignTop = false,
+                       bool alignRight = false)
     {
+        if (alignTop) {
+            // old top: _zoomBottom + _screenHeight / _zoomFactor
+            // new top: _zoomBottom + screenHeight / _zoomFactor
+            _zoomBottom -= (screenHeight - _screenHeight) / _zoomFactor;
+        }
+        if (alignRight) {
+            // old right: _zoomLeft + _screenWidth / (_zoomFactor * _zoomAspectRatio)
+            // new right: _zoomLeft + screenWidth / (_zoomFactor * _zoomAspectRatio)
+            _zoomLeft -= (screenWidth - _screenWidth) / (_zoomFactor * _zoomAspectRatio);
+        }
         _screenWidth = screenWidth;
         _screenHeight = screenHeight;
     }

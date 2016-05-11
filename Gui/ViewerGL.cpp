@@ -195,7 +195,7 @@ ViewerGL::resizeGL(int w,
         QMutexLocker(&_imp->zoomCtxMutex);
         oldWidth = _imp->zoomCtx.screenWidth();
         oldHeight = _imp->zoomCtx.screenHeight();
-        _imp->zoomCtx.setScreenSize(w, h);
+        _imp->zoomCtx.setScreenSize(w, h, /*alignTop=*/true, /*alignRight=*/false);
         zoomSinceLastFit = _imp->zoomOrPannedSinceLastFit;
     }
     glCheckError();
