@@ -371,7 +371,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->compositingOperator->setFixedWidth(fm.width( QString::fromUtf8("W-OnionSkin") ) + 3 * DROP_DOWN_ICON_SIZE);
     _imp->compositingOperator->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->compositingOperator->setToolTip( _imp->compositingOperatorLabel->toolTip() );
-    _imp->compositingOperator->addItem( tr(" - "), QIcon(), QKeySequence(), tr("A") );
+    _imp->compositingOperator->addItem( tr(" - "), QIcon(), QKeySequence(), tr("No wipe or composite: A") );
     ActionWithShortcut* actionWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDToggleWipe, "W-Under", _imp->compositingOperator);
     actionWipe->setToolTip( tr("Wipe under: A(1 - d) + Bd") );
     _imp->compositingOperator->addAction(actionWipe);
@@ -509,7 +509,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->checkerboardButton->setCheckable(true);
     _imp->checkerboardButton->setChecked(false);
     _imp->checkerboardButton->setDown(false);
-    _imp->checkerboardButton->setToolTip( GuiUtils::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under input A instead of black."), Qt::WhiteSpaceNormal) );
+    _imp->checkerboardButton->setToolTip( GuiUtils::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under input A instead of black (disabled under the wipe area and in stack modes)."), Qt::WhiteSpaceNormal) );
     _imp->checkerboardButton->setFixedSize(buttonSize);
     _imp->checkerboardButton->setIconSize(buttonIconSize);
     QObject::connect( _imp->checkerboardButton, SIGNAL(clicked(bool)), this, SLOT(onCheckerboardButtonClicked()) );
