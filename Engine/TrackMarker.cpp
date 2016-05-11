@@ -455,6 +455,12 @@ TrackMarker::getMotionModelKnob() const
     return _imp->motionModel.lock();
 }
 
+boost::shared_ptr<KnobBool>
+TrackMarker::getEnabledKnob() const
+{
+    return _imp->enabled.lock();
+}
+
 bool
 TrackMarker::isUserKeyframe(int time) const
 {
@@ -514,7 +520,7 @@ TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 bool
 TrackMarker::isEnabled(double time) const
 {
-    return _imp->enabled.lock()->getValueAtTime(time, 0);
+    return _imp->enabled.lock()->getValueAtTime(time, 0, ViewSpec::current(), true, true /*byPassMaster*/);
 }
 
 void
@@ -525,15 +531,7 @@ TrackMarker::setEnabledAtTime(double time, bool enabled)
     if (!knob) {
         return;
     }
-    std::pair<int, KnobPtr> master = knob->getMaster(0);
-    if (master.second) {
-        knob->unSlave(0, true);
-    }
     knob->setValueAtTime(time, enabled, ViewSpec::all(), 0);
-    if (master.second) {
-        master.second->cloneAndUpdateGui( knob.get() );
-        knob->slaveTo(0, master.second, master.first);
-    }
 }
 
 AnimationLevelEnum

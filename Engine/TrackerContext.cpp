@@ -356,6 +356,12 @@ TrackerContext::getCorrelationScoreTypeKnob() const
 #endif
 }
 
+boost::shared_ptr<KnobBool>
+TrackerContext::getEnabledKnob() const
+{
+    return _imp->activateTrack.lock();
+}
+
 bool
 TrackerContext::isTrackerPMEnabled() const
 {
@@ -1527,6 +1533,9 @@ TrackArgs::getRedrawAreasNeeded(int time,
                                 std::list<RectD>* canonicalRects) const
 {
     for (std::vector<boost::shared_ptr<TrackMarkerAndOptions> >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
+        if (!(*it)->natronMarker->isEnabled(time)) {
+            continue;
+        }
         boost::shared_ptr<KnobDouble> searchBtmLeft = (*it)->natronMarker->getSearchWindowBottomLeftKnob();
         boost::shared_ptr<KnobDouble> searchTopRight = (*it)->natronMarker->getSearchWindowTopRightKnob();
         boost::shared_ptr<KnobDouble> centerKnob = (*it)->natronMarker->getCenterKnob();
@@ -1650,6 +1659,11 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
     const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];
+
+    if (!track->natronMarker->isEnabled(time)) {
+        return false;
+    }
+
     TrackMarkerPM* isTrackerPM = dynamic_cast<TrackMarkerPM*>( track->natronMarker.get() );
     bool ret;
     if (isTrackerPM) {
@@ -1752,11 +1766,20 @@ TrackScheduler::run()
         if (frameStep != 0) {
             framesCount = frameStep > 0 ? (end - start) / frameStep : (start - end) / std::abs(frameStep);
         }
-        const int numTracks = _imp->curArgs.getNumTracks();
-        std::vector<int> trackIndexes;
-        for (std::size_t i = 0; i < (std::size_t)numTracks; ++i) {
-            trackIndexes.push_back(i);
+
+
+        const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = _imp->curArgs.getTracks();
+        const int numTracks = (int)tracks.size();
+        std::vector<int> trackIndexes(tracks.size());
+        for (std::size_t i = 0; i < tracks.size(); ++i) {
+            trackIndexes[i] = i;
+
+            // unslave the enabled knob, since it is slaved to the gui but we may modify it
+            boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
+            enabledKnob->unSlave(0, false);
         }
+
+
 
         // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
         // than just render the whole viewer RoI
@@ -1855,6 +1878,28 @@ TrackScheduler::run()
         }
 
         appPTR->getAppTLS()->cleanupTLSForThread();
+
+
+        boost::shared_ptr<KnobBool> contextEnabledKnob;
+        if (isContext) {
+            contextEnabledKnob = isContext->getEnabledKnob();
+        }
+        // Re-slave the knobs to the gui
+        if (contextEnabledKnob) {
+            for (std::size_t i = 0; i < tracks.size(); ++i) {
+                // unslave the enabled knob, since it is slaved to the gui but we may modify it
+                boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
+
+                contextEnabledKnob->blockListenersNotification();
+                contextEnabledKnob->cloneAndUpdateGui( enabledKnob.get() );
+                contextEnabledKnob->unblockListenersNotification();
+                enabledKnob->slaveTo(0, contextEnabledKnob, 0);
+            }
+            contextEnabledKnob->setDirty(tracks.size() > 1);
+        }
+        
+
+
 
         //Now that tracking is done update viewer once to refresh the whole visible portion
 

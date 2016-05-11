@@ -134,6 +134,7 @@ public:
     boost::shared_ptr<KnobDouble> getOffsetKnob() const;
     boost::shared_ptr<KnobDouble> getErrorKnob() const;
     boost::shared_ptr<KnobChoice> getMotionModelKnob() const;
+    boost::shared_ptr<KnobBool> getEnabledKnob() const;
 
     int getReferenceFrame(int time, int frameStep) const;
 
