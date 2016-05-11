@@ -330,7 +330,7 @@ DopeSheet::addNode(NodeGuiPtr nodeGui)
     if (pluginID == PLUGINID_NATRON_READ) {
 #endif
         nodeType = eDopeSheetItemTypeReader;
-    } else if ( dynamic_cast<NodeGroup *>( effectInstance.get() ) ) {
+    } else if ( effectInstance->getPluginID() == PLUGINID_NATRON_GROUP ) {
         nodeType = eDopeSheetItemTypeGroup;
     } else if (pluginID == PLUGINID_OFX_RETIME) {
         nodeType = eDopeSheetItemTypeRetime;
