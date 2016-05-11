@@ -203,7 +203,7 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
 }
 
 KnobGuiBool::KnobGuiBool(KnobPtr knob,
-                         DockablePanel *container)
+                         KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _checkBox(0)
 {

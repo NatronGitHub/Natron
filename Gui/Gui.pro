@@ -89,6 +89,7 @@ SOURCES += \
     DockablePanel.cpp \
     DockablePanelPrivate.cpp \
     DockablePanelTabWidget.cpp \
+    DocumentationManager.cpp \
     DopeSheet.cpp \
     DopeSheetView.cpp \
     DopeSheetEditorUndoRedo.cpp \
@@ -166,6 +167,7 @@ SOURCES += \
     NodeGui.cpp \
     NodeGuiSerialization.cpp \
     NodeSettingsPanel.cpp \
+    NodeViewerContext.cpp \
     PanelWidget.cpp \
     PickKnobDialog.cpp \
     PreferencesPanel.cpp \
@@ -218,14 +220,14 @@ SOURCES += \
     ViewerTab30.cpp \
     ViewerTab40.cpp \
     ViewerTabPrivate.cpp \
+    ViewerToolButton.cpp \
     NatronGui/natrongui_module_wrapper.cpp \
     NatronGui/pyguiapplication_wrapper.cpp \
     NatronGui/guiapp_wrapper.cpp \
     NatronGui/pymodaldialog_wrapper.cpp \
     NatronGui/pypanel_wrapper.cpp \
     NatronGui/pytabwidget_wrapper.cpp \
-    NatronGui/pyviewer_wrapper.cpp \
-    DocumentationManager.cpp
+    NatronGui/pyviewer_wrapper.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -250,6 +252,7 @@ HEADERS += \
     DockablePanel.h \
     DockablePanelPrivate.h \
     DockablePanelTabWidget.h \
+    DocumentationManager.h \
     DopeSheet.h \
     DopeSheetView.h \
     DopeSheetEditorUndoRedo.h \
@@ -276,6 +279,7 @@ HEADERS += \
     HostOverlay.h \
     InfoViewerWidget.h \
     KnobGui.h \
+    KnobGuiContainerI.h \
     KnobGuiFactory.h \
     KnobGuiFile.h \
     KnobGuiButton.h \
@@ -309,6 +313,7 @@ HEADERS += \
     NodeGui.h \
     NodeGuiSerialization.h \
     NodeSettingsPanel.h \
+    NodeViewerContext.h \
     PanelWidget.h \
     PickKnobDialog.h \
     PreferencesPanel.h \
@@ -360,6 +365,7 @@ HEADERS += \
     ViewerGLPrivate.h \
     ViewerTab.h \
     ViewerTabPrivate.h \
+    ViewerToolButton.h \
     ZoomContext.h \
     ../libs/OpenFX/include/ofxCore.h \
     ../libs/OpenFX/include/ofxDialog.h \
@@ -389,8 +395,7 @@ HEADERS += \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h \
-    NatronGui/pyviewer_wrapper.h \
-    DocumentationManager.h
+    NatronGui/pyviewer_wrapper.h
 
 
 RESOURCES += \

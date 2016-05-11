@@ -350,7 +350,7 @@ KnobLineEdit::focusOutEvent(QFocusEvent* e)
 }
 
 KnobGuiString::KnobGuiString(KnobPtr knob,
-                             DockablePanel *container)
+                             KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
     , _container(0)

@@ -85,7 +85,7 @@ using std::make_pair;
 //=============================SEPARATOR_KNOB_GUI===================================
 
 KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
-                                   DockablePanel *container)
+                                   KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _line(0)
 {

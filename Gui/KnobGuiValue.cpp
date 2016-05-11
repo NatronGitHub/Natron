@@ -188,7 +188,7 @@ KnobGuiValue::shouldAddStretch() const
 }
 
 KnobGuiValue::KnobGuiValue(KnobPtr knob,
-                           DockablePanel *container)
+                           KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _imp( new KnobGuiValuePrivate(knob) )
 {
@@ -1162,7 +1162,7 @@ KnobGuiValue::refreshDimensionName(int dim)
 }
 
 KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
-                             DockablePanel *container)
+                             KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
     , _knob( boost::dynamic_pointer_cast<KnobDouble>(knob) )
 {
@@ -1235,7 +1235,7 @@ KnobGuiDouble::getDecimals(std::vector<int>* decimals) const
 }
 
 KnobGuiInt::KnobGuiInt(KnobPtr knob,
-                       DockablePanel *container)
+                       KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
     , _knob( boost::dynamic_pointer_cast<KnobInt>(knob) )
 {

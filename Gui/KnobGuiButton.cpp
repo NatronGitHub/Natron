@@ -85,7 +85,7 @@ using std::make_pair;
 //=============================BUTTON_KNOB_GUI===================================
 
 KnobGuiButton::KnobGuiButton(KnobPtr knob,
-                             DockablePanel *container)
+                             KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _button(0)
 {
@@ -97,32 +97,65 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
-    const std::string & iconFilePath = knob->getIconLabel();
-    QString filePath = QString::fromUtf8( iconFilePath.c_str() );
+    QString onIconFilePath = QString::fromUtf8(knob->getIconLabel(false).c_str());
+    QString offIconFilePath = QString::fromUtf8(knob->getIconLabel(true).c_str());
 
-    if ( !iconFilePath.empty() && !QFile::exists(filePath) ) {
+
+
+    if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
         ///Search all natron paths for a file
 
         QStringList paths = appPTR->getAllNonOFXPluginsPaths();
         for (int i = 0; i < paths.size(); ++i) {
-            QString tmp = paths[i] + QLatin1Char('/') + filePath;
+            QString tmp = paths[i] + QLatin1Char('/') + onIconFilePath;
             if ( QFile::exists(tmp) ) {
-                filePath = tmp;
+                onIconFilePath = tmp;
+                break;
+            }
+        }
+    }
+    if ( !offIconFilePath.isEmpty() && !QFile::exists(offIconFilePath) ) {
+        ///Search all natron paths for a file
+
+        QStringList paths = appPTR->getAllNonOFXPluginsPaths();
+        for (int i = 0; i < paths.size(); ++i) {
+            QString tmp = paths[i] + QLatin1Char('/') + offIconFilePath;
+            if ( QFile::exists(tmp) ) {
+                offIconFilePath = tmp;
                 break;
             }
         }
     }
 
-    QPixmap pix;
+    bool checkable = knob->getIsCheckable();
 
-    if ( pix.load(filePath) ) {
-        _button = new Button( QIcon(pix), QString(), layout->parentWidget() );
+    QIcon icon;
+    QPixmap pixChecked,pixUnchecked;
+    if (!offIconFilePath.isEmpty()) {
+        if (pixUnchecked.load(offIconFilePath)) {
+            icon.addPixmap(pixUnchecked, QIcon::Normal, QIcon::Off);
+        }
+    }
+    if (!onIconFilePath.isEmpty()) {
+        if (pixChecked.load(onIconFilePath)) {
+            icon.addPixmap(pixChecked, QIcon::Normal, QIcon::On);
+        }
+    }
+
+    if ( !icon.isNull() ) {
+        _button = new Button( icon, QString(), layout->parentWidget() );
         _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
         _button->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     } else {
         _button = new Button( label, layout->parentWidget() );
     }
-    QObject::connect( _button, SIGNAL(clicked()), this, SLOT(emitValueChanged()) );
+    if (checkable) {
+        _button->setCheckable(true);
+        bool checked = knob->getValue();
+        _button->setChecked(checked);
+        _button->setDown(checked);
+    }
+    QObject::connect( _button, SIGNAL(clicked(bool)), this, SLOT(emitValueChanged(bool)) );
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }
@@ -137,6 +170,7 @@ KnobGuiButton::getDescriptionLabel() const
 
 KnobGuiButton::~KnobGuiButton()
 {
+
 }
 
 void
@@ -146,12 +180,20 @@ KnobGuiButton::removeSpecificGui()
 }
 
 void
-KnobGuiButton::emitValueChanged()
+KnobGuiButton::emitValueChanged(bool clicked)
 {
     boost::shared_ptr<KnobButton> k = _knob.lock();
-
     assert(k);
-    k->trigger();
+
+    if (k->getIsCheckable()) {
+        _button->setDown(clicked);
+        _button->setChecked(clicked);
+
+        pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(), clicked, 0, false) );
+    } else {
+        k->trigger();
+
+    }
 }
 
 void
@@ -167,11 +209,22 @@ KnobGuiButton::_show()
 }
 
 void
+KnobGuiButton::updateGUI(int /*dimension*/)
+{
+    boost::shared_ptr<KnobButton> k = _knob.lock();
+    if (k->getIsCheckable()) {
+        bool checked = k->getValue();
+        _button->setDown(checked);
+        _button->setChecked(checked);
+    }
+}
+
+void
 KnobGuiButton::setEnabled()
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
     bool b = knob->isEnabled(0);
-
+    
     _button->setEnabled(b);
 }
 

@@ -139,6 +139,8 @@ DockablePanel::DockablePanel(Gui* gui,
                              const QString & defaultPageName,
                              QWidget *parent)
     : QFrame(parent)
+    , DockablePanelI()
+    , KnobGuiContainerI(this)
     , _imp( new DockablePanelPrivate(this, gui, holder, container, headerMode, useScrollAreasForTabs, defaultPageName, helpToolTip, stack) )
 {
     QObject::connect(this, SIGNAL(deleteCurCmdLater()), this, SLOT(onDeleteCurCmdLater()), Qt::QueuedConnection);
@@ -1765,6 +1767,7 @@ DockablePanel::recreateKnobs(const QString& curTabName,
     ///Refresh the curve editor with potential new animated knobs
     if (isNodePanel) {
         NodeGuiPtr node = isNodePanel->getNode();
+        
         getGui()->getCurveEditor()->removeNode( node.get() );
         getGui()->getCurveEditor()->addNode(node);
 

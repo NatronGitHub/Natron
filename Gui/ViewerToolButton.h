@@ -16,54 +16,51 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_KNOBGUIFACTORY_H
-#define NATRON_GUI_KNOBGUIFACTORY_H
-
+#ifndef VIEWERTOOLBUTTON_H
+#define VIEWERTOOLBUTTON_H
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#include <string>
-#include <map>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Gui/GuiFwd.h"
+
+#include <QToolButton>
 
 NATRON_NAMESPACE_ENTER;
 
-/******************************KNOB_FACTORY**************************************/
-//Maybe the factory should move to a separate file since it is used to create KnobGui aswell
-class KnobGui;
-class KnobHolder;
-
-class KnobGuiFactory
+class ViewerToolButton
+: public QToolButton
 {
-    std::map<std::string, LibraryBinary *> _loadedKnobs;
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
 
 public:
-    KnobGuiFactory();
 
-    ~KnobGuiFactory();
+    ViewerToolButton(QWidget* parent);
+
+    virtual ~ViewerToolButton();
 
 
-    KnobGui * createGuiForKnob(KnobPtr knob, KnobGuiContainerI *container) const;
+    void handleSelection();
+
+    bool getIsSelected() const;
+    void setIsSelected(bool s);
+
+public Q_SLOTS:
+
+    void handleLongPress();
 
 private:
-    const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
-    {
-        return _loadedKnobs;
-    }
 
-    void loadBultinKnobs();
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
+    virtual void mouseReleaseEvent(QMouseEvent* e) OVERRIDE FINAL;
+    bool isSelected;
+    bool wasMouseReleased;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_GUI_KNOBGUIFACTORY_H
+#endif // VIEWERTOOLBUTTON_H

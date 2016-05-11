@@ -23,21 +23,21 @@
 // ***** END PYTHON BLOCK *****
 
 #include "KnobGuiPrivate.h"
-
 #include <stdexcept>
+
+#include "Gui/NodeViewerContext.h"
 
 NATRON_NAMESPACE_ENTER;
 
 
-KnobGuiPrivate::KnobGuiPrivate(DockablePanel* container)
+KnobGuiPrivate::KnobGuiPrivate(KnobGuiContainerI* container)
     : triggerNewLine(true)
     , spacingBetweenItems(0)
     , widgetCreated(false)
     , container(container)
-    , copyRightClickMenu( new MenuWithToolTips(container) )
+    , copyRightClickMenu( new MenuWithToolTips(container->getContainerWidget()) )
     , fieldLayout(NULL)
     , knobsOnSameLine()
-    , containerLayout(NULL)
     , field(NULL)
     , labelContainer(NULL)
     , descriptionLabel(NULL)
@@ -46,6 +46,7 @@ KnobGuiPrivate::KnobGuiPrivate(DockablePanel* container)
     , customInteract(NULL)
     , guiCurves()
     , guiRemoved(false)
+    , isInViewerUIKnob(dynamic_cast<NodeViewerContext*>(container) != 0)
 {
     //copyRightClickMenu->setFont( QFont(appFont,appFontSize) );
 }

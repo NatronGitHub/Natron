@@ -63,13 +63,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiButton(knob, container);
     }
 
     KnobGuiButton(KnobPtr knob,
-                  DockablePanel *container);
+                  KnobGuiContainerI *container);
 
     virtual ~KnobGuiButton() OVERRIDE;
 
@@ -83,7 +83,7 @@ public:
 
 public Q_SLOTS:
 
-    void emitValueChanged();
+    void emitValueChanged(bool clicked);
 
 private:
 
@@ -96,9 +96,7 @@ private:
     {
     }
 
-    virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL
-    {
-    }
+    virtual void updateGUI(int /*dimension*/) OVERRIDE FINAL;
 
 private:
     Button *_button;

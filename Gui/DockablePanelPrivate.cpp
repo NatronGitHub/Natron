@@ -722,7 +722,7 @@ DockablePanelPrivate::findKnobGuiOrCreate(const KnobPtr & knob,
         }
 
         ///fill the fieldLayout with the widgets
-        ret->createGUI(layout, fieldContainer, labelContainer, label, warningLabel, fieldLayout, makeNewLine, knobsOnSameLine);
+        ret->createGUI(fieldContainer, labelContainer, label, warningLabel, fieldLayout, makeNewLine, knobsOnSameLine);
 
 
         ret->setEnabledSlot();

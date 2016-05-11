@@ -49,7 +49,7 @@ NATRON_NAMESPACE_ENTER;
 
 /////////////// KnobGui
 KnobGui::KnobGui(const KnobPtr& /*knob*/,
-                 DockablePanel* container)
+                 KnobGuiContainerI* container)
     : QObject()
     , KnobGuiI()
     , boost::enable_shared_from_this<KnobGui>()
@@ -68,7 +68,9 @@ KnobGui::initialize()
     KnobGuiPtr thisShared = shared_from_this();
 
     assert(thisShared);
-    knob->setKnobGuiPointer(thisShared);
+    if (!_imp->isInViewerUIKnob) {
+        knob->setKnobGuiPointer(thisShared);
+    }
     KnobHelper* helper = dynamic_cast<KnobHelper*>( knob.get() );
     assert(helper);
     if (helper) {
@@ -99,15 +101,17 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
         QObject::connect( handler, SIGNAL(dimensionNameChanged(int)), this, SLOT(onDimensionNameChanged(int)) );
     }
-    _imp->guiCurves.resize( knob->getDimension() );
-    if ( knob->canAnimate() ) {
-        for (int i = 0; i < knob->getDimension(); ++i) {
-            _imp->guiCurves[i].reset( new Curve( *( knob->getCurve(ViewIdx(0), i) ) ) );
+    if (!_imp->isInViewerUIKnob) {
+        _imp->guiCurves.resize( knob->getDimension() );
+        if ( knob->canAnimate() ) {
+            for (int i = 0; i < knob->getDimension(); ++i) {
+                _imp->guiCurves[i].reset( new Curve( *( knob->getCurve(ViewIdx(0), i) ) ) );
+            }
         }
     }
 }
 
-DockablePanel*
+KnobGuiContainerI*
 KnobGui::getContainer()
 {
     return _imp->container;
@@ -175,8 +179,7 @@ KnobGui::pushUndoCommand(QUndoCommand* cmd)
 }
 
 void
-KnobGui::createGUI(QGridLayout* containerLayout,
-                   QWidget* fieldContainer,
+KnobGui::createGUI(QWidget* fieldContainer,
                    QWidget* labelContainer,
                    KnobClickableLabel* label,
                    Label* warningIndicator,
@@ -187,7 +190,6 @@ KnobGui::createGUI(QGridLayout* containerLayout,
     _imp->guiRemoved = false;
     KnobPtr knob = getKnob();
 
-    _imp->containerLayout = containerLayout;
     _imp->fieldLayout = layout;
     for (std::vector< boost::shared_ptr< KnobI > >::const_iterator it = knobsOnSameLine.begin(); it != knobsOnSameLine.end(); ++it) {
         _imp->knobsOnSameLine.push_back(*it);
@@ -276,7 +278,7 @@ KnobGui::shouldCreateLabel() const
     KnobPtr knob = getKnob();
     KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
 
-    return isStringKnob || knob->isLabelVisible();
+    return isStringKnob;
 }
 
 bool

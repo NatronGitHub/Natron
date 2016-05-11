@@ -28,6 +28,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <list>
 #include <QString>
 #include <QStringList>
 
@@ -150,6 +151,19 @@ public:
     }
 };
 
+class PluginActionShortcut
+{
+    std::string actionID;
+    std::string actionLabel;
+
+    struct ShortCut {
+        std::list<int> modifiers;
+        int symbol;
+    };
+
+    ShortCut shortcut;
+};
+
 class Plugin
 {
     LibraryBinary* _binary;
@@ -179,6 +193,11 @@ class Plugin
     bool _toolSetScript;
     mutable bool _activatedSet;
     mutable bool _activated;
+
+    /*
+      These are shortcuts that the plug-in registered
+     */
+    std::list<PluginActionShortcut> _shortcuts;
 
 public:
 
@@ -246,6 +265,17 @@ public:
     }
 
     ~Plugin();
+
+    void setShorcuts(const std::list<PluginActionShortcut>& shortcuts) {
+        _shortcuts = shortcuts;
+    }
+
+    const std::list<PluginActionShortcut>& getShortcuts() const
+    {
+        return _shortcuts;
+    }
+
+    QString getPluginShortcutGroup() const;
 
     bool getIsForInternalUseOnly() const { return _isInternalOnly; }
 

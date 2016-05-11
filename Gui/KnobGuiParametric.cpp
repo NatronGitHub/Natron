@@ -87,7 +87,7 @@ using std::make_pair;
 //=============================KnobGuiParametric===================================
 
 KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
-                                     DockablePanel *container)
+                                     KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , treeColumn(NULL)
     , _curveWidget(NULL)

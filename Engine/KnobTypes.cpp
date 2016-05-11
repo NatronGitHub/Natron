@@ -536,6 +536,7 @@ KnobButton::KnobButton(KnobHolder*  holder,
                        bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _renderButton(false)
+    , _checkable(false)
 {
     //setIsPersistant(false);
 }
@@ -1369,7 +1370,6 @@ void
 KnobString::setAsLabel()
 {
     setAnimationEnabled(false); //< labels cannot animate
-    // hideLabel(); // labels do not have a label
     _isLabel = true;
 }
 

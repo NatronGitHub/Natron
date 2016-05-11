@@ -97,6 +97,11 @@ public:
 
 public:
 
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
     void setIncrement(int incr, int index = 0);
 
     void setIncrement(const std::vector<int> &incr);
@@ -153,6 +158,11 @@ public:
 
     static const std::string & typeNameStatic();
 
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
 private:
 
     virtual bool canAnimate() const OVERRIDE FINAL;
@@ -188,6 +198,12 @@ public:
                bool declaredByPlugin );
 
     virtual ~KnobDouble();
+
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
 
     void disableSlider();
 
@@ -403,6 +419,20 @@ public:
 
     void trigger();
 
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    void setCheckable(bool b)
+    {
+        _checkable = b;
+    }
+
+    bool getIsCheckable() const
+    {
+        return _checkable;
+    }
 private:
 
 
@@ -412,6 +442,7 @@ private:
 private:
     static const std::string _typeNameStr;
     bool _renderButton;
+    bool _checkable;
 };
 
 /******************************KnobChoice**************************************/
@@ -459,6 +490,12 @@ public:
                bool declaredByPlugin);
 
     virtual ~KnobChoice();
+
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
 
     /**
      * @brief Fills-up the menu with the given entries and optionnally their tooltip.
@@ -588,6 +625,11 @@ public:
                   bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
 private:
 
 
@@ -647,6 +689,12 @@ public:
     void setSimplified(bool simp);
     bool isSimplified() const;
 
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+
 public Q_SLOTS:
 
     void onDimensionSwitchToggled(bool b);
@@ -689,6 +737,7 @@ public:
     {
         return new KnobString(holder, label, dimension, declaredByPlugin);
     }
+    
 
     KnobString(KnobHolder* holder,
                const std::string &label,
@@ -754,6 +803,12 @@ public:
     {
         return _isCustom;
     }
+
+    virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return !_multiLine;
+    }
+
 
     /**
      * @brief Relevant for multi-lines with rich text enables. It tells if

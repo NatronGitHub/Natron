@@ -70,7 +70,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #define kTrackerParamUsePatternMatching "usePatternMatching"
 #define kTrackerParamUsePatternMatchingLabel "Use Pattern Matching"
-#define kTrackerParamUsePatternMatchingHint "When enabled, the tracker will internally make use of the TrackerPM OpenFX plug-in to track the marker instead of LibMV. TrackerPM is using a patter-matching method. " \
+#define kTrackerParamUsePatternMatchingHint "When enabled, the tracker will internally make use of the TrackerPM OpenFX plug-in to track the marker instead of LibMV. TrackerPM is using a pattern-matching method. " \
     "Note that this is only applied to markers created after changing this parameter. Markers that existed prior to any change will continue using the method they were using when created"
 
 #define kTrackerParamPatternMatchingScoreType "pmScoreType"

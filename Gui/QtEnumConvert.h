@@ -50,6 +50,13 @@ public:
     static Key fromQtKey(Qt::Key k);
     static KeyboardModifierEnum fromQtModifier(Qt::KeyboardModifier m);
     static KeyboardModifiers fromQtModifiers(Qt::KeyboardModifiers m);
+
+    static Qt::Key toQtKey(Key k);
+    static Qt::KeyboardModifiers fromOfxtoQtModifiers(const std::list<int>& modifiers);
+    static bool fromOfxtoQtModifier(int modifier, Qt::KeyboardModifier* mod);
+    static Qt::KeyboardModifier  toQtModifier(KeyboardModifierEnum m);
+    static Qt::KeyboardModifiers toQtModifiers(const KeyboardModifiers& modifiers);
+
     static StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
     static QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
     static QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);

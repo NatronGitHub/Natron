@@ -115,7 +115,7 @@ KnobGui::onSetExprActionTriggered()
     assert(action);
 
     int dim = action->data().toInt();
-    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dim, shared_from_this(), _imp->container);
+    EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dim, shared_from_this(), _imp->field);
     dialog->create(QString::fromUtf8( getKnob()->getExpression(dim == -1 ? 0 : dim).c_str() ), true);
     QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onEditExprDialogFinished()) );
     QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onEditExprDialogFinished()) );
@@ -672,11 +672,17 @@ KnobGui::show(int /*index*/)
 int
 KnobGui::getActualIndexInLayout() const
 {
-    if (!_imp->containerLayout) {
+
+    QWidget* parent = _imp->field->parentWidget();
+    if (!parent) {
         return -1;
     }
-    for (int i = 0; i < _imp->containerLayout->rowCount(); ++i) {
-        QLayoutItem* item = _imp->containerLayout->itemAtPosition(i, 1);
+    QGridLayout* layout = dynamic_cast<QGridLayout*>(parent->layout());
+    if (!layout) {
+        return -1;
+    }
+    for (int i = 0; i < layout->rowCount(); ++i) {
+        QLayoutItem* item = layout->itemAtPosition(i, 1);
         if ( item && (item->widget() == _imp->field) ) {
             return i;
         }

@@ -58,13 +58,13 @@ class KnobGuiSeparator
 {
 public:
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiSeparator(knob, container);
     }
 
     KnobGuiSeparator(KnobPtr knob,
-                     DockablePanel *container);
+                     KnobGuiContainerI *container);
 
     virtual ~KnobGuiSeparator() OVERRIDE;
 

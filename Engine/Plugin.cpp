@@ -65,6 +65,12 @@ Plugin::isWriter() const
     return _isWriter;
 }
 
+QString
+Plugin::getPluginShortcutGroup() const
+{
+    return getPluginLabel() + QLatin1String(" Viewer Interface");
+}
+
 void
 Plugin::setPluginLabel(const QString & label)
 {

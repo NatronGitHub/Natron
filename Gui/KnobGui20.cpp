@@ -419,6 +419,12 @@ KnobGui::triggerNewLine() const
     return _imp->triggerNewLine;
 }
 
+bool
+KnobGui::isViewerUIKnob() const
+{
+    return _imp->isInViewerUIKnob;
+}
+
 void
 KnobGui::turnOffNewLine()
 {

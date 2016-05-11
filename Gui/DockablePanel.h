@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/DockablePanelI.h"
 
 #include "Gui/GuiFwd.h"
+#include "Gui/KnobGuiContainerI.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -57,7 +58,8 @@ NATRON_NAMESPACE_ENTER;
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
-      , public DockablePanelI
+    , public DockablePanelI
+    , public KnobGuiContainerI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -103,19 +105,14 @@ public:
     Button* insertHeaderButton(int headerPosition);
 
 
-    void pushUndoCommand(QUndoCommand* cmd);
-
     void refreshUndoRedoButtonsEnabledNess();
 
-    const QUndoCommand* getLastUndoCommand() const;
-    Gui* getGui() const;
 
     void insertHeaderWidget(int index, QWidget* widget);
 
     void appendHeaderWidget(QWidget* widget);
 
     QWidget* getHeaderWidget() const;
-    KnobGuiPtr getKnobGui(const KnobPtr & knob) const;
 
     ///MT-safe
     virtual QColor getCurrentColor() const
@@ -147,6 +144,14 @@ public:
     virtual void recreateUserKnobs(bool restorePageIndex) OVERRIDE FINAL;
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
 
+    virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
+
+    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 private:
 
     void recreateKnobs(const QString& curTabName, bool restorePageIndex);
@@ -177,7 +182,7 @@ public:
 
     void setPluginIDAndVersion(const std::string& pluginLabel, const std::string& pluginID, unsigned int version);
 
-    void refreshTabWidgetMaxHeight();
+    virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
 
 public Q_SLOTS:
 

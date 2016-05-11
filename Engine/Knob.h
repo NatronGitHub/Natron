@@ -84,6 +84,11 @@ public:
         Q_EMIT secretChanged();
     }
 
+    void s_viewerContextSecretChanged()
+    {
+        Q_EMIT viewerContextSecretChanged();
+    }
+
     void s_enabledChanged()
     {
         Q_EMIT enabledChanged();
@@ -272,6 +277,9 @@ Q_SIGNALS:
 
     ///Emitted when the secret state of the knob changed
     void secretChanged();
+
+    ///Emitted when the secret state of the knob changed in the viewer context
+    void viewerContextSecretChanged();
 
     ///Emitted when a dimension enabled state changed
     void enabledChanged();
@@ -785,16 +793,11 @@ public:
 
     /**
      * @brief Set an icon instead of the text label for this knob
+     * @param modeOff If true, this icon will be used when the parameter is an unchecked state (only relevant for
+     * buttons/booleans parameters), otherwise the icon will be used when the parameter is in a checked state
      **/
-    virtual void setIconLabel(const std::string& iconFilePath) = 0;
-    virtual const std::string& getIconLabel() const = 0;
-
-    /**
-     * @brief Hide the label label on the GUI on the left of the knob. This is not dynamic
-     * and must be called upon the knob creation.
-     **/
-    virtual void hideLabel() = 0;
-    virtual bool isLabelVisible() const = 0;
+    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) = 0;
+    virtual const std::string& getIconLabel(bool checked = false) const = 0;
 
     /**
      * @brief Returns a pointer to the holder owning the knob.
@@ -823,6 +826,44 @@ public:
      * @brief GUI-related
      **/
     virtual void setSpacingBetweenItems(int spacing) = 0;
+
+    /**
+     * @brief Set whether the knob should have a GUI on the viewer, if so set at which index
+     **/
+    virtual void setInViewerContextIndex(int index) = 0;
+    virtual int  getInViewerContextIndex() const = 0;
+
+    /**
+     * @brief Returns whether this type of knob can be instantiated in the viewer UI
+     **/
+    virtual bool supportsInViewerContext() const
+    {
+        return false;
+    }
+
+    /**
+     * @brief Set how much space (in pixels) to leave between the current parameter and the next parameter in horizontal layouts.
+     **/
+    virtual void setInViewerContextItemSpacing(int spacing) = 0;
+    virtual int  getInViewerContextItemSpacing() const = 0;
+
+    /**
+     * @brief Set whether the knob should have a vertical separator after or not in the viewer
+     **/
+    virtual void setInViewerContextAddSeparator(bool addSeparator) = 0;
+    virtual bool  getInViewerContextAddSeparator() const = 0;
+
+    /**
+     * @brief Set whether the viewer UI should create a new line after this parameter or not
+     **/
+    virtual void setInViewerContextNewLineActivated(bool activated) = 0;
+    virtual bool  getInViewerContextNewLineActivated() const = 0;
+
+    /**
+     * @brief Set whether the knob should have its viewer GUI secret or not
+     **/
+    virtual void setInViewerContextSecret(bool secret) = 0;
+    virtual bool  getInViewerContextSecret() const = 0;
 
     /**
      * @brief Enables/disables user interaction with the given dimension.
@@ -1346,10 +1387,8 @@ public:
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     void setLabel(const std::string& label) OVERRIDE FINAL;
-    virtual void setIconLabel(const std::string& iconFilePath) OVERRIDE FINAL;
-    virtual const std::string& getIconLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void hideLabel()  OVERRIDE FINAL;
-    virtual bool isLabelVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setIconLabel(const std::string& iconFilePath,bool checked = false) OVERRIDE FINAL;
+    virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHolder(KnobHolder* holder) OVERRIDE FINAL;
     virtual int getDimension() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1358,6 +1397,16 @@ public:
     virtual bool isNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSeparatorActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
+    virtual void setInViewerContextIndex(int index) OVERRIDE FINAL;
+    virtual int  getInViewerContextIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;
+    virtual int  getInViewerContextItemSpacing() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextAddSeparator(bool addSeparator) OVERRIDE FINAL;
+    virtual bool  getInViewerContextAddSeparator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextNewLineActivated(bool activated) OVERRIDE FINAL;
+    virtual bool  getInViewerContextNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextSecret(bool secret) OVERRIDE FINAL;
+    virtual bool  getInViewerContextSecret() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setEnabled(int dimension, bool b) OVERRIDE FINAL;
     virtual void setDefaultEnabled(int dimension, bool b) OVERRIDE FINAL;
     virtual bool isEnabled(int dimension) const OVERRIDE FINAL;
@@ -2194,6 +2243,8 @@ public:
 
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
+
+    bool hasKnobWithViewerInContextUI() const;
 
 protected:
 

@@ -204,7 +204,7 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
 }
 
 KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
-                             DockablePanel *container)
+                             KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _comboBox(0)
 {

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_KNOBGUIFACTORY_H
-#define NATRON_GUI_KNOBGUIFACTORY_H
+#ifndef KNOBGUICONTAINERI_H
+#define KNOBGUICONTAINERI_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,45 +25,50 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#include <string>
-#include <map>
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-/******************************KNOB_FACTORY**************************************/
-//Maybe the factory should move to a separate file since it is used to create KnobGui aswell
-class KnobGui;
-class KnobHolder;
-
-class KnobGuiFactory
-{
-    std::map<std::string, LibraryBinary *> _loadedKnobs;
+class KnobGuiContainerI {
 
 public:
-    KnobGuiFactory();
 
-    ~KnobGuiFactory();
+    KnobGuiContainerI()
+    : _containerWidget(0)
+    {}
 
+    KnobGuiContainerI(QWidget* w)
+    : _containerWidget(w)
+    {}
 
-    KnobGui * createGuiForKnob(KnobPtr knob, KnobGuiContainerI *container) const;
+    virtual ~KnobGuiContainerI() {}
 
-private:
-    const std::map<std::string, LibraryBinary *> &getLoadedKnobs() const
+    virtual Gui* getGui() const = 0;
+
+    virtual const QUndoCommand* getLastUndoCommand() const = 0;
+
+    virtual void pushUndoCommand(QUndoCommand* cmd) = 0;
+
+    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const = 0;
+
+    virtual void refreshTabWidgetMaxHeight() {}
+
+    QWidget* getContainerWidget() const
     {
-        return _loadedKnobs;
+        return _containerWidget;
     }
 
-    void loadBultinKnobs();
+protected:
+
+    void setContainerWidget(QWidget* widget)
+    {
+        _containerWidget = widget;
+    }
+
+
+    QWidget* _containerWidget;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_GUI_KNOBGUIFACTORY_H
+#endif // KNOBGUICONTAINERI_H

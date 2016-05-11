@@ -64,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 
 //===========================FILE_KNOB_GUI=====================================
 KnobGuiFile::KnobGuiFile(KnobPtr knob,
-                         DockablePanel *container)
+                         KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
     , _openFileButton(0)
@@ -463,7 +463,7 @@ KnobGuiFile::updateToolTip()
 
 //============================OUTPUT_FILE_KNOB_GUI====================================
 KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
-                                     DockablePanel *container)
+                                     KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
     , _openFileButton(0)
@@ -719,7 +719,7 @@ KnobGuiOutputFile::updateToolTip()
 
 //============================PATH_KNOB_GUI====================================
 KnobGuiPath::KnobGuiPath(KnobPtr knob,
-                         DockablePanel *container)
+                         KnobGuiContainerI *container)
     : KnobGuiTable(knob, container)
     , _mainContainer(0)
     , _lineEdit(0)

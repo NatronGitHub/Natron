@@ -237,17 +237,26 @@ struct KnobHelperPrivate
     KnobHolder* holder;
     mutable QMutex labelMutex;
     std::string label; //< the text label that will be displayed  on the GUI
-    bool labelVisible;
-    std::string iconFilePath; //< an icon to replace the label
+    std::string iconFilePath[2]; //< an icon to replace the label (one when checked, one when unchecked, for toggable buttons)
     std::string name; //< the knob can have a name different than the label displayed on GUI.
+    //By default this is the same as label but can be set by calling setName().
+
     std::string originalName; //< the original name passed to setName() by the user
-    //By default this is the same as _description but can be set by calling setName().
+
+    // Gui related stuff
     bool newLine;
     bool addSeparator;
     int itemSpacing;
+
+    // If this knob is supposed to be visible in the Viewer UI, this is the index at which it should be positioned
+    int inViewerContextIndex;
+    int inViewerContextAddSeparator;
+    int inViewerContextItemSpacing;
+    int inViewerContextAddNewLine;
+
     boost::weak_ptr<KnobI> parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
-    bool IsSecret, defaultIsSecret;
+    bool IsSecret, defaultIsSecret, inViewerContextSecret;
     std::vector<bool> enabled, defaultEnabled;
     bool CanUndo;
     QMutex evaluateOnChangeMutex;
@@ -320,17 +329,21 @@ struct KnobHelperPrivate
         , holder(holder_)
         , labelMutex()
         , label(label_)
-        , labelVisible(true)
         , iconFilePath()
         , name( label_.c_str() )
         , originalName( label_.c_str() )
         , newLine(true)
         , addSeparator(false)
         , itemSpacing(0)
+        , inViewerContextIndex(-1)
+        , inViewerContextAddSeparator(false)
+        , inViewerContextItemSpacing(1)
+        , inViewerContextAddNewLine(false)
         , parentKnob()
         , stateMutex()
         , IsSecret(false)
         , defaultIsSecret(false)
+        , inViewerContextSecret(false)
         , enabled(dimension_)
         , defaultEnabled(dimension_)
         , CanUndo(true)
@@ -1712,6 +1725,71 @@ KnobHelper::setSpacingBetweenItems(int spacing)
 }
 
 void
+KnobHelper::setInViewerContextIndex(int index)
+{
+    _imp->inViewerContextIndex = index;
+}
+
+int
+KnobHelper::getInViewerContextIndex() const
+{
+    return _imp->inViewerContextIndex;
+}
+
+void
+KnobHelper::setInViewerContextItemSpacing(int spacing)
+{
+    _imp->inViewerContextItemSpacing = spacing;
+}
+
+int
+KnobHelper::getInViewerContextItemSpacing() const
+{
+    return _imp->inViewerContextItemSpacing;
+}
+
+void
+KnobHelper::setInViewerContextAddSeparator(bool addSeparator)
+{
+    _imp->inViewerContextAddSeparator = addSeparator;
+}
+
+bool
+KnobHelper::getInViewerContextAddSeparator() const
+{
+    return _imp->inViewerContextAddSeparator;
+}
+
+void
+KnobHelper::setInViewerContextNewLineActivated(bool activated)
+{
+    _imp->inViewerContextAddNewLine = activated;
+}
+
+bool
+KnobHelper::getInViewerContextNewLineActivated() const
+{
+    return _imp->inViewerContextAddNewLine;
+}
+
+void
+KnobHelper::setInViewerContextSecret(bool secret)
+{
+    {
+        QMutexLocker k(&_imp->stateMutex);
+        _imp->inViewerContextSecret = secret;
+    }
+    _signalSlotHandler->s_viewerContextSecretChanged();
+}
+
+bool
+KnobHelper::getInViewerContextSecret() const
+{
+    QMutexLocker k(&_imp->stateMutex);
+    return _imp->inViewerContextSecret;
+}
+
+void
 KnobHelper::setEnabled(int dimension,
                        bool b)
 {
@@ -1719,9 +1797,8 @@ KnobHelper::setEnabled(int dimension,
         QMutexLocker k(&_imp->stateMutex);
         _imp->enabled[dimension] = b;
     }
-    if (_signalSlotHandler) {
-        _signalSlotHandler->s_enabledChanged();
-    }
+    _signalSlotHandler->s_enabledChanged();
+
 }
 
 void
@@ -1831,36 +1908,25 @@ KnobHelper::setLabel(const std::string& label)
 }
 
 void
-KnobHelper::setIconLabel(const std::string& iconFilePath)
+KnobHelper::setIconLabel(const std::string& iconFilePath,bool checked)
 {
     QMutexLocker k(&_imp->labelMutex);
-
-    _imp->iconFilePath = iconFilePath;
+    int idx = !checked ? 0 : 1;
+    _imp->iconFilePath[idx] = iconFilePath;
 }
 
 const std::string&
-KnobHelper::getIconLabel() const
+KnobHelper::getIconLabel(bool checked) const
 {
     QMutexLocker k(&_imp->labelMutex);
-
-    return _imp->iconFilePath;
+    int idx = !checked ? 0 : 1;
+    if (!_imp->iconFilePath[idx].empty()) {
+        return _imp->iconFilePath[idx];
+    }
+    int otherIdx = !checked ? 1 : 0;
+    return _imp->iconFilePath[otherIdx];
 }
 
-void
-KnobHelper::hideLabel()
-{
-    QMutexLocker k(&_imp->labelMutex);
-
-    _imp->labelVisible = false;
-}
-
-bool
-KnobHelper::isLabelVisible() const
-{
-    QMutexLocker k(&_imp->labelMutex);
-
-    return _imp->labelVisible;
-}
 
 bool
 KnobHelper::hasAnimation() const
@@ -4391,6 +4457,19 @@ KnobHolder::~KnobHolder()
             helper->_imp->holder = 0;
         }
     }
+}
+
+bool
+KnobHolder::hasKnobWithViewerInContextUI() const
+{
+    QMutexLocker k(&_imp->knobsMutex);
+    for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+        int index = (*it)->getInViewerContextIndex();
+        if (index != -1) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void

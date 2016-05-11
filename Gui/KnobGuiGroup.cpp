@@ -89,7 +89,7 @@ using std::make_pair;
 //=============================GROUP_KNOB_GUI===================================
 
 KnobGuiGroup::KnobGuiGroup(KnobPtr knob,
-                           DockablePanel *container)
+                           KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _checked(false)
     , _button(0)
@@ -111,7 +111,7 @@ KnobGuiGroup::getOrCreateTabWidget()
         return _tabGroup;
     }
 
-    _tabGroup = new TabGroup( getContainer() );
+    _tabGroup = new TabGroup( getContainer()->getContainerWidget() );
 
     return _tabGroup;
 }

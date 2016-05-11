@@ -108,13 +108,12 @@ struct KnobGuiPrivate
     bool triggerNewLine;
     int spacingBetweenItems;
     bool widgetCreated;
-    DockablePanel*  container;
+    KnobGuiContainerI*  container;
     QMenu* copyRightClickMenu;
     QHBoxLayout* fieldLayout; //< the layout containing the widgets of the knob
 
     ////A vector of all other knobs on the same line.
     std::vector< boost::weak_ptr< KnobI > > knobsOnSameLine;
-    QGridLayout* containerLayout;
     QWidget* field;
     QWidget* labelContainer;
     KnobClickableLabel* descriptionLabel;
@@ -125,7 +124,10 @@ struct KnobGuiPrivate
     std::vector< boost::shared_ptr<Curve> > guiCurves;
     bool guiRemoved;
 
-    KnobGuiPrivate(DockablePanel* container);
+    // True if this KnobGui is used in the viewer
+    bool isInViewerUIKnob;
+
+    KnobGuiPrivate(KnobGuiContainerI* container);
 
     void removeFromKnobsOnSameLineVector(const boost::shared_ptr<KnobI>& knob);
 };

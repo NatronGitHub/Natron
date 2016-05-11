@@ -54,13 +54,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiFile(knob, container);
     }
 
     KnobGuiFile(KnobPtr knob,
-                DockablePanel *container);
+                KnobGuiContainerI *container);
 
     virtual ~KnobGuiFile() OVERRIDE;
 
@@ -135,13 +135,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiOutputFile(knob, container);
     }
 
     KnobGuiOutputFile(KnobPtr knob,
-                      DockablePanel *container);
+                      KnobGuiContainerI *container);
 
     virtual ~KnobGuiOutputFile() OVERRIDE;
 
@@ -199,13 +199,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiPath(knob, container);
     }
 
     KnobGuiPath(KnobPtr knob,
-                DockablePanel *container);
+                KnobGuiContainerI *container);
 
     virtual ~KnobGuiPath() OVERRIDE;
 

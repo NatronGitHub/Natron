@@ -51,6 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#include "Gui/KnobGuiContainerI.h"
 #include "Gui/GuiFwd.h"
 
 
@@ -80,13 +81,13 @@ public:
 
 
     KnobGui(const KnobPtr& knob,
-            DockablePanel* container);
+            KnobGuiContainerI* container);
 
     virtual ~KnobGui() OVERRIDE;
 
     void initialize();
 
-    DockablePanel* getContainer();
+    KnobGuiContainerI* getContainer();
 
     void removeGui();
 
@@ -107,6 +108,8 @@ public:
      **/
     virtual KnobPtr getKnob() const = 0;
 
+    bool isViewerUIKnob() const;
+
     bool triggerNewLine() const;
 
     void turnOffNewLine();
@@ -118,8 +121,7 @@ public:
 
     bool hasWidgetBeenCreated() const;
 
-    void createGUI(QGridLayout* containerLayout,
-                   QWidget* fieldContainer,
+    void createGUI(QWidget* fieldContainer,
                    QWidget* labelContainer,
                    KnobClickableLabel* label,
                    Label* warningIndicator,

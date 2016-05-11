@@ -62,13 +62,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiGroup(knob, container);
     }
 
     KnobGuiGroup(KnobPtr knob,
-                 DockablePanel *container);
+                 KnobGuiContainerI *container);
 
     virtual ~KnobGuiGroup() OVERRIDE;
 

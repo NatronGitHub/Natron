@@ -127,7 +127,7 @@ public:
     const QCursor & getLinkToCursor() const;
     const QCursor & getLinkToMultCursor() const;
     virtual void setLoadingStatus(const QString & str) OVERRIDE FINAL;
-    KnobGui* createGuiForKnob(KnobPtr knob, DockablePanel *container) const;
+    KnobGui* createGuiForKnob(KnobPtr knob, KnobGuiContainerI *container) const;
     virtual void setUndoRedoStackLimit(int limit) OVERRIDE FINAL;
     virtual void debugImage( const Image* image, const RectI& roi, const QString & filename = QString() ) const OVERRIDE FINAL;
 

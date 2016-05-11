@@ -65,7 +65,7 @@ struct KnobGuiTablePrivate
 };
 
 KnobGuiTable::KnobGuiTable(KnobPtr knob,
-                           DockablePanel *container)
+                           KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _imp( new KnobGuiTablePrivate() )
 {
@@ -608,7 +608,7 @@ KnobGuiTable::updateToolTip()
 }
 
 KnobGuiLayers::KnobGuiLayers(KnobPtr knob,
-                             DockablePanel *container)
+                             KnobGuiContainerI *container)
     : KnobGuiTable(knob, container)
 {
     _knob = boost::dynamic_pointer_cast<KnobLayers>(knob);

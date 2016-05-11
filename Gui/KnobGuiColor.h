@@ -115,13 +115,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiColor(knob, container);
     }
 
     KnobGuiColor(KnobPtr knob,
-                 DockablePanel *container);
+                 KnobGuiContainerI *container);
 
     virtual ~KnobGuiColor() {}
 
@@ -183,6 +183,7 @@ private:
     ColorPickerLabel *_colorLabel;
     Button *_colorDialogButton;
     std::vector<double> _lastColor;
+    bool _useSimplifiedUI;
 };
 
 NATRON_NAMESPACE_EXIT;

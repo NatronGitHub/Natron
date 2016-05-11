@@ -47,7 +47,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     KnobGuiTable(KnobPtr knob,
-                 DockablePanel *container);
+                 KnobGuiContainerI *container);
 
     virtual ~KnobGuiTable() OVERRIDE;
 
@@ -120,13 +120,13 @@ class KnobGuiLayers
 public:
 
     static KnobGui * BuildKnobGui(KnobPtr knob,
-                                  DockablePanel *container)
+                                  KnobGuiContainerI *container)
     {
         return new KnobGuiLayers(knob, container);
     }
 
     KnobGuiLayers(KnobPtr knob,
-                  DockablePanel *container);
+                  KnobGuiContainerI *container);
 
     virtual ~KnobGuiLayers() OVERRIDE;
 
