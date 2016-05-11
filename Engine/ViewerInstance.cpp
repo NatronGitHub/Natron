@@ -1548,6 +1548,12 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
 
+        if ( (inArgs.channels == eDisplayChannelsA && (alphaChannelIndex < 0 || alphaChannelIndex >= (int)colorImage->getComponentsCount())) ||
+            (inArgs.channels == eDisplayChannelsMatte && (alphaChannelIndex < 0 || alphaChannelIndex >= (int)alphaImage->getComponentsCount()))) {
+            return eViewerRenderRetCodeBlack;
+        }
+
+
         assert( ( inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount() ) ||
                 ( inArgs.channels == eDisplayChannelsMatte && ( ( alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount() ) || !alphaImage ) ) );
 
