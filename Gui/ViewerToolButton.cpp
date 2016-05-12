@@ -22,12 +22,18 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
 #include "ViewerToolButton.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QStyle>
 #include <QMouseEvent>
+#include <QTimer>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Gui/GuiMacros.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
