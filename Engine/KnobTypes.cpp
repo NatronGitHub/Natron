@@ -786,7 +786,7 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
                 }
                 if (!found) {
                     hasChanged = true;
-                    if ( i < (int)_newEntriesHelp.size() ) {
+                    if ( i < _newEntriesHelp.size() ) {
                         _mergedEntriesHelp.push_back(_newEntriesHelp[i]);
                     }
                     _mergedEntries.push_back(entries[i]);
