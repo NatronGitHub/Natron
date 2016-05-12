@@ -22,12 +22,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
 #include "ThreadPool.h"
 
 #include <string>
 #include <sstream>
-#include <QAtomicInt>
+
+#include <QtCore/QAtomicInt>
+#include <QtCore/QMutex>
+#include <QtCore/QThread>
+
 #include "Engine/AbortableRenderInfo.h"
 
 
