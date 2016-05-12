@@ -208,11 +208,6 @@ void RunPrediction(const vector<Marker*> previous_markers,
 
 }  // namespace
 
-bool PredictMarkerPosition(const Tracks& tracks, Marker* marker,
-                           TrackerKalman::State *state) {
-    
-    
-}
     
 bool PredictMarkerPosition(const Tracks& tracks, Marker* marker) {
   // Get all markers for this clip and track.

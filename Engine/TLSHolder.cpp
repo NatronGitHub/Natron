@@ -79,6 +79,9 @@ copyAbortInfo(QThread* fromThread,
         fromAbortable->getAbortInfo(&isRenderResponseToUserInteraction, &abortInfo, &treeRoot);
         toAbortable->setAbortInfo(isRenderResponseToUserInteraction, abortInfo, treeRoot);
     }
+#else
+    Q_UNUSED(fromThread);
+    Q_UNUSED(toThread);
 #endif
 }
 
