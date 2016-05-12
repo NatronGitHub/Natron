@@ -73,7 +73,9 @@ class TabBar
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool mouseOverFocus READ hasMouseOverFocus WRITE setMouseOverFocus)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // properties
+    Q_PROPERTY(bool mouseOverFocus READ hasMouseOverFocus WRITE setMouseOverFocus)
     Q_PROPERTY(bool clickFocus READ hasClickFocus WRITE setClickFocus)
 
 public:

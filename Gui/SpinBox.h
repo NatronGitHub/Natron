@@ -44,7 +44,9 @@ class SpinBox
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // properties
+    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 
 public:
