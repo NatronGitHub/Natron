@@ -609,7 +609,9 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
     QObject::connect( &_imp->threadSpawnsTimer, SIGNAL(timeout()), this, SLOT(onThreadSpawnsTimerTriggered()) );
 #endif
 
+#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("Scheduler thread");
+#endif
 }
 
 OutputSchedulerThread::~OutputSchedulerThread()
@@ -2379,7 +2381,9 @@ RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>
 #endif
     , _imp( new RenderThreadTaskPrivate(output, scheduler) )
 {
+#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("Parallel render thread");
+#endif
 }
 
 #else
@@ -3880,7 +3884,9 @@ ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerIns
 #endif
     , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
 {
+#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("ViewerCurrentFrameRequestScheduler");
+#endif
     QObject::connect( this, SIGNAL(s_processProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)), this, SLOT(doProcessProducedFrameOnMainThread(RenderStatsPtr,BufferableObjectList)) );
 }
 
@@ -4322,11 +4328,13 @@ struct ViewerCurrentFrameRequestRendererBackupPrivate
 ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup()
     : QThread()
 #ifdef QT_CUSTOM_THREADPOOL
-, AbortableThread(this)
+    , AbortableThread(this)
 #endif
     , _imp( new ViewerCurrentFrameRequestRendererBackupPrivate() )
 {
+#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("ViewerCurrentFrameRequestRendererBackup");
+#endif
 }
 
 ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()

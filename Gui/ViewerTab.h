@@ -200,6 +200,8 @@ public:
 
     ViewerCompositingOperatorEnum getCompositingOperator() const;
 
+    ViewerCompositingOperatorEnum getCompositingOperatorPrevious() const;
+
     void setCompositingOperator(ViewerCompositingOperatorEnum op);
 
     bool isFPSLocked() const;

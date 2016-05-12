@@ -135,6 +135,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , inputNamesMap()
     , compOperatorMutex()
     , compOperator(eViewerCompositingOperatorNone)
+    , compOperatorPrevious(eViewerCompositingOperatorWipeUnder)
     , viewerNode(node)
     , visibleToolbarsMutex()
     , infobarVisible(true)

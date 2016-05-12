@@ -1327,7 +1327,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     }
 
     ///Notify the gui we're rendering.
-    EffectInstance::NotifyRenderingStarted_RAII renderingNotifier(getNode().get());
+    EffectInstance::NotifyRenderingStarted_RAII renderingNotifier( getNode().get() );
 
 
     if (useTLS) {
@@ -1728,6 +1728,12 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         const bool viewerRenderRoiOnly = !useTextureCache;
 
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
+
+        if ( (inArgs.channels == eDisplayChannelsA && (alphaChannelIndex < 0 || alphaChannelIndex >= (int)colorImage->getComponentsCount())) ||
+            (inArgs.channels == eDisplayChannelsMatte && (alphaChannelIndex < 0 || alphaChannelIndex >= (int)alphaImage->getComponentsCount()))) {
+            return eViewerRenderRetCodeBlack;
+        }
+
 
         assert( ( inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount() ) ||
                 ( inArgs.channels == eDisplayChannelsMatte && ( ( alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount() ) || !alphaImage ) ) );
@@ -3253,7 +3259,7 @@ ViewerInstance::refreshActiveInputs(int inputNbChanged)
             if ( (_imp->activeInputs[0] != -1) && _imp->activateInputChangedFromViewer ) {
                 ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
                 if (op == eViewerCompositingOperatorNone) {
-                    _imp->uiContext->setCompositingOperator(eViewerCompositingOperatorWipe);
+                    _imp->uiContext->setCompositingOperator(eViewerCompositingOperatorWipeUnder);
                 }
                 _imp->activeInputs[1] = inputNbChanged;
             } else {

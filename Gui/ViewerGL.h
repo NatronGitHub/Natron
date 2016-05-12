@@ -214,6 +214,26 @@ public:
 
     virtual void getViewerFrameRange(int* first, int* last) const OVERRIDE FINAL;
 
+    bool operatorIsWipe(ViewerCompositingOperatorEnum compOperator)
+    {
+        return (compOperator != eViewerCompositingOperatorNone &&
+                compOperator != eViewerCompositingOperatorStackUnder &&
+                compOperator != eViewerCompositingOperatorStackOver &&
+                compOperator != eViewerCompositingOperatorStackMinus &&
+                compOperator != eViewerCompositingOperatorStackOnionSkin &&
+                true);
+    }
+
+    bool operatorIsStack(ViewerCompositingOperatorEnum compOperator)
+    {
+        return (compOperator != eViewerCompositingOperatorNone &&
+                compOperator != eViewerCompositingOperatorWipeUnder &&
+                compOperator != eViewerCompositingOperatorWipeOver &&
+                compOperator != eViewerCompositingOperatorWipeMinus &&
+                compOperator != eViewerCompositingOperatorWipeOnionSkin &&
+                true);
+    }
+
 public Q_SLOTS:
 
 

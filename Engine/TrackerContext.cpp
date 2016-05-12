@@ -1635,11 +1635,13 @@ struct TrackSchedulerPrivate
 TrackSchedulerBase::TrackSchedulerBase()
     : QThread()
 #ifdef QT_CUSTOM_THREADPOOL
-, AbortableThread(this)
+    , AbortableThread(this)
 #endif
 {
     QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
+#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("TrackScheduler");
+#endif
 
 }
 

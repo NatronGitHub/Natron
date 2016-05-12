@@ -2148,7 +2148,6 @@ NodeGui::getUndoStack() const
     return _undoStack;
 }
 
-
 void
 NodeGui::refreshStateIndicator()
 {
@@ -2203,6 +2202,7 @@ void
 NodeGui::refreshRenderingIndicator()
 {
     NodePtr node = getNode();
+
     if (!node) {
         return;
     }
@@ -2219,15 +2219,14 @@ NodeGui::refreshRenderingIndicator()
             _inputEdges[i]->turnOffRenderingColor();
         }
     }
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(effect.get());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( effect.get() );
     if (isViewer) {
-        ViewerGL* hasUI = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
+        ViewerGL* hasUI = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (hasUI) {
             hasUI->getViewerTab()->refreshViewerRenderingState();
         }
     }
 }
-
 
 void
 NodeGui::moveBelowPositionRecursively(const QRectF & r)

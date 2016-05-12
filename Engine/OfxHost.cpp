@@ -1074,7 +1074,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
 class OfxThread
     : public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-      , public AbortableThread
+    , public AbortableThread
 #endif
 {
 public:
@@ -1085,7 +1085,9 @@ public:
               void *customArg,
               OfxStatus *stat)
         : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
         , AbortableThread(this)
+#endif
         , _func(func)
         , _threadIndex(threadIndex)
         , _threadMax(threadMax)
@@ -1093,7 +1095,9 @@ public:
         , _customArg(customArg)
         , _stat(stat)
     {
+#ifdef QT_CUSTOM_THREADPOOL
         setThreadName("Multi-thread suite");
+#endif
     }
 
     void run() OVERRIDE

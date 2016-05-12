@@ -917,16 +917,28 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorNone", (long) NATRON_NAMESPACE::eViewerCompositingOperatorNone))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorOver", (long) NATRON_NAMESPACE::eViewerCompositingOperatorOver))
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorWipeUnder", (long) NATRON_NAMESPACE::eViewerCompositingOperatorWipeUnder))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorMinus", (long) NATRON_NAMESPACE::eViewerCompositingOperatorMinus))
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorWipeOver", (long) NATRON_NAMESPACE::eViewerCompositingOperatorWipeOver))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorUnder", (long) NATRON_NAMESPACE::eViewerCompositingOperatorUnder))
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorWipeMinus", (long) NATRON_NAMESPACE::eViewerCompositingOperatorWipeMinus))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
-        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorWipe", (long) NATRON_NAMESPACE::eViewerCompositingOperatorWipe))
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorWipeOnionSkin", (long) NATRON_NAMESPACE::eViewerCompositingOperatorWipeOnionSkin))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorStackUnder", (long) NATRON_NAMESPACE::eViewerCompositingOperatorStackUnder))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorStackOver", (long) NATRON_NAMESPACE::eViewerCompositingOperatorStackOver))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorStackMinus", (long) NATRON_NAMESPACE::eViewerCompositingOperatorStackMinus))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_VIEWERCOMPOSITINGOPERATORENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eViewerCompositingOperatorStackOnionSkin", (long) NATRON_NAMESPACE::eViewerCompositingOperatorStackOnionSkin))
         return ;
     // Register converter for enum 'NATRON_NAMESPACE::ViewerCompositingOperatorEnum'.
     {

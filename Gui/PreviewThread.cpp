@@ -71,11 +71,13 @@ struct PreviewThreadPrivate
 PreviewThread::PreviewThread()
     : QThread()
 #ifdef QT_CUSTOM_THREADPOOL
-, AbortableThread(this)
+    , AbortableThread(this)
 #endif
     , _imp( new PreviewThreadPrivate() )
 {
+#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("PreviewThread");
+#endif
 }
 
 PreviewThread::~PreviewThread()

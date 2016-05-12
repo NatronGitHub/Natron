@@ -42,7 +42,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
+#ifdef QT_CUSTOM_THREADPOOL
 typedef std::set<AbortableThread*> ThreadSet;
+#endif
 
 struct AbortableRenderInfoPrivate
 {
@@ -51,7 +53,9 @@ struct AbortableRenderInfoPrivate
     U64 age;
 
     mutable QMutex threadsMutex;
+#ifdef QT_CUSTOM_THREADPOOL
     ThreadSet threadsForThisRender;
+#endif
 
     boost::shared_ptr<QTimer> abortTimeoutTimer;
 
@@ -61,7 +65,9 @@ struct AbortableRenderInfoPrivate
     , aborted()
     , age(age)
     , threadsMutex()
+#ifdef QT_CUSTOM_THREADPOOL
     , threadsForThisRender()
+#endif
     , abortTimeoutTimer()
     {
         aborted.fetchAndStoreAcquire(0);
