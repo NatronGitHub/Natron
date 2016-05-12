@@ -57,35 +57,32 @@ NATRON_NAMESPACE_ENTER;
 
 struct NodeViewerContextPrivate
 {
-
     NodeViewerContext* publicInterface;
     NodeGuiWPtr node;
     ViewerGL* viewer;
     ViewerTab* viewerTab;
-
     std::map<KnobWPtr, KnobGuiPtr> knobsMapping;
-
     QString currentRole, currentTool;
     QToolBar* toolbar;
     std::map<QString, ViewerToolButton*> toolButtons;
-
     QWidget* mainContainer;
     QVBoxLayout* mainContainerLayout;
 
-    NodeViewerContextPrivate(NodeViewerContext* pi, const NodeGuiPtr& node, ViewerTab* viewer)
-    : publicInterface(pi)
-    , node(node)
-    , viewer(viewer->getViewer())
-    , viewerTab(viewer)
-    , knobsMapping()
-    , currentRole()
-    , currentTool()
-    , toolbar(0)
-    , toolButtons()
-    , mainContainer(0)
-    , mainContainerLayout(0)
+    NodeViewerContextPrivate(NodeViewerContext* pi,
+                             const NodeGuiPtr& node,
+                             ViewerTab* viewer)
+        : publicInterface(pi)
+        , node(node)
+        , viewer( viewer->getViewer() )
+        , viewerTab(viewer)
+        , knobsMapping()
+        , currentRole()
+        , currentTool()
+        , toolbar(0)
+        , toolButtons()
+        , mainContainer(0)
+        , mainContainerLayout(0)
     {
-
     }
 
     void createKnobs();
@@ -95,7 +92,6 @@ struct NodeViewerContextPrivate
         return node.lock();
     }
 
-
     /**
      * @brief Add a new tool to the toolbutton corresponding to the given roleID.
      * If a ViewerToolButton for this roleID does not exist yet, it is created and the
@@ -103,7 +99,7 @@ struct NodeViewerContextPrivate
      * The shortcut for this button will be added to the Shorcut Editor with by default
      * the given modifiers and symbols (as defined in <ofxKeySyms.h>).
      * The tool will have the given label, and when hovering the button with the mouse, the user
-     * will receive the hintToolTip help. 
+     * will receive the hintToolTip help.
      * Optionnally, a path to an icon can be specified for this button.
      **/
     void addToolBarTool(const std::string& toolID,
@@ -115,10 +111,9 @@ struct NodeViewerContextPrivate
 
     void onToolActionTriggeredInternal(QAction* action, bool notifyNode);
 
-    void
-    toggleToolsSelection(ViewerToolButton* selected)
+    void toggleToolsSelection(ViewerToolButton* selected)
     {
-        for (std::map<QString,ViewerToolButton*>::iterator it = toolButtons.begin(); it != toolButtons.end(); ++it) {
+        for (std::map<QString, ViewerToolButton*>::iterator it = toolButtons.begin(); it != toolButtons.end(); ++it) {
             if (it->second == selected) {
                 it->second->setIsSelected(true);
             } else {
@@ -128,10 +123,11 @@ struct NodeViewerContextPrivate
     }
 };
 
-NodeViewerContext::NodeViewerContext(const NodeGuiPtr& node, ViewerTab* viewer)
-: QObject()
-, KnobGuiContainerI()
-, _imp(new NodeViewerContextPrivate(this, node, viewer))
+NodeViewerContext::NodeViewerContext(const NodeGuiPtr& node,
+                                     ViewerTab* viewer)
+    : QObject()
+    , KnobGuiContainerI()
+    , _imp( new NodeViewerContextPrivate(this, node, viewer) )
 {
     _imp->mainContainer = new QWidget(viewer);
     _imp->mainContainerLayout = new QVBoxLayout(_imp->mainContainer);
@@ -139,19 +135,16 @@ NodeViewerContext::NodeViewerContext(const NodeGuiPtr& node, ViewerTab* viewer)
     _imp->mainContainerLayout->setSpacing(0);
 
     setContainerWidget(_imp->mainContainer);
-
 }
-
 
 NodeViewerContext::~NodeViewerContext()
 {
-
 }
 
 static void
 addSpacer(QBoxLayout* layout)
 {
-    layout->addSpacing(TO_DPIX(5));
+    layout->addSpacing( TO_DPIX(5) );
     QFrame* line = new QFrame( layout->parentWidget() );
     line->setFrameShape(QFrame::VLine);
     line->setFrameShadow(QFrame::Raised);
@@ -159,16 +152,16 @@ addSpacer(QBoxLayout* layout)
     palette.setColor(QPalette::Foreground, Qt::black);
     line->setPalette(palette);
     layout->addWidget(line);
-    layout->addSpacing(TO_DPIX(5));
+    layout->addSpacing( TO_DPIX(5) );
 }
 
 void
 NodeViewerContextPrivate::createKnobs()
 {
     NodeGuiPtr thisNode = getNode();
-
     const KnobsVec& knobs = thisNode->getNode()->getKnobs();
     std::map<int, KnobPtr> knobsOrdered;
+
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         int index = (*it)->getInViewerContextIndex();
         if (index != -1) {
@@ -177,9 +170,9 @@ NodeViewerContextPrivate::createKnobs()
     }
 
     // hasKnobWithViewerInContextUI() should have been checked before
-    assert(!knobsOrdered.empty());
+    assert( !knobsOrdered.empty() );
 
-    if (knobsOrdered.empty()) {
+    if ( knobsOrdered.empty() ) {
         return;
     }
 
@@ -193,8 +186,6 @@ NodeViewerContextPrivate::createKnobs()
     mainContainerLayout->addWidget(lastRowContainer);
 
     KnobsVec knobsOnSameLine;
-
-
     std::map<int, KnobPtr>::iterator next = knobsOrdered.begin();
     ++next;
     for (std::map<int, KnobPtr>::iterator it = knobsOrdered.begin(); it != knobsOrdered.end(); ++it) {
@@ -205,10 +196,9 @@ NodeViewerContextPrivate::createKnobs()
         }
         ret->initialize();
 
-        knobsMapping.insert(std::make_pair(it->second, ret));
+        knobsMapping.insert( std::make_pair(it->second, ret) );
 
         bool makeNewLine = it->second->getInViewerContextNewLineActivated();
-
         QWidget* labelContainer = 0;
         KnobClickableLabel* label = 0;
 
@@ -221,83 +211,82 @@ NodeViewerContextPrivate::createKnobs()
             lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
             lastRowLayout->setSpacing(0);
             mainContainerLayout->addWidget(lastRowContainer);
-
         } else {
             knobsOnSameLine.push_back(it->second);
-            if (next != knobsOrdered.end()) {
-                if (it->second->getInViewerContextAddSeparator()) {
+            if ( next != knobsOrdered.end() ) {
+                if ( it->second->getInViewerContextAddSeparator() ) {
                     addSpacer(lastRowLayout);
                 } else {
                     int spacing = it->second->getInViewerContextItemSpacing();
-                    lastRowLayout->addSpacing(TO_DPIX(spacing));
+                    lastRowLayout->addSpacing( TO_DPIX(spacing) );
                 }
             }
         } // makeNewLine
 
-        if (next == knobsOrdered.end()) {
+        if ( next == knobsOrdered.end() ) {
             ++next;
         }
     }
-}
-
+} // NodeViewerContextPrivate::createKnobs
 
 void
-NodeViewerContextPrivate::addToolBarTool(const std::string& toolID, const std::string& roleID, const std::string& roleShortcutID,
-                                         const std::string& label, const std::string& hintToolTip, const std::string& iconPath)
+NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
+                                         const std::string& roleID,
+                                         const std::string& roleShortcutID,
+                                         const std::string& label,
+                                         const std::string& hintToolTip,
+                                         const std::string& iconPath)
 {
-
-    QString qRoleId = QString::fromUtf8(roleID.c_str());
-
+    QString qRoleId = QString::fromUtf8( roleID.c_str() );
     std::map<QString, ViewerToolButton*>::iterator foundToolButton = toolButtons.find(qRoleId);
     ViewerToolButton* toolButton = 0;
-    if (foundToolButton != toolButtons.end()) {
+
+    if ( foundToolButton != toolButtons.end() ) {
         toolButton = foundToolButton->second;
     } else {
         toolButton = new ViewerToolButton(toolbar);
-        toolButtons.insert(std::make_pair(qRoleId, toolButton));
+        toolButtons.insert( std::make_pair(qRoleId, toolButton) );
         QSize rotoToolSize( TO_DPIX(NATRON_LARGE_BUTTON_SIZE), TO_DPIY(NATRON_LARGE_BUTTON_SIZE) );
         toolButton->setFixedSize(rotoToolSize);
         toolButton->setIconSize(rotoToolSize);
         toolButton->setPopupMode(QToolButton::InstantPopup);
         QObject::connect( toolButton, SIGNAL(triggered(QAction*)), publicInterface, SLOT(onToolActionTriggered(QAction*)) );
-
     }
 
 
     QString shortcutGroup = getNode()->getNode()->getPlugin()->getPluginShortcutGroup();
-
     QIcon icon;
-    if (!iconPath.empty()) {
-        QString iconPathStr = QString::fromUtf8(iconPath.c_str());
-        if (QFile::exists(iconPathStr)) {
+    if ( !iconPath.empty() ) {
+        QString iconPathStr = QString::fromUtf8( iconPath.c_str() );
+        if ( QFile::exists(iconPathStr) ) {
             QPixmap pix;
             pix.load(iconPathStr);
-            if (!pix.isNull()) {
+            if ( !pix.isNull() ) {
                 icon.addPixmap(pix);
             }
         }
     }
 
     QAction* action;
-    if (!hintToolTip.empty()) {
+    if ( !hintToolTip.empty() ) {
         action = new TooltipActionShortcut(shortcutGroup.toStdString(), toolID, label, toolButton);
-        action->setText(QString::fromUtf8(label.c_str()));
+        action->setText( QString::fromUtf8( label.c_str() ) );
         action->setIcon(icon);
     } else {
-        action = new QAction(icon, QString::fromUtf8(label.c_str()), toolButton);
+        action = new QAction(icon, QString::fromUtf8( label.c_str() ), toolButton);
     }
 
     QStringList data;
     data.push_back(qRoleId);
-    data.push_back(QString::fromUtf8(toolID.c_str()));
+    data.push_back( QString::fromUtf8( toolID.c_str() ) );
     action->setData(data);
     QString toolTip;
-    if (!hintToolTip.empty()) {
-        toolTip.append(QString::fromUtf8("<p>"));
-        toolTip += QString::fromUtf8(hintToolTip.c_str());
-        toolTip.append(QString::fromUtf8("</p>"));
-        if (!roleShortcutID.empty()) {
-            std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(toolID.c_str()));
+    if ( !hintToolTip.empty() ) {
+        toolTip.append( QString::fromUtf8("<p>") );
+        toolTip += QString::fromUtf8( hintToolTip.c_str() );
+        toolTip.append( QString::fromUtf8("</p>") );
+        if ( !roleShortcutID.empty() ) {
+            std::list<QKeySequence> keybinds = getKeybind( shortcutGroup, QString::fromUtf8( toolID.c_str() ) );
             if (keybinds.size() >= 1) {
                 toolTip += QString::fromUtf8("<p><b>");
                 toolTip += QObject::tr("Keyboard shortcut: ");
@@ -309,14 +298,13 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID, const std::s
     }
     QObject::connect( action, SIGNAL(triggered()), publicInterface, SLOT(onToolActionTriggered()) );
     toolButton->addAction(action);
-}
+} // NodeViewerContextPrivate::addToolBarTool
 
 QWidget*
 NodeViewerContext::getButtonsContainer() const
 {
     return _imp->mainContainer;
 }
-
 
 QToolBar*
 NodeViewerContext::getToolBar() const
@@ -346,9 +334,11 @@ const QUndoCommand*
 NodeViewerContext::getLastUndoCommand() const
 {
     NodeSettingsPanel* panel = _imp->getNode()->getSettingPanel();
+
     if (panel) {
         return panel->getLastUndoCommand();
     }
+
     return 0;
 }
 
@@ -356,6 +346,7 @@ void
 NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 {
     NodeSettingsPanel* panel = _imp->getNode()->getSettingPanel();
+
     if (panel) {
         panel->pushUndoCommand(cmd);
     }
@@ -365,9 +356,11 @@ KnobGuiPtr
 NodeViewerContext::getKnobGui(const KnobPtr& knob) const
 {
     std::map<KnobWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
-    if (found == _imp->knobsMapping.end()) {
+
+    if ( found == _imp->knobsMapping.end() ) {
         return KnobGuiPtr();
     }
+
     return found->second;
 }
 
@@ -379,7 +372,6 @@ NodeViewerContext::onToolActionTriggered()
     if (act) {
         onToolActionTriggered(act);
     }
-
 }
 
 void
@@ -389,10 +381,11 @@ NodeViewerContext::onToolActionTriggered(QAction* act)
 }
 
 void
-NodeViewerContext::setCurrentTool(const QString& toolID, bool notifyNode)
+NodeViewerContext::setCurrentTool(const QString& toolID,
+                                  bool notifyNode)
 {
     QList<QAction*> actions;
-    for (std::map<QString,ViewerToolButton*>::iterator it = _imp->toolButtons.begin(); it != _imp->toolButtons.end(); ++it) {
+    for (std::map<QString, ViewerToolButton*>::iterator it = _imp->toolButtons.begin(); it != _imp->toolButtons.end(); ++it) {
         QList<QAction*> roleActions = it->second->actions();
         actions.append(roleActions);
     }
@@ -401,15 +394,17 @@ NodeViewerContext::setCurrentTool(const QString& toolID, bool notifyNode)
         if (actionData.size() != 2) {
             continue;
         }
-        if ( actionData[1] == toolID ) {
+        if (actionData[1] == toolID) {
             _imp->onToolActionTriggeredInternal(actions[i], notifyNode);
+
             return;
         }
     }
 }
 
 void
-NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action, bool notifyNode)
+NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
+                                                        bool notifyNode)
 {
     QStringList actionData = action->data().toStringList();
 
@@ -425,9 +420,9 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action, bool no
         return;
     }
 
-    std::map<QString,ViewerToolButton*>::iterator foundOldTool = toolButtons.find(newRoleID);
-    assert(foundOldTool != toolButtons.end());
-    if (foundOldTool == toolButtons.end()) {
+    std::map<QString, ViewerToolButton*>::iterator foundOldTool = toolButtons.find(newRoleID);
+    assert( foundOldTool != toolButtons.end() );
+    if ( foundOldTool == toolButtons.end() ) {
         return;
     }
 
@@ -446,7 +441,6 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action, bool no
     if (notifyNode) {
 #pragma message WARN("To implement when a toolbutton changes")
     }
-
 }
 
 NATRON_NAMESPACE_EXIT;

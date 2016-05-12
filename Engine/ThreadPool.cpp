@@ -41,30 +41,27 @@ NATRON_NAMESPACE_ENTER;
 struct AbortableThreadPrivate
 {
     mutable QMutex abortInfoMutex;
-
     bool isRenderResponseToUserInteraction;
     AbortableRenderInfoPtr abortInfo;
     EffectInstWPtr treeRoot;
     bool abortInfoValid;
-
     QThread* thread;
     std::string threadName;
-
     std::string currentActionName;
     std::string currentActionNodeName;
     std::string currentActionPluginID;
 
     AbortableThreadPrivate(QThread* thread)
-    : abortInfoMutex()
-    , isRenderResponseToUserInteraction(false)
-    , abortInfo()
-    , treeRoot()
-    , abortInfoValid(false)
-    , thread(thread)
-    , threadName()
-    , currentActionName()
-    , currentActionNodeName()
-    , currentActionPluginID()
+        : abortInfoMutex()
+        , isRenderResponseToUserInteraction(false)
+        , abortInfo()
+        , treeRoot()
+        , abortInfoValid(false)
+        , thread(thread)
+        , threadName()
+        , currentActionName()
+        , currentActionNodeName()
+        , currentActionPluginID()
     {
     }
 };
@@ -82,9 +79,10 @@ void
 AbortableThread::setThreadName(const std::string& threadName)
 {
     std::stringstream ss;
+
     ss << threadName << " (" << this << ")";
     _imp->threadName = ss.str();
-    _imp->thread->setObjectName(QString::fromUtf8(_imp->threadName.c_str()));
+    _imp->thread->setObjectName( QString::fromUtf8( _imp->threadName.c_str() ) );
 }
 
 const std::string&
@@ -94,7 +92,9 @@ AbortableThread::getThreadName() const
 }
 
 void
-AbortableThread::setCurrentActionInfos(const std::string& actionName, const std::string& nodeName, const std::string& pluginID)
+AbortableThread::setCurrentActionInfos(const std::string& actionName,
+                                       const std::string& nodeName,
+                                       const std::string& pluginID)
 {
     assert(QThread::currentThread() == _imp->thread);
 
@@ -105,9 +105,12 @@ AbortableThread::setCurrentActionInfos(const std::string& actionName, const std:
 }
 
 void
-AbortableThread::getCurrentActionInfos(std::string* actionName, std::string* nodeName, std::string* pluginID) const
+AbortableThread::getCurrentActionInfos(std::string* actionName,
+                                       std::string* nodeName,
+                                       std::string* pluginID) const
 {
     QMutexLocker k(&_imp->abortInfoMutex);
+
     *actionName = _imp->currentActionName;
     *nodeName = _imp->currentActionNodeName;
     *pluginID = _imp->currentActionPluginID;
@@ -147,6 +150,7 @@ AbortableThread::clearAbortInfo()
         _imp->treeRoot.reset();
         _imp->abortInfoValid = false;
     }
+
     if (abortInfo) {
         abortInfo->unregisterThreadForRender(this);
     }
@@ -158,6 +162,7 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
                               EffectInstPtr* treeRoot) const
 {
     QMutexLocker k(&_imp->abortInfoMutex);
+
     if (!_imp->abortInfoValid) {
         return false;
     }
@@ -172,13 +177,13 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class ThreadPoolThread
     : public QThreadPoolThread
-    , public AbortableThread
+      , public AbortableThread
 {
 public:
 
     ThreadPoolThread()
-    : QThreadPoolThread()
-    , AbortableThread(this)
+        : QThreadPoolThread()
+        , AbortableThread(this)
     {
     }
 

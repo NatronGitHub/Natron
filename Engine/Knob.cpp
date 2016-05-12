@@ -240,7 +240,6 @@ struct KnobHelperPrivate
     std::string iconFilePath[2]; //< an icon to replace the label (one when checked, one when unchecked, for toggable buttons)
     std::string name; //< the knob can have a name different than the label displayed on GUI.
     //By default this is the same as label but can be set by calling setName().
-
     std::string originalName; //< the original name passed to setName() by the user
 
     // Gui related stuff
@@ -253,7 +252,6 @@ struct KnobHelperPrivate
     int inViewerContextAddSeparator;
     int inViewerContextItemSpacing;
     int inViewerContextAddNewLine;
-
     boost::weak_ptr<KnobI> parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
@@ -1786,6 +1784,7 @@ bool
 KnobHelper::getInViewerContextSecret() const
 {
     QMutexLocker k(&_imp->stateMutex);
+
     return _imp->inViewerContextSecret;
 }
 
@@ -1798,7 +1797,6 @@ KnobHelper::setEnabled(int dimension,
         _imp->enabled[dimension] = b;
     }
     _signalSlotHandler->s_enabledChanged();
-
 }
 
 void
@@ -1908,10 +1906,12 @@ KnobHelper::setLabel(const std::string& label)
 }
 
 void
-KnobHelper::setIconLabel(const std::string& iconFilePath,bool checked)
+KnobHelper::setIconLabel(const std::string& iconFilePath,
+                         bool checked)
 {
     QMutexLocker k(&_imp->labelMutex);
     int idx = !checked ? 0 : 1;
+
     _imp->iconFilePath[idx] = iconFilePath;
 }
 
@@ -1920,13 +1920,14 @@ KnobHelper::getIconLabel(bool checked) const
 {
     QMutexLocker k(&_imp->labelMutex);
     int idx = !checked ? 0 : 1;
-    if (!_imp->iconFilePath[idx].empty()) {
+
+    if ( !_imp->iconFilePath[idx].empty() ) {
         return _imp->iconFilePath[idx];
     }
     int otherIdx = !checked ? 1 : 0;
+
     return _imp->iconFilePath[otherIdx];
 }
-
 
 bool
 KnobHelper::hasAnimation() const
@@ -4463,12 +4464,14 @@ bool
 KnobHolder::hasKnobWithViewerInContextUI() const
 {
     QMutexLocker k(&_imp->knobsMutex);
+
     for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
         int index = (*it)->getInViewerContextIndex();
         if (index != -1) {
             return true;
         }
     }
+
     return false;
 }
 

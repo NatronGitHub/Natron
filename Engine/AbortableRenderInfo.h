@@ -36,7 +36,8 @@ NATRON_NAMESPACE_ENTER;
  * @brief Holds infos necessary to identify one render request and whether it was aborted or not.
  **/
 struct AbortableRenderInfoPrivate;
-class AbortableRenderInfo : public QObject
+class AbortableRenderInfo
+    : public QObject
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

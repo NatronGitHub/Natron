@@ -707,673 +707,676 @@ Qt::Key
 QtEnumConvert::toQtKey(Key k)
 {
     switch (k) {
-        case Key_Escape:
+    case Key_Escape:
 
-            return Qt::Key_Escape;
-        case Key_Tab:
+        return Qt::Key_Escape;
+    case Key_Tab:
 
-            return Qt::Key_Tab;
-        case Key_Clear:
+        return Qt::Key_Tab;
+    case Key_Clear:
 
-            return Qt::Key_Clear;
-        case Key_Return:
+        return Qt::Key_Clear;
+    case Key_Return:
 
-            return Qt::Key_Return;
-        case Key_Pause:
+        return Qt::Key_Return;
+    case Key_Pause:
 
-            return Qt::Key_Pause;
-        case Key_Delete:
+        return Qt::Key_Pause;
+    case Key_Delete:
 
-            return Qt::Key_Delete;
+        return Qt::Key_Delete;
 
-        case Key_Multi_key:
+    case Key_Multi_key:
 
-            return Qt::Key_Multi_key;
-        case Key_SingleCandidate:
+        return Qt::Key_Multi_key;
+    case Key_SingleCandidate:
 
-            return Qt::Key_SingleCandidate;
-        case Key_MultipleCandidate:
+        return Qt::Key_SingleCandidate;
+    case Key_MultipleCandidate:
 
-            return Qt::Key_MultipleCandidate;
-        case Key_PreviousCandidate:
+        return Qt::Key_MultipleCandidate;
+    case Key_PreviousCandidate:
 
-            return Qt::Key_PreviousCandidate;
+        return Qt::Key_PreviousCandidate;
 
-        case Key_Kanji:
+    case Key_Kanji:
 
-            return Qt::Key_Kanji;
-        case Key_Muhenkan:
+        return Qt::Key_Kanji;
+    case Key_Muhenkan:
 
-            return Qt::Key_Muhenkan;
-        case Key_Henkan:
+        return Qt::Key_Muhenkan;
+    case Key_Henkan:
 
-            return Qt::Key_Henkan;
-        case Key_Romaji:
+        return Qt::Key_Henkan;
+    case Key_Romaji:
 
-            return Qt::Key_Romaji;
-        case Key_Hiragana:
+        return Qt::Key_Romaji;
+    case Key_Hiragana:
 
-            return Qt::Key_Hiragana;
-        case Key_Katakana:
+        return Qt::Key_Hiragana;
+    case Key_Katakana:
 
-            return Qt::Key_Katakana;
-        case Key_Hiragana_Katakana:
+        return Qt::Key_Katakana;
+    case Key_Hiragana_Katakana:
 
-            return Qt::Key_Hiragana_Katakana;
-        case Key_Zenkaku:
+        return Qt::Key_Hiragana_Katakana;
+    case Key_Zenkaku:
 
-            return Qt::Key_Zenkaku;
-        case Key_Hankaku:
+        return Qt::Key_Zenkaku;
+    case Key_Hankaku:
 
-            return Qt::Key_Hankaku;
-        case Key_Zenkaku_Hankaku:
+        return Qt::Key_Hankaku;
+    case Key_Zenkaku_Hankaku:
 
-            return Qt::Key_Zenkaku_Hankaku;
-        case Key_Touroku:
+        return Qt::Key_Zenkaku_Hankaku;
+    case Key_Touroku:
 
-            return Qt::Key_Touroku;
-        case Key_Massyo:
+        return Qt::Key_Touroku;
+    case Key_Massyo:
 
-            return Qt::Key_Massyo;
-        case Key_Kana_Lock:
+        return Qt::Key_Massyo;
+    case Key_Kana_Lock:
 
-            return Qt::Key_Kana_Lock;
-        case Key_Kana_Shift:
+        return Qt::Key_Kana_Lock;
+    case Key_Kana_Shift:
 
-            return Qt::Key_Kana_Shift;
-        case Key_Eisu_Shift:
+        return Qt::Key_Kana_Shift;
+    case Key_Eisu_Shift:
 
-            return Qt::Key_Eisu_Shift;
-        case Key_Eisu_toggle:
+        return Qt::Key_Eisu_Shift;
+    case Key_Eisu_toggle:
 
-            return Qt::Key_Eisu_toggle;
+        return Qt::Key_Eisu_toggle;
 
-        case Key_Home:
+    case Key_Home:
 
-            return Qt::Key_Home;
-        case Key_Left:
+        return Qt::Key_Home;
+    case Key_Left:
 
-            return Qt::Key_Left;
-        case Key_Up:
+        return Qt::Key_Left;
+    case Key_Up:
 
-            return Qt::Key_Up;
-        case Key_Right:
+        return Qt::Key_Up;
+    case Key_Right:
 
-            return Qt::Key_Right;
-        case Key_Down:
+        return Qt::Key_Right;
+    case Key_Down:
 
-            return Qt::Key_Down;
-        case Key_End:
+        return Qt::Key_Down;
+    case Key_End:
 
-            return Qt::Key_End;
+        return Qt::Key_End;
 
-        case Key_Select:
+    case Key_Select:
 
-            return Qt::Key_Select;
-        case Key_Print:
+        return Qt::Key_Select;
+    case Key_Print:
 
-            return Qt::Key_Print;
-        case Key_Execute:
+        return Qt::Key_Print;
+    case Key_Execute:
 
-            return Qt::Key_Execute;
-        case Key_Insert:
+        return Qt::Key_Execute;
+    case Key_Insert:
 
-            return Qt::Key_Insert;
-        case Key_Menu:
+        return Qt::Key_Insert;
+    case Key_Menu:
 
-            return Qt::Key_Menu;
-        case Key_Cancel:
+        return Qt::Key_Menu;
+    case Key_Cancel:
 
-            return Qt::Key_Cancel;
-        case Key_Help:
+        return Qt::Key_Cancel;
+    case Key_Help:
 
-            return Qt::Key_Help;
-        case Key_Mode_switch:
+        return Qt::Key_Help;
+    case Key_Mode_switch:
 
-            return Qt::Key_Mode_switch;
-        case Key_F1:
+        return Qt::Key_Mode_switch;
+    case Key_F1:
 
-            return Qt::Key_F1;
-        case Key_F2:
+        return Qt::Key_F1;
+    case Key_F2:
 
-            return Qt::Key_F2;
-        case Key_F3:
+        return Qt::Key_F2;
+    case Key_F3:
 
-            return Qt::Key_F3;
-        case Key_F4:
+        return Qt::Key_F3;
+    case Key_F4:
 
-            return Qt::Key_F4;
-        case Key_F5:
+        return Qt::Key_F4;
+    case Key_F5:
 
-            return Qt::Key_F5;
-        case Key_F6:
+        return Qt::Key_F5;
+    case Key_F6:
 
-            return Qt::Key_F6;
-        case Key_F7:
+        return Qt::Key_F6;
+    case Key_F7:
 
-            return Qt::Key_F7;
-        case Key_F8:
+        return Qt::Key_F7;
+    case Key_F8:
 
-            return Qt::Key_F8;
-        case Key_F9:
+        return Qt::Key_F8;
+    case Key_F9:
 
-            return Qt::Key_F9;
-        case Key_F10:
+        return Qt::Key_F9;
+    case Key_F10:
 
-            return Qt::Key_F10;
-        case Key_F11:
+        return Qt::Key_F10;
+    case Key_F11:
 
-            return Qt::Key_F11;
-        case Key_F12:
+        return Qt::Key_F11;
+    case Key_F12:
 
-            return Qt::Key_F12;
-        case Key_F13:
+        return Qt::Key_F12;
+    case Key_F13:
 
-            return Qt::Key_F13;
-        case Key_F14:
+        return Qt::Key_F13;
+    case Key_F14:
 
-            return Qt::Key_F14;
-        case Key_F15:
+        return Qt::Key_F14;
+    case Key_F15:
 
-            return Qt::Key_F15;
-        case Key_F16:
+        return Qt::Key_F15;
+    case Key_F16:
 
-            return Qt::Key_F16;
-        case Key_F17:
+        return Qt::Key_F16;
+    case Key_F17:
 
-            return Qt::Key_F17;
-        case Key_F18:
+        return Qt::Key_F17;
+    case Key_F18:
 
-            return Qt::Key_F18;
-        case Key_F19:
+        return Qt::Key_F18;
+    case Key_F19:
 
-            return Qt::Key_F19;
-        case Key_F20:
+        return Qt::Key_F19;
+    case Key_F20:
 
-            return Qt::Key_F20;
-        case Key_F21:
+        return Qt::Key_F20;
+    case Key_F21:
 
-            return Qt::Key_F21;
-        case Key_F22:
+        return Qt::Key_F21;
+    case Key_F22:
 
-            return Qt::Key_F22;
-        case Key_F23:
+        return Qt::Key_F22;
+    case Key_F23:
 
-            return Qt::Key_F23;
-        case Key_F24:
+        return Qt::Key_F23;
+    case Key_F24:
 
-            return Qt::Key_F24;
-        case Key_F25:
+        return Qt::Key_F24;
+    case Key_F25:
 
-            return Qt::Key_F25;
-        case Key_F26:
+        return Qt::Key_F25;
+    case Key_F26:
 
-            return Qt::Key_F26;
-        case Key_F27:
+        return Qt::Key_F26;
+    case Key_F27:
 
-            return Qt::Key_F27;
-        case Key_F28:
+        return Qt::Key_F27;
+    case Key_F28:
 
-            return Qt::Key_F28;
-        case Key_F29:
+        return Qt::Key_F28;
+    case Key_F29:
 
-            return Qt::Key_F29;
-        case Key_F30:
+        return Qt::Key_F29;
+    case Key_F30:
 
-            return Qt::Key_F30;
-        case Key_F31:
+        return Qt::Key_F30;
+    case Key_F31:
 
-            return Qt::Key_F31;
-        case Key_F32:
+        return Qt::Key_F31;
+    case Key_F32:
 
-            return Qt::Key_F32;
-        case Key_F33:
+        return Qt::Key_F32;
+    case Key_F33:
 
-            return Qt::Key_F33;
-        case Key_F34:
+        return Qt::Key_F33;
+    case Key_F34:
 
-            return Qt::Key_F34;
-        case Key_F35:
+        return Qt::Key_F34;
+    case Key_F35:
 
-            return Qt::Key_F35;
+        return Qt::Key_F35;
 
 
-        case Key_Shift_L:
-        case Key_Shift_R:
-            return Qt::Key_Shift;
-        case Key_Control_L:
-        case Key_Control_R:
-            return Qt::Key_Control;
-        case Key_Caps_Lock:
+    case Key_Shift_L:
+    case Key_Shift_R:
 
-            return Qt::Key_CapsLock;
+        return Qt::Key_Shift;
+    case Key_Control_L:
+    case Key_Control_R:
 
-        case Key_Meta_L:
-        case Key_Meta_R:
+        return Qt::Key_Control;
+    case Key_Caps_Lock:
 
-            return Qt::Key_Meta;
-        case Key_Alt_L:
-        case Key_Alt_R:
-            return Qt::Key_Alt;
-        case Key_Super_L:
+        return Qt::Key_CapsLock;
 
-            return Qt::Key_Super_L;
-        case Key_Super_R:
+    case Key_Meta_L:
+    case Key_Meta_R:
 
-            return Qt::Key_Super_R;
-        case Key_Hyper_L:
+        return Qt::Key_Meta;
+    case Key_Alt_L:
+    case Key_Alt_R:
 
-            return Qt::Key_Hyper_L;
-        case Key_Hyper_R:
+        return Qt::Key_Alt;
+    case Key_Super_L:
 
-            return Qt::Key_Hyper_R;
+        return Qt::Key_Super_L;
+    case Key_Super_R:
 
-        case Key_space:
+        return Qt::Key_Super_R;
+    case Key_Hyper_L:
 
-            return Qt::Key_Space;
-        case Key_exclam:
+        return Qt::Key_Hyper_L;
+    case Key_Hyper_R:
 
-            return Qt::Key_Exclam;
-        case Key_quotedbl:
+        return Qt::Key_Hyper_R;
 
-            return Qt::Key_QuoteDbl;
-        case Key_numbersign:
+    case Key_space:
 
-            return Qt::Key_NumberSign;
-        case Key_dollar:
+        return Qt::Key_Space;
+    case Key_exclam:
 
-            return Qt::Key_Dollar;
-        case Key_percent:
+        return Qt::Key_Exclam;
+    case Key_quotedbl:
 
-            return Qt::Key_Percent;
-        case Key_ampersand:
+        return Qt::Key_QuoteDbl;
+    case Key_numbersign:
 
-            return Qt::Key_Ampersand;
-        case Key_apostrophe:
+        return Qt::Key_NumberSign;
+    case Key_dollar:
 
-            return Qt::Key_Apostrophe;
-        case Key_parenleft:
+        return Qt::Key_Dollar;
+    case Key_percent:
 
-            return Qt::Key_ParenLeft;
-        case Key_parenright:
+        return Qt::Key_Percent;
+    case Key_ampersand:
 
-            return Qt::Key_ParenRight;
-        case Key_asterisk:
+        return Qt::Key_Ampersand;
+    case Key_apostrophe:
 
-            return Qt::Key_Asterisk;
-        case Key_plus:
+        return Qt::Key_Apostrophe;
+    case Key_parenleft:
 
-            return Qt::Key_Plus;
-        case Key_comma:
+        return Qt::Key_ParenLeft;
+    case Key_parenright:
 
-            return Qt::Key_Comma;
-        case Key_minus:
+        return Qt::Key_ParenRight;
+    case Key_asterisk:
 
-            return Qt::Key_Minus;
-        case Key_period:
+        return Qt::Key_Asterisk;
+    case Key_plus:
 
-            return Qt::Key_Period;
-        case Key_slash:
+        return Qt::Key_Plus;
+    case Key_comma:
 
-            return Qt::Key_Slash;
-        case Key_0:
+        return Qt::Key_Comma;
+    case Key_minus:
 
-            return Qt::Key_0;
-        case Key_1:
+        return Qt::Key_Minus;
+    case Key_period:
 
-            return Qt::Key_1;
-        case Key_2:
+        return Qt::Key_Period;
+    case Key_slash:
 
-            return Qt::Key_2;
-        case Key_3:
+        return Qt::Key_Slash;
+    case Key_0:
 
-            return Qt::Key_3;
-        case Key_4:
+        return Qt::Key_0;
+    case Key_1:
 
-            return Qt::Key_4;
-        case Key_5:
+        return Qt::Key_1;
+    case Key_2:
 
-            return Qt::Key_5;
-        case Key_6:
+        return Qt::Key_2;
+    case Key_3:
 
-            return Qt::Key_6;
-        case Key_7:
+        return Qt::Key_3;
+    case Key_4:
 
-            return Qt::Key_7;
-        case Key_8:
+        return Qt::Key_4;
+    case Key_5:
 
-            return Qt::Key_8;
-        case Key_9:
+        return Qt::Key_5;
+    case Key_6:
 
-            return Qt::Key_9;
-        case Key_colon:
+        return Qt::Key_6;
+    case Key_7:
 
-            return Qt::Key_Colon;
-        case Key_semicolon:
+        return Qt::Key_7;
+    case Key_8:
 
-            return Qt::Key_Semicolon;
-        case Key_less:
+        return Qt::Key_8;
+    case Key_9:
 
-            return Qt::Key_Less;
-        case Key_equal:
+        return Qt::Key_9;
+    case Key_colon:
 
-            return Qt::Key_Equal;
-        case Key_greater:
+        return Qt::Key_Colon;
+    case Key_semicolon:
 
-            return Qt::Key_Greater;
-        case Key_question:
+        return Qt::Key_Semicolon;
+    case Key_less:
 
-            return Qt::Key_Question;
-        case Key_at:
+        return Qt::Key_Less;
+    case Key_equal:
 
-            return Qt::Key_At;
-        case Key_A:
+        return Qt::Key_Equal;
+    case Key_greater:
 
-            return Qt::Key_A;
-        case Key_B:
+        return Qt::Key_Greater;
+    case Key_question:
 
-            return Qt::Key_B;
-        case Key_C:
+        return Qt::Key_Question;
+    case Key_at:
 
-            return Qt::Key_C;
-        case Key_D:
+        return Qt::Key_At;
+    case Key_A:
 
-            return Qt::Key_D;
-        case Key_E:
+        return Qt::Key_A;
+    case Key_B:
 
-            return Qt::Key_E;
-        case Key_F:
+        return Qt::Key_B;
+    case Key_C:
 
-            return Qt::Key_F;
-        case Key_G:
+        return Qt::Key_C;
+    case Key_D:
 
-            return Qt::Key_G;
-        case Key_H:
+        return Qt::Key_D;
+    case Key_E:
 
-            return Qt::Key_H;
-        case Key_I:
+        return Qt::Key_E;
+    case Key_F:
 
-            return Qt::Key_I;
-        case Key_J:
+        return Qt::Key_F;
+    case Key_G:
 
-            return Qt::Key_J;
-        case Key_K:
+        return Qt::Key_G;
+    case Key_H:
 
-            return Qt::Key_K;
-        case Key_L:
+        return Qt::Key_H;
+    case Key_I:
 
-            return Qt::Key_L;
-        case Key_M:
+        return Qt::Key_I;
+    case Key_J:
 
-            return Qt::Key_M;
-        case Key_N:
+        return Qt::Key_J;
+    case Key_K:
 
-            return Qt::Key_N;
-        case Key_O:
+        return Qt::Key_K;
+    case Key_L:
 
-            return Qt::Key_O;
-        case Key_P:
+        return Qt::Key_L;
+    case Key_M:
 
-            return Qt::Key_P;
-        case Key_Q:
+        return Qt::Key_M;
+    case Key_N:
 
-            return Qt::Key_Q;
-        case Key_R:
+        return Qt::Key_N;
+    case Key_O:
 
-            return Qt::Key_R;
-        case Key_S:
+        return Qt::Key_O;
+    case Key_P:
 
-            return Qt::Key_S;
-        case Key_T:
+        return Qt::Key_P;
+    case Key_Q:
 
-            return Qt::Key_T;
-        case Key_U:
+        return Qt::Key_Q;
+    case Key_R:
 
-            return Qt::Key_U;
-        case Key_V:
+        return Qt::Key_R;
+    case Key_S:
 
-            return Qt::Key_V;
-        case Key_W:
+        return Qt::Key_S;
+    case Key_T:
 
-            return Qt::Key_W;
-        case Key_X:
+        return Qt::Key_T;
+    case Key_U:
 
-            return Qt::Key_X;
-        case Key_Y:
+        return Qt::Key_U;
+    case Key_V:
 
-            return Qt::Key_Y;
-        case Key_Z:
+        return Qt::Key_V;
+    case Key_W:
 
-            return Qt::Key_Z;
-        case Key_bracketleft:
+        return Qt::Key_W;
+    case Key_X:
 
-            return Qt::Key_BracketLeft;
-        case Key_backslash:
+        return Qt::Key_X;
+    case Key_Y:
 
-            return Qt::Key_Backslash;
-        case Key_bracketright:
+        return Qt::Key_Y;
+    case Key_Z:
 
-            return Qt::Key_BracketRight;
-        case Key_asciicircum:
+        return Qt::Key_Z;
+    case Key_bracketleft:
 
-            return Qt::Key_AsciiCircum;
-        case Key_underscore:
+        return Qt::Key_BracketLeft;
+    case Key_backslash:
 
-            return Qt::Key_Underscore;
-        case Key_quoteleft:
+        return Qt::Key_Backslash;
+    case Key_bracketright:
 
-            return Qt::Key_QuoteLeft;
-        case Key_braceleft:
+        return Qt::Key_BracketRight;
+    case Key_asciicircum:
 
-            return Qt::Key_BraceLeft;
-        case Key_bar:
+        return Qt::Key_AsciiCircum;
+    case Key_underscore:
 
-            return Qt::Key_Bar;
-        case Key_braceright:
+        return Qt::Key_Underscore;
+    case Key_quoteleft:
 
-            return Qt::Key_BraceRight;
-        case Key_asciitilde:
+        return Qt::Key_QuoteLeft;
+    case Key_braceleft:
 
-            return Qt::Key_AsciiTilde;
+        return Qt::Key_BraceLeft;
+    case Key_bar:
 
-        case Key_nobreakspace:
+        return Qt::Key_Bar;
+    case Key_braceright:
 
-            return Qt::Key_nobreakspace;
-        case Key_exclamdown:
+        return Qt::Key_BraceRight;
+    case Key_asciitilde:
 
-            return Qt::Key_exclamdown;
-        case Key_cent:
+        return Qt::Key_AsciiTilde;
 
-            return Qt::Key_cent;
-        case Key_sterling:
+    case Key_nobreakspace:
 
-            return Qt::Key_sterling;
-        case Key_currency:
+        return Qt::Key_nobreakspace;
+    case Key_exclamdown:
 
-            return Qt::Key_currency;
-        case Key_yen:
+        return Qt::Key_exclamdown;
+    case Key_cent:
 
-            return Qt::Key_yen;
-        case Key_brokenbar:
+        return Qt::Key_cent;
+    case Key_sterling:
 
-            return Qt::Key_brokenbar;
-        case Key_section:
+        return Qt::Key_sterling;
+    case Key_currency:
 
-            return Qt::Key_section;
-        case Key_diaeresis:
-            
-            return Qt::Key_diaeresis;
-        case Key_copyright:
-            
-            return Qt::Key_copyright;
-        case Key_ordfeminine:
-            
-            return Qt::Key_ordfeminine;
-        case Key_guillemotleft:
-            
-            return Qt::Key_guillemotleft;
-        case Key_notsign:
-            
-            return Qt::Key_notsign;
-        case Key_hyphen:
-            
-            return Qt::Key_hyphen;
-        case Key_registered:
-            
-            return Qt::Key_registered;
-        case Key_macron:
-            
-            return Qt::Key_macron;
-        case Key_degree:
-            
-            return Qt::Key_degree;
-        case Key_plusminus:
-            
-            return Qt::Key_plusminus;
-        case Key_twosuperior:
-            
-            return Qt::Key_twosuperior;
-        case Key_threesuperior:
-            
-            return Qt::Key_threesuperior;
-        case Key_acute:
-            
-            return Qt::Key_acute;
-        case Key_mu:
-            
-            return Qt::Key_mu;
-        case Key_paragraph:
-            
-            return Qt::Key_paragraph;
-        case Key_periodcentered:
-            
-            return Qt::Key_periodcentered;
-        case Key_cedilla:
-            
-            return Qt::Key_cedilla;
-        case Key_onesuperior:
-            
-            return Qt::Key_onesuperior;
-        case Key_masculine:
-            
-            return Qt::Key_masculine;
-        case Key_guillemotright:
-            
-            return Qt::Key_guillemotright;
-        case Key_onequarter:
-            
-            return Qt::Key_onequarter;
-        case Key_onehalf:
-            
-            return Qt::Key_onehalf;
-        case Key_threequarters:
-            
-            return Qt::Key_threequarters;
-        case Key_questiondown:
-            
-            return Qt::Key_questiondown;
-        case Key_Agrave:
-            
-            return Qt::Key_Agrave;
-        case Key_Aacute:
-            
-            return Qt::Key_Aacute;
-        case Key_Acircumflex:
-            
-            return Qt::Key_Acircumflex;
-        case Key_Atilde:
-            
-            return Qt::Key_Atilde;
-        case Key_Adiaeresis:
-            
-            return Qt::Key_Adiaeresis;
-        case Key_Aring:
-            
-            return Qt::Key_Aring;
-        case Key_AE:
-            
-            return Qt::Key_AE;
-        case Key_Ccedilla:
-            
-            return Qt::Key_Ccedilla;
-        case Key_Egrave:
-            
-            return Qt::Key_Egrave;
-        case Key_Eacute:
-            
-            return Qt::Key_Eacute;
-        case Key_Ecircumflex:
-            
-            return Qt::Key_Ecircumflex;
-        case Key_Ediaeresis:
-            
-            return Qt::Key_Ediaeresis;
-        case Key_Igrave:
-            
-            return Qt::Key_Igrave;
-        case Key_Iacute:
-            
-            return Qt::Key_Iacute;
-        case Key_Icircumflex:
-            
-            return Qt::Key_Icircumflex;
-        case Key_Idiaeresis:
-            
-            return Qt::Key_Idiaeresis;
-        case Key_ETH:
-            
-            return Qt::Key_ETH;
-        case Key_Ntilde:
-            
-            return Qt::Key_Ntilde;
-        case Key_Ograve:
-            
-            return Qt::Key_Ograve;
-        case Key_Oacute:
-            
-            return Qt::Key_Oacute;
-        case Key_Ocircumflex:
-            
-            return Qt::Key_Ocircumflex;
-        case Key_Otilde:
-            
-            return Qt::Key_Otilde;
-        case Key_Odiaeresis:
-            
-            return Qt::Key_Odiaeresis;
-        case Key_multiply:
-            
-            return Qt::Key_multiply;
-        case Key_Ooblique:
-            
-            return Qt::Key_Ooblique;
-        case Key_Ugrave:
-            
-            return Qt::Key_Ugrave;
-        case Key_Uacute:
-            
-            return Qt::Key_Uacute;
-        case Key_Ucircumflex:
-            
-            return Qt::Key_Ucircumflex;
-        case Key_Udiaeresis:
-            
-            return Qt::Key_Udiaeresis;
-        case Key_Yacute:
-            
-            return Qt::Key_Yacute;
-        case Key_ssharp:
-            
-            return Qt::Key_ssharp;
-        case Key_thorn:
-            
-            return Qt::Key_THORN;
-        case Key_ydiaeresis:
-            
-            return Qt::Key_ydiaeresis;
-        default:
-            
-            return Qt::Key_unknown;
+        return Qt::Key_currency;
+    case Key_yen:
+
+        return Qt::Key_yen;
+    case Key_brokenbar:
+
+        return Qt::Key_brokenbar;
+    case Key_section:
+
+        return Qt::Key_section;
+    case Key_diaeresis:
+
+        return Qt::Key_diaeresis;
+    case Key_copyright:
+
+        return Qt::Key_copyright;
+    case Key_ordfeminine:
+
+        return Qt::Key_ordfeminine;
+    case Key_guillemotleft:
+
+        return Qt::Key_guillemotleft;
+    case Key_notsign:
+
+        return Qt::Key_notsign;
+    case Key_hyphen:
+
+        return Qt::Key_hyphen;
+    case Key_registered:
+
+        return Qt::Key_registered;
+    case Key_macron:
+
+        return Qt::Key_macron;
+    case Key_degree:
+
+        return Qt::Key_degree;
+    case Key_plusminus:
+
+        return Qt::Key_plusminus;
+    case Key_twosuperior:
+
+        return Qt::Key_twosuperior;
+    case Key_threesuperior:
+
+        return Qt::Key_threesuperior;
+    case Key_acute:
+
+        return Qt::Key_acute;
+    case Key_mu:
+
+        return Qt::Key_mu;
+    case Key_paragraph:
+
+        return Qt::Key_paragraph;
+    case Key_periodcentered:
+
+        return Qt::Key_periodcentered;
+    case Key_cedilla:
+
+        return Qt::Key_cedilla;
+    case Key_onesuperior:
+
+        return Qt::Key_onesuperior;
+    case Key_masculine:
+
+        return Qt::Key_masculine;
+    case Key_guillemotright:
+
+        return Qt::Key_guillemotright;
+    case Key_onequarter:
+
+        return Qt::Key_onequarter;
+    case Key_onehalf:
+
+        return Qt::Key_onehalf;
+    case Key_threequarters:
+
+        return Qt::Key_threequarters;
+    case Key_questiondown:
+
+        return Qt::Key_questiondown;
+    case Key_Agrave:
+
+        return Qt::Key_Agrave;
+    case Key_Aacute:
+
+        return Qt::Key_Aacute;
+    case Key_Acircumflex:
+
+        return Qt::Key_Acircumflex;
+    case Key_Atilde:
+
+        return Qt::Key_Atilde;
+    case Key_Adiaeresis:
+
+        return Qt::Key_Adiaeresis;
+    case Key_Aring:
+
+        return Qt::Key_Aring;
+    case Key_AE:
+
+        return Qt::Key_AE;
+    case Key_Ccedilla:
+
+        return Qt::Key_Ccedilla;
+    case Key_Egrave:
+
+        return Qt::Key_Egrave;
+    case Key_Eacute:
+
+        return Qt::Key_Eacute;
+    case Key_Ecircumflex:
+
+        return Qt::Key_Ecircumflex;
+    case Key_Ediaeresis:
+
+        return Qt::Key_Ediaeresis;
+    case Key_Igrave:
+
+        return Qt::Key_Igrave;
+    case Key_Iacute:
+
+        return Qt::Key_Iacute;
+    case Key_Icircumflex:
+
+        return Qt::Key_Icircumflex;
+    case Key_Idiaeresis:
+
+        return Qt::Key_Idiaeresis;
+    case Key_ETH:
+
+        return Qt::Key_ETH;
+    case Key_Ntilde:
+
+        return Qt::Key_Ntilde;
+    case Key_Ograve:
+
+        return Qt::Key_Ograve;
+    case Key_Oacute:
+
+        return Qt::Key_Oacute;
+    case Key_Ocircumflex:
+
+        return Qt::Key_Ocircumflex;
+    case Key_Otilde:
+
+        return Qt::Key_Otilde;
+    case Key_Odiaeresis:
+
+        return Qt::Key_Odiaeresis;
+    case Key_multiply:
+
+        return Qt::Key_multiply;
+    case Key_Ooblique:
+
+        return Qt::Key_Ooblique;
+    case Key_Ugrave:
+
+        return Qt::Key_Ugrave;
+    case Key_Uacute:
+
+        return Qt::Key_Uacute;
+    case Key_Ucircumflex:
+
+        return Qt::Key_Ucircumflex;
+    case Key_Udiaeresis:
+
+        return Qt::Key_Udiaeresis;
+    case Key_Yacute:
+
+        return Qt::Key_Yacute;
+    case Key_ssharp:
+
+        return Qt::Key_ssharp;
+    case Key_thorn:
+
+        return Qt::Key_THORN;
+    case Key_ydiaeresis:
+
+        return Qt::Key_ydiaeresis;
+    default:
+
+        return Qt::Key_unknown;
     } // switch
 } // toQtKey
 
@@ -1424,45 +1427,44 @@ Qt::KeyboardModifier
 QtEnumConvert::toQtModifier(KeyboardModifierEnum m)
 {
     switch (m) {
-        case eKeyboardModifierNone:
+    case eKeyboardModifierNone:
 
-            return Qt::NoModifier;
-            break;
-        case eKeyboardModifierShift:
+        return Qt::NoModifier;
+        break;
+    case eKeyboardModifierShift:
 
-            return Qt::ShiftModifier;
-            break;
-        case eKeyboardModifierControl:
+        return Qt::ShiftModifier;
+        break;
+    case eKeyboardModifierControl:
 
-            return Qt::ControlModifier;
-            break;
-        case eKeyboardModifierAlt:
+        return Qt::ControlModifier;
+        break;
+    case eKeyboardModifierAlt:
 
-            return Qt::AltModifier;
-            break;
-        case eKeyboardModifierMeta:
+        return Qt::AltModifier;
+        break;
+    case eKeyboardModifierMeta:
 
-            return Qt::MetaModifier;
-            break;
-        case eKeyboardModifierKeypad:
+        return Qt::MetaModifier;
+        break;
+    case eKeyboardModifierKeypad:
 
-            return Qt::KeypadModifier;
-            break;
-        case eKeyboardModifierGroupSwitch:
+        return Qt::KeypadModifier;
+        break;
+    case eKeyboardModifierGroupSwitch:
 
-            return Qt::GroupSwitchModifier;
-            break;
-        case eKeyboardModifierMask:
-            
-            return Qt::KeyboardModifierMask;
-            break;
-        default:
-            
-            return Qt::NoModifier;
-            break;
+        return Qt::GroupSwitchModifier;
+        break;
+    case eKeyboardModifierMask:
+
+        return Qt::KeyboardModifierMask;
+        break;
+    default:
+
+        return Qt::NoModifier;
+        break;
     }
 }
-
 
 Qt::KeyboardModifiers
 QtEnumConvert::toQtModifiers(const KeyboardModifiers& m)
@@ -1496,7 +1498,6 @@ QtEnumConvert::toQtModifiers(const KeyboardModifiers& m)
 
     return ret;
 }
-
 
 KeyboardModifiers
 QtEnumConvert::fromQtModifiers(Qt::KeyboardModifiers m)
@@ -1532,21 +1533,27 @@ QtEnumConvert::fromQtModifiers(Qt::KeyboardModifiers m)
 }
 
 bool
-QtEnumConvert::fromOfxtoQtModifier(int mod, Qt::KeyboardModifier* qtModifier)
+QtEnumConvert::fromOfxtoQtModifier(int mod,
+                                   Qt::KeyboardModifier* qtModifier)
 {
-    if (mod == kOfxKey_Control_L || mod == kOfxKey_Control_R) {
+    if ( (mod == kOfxKey_Control_L) || (mod == kOfxKey_Control_R) ) {
         *qtModifier =  Qt::ControlModifier;
+
         return true;
-    } else if (mod == kOfxKey_Shift_L || mod == kOfxKey_Shift_R) {
+    } else if ( (mod == kOfxKey_Shift_L) || (mod == kOfxKey_Shift_R) ) {
         *qtModifier = Qt::ShiftModifier;
+
         return true;
-    } else if (mod == kOfxKey_Alt_L || mod == kOfxKey_Alt_R) {
+    } else if ( (mod == kOfxKey_Alt_L) || (mod == kOfxKey_Alt_R) ) {
         *qtModifier = Qt::AltModifier;
+
         return true;
-    } else if (mod == kOfxKey_Meta_L || mod == kOfxKey_Meta_R) {
+    } else if ( (mod == kOfxKey_Meta_L) || (mod == kOfxKey_Meta_R) ) {
         *qtModifier = Qt::MetaModifier;
+
         return true;
     }
+
     return false;
 }
 
@@ -1554,19 +1561,20 @@ Qt::KeyboardModifiers
 QtEnumConvert::fromOfxtoQtModifiers(const std::list<int>& modifiers)
 {
     Qt::KeyboardModifiers ret = Qt::NoModifier;
+
     for (std::list<int>::const_iterator it = modifiers.begin(); it != modifiers.end(); ++it) {
         Qt::KeyboardModifier m;
         bool ok =  fromOfxtoQtModifier(*it, &m);
         if (!ok) {
             qDebug() << "Unrecognized keyboard modifier " << *it;
+
             return ret;
         }
         ret |= m;
     }
+
     return ret;
 }
-
-
 
 StandardButtonEnum
 QtEnumConvert::fromQtStandardButton(QMessageBox::StandardButton b)

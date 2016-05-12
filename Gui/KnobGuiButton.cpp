@@ -97,9 +97,8 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
-    QString onIconFilePath = QString::fromUtf8(knob->getIconLabel(false).c_str());
-    QString offIconFilePath = QString::fromUtf8(knob->getIconLabel(true).c_str());
-
+    QString onIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
+    QString offIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
 
 
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
@@ -128,16 +127,15 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
     }
 
     bool checkable = knob->getIsCheckable();
-
     QIcon icon;
-    QPixmap pixChecked,pixUnchecked;
-    if (!offIconFilePath.isEmpty()) {
-        if (pixUnchecked.load(offIconFilePath)) {
+    QPixmap pixChecked, pixUnchecked;
+    if ( !offIconFilePath.isEmpty() ) {
+        if ( pixUnchecked.load(offIconFilePath) ) {
             icon.addPixmap(pixUnchecked, QIcon::Normal, QIcon::Off);
         }
     }
-    if (!onIconFilePath.isEmpty()) {
-        if (pixChecked.load(onIconFilePath)) {
+    if ( !onIconFilePath.isEmpty() ) {
+        if ( pixChecked.load(onIconFilePath) ) {
             icon.addPixmap(pixChecked, QIcon::Normal, QIcon::On);
         }
     }
@@ -160,7 +158,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         _button->setToolTip( toolTip() );
     }
     layout->addWidget(_button);
-}
+} // KnobGuiButton::createWidget
 
 std::string
 KnobGuiButton::getDescriptionLabel() const
@@ -170,7 +168,6 @@ KnobGuiButton::getDescriptionLabel() const
 
 KnobGuiButton::~KnobGuiButton()
 {
-
 }
 
 void
@@ -183,16 +180,16 @@ void
 KnobGuiButton::emitValueChanged(bool clicked)
 {
     boost::shared_ptr<KnobButton> k = _knob.lock();
+
     assert(k);
 
-    if (k->getIsCheckable()) {
+    if ( k->getIsCheckable() ) {
         _button->setDown(clicked);
         _button->setChecked(clicked);
 
         pushUndoCommand( new KnobUndoCommand<bool>(shared_from_this(), _knob.lock()->getValue(), clicked, 0, false) );
     } else {
         k->trigger();
-
     }
 }
 
@@ -212,7 +209,8 @@ void
 KnobGuiButton::updateGUI(int /*dimension*/)
 {
     boost::shared_ptr<KnobButton> k = _knob.lock();
-    if (k->getIsCheckable()) {
+
+    if ( k->getIsCheckable() ) {
         bool checked = k->getValue();
         _button->setDown(checked);
         _button->setChecked(checked);
@@ -224,7 +222,7 @@ KnobGuiButton::setEnabled()
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
     bool b = knob->isEnabled(0);
-    
+
     _button->setEnabled(b);
 }
 

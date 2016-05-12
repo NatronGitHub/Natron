@@ -155,8 +155,8 @@ class PluginActionShortcut
 {
     std::string actionID;
     std::string actionLabel;
-
-    struct ShortCut {
+    struct ShortCut
+    {
         std::list<int> modifiers;
         int symbol;
     };
@@ -195,7 +195,7 @@ class Plugin
     mutable bool _activated;
 
     /*
-      These are shortcuts that the plug-in registered
+       These are shortcuts that the plug-in registered
      */
     std::list<PluginActionShortcut> _shortcuts;
 
@@ -266,7 +266,8 @@ public:
 
     ~Plugin();
 
-    void setShorcuts(const std::list<PluginActionShortcut>& shortcuts) {
+    void setShorcuts(const std::list<PluginActionShortcut>& shortcuts)
+    {
         _shortcuts = shortcuts;
     }
 

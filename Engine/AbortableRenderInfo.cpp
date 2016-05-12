@@ -51,7 +51,6 @@ struct AbortableRenderInfoPrivate
     bool canAbort;
     QAtomicInt aborted;
     U64 age;
-
     mutable QMutex threadsMutex;
 #ifdef QT_CUSTOM_THREADPOOL
     ThreadSet threadsForThisRender;
@@ -61,28 +60,27 @@ struct AbortableRenderInfoPrivate
 
     AbortableRenderInfoPrivate(bool canAbort,
                                U64 age)
-    : canAbort(canAbort)
-    , aborted()
-    , age(age)
-    , threadsMutex()
+        : canAbort(canAbort)
+        , aborted()
+        , age(age)
+        , threadsMutex()
 #ifdef QT_CUSTOM_THREADPOOL
-    , threadsForThisRender()
+        , threadsForThisRender()
 #endif
-    , abortTimeoutTimer()
+        , abortTimeoutTimer()
     {
         aborted.fetchAndStoreAcquire(0);
     }
 };
 
 AbortableRenderInfo::AbortableRenderInfo()
-: _imp(new AbortableRenderInfoPrivate(true, 0))
+    : _imp( new AbortableRenderInfoPrivate(true, 0) )
 {
-
 }
 
 AbortableRenderInfo::AbortableRenderInfo(bool canAbort,
                                          U64 age)
-: _imp(new AbortableRenderInfoPrivate(canAbort, age))
+    : _imp( new AbortableRenderInfoPrivate(canAbort, age) )
 {
 }
 
@@ -115,15 +113,16 @@ void
 AbortableRenderInfo::setAborted()
 {
     int abortedValue = _imp->aborted.fetchAndAddAcquire(1);
+
     if (abortedValue > 0) {
         return;
     }
 
     QMutexLocker k(&_imp->threadsMutex);
     assert(!_imp->abortTimeoutTimer);
-    _imp->abortTimeoutTimer.reset(new QTimer());
+    _imp->abortTimeoutTimer.reset( new QTimer() );
     _imp->abortTimeoutTimer->setSingleShot(true);
-    QObject::connect(_imp->abortTimeoutTimer.get(), SIGNAL(timeout()), this, SLOT(onAbortTimerTimeout()));
+    QObject::connect( _imp->abortTimeoutTimer.get(), SIGNAL(timeout()), this, SLOT(onAbortTimerTimeout()) );
     _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
 }
 
@@ -133,9 +132,9 @@ void
 AbortableRenderInfo::registerThreadForRender(AbortableThread* thread)
 {
     QMutexLocker k(&_imp->threadsMutex);
+
     _imp->threadsForThisRender.insert(thread);
 }
-
 
 bool
 AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
@@ -143,7 +142,8 @@ AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
     QMutexLocker k(&_imp->threadsMutex);
     ThreadSet::iterator found = _imp->threadsForThisRender.find(thread);
     bool ret = false;
-    if (found != _imp->threadsForThisRender.end()) {
+
+    if ( found != _imp->threadsForThisRender.end() ) {
         _imp->threadsForThisRender.erase(found);
         ret = true;
     }
@@ -151,23 +151,22 @@ AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
     if (_imp->threadsForThisRender.empty() && _imp->abortTimeoutTimer) {
         _imp->abortTimeoutTimer->stop();
     }
+
     return ret;
 }
-
 
 #endif // QT_CUSTOM_THREADPOOL
 
 void
 AbortableRenderInfo::onAbortTimerTimeout()
 {
-
 #ifdef QT_CUSTOM_THREADPOOL
 
     // In background mode, let the process continue
 
     // Runs in the thread that called setAborted()
     QMutexLocker k(&_imp->threadsMutex);
-    if (_imp->threadsForThisRender.empty()) {
+    if ( _imp->threadsForThisRender.empty() ) {
         return;
     }
     QString timeoutStr = Timer::printAsTime(NATRON_ABORT_TIMEOUT_MS / 1000, false);
@@ -177,28 +176,25 @@ AbortableRenderInfo::onAbortTimerTimeout()
     ss << tr("This is likely due to a render taking too long in a plug-in.").toStdString() << std::endl << std::endl;
     ss << tr("List of stuck renders:").toStdString() << std::endl << std::endl;
     for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
-
         ss << " - " << (*it)->getThreadName()  << tr(" stuck in:").toStdString() << std::endl << std::endl;
         std::string actionName, nodeName, pluginId;
         (*it)->getCurrentActionInfos(&actionName, &nodeName, &pluginId);
-        if (!nodeName.empty()) {
+        if ( !nodeName.empty() ) {
             ss << "    Node: " << nodeName << std::endl;
         }
-        if (!pluginId.empty()) {
+        if ( !pluginId.empty() ) {
             ss << "    Plugin: " << pluginId << std::endl;
         }
-        if (!actionName.empty()) {
+        if ( !actionName.empty() ) {
             ss << "    Action: " << actionName << std::endl;
         }
         ss << std::endl;
-
     }
     ss << std::endl;
 
-    if (appPTR->isBackground()) {
+    if ( appPTR->isBackground() ) {
         std::cout << ss.str() << std::endl;
     } else {
-
         ss << tr("Would you like to kill these renders?").toStdString() << std::endl << std::endl;
         ss << tr("WARNING: Killing them may not work or may leave " NATRON_APPLICATION_NAME " in a bad state. The application may crash or freeze as a consequence of this. It is advised to restart " NATRON_APPLICATION_NAME " instead.").toStdString();
 
@@ -212,8 +208,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
         }
     }
 #endif
-}
-
+} // AbortableRenderInfo::onAbortTimerTimeout
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;

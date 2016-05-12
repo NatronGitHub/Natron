@@ -129,7 +129,6 @@ public:
 
 
     boost::shared_ptr<Node> getNode() const;
-
     boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
     boost::shared_ptr<KnobBool> getEnabledKnob() const;
 

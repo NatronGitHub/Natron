@@ -29,28 +29,24 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class KnobGuiContainerI {
-
+class KnobGuiContainerI
+{
 public:
 
     KnobGuiContainerI()
-    : _containerWidget(0)
+        : _containerWidget(0)
     {}
 
     KnobGuiContainerI(QWidget* w)
-    : _containerWidget(w)
+        : _containerWidget(w)
     {}
 
     virtual ~KnobGuiContainerI() {}
 
     virtual Gui* getGui() const = 0;
-
     virtual const QUndoCommand* getLastUndoCommand() const = 0;
-
     virtual void pushUndoCommand(QUndoCommand* cmd) = 0;
-
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const = 0;
-
     virtual void refreshTabWidgetMaxHeight() {}
 
     QWidget* getContainerWidget() const
@@ -64,7 +60,6 @@ protected:
     {
         _containerWidget = widget;
     }
-
 
     QWidget* _containerWidget;
 };

@@ -58,8 +58,8 @@ NATRON_NAMESPACE_ENTER;
 struct DockablePanelPrivate;
 class DockablePanel
     : public QFrame
-    , public DockablePanelI
-    , public KnobGuiContainerI
+      , public DockablePanelI
+      , public KnobGuiContainerI
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -143,13 +143,9 @@ public:
 
     virtual void recreateUserKnobs(bool restorePageIndex) OVERRIDE FINAL;
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) OVERRIDE FINAL;
-
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
-
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:

@@ -846,32 +846,32 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 }
 
 ParallelRenderArgs::ParallelRenderArgs()
-: time(0)
-, timeline(0)
-, nodeHash(0)
-, request()
-, view(0)
-, abortInfo()
-, treeRoot()
-, rotoPaintNodes()
-, stats()
-, textureIndex(0)
-, currentThreadSafety(eRenderSafetyInstanceSafe)
-, isRenderResponseToUserInteraction(false)
-, isSequentialRender(false)
-, isAnalysis(false)
-, isDuringPaintStrokeCreation(false)
-, doNansHandling(true)
-, draftMode(false)
-, tilesSupported(false)
-, viewerProgressReportEnabled(false)
+    : time(0)
+    , timeline(0)
+    , nodeHash(0)
+    , request()
+    , view(0)
+    , abortInfo()
+    , treeRoot()
+    , rotoPaintNodes()
+    , stats()
+    , textureIndex(0)
+    , currentThreadSafety(eRenderSafetyInstanceSafe)
+    , isRenderResponseToUserInteraction(false)
+    , isSequentialRender(false)
+    , isAnalysis(false)
+    , isDuringPaintStrokeCreation(false)
+    , doNansHandling(true)
+    , draftMode(false)
+    , tilesSupported(false)
+    , viewerProgressReportEnabled(false)
 {
 }
 
 bool
 ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
 {
-    return isRenderResponseToUserInteraction && (!abortInfo || !abortInfo->canAbort());
+    return isRenderResponseToUserInteraction && ( !abortInfo || !abortInfo->canAbort() );
 }
 
 NATRON_NAMESPACE_EXIT;

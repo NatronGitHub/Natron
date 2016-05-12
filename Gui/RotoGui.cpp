@@ -3333,7 +3333,6 @@ RotoGui::penUp(double time,
         _imp->context->evaluateNeatStrokeRender();
         _imp->viewer->unsetCursor();
         _imp->rotoData->strokeBeingPaint->setStrokeFinished();
-
     }
 
     _imp->state = eEventStateNone;

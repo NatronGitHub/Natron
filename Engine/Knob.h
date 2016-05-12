@@ -1387,7 +1387,7 @@ public:
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     void setLabel(const std::string& label) OVERRIDE FINAL;
-    virtual void setIconLabel(const std::string& iconFilePath,bool checked = false) OVERRIDE FINAL;
+    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) OVERRIDE FINAL;
     virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHolder(KnobHolder* holder) OVERRIDE FINAL;

@@ -72,7 +72,7 @@ struct RenderThreadTaskPrivate;
 class RenderThreadTask
     :  public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
+      , public AbortableThread
 #endif
 #else
 class RenderThreadTask

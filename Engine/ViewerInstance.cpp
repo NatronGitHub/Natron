@@ -566,9 +566,9 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
 
             if (args[i] && args[i]->params) {
                 if ( (status[i] == eViewerRenderRetCodeFail) || (status[i] == eViewerRenderRetCodeBlack) ) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex, abortInfo->getRenderAge());
+                    _imp->checkAndUpdateDisplayAge( args[i]->params->textureIndex, abortInfo->getRenderAge() );
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, abortInfo->getRenderAge());
+                _imp->removeOngoingRender( args[i]->params->textureIndex, abortInfo->getRenderAge() );
             }
 
 
@@ -656,9 +656,9 @@ ViewerInstance::renderViewer(ViewIdx view,
 
             if (!isSequentialRender && args[i] && args[i]->params) {
                 if ( (ret[i] == eViewerRenderRetCodeFail) || (ret[i] == eViewerRenderRetCodeBlack) ) {
-                    _imp->checkAndUpdateDisplayAge(args[i]->params->textureIndex, args[i]->params->abortInfo->getRenderAge());
+                    _imp->checkAndUpdateDisplayAge( args[i]->params->textureIndex, args[i]->params->abortInfo->getRenderAge() );
                 }
-                _imp->removeOngoingRender(args[i]->params->textureIndex, args[i]->params->abortInfo->getRenderAge());
+                _imp->removeOngoingRender( args[i]->params->textureIndex, args[i]->params->abortInfo->getRenderAge() );
             }
 
             if (ret[i] == eViewerRenderRetCodeBlack) {
@@ -800,7 +800,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
     ViewerRenderRetCode stat = getRenderViewerArgsAndCheckCache(time, isSequential, view, textureIndex, viewerHash, rotoPaintNode, abortInfo, stats, outArgs);
 
     if ( (stat == eViewerRenderRetCodeFail) || (stat == eViewerRenderRetCodeBlack) ) {
-        _imp->checkAndUpdateDisplayAge(textureIndex, abortInfo->getRenderAge());
+        _imp->checkAndUpdateDisplayAge( textureIndex, abortInfo->getRenderAge() );
     }
 
     return stat;
@@ -1146,7 +1146,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         if (retCode != eViewerRenderRetCodeRender) {
             return retCode;
         }
-        
+
         assert(outArgs->params->tiles.size() > 0);
 
 
@@ -1267,9 +1267,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         }
     }
 #ifdef QT_CUSTOM_THREADPOOL
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
-        isAbortable->setAbortInfo(!isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance());
+        isAbortable->setAbortInfo( !isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance() );
     }
 #endif
 
@@ -1507,7 +1507,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
         ///We check that the render age is still OK and that no other renders were triggered, in which case we should not need to
         ///refresh the viewer.
-        if ( !_imp->checkAgeNoUpdate(inArgs.params->textureIndex, inArgs.params->abortInfo->getRenderAge()) ) {
+        if ( !_imp->checkAgeNoUpdate( inArgs.params->textureIndex, inArgs.params->abortInfo->getRenderAge() ) ) {
             return eViewerRenderRetCodeRedraw;
         }
 
@@ -1564,7 +1564,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 updateParams->recenterViewport = _imp->viewportCenterSet;
                 updateParams->viewportCenter = _imp->viewportCenter;
                 unCachedTiles.push_back(tile);
-
             }
             // If we are actively painting, re-use the last texture instead of re-drawing everything
             else if (rotoPaintNode) {
@@ -1576,7 +1575,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 assert(!_imp->lastRenderParams[updateParams->textureIndex] || _imp->lastRenderParams[updateParams->textureIndex]->tiles.size() == 1);
 
 
-
                 bool canUseOldTex = _imp->lastRenderParams[updateParams->textureIndex] &&
                                     updateParams->mipMapLevel == _imp->lastRenderParams[updateParams->textureIndex]->mipMapLevel &&
                                     tile.rect.contains(_imp->lastRenderParams[updateParams->textureIndex]->tiles.front().rect);
@@ -1586,9 +1584,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     updateParams->mustFreeRamBuffer = true;
                     tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
                     unCachedTiles.push_back(tile);
-
                 } else {
-
                     //Overwrite the RoI to only the last portion rendered
                     RectD lastPaintBbox = getApp()->getLastPaintStrokeBbox();
 
@@ -1622,8 +1618,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                     }
 
                     /*UpdateViewerParams::CachedTile tileCopy = tile;
-                    //If we are painting, only render the portion needed
-                    if ( !lastPaintBboxPixel.isNull() ) {
+                       //If we are painting, only render the portion needed
+                       if ( !lastPaintBboxPixel.isNull() ) {
                         tileCopy.rect.intersect(lastPaintBboxPixel, &tileCopy.rect);
                         std::size_t pixelSize = 4;
                         if (updateParams->depth == eImageBitDepthFloat) {
@@ -1631,11 +1627,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                         }
                         std::size_t dstRowSize = tileCopy.rect.width() * pixelSize;
                         tileCopy.bytesCount = tileCopy.rect.height() * dstRowSize;
-                    }
+                       }
 
-                    unCachedTiles.push_back(tileCopy);*/
+                       unCachedTiles.push_back(tileCopy);*/
                     unCachedTiles.push_back(tile);
-
                 }
                 _imp->lastRenderParams[updateParams->textureIndex] = updateParams;
             }
@@ -1647,8 +1642,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
                 unCachedTiles.push_back(tile);
             }
-
-
         } else { // useTextureCache
             //Look up the cache for a texture or create one
             {
@@ -1722,11 +1715,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         } // !useTextureCache
 
         /*
-         If we are not using the texture cache, there is a unique tile which has the required texture size on the viewer, so we render the RoI instead
-         of just the tile portion in the render function
+           If we are not using the texture cache, there is a unique tile which has the required texture size on the viewer, so we render the RoI instead
+           of just the tile portion in the render function
          */
         const bool viewerRenderRoiOnly = !useTextureCache;
-
         ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
 
         if ( ( (inArgs.channels == eDisplayChannelsA) && ( (alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)colorImage->getComponentsCount() ) ) ) ||
@@ -2080,7 +2072,7 @@ scaleToTexture8bits_generic(const RectI& roi,
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
     const RectI srcImgBounds = args.inputImage->getBounds();
 
-    assert((args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2));
+    assert( (args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2) );
     assert(tile.rect.x2 > tile.rect.x1);
 
     U32* dst_pixels;
@@ -2094,7 +2086,6 @@ scaleToTexture8bits_generic(const RectI& roi,
     const int y2 = args.renderOnlyRoI ? roi.y2 : tile.rect.y2;
     const int x1 = args.renderOnlyRoI ? roi.x1 : tile.rect.x1;
     const int x2 = args.renderOnlyRoI ? roi.x2 : tile.rect.x2;
-
     const PIX* src_pixels = (const PIX*)acc.pixelAt(x1, y1);
     const int srcRowElements = (int)args.inputImage->getRowElements();
     boost::shared_ptr<Image::ReadAccess> matteAcc;
@@ -2506,7 +2497,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
         matteAcc.reset( new Image::ReadAccess( args.matteImage.get() ) );
     }
 
-    assert((args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2));
+    assert( (args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2) );
     assert(tile.rect.x2 > tile.rect.x1);
 
     float* dst_pixels;
@@ -2520,9 +2511,7 @@ scaleToTexture32bitsGeneric(const RectI& roi,
     const int y2 = args.renderOnlyRoI ? roi.y2 : tile.rect.y2;
     const int x1 = args.renderOnlyRoI ? roi.x1 : tile.rect.x1;
     const int x2 = args.renderOnlyRoI ? roi.x2 : tile.rect.x2;
-
     const float* src_pixels = (const float*)acc.pixelAt(x1, y1);
-
     const int srcRowElements = (const int)args.inputImage->getRowElements();
 
     for (int y = y1; y < y2;
@@ -2824,7 +2813,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
     uiContext->makeOpenGLcontextCurrent();
 
     bool doUpdate = true;
-    if ( !params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge(params->textureIndex, params->abortInfo->getRenderAge()) ) {
+    if ( !params->isPartialRect && !params->isSequential && !checkAndUpdateDisplayAge( params->textureIndex, params->abortInfo->getRenderAge() ) ) {
         doUpdate = false;
     }
     if (doUpdate) {

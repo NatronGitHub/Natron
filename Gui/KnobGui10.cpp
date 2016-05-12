@@ -672,12 +672,12 @@ KnobGui::show(int /*index*/)
 int
 KnobGui::getActualIndexInLayout() const
 {
-
     QWidget* parent = _imp->field->parentWidget();
+
     if (!parent) {
         return -1;
     }
-    QGridLayout* layout = dynamic_cast<QGridLayout*>(parent->layout());
+    QGridLayout* layout = dynamic_cast<QGridLayout*>( parent->layout() );
     if (!layout) {
         return -1;
     }

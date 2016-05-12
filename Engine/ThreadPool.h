@@ -79,13 +79,13 @@ private:
 };
 
 #define REPORT_CURRENT_THREAD_ACTION(actionName, nodeName, pluginID) \
-{ \
-    QThread* thread = QThread::currentThread(); \
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(thread); \
-    if (isAbortable) {  \
-        isAbortable->setCurrentActionInfos(actionName, nodeName, pluginID);\
+    { \
+        QThread* thread = QThread::currentThread(); \
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(thread); \
+        if (isAbortable) {  \
+            isAbortable->setCurrentActionInfos(actionName, nodeName, pluginID); \
+        } \
     } \
-} \
 
 class ThreadPool
     : public QThreadPool

@@ -6019,9 +6019,9 @@ Node::makePreviewImage(SequenceTime time,
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
 #ifdef QT_CUSTOM_THREADPOOL
-        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, thisNode->getEffectInstance());
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
         }
 #endif
         ParallelRenderArgsSetter frameRenderArgs( time,
@@ -7088,9 +7088,9 @@ Node::onInputChanged(int inputNb)
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
 #ifdef QT_CUSTOM_THREADPOOL
-        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, getEffectInstance());
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
         }
 #endif
         ParallelRenderArgsSetter frameRenderArgs( time,

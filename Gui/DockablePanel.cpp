@@ -872,7 +872,8 @@ DockablePanel::helpString() const
 {
     //Base help
     QString tt;
-    if (Qt::mightBeRichText(_imp->_helpToolTip)) {
+
+    if ( Qt::mightBeRichText(_imp->_helpToolTip) ) {
         tt = _imp->_helpToolTip;
     } else {
         tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
@@ -1767,7 +1768,7 @@ DockablePanel::recreateKnobs(const QString& curTabName,
     ///Refresh the curve editor with potential new animated knobs
     if (isNodePanel) {
         NodeGuiPtr node = isNodePanel->getNode();
-        
+
         getGui()->getCurveEditor()->removeNode( node.get() );
         getGui()->getCurveEditor()->addNode(node);
 

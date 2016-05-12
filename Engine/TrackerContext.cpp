@@ -441,6 +441,7 @@ void
 TrackerContext::beginEditSelection(TrackSelectionReason reason)
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     k.unlock();
     Q_EMIT selectionAboutToChange( (int)reason );
     k.relock();
@@ -1536,7 +1537,7 @@ TrackArgs::getRedrawAreasNeeded(int time,
                                 std::list<RectD>* canonicalRects) const
 {
     for (std::vector<boost::shared_ptr<TrackMarkerAndOptions> >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
-        if (!(*it)->natronMarker->isEnabled(time)) {
+        if ( !(*it)->natronMarker->isEnabled(time) ) {
             continue;
         }
         boost::shared_ptr<KnobDouble> searchBtmLeft = (*it)->natronMarker->getSearchWindowBottomLeftKnob();
@@ -1639,10 +1640,10 @@ TrackSchedulerBase::TrackSchedulerBase()
 #endif
 {
     QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
+
 #ifdef QT_CUSTOM_THREADPOOL
     setThreadName("TrackScheduler");
 #endif
-
 }
 
 TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
@@ -1665,7 +1666,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
     const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];
 
-    if (!track->natronMarker->isEnabled(time)) {
+    if ( !track->natronMarker->isEnabled(time) ) {
         return false;
     }
 
@@ -1775,7 +1776,7 @@ TrackScheduler::run()
 
         const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = _imp->curArgs.getTracks();
         const int numTracks = (int)tracks.size();
-        std::vector<int> trackIndexes(tracks.size());
+        std::vector<int> trackIndexes( tracks.size() );
         for (std::size_t i = 0; i < tracks.size(); ++i) {
             trackIndexes[i] = i;
 
@@ -1783,7 +1784,6 @@ TrackScheduler::run()
             boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
             enabledKnob->unSlave(0, false);
         }
-
 
 
         // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
@@ -1902,8 +1902,6 @@ TrackScheduler::run()
             }
             contextEnabledKnob->setDirty(tracks.size() > 1);
         }
-        
-
 
 
         //Now that tracking is done update viewer once to refresh the whole visible portion

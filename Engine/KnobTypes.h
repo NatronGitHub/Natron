@@ -157,7 +157,6 @@ public:
     }
 
     static const std::string & typeNameStatic();
-
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
@@ -203,7 +202,6 @@ public:
     {
         return true;
     }
-
 
     void disableSlider();
 
@@ -433,6 +431,7 @@ public:
     {
         return _checkable;
     }
+
 private:
 
 
@@ -495,7 +494,6 @@ public:
     {
         return true;
     }
-
 
     /**
      * @brief Fills-up the menu with the given entries and optionnally their tooltip.
@@ -624,7 +622,6 @@ public:
                   int dimension,
                   bool declaredByPlugin);
     static const std::string & typeNameStatic();
-
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
@@ -694,7 +691,6 @@ public:
         return true;
     }
 
-
 public Q_SLOTS:
 
     void onDimensionSwitchToggled(bool b);
@@ -737,7 +733,6 @@ public:
     {
         return new KnobString(holder, label, dimension, declaredByPlugin);
     }
-    
 
     KnobString(KnobHolder* holder,
                const std::string &label,
@@ -808,7 +803,6 @@ public:
     {
         return !_multiLine;
     }
-
 
     /**
      * @brief Relevant for multi-lines with rich text enables. It tells if

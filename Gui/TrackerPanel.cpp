@@ -768,7 +768,6 @@ TrackerPanel::insertTableRow(const TrackMarkerPtr & node,
         std::advance(it, index);
         _imp->items.insert(it, data);
     }
-
 }
 
 void

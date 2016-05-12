@@ -52,7 +52,9 @@ class RotoToolButton
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // properties
+    Q_PROPERTY(bool isSelected READ getIsSelected WRITE setIsSelected)
 
 public:
 

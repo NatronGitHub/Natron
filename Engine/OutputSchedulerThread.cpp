@@ -2344,7 +2344,6 @@ struct RenderThreadTaskPrivate
 #endif
 
 
-
     RenderThreadTaskPrivate(const boost::shared_ptr<OutputEffectInstance>& output,
                             OutputSchedulerThread* scheduler
                             #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
@@ -2503,7 +2502,6 @@ DefaultScheduler::~DefaultScheduler()
 class DefaultRenderFrameRunnable
     : public RenderThreadTask
 {
-
 public:
 
 
@@ -2547,7 +2545,7 @@ private:
         }
 
 #ifdef QT_CUSTOM_THREADPOOL
-        AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(QThread::currentThread());
+        AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>( QThread::currentThread() );
 #endif
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
@@ -2626,7 +2624,6 @@ private:
             NodePtr activeInputNode = activeInputToRender->getNode();
             U64 activeInputToRenderHash = activeInputToRender->getHash();
             const double par = activeInputToRender->getAspectRatio(-1);
-
             const bool isRenderDueToRenderInteraction = false;
             const bool isSequentialRender = true;
 
@@ -2662,7 +2659,6 @@ private:
                 }
                 RectI renderWindow;
                 rod.toPixelEnclosing(scale, par, &renderWindow);
-
 
 
                 AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
@@ -2780,8 +2776,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     components.push_back( effect->getComponents(-1) );
     ImageBitDepthEnum imageDepth = effect->getBitDepth(-1);
     const double par = effect->getAspectRatio(-1);
-
-
     const bool isRenderDueToRenderInteraction = false;
     const bool isSequentialRender = true;
 
@@ -3880,7 +3874,7 @@ public:
 ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
     : QThread()
 #ifdef QT_CUSTOM_THREADPOOL
-, AbortableThread(this)
+    , AbortableThread(this)
 #endif
     , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
 {

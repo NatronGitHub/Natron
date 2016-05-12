@@ -1074,7 +1074,7 @@ threadFunctionWrapper(OfxThreadFunctionV1 func,
 class OfxThread
     : public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-    , public AbortableThread
+      , public AbortableThread
 #endif
 {
 public:

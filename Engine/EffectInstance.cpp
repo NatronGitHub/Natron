@@ -286,6 +286,7 @@ void
 EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+
     assert(args->abortInfo);
     tls->frameArgs.push_back(args);
 }
@@ -355,7 +356,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 {
     if (!isRenderResponseToUserInteraction) {
         // Rendering is playback or render on disk
-        if (  abortInfo && abortInfo->isAborted()) {
+        if ( abortInfo && abortInfo->isAborted() ) {
             return true;
         }
 
@@ -371,7 +372,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
     } else {
         // This is a render issued to refresh the image on the Viewer
 
-        if (!abortInfo || !abortInfo->canAbort()) {
+        if ( !abortInfo || !abortInfo->canAbort() ) {
             return false;
         }
 
@@ -1845,7 +1846,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
 EffectInstance::RenderingFunctorRetEnum
 EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementation::TiledRenderingFunctorArgs & args,
                                                       const RectToRender & specificData,
-                                                       QThread* callingThread)
+                                                      QThread* callingThread)
 {
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     QThread* curThread = QThread::currentThread();
@@ -3236,8 +3237,9 @@ EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
+
     return render(args);
 }
 
@@ -3514,7 +3516,7 @@ EffectInstance::beginSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionBeginSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -3537,7 +3539,7 @@ EffectInstance::endSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionEndSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -4113,9 +4115,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             const bool isRenderUserInteraction = true;
             const bool isSequentialRender = false;
 #ifdef QT_CUSTOM_THREADPOOL
-            AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+            AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
             if (isAbortable) {
-                isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, node->getEffectInstance());
+                isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
 #endif
             setter.reset( new ParallelRenderArgsSetter( time,
@@ -4135,7 +4137,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         {
             RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-            REPORT_CURRENT_THREAD_ACTION("kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
             knobChanged(k, reason, view, time, originatedFromMainThread);
         }

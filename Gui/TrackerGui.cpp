@@ -1070,7 +1070,6 @@ TrackerGui::drawOverlays(double time,
                         glDisable(GL_POINT_SMOOTH);
 
 
-
                         glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
                         glBegin(GL_LINE_LOOP);
                         glVertex2d( topLeft.x(), topLeft.y() );
