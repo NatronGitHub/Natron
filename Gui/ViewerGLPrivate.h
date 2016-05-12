@@ -178,6 +178,7 @@ struct ViewerGL::Implementation
     double mixAmount; /// the amount of the second input to blend, by default 1.
     double wipeAngle; /// the angle to the X axis
     QPointF wipeCenter; /// the center of the wipe control
+    bool wipeInitialized;
     QRectF selectionRectangle;
     GLuint checkerboardTextureID;
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
@@ -201,7 +202,7 @@ public:
      *@brief Fill the rendering VAO with vertices and texture coordinates
      * that depends upon the currently displayed texture.
      **/
-    void drawRenderingVAO(unsigned int mipMapLevel, int textureIndex, DrawPolygonModeEnum polygonMode);
+    void drawRenderingVAO(unsigned int mipMapLevel, int textureIndex, DrawPolygonModeEnum polygonMode, bool background);
 
     void initializeGL();
 
@@ -229,8 +230,8 @@ public:
     };
 
     WipePolygonEnum getWipePolygon(const RectD & texRectClipped, //!< in canonical coordinates
-                                   QPolygonF & polygonPoints,
-                                   bool rightPlane) const;
+                                   bool rightPlane,
+                                   QPolygonF * polygonPoints) const;
 
     static void getBaseTextureCoordinates(const RectI & texRect, int closestPo2, int texW, int texH,
                                           GLfloat & bottom, GLfloat & top, GLfloat & left, GLfloat & right);
@@ -245,6 +246,8 @@ public:
     void initializeCheckerboardTexture(bool mustCreateTexture);
 
     void drawCheckerboardTexture(const RectD& rod);
+
+    void drawCheckerboardTexture(const QPolygonF& polygon);
 
     void getProjectFormatCanonical(RectD& canonicalProjectFormat) const
     {

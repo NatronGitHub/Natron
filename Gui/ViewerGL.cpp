@@ -195,7 +195,7 @@ ViewerGL::resizeGL(int w,
         QMutexLocker(&_imp->zoomCtxMutex);
         oldWidth = _imp->zoomCtx.screenWidth();
         oldHeight = _imp->zoomCtx.screenHeight();
-        _imp->zoomCtx.setScreenSize(w, h);
+        _imp->zoomCtx.setScreenSize(w, h, /*alignTop=*/true, /*alignRight=*/false);
         zoomSinceLastFit = _imp->zoomOrPannedSinceLastFit;
     }
     glCheckError();
@@ -314,7 +314,7 @@ ViewerGL::paintGL()
 
 
         // don't even bind the shader on 8-bits gamma-compressed textures
-        ViewerCompositingOperatorEnum compOp = _imp->viewerTab->getCompositingOperator();
+        ViewerCompositingOperatorEnum compOperator = _imp->viewerTab->getCompositingOperator();
 
         ///Determine whether we need to draw each texture or not
         int activeInputs[2];
@@ -325,8 +325,10 @@ ViewerGL::paintGL()
         internalViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
         bool drawTexture[2];
         drawTexture[0] = _imp->activeTextures[0];
-        drawTexture[1] = _imp->activeTextures[1] && compOp != eViewerCompositingOperatorNone;
-        if ( (activeInputs[0] == activeInputs[1]) && (compOp != eViewerCompositingOperatorMinus) ) {
+        drawTexture[1] = _imp->activeTextures[1] && compOperator != eViewerCompositingOperatorNone;
+        if ( (activeInputs[0] == activeInputs[1]) &&
+             (compOperator != eViewerCompositingOperatorWipeMinus) &&
+             (compOperator != eViewerCompositingOperatorStackMinus) ) {
             drawTexture[1] = false;
         }
 
@@ -336,6 +338,12 @@ ViewerGL::paintGL()
             wipeMix = _imp->mixAmount;
         }
         GLuint savedTexture;
+        bool stack = (compOperator == eViewerCompositingOperatorStackUnder ||
+                      compOperator == eViewerCompositingOperatorStackOver ||
+                      compOperator == eViewerCompositingOperatorStackMinus ||
+                      compOperator == eViewerCompositingOperatorStackOnionSkin ||
+                      false);
+
         glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
         {
             GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
@@ -347,84 +355,117 @@ ViewerGL::paintGL()
             glColor4d(1., 1., 1., 1.);
             glBlendColor(1, 1, 1, wipeMix);
 
-            ///Depending on the premultiplication of the input image we use a different blending func
-            ImagePremultiplicationEnum premultA = _imp->displayingImagePremult[0];
-            if ( !_imp->viewerTab->isCheckerboardEnabled() ) {
-                premultA = eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
+            if ( _imp->viewerTab->isCheckerboardEnabled() ) {
+                // draw checkerboard texture, but only on the left side if in wipe mode
+                RectD projectFormatCanonical;
+                _imp->getProjectFormatCanonical(projectFormatCanonical);
+                if (compOperator == eViewerCompositingOperatorNone) {
+                    _imp->drawCheckerboardTexture(projectFormatCanonical);
+                } else if ( operatorIsWipe(compOperator) ) {
+                    QPolygonF polygonPoints;
+                    Implementation::WipePolygonEnum t = _imp->getWipePolygon(projectFormatCanonical,
+                                                                             false,
+                                                                             &polygonPoints);
+                    if (t == Implementation::eWipePolygonFull) {
+                        _imp->drawCheckerboardTexture(projectFormatCanonical);
+                    } else if (t == Implementation::eWipePolygonPartial) {
+                        _imp->drawCheckerboardTexture(polygonPoints);
+                    }
+                }
             }
 
-            if (compOp == eViewerCompositingOperatorWipe) {
-                ///In wipe mode draw first the input A then only the portion we are interested in the input B
 
+            ///Depending on the premultiplication of the input image we use a different blending func
+            ImagePremultiplicationEnum premultA = _imp->displayingImagePremult[0];
+            //if ( !_imp->viewerTab->isCheckerboardEnabled() ) {
+            //    premultA = eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
+            //}
+
+            switch (compOperator) {
+            case eViewerCompositingOperatorNone: {
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole, true);
+                }
+                break;
+            }
+            case eViewerCompositingOperatorWipeUnder:
+            case eViewerCompositingOperatorStackUnder: {
+                if (drawTexture[0] && !stack) {
+                    BlendSetter b(premultA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
+                }
+                if (drawTexture[0]) {
+                    BlendSetter b(premultA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     glDisable(GL_BLEND);
                 }
-            } else if (compOp == eViewerCompositingOperatorMinus) {
+
+                break;
+            }
+            case eViewerCompositingOperatorWipeOver:
+            case eViewerCompositingOperatorStackOver: {
+                if (drawTexture[0] && !stack) {
+                    BlendSetter b(premultA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
+                }
+                if (drawTexture[1]) {
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    glDisable(GL_BLEND);
+                }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                }
+
+                break;
+            }
+            case eViewerCompositingOperatorWipeMinus:
+            case eViewerCompositingOperatorStackMinus: {
+                if (drawTexture[0] && !stack) {
+                    BlendSetter b(premultA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
+                }
+                if (drawTexture[0]) {
+                    BlendSetter b(premultA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     glEnable(GL_BLEND);
                     glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     glDisable(GL_BLEND);
                 }
-            } else if (compOp == eViewerCompositingOperatorUnder) {
-                if (drawTexture[0]) {
-                    BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, _imp->activeTextures[1] ? eDrawPolygonModeWhole : eDrawPolygonModeWipeLeft);
-                }
-                if (drawTexture[1]) {
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_ONE_MINUS_DST_ALPHA, GL_ONE);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
-                    glDisable(GL_BLEND);
-
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
-                    glDisable(GL_BLEND);
-                }
-            } else if (compOp == eViewerCompositingOperatorOver) {
-                ///draw first B then A
-                if (drawTexture[1]) {
-                    ///Depending on the premultiplication of the input image we use a different blending func
-                    ImagePremultiplicationEnum premultB = _imp->displayingImagePremult[1];
-                    if ( !_imp->viewerTab->isCheckerboardEnabled() ) {
-                        premultB = eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
-                    }
-                    BlendSetter b(premultB);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, eDrawPolygonModeWipeRight);
-                }
-                if (drawTexture[0]) {
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeRight);
-                    glDisable(GL_BLEND);
-
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft);
-
-                    glEnable(GL_BLEND);
-                    glBlendFunc(GL_ONE_MINUS_CONSTANT_ALPHA, GL_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeRight);
-                    glDisable(GL_BLEND);
-                }
-            } else {
-                if (drawTexture[0]) {
-                    glDisable(GL_BLEND);
-                    BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole);
-                }
+                break;
             }
+            case eViewerCompositingOperatorWipeOnionSkin:
+            case eViewerCompositingOperatorStackOnionSkin: {
+                if (drawTexture[0] && !stack) {
+                    BlendSetter b(premultA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
+                }
+                if (drawTexture[0]) {
+                    BlendSetter b(premultA);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                }
+                if (drawTexture[1]) {
+                    glEnable(GL_BLEND);
+                    glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
+                    //glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
+                    _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    glDisable(GL_BLEND);
+                }
+                break;
+            }
+            } // switch
         } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
         ///Unbind render textures for overlays
@@ -482,10 +523,21 @@ ViewerGL::toggleOverlays()
 void
 ViewerGL::toggleWipe()
 {
-    if (getViewerTab()->getCompositingOperator() != eViewerCompositingOperatorNone) {
+    ViewerCompositingOperatorEnum compOperator = getViewerTab()->getCompositingOperator();
+
+    switch (compOperator) {
+    case eViewerCompositingOperatorNone: {
+        ViewerCompositingOperatorEnum newOp = getViewerTab()->getCompositingOperatorPrevious();
+        if (newOp == eViewerCompositingOperatorNone) {
+            newOp = eViewerCompositingOperatorWipeUnder;
+        }
+        getViewerTab()->setCompositingOperator(newOp);
+        break;
+    }
+    default: {
         getViewerTab()->setCompositingOperator(eViewerCompositingOperatorNone);
-    } else {
-        getViewerTab()->setCompositingOperator(eViewerCompositingOperatorWipe);
+        break;
+    }
     }
 }
 
@@ -605,7 +657,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         }
 
         ViewerCompositingOperatorEnum compOperator = _imp->viewerTab->getCompositingOperator();
-        if (compOperator != eViewerCompositingOperatorNone) {
+        if ( operatorIsWipe(compOperator) ) {
             drawWipeControl();
         }
 
@@ -2697,7 +2749,7 @@ ViewerGL::disconnectViewer()
         setRegionOfDefinition(_imp->blankViewerInfo.getRoD(), _imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(), 0);
         setRegionOfDefinition(_imp->blankViewerInfo.getRoD(), _imp->blankViewerInfo.getDisplayWindow().getPixelAspectRatio(), 1);
     }
-    resetWipeControls();
+    //resetWipeControls();
     clearViewer();
 }
 
@@ -3608,8 +3660,8 @@ ViewerGL::resetWipeControls()
     }
     {
         QMutexLocker l(&_imp->wipeControlsMutex);
-        _imp->wipeCenter.setX(rod.width() / 2.);
-        _imp->wipeCenter.setY(rod.height() / 2.);
+        _imp->wipeCenter.setX( (rod.x1 + rod.x2) / 2. );
+        _imp->wipeCenter.setY( (rod.y1 + rod.y2) / 2. );
         _imp->wipeAngle = 0;
         _imp->mixAmount = 1.;
     }

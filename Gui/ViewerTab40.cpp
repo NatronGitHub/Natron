@@ -774,14 +774,13 @@ void
 ViewerTab::refreshViewerRenderingState()
 {
     int value = _imp->viewerNode->getNode()->getIsNodeRenderingCounter();
+
     if (value >= 1) {
         _imp->refreshButton->setIcon(_imp->iconRefreshOn);
     } else {
         _imp->refreshButton->setIcon(_imp->iconRefreshOff);
     }
 }
-
-
 
 void
 ViewerTab::setTurboButtonDown(bool down)

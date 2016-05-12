@@ -403,10 +403,14 @@ enum ImageFieldingOrderEnum
 enum ViewerCompositingOperatorEnum
 {
     eViewerCompositingOperatorNone,
-    eViewerCompositingOperatorOver,
-    eViewerCompositingOperatorMinus,
-    eViewerCompositingOperatorUnder,
-    eViewerCompositingOperatorWipe
+    eViewerCompositingOperatorWipeUnder,
+    eViewerCompositingOperatorWipeOver,
+    eViewerCompositingOperatorWipeMinus,
+    eViewerCompositingOperatorWipeOnionSkin,
+    eViewerCompositingOperatorStackUnder,
+    eViewerCompositingOperatorStackOver,
+    eViewerCompositingOperatorStackMinus,
+    eViewerCompositingOperatorStackOnionSkin,
 };
 
 enum ViewerColorSpaceEnum
