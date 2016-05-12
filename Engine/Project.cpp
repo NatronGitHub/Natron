@@ -852,10 +852,10 @@ Project::initializeKnobs()
             std::string channelsStr;
             const std::vector<std::string>& channels = comps.getComponentsNames();
             for (std::size_t c = 0; c < channels.size(); ++c) {
-                channelsStr += channels[c];
-                if ( i < (channels.size() - 1) ) {
+                if (c > 0) {
                     channelsStr += ' ';
                 }
+                channelsStr += channels[c];
             }
             row[1] = channelsStr;
             defaultLayers.push_back(row);
