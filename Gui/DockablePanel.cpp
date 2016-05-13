@@ -109,7 +109,7 @@ private:
     {
         if ( triggerButtonIsRight(e) ) {
             StandardButtonEnum rep = Dialogs::questionDialog(tr("Warning").toStdString(),
-                                                             tr("Are you sure you want to reset the overlay color ?").toStdString(),
+                                                             tr("Are you sure you want to reset the overlay color?").toStdString(),
                                                              false);
             if (rep == eStandardButtonYes) {
                 _panel->resetHostOverlayColor();

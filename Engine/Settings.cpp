@@ -3112,16 +3112,15 @@ Settings::doOCIOStartupCheckIfNeeded()
         std::vector<std::string> entries = _ocioConfigKnob->getEntries_mt_safe();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
-            warnText = "The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (" NATRON_DEFAULT_OCIO_CONFIG_NAME ") ?";
+            warnText = QObject::tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
-            warnText = "The current OCIO config selected in the preferences is not the default one (" NATRON_DEFAULT_OCIO_CONFIG_NAME "),"
-                       " would you like to set it to the default config ?";
+            warnText = QObject::tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
             return;
         }
 
         bool stopAsking = false;
-        StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr( warnText.c_str() ).toStdString(), false,
+        StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", warnText, false,
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                                 eStandardButtonYes,
                                                                 &stopAsking);

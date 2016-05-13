@@ -1588,7 +1588,7 @@ HistogramPrivate::drawScale()
     {
         GLenum _glerror_ = glGetError();
         if (_glerror_ != GL_NO_ERROR) {
-            std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
         }
     }
 

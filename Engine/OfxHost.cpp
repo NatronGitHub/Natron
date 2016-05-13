@@ -369,7 +369,7 @@ getHostNameProxy(const std::string& pluginID,
     //printf("%s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
 
     return Settings::eKnownHostNameNone;
-}
+} // getHostNameProxy
 
 const std::string &
 OfxHost::getStringProperty(const std::string &name,
