@@ -323,7 +323,7 @@ OfxImageEffectInstance::getEffectDuration() const
 {
     assert( getOfxEffectInstance() );
 #ifdef DEBUG
-#pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain ?")
+#pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain?")
 #endif
 
     return 1.0;

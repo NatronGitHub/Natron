@@ -279,8 +279,8 @@ GuiAppInstance::load(const CLArgs& cl,
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
         if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
-                                                               tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
-                                                                  "on launch of the application ?").toStdString(), false);
+                                                               tr("Do you want %1 to check for updates "
+                                                                  "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
             bool checkForUpdates = reply == eStandardButtonYes;
             nSettings->setCheckUpdatesEnabled(checkForUpdates);
         }
@@ -293,8 +293,8 @@ GuiAppInstance::load(const CLArgs& cl,
 
     if ( nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
-                                                           tr(NATRON_APPLICATION_NAME " default appearance changed since last version.\n"
-                                                              "Would you like to set the new default appearance?").toStdString(), false);
+                                                           tr("The default appearance of %1 changed since last version.\n"
+                                                              "Would you like to use the new default appearance?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
         if (reply == eStandardButtonYes) {
             nSettings->restoreDefaultAppearance();
         }

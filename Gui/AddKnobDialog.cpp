@@ -660,7 +660,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
         _imp->multiLineLabel = new Label(tr("Multi-line:"), optContainer);
         _imp->multiLine = new QCheckBox(optContainer);
-        _imp->multiLine->setToolTip( GuiUtils::convertFromPlainText(tr("Should this text be multi-line or single-line ?"), Qt::WhiteSpaceNormal) );
+        _imp->multiLine->setToolTip( GuiUtils::convertFromPlainText(tr("Should this text be multi-line or single-line?"), Qt::WhiteSpaceNormal) );
         optLayout->addWidget(_imp->multiLine);
         _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
 

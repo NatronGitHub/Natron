@@ -852,6 +852,7 @@ struct RotoDrawableItemPrivate
         inverted->setDefaultValue(false);
         knobs.push_back(inverted);
 #endif
+
         color.reset( new KnobColor(NULL, QObject::tr(kRotoColorParamLabel), 3, false) );
         color->setHintToolTip( QObject::tr(kRotoColorHint) );
         color->setName(kRotoColorParam);

@@ -3045,7 +3045,7 @@ Dialogs::warningDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, stopAsking, useHtml);
     } else {
-        std::cerr << "WARNING: " << title << " :" << message << std::endl;
+        std::cerr << "WARNING: " << title << ":" << message << std::endl;
     }
 }
 
@@ -3059,7 +3059,7 @@ Dialogs::informationDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, useHtml);
     } else {
-        std::cout << "INFO: " << title << " :" << message << std::endl;
+        std::cout << "INFO: " << title << ":" << message << std::endl;
     }
 }
 
@@ -3074,7 +3074,7 @@ Dialogs::informationDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, stopAsking, useHtml);
     } else {
-        std::cout << "INFO: " << title << " :" << message << std::endl;
+        std::cout << "INFO: " << title << ":" << message << std::endl;
     }
 }
 
@@ -3090,7 +3090,7 @@ Dialogs::questionDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton);
     } else {
-        std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
+        std::cout << "QUESTION ASKED: " << title << ":" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
 
         return eStandardButtonYes;
@@ -3110,7 +3110,7 @@ Dialogs::questionDialog(const std::string & title,
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton, stopAsking);
     } else {
-        std::cout << "QUESTION ASKED: " << title << " :" << message << std::endl;
+        std::cout << "QUESTION ASKED: " << title << ":" << message << std::endl;
         std::cout << NATRON_APPLICATION_NAME " answered yes." << std::endl;
 
         return eStandardButtonYes;

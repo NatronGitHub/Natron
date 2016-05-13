@@ -35,7 +35,7 @@ glError() {}
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
             glError();                                                  \
         }                                                               \
     }
@@ -44,7 +44,7 @@ glError() {}
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR && _glerror_ != GL_INVALID_FRAMEBUFFER_OPERATION) { \
-            std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
             glError();                                                  \
         }                                                               \
     }
@@ -55,7 +55,7 @@ glError() {}
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
             glError();                                                  \
         }                                                               \
     }
@@ -63,7 +63,7 @@ glError() {}
     {                                                                   \
         GLenum error = glCheckFramebufferStatus(GL_FRAMEBUFFER);        \
         if (error != GL_FRAMEBUFFER_COMPLETE) {                         \
-            std::cout << "GL_FRAMEBUFFER_ERROR :" << __FILE__ << " " << __LINE__ << " "; \
+            std::cout << "GL_FRAMEBUFFER_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
             if (error == GL_FRAMEBUFFER_UNDEFINED) {                    \
                 std::cout << "Framebuffer undefined" << std::endl;      \
                 glError();                                              \

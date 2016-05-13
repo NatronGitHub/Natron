@@ -421,7 +421,6 @@ Settings::initializeKnobsGeneral()
                                                      "image allocation and copy before rendering any plug-in.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _generalTab->addKnob(_pluginUseImageCopyForSource);
 
-
     _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>( this, tr("Auto-preview enabled by default for new projects") );
     _autoPreviewEnabledForNewProjects->setName("enableAutoPreviewNewProjects");
     _autoPreviewEnabledForNewProjects->setAnimationEnabled(false);
@@ -669,13 +668,11 @@ Settings::initializeKnobsAppearance()
     _trackerKeyframeColor->setAddNewLine(false);
     _guiColors->addKnob(_trackerKeyframeColor);
 
-
     _exprColor =  AppManager::createKnob<KnobColor>(this, tr("Expression"), 3);
     _exprColor->setName("exprColor");
     _exprColor->setAnimationEnabled(false);
     _exprColor->setSimplified(true);
     _guiColors->addKnob(_exprColor);
-
 
     _curveEditorBGColor =  AppManager::createKnob<KnobColor>(this, tr("Background color"), 3);
     _curveEditorBGColor->setName("curveEditorBG");
@@ -684,14 +681,12 @@ Settings::initializeKnobsAppearance()
     _curveEditorBGColor->setAddNewLine(false);
     _curveEditorColors->addKnob(_curveEditorBGColor);
 
-
     _gridColor =  AppManager::createKnob<KnobColor>(this, tr("Grid color"), 3);
     _gridColor->setName("curveditorGrid");
     _gridColor->setAnimationEnabled(false);
     _gridColor->setSimplified(true);
     _gridColor->setAddNewLine(false);
     _curveEditorColors->addKnob(_gridColor);
-
 
     _curveEditorScaleColor =  AppManager::createKnob<KnobColor>(this, tr("Scale color"), 3);
     _curveEditorScaleColor->setName("curveeditorScale");
@@ -3227,16 +3222,15 @@ Settings::doOCIOStartupCheckIfNeeded()
         std::vector<std::string> entries = _ocioConfigKnob->getEntries_mt_safe();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
-            warnText = "The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (" NATRON_DEFAULT_OCIO_CONFIG_NAME ") ?";
+            warnText = QObject::tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
-            warnText = "The current OCIO config selected in the preferences is not the default one (" NATRON_DEFAULT_OCIO_CONFIG_NAME "),"
-                       " would you like to set it to the default config ?";
+            warnText = QObject::tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
             return;
         }
 
         bool stopAsking = false;
-        StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", QObject::tr( warnText.c_str() ).toStdString(), false,
+        StandardButtonEnum reply = mainInstance->questionDialog("OCIO config", warnText, false,
                                                                 StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                                 eStandardButtonYes,
                                                                 &stopAsking);

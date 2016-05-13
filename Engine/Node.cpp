@@ -3450,10 +3450,10 @@ void
 Node::createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage)
 {
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), kNatronWriteParamFrameStepLabel, 1, false);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr(kNatronWriteParamFrameStepLabel), 1, false);
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
-    frameIncrKnob->setHintToolTip(kNatronWriteParamFrameStepHint);
+    frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
