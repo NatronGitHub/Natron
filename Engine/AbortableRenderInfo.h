@@ -25,10 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
+
+#include <QtCore/QObject>
+#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #include "Engine/EngineFwd.h"
-#include "Global/GlobalDefines.h"
-#include <QObject>
+
 
 NATRON_NAMESPACE_ENTER;
 

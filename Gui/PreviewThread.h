@@ -27,7 +27,8 @@
 
 #include "Global/Macros.h"
 
-#include <QThread>
+#include <QtCore/QThread>
+#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>

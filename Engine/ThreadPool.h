@@ -25,14 +25,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QThreadPool>
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
+
 #include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
+
 
 NATRON_NAMESPACE_ENTER;
 

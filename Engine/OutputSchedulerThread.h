@@ -31,9 +31,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-#include <QThread>
+
+#include <QtCore/QThread>
+#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/BufferableObject.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"

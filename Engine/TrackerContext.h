@@ -37,8 +37,9 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include <QThread>
-#include <QMutex>
+#include <QtCore/QMutex>
+#include <QtCore/QThread>
+#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
