@@ -33,7 +33,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QVector>
+#include <QtCore/QVector>
 #include <QtCore/QMutex>
 
 #include "Global/GlobalDefines.h"

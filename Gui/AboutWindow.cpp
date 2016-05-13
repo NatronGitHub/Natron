@@ -34,7 +34,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QVBoxLayout>
 #include <QTabWidget>
 #include <QtCore/QFile>
-#include <QTextCodec>
+#include <QtCore/QTextCodec>
 #include <QItemSelectionModel>
 #include <QHeaderView>
 #include <QtCore/QDir>

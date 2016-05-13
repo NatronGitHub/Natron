@@ -40,8 +40,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCursor>
 #include <QMouseEvent>
 #include <QApplication>
-#include <QDataStream>
-#include <QMimeData>
+#include <QtCore/QDataStream>
+#include <QtCore/QMimeData>
 #include <QImage>
 #include <QPainter>
 #include <QtCore/QByteArray>

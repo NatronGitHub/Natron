@@ -30,7 +30,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDrag>
-#include <QMimeData>
+#include <QtCore/QMimeData>
 #include <QPainter>
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>

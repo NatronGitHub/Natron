@@ -26,7 +26,7 @@
 
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
-#include <QVector>
+#include <QtCore/QVector>
 
 #include <iostream>
 #include <exception>
