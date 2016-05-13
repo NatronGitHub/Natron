@@ -253,7 +253,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
                                                                                                "or links. Deleting this node will "
                                                                                                "remove these expressions  "
                                                                                                "and undoing the action will not recover "
-                                                                                               "them. Do you wish to continue ?")
+                                                                                               "them. Do you wish to continue?")
                                                                 .toStdString(), false );
             if (reply == eStandardButtonNo) {
                 return;
@@ -328,7 +328,7 @@ NodeGraph::deleteSelection()
                                                                            "of the project rely on through expressions "
                                                                            "or links. Deleting this node will "
                                                                            "may break these expressions."
-                                                                           "\nContinue anyway ?")
+                                                                           "\nContinue anyway?")
                                                                         .toStdString(), false );
                     if (reply == eStandardButtonNo) {
                         return;

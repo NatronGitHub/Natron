@@ -1569,13 +1569,9 @@ SequenceFileDialog::openSelectedFiles()
                         std::map<int, std::string> & views = sequence.begin()->second;
                         assert( !views.empty() );
 
-                        text = tr("The file ");
-                        text.append( QString::fromUtf8( views.begin()->second.c_str() ) );
-                        text.append( tr(" already exists.\n Would you like to replace it ?") );
+                        text = tr("The file %1 already exists.\nWould you like to replace it?").arg( QString::fromUtf8( views.begin()->second.c_str() ) );
                     } else {
-                        text = tr("The sequence ");
-                        text.append(str);
-                        text.append( tr(" already exists.\n Would you like to replace it ?") );
+                        text = tr("The sequence %1 already exists.\nWould you like to replace it?").arg(str);
                     }
 
                     QMessageBox ques(QMessageBox::Question, tr("Existing file"), text, QMessageBox::Yes | QMessageBox::No,
