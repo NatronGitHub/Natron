@@ -849,34 +849,34 @@ ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
 void
 ReadNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>(this, "Controls");
-    boost::shared_ptr<KnobButton> fileInfos = AppManager::createKnob<KnobButton>(this, "File Info...");
+    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    boost::shared_ptr<KnobButton> fileInfos = AppManager::createKnob<KnobButton>( this, tr("File Info...") );
 
     fileInfos->setName("fileInfo");
-    fileInfos->setHintToolTip("Press to display informations about the file");
+    fileInfos->setHintToolTip( tr("Press to display informations about the file") );
     controlpage->addKnob(fileInfos);
     _imp->fileInfosKnob = fileInfos;
     _imp->readNodeKnobs.push_back(fileInfos);
 
-    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>(this, "Decoder");
+    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>( this, tr("Decoder") );
     pluginSelector->setAnimationEnabled(false);
     pluginSelector->setName(kNatronReadNodeParamDecodingPluginChoice);
-    pluginSelector->setHintToolTip("Select the internal decoder plug-in used for this file format. By default this uses "
-                                   "the plug-in selected for this file extension in the Preferences of Natron");
+    pluginSelector->setHintToolTip( tr("Select the internal decoder plug-in used for this file format. By default this uses "
+                                       "the plug-in selected for this file extension in the Preferences of Natron") );
     pluginSelector->setEvaluateOnChange(false);
     _imp->pluginSelectorKnob = pluginSelector;
     controlpage->addKnob(pluginSelector);
 
     _imp->readNodeKnobs.push_back(pluginSelector);
 
-    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>(this, "Decoder Options");
+    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>( this, tr("Decoder Options") );
     separator->setName("decoderOptionsSeparator");
-    separator->setHintToolTip("Below can be found parameters that are specific to the Reader plug-in.");
+    separator->setHintToolTip( tr("Below can be found parameters that are specific to the Reader plug-in.") );
     controlpage->addKnob(separator);
     _imp->separatorKnob = separator;
     _imp->readNodeKnobs.push_back(separator);
 
-    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>(this, "PluginID");
+    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>( this, tr("PluginID") );
     pluginID->setAnimationEnabled(false);
     pluginID->setName(kNatronReadNodeParamDecodingPluginID);
     pluginID->setSecretByDefault(true);

@@ -657,7 +657,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         if (sep) {
                             sep->resetParent();
                         } else {
-                            sep = AppManager::createKnob<KnobSeparator>( knobHolder, "");
+                            sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
                             assert(sep);
                             sep->setName(separatorName);
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -683,7 +683,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     if ( !finalPages.empty() ) {
         mainPage = finalPages.begin();
     } else {
-        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(effect.get(), "Settings");
+        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( effect.get(), QObject::tr("Settings") );
         boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
         pageData->page = page;
         finalPages.push_back(pageData);
@@ -776,7 +776,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                     if (sep) {
                         sep->resetParent();
                     } else {
-                        sep = AppManager::createKnob<KnobSeparator>( knobHolder, "");
+                        sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
                         assert(sep);
                         sep->setName(separatorName);
 #ifdef NATRON_ENABLE_IO_META_NODES

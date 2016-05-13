@@ -617,7 +617,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     }
     {
-        _imp->tooltipLabel = new Label(tr("Tooltip:"), this);
+        _imp->tooltipLabel = new Label(tr("ToolTip:"), this);
         _imp->tooltipArea = new QTextEdit(this);
         _imp->tooltipArea->setToolTip( GuiUtils::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), Qt::WhiteSpaceNormal) );
         _imp->mainLayout->addRow(_imp->tooltipLabel, _imp->tooltipArea);

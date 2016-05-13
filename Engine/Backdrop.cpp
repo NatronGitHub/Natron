@@ -62,13 +62,13 @@ Backdrop::getPluginDescription() const
 void
 Backdrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
-    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, "Label");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, tr("Label") );
 
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
     knobLabel->setUsesRichText(true);
-    knobLabel->setHintToolTip( QObject::tr("Text to display on the backdrop.").toStdString() );
+    knobLabel->setHintToolTip( QObject::tr("Text to display on the backdrop.") );
     knobLabel->setEvaluateOnChange(false);
     page->addKnob(knobLabel);
     _imp->knobLabel = knobLabel;

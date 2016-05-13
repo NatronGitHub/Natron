@@ -282,6 +282,16 @@ public:
         return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
     }
 
+    template <class K>
+    static
+    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+                                    const QString &label,
+                                    int dimension = 1,
+                                    bool declaredByPlugin = true)
+    {
+        return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
+    }
+
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
      * short message. Otherwise the longMessage is printed to stdout
