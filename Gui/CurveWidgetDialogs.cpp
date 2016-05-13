@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QVBoxLayout> // in QtGui on Qt4, in QtWidgets on Qt5
 #include <QtCore/QThread>
 #include <QtCore/QSettings>
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/AppManager.h" // appPTR
 

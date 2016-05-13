@@ -31,19 +31,19 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QString>
+#include <QtCore/QString>
 #include <QToolBar>
 #include <QWidget>
 #include <QAction>
 #include <QRectF>
-#include <QLineF>
+#include <QtCore/QLineF>
 #include <QKeyEvent>
 #include <QHBoxLayout>
 #include <QStyle>
 #include <QDialogButtonBox>
 #include <QColorDialog>
 #include <QCheckBox>
-#include <QTimer>
+#include <QtCore/QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

@@ -32,7 +32,7 @@
 #include <QApplication>
 #include <QMouseEvent>
 #include <QScrollBar>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QToolButton>
 
 // Natron includes

@@ -38,10 +38,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include <QString>
-#include <QDebug>
-#include <QCoreApplication>
-#include <QThread>
+#include <QtCore/QString>
+#include <QtCore/QDebug>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)

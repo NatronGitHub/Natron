@@ -29,13 +29,13 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QHBoxLayout>
 #include <QTextEdit>
 #include <QKeyEvent>
 #include <QPixmap>
 #include <QIcon>
-#include <QtConcurrentRun>
+#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QFutureWatcher>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)

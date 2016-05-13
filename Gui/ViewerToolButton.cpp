@@ -28,7 +28,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QStyle>
 #include <QMouseEvent>
-#include <QTimer>
+#include <QtCore/QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

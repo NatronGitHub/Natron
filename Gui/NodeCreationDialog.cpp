@@ -32,7 +32,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStringList>
 #include <QKeyEvent>
 #include <QAbstractItemView>
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QApplication>
 #include <QListView>
 #include <QSettings>

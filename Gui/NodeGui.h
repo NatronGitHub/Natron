@@ -46,7 +46,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
 #include <QGraphicsItem>
 #include <QDialog>
-#include <QMutex>
+#include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

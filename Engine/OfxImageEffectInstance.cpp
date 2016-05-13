@@ -33,7 +33,7 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>

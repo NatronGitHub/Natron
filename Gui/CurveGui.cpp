@@ -31,7 +31,7 @@
 #include <QtCore/QThread>
 #include <QtCore/QObject>
 #include <QtCore/QCoreApplication>
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/Bezier.h"
 #include "Engine/Knob.h"

@@ -27,7 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QFileInfo>
+#include <QtCore/QFileInfo>
 
 #include "Engine/AppManager.h"
 #include "Engine/Settings.h"

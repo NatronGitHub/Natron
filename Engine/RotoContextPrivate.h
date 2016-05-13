@@ -38,11 +38,11 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-#include <QMutex>
-#include <QCoreApplication>
-#include <QThread>
-#include <QReadWriteLock>
-#include <QWaitCondition>
+#include <QtCore/QMutex>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QWaitCondition>
 
 #include <cairo/cairo.h>
 

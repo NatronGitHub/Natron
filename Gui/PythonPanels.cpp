@@ -29,7 +29,7 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QMutex>
+#include <QtCore/QMutex>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDialogButtonBox>

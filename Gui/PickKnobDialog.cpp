@@ -35,7 +35,7 @@
 
 #include <QGridLayout>
 #include <QCheckBox>
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QDialogButtonBox>
 
 #include "Engine/Knob.h" // KnobI

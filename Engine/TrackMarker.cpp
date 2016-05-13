@@ -24,7 +24,7 @@
 
 #include "TrackMarker.h"
 
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"

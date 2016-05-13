@@ -25,10 +25,11 @@
 #include "AbortableRenderInfo.h"
 
 #include <set>
-#include <QMutex>
-#include <QAtomicInt>
-#include <QTimer>
-#include <QDebug>
+
+#include <QtCore/QMutex>
+#include <QtCore/QAtomicInt>
+#include <QtCore/QTimer>
+#include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
 #include "Engine/ThreadPool.h"

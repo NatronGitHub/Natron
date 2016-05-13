@@ -36,7 +36,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
-#include <QFileInfo>
+#include <QtCore/QFileInfo>
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QFileOpenEvent>

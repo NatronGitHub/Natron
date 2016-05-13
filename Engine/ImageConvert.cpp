@@ -28,12 +28,14 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QDebug>
 #ifndef Q_MOC_RUN
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
+
+#include <QtCore/QDebug>
+
 #include "Engine/AppManager.h"
 #include "Engine/Lut.h"
 

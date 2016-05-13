@@ -29,8 +29,8 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset
 
-#include <QWaitCondition>
-#include <QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QMutex>
 
 #include "Gui/GuiDefines.h"
 #include "Gui/NodeGui.h"

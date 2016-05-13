@@ -41,8 +41,8 @@
 #endif
 
 
-#include <QReadWriteLock>
-#include <QThread>
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QThread>
 
 #include "Engine/EngineFwd.h"
 

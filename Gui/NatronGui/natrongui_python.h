@@ -31,7 +31,7 @@ CLANG_DIAG_ON(uninitialized)
 // Conversion Includes - Primitive Types
 #include <QStringList>
 #include <qabstractitemmodel.h>
-#include <QString>
+#include <QtCore/QString>
 #include <signalmanager.h>
 #include <typeresolver.h>
 #include <QtConcurrentFilter>

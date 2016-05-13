@@ -37,11 +37,11 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
 #include <QTextBrowser>
 #include <QApplication>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QKeyEvent>
-#include <QMutex>
-#include <QString>
-#include <QTimer>
+#include <QtCore/QMutex>
+#include <QtCore/QString>
+#include <QtCore/QTimer>
 #include <QProgressBar>
 #include <QtCore/QTextStream>
 CLANG_DIAG_ON(deprecated)

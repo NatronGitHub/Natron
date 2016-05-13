@@ -32,7 +32,7 @@
 #include <QtCore/QSettings>
 #include <QtCore/QThreadPool>
 #include <QtCore/QThread>
-#include <QTextStream>
+#include <QtCore/QTextStream>
 
 #ifdef WINDOWS
 #include <tchar.h>

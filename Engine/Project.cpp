@@ -50,12 +50,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
-#if QT_VERSION >= 0x050000
-#include <QtConcurrent/QtConcurrentRun>
-#else
-#include <QtCore/QtConcurrentRun>
-#endif
-
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTimer>
 #include <QtCore/QThreadPool>
@@ -65,6 +59,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QDebug>
 #include <QtCore/QTextStream>
 #include <QtNetwork/QHostInfo>
+#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #ifdef __NATRON_WIN32__
 #include <ofxhUtilities.h> // for wideStringToString

@@ -39,7 +39,7 @@
 
 CLANG_DIAG_OFF(deprecated-declarations)
 #include <QObject>
-#include <QMutex>
+#include <QtCore/QMutex>
 #include <QMetaType>
 CLANG_DIAG_ON(deprecated-declarations)
 

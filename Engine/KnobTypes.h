@@ -34,7 +34,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QVector>
-#include <QMutex>
+#include <QtCore/QMutex>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"

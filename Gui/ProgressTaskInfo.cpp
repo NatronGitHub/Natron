@@ -32,10 +32,10 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QProgressBar>
 #include <QApplication>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QProgressBar>
 #include <QHBoxLayout>
 CLANG_DIAG_ON(deprecated)

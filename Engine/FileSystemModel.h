@@ -31,7 +31,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
-#include <QThread>
+#include <QtCore/QThread>
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QDir>
 

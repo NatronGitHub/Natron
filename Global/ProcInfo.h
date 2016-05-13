@@ -21,8 +21,8 @@
 
 #include "../Global/Macros.h"
 
-#include <QProcess>
-#include <QString>
+#include <QtCore/QProcess>
+#include <QtCore/QString>
 
 #ifdef __NATRON_OSX__
 #include <CoreFoundation/CoreFoundation.h>

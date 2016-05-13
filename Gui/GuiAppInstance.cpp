@@ -26,10 +26,10 @@
 
 #include <stdexcept>
 
-#include <QDir>
+#include <QtCore/QDir>
 #include <QSettings>
-#include <QMutex>
-#include <QCoreApplication>
+#include <QtCore/QMutex>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"

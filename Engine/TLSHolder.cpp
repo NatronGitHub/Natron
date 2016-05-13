@@ -34,9 +34,9 @@
 #include "Engine/Project.h"
 #include "Engine/ThreadPool.h"
 
-#include <QWaitCondition>
-#include <QThread>
-#include <QDebug>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QThread>
+#include <QtCore/QDebug>
 
 NATRON_NAMESPACE_ENTER;
 

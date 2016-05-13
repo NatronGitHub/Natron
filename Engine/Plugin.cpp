@@ -27,7 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QMutex>
+#include <QtCore/QMutex>
 
 #include "Engine/AppManager.h"
 #include "Engine/LibraryBinary.h"

@@ -30,15 +30,15 @@
 #include <stdexcept>
 
 #include <QtCore/QTextStream>
-#include <QWaitCondition>
-#include <QMutex>
-#include <QCoreApplication>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QMutex>
+#include <QtCore/QCoreApplication>
 #include <QAction>
 #include <QSettings>
-#include <QDebug>
-#include <QThread>
+#include <QtCore/QDebug>
+#include <QtCore/QThread>
 #include <QCheckBox>
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QTextEdit>
 
 

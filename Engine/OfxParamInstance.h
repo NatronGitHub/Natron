@@ -36,7 +36,7 @@
 #endif
 CLANG_DIAG_OFF(deprecated)
 #include <QStringList>
-#include <QMutex>
+#include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
 
 

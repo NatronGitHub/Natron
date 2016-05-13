@@ -29,7 +29,7 @@
 #include <set>
 #include <map>
 #include <list>
-#include <QString>
+#include <QtCore/QString>
 #include <QStringList>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)

@@ -26,10 +26,10 @@
 
 #include <stdexcept>
 
-#include <QThread>
-#include <QCoreApplication>
+#include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
 #include <QMouseEvent>
-#include <QByteArray>
+#include <QtCore/QByteArray>
 
 #include "Gui/KnobGui.h"
 #include "Gui/QtEnumConvert.h"

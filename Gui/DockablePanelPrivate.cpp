@@ -34,7 +34,7 @@
 
 #include <QGridLayout>
 #include <QUndoStack>
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QScrollArea>
 #include <QApplication>
 #include <QStyle>

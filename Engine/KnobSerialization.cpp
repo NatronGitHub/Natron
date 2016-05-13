@@ -1,4 +1,3 @@
-
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
  * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
@@ -29,7 +28,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/Knob.h"
 #include "Engine/Curve.h"

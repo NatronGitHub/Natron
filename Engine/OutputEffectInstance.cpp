@@ -31,16 +31,11 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
-
-#if QT_VERSION >= 0x050000
-#include <QtConcurrent/QtConcurrentRun>
-#else
-#include <QtCore/QtConcurrentRun>
-#endif
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

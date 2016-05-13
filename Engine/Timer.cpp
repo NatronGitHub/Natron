@@ -30,7 +30,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QMutexLocker>
+#include <QtCore/QMutex>
+#include <QtCore/QMutexLocker>
 
 #include "Global/GlobalDefines.h"
 

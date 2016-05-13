@@ -24,7 +24,7 @@
 #define Q_HTTP_SERVER_FWD
 
 #include <QHash>
-#include <QString>
+#include <QtCore/QString>
 
 /*!
  * A map of request or response headers

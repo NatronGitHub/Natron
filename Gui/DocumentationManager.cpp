@@ -24,8 +24,8 @@
 
 #include "DocumentationManager.h"
 
-#include <QFile>
-#include <QFileInfo>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QVector>
 
 #include <iostream>

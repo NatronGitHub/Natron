@@ -27,7 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Project.h"

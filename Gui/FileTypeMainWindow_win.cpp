@@ -47,8 +47,8 @@
 #include <windows.h>
 #include <QMessageBox>
 #include <QApplication>
-#include <QDir>
-#include <QFileInfo>
+#include <QtCore/QDir>
+#include <QtCore/QFileInfo>
 #include <QRegExp>
 
 NATRON_NAMESPACE_ENTER;

@@ -23,9 +23,9 @@
 #include <iostream>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
-#include <QDir>
+#include <QtCore/QDir>
 #include <QStringList>
-#include <QDebug>
+#include <QtCore/QDebug>
 
 NATRON_NAMESPACE_ENTER;
 

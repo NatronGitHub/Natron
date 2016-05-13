@@ -51,8 +51,8 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtOpenGL/QGLWidget>
 CLANG_DIAG_ON(deprecated)
-#include <QPointF>
-#include <QThread>
+#include <QtCore/QPointF>
+#include <QtCore/QThread>
 #include <QFont>
 #include <QColor>
 #include <QApplication>

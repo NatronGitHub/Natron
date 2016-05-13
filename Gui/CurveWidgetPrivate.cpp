@@ -30,7 +30,7 @@
 
 #include <QtCore/QThread>
 #include <QApplication>
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/Bezier.h"
 #include "Engine/TimeLine.h"

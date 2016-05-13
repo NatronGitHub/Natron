@@ -34,7 +34,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"

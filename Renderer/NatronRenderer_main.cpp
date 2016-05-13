@@ -26,7 +26,7 @@
 #include <cstdlib> // exit
 #include <iostream>
 
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"

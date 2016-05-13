@@ -27,10 +27,10 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
-#include <QProcess>
-#include <QThread>
+#include <QtCore/QProcess>
+#include <QtCore/QThread>
 #include <QStringList>
-#include <QString>
+#include <QtCore/QString>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 CLANG_DIAG_ON(deprecated)

@@ -39,7 +39,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QMouseEvent>
-#include <QString>
+#include <QtCore/QString>
 #include <QAction>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)

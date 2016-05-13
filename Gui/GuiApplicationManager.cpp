@@ -36,7 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPixmapCache>
 #include <QApplication>
 #include <QFontDatabase>
-#include <QtConcurrentRun>
+#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

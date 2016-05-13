@@ -33,7 +33,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QItemSelection>
-#include <QDebug>
+#include <QtCore/QDebug>
 
 
 #include "Engine/Settings.h"

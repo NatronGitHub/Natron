@@ -44,7 +44,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QMimeData>
 #include <QImage>
 #include <QPainter>
-#include <QByteArray>
+#include <QtCore/QByteArray>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

@@ -30,7 +30,7 @@
 
 #include <QtCore/QStringList>
 #include <QtCore/QMutexLocker>
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Transform.h"

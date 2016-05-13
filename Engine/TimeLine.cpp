@@ -28,8 +28,8 @@
 #include <stdexcept>
 
 #ifndef NDEBUG
-#include <QThread>
-#include <QCoreApplication>
+#include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
 #endif
 
 #include "Engine/Project.h"

@@ -30,9 +30,9 @@
 #include <stdexcept>
 
 #include <QtCore/QDebug>
-#include <QByteArray>
-#include <QReadWriteLock>
-#include <QPointF>
+#include <QtCore/QByteArray>
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QPointF>
 
 
 #include "Global/Macros.h"

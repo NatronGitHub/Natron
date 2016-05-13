@@ -33,7 +33,7 @@
 #endif
 
 // Qt includes
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QtEvents>
 #include <QTreeWidget>
 #include <QUndoStack>

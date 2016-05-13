@@ -25,7 +25,7 @@
 
 #include "BaseTest.h"
 
-#include <QFile>
+#include <QtCore/QFile>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"

@@ -30,7 +30,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
-#include <QMutex>
+#include <QtCore/QMutex>
 
 #include "Engine/Variant.h"
 #include "Engine/Knob.h"

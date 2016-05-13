@@ -30,8 +30,8 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsTextItem>
-#include <QCoreApplication>
-#include <QThread>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

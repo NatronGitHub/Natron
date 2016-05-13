@@ -29,11 +29,13 @@
 
 #include <list>
 #include <vector>
-#include <QPointF>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
+
+#include <QtCore/QPointF>
 #include <QUndoCommand>
 
 #include "Global/GlobalDefines.h"

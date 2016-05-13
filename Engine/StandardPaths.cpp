@@ -27,9 +27,9 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QCoreApplication>
-#include <QDir>
-#include <QString>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
+#include <QtCore/QString>
 #if QT_VERSION < 0x050000
 
 #else
@@ -52,7 +52,7 @@
 #define CSIDL_MYMUSIC 13
 #define CSIDL_MYVIDEO 14
 #endif
-#include <QFileInfo>
+#include <QtCore/QFileInfo>
 #elif defined(__NATRON_LINUX__)
 #include <cerrno>
 #include <unistd.h>

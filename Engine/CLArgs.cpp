@@ -29,9 +29,9 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QDebug>
-#include <QFile>
-#include <QFileInfo>
+#include <QtCore/QDebug>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 
 #include "Global/GitVersion.h"
 #include "Global/QtCompat.h"

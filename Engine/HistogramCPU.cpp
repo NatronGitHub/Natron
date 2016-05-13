@@ -28,8 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QMutex>
-#include <QWaitCondition>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 
 #include "Engine/Image.h"
 
