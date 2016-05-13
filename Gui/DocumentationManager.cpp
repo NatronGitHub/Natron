@@ -129,19 +129,6 @@ DocumentationManager::handler(QHttpRequest *req,
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {
                                 QString html = node->makeHTMLDocumentation(false);
-                                /*QFileInfo moreinfo(docDir+QString::fromUtf8("_static/plugins/")+pluginID+QString::fromUtf8(".html"));
-                                   /// TODO also add actual plugin html from it's folder
-                                   if (moreinfo.exists()) {
-                                    QString morehtml;
-                                    QFile moreinfoFile(moreinfo.absoluteFilePath());
-                                    if (moreinfoFile.open(QIODevice::Text|QIODevice::ReadOnly)) {
-                                        morehtml = QString::fromUtf8(moreinfoFile.readAll());
-                                        moreinfoFile.close();
-                                    }
-                                    if (!morehtml.isEmpty()) {
-                                        html.replace(QString::fromUtf8("<!--ADD_MORE_HERE-->"),morehtml);
-                                    }
-                                   }*/
                                 html.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
                                 html = parser(html, docDir);
                                 body = html.toUtf8();
@@ -268,11 +255,7 @@ DocumentationManager::handler(QHttpRequest *req,
         if ( staticFile.open(QIODevice::ReadOnly) ) {
             if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
                 QString input = QString::fromUtf8( staticFile.readAll() );
-                if ( input.contains( QString::fromUtf8("http://sphinx.pocoo.org/") ) && !input.contains( QString::fromUtf8("mainMenu") ) ) {
-                    body = parser(input, docDir).toUtf8();
-                } else {
-                    body = input.toUtf8();
-                }
+                body = parser(input, docDir).toUtf8();
             } else {
                 body = staticFile.readAll();
             }
@@ -313,11 +296,27 @@ DocumentationManager::parser(QString html,
 {
     QString result = html;
 
+    bool plainBody = false;
+
+    // sphinx compat
+    if (result.contains(QString::fromUtf8("<body>"))) { // 1.3 and lower
+        plainBody = true;
+    }
+    else if (result.contains(QString::fromUtf8("<body role=\"document\">"))) { // 1.4+
+        plainBody = false;
+    }
+
     // get static menu from index.html and make a header+menu
     QFile indexFile( path + QString::fromUtf8("/index.html") );
     QString menuHTML;
 
-    menuHTML.append( QString::fromUtf8("<body>\n") );
+    if (plainBody) {
+        menuHTML.append( QString::fromUtf8("<body>\n") );
+    }
+    else {
+        menuHTML.append( QString::fromUtf8("<body role=\"document\">") );
+    }
+
     menuHTML.append( QString::fromUtf8("<div id=\"header\">\n<a href=\"/\"><div id=\"logo\"></div></a>\n") );
     menuHTML.append( QString::fromUtf8("<div id=\"search\">\n<form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form>\n</div>\n") );
     menuHTML.append( QString::fromUtf8("<div id=\"mainMenu\">\n<ul>\n") );
@@ -352,44 +351,12 @@ DocumentationManager::parser(QString html,
         menuHTML.append( QString::fromUtf8("</ul></div></div>") );
     }
 
-    // add search
-    //menuHTML.append( QString::fromUtf8("<div id=\"search\"><form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form></div>") );
-
-    // preferences
-    /*boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-       QString prefsHTML = settings->makeHTMLDocumentation(true, false);
-       menuHTML.append(prefsHTML);
-
-       /// TODO probably a better way to get categories...
-       QStringList groups;
-       std::list<std::string> pluginIDs = appPTR->getPluginIDs();
-       for (std::list<std::string>::iterator it=pluginIDs.begin(); it != pluginIDs.end(); ++it) {
-        Plugin* plugin = 0;
-        QString pluginID = QString::fromUtf8(it->c_str());
-        try {
-            plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-        }
-        catch (const std::exception& e) {
-            std::cerr << e.what() << std::endl;
-        }
-        if (plugin) {
-            QStringList groupList = plugin->getGrouping();
-            groups << groupList.at(0);
-        }
-       }
-       groups.removeDuplicates();
-       QString refHTML;
-       refHTML.append(QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_group.html\">Reference Guide</a>\n"));
-       refHTML.append(QString::fromUtf8("<ul>\n"));
-       for (int i = 0; i < groups.size(); ++i) {
-        refHTML.append(QString::fromUtf8("\n<li class='toctree-l2'><a href='/_group.html?id=")+groups.at(i)+QString::fromUtf8("'>")+groups.at(i)+QString::fromUtf8("</a></li>"));
-       }
-       refHTML.append(QString::fromUtf8("\n</ul>\n</li>\n</ul>\n"));*/
-
-    // make html
-    //menuHTML.append(refHTML);
-
-    result.replace(QString::fromUtf8("<body>"), menuHTML);
+    if (plainBody) {
+        result.replace(QString::fromUtf8("<body>"), menuHTML);
+    }
+    else {
+        result.replace(QString::fromUtf8("<body role=\"document\">"), menuHTML);
+    }
 
     // replace "Natron 2.0 documentation" with current version
     result.replace( QString::fromUtf8("Natron 2.0 documentation"), QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8(" ") + QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8(" documentation") );
