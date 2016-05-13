@@ -29,7 +29,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 #include <QMenu>
-#include <qalgorithms.h>
+#include <QtCore/QtAlgorithms>
 CLANG_DIAG_ON(deprecated)
 
 #include <boost/weak_ptr.hpp>

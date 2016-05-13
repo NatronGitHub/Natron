@@ -49,7 +49,7 @@
 #include <QApplication>
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
-#include <QRegExp>
+#include <QtCore/QRegExp>
 
 NATRON_NAMESPACE_ENTER;
 

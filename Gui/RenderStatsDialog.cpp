@@ -32,7 +32,7 @@
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QItemSelectionModel>
-#include <QRegExp>
+#include <QtCore/QRegExp>
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"

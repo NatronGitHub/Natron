@@ -35,7 +35,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QToolBar>
 #include <QWidget>
 #include <QAction>
-#include <QRectF>
+#include <QtCore/QRectF>
 #include <QtCore/QLineF>
 #include <QKeyEvent>
 #include <QHBoxLayout>

@@ -37,7 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QListView>
 #include <QSettings>
 #include <QDesktopWidget>
-#include <QRegExp>
+#include <QtCore/QRegExp>
 #include <QApplication>
 #include <QStringListModel>
 CLANG_DIAG_ON(deprecated)
