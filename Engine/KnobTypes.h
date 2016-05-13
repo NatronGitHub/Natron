@@ -33,8 +33,9 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QVector>
-#include <QMutex>
+#include <QtCore/QVector>
+#include <QtCore/QMutex>
+#include <QtCore/QString>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
@@ -73,6 +74,11 @@ public:
 
     KnobInt(KnobHolder* holder,
             const std::string &label,
+            int dimension,
+            bool declaredByPlugin);
+
+    KnobInt(KnobHolder* holder,
+            const QString &label,
             int dimension,
             bool declaredByPlugin);
 
@@ -129,6 +135,11 @@ public:
              int dimension,
              bool declaredByPlugin);
 
+    KnobBool(KnobHolder* holder,
+             const QString &label,
+             int dimension,
+             bool declaredByPlugin);
+
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
     /// @see Curve::getValueAt() for the animation code.
@@ -176,6 +187,11 @@ public:
 
     KnobDouble(KnobHolder* holder,
                const std::string &label,
+               int dimension,
+               bool declaredByPlugin );
+
+    KnobDouble(KnobHolder* holder,
+               const QString &label,
                int dimension,
                bool declaredByPlugin );
 
@@ -368,6 +384,11 @@ public:
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
+
+    KnobButton(KnobHolder* holder,
+               const QString &label,
+               int dimension,
+               bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
     void setAsRenderButton()
@@ -434,6 +455,11 @@ public:
 
     KnobChoice(KnobHolder* holder,
                const std::string &label,
+               int dimension,
+               bool declaredByPlugin);
+
+    KnobChoice(KnobHolder* holder,
+               const QString &label,
                int dimension,
                bool declaredByPlugin);
 
@@ -565,6 +591,11 @@ public:
                   const std::string &label,
                   int dimension,
                   bool declaredByPlugin);
+
+    KnobSeparator(KnobHolder* holder,
+                  const QString &label,
+                  int dimension,
+                  bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
 private:
@@ -604,6 +635,11 @@ public:
 
     KnobColor(KnobHolder* holder,
               const std::string &label,
+              int dimension,
+              bool declaredByPlugin);
+
+    KnobColor(KnobHolder* holder,
+              const QString &label,
               int dimension,
               bool declaredByPlugin);
     static const std::string & typeNameStatic();
@@ -671,6 +707,11 @@ public:
 
     KnobString(KnobHolder* holder,
                const std::string &label,
+               int dimension,
+               bool declaredByPlugin);
+
+    KnobString(KnobHolder* holder,
+               const QString &label,
                int dimension,
                bool declaredByPlugin);
 
@@ -780,6 +821,11 @@ public:
               int dimension,
               bool declaredByPlugin);
 
+    KnobGroup(KnobHolder* holder,
+              const QString &label,
+              int dimension,
+              bool declaredByPlugin);
+
     void addKnob(const KnobPtr& k);
     void removeKnob(KnobI* k);
 
@@ -827,6 +873,11 @@ public:
 
     KnobPage(KnobHolder* holder,
              const std::string &label,
+             int dimension,
+             bool declaredByPlugin);
+
+    KnobPage(KnobHolder* holder,
+             const QString &label,
              int dimension,
              bool declaredByPlugin);
 
@@ -879,6 +930,11 @@ public:
 
     KnobParametric(KnobHolder* holder,
                    const std::string &label,
+                   int dimension,
+                   bool declaredByPlugin );
+
+    KnobParametric(KnobHolder* holder,
+                   const QString &label,
                    int dimension,
                    bool declaredByPlugin );
 
@@ -978,10 +1034,13 @@ class KnobTable
     : public Knob<std::string>
 {
 public:
-
-
     KnobTable(KnobHolder* holder,
               const std::string &description,
+              int dimension,
+              bool declaredByPlugin);
+
+    KnobTable(KnobHolder* holder,
+              const QString &description,
               int dimension,
               bool declaredByPlugin);
 
@@ -1063,11 +1122,11 @@ public:
     virtual std::string getColumnLabel(int col) const OVERRIDE FINAL
     {
         if (col == 0) {
-            return "Name";
+            return QObject::tr("Name").toStdString();
         } else if (col == 1) {
-            return "Channels";
+            return QObject::tr("Channels").toStdString();
         } else {
-            return "";
+            return std::string();
         }
     }
 

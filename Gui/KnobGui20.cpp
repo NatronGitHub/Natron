@@ -728,18 +728,18 @@ KnobGui::refreshKnobWarningIndicatorVisibility()
     if (!_imp->warningIndicator) {
         return;
     }
-    QString fullTooltip;
+    QString fullToolTip;
     bool hasWarning = false;
     for (std::map<KnobGui::KnobWarningEnum, QString>::iterator it = _imp->warningsMapping.begin(); it != _imp->warningsMapping.end(); ++it) {
         if ( !it->second.isEmpty() ) {
             hasWarning = true;
-            fullTooltip += QString::fromUtf8("<p>");
-            fullTooltip += it->second;
-            fullTooltip += QString::fromUtf8("</p>");
+            fullToolTip += QString::fromUtf8("<p>");
+            fullToolTip += it->second;
+            fullToolTip += QString::fromUtf8("</p>");
         }
     }
     if (hasWarning) {
-        _imp->warningIndicator->setToolTip(fullTooltip);
+        _imp->warningIndicator->setToolTip(fullToolTip);
     }
     _imp->warningIndicator->setVisible(hasWarning);
 }
@@ -766,7 +766,7 @@ KnobGui::onExprChanged(int dimension)
 
         if (_imp->warningIndicator) {
             bool invalid = false;
-            QString fullErrTooltip;
+            QString fullErrToolTip;
             int dims = knob->getDimension();
             for (int i = 0; i < dims; ++i) {
                 std::string err;
@@ -774,12 +774,12 @@ KnobGui::onExprChanged(int dimension)
                     invalid = true;
                 }
                 if ( (dims > 1) && invalid ) {
-                    fullErrTooltip += QString::fromUtf8("<p><b>");
-                    fullErrTooltip += QString::fromUtf8( knob->getDimensionName(i).c_str() );
-                    fullErrTooltip += QString::fromUtf8("</b></p>");
+                    fullErrToolTip += QString::fromUtf8("<p><b>");
+                    fullErrToolTip += QString::fromUtf8( knob->getDimensionName(i).c_str() );
+                    fullErrToolTip += QString::fromUtf8("</b></p>");
                 }
                 if ( !err.empty() ) {
-                    fullErrTooltip += QString::fromUtf8( err.c_str() );
+                    fullErrToolTip += QString::fromUtf8( err.c_str() );
                 }
             }
             if (invalid) {
@@ -787,9 +787,9 @@ KnobGui::onExprChanged(int dimension)
                 toPrepend += QString::fromUtf8("<p>");
                 toPrepend += QObject::tr("Invalid expression(s), value returned is the underlying curve:");
                 toPrepend += QString::fromUtf8("</p>");
-                fullErrTooltip.prepend(toPrepend);
+                fullErrToolTip.prepend(toPrepend);
 
-                setWarningValue(eKnobWarningExpressionInvalid, fullErrTooltip);
+                setWarningValue(eKnobWarningExpressionInvalid, fullErrToolTip);
             } else {
                 setWarningValue( eKnobWarningExpressionInvalid, QString() );
             }

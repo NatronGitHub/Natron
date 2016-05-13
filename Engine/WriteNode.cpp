@@ -787,14 +787,14 @@ WriteNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
 void
 WriteNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
 
 
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(this, kNatronWriteParamFrameStepLabel, 1, false);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(this, tr(kNatronWriteParamFrameStepLabel), 1, false);
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
-    frameIncrKnob->setHintToolTip(kNatronWriteParamFrameStepHint);
+    frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
@@ -816,25 +816,25 @@ WriteNode::initializeKnobs()
     _imp->writeNodeKnobs.push_back(frameIncrKnob);
 
 
-    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>(this, "Encoder");
+    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>( this, tr("Encoder") );
     pluginSelector->setAnimationEnabled(false);
     pluginSelector->setName(kNatronWriteNodeParamEncodingPluginChoice);
-    pluginSelector->setHintToolTip("Select the internal encoder plug-in used for this file format. By default this uses "
-                                   "the plug-in selected for this file extension in the Preferences of Natron");
+    pluginSelector->setHintToolTip( tr("Select the internal encoder plug-in used for this file format. By default this uses "
+                                       "the plug-in selected for this file extension in the Preferences.") );
     pluginSelector->setEvaluateOnChange(false);
     _imp->pluginSelectorKnob = pluginSelector;
     controlpage->addKnob(pluginSelector);
 
     _imp->writeNodeKnobs.push_back(pluginSelector);
 
-    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>(this, "Encoder Options");
+    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>( this, tr("Encoder Options") );
     separator->setName("encoderOptionsSeparator");
-    separator->setHintToolTip("Below can be found parameters that are specific to the Writer plug-in.");
+    separator->setHintToolTip( tr("Below can be found parameters that are specific to the Writer plug-in.") );
     controlpage->addKnob(separator);
     _imp->separatorKnob = separator;
     _imp->writeNodeKnobs.push_back(separator);
 
-    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>(this, "PluginID");
+    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>( this, tr("PluginID") );
     pluginID->setAnimationEnabled(false);
     pluginID->setName(kNatronWriteNodeParamEncodingPluginID);
     pluginID->setSecretByDefault(true);

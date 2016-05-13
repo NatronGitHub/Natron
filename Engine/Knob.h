@@ -36,6 +36,7 @@
 
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
+#include <QtCore/QString>
 
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
@@ -949,6 +950,16 @@ public:
      **/
     virtual void setHintToolTip(const std::string & hint) = 0;
 
+    void setHintToolTip(const QString & hint)
+    {
+        setHintToolTip( hint.toStdString() );
+    }
+
+    //void setHintToolTip(const char* hint)
+    //{
+    //    setHintToolTip(std::string(hint));
+    //}
+
     /**
      * @brief Get the tooltip text.
      **/
@@ -1366,6 +1377,9 @@ public:
     virtual void setIsMetadataSlave(bool slave) OVERRIDE FINAL;
     virtual bool getIsMetadataSlave() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintToolTip(const std::string & hint) OVERRIDE FINAL;
+    void setHintToolTip(const QString & hint) { setHintToolTip( hint.toStdString() ); }
+
+    //void setHintToolTip(const char* hint) { setHintToolTip(std::string(hint)); }
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
     virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;

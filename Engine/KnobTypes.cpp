@@ -78,6 +78,19 @@ KnobInt::KnobInt(KnobHolder* holder,
     }
 }
 
+KnobInt::KnobInt(KnobHolder* holder,
+                 const QString &label,
+                 int dimension,
+                 bool declaredByPlugin)
+    : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
+    , _increments(dimension)
+    , _disableSlider(false)
+{
+    for (int i = 0; i < dimension; ++i) {
+        _increments[i] = 1;
+    }
+}
+
 void
 KnobInt::disableSlider()
 {

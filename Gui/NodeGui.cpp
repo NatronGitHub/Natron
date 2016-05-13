@@ -2414,10 +2414,10 @@ NodeGui::onKnobsLinksChanged()
                 k.dimensions.insert(it->dimension);
                 k.linkInValid = 0;
                 foundGuiLink->second.knobs.push_back(k);
-                QString fullTooltip;
+                QString fullToolTip;
                 for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
                     QString tt = makeLinkString( masterNode.get(), it2->master.lock().get(), node.get(), it2->slave.lock().get() );
-                    fullTooltip.append(tt);
+                    fullToolTip.append(tt);
                 }
             } else {
                 found->dimensions.insert(it->dimension);

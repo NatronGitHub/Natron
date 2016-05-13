@@ -196,11 +196,11 @@ PrecompNode::initializeKnobs()
         _imp->app = appPTR->newBackgroundInstance(args, true);
     }
 
-    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>(this, "Controls");
-    boost::shared_ptr<KnobFile> filename = AppManager::createKnob<KnobFile>(this, "Project Filename (." NATRON_PROJECT_FILE_EXT ")");
+    boost::shared_ptr<KnobPage> mainPage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    boost::shared_ptr<KnobFile> filename = AppManager::createKnob<KnobFile>( this, tr("Project Filename (.%1)").arg( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) );
 
     filename->setName("projectFilename");
-    filename->setHintToolTip("The absolute file path of the project to use as a pre-comp");
+    filename->setHintToolTip( tr("The absolute file path of the project to use as a pre-comp.").toStdString() );
     filename->setAnimationEnabled(false);
     filename->setAddNewLine(false);
     mainPage->addKnob(filename);
@@ -213,37 +213,37 @@ PrecompNode::initializeKnobs()
        mainPage->addKnob(reload);
        _imp->reloadProjectKnob = reload;*/
 
-    boost::shared_ptr<KnobButton> edit = AppManager::createKnob<KnobButton>(this, "Edit Project...");
+    boost::shared_ptr<KnobButton> edit = AppManager::createKnob<KnobButton>( this, tr("Edit Project...") );
     edit->setName("editProject");
     edit->setEvaluateOnChange(false);
-    edit->setHintToolTip("Opens the specified project in a new " NATRON_APPLICATION_NAME " instance");
+    edit->setHintToolTip( tr("Opens the specified project in a new %1 instance").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
     mainPage->addKnob(edit);
     _imp->editProjectKnob = edit;
 
-    boost::shared_ptr<KnobBool> enablePreRender = AppManager::createKnob<KnobBool>(this, "Pre-Render");
+    boost::shared_ptr<KnobBool> enablePreRender = AppManager::createKnob<KnobBool>( this, tr("Pre-Render") );
     enablePreRender->setName("preRender");
     enablePreRender->setAnimationEnabled(false);
     enablePreRender->setDefaultValue(true);
-    enablePreRender->setHintToolTip("When checked the output of this node will be the images read directly from what is rendered "
-                                    "by the node indicated by \"Write Node\". If no Write is selected, or if the rendered images do not exist "
-                                    "this node will have the behavior determined by the \"On Error\" parameter. "
-                                    "To pre-render images, select a write node, a frame-range and hit \"Render\".\n\n"
-                                    "When unchecked, this node will output the image rendered by the node indicated in the \"Output Node\" parameter "
-                                    "by rendering the full-tree of the sub-project. In that case no writing on disk will occur and the images will be "
-                                    "cached with the same policy as if the nodes were used in the active project in the first place.");
+    enablePreRender->setHintToolTip( tr("When checked the output of this node will be the images read directly from what is rendered "
+                                        "by the node indicated by \"Write Node\". If no Write is selected, or if the rendered images do not exist "
+                                        "this node will have the behavior determined by the \"On Error\" parameter. "
+                                        "To pre-render images, select a write node, a frame-range and hit \"Render\".\n\n"
+                                        "When unchecked, this node will output the image rendered by the node indicated in the \"Output Node\" parameter "
+                                        "by rendering the full-tree of the sub-project. In that case no writing on disk will occur and the images will be "
+                                        "cached with the same policy as if the nodes were used in the active project in the first place.").toStdString() );
     mainPage->addKnob(enablePreRender);
     _imp->enablePreRenderKnob = enablePreRender;
 
-    boost::shared_ptr<KnobGroup> renderGroup = AppManager::createKnob<KnobGroup>(this, "Pre-Render Settings");
+    boost::shared_ptr<KnobGroup> renderGroup = AppManager::createKnob<KnobGroup>( this, tr("Pre-Render Settings") );
     renderGroup->setName("preRenderSettings");
     renderGroup->setDefaultValue(true);
     mainPage->addKnob(renderGroup);
     _imp->preRenderGroupKnob = renderGroup;
 
-    boost::shared_ptr<KnobChoice> writeChoice = AppManager::createKnob<KnobChoice>(this, "Write Node");
+    boost::shared_ptr<KnobChoice> writeChoice = AppManager::createKnob<KnobChoice>( this, tr("Write Node") );
     writeChoice->setName("writeNode");
-    writeChoice->setHintToolTip("Choose here the Write node in the pre-comp from which to render images then specify a frame-range and "
-                                "hit the \"Render\" button");
+    writeChoice->setHintToolTip( tr("Choose here the Write node in the pre-comp from which to render images then specify a frame-range and "
+                                    "hit the \"Render\" button.").toStdString() );
     writeChoice->setAnimationEnabled(false);
     {
         std::vector<std::string> choices;
@@ -254,40 +254,40 @@ PrecompNode::initializeKnobs()
     _imp->writeNodesKnob = writeChoice;
 
 
-    boost::shared_ptr<KnobInt> first = AppManager::createKnob<KnobInt>(this, "First-Frame");
+    boost::shared_ptr<KnobInt> first = AppManager::createKnob<KnobInt>( this, tr("First-Frame") );
     first->setName("first");
-    first->setHintToolTip("The first-frame to render");
+    first->setHintToolTip( tr("The first-frame to render") );
     first->setAnimationEnabled(false);
     first->setEvaluateOnChange(false);
     first->setAddNewLine(false);
     renderGroup->addKnob(first);
     _imp->firstFrameKnob = first;
 
-    boost::shared_ptr<KnobInt> last = AppManager::createKnob<KnobInt>(this, "Last-Frame");
+    boost::shared_ptr<KnobInt> last = AppManager::createKnob<KnobInt>( this, tr("Last-Frame") );
     last->setName("last");
-    last->setHintToolTip("The last-frame to render");
+    last->setHintToolTip( tr("The last-frame to render") );
     last->setAnimationEnabled(false);
     last->setEvaluateOnChange(false);
     last->setAddNewLine(false);
     renderGroup->addKnob(last);
     _imp->lastFrameKnob = last;
 
-    boost::shared_ptr<KnobChoice> error = AppManager::createKnob<KnobChoice>(this, "On Error");
+    boost::shared_ptr<KnobChoice> error = AppManager::createKnob<KnobChoice>( this, tr("On Error") );
     error->setName("onError");
-    error->setHintToolTip("Indicates the behavior when an image is missing from the render of the pre-comp project");
+    error->setHintToolTip( tr("Indicates the behavior when an image is missing from the render of the pre-comp project").toStdString() );
     error->setAnimationEnabled(false);
     {
         std::vector<std::string> choices, helps;
         choices.push_back("Load Previous");
-        helps.push_back("Loads the previous frame in the sequence");
+        helps.push_back( tr("Loads the previous frame in the sequence.").toStdString() );
         choices.push_back("Load Next");
-        helps.push_back("Loads the next frame in the sequence");
+        helps.push_back( tr("Loads the next frame in the sequence.").toStdString() );
         choices.push_back("Load Nearest");
-        helps.push_back("Loads the nearest frame in the sequence");
+        helps.push_back( tr("Loads the nearest frame in the sequence.").toStdString() );
         choices.push_back("Error");
-        helps.push_back("Fails the render");
+        helps.push_back( tr("Fails to render.").toStdString() );
         choices.push_back("Black");
-        helps.push_back("Black Image");
+        helps.push_back( tr("Black Image.").toStdString() );
 
         error->populateChoices(choices, helps);
     }
@@ -295,20 +295,20 @@ PrecompNode::initializeKnobs()
     renderGroup->addKnob(error);
     _imp->errorBehaviourKnbo = error;
 
-    boost::shared_ptr<KnobButton> renderBtn = AppManager::createKnob<KnobButton>(this, "Render");
+    boost::shared_ptr<KnobButton> renderBtn = AppManager::createKnob<KnobButton>( this, tr("Render") );
     renderBtn->setName("render");
     renderGroup->addKnob(renderBtn);
     _imp->preRenderKnob = renderBtn;
 
-    boost::shared_ptr<KnobString> outputNode = AppManager::createKnob<KnobString>(this, "Output Node");
+    boost::shared_ptr<KnobString> outputNode = AppManager::createKnob<KnobString>( this, tr("Output Node") );
     outputNode->setName("outputNode");
-    outputNode->setHintToolTip("The script-name of the node to use as output node in the tree of the pre-comp. This can be any node.");
+    outputNode->setHintToolTip( tr("The script-name of the node to use as output node in the tree of the pre-comp. This can be any node.").toStdString() );
     outputNode->setAnimationEnabled(false);
     outputNode->setSecretByDefault(true);
     mainPage->addKnob(outputNode);
     _imp->outputNodeNameKnob = outputNode;
 
-    boost::shared_ptr<KnobString> sublabel = AppManager::createKnob<KnobString>(this, "SubLabel");
+    boost::shared_ptr<KnobString> sublabel = AppManager::createKnob<KnobString>( this, tr("SubLabel") );
     sublabel->setName(kNatronOfxParamStringSublabelName);
     sublabel->setSecretByDefault(true);
     mainPage->addKnob(sublabel);

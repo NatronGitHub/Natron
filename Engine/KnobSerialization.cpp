@@ -92,31 +92,31 @@ KnobSerialization::createKnob(const std::string & typeName,
     KnobPtr ret;
 
     if ( typeName == KnobInt::typeNameStatic() ) {
-        ret.reset( new KnobInt(NULL, "", dimension, false) );
+        ret.reset( new KnobInt(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobBool::typeNameStatic() ) {
-        ret.reset( new KnobBool(NULL, "", dimension, false) );
+        ret.reset( new KnobBool(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobDouble::typeNameStatic() ) {
-        ret.reset( new KnobDouble(NULL, "", dimension, false) );
+        ret.reset( new KnobDouble(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobChoice::typeNameStatic() ) {
-        ret.reset( new KnobChoice(NULL, "", dimension, false) );
+        ret.reset( new KnobChoice(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobString::typeNameStatic() ) {
-        ret.reset( new KnobString(NULL, "", dimension, false) );
+        ret.reset( new KnobString(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobParametric::typeNameStatic() ) {
-        ret.reset( new KnobParametric(NULL, "", dimension, false) );
+        ret.reset( new KnobParametric(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobColor::typeNameStatic() ) {
-        ret.reset( new KnobColor(NULL, "", dimension, false) );
+        ret.reset( new KnobColor(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobPath::typeNameStatic() ) {
-        ret.reset( new KnobPath(NULL, "", dimension, false) );
+        ret.reset( new KnobPath(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobLayers::typeNameStatic() ) {
-        ret.reset( new KnobLayers(NULL, "", dimension, false) );
+        ret.reset( new KnobLayers(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobFile::typeNameStatic() ) {
-        ret.reset( new KnobFile(NULL, "", dimension, false) );
+        ret.reset( new KnobFile(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobOutputFile::typeNameStatic() ) {
-        ret.reset( new KnobOutputFile(NULL, "", dimension, false) );
+        ret.reset( new KnobOutputFile(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobButton::typeNameStatic() ) {
-        ret.reset( new KnobButton(NULL, "", dimension, false) );
+        ret.reset( new KnobButton(NULL, std::string(), dimension, false) );
     } else if ( typeName == KnobSeparator::typeNameStatic() ) {
-        ret.reset( new KnobSeparator(NULL, "", dimension, false) );
+        ret.reset( new KnobSeparator(NULL, std::string(), dimension, false) );
     }
 
     if (ret) {
