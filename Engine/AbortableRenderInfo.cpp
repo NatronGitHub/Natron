@@ -193,7 +193,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
     ss << std::endl;
 
     if ( appPTR->isBackground() ) {
-        std::cout << ss.str() << std::endl;
+        qDebug() << ss.str().c_str();
     } else {
         ss << tr("Would you like to kill these renders?").toStdString() << std::endl << std::endl;
         ss << tr("WARNING: Killing them may not work or may leave " NATRON_APPLICATION_NAME " in a bad state. The application may crash or freeze as a consequence of this. It is advised to restart " NATRON_APPLICATION_NAME " instead.").toStdString();
