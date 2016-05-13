@@ -3130,7 +3130,7 @@ void
 Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                      int renderScaleSupportPref)
 {
-    boost::shared_ptr<KnobBool> hideInputs = AppManager::createKnob<KnobBool>(_imp->effect.get(), "Hide inputs", 1, false);
+    boost::shared_ptr<KnobBool> hideInputs = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Hide inputs"), 1, false);
 
     hideInputs->setName("hideInputs");
     hideInputs->setDefaultValue(false);
@@ -3138,12 +3138,12 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     hideInputs->setAddNewLine(false);
     hideInputs->setIsPersistant(true);
     hideInputs->setEvaluateOnChange(false);
-    hideInputs->setHintToolTip( tr("When checked, the input arrows of the node in the nodegraph will be hidden").toStdString() );
+    hideInputs->setHintToolTip( tr("When checked, the input arrows of the node in the nodegraph will be hidden") );
     _imp->hideInputs = hideInputs;
     settingsPage->addKnob(hideInputs);
 
 
-    boost::shared_ptr<KnobBool> fCaching = AppManager::createKnob<KnobBool>(_imp->effect.get(), "Force caching", 1, false);
+    boost::shared_ptr<KnobBool> fCaching = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Force caching"), 1, false);
     fCaching->setName("forceCaching");
     fCaching->setDefaultValue(false);
     fCaching->setAnimationEnabled(false);
@@ -3151,11 +3151,11 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     fCaching->setIsPersistant(true);
     fCaching->setEvaluateOnChange(false);
     fCaching->setHintToolTip( tr("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
-                                 "images.").toStdString() );
+                                 "images.") );
     _imp->forceCaching = fCaching;
     settingsPage->addKnob(fCaching);
 
-    boost::shared_ptr<KnobBool> previewEnabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Preview").toStdString(), 1, false);
+    boost::shared_ptr<KnobBool> previewEnabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Preview"), 1, false);
     assert(previewEnabled);
     previewEnabled->setDefaultValue( makePreviewByDefault() );
     previewEnabled->setName(kEnablePreviewKnobName);
@@ -3163,22 +3163,22 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     previewEnabled->setAddNewLine(false);
     previewEnabled->setIsPersistant(false);
     previewEnabled->setEvaluateOnChange(false);
-    previewEnabled->setHintToolTip( tr("Whether to show a preview on the node box in the node-graph.").toStdString() );
+    previewEnabled->setHintToolTip( tr("Whether to show a preview on the node box in the node-graph.") );
     settingsPage->addKnob(previewEnabled);
     _imp->previewEnabledKnob = previewEnabled;
 
-    boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), "Disable", 1, false);
+    boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Disable"), 1, false);
     assert(disableNodeKnob);
     disableNodeKnob->setAnimationEnabled(false);
     disableNodeKnob->setDefaultValue(false);
     disableNodeKnob->setIsMetadataSlave(true);
     disableNodeKnob->setName(kDisableNodeKnobName);
     disableNodeKnob->setAddNewLine(false);
-    disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
+    disableNodeKnob->setHintToolTip( tr("When disabled, this node acts as a pass through.") );
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
 
-    boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream").toStdString(), 1, false);
+    boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
@@ -3188,14 +3188,14 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                                                                      "the most optimal resolution for the current viewer's viewport. Typically checking this "
                                                                      "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
                                                                      "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
-                                                                     "faster to render but will have to be recomputed when zooming in/out in the Viewer.").toStdString() );
+                                                                     "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
     if ( (renderScaleSupportPref == 0) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
         useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
 
-    boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
     knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
                                             "parameter change. Either define this function in the Script Editor "
                                             "or in the init.py script or even in the script of a Python group plug-in.\n"
@@ -3205,13 +3205,13 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                                             "because something internally triggered the change.\n"
                                             "- thisNode: The node holding the parameter\n"
                                             "- app: points to the current application instance\n"
-                                            "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString() );
+                                            "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)") );
     knobChangedCallback->setAnimationEnabled(false);
     knobChangedCallback->setName("onParamChanged");
     settingsPage->addKnob(knobChangedCallback);
     _imp->knobChangedCallback = knobChangedCallback;
 
-    boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback"), 1, false);
     inputChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called after "
                                              "each connection is changed for the inputs of the node. "
                                              "Either define this function in the Script Editor "
@@ -3221,7 +3221,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                                              "connected to the input by calling the getInput(...) function.\n"
                                              "- thisNode: The node holding the parameter\n"
                                              "- app: points to the current application instance\n"
-                                             "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString() );
+                                             "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)") );
 
     inputChangedCallback->setAnimationEnabled(false);
     inputChangedCallback->setName("onInputChanged");
@@ -3230,31 +3230,31 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
 
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGroup) {
-        boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), "After Node Created", 1, false);
+        boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After Node Created"), 1, false);
         onNodeCreated->setName("afterNodeCreated");
-        onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
-                                      "is created in the group. This will be called in addition to the After Node Created "
-                                      " callback of the project for the group node and all nodes within it (not recursively).\n"
-                                      "The boolean variable userEdited will be set to True if the node was created "
-                                      "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
-                                      "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
-                                      "- thisNode: the node which has just been created\n"
-                                      "- userEdited: a boolean indicating whether the node was created by user interaction or from "
-                                      "a script/project load/copy-paste\n"
-                                      "- app: points to the current application instance\n");
+        onNodeCreated->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
+                                          "is created in the group. This will be called in addition to the After Node Created "
+                                          " callback of the project for the group node and all nodes within it (not recursively).\n"
+                                          "The boolean variable userEdited will be set to True if the node was created "
+                                          "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
+                                          "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
+                                          "- thisNode: the node which has just been created\n"
+                                          "- userEdited: a boolean indicating whether the node was created by user interaction or from "
+                                          "a script/project load/copy-paste\n"
+                                          "- app: points to the current application instance.") );
         onNodeCreated->setAnimationEnabled(false);
         _imp->nodeCreatedCallback = onNodeCreated;
         settingsPage->addKnob(onNodeCreated);
 
-        boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), "Before Node Removal", 1, false);
+        boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before Node Removal"), 1, false);
         onNodeDeleted->setName("beforeNodeRemoval");
-        onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
-                                      "is about to be deleted. This will be called in addition to the Before Node Removal "
-                                      " callback of the project for the group node and all nodes within it (not recursively).\n"
-                                      "This function will not be called when the project is closing.\n"
-                                      "The signature of the callback is: callback(thisNode, app) where:\n"
-                                      "- thisNode: the node about to be deleted\n"
-                                      "- app: points to the current application instance\n");
+        onNodeDeleted->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
+                                          "is about to be deleted. This will be called in addition to the Before Node Removal "
+                                          " callback of the project for the group node and all nodes within it (not recursively).\n"
+                                          "This function will not be called when the project is closing.\n"
+                                          "The signature of the callback is: callback(thisNode, app) where:\n"
+                                          "- thisNode: the node about to be deleted\n"
+                                          "- app: points to the current application instance.") );
         onNodeDeleted->setAnimationEnabled(false);
         _imp->nodeRemovalCallback = onNodeDeleted;
         settingsPage->addKnob(onNodeDeleted);
@@ -3269,19 +3269,19 @@ Node::createInfoPage()
     infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
     _imp->infoPage = infoPage;
 
-    boost::shared_ptr<KnobString> nodeInfos = AppManager::createKnob<KnobString>(_imp->effect.get(), "", 1, false);
+    boost::shared_ptr<KnobString> nodeInfos = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
     nodeInfos->setName("nodeInfos");
     nodeInfos->setAnimationEnabled(false);
     nodeInfos->setIsPersistant(false);
     nodeInfos->setAsMultiLine();
     nodeInfos->setAsCustomHTMLText(true);
     nodeInfos->setEvaluateOnChange(false);
-    nodeInfos->setHintToolTip( tr("Input and output informations, press Refresh to update them with current values").toStdString() );
+    nodeInfos->setHintToolTip( tr("Input and output informations, press Refresh to update them with current values") );
     infoPage->addKnob(nodeInfos);
     _imp->nodeInfos = nodeInfos;
 
 
-    boost::shared_ptr<KnobButton> refreshInfoButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Refresh Info").toStdString(), 1, false);
+    boost::shared_ptr<KnobButton> refreshInfoButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Refresh Info"), 1, false);
     refreshInfoButton->setName("refreshButton");
     refreshInfoButton->setEvaluateOnChange(false);
     infoPage->addKnob(refreshInfoButton);
@@ -3291,8 +3291,8 @@ Node::createInfoPage()
 void
 Node::createPythonPage()
 {
-    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr("Python").toStdString(), 1, false);
-    boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render").toStdString(), 1, false);
+    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr("Python"), 1, false);
+    boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render"), 1, false);
 
     beforeFrameRender->setName("beforeFrameRender");
     beforeFrameRender->setAnimationEnabled(false);
@@ -3301,22 +3301,22 @@ Node::createPythonPage()
                                           "The signature of the callback is: callback(frame, thisNode, app) where:\n"
                                           "- frame: the frame to be rendered\n"
                                           "- thisNode: points to the writer node\n"
-                                          "- app: points to the current application instance").toStdString() );
+                                          "- app: points to the current application instance") );
     pythonPage->addKnob(beforeFrameRender);
     _imp->beforeFrameRender = beforeFrameRender;
 
-    boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render"), 1, false);
     beforeRender->setName("beforeRender");
     beforeRender->setAnimationEnabled(false);
     beforeRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
                                      "starting rendering.\n "
                                      "The signature of the callback is: callback(thisNode, app) where:\n"
                                      "- thisNode: points to the writer node\n"
-                                     "- app: points to the current application instance").toStdString() );
+                                     "- app: points to the current application instance") );
     pythonPage->addKnob(beforeRender);
     _imp->beforeRender = beforeRender;
 
-    boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render"), 1, false);
     afterFrameRender->setName("afterFrameRender");
     afterFrameRender->setAnimationEnabled(false);
     afterFrameRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
@@ -3324,11 +3324,11 @@ Node::createPythonPage()
                                          "The signature of the callback is: callback(frame, thisNode, app) where:\n"
                                          "- frame: the frame that has been rendered\n"
                                          "- thisNode: points to the writer node\n"
-                                         "- app: points to the current application instance").toStdString() );
+                                         "- app: points to the current application instance") );
     pythonPage->addKnob(afterFrameRender);
     _imp->afterFrameRender = afterFrameRender;
 
-    boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render"), 1, false);
     afterRender->setName("afterRender");
     afterRender->setAnimationEnabled(false);
     afterRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
@@ -3336,7 +3336,7 @@ Node::createPythonPage()
                                     "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
                                     "- aborted: True if the render ended because it was aborted, False upon completion\n"
                                     "- thisNode: points to the writer node\n"
-                                    "- app: points to the current application instance").toStdString() );
+                                    "- app: points to the current application instance") );
     pythonPage->addKnob(afterRender);
     _imp->afterRender = afterRender;
 } // Node::createPythonPage
@@ -3344,10 +3344,10 @@ Node::createPythonPage()
 void
 Node::createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage)
 {
-    boost::shared_ptr<KnobDouble> mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect.get(), "Mix", 1, false);
+    boost::shared_ptr<KnobDouble> mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect.get(), tr("Mix"), 1, false);
 
     mixKnob->setName("hostMix");
-    mixKnob->setHintToolTip("Mix between the source image at 0 and the full effect at 1.");
+    mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
     mixKnob->setMinimum(0.);
     mixKnob->setMaximum(1.);
     mixKnob->setDefaultValue(1.);
@@ -3381,12 +3381,12 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
             std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + inputLabels[i]);
             enabled->setName(enableMaskName);
             enabled->setHintToolTip( tr("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                        "Turning this off will act as though the mask was disconnected.").toStdString() );
+                                        "Turning this off will act as though the mask was disconnected.") );
         } else {
             std::string enableMaskName(std::string(kEnableInputKnobName) + "_" + inputLabels[i]);
             enabled->setName(enableMaskName);
             enabled->setHintToolTip( tr("Enable the image to come from the channel named by the choice parameter on the right. "
-                                        "Turning this off will act as though the input was disconnected.").toStdString() );
+                                        "Turning this off will act as though the input was disconnected.") );
         }
         enabled->setAnimationEnabled(false);
         if (mainPage) {
@@ -3396,7 +3396,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
         sel.enabled = enabled;
 
-        boost::shared_ptr<KnobChoice> channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), "", 1, false);
+        boost::shared_ptr<KnobChoice> channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
         std::vector<std::string> choices;
         choices.push_back("None");
 
@@ -3418,7 +3418,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
         channel->setDefaultValue(choices.size() - 1, 0);
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
-                                    "Setting this to None is the same as disconnecting the input.").toStdString() );
+                                    "Setting this to None is the same as disconnecting the input.") );
         if (hasMaskChannelSelector[i].second) {
             std::string channelMaskName(std::string(kMaskChannelKnobName) + "_" + inputLabels[i]);
             channel->setName(channelMaskName);
@@ -3491,7 +3491,7 @@ Node::getOrCreateMainPage()
         }
     }
     if (!mainPage) {
-        mainPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), "Settings");
+        mainPage = AppManager::createKnob<KnobPage>( _imp->effect.get(), tr("Settings") );
     }
 
     return mainPage;
@@ -3509,7 +3509,7 @@ Node::createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage,
     nodeLabel->setEvaluateOnChange(false);
     nodeLabel->setAsMultiLine();
     nodeLabel->setUsesRichText(true);
-    nodeLabel->setHintToolTip( tr("This label gets appended to the node name on the node graph.").toStdString() );
+    nodeLabel->setHintToolTip( tr("This label gets appended to the node name on the node graph.") );
     settingsPage->addKnob(nodeLabel);
     _imp->nodeLabelKnob = nodeLabel;
 }
@@ -3575,7 +3575,7 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
     }
     if ( !isWriter && foundAll && !getApp()->isBackground() ) {
         _imp->enabledChan[3].lock()->setAddNewLine(false);
-        boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), "", 1, false);
+        boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
         premultWarning->setIconLabel("dialog-warning");
         premultWarning->setSecretByDefault(true);
         premultWarning->setAsLabel();
@@ -3617,7 +3617,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
 #endif
 
     //Add the "Node" page
-    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA, 1, false);
+    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr(NATRON_PARAMETER_PAGE_NAME_EXTRA), 1, false);
     _imp->nodeSettingsPage = settingsPage;
 
     //Create the "Label" knob
@@ -3718,7 +3718,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
                     KnobsVec::iterator prev = it;
                     --prev;
                     if ( !dynamic_cast<KnobSeparator*>( prev->get() ) ) {
-                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), "", 1, false);
+                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
                     }
@@ -3741,8 +3741,8 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
         if (!ioContainer) {
 #endif
 
-        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), "Render", 1, false);
-        renderButton->setHintToolTip("Starts rendering the specified frame range.");
+        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
+        renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
         renderButton->setName("startRender");
         renderButton->setEvaluateOnChange(false);
@@ -3803,7 +3803,7 @@ Node::Implementation::createChannelSelector(int inputNb,
     ChannelSelector sel;
 
     sel.hasAllChoice = isOutput;
-    boost::shared_ptr<KnobChoice> layer = AppManager::createKnob<KnobChoice>(effect.get(), isOutput ? "Output Layer" : inputName + " Layer", 1, false);
+    boost::shared_ptr<KnobChoice> layer = AppManager::createKnob<KnobChoice>(effect.get(), isOutput ? tr("Output Layer") : tr("%1 Layer").arg( QString::fromUtf8( inputName.c_str() ) ), 1, false);
     layer->setHostCanAddOptions(isOutput);
     if (!isOutput) {
         layer->setName( inputName + std::string("_") + std::string(kOutputChannelsKnobName) );
@@ -3811,9 +3811,9 @@ Node::Implementation::createChannelSelector(int inputNb,
         layer->setName(kOutputChannelsKnobName);
     }
     if (isOutput) {
-        layer->setHintToolTip("Select here the layer onto which the processing should occur.");
+        layer->setHintToolTip( tr("Select here the layer onto which the processing should occur.") );
     } else {
-        layer->setHintToolTip("Select here the layer that will be used in input by " + inputName);
+        layer->setHintToolTip( tr("Select here the layer that will be used in input by %1.").arg( QString::fromUtf8( inputName.c_str() ) ) );
     }
     layer->setAnimationEnabled(false);
     layer->setSecretByDefault(!isOutput);

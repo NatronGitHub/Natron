@@ -274,7 +274,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->activateRenderScale->setFocusPolicy(Qt::NoFocus);
     _imp->activateRenderScale->setFixedSize(buttonSize);
     _imp->activateRenderScale->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyEnabled,
+    setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionProxyEnabled,
                            "<p><b>" + tr("Proxy mode:").toStdString() + "</b></p><p>" +
                            tr("Activates the downscaling by the amount indicated by the value on the right. "
                               "The rendered images are degraded and as a result of this the whole rendering pipeline "
@@ -315,7 +315,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         std::list<std::string> refreshActions;
         refreshActions.push_back(kShortcutIDActionRefresh);
         refreshActions.push_back(kShortcutIDActionRefreshWithStats);
-        setTooltipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.").toStdString() +
+        setToolTipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.").toStdString() +
                                 "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p><p>" +
                                 tr("Press ").toStdString() + "%2" + tr(" to activate in-depth render statistics useful "
                                                                        "for debugging the composition.").toStdString() + "</p>", _imp->refreshButton);
@@ -334,7 +334,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         std::list<std::string> actions;
         actions.push_back(kShortcutIDActionPauseViewerInputA);
         actions.push_back(kShortcutIDActionPauseViewer);
-        setTooltipWithShortcut2(kShortcutGroupViewer, actions,
+        setToolTipWithShortcut2(kShortcutGroupViewer, actions,
                                 "<p><b>" + tr("Pause Updates:").toStdString() + "</b></p><p>" +
                                 tr("When activated the viewer will not update after any change that would modify the image "
                                    "displayed in the viewport.").toStdString() + "</p>" +
@@ -595,7 +595,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->firstFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->firstFrame_Button->setFixedSize(buttonSize);
     _imp->firstFrame_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, "<p>" + tr("First frame").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, "<p>" + tr("First frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->firstFrame_Button);
 
 
@@ -603,7 +603,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousKeyFrame_Button->setFixedSize(buttonSize);
     _imp->previousKeyFrame_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, "<p>" + tr("Previous Keyframe").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, "<p>" + tr("Previous Keyframe").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->previousKeyFrame_Button);
 
 
@@ -611,7 +611,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousFrame_Button->setFixedSize(buttonSize);
     _imp->previousFrame_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, "<p>" + tr("Previous frame").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, "<p>" + tr("Previous frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->previousFrame_Button);
 
 
@@ -623,7 +623,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         std::list<std::string> actions;
         actions.push_back(kShortcutIDActionPlayerBackward);
         actions.push_back(kShortcutIDActionPlayerStop);
-        setTooltipWithShortcut2(kShortcutGroupPlayer, actions, "<p>" + tr("Play backward").toStdString() + "</p>" +
+        setToolTipWithShortcut2(kShortcutGroupPlayer, actions, "<p>" + tr("Play backward").toStdString() + "</p>" +
                                 "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b> (%2 to stop)</p>", _imp->play_Backward_Button);
     }
     _imp->play_Backward_Button->setCheckable(true);
@@ -637,7 +637,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
         std::list<std::string> actions;
         actions.push_back(kShortcutIDActionPlayerForward);
         actions.push_back(kShortcutIDActionPlayerStop);
-        setTooltipWithShortcut2(kShortcutGroupPlayer, actions, "<p>" + tr("Play forward").toStdString() + "</p>" +
+        setToolTipWithShortcut2(kShortcutGroupPlayer, actions, "<p>" + tr("Play forward").toStdString() + "</p>" +
                                 "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b> (%2 to stop)</p>", _imp->play_Forward_Button);
     }
     _imp->play_Forward_Button->setCheckable(true);
@@ -648,7 +648,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextFrame_Button->setFixedSize(buttonSize);
     _imp->nextFrame_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, "<p>" + tr("Next frame").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, "<p>" + tr("Next frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->nextFrame_Button);
 
 
@@ -656,7 +656,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextKeyFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextKeyFrame_Button->setFixedSize(buttonSize);
     _imp->nextKeyFrame_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, "<p>" + tr("Next Keyframe").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, "<p>" + tr("Next Keyframe").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->nextKeyFrame_Button);
 
 
@@ -664,7 +664,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->lastFrame_Button->setFocusPolicy(Qt::NoFocus);
     _imp->lastFrame_Button->setFixedSize(buttonSize);
     _imp->lastFrame_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, "<p>" + tr("Last Frame").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, "<p>" + tr("Last Frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->lastFrame_Button);
 
 
@@ -672,7 +672,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->previousIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->previousIncrement_Button->setFixedSize(buttonSize);
     _imp->previousIncrement_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, "<p>" + tr("Previous Increment").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, "<p>" + tr("Previous Increment").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->previousIncrement_Button);
 
 
@@ -688,20 +688,20 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     _imp->nextIncrement_Button->setFocusPolicy(Qt::NoFocus);
     _imp->nextIncrement_Button->setFixedSize(buttonSize);
     _imp->nextIncrement_Button->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, "<p>" + tr("Next Increment").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, "<p>" + tr("Next Increment").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->nextIncrement_Button);
 
     _imp->playBackInputButton = new Button(_imp->playerButtonsContainer);
     _imp->playBackInputButton->setFocusPolicy(Qt::NoFocus);
     _imp->playBackInputButton->setFixedSize(buttonSize);
     _imp->playBackInputButton->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, "<p>" + tr("Set the playback in point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->playBackInputButton);
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, "<p>" + tr("Set the playback in point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->playBackInputButton);
 
     _imp->playBackOutputButton = new Button(_imp->playerButtonsContainer);
     _imp->playBackOutputButton->setFocusPolicy(Qt::NoFocus);
     _imp->playBackOutputButton->setFixedSize(buttonSize);
     _imp->playBackOutputButton->setIconSize(buttonIconSize);
-    setTooltipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, "<p>" + tr("Set the playback out point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->playBackOutputButton);
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, "<p>" + tr("Set the playback out point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->playBackOutputButton);
 
     _imp->playBackInputSpinbox = new SpinBox(_imp->playerButtonsContainer);
     _imp->playBackInputSpinbox->setToolTip( tr("The playback in point") );
@@ -880,11 +880,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     icPauseViewer.addPixmap(pixPauseEnabled, QIcon::Normal, QIcon::On);
     _imp->pauseButton->setIcon(icPauseViewer);
 
-    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer, "<p>" +
+    setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer, "<p>" +
                            tr("Scales the image so it doesn't exceed the size of the viewer and centers it.").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->centerViewerButton);
 
-    setTooltipWithShortcut(kShortcutGroupViewer, kShortcutIDActionClipEnabled, "<p>" +
+    setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionClipEnabled, "<p>" +
                            tr("Clips the portion of the image displayed "
                               "on the viewer to the project format. "
                               "When off, everything in the union of all nodes "
@@ -894,7 +894,7 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
     std::list<std::string> roiActions;
     roiActions.push_back(kShortcutIDActionROIEnabled);
     roiActions.push_back(kShortcutIDActionNewROI);
-    setTooltipWithShortcut2(kShortcutGroupViewer, roiActions, "<p>" +
+    setToolTipWithShortcut2(kShortcutGroupViewer, roiActions, "<p>" +
                             tr("When active, enables the region of interest that limits"
                                " the portion of the viewer that is kept updated.").toStdString() + "</p>" +
                             "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>" +

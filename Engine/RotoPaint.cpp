@@ -188,7 +188,7 @@ RotoPaint::initializeKnobs()
     assert(generalPage);
 
 
-    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(this, "Output", 1, false);
+    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(this, tr("Output"), 1, false);
     generalPage->addKnob(sep);
 
 
@@ -204,17 +204,17 @@ RotoPaint::initializeKnobs()
         enabled->setAnimationEnabled(false);
         enabled->setAddNewLine(i == 3);
         enabled->setDefaultValue(defaultValues[i]);
-        enabled->setHintToolTip("Enable drawing onto this channel");
+        enabled->setHintToolTip( tr("Enable drawing onto this channel") );
         generalPage->addKnob(enabled);
         _imp->enabledKnobs[i] = enabled;
     }
 
 
-    boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, "Premultiply", 1, false);
+    boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, tr("Premultiply"), 1, false);
     premultKnob->setName("premultiply");
-    premultKnob->setHintToolTip("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
-                                " This will result in the pixels outside of the shapes and paint strokes "
-                                "being black and transparant.");
+    premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
+                                    " This will result in the pixels outside of the shapes and paint strokes "
+                                    "being black and transparant.") );
     premultKnob->setDefaultValue(false);
     premultKnob->setAnimationEnabled(false);
     premultKnob->setIsMetadataSlave(true);

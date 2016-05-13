@@ -460,7 +460,7 @@ TrackerGui::createGui()
     _imp->trackBwButton = new Button(bwIcon, QString(), _imp->buttonsBar);
     _imp->trackBwButton->setFixedSize(medButtonSize);
     _imp->trackBwButton->setIconSize(medButtonIconSize);
-    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, "<p>" + tr("Track selected tracks backward until left bound of the timeline").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, "<p>" + tr("Track selected tracks backward until left bound of the timeline").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackBwButton);
     _imp->trackBwButton->setCheckable(true);
     _imp->trackBwButton->setChecked(false);
@@ -470,7 +470,7 @@ TrackerGui::createGui()
     _imp->trackPrevButton = new Button(QIcon(pixPrev), QString(), _imp->buttonsBar);
     _imp->trackPrevButton->setFixedSize(medButtonSize);
     _imp->trackPrevButton->setIconSize(medButtonIconSize);
-    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, "<p>" + tr("Track selected tracks on the previous frame").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, "<p>" + tr("Track selected tracks on the previous frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackPrevButton);
     QObject::connect( _imp->trackPrevButton, SIGNAL(clicked(bool)), this, SLOT(onTrackPrevClicked()) );
     trackPlayerLayout->addWidget(_imp->trackPrevButton);
@@ -479,7 +479,7 @@ TrackerGui::createGui()
     _imp->trackNextButton = new Button(QIcon(pixNext), QString(), _imp->buttonsBar);
     _imp->trackNextButton->setFixedSize(medButtonSize);
     _imp->trackNextButton->setIconSize(medButtonIconSize);
-    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingNext, "<p>" + tr("Track selected tracks on the next frame").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingNext, "<p>" + tr("Track selected tracks on the next frame").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackNextButton);
     QObject::connect( _imp->trackNextButton, SIGNAL(clicked(bool)), this, SLOT(onTrackNextClicked()) );
     trackPlayerLayout->addWidget(_imp->trackNextButton);
@@ -491,7 +491,7 @@ TrackerGui::createGui()
     _imp->trackFwButton = new Button(fwIcon, QString(), _imp->buttonsBar);
     _imp->trackFwButton->setFixedSize(medButtonSize);
     _imp->trackFwButton->setIconSize(medButtonIconSize);
-    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingForward, "<p>" + tr("Track selected tracks forward until right bound of the timeline").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingForward, "<p>" + tr("Track selected tracks forward until right bound of the timeline").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackFwButton);
     _imp->trackFwButton->setCheckable(true);
     _imp->trackFwButton->setChecked(false);
@@ -503,7 +503,7 @@ TrackerGui::createGui()
     _imp->trackRangeButton = new Button(QIcon(pixTrackRange), QString(), _imp->buttonsBar);
     _imp->trackRangeButton->setFixedSize(medButtonSize);
     _imp->trackRangeButton->setIconSize(medButtonIconSize);
-    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingRange, "<p>" + tr("Track selected tracks over the range and with the step input by a dialog").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingRange, "<p>" + tr("Track selected tracks over the range and with the step input by a dialog").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackRangeButton);
     QObject::connect( _imp->trackRangeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackRangeClicked()) );
     trackPlayerLayout->addWidget(_imp->trackRangeButton);
@@ -513,7 +513,7 @@ TrackerGui::createGui()
     _imp->trackAllKeyframesButton = new Button(QIcon(pixTrackKeyframes), QString(), _imp->buttonsBar);
     _imp->trackAllKeyframesButton->setFixedSize(medButtonSize);
     _imp->trackAllKeyframesButton->setIconSize(medButtonIconSize);
-    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingAllKeyframes, "<p>" + tr("Track selected tracks across all pattern keyframes").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingAllKeyframes, "<p>" + tr("Track selected tracks across all pattern keyframes").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackAllKeyframesButton);
     QObject::connect( _imp->trackAllKeyframesButton, SIGNAL(clicked(bool)), this, SLOT(onTrackAllKeyframesClicked()) );
     trackPlayerLayout->addWidget(_imp->trackAllKeyframesButton);
@@ -523,7 +523,7 @@ TrackerGui::createGui()
     _imp->trackCurrentKeyframeButton = new Button(QIcon(pixTrackCurrentKey), QString(), _imp->buttonsBar);
     _imp->trackCurrentKeyframeButton->setFixedSize(medButtonSize);
     _imp->trackCurrentKeyframeButton->setIconSize(medButtonIconSize);
-    setTooltipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingCurrentKeyframes, "<p>" + tr("Track selected tracks over only the pattern keyframes related to the current track").toStdString() + "</p>" +
+    setToolTipWithShortcut(kShortcutGroupTracking, kShortcutIDActionTrackingCurrentKeyframes, "<p>" + tr("Track selected tracks over only the pattern keyframes related to the current track").toStdString() + "</p>" +
                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->trackCurrentKeyframeButton);
     QObject::connect( _imp->trackCurrentKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onTrackCurrentKeyframeClicked()) );
     trackPlayerLayout->addWidget(_imp->trackCurrentKeyframeButton);

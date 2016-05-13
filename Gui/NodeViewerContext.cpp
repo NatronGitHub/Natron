@@ -270,7 +270,7 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
 
     QAction* action;
     if ( !hintToolTip.empty() ) {
-        action = new TooltipActionShortcut(shortcutGroup.toStdString(), toolID, label, toolButton);
+        action = new ToolTipActionShortcut(shortcutGroup.toStdString(), toolID, label, toolButton);
         action->setText( QString::fromUtf8( label.c_str() ) );
         action->setIcon(icon);
     } else {

@@ -107,13 +107,13 @@ OneViewNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 OneViewNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
 
     page->setName("controls");
 
-    boost::shared_ptr<KnobChoice> viewKnob = AppManager::createKnob<KnobChoice>(this, "View");
+    boost::shared_ptr<KnobChoice> viewKnob = AppManager::createKnob<KnobChoice>( this, tr("View") );
     viewKnob->setName("view");
-    viewKnob->setHintToolTip("View to take from the input");
+    viewKnob->setHintToolTip( tr("View to take from the input") );
     page->addKnob(viewKnob);
 
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
