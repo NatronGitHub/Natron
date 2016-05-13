@@ -330,6 +330,7 @@ getHostNameProxy(const std::string& pluginID,
     static const std::string hitfilm("com.FXHOME.HitFilm");
     static const std::string redgiant("com.redgiantsoftware.Universe_");
     static const std::string digitalfilmtools("com.digitalfilmtools.");
+    static const std::string tiffen("com.tiffen.");
     //static const std::string digitalanarchy("com.digitalanarchy.");
 
     if ( !pluginID.compare(0, neatvideo.size(), neatvideo) ) {
@@ -354,7 +355,8 @@ getHostNameProxy(const std::string& pluginID,
     } else if ( !pluginID.compare(0, redgiant.size(), redgiant) ) {
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
         return Settings::eKnownHostNameVegas;
-    } else if ( !pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools) ) {
+    } else if ( !pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools) ||
+                !pluginID.compare(0, tiffen.size(), tiffen) ) {
         // Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
 
         // http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
