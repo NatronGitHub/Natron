@@ -174,7 +174,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
             if ( foundInputRoI->second.isInfinite() ) {
                 std::stringstream ss;
                 ss << node->getScriptName_mt_safe();
-                ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
+                ss << tr(" asked for an infinite region of interest upstream").toStdString();
                 effect->setPersistentMessage( eMessageTypeError, ss.str() );
 
                 return EffectInstance::eRenderRoIRetCodeFailed;

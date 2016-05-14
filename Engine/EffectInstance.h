@@ -115,9 +115,11 @@ class EffectInstance
       , public LockManagerI<Image>
       , public boost::enable_shared_from_this<EffectInstance>
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
-
-
     typedef std::map<ImageComponents, NodeWPtr > ComponentsAvailableMap;
     typedef std::list<std::pair<ImageComponents, NodeWPtr > > ComponentsAvailableList;
     typedef std::map<int, std::list< boost::shared_ptr<Image> > > InputImagesMap;

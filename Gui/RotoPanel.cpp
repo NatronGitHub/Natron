@@ -928,7 +928,10 @@ expandRecursively(QTreeWidgetItem* item)
 static QString
 scriptNameToolTipFromItem(const boost::shared_ptr<RotoItem>& item)
 {
-    return QString::fromUtf8("<p><b>") + QString::fromUtf8( item->getScriptName().c_str() ) + QString::fromUtf8("</b></p>") +  GuiUtils::convertFromPlainText(QObject::tr("The label of the item."), Qt::WhiteSpaceNormal);
+    return ( QString::fromUtf8("<p><b>")
+             + QString::fromUtf8( item->getScriptName().c_str() )
+             + QString::fromUtf8("</b></p>")
+             +  GuiUtils::convertFromPlainText(QCoreApplication::translate("RotoPanel", "The label of the item."), Qt::WhiteSpaceNormal) );
 }
 
 void

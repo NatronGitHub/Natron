@@ -314,7 +314,7 @@ GuiPrivate::createPropertiesBinGui()
 {
     _propertiesBin = new PropertiesBinWrapper(_gui);
     _propertiesBin->setScriptName(kPropertiesBinName);
-    _propertiesBin->setLabel( QObject::tr("Properties").toStdString() );
+    _propertiesBin->setLabel( tr("Properties").toStdString() );
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
     mainPropertiesLayout->setContentsMargins(0, 0, 0, 0);
@@ -401,7 +401,7 @@ GuiPrivate::createNodeGraphGui()
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(_gui, _appInstance->getProject(), scene, _gui);
     _nodeGraphArea->setScriptName(kNodeGraphObjectName);
-    _nodeGraphArea->setLabel( QObject::tr("Node Graph").toStdString() );
+    _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
     _gui->registerTab(_nodeGraphArea, _nodeGraphArea);
 }
@@ -411,7 +411,7 @@ GuiPrivate::createCurveEditorGui()
 {
     _curveEditor = new CurveEditor(_gui, _appInstance->getTimeLine(), _gui);
     _curveEditor->setScriptName(kCurveEditorObjectName);
-    _curveEditor->setLabel( QObject::tr("Curve Editor").toStdString() );
+    _curveEditor->setLabel( tr("Curve Editor").toStdString() );
     _curveEditor->setVisible(false);
     _gui->registerTab(_curveEditor, _curveEditor);
 }
@@ -421,7 +421,7 @@ GuiPrivate::createDopeSheetGui()
 {
     _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance->getTimeLine(), _gui);
     _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
-    _dopeSheetEditor->setLabel( QObject::tr("Dope Sheet").toStdString() );
+    _dopeSheetEditor->setLabel( tr("Dope Sheet").toStdString() );
     _dopeSheetEditor->setVisible(false);
     _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
@@ -431,7 +431,7 @@ GuiPrivate::createScriptEditorGui()
 {
     _scriptEditor = new ScriptEditor(_gui);
     _scriptEditor->setScriptName("scriptEditor");
-    _scriptEditor->setLabel( QObject::tr("Script Editor").toStdString() );
+    _scriptEditor->setLabel( tr("Script Editor").toStdString() );
     _scriptEditor->setVisible(false);
     _gui->registerTab(_scriptEditor, _scriptEditor);
 }
@@ -441,7 +441,7 @@ GuiPrivate::createProgressPanelGui()
 {
     _progressPanel = new ProgressPanel(_gui);
     _progressPanel->setScriptName("progress");
-    _progressPanel->setLabel( QObject::tr("Progress").toStdString() );
+    _progressPanel->setLabel( tr("Progress").toStdString() );
     _progressPanel->setVisible(false);
     _gui->registerTab(_progressPanel, _progressPanel);
 }
@@ -603,13 +603,13 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
             if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), (Q_PID)lockPID) ) {
-                StandardButtonEnum rep = Dialogs::questionDialog( QObject::tr("Project").toStdString(),
-                                                                  QObject::tr("This project may be open in another instance of Natron "
-                                                                              "running on %1 as process ID %2, "
-                                                                              "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
-                                                                                                                                   QString::number(lockPID),
-                                                                                                                                   author,
-                                                                                                                                   lockCreationDate).toStdString(),
+                StandardButtonEnum rep = Dialogs::questionDialog( tr("Project").toStdString(),
+                                                                  tr("This project may be open in another instance of Natron "
+                                                                     "running on %1 as process ID %2, "
+                                                                     "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
+                                                                                                                          QString::number(lockPID),
+                                                                                                                          author,
+                                                                                                                          lockCreationDate).toStdString(),
                                                                   false,
                                                                   StandardButtons(eStandardButtonYes | eStandardButtonNo) );
                 if (rep == eStandardButtonYes) {

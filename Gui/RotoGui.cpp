@@ -714,7 +714,7 @@ RotoGui::RotoGui(NodeGui* node,
     QString multiTt = GuiUtils::convertFromPlainText(tr("When checked, strokes will be appended to the same item "
                                                         "in the hierarchy as long as the same tool is selected.\n"
                                                         "Select another tool to make a new item."), Qt::WhiteSpaceNormal);
-    _imp->multiStrokeEnabledLabel = new Label(QObject::tr("Multi-stroke:"), _imp->brushButtonsBar);
+    _imp->multiStrokeEnabledLabel = new Label(tr("Multi-stroke:"), _imp->brushButtonsBar);
     _imp->multiStrokeEnabledLabel->setToolTip(multiTt);
     _imp->brushButtonsBarLayout->addWidget(_imp->multiStrokeEnabledLabel);
 
@@ -4863,7 +4863,7 @@ public:
         connect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
         connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
         mainLayout->addWidget(buttons);
-        setWindowTitle( QObject::tr("Link to track") );
+        setWindowTitle( tr("Link to track") );
     }
 
     int getSelectedKnob() const

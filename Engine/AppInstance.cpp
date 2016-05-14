@@ -1348,7 +1348,7 @@ AppInstance::exportHTMLDocs(const QString path)
         QString categoryBodyEnd = QString::fromUtf8("</ul></div></div></div></div>");
         QString categoriesFooter = QString::fromUtf8("</body></html>");
         for (int i = 0; i < categories.size(); ++i) {
-            QString categoriesBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>") + categories.at(0) + QString::fromUtf8("</h1><p>") + QObject::tr("This manual is intended as a reference for all the parameters within each node in ") + categories.at(0) + QString::fromUtf8(".</p><div class=\"toctree-wrapper compound\"><ul>");
+            QString categoriesBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>") + categories.at(0) + QString::fromUtf8("</h1><p>") + tr("This manual is intended as a reference for all the parameters within each node in %1.").arg( categories.at(0) ) + QString::fromUtf8("</p><div class=\"toctree-wrapper compound\"><ul>");
             QString html;
             html.append(categoriesHeader);
             html.append(categoriesBodyStart);
@@ -1486,7 +1486,7 @@ AppInstance::parseHTMLDoc(const QString html,
         result.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
     }
     result.replace(QString::fromUtf8("<body>"), menuHTML);
-    result.replace( QString::fromUtf8("Natron 2.0 documentation"), QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8(" ") + QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8(" documentation") );
+    result.replace( QString::fromUtf8("NATRON_DOCUMENTATION"), tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) );
 
     return result;
 } // AppInstance::parseHTMLDoc

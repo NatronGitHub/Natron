@@ -129,6 +129,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 class DopeSheetViewPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(DopeSheetView)
+
 public:
     enum KeyframeTexture
     {
@@ -2302,19 +2304,19 @@ DopeSheetViewPrivate::createContextMenu()
 
     // Edit menu
     Menu *editMenu = new Menu(contextMenu);
-    editMenu->setTitle( QObject::tr("Edit") );
+    editMenu->setTitle( tr("Edit") );
 
     contextMenu->addAction( editMenu->menuAction() );
 
     // Interpolation menu
     Menu *interpMenu = new Menu(contextMenu);
-    interpMenu->setTitle( QObject::tr("Interpolation") );
+    interpMenu->setTitle( tr("Interpolation") );
 
     contextMenu->addAction( interpMenu->menuAction() );
 
     // View menu
     Menu *viewMenu = new Menu(contextMenu);
-    viewMenu->setTitle( QObject::tr("View") );
+    viewMenu->setTitle( tr("View") );
 
     contextMenu->addAction( viewMenu->menuAction() );
 

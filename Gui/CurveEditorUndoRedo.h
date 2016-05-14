@@ -108,6 +108,8 @@ typedef std::map<boost::shared_ptr<CurveGui>, std::list<KeyPtr> > SelectedKeys;
 class AddKeysCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddKeysCommand)
+
 public:
 
     struct KeyToAdd
@@ -180,6 +182,8 @@ private:
 class RemoveKeysCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveKeysCommand)
+
 public:
     RemoveKeysCommand(CurveWidget* editor,
                       const std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > & curveEditorElement
@@ -205,6 +209,8 @@ private:
 class MoveKeysCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveKeysCommand)
+
 public:
 
     struct KeyToMove
@@ -264,6 +270,8 @@ struct KeyInterpolationChange
 class SetKeysInterpolationCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(SetKeysInterpolationCommand)
+
 public:
 
     SetKeysInterpolationCommand(CurveWidget* widget,
@@ -288,6 +296,8 @@ private:
 class MoveTangentCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveTangentCommand)
+
 public:
 
     enum SelectedTangentEnum

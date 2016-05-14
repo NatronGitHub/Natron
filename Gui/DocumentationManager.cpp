@@ -166,7 +166,7 @@ DocumentationManager::handler(QHttpRequest *req,
         QString groupHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n<html>\n<head>\n<title>__REPLACE_TITLE__ - ") + QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8(" ") + QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8(" documentation") + QString::fromUtf8("</title>\n<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/pygments.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />\n</head>\n<body>\n");
         QString groupBodyEnd = QString::fromUtf8("</ul>\n</div>\n</div>\n</div>\n</div>\n");
         QString groupFooter = QString::fromUtf8("</body>\n</html>\n");
-        QString navHeader = QString::fromUtf8("<div class=\"related\">\n<h3>Navigation</h3>\n<ul>\n<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>\n");
+        QString navHeader = QString::fromUtf8("<div class=\"related\">\n<h3>") + tr("Navigation") + QString::fromUtf8("</h3>\n<ul>\n<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>\n");
         QString navFooter = QString::fromUtf8("</ul>\n</div>\n");
         for (int i = 0; i < options.size(); ++i) {
             if ( options.at(i).contains( QString::fromUtf8("id=") ) ) {
@@ -199,11 +199,11 @@ DocumentationManager::handler(QHttpRequest *req,
                 }
             }
             if ( !plugins.isEmpty() ) {
-                QString groupBodyStart = QString::fromUtf8("<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n<h1>") + group + QString::fromUtf8("</h1>\n<p>") + QObject::tr("This manual is intended as a reference for all the parameters within each node in ") + group + QString::fromUtf8(".</p>\n<div class=\"toctree-wrapper compound\">\n<ul>\n");
+                QString groupBodyStart = QString::fromUtf8("<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n<h1>") + group + QString::fromUtf8("</h1>\n<p>") + tr("This manual is intended as a reference for all the parameters within each node in %1.").arg(group) + QString::fromUtf8("</p>\n<div class=\"toctree-wrapper compound\">\n<ul>\n");
                 html.append(groupHeader);
                 html.replace(QString::fromUtf8("__REPLACE_TITLE__"), group);
                 html.append(navHeader);
-                html.append( QString::fromUtf8("<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>\n") );
+                html.append( QString::fromUtf8("<li><a href=\"/_group.html\">") + tr("Reference Guide") + QString::fromUtf8("</a> &raquo;</li>\n") );
                 html.append(navFooter);
                 html.append(groupBodyStart);
                 for (int i = 0; i < plugins.size(); ++i) {
@@ -221,9 +221,9 @@ DocumentationManager::handler(QHttpRequest *req,
                 html.append(groupFooter);
             }
         } else {
-            QString groupBodyStart = QString::fromUtf8("<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n<h1>") + QObject::tr("Reference Guide") + QString::fromUtf8("</h1>\n<p>") + QObject::tr("This manual is intended as a reference for all the parameters within each node in Natron.") + QString::fromUtf8("</p>\n<div class=\"toctree-wrapper compound\">\n<ul>\n");
+            QString groupBodyStart = QString::fromUtf8("<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n<h1>") + tr("Reference Guide") + QString::fromUtf8("</h1>\n<p>") + tr("This manual is intended as a reference for all the parameters within each node in %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QString::fromUtf8("</p>\n<div class=\"toctree-wrapper compound\">\n<ul>\n");
             html.append(groupHeader);
-            html.replace( QString::fromUtf8("__REPLACE_TITLE__"), QString::fromUtf8("Reference Guide") );
+            html.replace( QString::fromUtf8("__REPLACE_TITLE__"), tr("Reference Guide") );
             html.append(navHeader);
             html.append(navFooter);
             html.append(groupBodyStart);
@@ -391,8 +391,8 @@ DocumentationManager::parser(QString html,
 
     result.replace(QString::fromUtf8("<body>"), menuHTML);
 
-    // replace "Natron 2.0 documentation" with current version
-    result.replace( QString::fromUtf8("Natron 2.0 documentation"), QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8(" ") + QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8(" documentation") );
+    // replace "NATRON_DOCUMENTATION" with current version
+    result.replace( QString::fromUtf8("NATRON_DOCUMENTATION"), tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) );
 
     return result;
 } // DocumentationManager::parser

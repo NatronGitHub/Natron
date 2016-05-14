@@ -813,7 +813,7 @@ KnobGui::onExprChanged(int dimension)
             if (invalid) {
                 QString toPrepend;
                 toPrepend += QString::fromUtf8("<p>");
-                toPrepend += QObject::tr("Invalid expression(s), value returned is the underlying curve:");
+                toPrepend += tr("Invalid expression(s), value returned is the underlying curve:");
                 toPrepend += QString::fromUtf8("</p>");
                 fullErrToolTip.prepend(toPrepend);
 

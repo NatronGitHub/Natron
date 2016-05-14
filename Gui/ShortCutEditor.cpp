@@ -77,13 +77,13 @@ mouseShortcutToString(const Qt::KeyboardModifiers & modifiers,
 
     switch (button) {
     case Qt::LeftButton:
-        ret.append( QObject::tr("LeftButton") );
+        ret.append( QCoreApplication::translate("ShortCutEditor", "LeftButton") );
         break;
     case Qt::MiddleButton:
-        ret.append( QObject::tr("MiddleButton") );
+        ret.append( QCoreApplication::translate("ShortCutEditor", "MiddleButton") );
         break;
     case Qt::RightButton:
-        ret.append( QObject::tr("RightButton") );
+        ret.append( QCoreApplication::translate("ShortCutEditor", "RightButton") );
         break;
     default:
         break;
@@ -119,6 +119,9 @@ public:
 
 struct ShortCutEditorPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(ShortCutEditor)
+
+public:
     QVBoxLayout* mainLayout;
     HackedTreeWidget* tree;
     QWidget* shortcutGroup;
@@ -502,8 +505,8 @@ ShortCutEditorPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGrou
         assert(false);
     }
     if (!action->editable) {
-        guiAction.item->setToolTip( 0, QObject::tr("This action is standard and its shortcut cannot be edited.") );
-        guiAction.item->setToolTip( 1, QObject::tr("This action is standard and its shortcut cannot be edited.") );
+        guiAction.item->setToolTip( 0, tr("This action is standard and its shortcut cannot be edited.") );
+        guiAction.item->setToolTip( 1, tr("This action is standard and its shortcut cannot be edited.") );
         guiAction.item->setDisabled(true);
     }
     guiAction.item->setExpanded(true);

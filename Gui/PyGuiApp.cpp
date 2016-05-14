@@ -378,7 +378,7 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         selection.push_back(nodeUi);
     }
     if (printWarn) {
-        _app->appendToScriptEditor( QObject::tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString() );
+        _app->appendToScriptEditor( tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString() );
     } else {
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
         NodeGraph* graph = 0;

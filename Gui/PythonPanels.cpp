@@ -150,7 +150,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         std::string err;
         std::string output;
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
-            getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + err);
+            getApp()->appendToScriptEditor(tr("Failed to execute callback: ").toStdString() + err);
         } else if ( !output.empty() ) {
             getApp()->appendToScriptEditor(output);
         }
@@ -574,7 +574,7 @@ void
 PyTabWidget::closePane()
 {
     if (_tab->getGui()->getPanes().size() == 1) {
-        _tab->getGui()->getApp()->appendToScriptEditor( QObject::tr("Cannot close pane when this is the last one remaining.").toStdString() );
+        _tab->getGui()->getApp()->appendToScriptEditor( tr("Cannot close pane when this is the last one remaining.").toStdString() );
 
         return;
     }

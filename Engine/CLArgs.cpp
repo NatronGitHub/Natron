@@ -787,7 +787,7 @@ CLArgsPrivate::parse()
                 exportDocsPath = *it;
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the doc dir path").toStdString() << std::endl;
+                std::cout << tr("You must specify the doc dir path").toStdString() << std::endl;
                 error = 1;
 
                 return;

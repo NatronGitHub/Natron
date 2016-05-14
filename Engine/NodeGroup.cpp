@@ -471,14 +471,14 @@ NodeCollection::checkNodeName(const Node* node,
                               std::string* nodeName)
 {
     if ( baseName.empty() ) {
-        throw std::runtime_error( QObject::tr("Invalid script-name").toStdString() );
+        throw std::runtime_error( tr("Invalid script-name.").toStdString() );
 
         return;
     }
     ///Remove any non alpha-numeric characters from the baseName
     std::string cpy = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(baseName);
     if ( cpy.empty() ) {
-        throw std::runtime_error( QObject::tr("Invalid script-name").toStdString() );
+        throw std::runtime_error( tr("Invalid script-name.").toStdString() );
 
         return;
     }
@@ -490,11 +490,7 @@ NodeCollection::checkNodeName(const Node* node,
         const KnobsVec&  knobs = isGroup->getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             if ( (*it)->getName() == cpy ) {
-                std::stringstream ss;
-                ss << QObject::tr("A node within a group cannot have the same script-name (").toStdString();
-                ss << cpy;
-                ss << QObject::tr(") as a parameter on the group for scripting purposes.").toStdString();
-                throw std::runtime_error( ss.str() );
+                throw std::runtime_error( tr("A node within a group cannot have the same script-name (%1) as a parameter on the group for scripting purposes.").arg( QString::fromUtf8( cpy.c_str() ) ).toStdString() );
 
                 return;
             }
@@ -522,11 +518,7 @@ NodeCollection::checkNodeName(const Node* node,
         }
         if (foundNodeWithName) {
             if (errorIfExists || !appendDigit) {
-                std::stringstream ss;
-                ss << QObject::tr("A node with the script-name ").toStdString();
-                ss << *nodeName;
-                ss << QObject::tr(" already exists").toStdString();
-                throw std::runtime_error( ss.str() );
+                throw std::runtime_error( tr("A node with the script-name %1 already exists.").arg( QString::fromUtf8( nodeName->c_str() ) ).toStdString() );
 
                 return;
             }

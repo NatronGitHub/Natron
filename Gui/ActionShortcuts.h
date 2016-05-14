@@ -733,6 +733,11 @@ public:
 class ActionWithShortcut
     : public QAction
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     QString _group;
 
 protected:

@@ -215,11 +215,13 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                             if ( mainView < (int)viewNames.size() ) {
                                 mainViewName = viewNames[mainView];
                             }
-                            QString message = QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ) + QLatin1Char(' ') +
-                                              QObject::tr("does not support multi-view, only the view ") + QString::fromUtf8( mainViewName.c_str() ) + QObject::tr(" will be rendered");
+                            QString message = tr("%1 does not support multi-view, only the view %2 will be rendered.")
+                                              .arg( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ) )
+                                              .arg( QString::fromUtf8( mainViewName.c_str() ) );
                             if (!renderController) {
-                                message.append( QString::fromUtf8(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n") );
-                                message = message + QObject::tr("Would you like to continue?");
+                                message.append( QChar::fromLatin1('\n') );
+                                message.append( QString::fromUtf8("You can use the %v or %V indicator in the filename to render to separate files.\n"
+                                                                  "Would you like to continue?") );
                                 StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                                 if (rep != eStandardButtonOk) {
                                     return;
@@ -246,11 +248,13 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             if ( mainView < (int)viewNames.size() ) {
                 mainViewName = viewNames[mainView];
             }
-            QString message = QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ) + QLatin1Char(' ') +
-                              QObject::tr("does not support multi-view, only the view") + QString::fromUtf8( mainViewName.c_str() ) + QObject::tr("will be rendered");
+            QString message = tr("%1 does not support multi-view, only the view %2 will be rendered.")
+                              .arg( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ) )
+                              .arg( QString::fromUtf8( mainViewName.c_str() ) );
             if (!renderController) {
-                message.append( QString::fromUtf8(".\nYou can use the %v or %V indicator in the filename to render to separate files.\n") );
-                message = message + QObject::tr("Would you like to continue?");
+                message.append( QChar::fromLatin1('\n') );
+                message.append( QString::fromUtf8("You can use the %v or %V indicator in the filename to render to separate files.\n"
+                                                  "Would you like to continue?") );
                 StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                 if (rep != eStandardButtonOk) {
                     return;
@@ -453,8 +457,10 @@ OutputEffectInstance::reportStats(int time,
 
     //If there's no filename knob, do not write anything
     if ( filename.empty() ) {
-        std::cout << QObject::tr("Cannot write render statistics file: ").toStdString() << getScriptName_mt_safe() <<
-            QObject::tr(" does not seem to have a parameter named \"filename\" to determine the location where to write the stats file.").toStdString() << std::endl;
+        std::cout << tr("Cannot write render statistics file: "
+                        "%1 does not seem to have a parameter named \"filename\" "
+                        "to determine the location where to write the stats file.")
+            .arg( QString::fromUtf8( getScriptName_mt_safe().c_str() ) ).toStdString();
 
         return;
     }
@@ -463,7 +469,7 @@ OutputEffectInstance::reportStats(int time,
     FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, filename);
     if (!ofile) {
-        std::cout << QObject::tr("Failure to write render statistics file.").toStdString() << std::endl;
+        std::cout << tr("Failure to write render statistics file.").toStdString() << std::endl;
 
         return;
     }

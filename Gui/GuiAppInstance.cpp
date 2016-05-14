@@ -245,7 +245,7 @@ GuiAppInstance::load(const CLArgs& cl,
                      bool makeEmptyInstance)
 {
     if (getAppID() == 0) {
-        appPTR->setLoadingStatus( QObject::tr("Creating user interface...") );
+        appPTR->setLoadingStatus( tr("Creating user interface...") );
     }
 
     try {

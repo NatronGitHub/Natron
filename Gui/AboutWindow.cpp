@@ -57,7 +57,7 @@ AboutWindow::AboutWindow(Gui* gui,
     : QDialog(parent)
     , _gui(gui)
 {
-    setWindowTitle( QObject::tr("About ") + QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    setWindowTitle( tr("About %1").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _mainLayout = new QVBoxLayout(this);
     setLayout(_mainLayout);
 
@@ -72,7 +72,7 @@ AboutWindow::AboutWindow(Gui* gui,
     _buttonLayout = new QHBoxLayout(_buttonContainer);
     _buttonLayout->addStretch();
 
-    _closeButton = new Button(QObject::tr("Close"), _buttonContainer);
+    _closeButton = new Button(tr("Close"), _buttonContainer);
     QObject::connect( _closeButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonLayout->addWidget(_closeButton);
 
@@ -202,7 +202,7 @@ AboutWindow::AboutWindow(Gui* gui,
     }
 
     _aboutText->setText(aboutText);
-    _tabWidget->addTab( _aboutText, QObject::tr("About") );
+    _tabWidget->addTab( _aboutText, tr("About") );
 
     _changelogText =  new QTextBrowser(_tabWidget);
     _changelogText->setOpenExternalLinks(true);
@@ -211,13 +211,13 @@ AboutWindow::AboutWindow(Gui* gui,
         changelogFile.open(QIODevice::ReadOnly | QIODevice::Text);
         _changelogText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( changelogFile.readAll() ) );
     }
-    _tabWidget->addTab( _changelogText, QObject::tr("Changelog") );
+    _tabWidget->addTab( _changelogText, tr("Changelog") );
 
     _libsText = new QTextBrowser(_tabWidget);
     _libsText->setOpenExternalLinks(true);
     updateLibrariesVersions();
 
-    _tabWidget->addTab( _libsText, QObject::tr("Libraries") );
+    _tabWidget->addTab( _libsText, tr("Libraries") );
 
     _teamText = new QTextBrowser(_tabWidget);
     _teamText->setOpenExternalLinks(false);
@@ -226,7 +226,7 @@ AboutWindow::AboutWindow(Gui* gui,
         team_file.open(QIODevice::ReadOnly | QIODevice::Text);
         _teamText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( team_file.readAll() ) );
     }
-    _tabWidget->addTab( _teamText, QObject::tr("Contributors") );
+    _tabWidget->addTab( _teamText, tr("Contributors") );
 
     _licenseText = new QTextBrowser(_tabWidget);
     _licenseText->setOpenExternalLinks(false);
@@ -235,7 +235,7 @@ AboutWindow::AboutWindow(Gui* gui,
         license.open(QIODevice::ReadOnly | QIODevice::Text);
         _licenseText->setText( QTextCodec::codecForName("UTF-8")->toUnicode( license.readAll() ) );
     }
-    _tabWidget->addTab( _licenseText, QObject::tr("License") );
+    _tabWidget->addTab( _licenseText, tr("License") );
 
     QWidget* thirdPartyContainer = new QWidget(_tabWidget);
     QVBoxLayout* thidPartyLayout = new QVBoxLayout(thirdPartyContainer);

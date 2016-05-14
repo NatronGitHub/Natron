@@ -44,6 +44,8 @@ NATRON_NAMESPACE_ENTER;
 class AddTrackCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddTrackCommand)
+
 public:
 
     AddTrackCommand(const TrackMarkerPtr &marker, const boost::shared_ptr<TrackerContext>& context);
@@ -63,6 +65,8 @@ private:
 class RemoveTracksCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveTracksCommand)
+
 public:
 
     RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers, const boost::shared_ptr<TrackerContext>& context);

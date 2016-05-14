@@ -61,6 +61,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct KnobWidgetDnDPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnd)
+
+public:
     KnobGuiWPtr knob;
     int dimension;
     QPoint dragPos;
@@ -200,9 +203,9 @@ KnobWidgetDnD::startDrag()
     bool isExprMult = ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier | Qt::ShiftModifier);
     QString textFirstLine;
     if (isExprMult) {
-        textFirstLine = QObject::tr("Linking (expression):");
+        textFirstLine = tr("Linking (expression):");
     } else {
-        textFirstLine = QObject::tr("Linking (hard-link) from:");
+        textFirstLine = tr("Linking (hard-link) from:");
     }
 
 
@@ -222,7 +225,7 @@ KnobWidgetDnD::startDrag()
         } else {
             if (!isExprMult) {
                 knobLine += QLatin1Char(' ');
-                knobLine += QObject::tr("(all dimensions)");
+                knobLine += tr("(all dimensions)");
             }
         }
     }
@@ -233,9 +236,9 @@ KnobWidgetDnD::startDrag()
 
     QString textThirdLine;
     if (dragDim == -1) {
-        textThirdLine = QObject::tr("Drag it to another parameter's label of the same type");
+        textThirdLine = tr("Drag it to the label of another parameter of the same type");
     } else {
-        textThirdLine = QObject::tr("Drag it to another parameter's dimension of the same type");
+        textThirdLine = tr("Drag it to a dimension of another parameter of the same type");
     }
 
     int textWidth = std::max( std::max( fmetrics.width(textFirstLine), fmetrics.width(knobLine) ), fmetrics.width(textThirdLine) );
@@ -313,21 +316,21 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
 
         if ( !KnobI::areTypesCompatibleForSlave( source.get(), thisKnob.get() ) ) {
             if (warn) {
-                Dialogs::errorDialog( QObject::tr("Link").toStdString(), QObject::tr("You can only link parameters of the same type. To overcome this, use an expression instead.").toStdString() );
+                Dialogs::errorDialog( tr("Link").toStdString(), tr("You can only link parameters of the same type. To overcome this, use an expression instead.").toStdString() );
             }
             ret = false;
         }
 
         if ( ret && (srcDim != -1) && (targetDim == -1) ) {
             if (warn) {
-                Dialogs::errorDialog( QObject::tr("Link").toStdString(), QObject::tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
+                Dialogs::errorDialog( tr("Link").toStdString(), tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
             }
             ret = false;
         }
 
         if ( ret && ( (targetDim == -1) || (srcDim == -1) ) && ( source->getDimension() != thisKnob->getDimension() ) ) {
             if (warn) {
-                Dialogs::errorDialog( QObject::tr("Link").toStdString(), QObject::tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
+                Dialogs::errorDialog( tr("Link").toStdString(), tr("When linking on all dimensions, original and target parameters must have the same dimension.").toStdString() );
             }
             ret = false;
         }

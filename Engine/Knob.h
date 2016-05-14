@@ -2167,10 +2167,11 @@ private:
 class KnobHolder
     : public QObject
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class RecursionLevelRAII;
-
     struct KnobHolderPrivate;
     boost::scoped_ptr<KnobHolderPrivate> _imp;
 

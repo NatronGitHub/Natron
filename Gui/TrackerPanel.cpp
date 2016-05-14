@@ -231,6 +231,9 @@ typedef std::map<boost::weak_ptr<TrackMarker>, TrackKeys  > TrackKeysMap;
 
 struct TrackerPanelPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(TrackerPanel)
+
+public:
     TrackerPanel* _publicInterface;
     boost::weak_ptr<NodeGui> node;
     boost::weak_ptr<TrackerContext> context;
@@ -576,7 +579,10 @@ tooltipFromKnob(const KnobPtr& knob)
 static QString
 labelToolTipFromScriptName(const TrackMarker& marker)
 {
-    return QString::fromUtf8("<p><b>") + QString::fromUtf8( marker.getScriptName_mt_safe().c_str() ) + QString::fromUtf8("</b></p>") +  GuiUtils::convertFromPlainText(QObject::tr("The label of the track as seen in the viewer."), Qt::WhiteSpaceNormal);
+    return ( QString::fromUtf8("<p><b>")
+             + QString::fromUtf8( marker.getScriptName_mt_safe().c_str() )
+             + QString::fromUtf8("</b></p>")
+             +  GuiUtils::convertFromPlainText(QCoreApplication::translate("TrackerPanel", "The label of the track as seen in the viewer."), Qt::WhiteSpaceNormal) );
 }
 
 void
@@ -599,7 +605,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         QObject::connect( checkbox, SIGNAL(clicked(bool)), _publicInterface, SLOT(onItemEnabledCheckBoxChecked(bool)) );
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
-        newItem->setToolTip( GuiUtils::convertFromPlainText(QObject::tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), Qt::WhiteSpaceNormal) );
+        newItem->setToolTip( GuiUtils::convertFromPlainText(tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), Qt::WhiteSpaceNormal) );
         d.item = newItem;
         d.dimension = -1;
         view->setCellWidget(row, COL_ENABLED, checkboxContainer);

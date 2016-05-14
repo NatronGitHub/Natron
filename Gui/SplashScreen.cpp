@@ -50,14 +50,16 @@ SplashScreen::SplashScreen(const QString & filePath)
         if ( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE) ) {
             buildNo = QString::number(NATRON_BUILD_NUMBER);
         }
-        _versionString = QString( QString::fromUtf8("v" NATRON_VERSION_STRING " - " NATRON_DEVELOPMENT_STATUS) + buildNo
-                                  + QObject::tr(" - built on ") + QString::fromUtf8(__DATE__) );
+        _versionString = tr("v%1 - %2 %3 - built on %3")
+                         .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
+                         .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
+                         .arg(buildNo)
+                         .arg( QString::fromUtf8(__DATE__) );
     } else {
-        _versionString = QString ( QString::fromUtf8(NATRON_APPLICATION_NAME) +
-                                   QObject::tr(" for ") +
-                                   customBuildString +
-                                   QObject::tr(" - built on ") +
-                                   QString::fromUtf8(__DATE__) );
+        _versionString = tr("%1 for %2 - built on %3")
+                         .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+                         .arg(customBuildString)
+                         .arg( QString::fromUtf8(__DATE__) );
     }
 
     setAttribute( Qt::WA_TransparentForMouseEvents );

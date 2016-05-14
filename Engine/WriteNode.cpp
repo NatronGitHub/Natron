@@ -164,6 +164,9 @@ WriteNode::isBundledWriter(const std::string& pluginID)
 
 struct WriteNodePrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(WriteNode)
+
+public:
     WriteNode* _publicInterface;
     NodeWPtr embeddedPlugin, readBackNode, inputNode, outputNode;
     std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
@@ -396,7 +399,7 @@ WriteNodePrivate::createDefaultWriteNode()
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
 
     if ( !embeddedPlugin.lock() ) {
-        QString error = QObject::tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
+        QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
         throw std::runtime_error( error.toStdString() );
     }
 
@@ -419,15 +422,14 @@ WriteNodePrivate::checkEncoderCreated(double time,
     assert(fileKnob);
     std::string pattern = fileKnob->generateFileNameAtTime( std::floor(time + 0.5), ViewSpec( view.value() ) ).toStdString();
     if ( pattern.empty() ) {
-        _publicInterface->setPersistentMessage( eMessageTypeError, QObject::tr("Filename empty").toStdString() );
+        _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 
         return false;
     }
     if ( !embeddedPlugin.lock() ) {
-        std::stringstream ss;
-        ss << QObject::tr("Encoder was not created for ").toStdString() << pattern;
-        ss << QObject::tr(" check that the file exists and its format is supported").toStdString();
-        _publicInterface->setPersistentMessage( eMessageTypeError, ss.str() );
+        QString s = tr("Encoder was not created for %1. Check that the file exists and its format is supported.")
+                    .arg( QString::fromUtf8( pattern.c_str() ) );
+        _publicInterface->setPersistentMessage( eMessageTypeError, s.toStdString() );
 
         return false;
     }
@@ -631,8 +633,8 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     if (writerPluginID.empty() && !serialization) {
         //Couldn't find any reader
         if ( !ext.empty() ) {
-            QString message = QObject::tr("No plugin capable of encoding") + QLatin1Char(' ') + QString::fromUtf8( ext.c_str() ) + QLatin1Char(' ') + QObject::tr("was found") + QLatin1Char('.');
-            //Dialogs::errorDialog(QObject::tr("Read").toStdString(), message.toStdString(), false);
+            QString message = tr("No plugin capable of encoding %1 was found.").arg( QString::fromUtf8( ext.c_str() ) );
+            //Dialogs::errorDialog(tr("Read").toStdString(), message.toStdString(), false);
             if (throwErrors) {
                 throw std::runtime_error( message.toStdString() );
             }

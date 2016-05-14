@@ -1637,7 +1637,7 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
         }
     }
     if (!curve) {
-        Dialogs::warningDialog( QObject::tr("Curve Editor").toStdString(), QObject::tr("You must select a curve first.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first.").toStdString() );
 
         return;
     }

@@ -40,6 +40,8 @@ NATRON_NAMESPACE_ENTER;
 struct KnobWidgetDnDPrivate;
 class KnobWidgetDnD
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
+
 public:
 
     KnobWidgetDnD(const KnobGuiPtr& knob, int dimension, QWidget* widget);

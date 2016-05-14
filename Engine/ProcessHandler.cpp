@@ -249,7 +249,7 @@ void
 ProcessHandler::onProcessError(QProcess::ProcessError err)
 {
     if (err == QProcess::FailedToStart) {
-        Dialogs::errorDialog( _writer->getScriptName(), QObject::tr("The render process failed to start").toStdString() );
+        Dialogs::errorDialog( _writer->getScriptName(), tr("The render process failed to start.").toStdString() );
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }
