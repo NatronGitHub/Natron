@@ -89,7 +89,7 @@ using std::make_pair;
 NATRON_NAMESPACE_ENTER;
 
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
+//NATRON_NAMESPACE_ANONYMOUS_ENTER;
 
 class OverlayColorButton
     : public Button
@@ -129,7 +129,7 @@ private:
     }
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT
+//NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 
 DockablePanel::DockablePanel(Gui* gui,
