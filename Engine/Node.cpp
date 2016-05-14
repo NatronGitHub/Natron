@@ -2548,7 +2548,6 @@ Node::getPreferredInputInternal(bool connected) const
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
     }  else {
-#if 1
         if ( !optionalEmptyInputs.empty() ) {
             //We return the first optional empty input
             std::list<int>::iterator first = optionalEmptyInputs.begin();
@@ -2560,18 +2559,6 @@ Node::getPreferredInputInternal(bool connected) const
             } else {
                 return *first;
             }
-#else // previous version, not consistent with Node::getPreferredInputInternal()
-      //We return the last optional empty input
-        std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
-        while ( first != optionalEmptyInputs.rend() && _imp->effect->isInputRotoBrush(*first) ) {
-            ++first;
-        }
-        if ( first == optionalEmptyInputs.rend() ) {
-            return -1;
-        } else {
-            return *first;
-        }
-#endif
         } else if ( !optionalEmptyMasks.empty() ) {
             return optionalEmptyMasks.front();
         } else {
@@ -3732,12 +3719,14 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
     createNodePage(settingsPage, renderScaleSupportPref);
     createInfoPage();
 
-    if ( _imp->effect->isWriter() ) {
+    if (_imp->effect->isWriter()
+#ifdef NATRON_ENABLE_IO_META_NODES
+        && !ioContainer
+#endif
+        ) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
 #ifndef NATRON_ENABLE_IO_META_NODES
         createWriterFrameStepKnob(mainPage);
-#else
-        if (!ioContainer) {
 #endif
 
         boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
@@ -3749,9 +3738,6 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
         mainPage->addKnob(renderButton);
 
         createPythonPage();
-#ifdef NATRON_ENABLE_IO_META_NODES
-    }
-#endif
     }
 } // Node::initializeDefaultKnobs
 

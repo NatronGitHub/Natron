@@ -158,6 +158,8 @@ Project::~Project()
     //removeAutoSaves();
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER;
+
 class LoadProjectSplashScreen_RAII
 {
     AppInstance* app;
@@ -180,6 +182,8 @@ public:
         }
     }
 };
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 bool
 Project::loadProject(const QString & path,

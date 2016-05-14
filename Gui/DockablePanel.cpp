@@ -94,6 +94,11 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 class OverlayColorButton
     : public Button
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     DockablePanel* _panel;
 
 public:

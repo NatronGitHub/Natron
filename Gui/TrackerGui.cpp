@@ -196,6 +196,9 @@ typedef std::map<TrackRequestKey, TrackWatcherPtr, TrackRequestKey_compareLess> 
 
 struct TrackerGuiPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(TrackerGui)
+
+public:
     TrackerGui* _publicInterface;
     boost::shared_ptr<TrackerPanelV1> panelv1;
     TrackerPanel* panel;
@@ -1629,7 +1632,7 @@ TrackerGuiPrivate::drawSelectedMarkerKeyframes(const std::pair<double, double>& 
                 viewer->getViewer()->renderText(textPos.x(), textPos.y(), QString::fromUtf8( marker->getLabel().c_str() ), QColor(200, 200, 200), font);
 
                 QPointF framePos = viewer->getViewer()->toZoomCoordinates( QPointF( xOffsetPixels + 5, viewer->getViewer()->toWidgetCoordinates( QPointF(textureRectCanonical.x1, textureRectCanonical.y1) ).y() ) );
-                QString frameText = _publicInterface->tr("Frame");
+                QString frameText = tr("Frame");
                 frameText.append( QString::fromUtf8(" ") + QString::number(it2->first) );
                 viewer->getViewer()->renderText(framePos.x(), framePos.y(), frameText, QColor(200, 200, 200), font);
 
