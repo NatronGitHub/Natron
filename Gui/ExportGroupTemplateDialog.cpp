@@ -161,11 +161,14 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
 
     _imp->idLabel = new Label(tr("Unique ID"), this);
-    QString idTt = GuiUtils::convertFromPlainText(tr("The unique ID is used by " NATRON_APPLICATION_NAME "to identify the plug-in in various "
-                                                     "places in the application. Generally this contains domain and sub-domains names "
-                                                     "such as fr.inria.group.XXX. If 2 plug-ins happen to have the same ID they will be "
-                                                     "gathered by version. If 2 plug-ins have the same ID and version, the first loaded in the"
-                                                     " search-paths will take precedence over the other."), Qt::WhiteSpaceNormal);
+    QString idTt = GuiUtils::convertFromPlainText(tr("The unique ID is used by %1 to identify the plug-in in various "
+                                                     "places in the application.\n"
+                                                     "Generally, this contains domain and sub-domains names "
+                                                     "such as fr.inria.group.XXX.\n"
+                                                     "If two plug-ins or more happen to have the same ID, they will be "
+                                                     "gathered by version.\n"
+                                                     "If two plug-ins or more have the same ID and version, the first loaded in the"
+                                                     " search-paths will take precedence over the other.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal);
     _imp->idEdit = new LineEdit(this);
     _imp->idEdit->setPlaceholderText( QString::fromUtf8("org.organization.pyplugs.XXX") );
     _imp->idEdit->setToolTip(idTt);
@@ -181,8 +184,8 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
 
     _imp->groupingLabel = new Label(tr("Grouping"), this);
-    QString groupingTt = GuiUtils::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus. "
-                                                           "E.g: Color/Transform, or Draw. Each sub-level must be separated by a '/'."), Qt::WhiteSpaceNormal);
+    QString groupingTt = GuiUtils::convertFromPlainText(tr("The grouping of the plug-in specifies where the plug-in will be located in the menus, "
+                                                           "e.g. \"Color/Transform\", or \"Draw\". Each sub-level must be separated by a '/'."), Qt::WhiteSpaceNormal);
     _imp->groupingLabel->setToolTip(groupingTt);
 
     _imp->groupingEdit = new LineEdit(this);

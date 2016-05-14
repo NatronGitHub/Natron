@@ -1686,7 +1686,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
              && !didFontWarn ) {
             didOCIOWarn = true;
             Dialogs::warningDialog( QObject::tr("Font change").toStdString(),
-                                    QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString() );
+                                    QObject::tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         } else if ( ( ( knobs[i] == _ocioConfigKnob.get() ) ||
                       ( knobs[i] == _customOcioConfigFile.get() ) )
                     && !didOCIOWarn ) {
@@ -1695,8 +1695,7 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
             if (warnOcioChanged) {
                 bool stopAsking = false;
                 Dialogs::warningDialog(QObject::tr("OCIO config changed").toStdString(),
-                                       QObject::tr("The OpenColorIO config change requires a restart of "
-                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(), &stopAsking);
+                                       QObject::tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
                 if (stopAsking) {
                     _warnOcioConfigKnobChanged->setValue(false);
                     saveSetting( _warnOcioConfigKnobChanged.get() );
@@ -2073,8 +2072,7 @@ Settings::onKnobValueChanged(KnobI* k,
             if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
                 bool stopAsking = false;
                 Dialogs::warningDialog(QObject::tr("OCIO config changed").toStdString(),
-                                       QObject::tr("The OpenColorIO config change requires a restart of "
-                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(), &stopAsking);
+                                       QObject::tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
                 if (stopAsking) {
                     _warnOcioConfigKnobChanged->setValue(false);
                 }
@@ -2132,9 +2130,8 @@ Settings::onKnobValueChanged(KnobI* k,
         _customHostName->setSecret(!isCustom);
     } else if ( ( k == _testCrashReportButton.get() ) && (reason == eValueChangedReasonUserEdited) ) {
         StandardButtonEnum reply = Dialogs::questionDialog( QObject::tr("Crash Test").toStdString(),
-                                                            QObject::tr("You are about to make " NATRON_APPLICATION_NAME
-                                                                        " crash to test the reporting system. "
-                                                                        "Do you really want to crash?").toStdString(), false,
+                                                            QObject::tr("You are about to make %1 crash to test the reporting system.\n"
+                                                                        "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
                                                             StandardButtons(eStandardButtonYes | eStandardButtonNo) );
         if (reply == eStandardButtonYes) {
             crash_application();
@@ -2143,8 +2140,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->reloadScriptEditorFonts();
     }
     if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
-        Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
-                                                                         " and clearing the OpenFX plug-ins load cache from the Cache menu.").toStdString() );
+        Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
     }
 } // onKnobValueChanged
 
@@ -2496,7 +2492,9 @@ Settings::populatePluginsTab()
             pluginActivation->setName(it->first + ".enabled");
             pluginActivation->setAnimationEnabled(false);
             pluginActivation->setAddNewLine(false);
-            pluginActivation->setHintToolTip( tr("When checked, %2 will be activated and you can create a node using this plug-in in %1. When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( pluginName.c_str() ) ) );
+            pluginActivation->setHintToolTip( tr("When checked, %2 will be activated and you can create a node using this plug-in in %1.\n"
+                                                 "When unchecked, you'll be unable to create a node for this plug-in.\n"
+                                                 "Changing this parameter requires a restart of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( pluginName.c_str() ) ) );
             if (group) {
                 group->addKnob(pluginActivation);
             }
@@ -2507,7 +2505,7 @@ Settings::populatePluginsTab()
             zoomSupport->populateChoices(zoomSupportEntries);
             zoomSupport->setName(it->first + ".zoomSupport");
             zoomSupport->setDefaultValue( filterDefaultRenderScaleSupportPlugin( plugin->getPluginID() ) );
-            zoomSupport->setHintToolTip( tr("Controls whether the plug-in should have its default zoom support or it should be deactivated. "
+            zoomSupport->setHintToolTip( tr("Controls whether the plug-in should have its default zoom support or it should be deactivated.\n"
                                             "This parameter is useful because some plug-ins flag that they can support different level of zoom "
                                             "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
                                             "plug-in, hence making it work at different zoom levels."
@@ -3135,9 +3133,9 @@ Settings::doOCIOStartupCheckIfNeeded()
                 _ocioConfigKnob->setValue(defaultIndex);
                 saveSetting( _ocioConfigKnob.get() );
             } else {
-                Dialogs::warningDialog( "OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
+                Dialogs::warningDialog( "OCIO config", QObject::tr("The %2 OCIO config could not be found.\n"
                                                                    "This is probably because you're not using the OpenColorIO-Configs folder that should "
-                                                                   "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString() );
+                                                                   "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
             }
         }
     }

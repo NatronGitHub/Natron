@@ -309,10 +309,10 @@ GuiAppInstance::load(const CLArgs& cl,
 
         if ( !appPTR->isShorcutVersionUpToDate() ) {
             StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
-                                                      tr("Default shortcuts for " NATRON_APPLICATION_NAME " have changed, "
-                                                         "would you like to set them to their defaults ? "
+                                                      tr("Default shortcuts for %1 have changed, "
+                                                         "would you like to set them to their defaults?\n"
                                                          "Clicking no will keep the old shortcuts hence if a new shortcut has been "
-                                                         "set to something else than an empty shortcut you won't benefit of it.").toStdString(),
+                                                         "set to something else than an empty shortcut you won't benefit of it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(),
                                                       false,
                                                       StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                       eStandardButtonNo);
@@ -363,7 +363,7 @@ GuiAppInstance::load(const CLArgs& cl,
             appPTR->setFileToOpen( QString() );
         } else {
             Dialogs::errorDialog( tr("Invalid file").toStdString(),
-                                  tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString() );
+                                  tr("%1 only accepts python scripts or .ntp project files").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
             execOnProjectCreatedCallback();
         }
     }
