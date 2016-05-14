@@ -161,7 +161,7 @@ KnobBool::KnobBool(KnobHolder* holder,
                    const std::string &label,
                    int dimension,
                    bool declaredByPlugin)
-: Knob<bool>(holder, label, dimension, declaredByPlugin)
+    : Knob<bool>(holder, label, dimension, declaredByPlugin)
 {
 }
 
@@ -169,7 +169,7 @@ KnobBool::KnobBool(KnobHolder* holder,
                    const QString &label,
                    int dimension,
                    bool declaredByPlugin)
-: Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 
@@ -1787,7 +1787,6 @@ KnobParametric::KnobParametric(KnobHolder* holder,
 }
 
 const std::string KnobParametric::_typeNameStr("Parametric");
-
 const std::string &
 KnobParametric::typeNameStatic()
 {
