@@ -48,6 +48,11 @@ NATRON_NAMESPACE_ENTER;
 class OutputEffectInstance
     : public EffectInstance
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     struct RenderSequenceArgs
     {
         BlockingBackgroundRender* renderController;

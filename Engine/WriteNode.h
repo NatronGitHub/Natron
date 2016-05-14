@@ -56,6 +56,10 @@ struct WriteNodePrivate;
 class WriteNode
     : public OutputEffectInstance
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     static EffectInstance* BuildEffect(NodePtr n)
