@@ -642,7 +642,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     if ( foundCurveNearby != _imp->_curves.end() ) {
         std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
         if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
-            QString err =  tr(" Out of curve y range ") +
+            QString err =  tr("Out of curve y range ") +
                           QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
             Dialogs::warningDialog( "", err.toStdString() );
             e->accept();
@@ -726,7 +726,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
             std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
             if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
-                QString err =  tr(" Out of curve y range ") +
+                QString err =  tr("Out of curve y range ") +
                               QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
                 Dialogs::warningDialog( "", err.toStdString() );
                 e->accept();
@@ -1985,7 +1985,7 @@ CurveWidget::exportCurveToAscii()
             double endInt = std::floor(end);
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) || ( endInt != end) ) ) {
-                Dialogs::warningDialog( tr("Curve Export").toStdString(), curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Export").toStdString(), tr("%1 doesn't support X values that are not integers.").arg( curves[i]->getName() ).toStdString() );
 
                 return;
             }

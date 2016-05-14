@@ -307,7 +307,7 @@ KnobGui::linkTo(int dimension)
         KnobPtr otherKnob = dialog.getSelectedKnobs();
         if (otherKnob) {
             if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-                Dialogs::errorDialog( tr("Param Link").toStdString(), tr("Types incompatibles!").toStdString() );
+                Dialogs::errorDialog( tr("Param Link").toStdString(), tr("Types are incompatible!").toStdString() );
 
                 return;
             }
@@ -316,11 +316,11 @@ KnobGui::linkTo(int dimension)
             for (int i = 0; i < thisKnob->getDimension(); ++i) {
                 std::pair<int, KnobPtr > existingLink = thisKnob->getMaster(i);
                 if (existingLink.second) {
-                    std::string err( tr("Cannot link ").toStdString() );
-                    err.append( thisKnob->getLabel() );
-                    err.append( " \n " + tr("because the knob is already linked to ").toStdString() );
-                    err.append( existingLink.second->getLabel() );
-                    Dialogs::errorDialog(tr("Param Link").toStdString(), err);
+                    Dialogs::errorDialog( tr("Param Link").toStdString(),
+                                          tr("Cannot link %1 because the knob is already linked to %2.")
+                                          .arg( QString::fromUtf8( thisKnob->getLabel().c_str() ) )
+                                          .arg( QString::fromUtf8( existingLink.second->getLabel().c_str() ) )
+                                          .toStdString() );
 
                     return;
                 }

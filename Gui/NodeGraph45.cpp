@@ -93,7 +93,7 @@ NodeGraph::toggleHideInputs()
     const NodesGuiList& selectedNodes = getSelectedNodes();
 
     if ( selectedNodes.empty() ) {
-        Dialogs::warningDialog( tr("Hide Inptus").toStdString(), tr("You must select a node first").toStdString() );
+        Dialogs::warningDialog( tr("Hide Inputs").toStdString(), tr("You must select a node first").toStdString() );
 
         return;
     }

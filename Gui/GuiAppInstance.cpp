@@ -313,7 +313,7 @@ GuiAppInstance::load(const CLArgs& cl,
                                                       tr("Default shortcuts for %1 have changed, "
                                                          "would you like to set them to their defaults?\n"
                                                          "Clicking no will keep the old shortcuts hence if a new shortcut has been "
-                                                         "set to something else than an empty shortcut you won't benefit of it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(),
+                                                         "set to something else than an empty shortcut you will not benefit of it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(),
                                                       false,
                                                       StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                       eStandardButtonNo);
@@ -405,8 +405,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     }
 
     QString text = tr("An auto-saved project was found with no associated project file.\n"
-                      "Would you like to restore it? Clicking No will remove this auto-save.");
-
+                      "Would you like to restore it?\n"
+                      "Clicking No will remove this auto-save.");
 
     appPTR->hideSplashScreen();
 

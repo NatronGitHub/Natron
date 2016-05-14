@@ -163,7 +163,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
         column._curve = curves[i];
         column._curveContainer = new QWidget(this);
         column._curveLayout = new QHBoxLayout(column._curveContainer);
-        column._curveLabel = new Label( curves[i]->getName() + tr(" column:") );
+        column._curveLabel = new Label( tr("%1 column:").arg( curves[i]->getName() ) );
         column._curveLabel->setFont( QApplication::font() ); // necessary, or the labels will get the default font size
         column._curveLayout->addWidget(column._curveLabel);
         column._curveSpinBox = new SpinBox(column._curveContainer, SpinBox::eSpinBoxTypeInt);
