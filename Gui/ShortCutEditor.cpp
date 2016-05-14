@@ -295,10 +295,10 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
                                 tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
                                    " Note that this table also have some special assignments which also involve the mouse. "
                                    "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
-                                   "Note that internally " NATRON_APPLICATION_NAME " does an emulation of a three-button mouse "
+                                   "Note that internally %1 does an emulation of a three-button mouse "
                                    "if your computer doesn't have one, that is: \n"
                                    "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
-                                   "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."), Qt::WhiteSpaceNormal) );
+                                   "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal) );
     _imp->tree->setItemDelegate( new ShortcutDelegate(_imp->tree) );
 
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();

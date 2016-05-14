@@ -567,7 +567,7 @@ AppInstance::load(const CLArgs& cl,
             ///Load the python script
             loadPythonScript(info);
         } else {
-            throw std::invalid_argument( tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString() );
+            throw std::invalid_argument( tr("%1 only accepts python scripts or .ntp project files.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
 
 
@@ -590,20 +590,17 @@ AppInstance::load(const CLArgs& cl,
             NodePtr readNode = getNodeByFullySpecifiedName(readerName);
 
             if (!readNode) {
-                std::string exc(readerName);
-                exc.append( tr(" does not belong to the project file. Please enter a valid Read node script-name.").toStdString() );
+                std::string exc( tr("%1 does not belong to the project file. Please enter a valid Read node script-name.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             } else {
                 if ( !readNode->getEffectInstance()->isReader() ) {
-                    std::string exc(readerName);
-                    exc.append( tr(" is not a Read node! It cannot render anything.").toStdString() );
+                    std::string exc( tr("%1 is not a Read node! It cannot render anything.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                     throw std::invalid_argument(exc);
                 }
             }
 
             if ( it->filename.isEmpty() ) {
-                std::string exc(readerName);
-                exc.append( tr(": Filename specified is empty but [-i] or [--reader] was passed to the command-line").toStdString() );
+                std::string exc( tr("%1: Filename specified is empty but [-i] or [--reader] was passed to the command-line").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             }
             KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
@@ -1147,9 +1144,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
              ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                tr("The settings of the application are currently set to use "
-                                                                  "the global thread-pool for rendering effects. The Foundry Furnace "
-                                                                  "is known not to work well when this setting is checked. "
-                                                                  "Would you like to turn it off ? ").toStdString(), false);
+                                                                  "the global thread-pool for rendering effects.\n"
+                                                                  "The Foundry Furnace "
+                                                                  "is known not to work well when this setting is checked.\n"
+                                                                  "Would you like to turn it off?").toStdString(), false);
             if (reply == eStandardButtonYes) {
                 settings->setUseGlobalThreadPool(false);
                 settings->setNumberOfParallelRenders(1);
@@ -1164,7 +1162,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 if (nbViews < 2) {
                     StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
                                                                        tr("Using a multi-view node requires the project settings to be setup "
-                                                                          "for multi-view. Would you like to setup the project for stereo?").toStdString(), false);
+                                                                          "for multi-view.\n"
+                                                                          "Would you like to setup the project for stereo?").toStdString(), false);
                     if (reply == eStandardButtonYes) {
                         getProject()->setupProjectForStereo();
                     }
