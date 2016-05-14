@@ -34,6 +34,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
+
+#include <QtCore/QCoreApplication>
 #include <QUndoCommand>
 
 #include "Global/GlobalDefines.h"

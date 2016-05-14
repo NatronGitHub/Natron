@@ -30,7 +30,11 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
+
 #include "Global/Macros.h"
+
+#include <QtCore/QCoreApplication>
+
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhImageEffect.h>

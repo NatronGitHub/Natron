@@ -37,6 +37,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
 #include <QUndoCommand>
 #include <QList>
 CLANG_DIAG_ON(deprecated)
