@@ -4829,6 +4829,11 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
 class LinkToTrackDialog
     : public QDialog
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     ComboBox* _choice;
 
 public:

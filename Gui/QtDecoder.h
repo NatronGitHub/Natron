@@ -47,6 +47,10 @@ NATRON_NAMESPACE_ENTER;
 class QtReader
     : public EffectInstance
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
     static EffectInstance* BuildEffect(NodePtr n)
     {

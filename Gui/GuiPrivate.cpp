@@ -352,7 +352,7 @@ GuiPrivate::createPropertiesBinGui()
 
     _clearAllPanelsButton->setFixedSize(smallButtonSize);
     _clearAllPanelsButton->setIconSize(smallButtonIconSize);
-    _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
+    _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
                                                                       Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL(clicked(bool)), _gui, SLOT(clearAllVisiblePanels()) );
@@ -367,7 +367,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(smallButtonSize);
     _minimizeAllPanelsButtons->setIconSize(smallButtonIconSize);
-    _minimizeAllPanelsButtons->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
+    _minimizeAllPanelsButtons->setToolTip( GuiUtils::convertFromPlainText(tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL(clicked(bool)), _gui, SLOT(minimizeMaximizeAllPanels(bool)) );
 
@@ -375,9 +375,9 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
-                                                                                 "in the properties bin pane. The special value of 0 indicates "
-                                                                                 "that an unlimited number of panels can be opened."),
+    _maxPanelsOpenedSpinBox->setToolTip( GuiUtils::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
+                                                                           "in the properties bin pane. The special value of 0 indicates "
+                                                                           "that an unlimited number of panels can be opened."),
                                                                         Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL(valueChanged(double)), _gui, SLOT(onMaxPanelsSpinBoxValueChanged(double)) );

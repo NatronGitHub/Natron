@@ -117,6 +117,10 @@ private:
 class KnobGuiLayers
     : public KnobGuiTable
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     static KnobGui * BuildKnobGui(KnobPtr knob,
