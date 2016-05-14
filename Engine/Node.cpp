@@ -3120,12 +3120,12 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
-    useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip( tr("This node doesn't support rendering images at a scale lower than 1, it "
+    useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip( tr("This node does not support rendering images at a scale lower than 1, it "
                                                                      "can only render high definition images. When checked this parameter controls "
                                                                      "whether the rest of the graph upstream should be rendered with a high quality too or at "
                                                                      "the most optimal resolution for the current viewer's viewport. Typically checking this "
                                                                      "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
-                                                                     "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
+                                                                     "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
                                                                      "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
     if ( (renderScaleSupportPref == 0) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
         useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);

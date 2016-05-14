@@ -387,42 +387,64 @@ AppInstance::newVersionCheckDownloaded()
          ( ( versionEncoded == NATRON_VERSION_ENCODED) &&
            ( ( devStatCompare > 0) || ( ( devStatCompare == 0) && ( buildNumber > NATRON_BUILD_NUMBER) ) ) ) ) {
         QString text;
+        const QString popen = QString::fromUtf8("<p>");
+        const QString pclose = QString::fromUtf8("</p>");
         if (devStatCompare == 0) {
             if ( ( buildNumber > NATRON_BUILD_NUMBER) && ( versionEncoded == NATRON_VERSION_ENCODED) &&
                  ( currentDevStatus == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE) ) ) {
                 ///show build number in version
-                text =  tr("<p>Updates for %1 are now available for download. "
-                           "You are currently using %1 version %2 - %3 - build %4. "
-                           "The latest version of %1 is version %5 - %6 - build %7.</p> ")
+                text =  popen
+                       + tr("Updates for %1 are now available for download.")
+                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+                       + pclose
+                       + popen
+                       + tr("You are currently using %1 version %2 - %3 - build %4.")
                        .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                        .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
                        .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
                        .arg(NATRON_BUILD_NUMBER)
+                       + pclose
+                       + popen
+                       + tr("The latest version of %1 is version %2 - %3 - build %4.")
+                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                        .arg(extractedSoftwareVersionStr)
                        .arg(extractedDevStatusStr)
-                       .arg(extractedBuildNumberStr) +
-                       tr("<p>You can download it from %6</p>")
+                       .arg(extractedBuildNumberStr)
+                       + pclose
+                       + popen
+                       + tr("You can download it from %1.")
                        .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                               "www.natron.fr</a>. </p>") );
+                                               "www.natron.fr</a>") )
+                       + pclose;
             } else {
                 //Only notify build number increments for Release candidates
                 return;
             }
         } else {
-            text =  tr("<p>Updates for %1 are now available for download. "
-                       "You are currently using %1 version %2 - %3. "
-                       "The latest version of %1 is version %4 - %5.</p>")
+            text =  popen
+                   + tr("Updates for %1 are now available for download.")
+                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+                   + pclose
+                   + popen
+                   + tr("You are currently using %1 version %2 - %3.")
                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                    .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
                    .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
+                   + pclose
+                   + popen
+                   + tr("The latest version of %1 is version %4 - %5.")
+                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                    .arg(extractedSoftwareVersionStr)
-                   .arg(extractedDevStatusStr) +
-                   tr("<p>You can download it from %6</p>")
+                   .arg(extractedDevStatusStr)
+                   + pclose
+                   + popen
+                   + tr("You can download it from %1.")
                    .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                           "www.natron.fr</a>. </p>") );
+                                           "www.natron.fr</a>") )
+                   + pclose;
         }
 
-        Dialogs::informationDialog( "New version", text.toStdString(), true );
+        Dialogs::informationDialog( tr("New version").toStdString(), text.toStdString(), true );
     }
 } // AppInstance::newVersionCheckDownloaded
 
@@ -449,14 +471,12 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             writerNode = getNodeByFullySpecifiedName(writerName);
 
             if (!writerNode) {
-                std::string exc(writerName);
-                exc.append( tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString() );
-                throw std::invalid_argument(exc);
+                QString s = tr("%1 does not belong to the project file. Please enter a valid Write node script-name.").arg(it->name);
+                throw std::invalid_argument( s.toStdString() );
             } else {
                 if ( !writerNode->isOutputNode() ) {
-                    std::string exc(writerName);
-                    exc.append( tr(" is not an output node! It cannot render anything.").toStdString() );
-                    throw std::invalid_argument(exc);
+                    QString s = tr("%1 is not an output node! It cannot render anything.").arg(it->name);
+                    throw std::invalid_argument( s.toStdString() );
                 }
             }
 
@@ -472,17 +492,17 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
         } else {
             writerNode = createWriter( it->filename.toStdString(), eCreateNodeReasonInternal, getProject() );
             if (!writerNode) {
-                throw std::runtime_error( std::string("Failed to create writer for ") + it->filename.toStdString() );
+                throw std::runtime_error( tr("Failed to create writer for %1.").arg(it->filename).toStdString() );
             }
 
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName( it->name.toStdString() );
             if (!output) {
-                throw std::invalid_argument( it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString() );
+                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
             GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>( output->getEffectInstance().get() );
             if (!isGrpOutput) {
-                throw std::invalid_argument( it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString() );
+                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
             NodePtr outputInput = output->getRealInput(0);
             if (outputInput) {
@@ -556,10 +576,7 @@ AppInstance::load(const CLArgs& cl,
 
         QFileInfo info(scriptFilename);
         if ( !info.exists() ) {
-            std::stringstream ss;
-            ss << scriptFilename.toStdString();
-            ss << tr(": No such file").toStdString();
-            throw std::invalid_argument( ss.str() );
+            throw std::invalid_argument( tr("%1: No such file.").arg(scriptFilename).toStdString() );
         }
 
         std::list<AppInstance::RenderWork> writersWork;
@@ -607,7 +624,7 @@ AppInstance::load(const CLArgs& cl,
             }
 
             if ( it->filename.isEmpty() ) {
-                std::string exc( tr("%1: Filename specified is empty but [-i] or [--reader] was passed to the command-line").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
+                std::string exc( tr("%1: Filename specified is empty but [-i] or [--reader] was passed to the command-line.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             }
             KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
@@ -906,11 +923,12 @@ AppInstance::createReader(const std::string& filename,
     std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     QString fileCpy = QString::fromUtf8( filename.c_str() );
-    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
+    std::string ext = extq.toStdString();
     std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
     if ( found == readersForFormat.end() ) {
         Dialogs::errorDialog( tr("Reader").toStdString(),
-                              tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false );
+                              tr("No plugin capable of decoding %1 was found").arg(extq).toStdString(), false );
 
         return NodePtr();
     }
@@ -941,11 +959,12 @@ AppInstance::createWriter(const std::string& filename,
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
 
     QString fileCpy = QString::fromUtf8( filename.c_str() );
-    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
+    std::string ext = extq.toStdString();
     std::map<std::string, std::string>::iterator found = writersForFormat.find(ext);
     if ( found == writersForFormat.end() ) {
         Dialogs::errorDialog( tr("Writer").toStdString(),
-                              tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(), false );
+                              tr("No plugin capable of encoding %1 was found.").arg(extq).toStdString(), false );
 
         return NodePtr();
     }
@@ -1039,7 +1058,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             plugin = appPTR->getPluginBinaryFromOldID(args.pluginID, args.majorV, args.minorV);
         } catch (const std::exception& e2) {
             Dialogs::errorDialog(tr("Plugin error").toStdString(),
-                                 tr("Cannot load plugin executable").toStdString() + ": " + e2.what(), false );
+                                 tr("Cannot load plugin executable.").toStdString() + ": " + e2.what(), false );
 
             return node;
         }
@@ -1093,8 +1112,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 // ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
                 ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
             } catch (const std::exception& e) {
-                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of ").toStdString()
-                            + args.pluginID.toStdString() + ": " + e.what(), false);
+                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(args.pluginID).toStdString()
+                            + '\n' + e.what(), false);
 
                 return NodePtr();
             }

@@ -4977,9 +4977,9 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
 
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
-    QString bitDepthWarning;
-    bitDepthWarning.append( tr("This nodes converts higher bit depths images from its inputs to work. As "
-                               "a result of this process, the quality of the images is degraded. The following conversions are done: \n") );
+    QString bitDepthWarning = tr("This nodes converts higher bit depths images from its inputs to work. As "
+                                 "a result of this process, the quality of the images is degraded. The following conversions are done:");
+    bitDepthWarning.append( QChar::fromLatin1('\n') );
     bool setBitDepthWarning = false;
     const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
     const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();

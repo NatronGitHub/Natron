@@ -2065,7 +2065,7 @@ PasteItemUndoCommand::undo()
         }
     }
     _roto->getContext()->evaluateChange();
-    setText( tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Paste item(s) of %1").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 void
@@ -2107,7 +2107,7 @@ PasteItemUndoCommand::redo()
     }
 
     _roto->getContext()->evaluateChange();
-    setText( tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Paste item(s) of %1").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 //////////////////

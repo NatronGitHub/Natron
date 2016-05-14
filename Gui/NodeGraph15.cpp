@@ -76,7 +76,7 @@ handleConnectionError(const NodeGuiPtr& outputNode,
 
             return true;
         } else if (linkRetCode == Node::eCanConnectInput_differentFPS) {
-            QString error = QCoreApplication::translate("NodeGraph", "%1 and %2 don't have the same frame rate (%3 vs. %4).\n"
+            QString error = QCoreApplication::translate("NodeGraph", "%1 and %2 do not have the same frame rate (%3 vs. %4).\n"
                                                         "This might yield unwanted results.\n"
                                                         "Either change the FPS from the Read node parameters or change the settings of the project.")
                             .arg( QString::fromUtf8( outputNode->getNode()->getLabel().c_str() ) )

@@ -1390,8 +1390,9 @@ AppManager::loadPythonGroups()
         bool ok  = Python::interpretPythonScript(s, &err, 0);
         if (!ok) {
             std::string message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
-                                     "or reachable through the Python path. (Note that Natron disables usage "
-                                     "of site-packages ").toStdString();
+                                     "or reachable through the Python path. "
+                                     "Note that Natron disables usage "
+                                     "of site-packages).").toStdString();
             std::cerr << message << std::endl;
             appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
         }
@@ -2824,14 +2825,12 @@ AppManager::onCrashReporterNoLongerResponding()
 {
 #ifdef NATRON_USE_BREAKPAD
     //Crash reporter seems to no longer exist, quit
-    std::stringstream ss;
-    ss << NATRON_APPLICATION_NAME << ' ';
-    ss << tr("has detected that the crash reporter process is no longer responding. "
-             "This most likely indicates that it was killed or that the "
-             "communication between the 2 processes is failing.").toStdString();
-    std::string error = ss.str();
-    std::cerr << error << std::endl;
-    writeToErrorLog_mt_safe( QString::fromUtf8( error.c_str() ) );
+    QString error = tr("%1 has detected that the crash reporter process is no longer responding. "
+                       "This most likely indicates that it was killed or that the "
+                       "communication between the 2 processes is failing.")
+                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    std::cerr << error.toStdString() << std::endl;
+    writeToErrorLog_mt_safe( error ) );
 #endif
 }
 

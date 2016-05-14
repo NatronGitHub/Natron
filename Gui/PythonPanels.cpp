@@ -149,7 +149,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         std::string err;
         std::string output;
         if ( !Python::interpretPythonScript(script, &err, &output) ) {
-            getApp()->appendToScriptEditor(tr("Failed to execute callback: ").toStdString() + err);
+            getApp()->appendToScriptEditor( tr("Failed to execute callback: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         } else if ( !output.empty() ) {
             getApp()->appendToScriptEditor(output);
         }

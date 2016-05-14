@@ -203,7 +203,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
 
     _imp->descriptionLabel = new Label(tr("Description"), this);
     QString descTt =  GuiUtils::convertFromPlainText(tr("Set here the (optional) plug-in description that the user will see when clicking the "
-                                                        " \"?\" button on the settings panel of the node."), Qt::WhiteSpaceNormal);
+                                                        "\"?\" button on the settings panel of the node."), Qt::WhiteSpaceNormal);
     _imp->descriptionEdit = new PlaceHolderTextEdit(this);
     _imp->descriptionEdit->setToolTip(descTt);
     _imp->descriptionEdit->setPlaceHolderText( tr("This plug-in can be used to produce XXX effect...") );

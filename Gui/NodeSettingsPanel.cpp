@@ -223,9 +223,10 @@ NodeSettingsPanel::onImportPresetsActionTriggered()
 
     NodeGuiPtr node = getNode();
     if ( nodeSerialization.front()->getPluginID() != node->getNode()->getPluginID() ) {
-        QString err = QString( tr("You cannot load ") + QString::fromUtf8( filename.c_str() )  + tr(" which are presets for the plug-in ") +
-                               QString::fromUtf8( nodeSerialization.front()->getPluginID().c_str() ) + tr(" on the plug-in ") +
-                               QString::fromUtf8( node->getNode()->getPluginID().c_str() ) );
+        QString err = tr("You cannot load %1 which are presets for the plug-in %2 on the plug-in %3.")
+                      .arg( QString::fromUtf8( filename.c_str() ) )
+                      .arg( QString::fromUtf8( nodeSerialization.front()->getPluginID().c_str() ) )
+                      .arg( QString::fromUtf8( node->getNode()->getPluginID().c_str() ) );
         Dialogs::errorDialog( tr("Presets").toStdString(), err.toStdString() );
 
         return;
@@ -262,7 +263,7 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     FStreamsSupport::open(&ofile, filename);
     if (!ofile) {
         Dialogs::errorDialog( tr("Presets").toStdString()
-                              , tr("Failed to open file ").toStdString() + filename, false );
+                              , tr("Failed to open file %1.").arg( QString::fromUtf8( filename.c_str() ) ), false );
 
         return;
     }
