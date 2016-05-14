@@ -1200,6 +1200,9 @@ struct KnobHelperPrivate;
 class KnobHelper
     : public KnobI
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobHelper)
+
+    // friends
     friend class KnobHolder;
 
 public:

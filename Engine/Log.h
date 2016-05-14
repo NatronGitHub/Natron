@@ -35,6 +35,7 @@
 
 
 NATRON_NAMESPACE_ENTER;
+
 class LogPrivate;
 class Log
     : public Singleton<Log>
@@ -82,11 +83,15 @@ public:
         return true;
     }
 };
-}
+
+NATRON_NAMESPACE_EXIT;
+
 #else
+
 #include <string>
 
 NATRON_NAMESPACE_ENTER;
+
 // no-op class
 class Log
 {
@@ -131,7 +136,8 @@ public:
         return false;
     }
 };
-}
+
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifdef NATRON_LOG
 

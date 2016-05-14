@@ -142,7 +142,9 @@ public:
 class AppInstance
     : public QObject, public boost::noncopyable, public TimeLineKeyFrames
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 

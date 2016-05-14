@@ -135,6 +135,9 @@ struct RenderQueueItem
 
 struct AppInstancePrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(AppInstance)
+
+public:
     AppInstance* _publicInterface;
     boost::shared_ptr<Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
@@ -381,9 +384,9 @@ AppInstance::newVersionCheckDownloaded()
             if ( ( buildNumber > NATRON_BUILD_NUMBER) && ( versionEncoded == NATRON_VERSION_ENCODED) &&
                  ( currentDevStatus == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE) ) ) {
                 ///show build number in version
-                text =  QObject::tr("<p>Updates for %1 are now available for download. "
-                                    "You are currently using %1 version %2 - %3 - build %4. "
-                                    "The latest version of %1 is version %5 - %6 - build %7.</p> ")
+                text =  tr("<p>Updates for %1 are now available for download. "
+                           "You are currently using %1 version %2 - %3 - build %4. "
+                           "The latest version of %1 is version %5 - %6 - build %7.</p> ")
                        .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                        .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
                        .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
@@ -391,23 +394,25 @@ AppInstance::newVersionCheckDownloaded()
                        .arg(extractedSoftwareVersionStr)
                        .arg(extractedDevStatusStr)
                        .arg(extractedBuildNumberStr) +
-                       QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                                                                       "www.natron.fr</a>. </p>");
+                       tr("<p>You can download it from %6</p>")
+                       .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                               "www.natron.fr</a>. </p>") );
             } else {
                 //Only notify build number increments for Release candidates
                 return;
             }
         } else {
-            text =  QObject::tr("<p>Updates for %1 are now available for download. "
-                                "You are currently using %1 version %2 - %3. "
-                                "The latest version of %1 is version %4 - %5.</p> ")
+            text =  tr("<p>Updates for %1 are now available for download. "
+                       "You are currently using %1 version %2 - %3. "
+                       "The latest version of %1 is version %4 - %5.</p>")
                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                    .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
                    .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
                    .arg(extractedSoftwareVersionStr)
                    .arg(extractedDevStatusStr) +
-                   QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                                                                   "www.natron.fr</a>. </p>");
+                   tr("<p>You can download it from %6</p>")
+                   .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                           "www.natron.fr</a>. </p>") );
         }
 
         Dialogs::informationDialog( "New version", text.toStdString(), true );
@@ -504,10 +509,11 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
         std::string output;
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(*it, &err, &output);
         if (!ok) {
-            QString m = QObject::tr("Failed to execute given command-line Python command: ");
-            m.append( QString::fromUtf8( it->c_str() ) );
-            m.append( QString::fromUtf8(" Error: ") );
-            m.append( QString::fromUtf8( err.c_str() ) );
+            const QString sp( QString::fromUtf8(" ") );
+            QString m = tr("Failed to execute the following Python command:") + sp +
+                        QString::fromUtf8( it->c_str() ) + sp +
+                        tr("Error:") + sp +
+                        QString::fromUtf8( err.c_str() );
             throw std::runtime_error( m.toStdString() );
         } else if ( !output.empty() ) {
             std::cout << output << std::endl;
@@ -543,7 +549,7 @@ AppInstance::load(const CLArgs& cl,
 
         if ( scriptFilename.isEmpty() ) {
             // cannot start a background process without a file
-            throw std::invalid_argument( tr("Project file name empty").toStdString() );
+            throw std::invalid_argument( tr("Project file name is empty.").toStdString() );
         }
 
 
@@ -1731,7 +1737,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer
     const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
 
     if (isDiskCache) {
-        *sequenceName = QObject::tr("Caching");
+        *sequenceName = tr("Caching");
     } else {
         *sequenceName = QString();
         KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
@@ -1761,7 +1767,7 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
 
         if (firstFrameD > lastFrameD) {
             Dialogs::errorDialog(w.writer->getNode()->getLabel_mt_safe(),
-                                 QObject::tr("First frame in the sequence is greater than the last frame").toStdString(), false );
+                                 tr("First frame index in the sequence is greater than the last frame index.").toStdString(), false );
 
             return false;
         }
