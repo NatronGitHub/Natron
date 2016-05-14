@@ -54,6 +54,9 @@ NATRON_NAMESPACE_ENTER;
 
 class NodeCollectionSerialization
 {
+    Q_DECLARE_TR_FUNCTIONS(NodeCollection)
+
+private:
     std::list< boost::shared_ptr<NodeSerialization> > _serializedNodes;
 
 public:

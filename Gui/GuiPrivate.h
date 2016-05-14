@@ -53,6 +53,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct GuiPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(Gui)
+
+public:
     Gui* _gui; //< ptr to the public interface
     mutable QMutex _isInDraftModeMutex;
     bool _isInDraftMode; //< true if the user is actively moving the cursor on the timeline or a slider. False on mouse release.

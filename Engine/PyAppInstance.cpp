@@ -238,20 +238,20 @@ App::renderInternal(bool forceBlocking,
                     int frameStep)
 {
     if (!writeNode) {
-        std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+        std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
         return;
     }
     AppInstance::RenderWork w;
     NodePtr node =  writeNode->getInternalNode();
     if (!node) {
-        std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+        std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
         return;
     }
     w.writer = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
     if (!w.writer) {
-        std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+        std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
         return;
     }
@@ -282,20 +282,20 @@ App::renderInternal(bool forceBlocking,
     std::list<int>::const_iterator itS = frameSteps.begin();
     for (; itE != effects.end(); ++itE, ++itF, ++itL, ++itS) {
         if (!*itE) {
-            std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+            std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
             return;
         }
         AppInstance::RenderWork w;
         NodePtr node =  (*itE)->getInternalNode();
         if (!node) {
-            std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+            std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
             return;
         }
         w.writer = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
         if ( !w.writer || !w.writer->isOutput() ) {
-            std::cerr << QObject::tr("Invalid write node").toStdString() << std::endl;
+            std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
             return;
         }

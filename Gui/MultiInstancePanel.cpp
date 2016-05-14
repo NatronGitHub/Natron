@@ -104,6 +104,9 @@ getCenterKnobForTracker(Node* node)
 
 struct MultiInstancePanelPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(MultiInstancePanel)
+
+public:
     MultiInstancePanel* publicInterface;
     bool guiCreated;
     boost::weak_ptr<NodeGui> mainInstance;
@@ -581,6 +584,9 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
 class AddNodeCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddNodeCommand)
+
+private:
     bool _firstRedoCalled;
     NodePtr _node;
     MultiInstancePanel* _panel;
@@ -609,7 +615,7 @@ public:
         _panel->removeRow(index);
         _node->deactivate();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( QObject::tr("Add %1").arg( QString::fromUtf8( _node->getLabel().c_str() ) ) );
+        setText( tr("Add %1").arg( QString::fromUtf8( _node->getLabel().c_str() ) ) );
     }
 
     virtual void redo() OVERRIDE FINAL
@@ -620,7 +626,7 @@ public:
             _panel->getMainInstance()->getApp()->redrawAllViewers();
         }
         _firstRedoCalled = true;
-        setText( QObject::tr("Add %1").arg( QString::fromUtf8( _node->getLabel().c_str() ) ) );
+        setText( tr("Add %1").arg( QString::fromUtf8( _node->getLabel().c_str() ) ) );
     }
 };
 
@@ -728,7 +734,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
     {
         TableItem* newItem = new TableItem;
         view->setItem(newRowIndex, COL_SCRIPT_NAME, newItem);
-        newItem->setToolTip( QObject::tr("The script-name of the item as exposed to Python scripts") );
+        newItem->setToolTip( tr("The script-name of the item as exposed to Python scripts") );
         newItem->setText( QString::fromUtf8( node->getScriptName().c_str() ) );
         newItem->setFlags(newItem->flags() & ~Qt::ItemIsEditable);
         view->resizeColumnToContents(COL_ENABLED);
@@ -866,6 +872,9 @@ MultiInstancePanel::selectNodes(const std::list<Node*> & nodes,
 class RemoveNodeCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveNodeCommand)
+
+private:
     MultiInstancePanel* _panel;
     NodesList _nodes;
 
@@ -891,7 +900,7 @@ public:
         _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( QObject::tr("Remove instance(s)") );
+        setText( tr("Remove instance(s)") );
     }
 
     virtual void redo() OVERRIDE FINAL
@@ -901,7 +910,7 @@ public:
         _panel->setRedrawOnSelectionChanged(true);
         _panel->getMainInstance()->getApp()->triggerAutoSave();
         _panel->getMainInstance()->getApp()->redrawAllViewers();
-        setText( QObject::tr("Remove instance(s)") );
+        setText( tr("Remove instance(s)") );
     }
 };
 
@@ -1696,6 +1705,9 @@ enum ExportTransformTypeEnum
 /////////////// Tracker panel
 struct TrackerPanelPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(TrackerPanel)
+
+public:
     TrackerPanel* publicInterface;
     Button* averageTracksButton;
     mutable QMutex updateViewerMutex;
@@ -2024,7 +2036,7 @@ TrackerPanelPrivate::getTrackInstancesForButton(std::list<KnobButton*>* trackBut
 
     publicInterface->getSelectedInstances(&selectedInstances);
     if ( selectedInstances.empty() ) {
-        Dialogs::warningDialog( QObject::tr("Tracker").toStdString(), QObject::tr("You must select something to track first").toStdString() );
+        Dialogs::warningDialog( tr("Tracker").toStdString(), tr("You must select something to track first").toStdString() );
 
         return false;
     }
@@ -2308,8 +2320,8 @@ TrackerPanelPrivate::createCornerPinFromSelection(const std::list<Node*> & selec
                                                   bool invert)
 {
     if ( (selection.size() > 4) || selection.empty() ) {
-        Dialogs::errorDialog( QObject::tr("Export").toStdString(),
-                              QObject::tr("Export to corner pin needs between 1 and 4 selected tracks.").toStdString() );
+        Dialogs::errorDialog( tr("Export").toStdString(),
+                              tr("Export to corner pin needs between 1 and 4 selected tracks.").toStdString() );
 
         return;
     }

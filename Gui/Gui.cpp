@@ -399,17 +399,17 @@ Gui::createMenuActions()
     _imp->menubar = new QMenuBar(this);
     setMenuBar(_imp->menubar);
 
-    _imp->menuFile = new Menu(QObject::tr("File"), _imp->menubar);
-    _imp->menuRecentFiles = new Menu(QObject::tr("Open Recent"), _imp->menuFile);
-    _imp->menuEdit = new Menu(QObject::tr("Edit"), _imp->menubar);
-    _imp->menuLayout = new Menu(QObject::tr("Layout"), _imp->menubar);
-    _imp->menuDisplay = new Menu(QObject::tr("Display"), _imp->menubar);
-    _imp->menuRender = new Menu(QObject::tr("Render"), _imp->menubar);
-    _imp->viewersMenu = new Menu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
-    _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
-    _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
-    _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
-    _imp->menuHelp = new Menu(QObject::tr("Help"), _imp->menubar);
+    _imp->menuFile = new Menu(tr("File"), _imp->menubar);
+    _imp->menuRecentFiles = new Menu(tr("Open Recent"), _imp->menuFile);
+    _imp->menuEdit = new Menu(tr("Edit"), _imp->menubar);
+    _imp->menuLayout = new Menu(tr("Layout"), _imp->menubar);
+    _imp->menuDisplay = new Menu(tr("Display"), _imp->menubar);
+    _imp->menuRender = new Menu(tr("Render"), _imp->menubar);
+    _imp->viewersMenu = new Menu(tr("Viewer(s)"), _imp->menuDisplay);
+    _imp->viewerInputsMenu = new Menu(tr("Connect Current Viewer"), _imp->viewersMenu);
+    _imp->viewersViewMenu = new Menu(tr("Display View Number"), _imp->viewersMenu);
+    _imp->cacheMenu = new Menu(tr("Cache"), _imp->menubar);
+    _imp->menuHelp = new Menu(tr("Help"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -633,27 +633,27 @@ Gui::createMenuActions()
 
     // Help menu
     _imp->actionHelpWebsite = new QAction(this);
-    _imp->actionHelpWebsite->setText( QObject::tr("Website") );
+    _imp->actionHelpWebsite->setText( tr("Website") );
     _imp->menuHelp->addAction(_imp->actionHelpWebsite);
     QObject::connect( _imp->actionHelpWebsite, SIGNAL(triggered()), this, SLOT(openHelpWebsite()) );
 
     _imp->actionHelpForum = new QAction(this);
-    _imp->actionHelpForum->setText( QObject::tr("Forum") );
+    _imp->actionHelpForum->setText( tr("Forum") );
     _imp->menuHelp->addAction(_imp->actionHelpForum);
     QObject::connect( _imp->actionHelpForum, SIGNAL(triggered()), this, SLOT(openHelpForum()) );
 
     _imp->actionHelpIssues = new QAction(this);
-    _imp->actionHelpIssues->setText( QObject::tr("Issues") );
+    _imp->actionHelpIssues->setText( tr("Issues") );
     _imp->menuHelp->addAction(_imp->actionHelpIssues);
     QObject::connect( _imp->actionHelpIssues, SIGNAL(triggered()), this, SLOT(openHelpIssues()) );
 
     _imp->actionHelpWiki = new QAction(this);
-    _imp->actionHelpWiki->setText( QObject::tr("Wiki") );
+    _imp->actionHelpWiki->setText( tr("Wiki") );
     _imp->menuHelp->addAction(_imp->actionHelpWiki);
     QObject::connect( _imp->actionHelpWiki, SIGNAL(triggered()), this, SLOT(openHelpWiki()) );
 
     _imp->actionHelpPython = new QAction(this);
-    _imp->actionHelpPython->setText( QObject::tr("Python API") );
+    _imp->actionHelpPython->setText( tr("Python API") );
     _imp->menuHelp->addAction(_imp->actionHelpPython);
     QObject::connect( _imp->actionHelpPython, SIGNAL(triggered()), this, SLOT(openHelpPython()) );
 

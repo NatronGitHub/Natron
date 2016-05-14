@@ -499,7 +499,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         }
     }
 
-    _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring settings panels") );
+    _gui->getApp()->updateProjectLoadStatus( tr("Restoring settings panels") );
 
     ///now restore opened settings panels
     const std::list<std::string> & openedPanels = obj.getOpenedPanels();
@@ -525,7 +525,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
     ///restore user python panels
     const std::list<boost::shared_ptr<PythonPanelSerialization> >& pythonPanels = obj.getPythonPanels();
     if ( !pythonPanels.empty() ) {
-        _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring user panels") );
+        _gui->getApp()->updateProjectLoadStatus( tr("Restoring user panels") );
     }
 
     if ( !pythonPanels.empty() ) {
@@ -565,7 +565,7 @@ ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & ar
         }
     }
 
-    _gui->getApp()->updateProjectLoadStatus( QObject::tr("Restoring layout") );
+    _gui->getApp()->updateProjectLoadStatus( tr("Restoring layout") );
 
     bool loadWorkspace = appPTR->getCurrentSettings()->getLoadProjectWorkspce();
     if (loadWorkspace) {

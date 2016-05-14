@@ -2741,7 +2741,7 @@ FileDialogComboBox::showPopup()
         model()->insertRow( model()->rowCount() );
         idx = model()->index(model()->rowCount() - 1, 0);
         // ### TODO maybe add a horizontal line before this
-        model()->setData( idx, QObject::tr("Recent Places") );
+        model()->setData( idx, tr("Recent Places") );
         QStandardItemModel *m = qobject_cast<QStandardItemModel*>( model() );
         if (m) {
             Qt::ItemFlags flags = m->flags(idx);

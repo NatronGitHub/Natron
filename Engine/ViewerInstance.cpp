@@ -1332,10 +1332,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         bool cached = AppManager::getTextureFromCacheOrCreate(*(inArgs.key), cachedFrameParams,
                                                               &inArgs.params->cachedFrame);
         if (!inArgs.params->cachedFrame) {
-            std::stringstream ss;
-            ss << "Failed to allocate a texture of ";
-            ss << printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ).toStdString();
-            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+            QString s = tr("Failed to allocate a texture of %1.").arg( printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ) );
+            Dialogs::errorDialog( tr("Out of memory.").toStdString(), s.toStdString() );
 
             return eViewerRenderRetCodeFail;
         }

@@ -51,6 +51,8 @@ class OfxHost
     : public OFX::Host::ImageEffect::Host
       , private OFX::Host::Property::GetHook
 {
+    Q_DECLARE_TR_FUNCTIONS(OfxHost)
+
 public:
 
     OfxHost();

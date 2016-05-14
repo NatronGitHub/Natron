@@ -232,7 +232,7 @@ Project::loadProject(const QString & path,
             saveProject(realPath, realName, 0);
         }
     } catch (const std::exception & e) {
-        Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Error while loading project").toStdString() + ": " + e.what() );
+        Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Error while loading project: %1").arg( QString::fromUtf8( e.what() ) ).toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
             getApp()->createNode(args);
@@ -240,7 +240,7 @@ Project::loadProject(const QString & path,
 
         return false;
     } catch (...) {
-        Dialogs::errorDialog( QObject::tr("Project loader").toStdString(), QObject::tr("Unkown error while loading project").toStdString() );
+        Dialogs::errorDialog( tr("Project loader").toStdString(), tr("Unkown error while loading project.").toStdString() );
         if ( !getApp()->isBackground() ) {
             CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, shared_from_this() );
             getApp()->createNode(args);
@@ -263,7 +263,7 @@ Project::loadProjectInternal(const QString & path,
 {
     FlagSetter loadingProjectRAII(true, &_imp->isLoadingProject, &_imp->isLoadingProjectMutex);
     QString filePath = path + name;
-    std::cout << QObject::tr("Loading project").toStdString() << ": " << filePath.toStdString() << std::endl;
+    std::cout << tr("Loading project: %1").arg(filePath).toStdString() << std::endl;
 
     if ( !QFile::exists(filePath) ) {
         throw std::invalid_argument( QString( filePath + QString::fromUtf8(" : no such file.") ).toStdString() );
@@ -273,7 +273,7 @@ Project::loadProjectInternal(const QString & path,
     FStreamsSupport::ifstream ifile;
     FStreamsSupport::open( &ifile, filePath.toStdString() );
     if (!ifile) {
-        throw std::runtime_error( std::string("Failed to open ") + filePath.toStdString() );
+        throw std::runtime_error( tr("Failed to open %1").arg(filePath).toStdString() );
     }
 
     if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
@@ -421,7 +421,7 @@ Project::saveProject_imp(const QString & path,
         }
     } catch (const std::exception & e) {
         if (!autoS) {
-            Dialogs::errorDialog( QObject::tr("Save").toStdString(), e.what() );
+            Dialogs::errorDialog( tr("Save").toStdString(), e.what() );
         } else {
             qDebug() << "Save failure: " << e.what();
         }

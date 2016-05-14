@@ -191,6 +191,9 @@ struct FormatKnob
 
 struct Node::Implementation
 {
+    Q_DECLARE_TR_FUNCTIONS(Node)
+
+public:
     Implementation(Node* publicInterface,
                    AppInstance* app_,
                    const boost::shared_ptr<NodeCollection>& collection,
@@ -1749,9 +1752,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         } else if (isRegular) {
             KnobPtr knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
-                QString err = QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() );
-                err.append( QObject::tr(": Could not find a parameter named ") );
-                err.append( QString::fromUtf8( (*it)->getName().c_str() ) );
+                QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
                 appPTR->writeToErrorLog_mt_safe(err);
                 continue;
             }
@@ -1775,9 +1776,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         KnobPtr knob = getKnobByName( (*it)->getName() );
         if (!knob) {
-            QString err = QString::fromUtf8( getScriptName_mt_safe().c_str() );
-            err.append( QObject::tr(": Could not find a parameter named ") );
-            err.append( QString::fromUtf8( (*it)->getName().c_str() ) );
+            QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
             appPTR->writeToErrorLog_mt_safe(err);
             continue;
         }
@@ -2878,7 +2877,7 @@ Node::setScriptName(const std::string& name)
     }
     //We do not allow setting the script-name of output nodes because we rely on it with NatronRenderer
     if ( dynamic_cast<GroupOutput*>( _imp->effect.get() ) ) {
-        throw std::runtime_error( QObject::tr("Changing the script-name of an Output node is not a valid operation").toStdString() );
+        throw std::runtime_error( tr("Changing the script-name of an Output node is not a valid operation.").toStdString() );
 
         return;
     }
@@ -3520,11 +3519,11 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
         premultWarning->setAsLabel();
         premultWarning->setEvaluateOnChange(false);
         premultWarning->setIsPersistant(false);
-        premultWarning->setHintToolTip( QObject::tr("The alpha checkbox is checked and the RGB "
-                                                    "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
-                                                    "may be incorrect because the alpha channel changed but their value did not. "
-                                                    "To fix this, either check all RGB channels (or uncheck alpha) or unpremultiply the "
-                                                    "input image first.").toStdString() );
+        premultWarning->setHintToolTip( tr("The alpha checkbox is checked and the RGB "
+                                           "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
+                                           "may be incorrect because the alpha channel changed but their value did not. "
+                                           "To fix this, either check all RGB channels (or uncheck alpha) or unpremultiply the "
+                                           "input image first.").toStdString() );
         mainPage->insertKnob(4, premultWarning);
         _imp->premultWarning = premultWarning;
     }
@@ -7569,11 +7568,9 @@ Node::refreshCreatedViews(KnobI* knob)
             }
             ss << std::endl;
             ss << std::endl;
-            ss << QObject::tr("These views are in").toStdString() << ' ' << filename << ' '
-               << QObject::tr("but do not exist in the project.").toStdString() << std::endl;
-            ss << QObject::tr("Would you like to create them?").toStdString();
+            ss << tr("These views are in %1 but do not exist in the project.\nWould you like to create them?").arg( QString::fromUtf8( filename.c_str() ) ).toStdString();
             std::string question  = ss.str();
-            StandardButtonEnum rep = Dialogs::questionDialog("Views available", question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
+            StandardButtonEnum rep = Dialogs::questionDialog(tr("Views available").toStdString(), question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
             if (rep == eStandardButtonYes) {
                 std::vector<std::string> viewsToCreate;
                 for (QStringList::Iterator it = missingViews.begin(); it != missingViews.end(); ++it) {
@@ -9694,7 +9691,7 @@ Node::Implementation::runInputChangedCallback(int index,
     std::string script = ss.str();
     std::string output;
     if ( !Python::interpretPythonScript(script, &error, &output) ) {
-        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + error);
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
     } else {
         if ( !output.empty() ) {
             _publicInterface->getApp()->appendToScriptEditor(output);

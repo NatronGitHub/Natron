@@ -863,7 +863,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
     _imp->fontconfigUpdateWatcher.reset(new QFutureWatcher<void>);
     QObject::connect( _imp->fontconfigUpdateWatcher.get(), SIGNAL(finished()), this, SLOT(onFontconfigCacheUpdateFinished()) );
-    setLoadingStatus( QObject::tr("Updating fontconfig cache...") );
+    setLoadingStatus( tr("Updating fontconfig cache...") );
 
     QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()) );
     _imp->updateSplashscreenTimer.start(1000);

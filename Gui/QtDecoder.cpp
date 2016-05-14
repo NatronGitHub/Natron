@@ -91,73 +91,73 @@ QtReader::getPluginGrouping(std::list<std::string>* grouping) const
 std::string
 QtReader::getPluginDescription() const
 {
-    return QObject::tr("A QImage (Qt) based image reader.").toStdString();
+    return tr("A QImage (Qt) based image reader.").toStdString();
 }
 
 void
 QtReader::initializeKnobs()
 {
-    Dialogs::warningDialog( getScriptName_mt_safe(), QObject::tr("This plugin exists only to help the developers team to test %1"
-                                                                 ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
+    Dialogs::warningDialog( getScriptName_mt_safe(), tr("This plugin exists only to help the developers team to test %1"
+                                                        ". You cannot use it when rendering a project.").arg(NATRON_APPLICATION_NAME).toStdString() );
 
 
-    _fileKnob = getNode()->createKnob<KnobFile>( QObject::tr("File").toStdString() );
+    _fileKnob = getNode()->createKnob<KnobFile>( tr("File").toStdString() );
     _fileKnob->setAsInputImage();
 
-    _firstFrame =  getNode()->createKnob<KnobInt>( QObject::tr("First frame").toStdString() );
+    _firstFrame =  getNode()->createKnob<KnobInt>( tr("First frame").toStdString() );
     _firstFrame->setAnimationEnabled(false);
     _firstFrame->setDefaultValue(0, 0);
 
 
-    _before = getNode()->createKnob<KnobChoice>( QObject::tr("Before").toStdString() );
+    _before = getNode()->createKnob<KnobChoice>( tr("Before").toStdString() );
     std::vector<std::string> beforeOptions;
-    beforeOptions.push_back( QObject::tr("hold").toStdString() );
-    beforeOptions.push_back( QObject::tr("loop").toStdString() );
-    beforeOptions.push_back( QObject::tr("bounce").toStdString() );
-    beforeOptions.push_back( QObject::tr("black").toStdString() );
-    beforeOptions.push_back( QObject::tr("error").toStdString() );
+    beforeOptions.push_back( tr("hold").toStdString() );
+    beforeOptions.push_back( tr("loop").toStdString() );
+    beforeOptions.push_back( tr("bounce").toStdString() );
+    beforeOptions.push_back( tr("black").toStdString() );
+    beforeOptions.push_back( tr("error").toStdString() );
     _before->populateChoices(beforeOptions);
     _before->setAnimationEnabled(false);
     _before->setDefaultValue(0, 0);
 
-    _lastFrame =  getNode()->createKnob<KnobInt>( QObject::tr("Last frame").toStdString() );
+    _lastFrame =  getNode()->createKnob<KnobInt>( tr("Last frame").toStdString() );
     _lastFrame->setAnimationEnabled(false);
     _lastFrame->setDefaultValue(0, 0);
 
 
-    _after = getNode()->createKnob<KnobChoice>( QObject::tr("After").toStdString() );
+    _after = getNode()->createKnob<KnobChoice>( tr("After").toStdString() );
     std::vector<std::string> afterOptions;
-    afterOptions.push_back( QObject::tr("hold").toStdString() );
-    afterOptions.push_back( QObject::tr("loop").toStdString() );
-    afterOptions.push_back( QObject::tr("bounce").toStdString() );
-    afterOptions.push_back( QObject::tr("black").toStdString() );
-    afterOptions.push_back( QObject::tr("error").toStdString() );
+    afterOptions.push_back( tr("hold").toStdString() );
+    afterOptions.push_back( tr("loop").toStdString() );
+    afterOptions.push_back( tr("bounce").toStdString() );
+    afterOptions.push_back( tr("black").toStdString() );
+    afterOptions.push_back( tr("error").toStdString() );
     _after->populateChoices(beforeOptions);
     _after->setAnimationEnabled(false);
     _after->setDefaultValue(0, 0);
 
-    _missingFrameChoice = getNode()->createKnob<KnobChoice>( QObject::tr("On missing frame").toStdString() );
+    _missingFrameChoice = getNode()->createKnob<KnobChoice>( tr("On missing frame").toStdString() );
     std::vector<std::string> missingFrameOptions;
-    missingFrameOptions.push_back( QObject::tr("Load nearest").toStdString() );
-    missingFrameOptions.push_back( QObject::tr("Error").toStdString() );
-    missingFrameOptions.push_back( QObject::tr("Black image").toStdString() );
+    missingFrameOptions.push_back( tr("Load nearest").toStdString() );
+    missingFrameOptions.push_back( tr("Error").toStdString() );
+    missingFrameOptions.push_back( tr("Black image").toStdString() );
     _missingFrameChoice->populateChoices(missingFrameOptions);
     _missingFrameChoice->setDefaultValue(0, 0);
     _missingFrameChoice->setAnimationEnabled(false);
 
-    _frameMode = getNode()->createKnob<KnobChoice>( QObject::tr("Frame mode").toStdString() );
+    _frameMode = getNode()->createKnob<KnobChoice>( tr("Frame mode").toStdString() );
     _frameMode->setAnimationEnabled(false);
     std::vector<std::string> frameModeOptions;
-    frameModeOptions.push_back( QObject::tr("Starting frame").toStdString() );
-    frameModeOptions.push_back( QObject::tr("Time offset").toStdString() );
+    frameModeOptions.push_back( tr("Starting frame").toStdString() );
+    frameModeOptions.push_back( tr("Time offset").toStdString() );
     _frameMode->populateChoices(frameModeOptions);
     _frameMode->setDefaultValue(0, 0);
 
-    _startingFrame = getNode()->createKnob<KnobInt>( QObject::tr("Starting frame").toStdString() );
+    _startingFrame = getNode()->createKnob<KnobInt>( tr("Starting frame").toStdString() );
     _startingFrame->setAnimationEnabled(false);
     _startingFrame->setDefaultValue(0, 0);
 
-    _timeOffset = getNode()->createKnob<KnobInt>( QObject::tr("Time offset").toStdString() );
+    _timeOffset = getNode()->createKnob<KnobInt>( tr("Time offset").toStdString() );
     _timeOffset->setAnimationEnabled(false);
     _timeOffset->setDefaultValue(0, 0);
     _timeOffset->setSecretByDefault(true);
@@ -341,7 +341,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( eMessageTypeError,  QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError,  tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -378,7 +378,7 @@ QtReader::getSequenceTime(SequenceTime t)
             throw std::invalid_argument("Out of frame range.");
             break;
         case 4:     //error
-            setPersistentMessage( eMessageTypeError, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError, tr("Missing frame").toStdString() );
             throw std::invalid_argument("Out of frame range.");
             break;
         default:
@@ -404,7 +404,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
         if ( filename.empty() ) {
             filename = _fileKnob->getFileName(time);
             if ( filename.empty() ) {
-                setPersistentMessage( eMessageTypeError, QObject::tr("Nearest frame search went out of range").toStdString() );
+                setPersistentMessage( eMessageTypeError, tr("Nearest frame search went out of range").toStdString() );
             }
         }
         break;
@@ -412,7 +412,7 @@ QtReader::getFilenameAtSequenceTime(SequenceTime time,
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
                 /// time, we can safely say this is  a missing frame.
         if ( filename.empty() ) {
-            setPersistentMessage( eMessageTypeError, QObject::tr("Missing frame").toStdString() );
+            setPersistentMessage( eMessageTypeError, tr("Missing frame").toStdString() );
         }
     case 2:     // Black image
                 /// For images sequences, if the offset is not 0, that means no frame were found at the  originally given
@@ -451,7 +451,7 @@ QtReader::getRegionOfDefinition(U64 /*hash*/,
         delete _img;
         _img = new QImage( _filename.c_str() );
         if (_img->format() == QImage::Format_Invalid) {
-            setPersistentMessage(eMessageTypeError, QObject::tr("Failed to load the image ").toStdString() + filename);
+            setPersistentMessage(eMessageTypeError, tr("Failed to load the image ").toStdString() + filename);
 
             return eStatusFailed;
         }
@@ -523,7 +523,7 @@ QtReader::render(const RenderActionArgs& args)
     case QImage::Format_Invalid:
     default:
         output.second->fill(args.roi, 0.f, 1.f);
-        setPersistentMessage( eMessageTypeError, QObject::tr("Invalid image format.").toStdString() );
+        setPersistentMessage( eMessageTypeError, tr("Invalid image format.").toStdString() );
 
         return eStatusFailed;
     }

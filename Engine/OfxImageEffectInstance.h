@@ -46,6 +46,8 @@ NATRON_NAMESPACE_ENTER;
 class OfxImageEffectInstance
     : public OFX::Host::ImageEffect::Instance
 {
+    Q_DECLARE_TR_FUNCTIONS(OfxImageEffectInstance)
+
 public:
     OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                            OFX::Host::ImageEffect::Descriptor & desc,

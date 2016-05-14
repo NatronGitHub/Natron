@@ -161,7 +161,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
     _dt(dt),
     _model(model)
 {
-    setText( QObject::tr("Move selected keys") );
+    setText( tr("Move selected keys") );
     std::set<NodePtr > nodesSet;
     for (std::vector<boost::shared_ptr<DSNode> >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         DopeSheetItemType type = (*it)->getItemType();
@@ -340,7 +340,7 @@ DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
         data.keys.push_back(*it);
     }
 
-    setText( QObject::tr("Scale keyframes") );
+    setText( tr("Scale keyframes") );
 }
 
 void
@@ -495,7 +495,7 @@ DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode>
     _oldTime(oldTime),
     _newTime(newTime)
 {
-    setText( QObject::tr("Trim left") );
+    setText( tr("Trim left") );
 }
 
 void
@@ -582,7 +582,7 @@ DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNod
     _oldTime(oldTime),
     _newTime(newTime)
 {
-    setText( QObject::tr("Trim right") );
+    setText( tr("Trim right") );
 }
 
 void
@@ -668,7 +668,7 @@ DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNode
     _dt(dt),
     _model(model)
 {
-    setText( QObject::tr("Slip reader") );
+    setText( tr("Slip reader") );
 }
 
 void
@@ -785,7 +785,7 @@ DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
     _keys(keys),
     _model(model)
 {
-    setText( QObject::tr("Delete selected keyframes") );
+    setText( tr("Delete selected keyframes") );
 }
 
 void
@@ -832,7 +832,7 @@ DSSetSelectedKeysInterpolationCommand::DSSetSelectedKeysInterpolationCommand(con
     _changes(changes),
     _model(model)
 {
-    setText( QObject::tr("Set selected keys interpolation") );
+    setText( tr("Set selected keys interpolation") );
 }
 
 void
@@ -880,7 +880,7 @@ DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
     _model(model)
 {
     _refTime = _model->getTimelineCurrentTime();
-    setText( QObject::tr("Paste keyframes") );
+    setText( tr("Paste keyframes") );
     for (std::size_t i = 0; i < keys.size(); ++i) {
         _keys.push_back(keys[i]);
         if (_refKeyindex == -1) {

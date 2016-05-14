@@ -118,6 +118,9 @@ struct StatRowsCompare
 class StatsTableModel
     : public TableModel
 {
+    Q_DECLARE_TR_FUNCTIONS(StatsTableModel)
+
+private:
     TableView* view;
     std::vector<NodeWPtr > rows;
 
@@ -184,7 +187,7 @@ public:
             } else {
                 item = new TableItem;
 
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The label of the node as it appears on the nodegraph"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The label of the node as it appears on the nodegraph."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -207,7 +210,7 @@ public:
                 item = view->item(row, COL_PLUGIN_ID);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The ID of the plug-in embedded in the node"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The ID of the plug-in embedded in the node."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -231,7 +234,7 @@ public:
                 timeSoFar += stats.getTotalTimeSpentRendering();
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The time spent rendering by this node across all threads"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The time spent rendering by this node across all threads."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 timeSoFar = stats.getTotalTimeSpentRendering();
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
@@ -254,7 +257,7 @@ public:
                 item = view->item(row, COL_SUPPORT_TILES);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("Whether this node has tiles (portions of the final image) support or not"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("Whether this node has tiles (portions of the final image) support or not."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -280,9 +283,9 @@ public:
                 item = view->item(row, COL_SUPPORT_RS);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("Whether this node has render scale support or not.\n"
-                                                                        "When activated, that means the node can render an image at a "
-                                                                        "lower scale."), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("Whether this node has render scale support or not.\n"
+                                                               "When activated, that means the node can render an image at a "
+                                                               "lower scale."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -309,8 +312,8 @@ public:
                 item = view->item(row, COL_MIPMAP_LEVEL);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The mipmaplevel rendered (See render-scale). 0 means scale = 100%, "
-                                                                        "1 means scale = 50%, 2 means scale = 25%, etc..."), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The mipmaplevel rendered (See render-scale). 0 means scale = 100%, "
+                                                               "1 means scale = 50%, 2 means scale = 25%, etc."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -335,7 +338,7 @@ public:
                 item = view->item(row, COL_CHANNELS);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The channels processed by this node (corresponding to the RGBA checkboxes)"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The channels processed by this node (corresponding to the RGBA checkboxes)."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -370,7 +373,7 @@ public:
                 item = view->item(row, COL_PREMULT);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The alpha premultiplication of the image produced by this node"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The alpha premultiplication of the image produced by this node."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -403,7 +406,7 @@ public:
                 item = view->item(row, COL_ROD);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The region of definition of the image produced"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The region of definition of the image produced."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -425,8 +428,8 @@ public:
                 item = view->item(row, COL_IDENTITY);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("When different of \"-\", this node does not render but rather "
-                                                                        "directly returns the image produced by the node indicated by its label."), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("When different of \"-\", this node does not render but rather "
+                                                               "directly returns the image produced by the node indicated by its label."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -457,8 +460,8 @@ public:
                 tilesInfo = item->data( (int)eItemsRoleIdentityTilesInfo ).toString();
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The list of the tiles that were identity in the image.\n"
-                                                                        "Double-click for more info"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The list of the tiles that were identity in the image.\n"
+                                                               "Double-click for more info."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -494,8 +497,8 @@ public:
                 tilesInfo = item->data( (int)eItemsRoleRenderedTilesInfo ).toString();
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The list of the tiles effectivly rendered.\n"
-                                                                        "Double-click for more infos."), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The list of the tiles effectivly rendered.\n"
+                                                               "Double-click for more infos"), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -528,7 +531,7 @@ public:
                 item = view->item(row, COL_RENDERED_PLANES);
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The list of the planes rendered by this node"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The list of the planes rendered by this node."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -558,7 +561,7 @@ public:
                 nb = item->text().toInt();
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The number of cache hit (success)"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The number of cache hits."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -587,8 +590,8 @@ public:
                 }
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The number of cache access hit (success) but at higher scale "
-                                                                        "hence requiring downscaling."), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The number of cache access hits but at higher scale "
+                                                               "hence requiring downscaling."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }
@@ -619,7 +622,7 @@ public:
                 }
             } else {
                 item = new TableItem;
-                QString tt = GuiUtils::convertFromPlainText(QObject::tr("The number of cache access miss (image missing)"), Qt::WhiteSpaceNormal);
+                QString tt = GuiUtils::convertFromPlainText(tr("The number of cache misses."), Qt::WhiteSpaceNormal);
                 item->setToolTip(tt);
                 item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
             }

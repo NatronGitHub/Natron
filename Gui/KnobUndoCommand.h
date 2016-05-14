@@ -66,6 +66,8 @@ template<typename T>
 class KnobUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobUndoCommand)
+
 public:
 
     KnobUndoCommand(const KnobGuiPtr& knob,
@@ -171,7 +173,7 @@ private:
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
-        setText( QObject::tr("Set value of %1")
+        setText( tr("Set value of %1")
                  .arg( QString::fromUtf8( _knob->getKnob()->getLabel().c_str() ) ) );
     } // undo
 
@@ -240,7 +242,7 @@ private:
             _knob->getGui()->getCurveEditor()->getCurveWidget()->refreshSelectedKeysAndUpdate();
         }
 
-        setText( QObject::tr("Set value of %1")
+        setText( tr("Set value of %1")
                  .arg( QString::fromUtf8( knob->getLabel().c_str() ) ) );
 
         _firstRedoCalled = true;
@@ -292,6 +294,9 @@ private:
 class MultipleKnobEditsUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MultipleKnobEditsUndoCommand)
+
+private:
     struct ValueToSet
     {
         Variant newValue, oldValue;
@@ -336,6 +341,9 @@ struct PasteUndoCommandPrivate;
 class PasteUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(PasteUndoCommand)
+
+private:
     boost::scoped_ptr<PasteUndoCommandPrivate> _imp;
 
 public:
@@ -358,6 +366,8 @@ public:
 class RestoreDefaultsCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RestoreDefaultsCommand)
+
 public:
 
     RestoreDefaultsCommand(bool isNodeReset,
@@ -377,6 +387,8 @@ private:
 class SetExpressionCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(SetExpressionCommand)
+
 public:
 
     SetExpressionCommand(const KnobPtr & knob,

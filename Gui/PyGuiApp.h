@@ -104,6 +104,9 @@ public:
 class GuiApp
     : public App
 {
+    Q_DECLARE_TR_FUNCTIONS(GuiApp)
+
+private:
     GuiAppInstance* _app;
 
 public:

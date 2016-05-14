@@ -4417,7 +4417,7 @@ KnobHolder::getOrCreateUserPageKnob()
     if (ret) {
         return ret;
     }
-    ret = AppManager::createKnob<KnobPage>(this, QObject::tr(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL), 1, false);
+    ret = AppManager::createKnob<KnobPage>(this, tr(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL), 1, false);
     ret->setAsUserKnob();
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
 
