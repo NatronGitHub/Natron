@@ -33,6 +33,8 @@
 #endif
 
 #include <list>
+
+#include <QtCore/QCoreApplication>
 #include <QUndoCommand>
 
 #include "Global/Macros.h"

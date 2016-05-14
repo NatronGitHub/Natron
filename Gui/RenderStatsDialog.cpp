@@ -27,6 +27,7 @@
 #include <bitset>
 #include <stdexcept>
 
+#include <QtCore/QCoreApplication>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>

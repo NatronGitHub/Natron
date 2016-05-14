@@ -36,6 +36,7 @@
 #endif
 
 #include <QtCore/QPointF>
+#include <QtCore/QCoreApplication>
 #include <QUndoCommand>
 
 #include "Global/GlobalDefines.h"

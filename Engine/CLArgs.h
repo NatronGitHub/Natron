@@ -33,6 +33,7 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QStringList>
 #include <QtCore/QString>
+#include <QtCore/QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)

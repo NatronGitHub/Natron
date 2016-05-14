@@ -68,6 +68,7 @@
 #include "Global/Macros.h"
 #include <QtCore/QString>
 #include <QtCore/QLocale>
+#include <QtCore/QCoreApplication>
 
 #include "Global/GlobalDefines.h"
 

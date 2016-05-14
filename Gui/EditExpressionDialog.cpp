@@ -178,3 +178,6 @@ EditExpressionDialog::getDeclaredVariables(std::list<std::pair<QString, QString>
 }
 
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_EditExpressionDialog.cpp"

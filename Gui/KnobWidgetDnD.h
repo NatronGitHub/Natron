@@ -30,6 +30,8 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <QtCore/QCoreApplication>
+
 #include "Gui/GuiFwd.h"
 
 #define KNOB_DND_MIME_DATA_KEY "KnobLink"

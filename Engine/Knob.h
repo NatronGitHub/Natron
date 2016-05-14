@@ -37,6 +37,7 @@
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 #include <QtCore/QString>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"

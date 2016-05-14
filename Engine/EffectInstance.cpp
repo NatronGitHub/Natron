@@ -5205,3 +5205,6 @@ EffectInstance::setClipPreferencesRunning(bool running)
 
 NATRON_NAMESPACE_EXIT;
 
+NATRON_NAMESPACE_USING;
+#include "moc_EffectInstance.cpp"
+

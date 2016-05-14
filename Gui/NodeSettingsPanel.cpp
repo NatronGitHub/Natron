@@ -277,8 +277,8 @@ NodeSettingsPanel::onExportPresetsActionTriggered()
     FStreamsSupport::ofstream ofile;
     FStreamsSupport::open(&ofile, filename);
     if (!ofile) {
-        Dialogs::errorDialog( tr("Presets").toStdString()
-                              , tr("Failed to open file %1.").arg( QString::fromUtf8( filename.c_str() ) ), false );
+        Dialogs::errorDialog( tr("Presets").toStdString(),
+                             tr("Failed to open file %1.").arg( QString::fromUtf8( filename.c_str() ) ).toStdString(), false );
 
         return;
     }
