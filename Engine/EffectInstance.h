@@ -1804,7 +1804,7 @@ protected:
 
 private:
 
-    struct Implementation;
+    class Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 
     friend class ReadNode;

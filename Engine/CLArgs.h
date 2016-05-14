@@ -45,6 +45,8 @@ NATRON_NAMESPACE_ENTER;
 struct CLArgsPrivate;
 class CLArgs //: boost::noncopyable // GCC 4.2 requires the copy constructor
 {
+    Q_DECLARE_TR_FUNCTIONS(CLArgs)
+
 public:
 
     struct WriterArg

@@ -1324,7 +1324,7 @@ getOrCreateFromCacheInternal(const ImageKey & key,
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+            Dialogs::errorDialog( QCoreApplication::translate("EffectInstance", "Out of memory").toStdString(), ss.str() );
 
             return;
         }
@@ -5060,18 +5060,18 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     }
 
     if (mustWarnFPS) {
-        QString fpsWarning = QObject::tr("Several input with different different frame rates "
-                                         "is not handled correctly by this node. To remove this warning make sure all inputs have "
-                                         "the same frame-rate, either by adjusting project settings or the upstream Read node.");
+        QString fpsWarning = tr("Several input with different different frame rates "
+                                "is not handled correctly by this node. To remove this warning make sure all inputs have "
+                                "the same frame-rate, either by adjusting project settings or the upstream Read node.");
         warnings[Node::eStreamWarningFrameRate] = fpsWarning;
     } else {
         warnings[Node::eStreamWarningFrameRate] = QString();
     }
 
     if (mustWarnPar) {
-        QString parWarnings = QObject::tr("Several input with different pixel aspect ratio is not "
-                                          "handled correctly by this node and may yield unwanted results. Please adjust the "
-                                          "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
+        QString parWarnings = tr("Several input with different pixel aspect ratio is not "
+                                 "handled correctly by this node and may yield unwanted results. Please adjust the "
+                                 "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
         warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
     } else {
         warnings[Node::eStreamWarningPixelAspectRatio] = QString();

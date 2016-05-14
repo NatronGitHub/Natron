@@ -462,7 +462,7 @@ KnobHelper::deleteKnob()
             knob->setKnobAsAliasOfThis(aliasKnob, false);
         }
         for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->setExpressionInvalid( i, false, getName() + QObject::tr(": parameter does not exist").toStdString() );
+            knob->setExpressionInvalid( i, false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
             knob->unSlave(i, false);
         }
     }

@@ -1316,8 +1316,7 @@ addToPythonPathFunctor(const QDir& directory)
     std::string err;
     bool ok  = Python::interpretPythonScript(addToPythonPath, &err, 0);
     if (!ok) {
-        std::string message = QObject::tr("Could not add").toStdString() + ' ' + directory.absolutePath().toStdString() + ' ' +
-                              QObject::tr("to python path").toStdString() + ": " + err;
+        std::string message = QCoreApplication::translate("AppManager", "Could not add %1 to python path:").arg( directory.absolutePath() ).toStdString() + ' ' + err;
         std::cerr << message << std::endl;
         AppInstance* topLevel = appPTR->getTopLevelInstance();
         if (topLevel) {
@@ -1390,9 +1389,9 @@ AppManager::loadPythonGroups()
         std::string s = "import PySide\nimport PySide.QtCore as QtCore";
         bool ok  = Python::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = QObject::tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
-                                              "or reachable through the Python path. (Note that Natron disables usage "
-                                              "of site-packages ").toStdString();
+            std::string message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
+                                     "or reachable through the Python path. (Note that Natron disables usage "
+                                     "of site-packages ").toStdString();
             std::cerr << message << std::endl;
             appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
         }
@@ -1402,7 +1401,7 @@ AppManager::loadPythonGroups()
         std::string s = "import PySide.QtGui as QtGui";
         bool ok  = Python::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = QObject::tr("Failed to import PySide.QtGui").toStdString();
+            std::string message = tr("Failed to import PySide.QtGui").toStdString();
             std::cerr << message << std::endl;
             appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
         }
@@ -1416,15 +1415,14 @@ AppManager::loadPythonGroups()
         findAllScriptsRecursive(d, allPlugins, &foundInit, &foundInitGui);
     }
     if ( foundInit.isEmpty() ) {
-        QString message = QObject::tr("init.py script not loaded");
+        QString message = tr("init.py script not loaded");
         appPTR->setLoadingStatus(message);
         if ( !appPTR->isBackground() ) {
             std::cout << message.toStdString() << std::endl;
         }
     } else {
         for (int i = 0; i < foundInit.size(); ++i) {
-            QString message = QObject::tr("init.py script found and loaded at: ");
-            message.append(foundInit[i]);
+            QString message = tr("init.py script found and loaded at %1").arg(foundInit[i]);
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;
@@ -1434,15 +1432,14 @@ AppManager::loadPythonGroups()
 
     if ( !appPTR->isBackground() ) {
         if ( foundInitGui.isEmpty() ) {
-            QString message = QObject::tr("initGui.py script not loaded");
+            QString message = tr("initGui.py script not loaded");
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;
             }
         } else {
             for (int i = 0; i < foundInitGui.size(); ++i) {
-                QString message = QObject::tr("initGui.py script found and loaded at: ");
-                message.append(foundInitGui[i]);
+                QString message = tr("initGui.py script found and loaded at %1").arg(foundInitGui[i]);
                 appPTR->setLoadingStatus(message);
                 if ( !appPTR->isBackground() ) {
                     std::cout << message.toStdString() << std::endl;
@@ -1470,7 +1467,7 @@ AppManager::loadPythonGroups()
         }
     }
 
-    appPTR->setLoadingStatus( QString( QObject::tr("Loading PyPlugs...") ) );
+    appPTR->setLoadingStatus( tr("Loading PyPlugs...") );
 
     for (int i = 0; i < allPlugins.size(); ++i) {
         QString moduleName = allPlugins[i];
@@ -3351,10 +3348,7 @@ getGroupInfosInternal(const std::string& modulePath,
     std::string toRun = script.arg( QString::fromUtf8( pythonModule.c_str() ) ).toStdString();
     std::string err;
     if ( !Python::interpretPythonScript(toRun, &err, 0) ) {
-        QString logStr;
-        logStr.append( QString::fromUtf8( pythonModule.c_str() ) );
-        logStr.append( QObject::tr(" was not recognized as a PyPlug: ") );
-        logStr.append( QString::fromUtf8( err.c_str() ) );
+        QString logStr = QCoreApplication::translate("AppManager", "%1 was not recognized as a PyPlug: %2").arg( QString::fromUtf8( pythonModule.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) );
         appPTR->writeToErrorLog_mt_safe(logStr);
 
         return false;
