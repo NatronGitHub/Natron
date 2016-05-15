@@ -86,50 +86,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 using std::make_pair;
 
+
 NATRON_NAMESPACE_ENTER;
-
-
-//NATRON_NAMESPACE_ANONYMOUS_ENTER;
-
-class OverlayColorButton
-    : public Button
-{
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-private:
-    DockablePanel* _panel;
-
-public:
-
-
-    OverlayColorButton(DockablePanel* panel,
-                       const QIcon& icon,
-                       QWidget* parent)
-        : Button(icon, QString(), parent)
-        , _panel(panel)
-    {
-    }
-
-private:
-
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
-    {
-        if ( triggerButtonIsRight(e) ) {
-            StandardButtonEnum rep = Dialogs::questionDialog(tr("Warning").toStdString(),
-                                                             tr("Are you sure you want to reset the overlay color?").toStdString(),
-                                                             false);
-            if (rep == eStandardButtonYes) {
-                _panel->resetHostOverlayColor();
-            }
-        } else {
-            Button::mousePressEvent(e);
-        }
-    }
-};
-
-//NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 
 DockablePanel::DockablePanel(Gui* gui,

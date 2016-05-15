@@ -32,20 +32,23 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
+#include <QtCore/QDebug>
 #include <QGridLayout>
 #include <QUndoStack>
-#include <QtCore/QDebug>
 #include <QScrollArea>
 #include <QApplication>
 #include <QStyle>
 #include <QMessageBox>
+#include <QMouseEvent>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h" // NATRON_PARAMETER_PAGE_NAME_INFO
 #include "Engine/ViewIdx.h"
 
+#include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
+#include "Gui/GuiMacros.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiGroup.h" // for KnobGuiGroup
 #include "Gui/KnobWidgetDnD.h"
@@ -985,4 +988,32 @@ DockablePanelPrivate::refreshPagesSecretness()
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////
+
+OverlayColorButton::OverlayColorButton(DockablePanel* panel,
+                                       const QIcon& icon,
+                                       QWidget* parent)
+    : Button(icon, QString(), parent)
+    , _panel(panel)
+{
+}
+
+void
+OverlayColorButton::mousePressEvent(QMouseEvent* e)
+{
+    if ( triggerButtonIsRight(e) ) {
+        StandardButtonEnum rep = Dialogs::questionDialog(tr("Warning").toStdString(),
+                                                         tr("Are you sure you want to reset the overlay color?").toStdString(),
+                                                         false);
+        if (rep == eStandardButtonYes) {
+            _panel->resetHostOverlayColor();
+        }
+    } else {
+        Button::mousePressEvent(e);
+    }
+}
+
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_DockablePanelPrivate.cpp"

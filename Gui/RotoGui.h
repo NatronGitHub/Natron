@@ -34,8 +34,9 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QObject>
+#include <QtCore/QObject>
 #include <QToolButton>
+#include <QDialog>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -331,6 +332,26 @@ private:
                               RotoGui::RotoToolEnum tool);
     struct RotoGuiPrivate;
     boost::scoped_ptr<RotoGuiPrivate> _imp;
+};
+
+class LinkToTrackDialog
+    : public QDialog
+{
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
+    ComboBox* _choice;
+
+public:
+
+    LinkToTrackDialog(const std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > > & knobs,
+                      QWidget* parent);
+
+    int getSelectedKnob() const;
+
+    virtual ~LinkToTrackDialog() {};
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -4838,49 +4838,6 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     }
 } // showMenuForControlPoint
 
-class LinkToTrackDialog
-    : public QDialog
-{
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-private:
-    ComboBox* _choice;
-
-public:
-
-    LinkToTrackDialog(const std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > > & knobs,
-                      QWidget* parent)
-        : QDialog(parent)
-    {
-        QVBoxLayout* mainLayout = new QVBoxLayout(this);
-
-        _choice = new ComboBox(this);
-
-        for (std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            _choice->addItem( QString::fromUtf8( it->first.c_str() ) );
-        }
-
-        mainLayout->addWidget(_choice);
-
-        QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
-        connect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-        connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
-        mainLayout->addWidget(buttons);
-        setWindowTitle( tr("Link to track") );
-    }
-
-    int getSelectedKnob() const
-    {
-        return _choice->activeIndex();
-    }
-
-    virtual ~LinkToTrackDialog()
-    {
-    }
-};
-
 void
 RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points)
 {
@@ -4988,6 +4945,35 @@ RotoGui::onResetCloneTransformClicked()
 {
     _imp->rotoData->cloneOffset.first = _imp->rotoData->cloneOffset.second = 0;
     onBreakMultiStrokeTriggered();
+}
+
+////////////////////////////////////////////////////////////////////
+
+LinkToTrackDialog::LinkToTrackDialog(const std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > > & knobs,
+                                     QWidget* parent)
+    : QDialog(parent)
+{
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+
+    _choice = new ComboBox(this);
+
+    for (std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        _choice->addItem( QString::fromUtf8( it->first.c_str() ) );
+    }
+
+    mainLayout->addWidget(_choice);
+
+    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    connect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    mainLayout->addWidget(buttons);
+    setWindowTitle( tr("Link to track") );
+}
+
+int
+LinkToTrackDialog::getSelectedKnob() const
+{
+    return _choice->activeIndex();
 }
 
 NATRON_NAMESPACE_EXIT;
