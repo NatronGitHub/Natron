@@ -709,6 +709,25 @@ KnobGuiValue::onDisplayMinMaxChanged(double mini,
             }
         }
 
+        if (sliderMin < -SLIDER_MAX_RANGE) {
+            if (isSpatialType()) {
+                Format f;
+                getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+                sliderMin = -f.width();
+            } else {
+                sliderMin = -SLIDER_MAX_RANGE;
+            }
+        }
+        if (sliderMax > SLIDER_MAX_RANGE) {
+            if (isSpatialType()) {
+                Format f;
+                getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+                sliderMax = f.width();
+            } else {
+                sliderMax = SLIDER_MAX_RANGE;
+            }
+        }
+
         if ( shouldSliderBeVisible(sliderMin, sliderMax) ) {
             _imp->slider->setVisible(true);
         } else {

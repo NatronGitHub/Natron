@@ -27,6 +27,10 @@
 
 #include "Global/Macros.h"
 
+#ifndef NDEBUG
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QPointF>
@@ -181,6 +185,7 @@ public:
         _zoomBottom = zoomBottom;
         _zoomFactor = zoomFactor;
         _zoomAspectRatio = zoomAspectRatio;
+        check();
     }
 
     void translate(double dx,
@@ -188,6 +193,7 @@ public:
     {
         _zoomLeft += dx;
         _zoomBottom += dy;
+        check();
     }
 
     void zoom(double centerX,
@@ -197,6 +203,7 @@ public:
         _zoomLeft = centerX - ( centerX - left() ) / scale;
         _zoomBottom = centerY - ( centerY - bottom() ) / scale;
         _zoomFactor *= scale;
+        check();
     }
 
     // only zoom the x axis: changes the AspectRatio and the Left but not the zoomFactor or the bottom
@@ -206,6 +213,7 @@ public:
     {
         _zoomLeft = centerX - ( centerX - left() ) / scale;
         _zoomAspectRatio *= scale;
+        check();
     }
 
     // only zoom the y axis: changes the AspectRatio, the zoomFactor and the Bottom but not the Left
@@ -216,6 +224,7 @@ public:
         _zoomBottom = centerY - ( centerY - bottom() ) / scale;
         _zoomAspectRatio /= scale;
         _zoomFactor *= scale;
+        check();
     }
 
     // fit the area (xmin-xmax,ymin-ymax) in the zoom window, without modifying the AspectRatio
@@ -236,6 +245,7 @@ public:
             _zoomFactor = screenHeight() / height;
             _zoomLeft = (xmax + xmin) / 2. - ( screenWidth() / ( screenHeight() * aspectRatio() ) ) * height / 2.;
         }
+        check();
     }
 
     // fill the area (xmin-xmax,ymin-ymax) in the zoom window, modifying the AspectRatio
@@ -251,6 +261,7 @@ public:
         _zoomBottom = ymin;
         _zoomFactor = screenHeight() / height;
         _zoomAspectRatio = (screenWidth() * height) / (screenHeight() * width);
+        check();
     }
 
     void setScreenSize(double screenWidth,
@@ -270,6 +281,7 @@ public:
         }
         _screenWidth = screenWidth;
         _screenHeight = screenHeight;
+        check();
     }
 
     /**
@@ -299,6 +311,12 @@ public:
     {
         return QPointF( ( ( zoomX - left() ) / ( right() - left() ) ) * screenWidth(),
                         ( ( zoomY - top() ) / ( bottom() - top() ) ) * screenHeight() );
+    }
+
+private:
+    void check()
+    {
+        assert(boost::math::isfinite(_zoomLeft) && boost::math::isfinite(_zoomBottom) && boost::math::isfinite(_zoomFactor) && boost::math::isfinite(_zoomAspectRatio)&& boost::math::isfinite(_screenWidth)&& boost::math::isfinite(_screenHeight));
     }
 
 private:

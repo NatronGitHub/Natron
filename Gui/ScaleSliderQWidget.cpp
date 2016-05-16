@@ -29,6 +29,10 @@
 #include <cassert>
 #include <stdexcept>
 
+#ifndef NDEBUG
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif
+
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QPaintEvent>
@@ -109,6 +113,7 @@ struct ScaleSliderQWidgetPrivate
         , allowDraftModeSetting(allowDraftModeSetting)
     {
         font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12 );
+        assert(boost::math::isfinite(minimum) && boost::math::isfinite(maximum) && boost::math::isfinite(initialPos));
     }
 };
 
@@ -343,6 +348,7 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 void
 ScaleSliderQWidget::seekScalePosition(double v)
 {
+    assert(boost::math::isfinite(v));
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -363,6 +369,7 @@ ScaleSliderQWidget::seekScalePosition(double v)
 void
 ScaleSliderQWidget::seekInternal(double v)
 {
+    assert(boost::math::isfinite(v));
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -383,6 +390,7 @@ void
 ScaleSliderQWidget::setMinimumAndMaximum(double min,
                                          double max)
 {
+    assert(boost::math::isfinite(min) && boost::math::isfinite(max));
     _imp->minimum = min;
     _imp->maximum = max;
     centerOn(_imp->minimum, _imp->maximum);
@@ -392,6 +400,7 @@ void
 ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
+    assert(boost::math::isfinite(left) && boost::math::isfinite(right));
     if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) ) {
         return;
     }
