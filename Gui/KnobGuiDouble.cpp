@@ -483,6 +483,26 @@ KnobGuiDouble::onDisplayMinMaxChanged(double mini,
             }
         }
 
+        bool spatial = knob->getIsSpatial();
+        Format f;
+        if (spatial) {
+            getKnob()->getHolder()->getApp()->getProject()->getProjectDefaultFormat(&f);
+        }
+        if (sliderMin < -SLIDER_MAX_RANGE) {
+            if (spatial) {
+                sliderMin = -f.width();
+            } else {
+                sliderMin = -SLIDER_MAX_RANGE;
+            }
+        }
+        if (sliderMax > SLIDER_MAX_RANGE) {
+            if (spatial) {
+                sliderMax = f.width();
+            } else {
+                sliderMax = SLIDER_MAX_RANGE;
+            }
+        }
+
         if ( shouldSliderBeVisible(sliderMin, sliderMax) ) {
             _slider->setVisible(true);
         } else {
