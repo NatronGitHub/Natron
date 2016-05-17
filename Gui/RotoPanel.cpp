@@ -173,6 +173,9 @@ enum ColorDialogEditingEnum
 
 struct RotoPanelPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(RotoPanel)
+
+public:
     RotoPanel* publicInterface;
     boost::weak_ptr<NodeGui> node;
     boost::shared_ptr<RotoContext> context;
@@ -928,7 +931,10 @@ expandRecursively(QTreeWidgetItem* item)
 static QString
 scriptNameToolTipFromItem(const boost::shared_ptr<RotoItem>& item)
 {
-    return QString::fromUtf8("<p><b>") + QString::fromUtf8( item->getScriptName().c_str() ) + QString::fromUtf8("</b></p>") +  GuiUtils::convertFromPlainText(QObject::tr("The label of the item."), Qt::WhiteSpaceNormal);
+    return ( QString::fromUtf8("<p><b>")
+             + QString::fromUtf8( item->getScriptName().c_str() )
+             + QString::fromUtf8("</b></p>")
+             +  GuiUtils::convertFromPlainText(QCoreApplication::translate("RotoPanel", "The label of the item."), Qt::WhiteSpaceNormal) );
 }
 
 void
@@ -955,10 +961,10 @@ RotoPanelPrivate::insertItemRecursively(double time,
 
 
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setToolTip( COL_ACTIVATED, GuiUtils::convertFromPlainText(publicInterface->tr("Controls whether the overlay should be visible on the viewer for "
-                                                                                            "the shape."), Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_ACTIVATED, GuiUtils::convertFromPlainText(tr("Controls whether the overlay should be visible on the viewer for "
+                                                                           "the shape."), Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
-    treeItem->setToolTip( COL_LOCKED, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoLockedHint), Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_LOCKED, GuiUtils::convertFromPlainText(tr(kRotoLockedHint), Qt::WhiteSpaceNormal) );
 
     boost::shared_ptr<RotoDrawableItem> drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
     boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
@@ -1003,16 +1009,16 @@ RotoPanelPrivate::insertItemRecursively(double time,
             }
         }
         treeItem->setIcon(COL_OVERLAY, overlayIcon);
-        treeItem->setToolTip( COL_OVERLAY, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_OVERLAY, GuiUtils::convertFromPlainText(tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
-        treeItem->setToolTip( COL_COLOR, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoColorHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_COLOR, GuiUtils::convertFromPlainText(tr(kRotoColorHint), Qt::WhiteSpaceNormal) );
 #ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        treeItem->setToolTip( COL_INVERTED, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoInvertedHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_INVERTED, GuiUtils::convertFromPlainText(tr(kRotoInvertedHint), Qt::WhiteSpaceNormal) );
 #endif
 
         publicInterface->makeCustomWidgetsForItem(drawable, treeItem);

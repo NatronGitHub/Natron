@@ -52,6 +52,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct ProjectPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(Project)
+
+public:
     Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file

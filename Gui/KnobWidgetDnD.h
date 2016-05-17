@@ -30,6 +30,8 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include <QtCore/QCoreApplication>
+
 #include "Gui/GuiFwd.h"
 
 #define KNOB_DND_MIME_DATA_KEY "KnobLink"
@@ -40,6 +42,8 @@ NATRON_NAMESPACE_ENTER;
 struct KnobWidgetDnDPrivate;
 class KnobWidgetDnD
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobWidgetDnD)
+
 public:
 
     KnobWidgetDnD(const KnobGuiPtr& knob, int dimension, QWidget* widget);

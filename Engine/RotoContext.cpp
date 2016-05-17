@@ -2784,7 +2784,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
         ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-        Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+        Dialogs::errorDialog( tr("Out of memory").toStdString(), ss.str() );
 
         return image;
     }

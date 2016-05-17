@@ -475,7 +475,7 @@ KnobHelper::deleteKnob()
             knob->setKnobAsAliasOfThis(aliasKnob, false);
         }
         for (int i = 0; i < knob->getDimension(); ++i) {
-            knob->setExpressionInvalid( i, false, getName() + QObject::tr(": parameter does not exist").toStdString() );
+            knob->setExpressionInvalid( i, false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
             knob->unSlave(i, false);
         }
     }
@@ -4782,7 +4782,7 @@ KnobHolder::getOrCreateUserPageKnob()
     if (ret) {
         return ret;
     }
-    ret = AppManager::createKnob<KnobPage>(this, QObject::tr(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL), 1, false);
+    ret = AppManager::createKnob<KnobPage>(this, tr(NATRON_USER_MANAGED_KNOBS_PAGE_LABEL), 1, false);
     ret->setAsUserKnob(true);
     ret->setName(NATRON_USER_MANAGED_KNOBS_PAGE);
 

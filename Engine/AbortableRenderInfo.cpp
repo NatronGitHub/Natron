@@ -172,10 +172,10 @@ AbortableRenderInfo::onAbortTimerTimeout()
     }
     QString timeoutStr = Timer::printAsTime(NATRON_ABORT_TIMEOUT_MS / 1000, false);
     std::stringstream ss;
-    ss << tr("One or multiple render seems to not be responding anymore after numerous attempt made by %1 to abort them for the last %2.").arg (QString::fromUtf8( NATRON_APPLICATION_NAME).arg(timeoutStr).toStdString() << std::endl;
-                                                                                                                                                ss << tr("This is likely due to a render taking too long in a plug-in.").toStdString() << std::endl << std::endl;
-                                                                                                                                                ss << tr("List of stalled renders:").toStdString() << std::endl << std::endl;
-                                                                                                                                                for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
+    ss << tr("One or multiple render seems to not be responding anymore after numerous attempt made by %1 to abort them for the last %2.").arg ( QString::fromUtf8( NATRON_APPLICATION_NAME) ).arg(timeoutStr).toStdString() << std::endl;
+    ss << tr("This is likely due to a render taking too long in a plug-in.").toStdString() << std::endl << std::endl;
+    ss << tr("List of stalled renders:").toStdString() << std::endl << std::endl;
+    for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
         ss << " - " << (*it)->getThreadName()  << tr(" stalled in:").toStdString() << std::endl << std::endl;
         std::string actionName, nodeName, pluginId;
         (*it)->getCurrentActionInfos(&actionName, &nodeName, &pluginId);
@@ -190,23 +190,23 @@ AbortableRenderInfo::onAbortTimerTimeout()
         }
         ss << std::endl;
     }
-                                                                                                                                                ss << std::endl;
+    ss << std::endl;
 
-                                                                                                                                                if ( appPTR->isBackground() ) {
+    if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();
     } else {
         ss << tr("Would you like to kill these renders?").toStdString() << std::endl << std::endl;
-        ss << tr("WARNING: Killing them may not work or may leave %1 in a bad state. The application may crash or freeze as a consequence of this. It is advised to restart %1 instead.").arg (QString::fromUtf8( NATRON_APPLICATION_NAME).toStdString();
+        ss << tr("WARNING: Killing them may not work or may leave %1 in a bad state. The application may crash or freeze as a consequence of this. It is advised to restart %1 instead.").arg( QString::fromUtf8( NATRON_APPLICATION_NAME) ).toStdString();
 
-                                                                                                                                                                                               std::string message = ss.str();
-                                                                                                                                                                                               StandardButtonEnum reply = Dialogs::questionDialog(tr("A Render is not responding anymore").toStdString(), ss.str(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonNo);
-                                                                                                                                                                                               if (reply == eStandardButtonYes) {
+        std::string message = ss.str();
+        StandardButtonEnum reply = Dialogs::questionDialog(tr("A Render is not responding anymore").toStdString(), ss.str(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonNo);
+        if (reply == eStandardButtonYes) {
             // Kill threads
             for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
                 (*it)->killThread();
             }
         }
-                                                                                                                                                                                               }
+    }
 #endif
 } // AbortableRenderInfo::onAbortTimerTimeout
 

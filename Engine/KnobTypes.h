@@ -301,13 +301,13 @@ public:
      * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void denormalize(int dimension, double time, double* value) const;
+    double denormalize(int dimension, double time, double value) const;
 
     /**
      * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void normalize(int dimension, double time, double* value) const;
+    double normalize(int dimension, double time, double value) const;
 
     void addSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
     {
@@ -1162,6 +1162,8 @@ private:
 class KnobLayers
     : public KnobTable
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobLayers)
+
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
@@ -1192,9 +1194,9 @@ public:
     virtual std::string getColumnLabel(int col) const OVERRIDE FINAL
     {
         if (col == 0) {
-            return QObject::tr("Name").toStdString();
+            return tr("Name").toStdString();
         } else if (col == 1) {
-            return QObject::tr("Channels").toStdString();
+            return tr("Channels").toStdString();
         } else {
             return std::string();
         }

@@ -52,6 +52,10 @@ struct DialogParamHolderPrivate;
 class DialogParamHolder
     : public NamedKnobHolder
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     DialogParamHolder(const QString& uniqueID, AppInstance* app);
@@ -151,6 +155,9 @@ private:
 
 class PyTabWidget
 {
+    Q_DECLARE_TR_FUNCTIONS(PyTabWidget)
+
+private:
     TabWidget* _tab;
 
 public:

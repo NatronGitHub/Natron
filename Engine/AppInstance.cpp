@@ -135,6 +135,9 @@ struct RenderQueueItem
 
 struct AppInstancePrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(AppInstance)
+
+public:
     AppInstance* _publicInterface;
     boost::shared_ptr<Project> _currentProject; //< ptr to the project
     int _appID; //< the unique ID of this instance (or window)
@@ -377,40 +380,64 @@ AppInstance::newVersionCheckDownloaded()
          ( ( versionEncoded == NATRON_VERSION_ENCODED) &&
            ( ( devStatCompare > 0) || ( ( devStatCompare == 0) && ( buildNumber > NATRON_BUILD_NUMBER) ) ) ) ) {
         QString text;
+        const QString popen = QString::fromUtf8("<p>");
+        const QString pclose = QString::fromUtf8("</p>");
         if (devStatCompare == 0) {
             if ( ( buildNumber > NATRON_BUILD_NUMBER) && ( versionEncoded == NATRON_VERSION_ENCODED) &&
                  ( currentDevStatus == QString::fromUtf8(NATRON_DEVELOPMENT_RELEASE_CANDIDATE) ) ) {
                 ///show build number in version
-                text =  QObject::tr("<p>Updates for %1 are now available for download. "
-                                    "You are currently using %1 version %2 - %3 - build %4. "
-                                    "The latest version of %1 is version %5 - %6 - build %7.</p> ")
+                text =  popen
+                       + tr("Updates for %1 are now available for download.")
+                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+                       + pclose
+                       + popen
+                       + tr("You are currently using %1 version %2 - %3 - build %4.")
                        .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                        .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
                        .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
                        .arg(NATRON_BUILD_NUMBER)
+                       + pclose
+                       + popen
+                       + tr("The latest version of %1 is version %2 - %3 - build %4.")
+                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                        .arg(extractedSoftwareVersionStr)
                        .arg(extractedDevStatusStr)
-                       .arg(extractedBuildNumberStr) +
-                       QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                                                                       "www.natron.fr</a>. </p>");
+                       .arg(extractedBuildNumberStr)
+                       + pclose
+                       + popen
+                       + tr("You can download it from %1.")
+                       .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                               "www.natron.fr</a>") )
+                       + pclose;
             } else {
                 //Only notify build number increments for Release candidates
                 return;
             }
         } else {
-            text =  QObject::tr("<p>Updates for %1 are now available for download. "
-                                "You are currently using %1 version %2 - %3. "
-                                "The latest version of %1 is version %4 - %5.</p> ")
+            text =  popen
+                   + tr("Updates for %1 are now available for download.")
+                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+                   + pclose
+                   + popen
+                   + tr("You are currently using %1 version %2 - %3.")
                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                    .arg( QString::fromUtf8(NATRON_VERSION_STRING) )
                    .arg( QString::fromUtf8(NATRON_DEVELOPMENT_STATUS) )
+                   + pclose
+                   + popen
+                   + tr("The latest version of %1 is version %4 - %5.")
+                   .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
                    .arg(extractedSoftwareVersionStr)
-                   .arg(extractedDevStatusStr) +
-                   QObject::tr("<p>You can download it from ") + QString::fromUtf8("<a href=\"www.natron.fr/download\">"
-                                                                                   "www.natron.fr</a>. </p>");
+                   .arg(extractedDevStatusStr)
+                   + pclose
+                   + popen
+                   + tr("You can download it from %1.")
+                   .arg( QString::fromUtf8("<a href=\"www.natron.fr/download\">"
+                                           "www.natron.fr</a>") )
+                   + pclose;
         }
 
-        Dialogs::informationDialog( "New version", text.toStdString(), true );
+        Dialogs::informationDialog( tr("New version").toStdString(), text.toStdString(), true );
     }
 } // AppInstance::newVersionCheckDownloaded
 
@@ -437,14 +464,12 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             writerNode = getNodeByFullySpecifiedName(writerName);
 
             if (!writerNode) {
-                std::string exc(writerName);
-                exc.append( tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString() );
-                throw std::invalid_argument(exc);
+                QString s = tr("%1 does not belong to the project file. Please enter a valid Write node script-name.").arg(it->name);
+                throw std::invalid_argument( s.toStdString() );
             } else {
                 if ( !writerNode->isOutputNode() ) {
-                    std::string exc(writerName);
-                    exc.append( tr(" is not an output node! It cannot render anything.").toStdString() );
-                    throw std::invalid_argument(exc);
+                    QString s = tr("%1 is not an output node! It cannot render anything.").arg(it->name);
+                    throw std::invalid_argument( s.toStdString() );
                 }
             }
 
@@ -460,17 +485,17 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
         } else {
             writerNode = createWriter( it->filename.toStdString(), eCreateNodeReasonInternal, getProject() );
             if (!writerNode) {
-                throw std::runtime_error( std::string("Failed to create writer for ") + it->filename.toStdString() );
+                throw std::runtime_error( tr("Failed to create writer for %1.").arg(it->filename).toStdString() );
             }
 
             //Connect the writer to the corresponding Output node input
             NodePtr output = getProject()->getNodeByFullySpecifiedName( it->name.toStdString() );
             if (!output) {
-                throw std::invalid_argument( it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString() );
+                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
             GroupOutput* isGrpOutput = dynamic_cast<GroupOutput*>( output->getEffectInstance().get() );
             if (!isGrpOutput) {
-                throw std::invalid_argument( it->name.toStdString() + tr(" is not the name of a valid Output node of the script").toStdString() );
+                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
             NodePtr outputInput = output->getRealInput(0);
             if (outputInput) {
@@ -504,10 +529,11 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
         std::string output;
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(*it, &err, &output);
         if (!ok) {
-            QString m = QObject::tr("Failed to execute given command-line Python command: ");
-            m.append( QString::fromUtf8( it->c_str() ) );
-            m.append( QString::fromUtf8(" Error: ") );
-            m.append( QString::fromUtf8( err.c_str() ) );
+            const QString sp( QString::fromUtf8(" ") );
+            QString m = tr("Failed to execute the following Python command:") + sp +
+                        QString::fromUtf8( it->c_str() ) + sp +
+                        tr("Error:") + sp +
+                        QString::fromUtf8( err.c_str() );
             throw std::runtime_error( m.toStdString() );
         } else if ( !output.empty() ) {
             std::cout << output << std::endl;
@@ -543,16 +569,13 @@ AppInstance::load(const CLArgs& cl,
 
         if ( scriptFilename.isEmpty() ) {
             // cannot start a background process without a file
-            throw std::invalid_argument( tr("Project file name empty").toStdString() );
+            throw std::invalid_argument( tr("Project file name is empty.").toStdString() );
         }
 
 
         QFileInfo info(scriptFilename);
         if ( !info.exists() ) {
-            std::stringstream ss;
-            ss << scriptFilename.toStdString();
-            ss << tr(": No such file").toStdString();
-            throw std::invalid_argument( ss.str() );
+            throw std::invalid_argument( tr("%1: No such file.").arg(scriptFilename).toStdString() );
         }
 
         std::list<AppInstance::RenderWork> writersWork;
@@ -567,7 +590,7 @@ AppInstance::load(const CLArgs& cl,
             ///Load the python script
             loadPythonScript(info);
         } else {
-            throw std::invalid_argument( tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString() );
+            throw std::invalid_argument( tr("%1 only accepts python scripts or .ntp project files.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
 
 
@@ -590,20 +613,17 @@ AppInstance::load(const CLArgs& cl,
             NodePtr readNode = getNodeByFullySpecifiedName(readerName);
 
             if (!readNode) {
-                std::string exc(readerName);
-                exc.append( tr(" does not belong to the project file. Please enter a valid Read node script-name.").toStdString() );
+                std::string exc( tr("%1 does not belong to the project file. Please enter a valid Read node script-name.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             } else {
                 if ( !readNode->getEffectInstance()->isReader() ) {
-                    std::string exc(readerName);
-                    exc.append( tr(" is not a Read node! It cannot render anything.").toStdString() );
+                    std::string exc( tr("%1 is not a Read node! It cannot render anything.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                     throw std::invalid_argument(exc);
                 }
             }
 
             if ( it->filename.isEmpty() ) {
-                std::string exc(readerName);
-                exc.append( tr(": Filename specified is empty but [-i] or [--reader] was passed to the command-line").toStdString() );
+                std::string exc( tr("%1: Filename specified is empty but [-i] or [--reader] was passed to the command-line.").arg( QString::fromUtf8( readerName.c_str() ) ).toStdString() );
                 throw std::invalid_argument(exc);
             }
             KnobPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
@@ -930,11 +950,12 @@ AppInstance::createReader(const std::string& filename,
     std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     QString fileCpy = QString::fromUtf8( filename.c_str() );
-    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
+    std::string ext = extq.toStdString();
     std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
     if ( found == readersForFormat.end() ) {
         Dialogs::errorDialog( tr("Reader").toStdString(),
-                              tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false );
+                              tr("No plugin capable of decoding %1 was found").arg(extq).toStdString(), false );
 
         return NodePtr();
     }
@@ -967,11 +988,12 @@ AppInstance::createWriter(const std::string& filename,
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
 
     QString fileCpy = QString::fromUtf8( filename.c_str() );
-    std::string ext = QtCompat::removeFileExtension(fileCpy).toLower().toStdString();
+    QString extq = QtCompat::removeFileExtension(fileCpy).toLower();
+    std::string ext = extq.toStdString();
     std::map<std::string, std::string>::iterator found = writersForFormat.find(ext);
     if ( found == writersForFormat.end() ) {
         Dialogs::errorDialog( tr("Writer").toStdString(),
-                              tr("No plugin capable of encoding ").toStdString() + ext + tr(" was found.").toStdString(), false );
+                              tr("No plugin capable of encoding %1 was found.").arg(extq).toStdString(), false );
 
         return NodePtr();
     }
@@ -1065,7 +1087,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             plugin = appPTR->getPluginBinaryFromOldID(args.pluginID, args.majorV, args.minorV);
         } catch (const std::exception& e2) {
             Dialogs::errorDialog(tr("Plugin error").toStdString(),
-                                 tr("Cannot load plugin executable").toStdString() + ": " + e2.what(), false );
+                                 tr("Cannot load plugin executable.").toStdString() + ": " + e2.what(), false );
 
             return node;
         }
@@ -1119,8 +1141,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 // ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
                 ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
             } catch (const std::exception& e) {
-                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of ").toStdString()
-                            + args.pluginID.toStdString() + ": " + e.what(), false);
+                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(args.pluginID).toStdString()
+                            + '\n' + e.what(), false);
 
                 return NodePtr();
             }
@@ -1147,9 +1169,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
              ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                tr("The settings of the application are currently set to use "
-                                                                  "the global thread-pool for rendering effects. The Foundry Furnace "
-                                                                  "is known not to work well when this setting is checked. "
-                                                                  "Would you like to turn it off ? ").toStdString(), false);
+                                                                  "the global thread-pool for rendering effects.\n"
+                                                                  "The Foundry Furnace "
+                                                                  "is known not to work well when this setting is checked.\n"
+                                                                  "Would you like to turn it off?").toStdString(), false);
             if (reply == eStandardButtonYes) {
                 settings->setUseGlobalThreadPool(false);
                 settings->setNumberOfParallelRenders(1);
@@ -1164,7 +1187,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 if (nbViews < 2) {
                     StandardButtonEnum reply = Dialogs::questionDialog(tr("Multi-View").toStdString(),
                                                                        tr("Using a multi-view node requires the project settings to be setup "
-                                                                          "for multi-view. Would you like to setup the project for stereo?").toStdString(), false);
+                                                                          "for multi-view.\n"
+                                                                          "Would you like to setup the project for stereo?").toStdString(), false);
                     if (reply == eStandardButtonYes) {
                         getProject()->setupProjectForStereo();
                     }
@@ -1343,7 +1367,7 @@ AppInstance::exportHTMLDocs(const QString path)
         QString categoryBodyEnd = QString::fromUtf8("</ul></div></div></div></div>");
         QString categoriesFooter = QString::fromUtf8("</body></html>");
         for (int i = 0; i < categories.size(); ++i) {
-            QString categoriesBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>") + categories.at(0) + QString::fromUtf8("</h1><p>") + QObject::tr("This manual is intended as a reference for all the parameters within each node in ") + categories.at(0) + QString::fromUtf8(".</p><div class=\"toctree-wrapper compound\"><ul>");
+            QString categoriesBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>") + categories.at(0) + QString::fromUtf8("</h1><p>") + tr("This manual is intended as a reference for all the parameters within each node in %1.").arg( categories.at(0) ) + QString::fromUtf8("</p><div class=\"toctree-wrapper compound\"><ul>");
             QString html;
             html.append(categoriesHeader);
             html.append(categoriesBodyStart);
@@ -1481,7 +1505,7 @@ AppInstance::parseHTMLDoc(const QString html,
         result.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
     }
     result.replace(QString::fromUtf8("<body>"), menuHTML);
-    result.replace( QString::fromUtf8("Natron 2.0 documentation"), QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8(" ") + QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8(" documentation") );
+    result.replace( QString::fromUtf8("NATRON_DOCUMENTATION"), tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) );
 
     return result;
 } // AppInstance::parseHTMLDoc
@@ -1732,7 +1756,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstance* writer
     const DiskCacheNode* isDiskCache = dynamic_cast<const DiskCacheNode*>(writer);
 
     if (isDiskCache) {
-        *sequenceName = QObject::tr("Caching");
+        *sequenceName = tr("Caching");
     } else {
         *sequenceName = QString();
         KnobPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
@@ -1762,7 +1786,7 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
 
         if (firstFrameD > lastFrameD) {
             Dialogs::errorDialog(w.writer->getNode()->getLabel_mt_safe(),
-                                 QObject::tr("First frame in the sequence is greater than the last frame").toStdString(), false );
+                                 tr("First frame index in the sequence is greater than the last frame index.").toStdString(), false );
 
             return false;
         }

@@ -37,6 +37,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
 #include <QUndoCommand> // in QtGui on Qt4, in QtWidgets on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -120,6 +121,8 @@ typedef std::list<DSKeyPtr> DSKeyPtrList;
 class DSMoveKeysAndNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSMoveKeysAndNodesCommand)
+
 public:
     DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
                               const std::vector<boost::shared_ptr<DSNode> >& nodes,
@@ -151,6 +154,8 @@ private:
 class DSTransformKeysCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSTransformKeysCommand)
+
 public:
     DSTransformKeysCommand(const DSKeyPtrList &keys,
                            const Transform::Matrix3x3& transform,
@@ -195,6 +200,8 @@ private:
 class DSLeftTrimReaderCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSLeftTrimReaderCommand)
+
 public:
     DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                             double oldTime,
@@ -227,6 +234,8 @@ private:
 class DSRightTrimReaderCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSRightTrimReaderCommand)
+
 public:
     DSRightTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                              double oldTime,
@@ -259,6 +268,8 @@ private:
 class DSSlipReaderCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSSlipReaderCommand)
+
 public:
     DSSlipReaderCommand(const boost::shared_ptr<DSNode> &reader,
                         double dt,
@@ -293,6 +304,8 @@ private:
 class DSRemoveKeysCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSRemoveKeysCommand)
+
 public:
     DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
                         DopeSheetEditor *model,
@@ -338,6 +351,8 @@ struct DSKeyInterpolationChange
 class DSSetSelectedKeysInterpolationCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSSetSelectedKeysInterpolationCommand)
+
 public:
     DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
                                           DopeSheetEditor *model,
@@ -364,6 +379,8 @@ private:
 class DSPasteKeysCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DSPasteKeysCommand)
+
 public:
     DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                        DopeSheetEditor *model,

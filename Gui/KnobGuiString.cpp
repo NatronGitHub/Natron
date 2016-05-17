@@ -1300,11 +1300,11 @@ KnobGuiString::updateToolTip()
         if (_textEdit) {
             bool useRichText = _knob.lock()->usesRichText();
             if (useRichText) {
-                tt += tr(" This text area supports html encoding. "
-                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info. ");
+                tt += tr("This text area supports html encoding. "
+                         "Please check <a href=http://qt-project.org/doc/qt-5/richtext-html-subset.html>Qt website</a> for more info.");
             }
             QKeySequence seq(Qt::CTRL + Qt::Key_Return);
-            tt += tr("Use ") + seq.toString(QKeySequence::NativeText) + tr(" to validate changes made to the text. ");
+            tt += tr("Use %1 to validate changes made to the text.").arg( seq.toString(QKeySequence::NativeText) );
             _textEdit->setToolTip(tt);
         } else if (_lineEdit) {
             _lineEdit->setToolTip(tt);

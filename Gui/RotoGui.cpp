@@ -714,7 +714,7 @@ RotoGui::RotoGui(NodeGui* node,
     QString multiTt = GuiUtils::convertFromPlainText(tr("When checked, strokes will be appended to the same item "
                                                         "in the hierarchy as long as the same tool is selected.\n"
                                                         "Select another tool to make a new item."), Qt::WhiteSpaceNormal);
-    _imp->multiStrokeEnabledLabel = new Label(QObject::tr("Multi-stroke:"), _imp->brushButtonsBar);
+    _imp->multiStrokeEnabledLabel = new Label(tr("Multi-stroke:"), _imp->brushButtonsBar);
     _imp->multiStrokeEnabledLabel->setToolTip(multiTt);
     _imp->brushButtonsBarLayout->addWidget(_imp->multiStrokeEnabledLabel);
 
@@ -4838,44 +4838,6 @@ RotoGui::showMenuForControlPoint(const boost::shared_ptr<Bezier> & curve,
     }
 } // showMenuForControlPoint
 
-class LinkToTrackDialog
-    : public QDialog
-{
-    ComboBox* _choice;
-
-public:
-
-    LinkToTrackDialog(const std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > > & knobs,
-                      QWidget* parent)
-        : QDialog(parent)
-    {
-        QVBoxLayout* mainLayout = new QVBoxLayout(this);
-
-        _choice = new ComboBox(this);
-
-        for (std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            _choice->addItem( QString::fromUtf8( it->first.c_str() ) );
-        }
-
-        mainLayout->addWidget(_choice);
-
-        QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
-        connect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-        connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
-        mainLayout->addWidget(buttons);
-        setWindowTitle( QObject::tr("Link to track") );
-    }
-
-    int getSelectedKnob() const
-    {
-        return _choice->activeIndex();
-    }
-
-    virtual ~LinkToTrackDialog()
-    {
-    }
-};
-
 void
 RotoGui::linkPointTo(const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points)
 {
@@ -4983,6 +4945,35 @@ RotoGui::onResetCloneTransformClicked()
 {
     _imp->rotoData->cloneOffset.first = _imp->rotoData->cloneOffset.second = 0;
     onBreakMultiStrokeTriggered();
+}
+
+////////////////////////////////////////////////////////////////////
+
+LinkToTrackDialog::LinkToTrackDialog(const std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > > & knobs,
+                                     QWidget* parent)
+    : QDialog(parent)
+{
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+
+    _choice = new ComboBox(this);
+
+    for (std::vector< std::pair<std::string, boost::shared_ptr<KnobDouble> > >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        _choice->addItem( QString::fromUtf8( it->first.c_str() ) );
+    }
+
+    mainLayout->addWidget(_choice);
+
+    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
+    connect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    mainLayout->addWidget(buttons);
+    setWindowTitle( tr("Link to track") );
+}
+
+int
+LinkToTrackDialog::getSelectedKnob() const
+{
+    return _choice->activeIndex();
 }
 
 NATRON_NAMESPACE_EXIT;

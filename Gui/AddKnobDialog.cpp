@@ -1877,13 +1877,8 @@ AddKnobDialog::onOkClicked()
                 }
             }
             if (defIndex == -1) {
-                std::stringstream ss;
-                ss << QObject::tr("The default value").toStdString();
-                ss << " \"";
-                ss << defValue;
-                ss << "\" ";
-                ss << QObject::tr("does not exist in the defined menu items").toStdString();
-                Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), ss.str() );
+                QString s = tr("The default value \"%1\" does not exist in the defined menu items.").arg( _imp->defaultStr->text() );
+                Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), s.toStdString() );
 
                 return;
             }

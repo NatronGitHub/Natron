@@ -44,20 +44,20 @@ GroupInput::getPluginDescription() const
 void
 GroupInput::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, QObject::tr("Controls") );
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
 
     page->setName("controls");
 
-    boost::shared_ptr<KnobBool> optKnob = AppManager::createKnob<KnobBool>( this, QObject::tr("Optional") );
-    optKnob->setHintToolTip( QObject::tr("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
-                                         "for the render to work.") );
+    boost::shared_ptr<KnobBool> optKnob = AppManager::createKnob<KnobBool>( this, tr("Optional") );
+    optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
+                                "for the render to work.") );
     optKnob->setAnimationEnabled(false);
     optKnob->setName(kNatronGroupInputIsOptionalParamName);
     page->addKnob(optKnob);
     optional = optKnob;
 
-    boost::shared_ptr<KnobBool> maskKnob = AppManager::createKnob<KnobBool>( this, QObject::tr("Mask") );
-    maskKnob->setHintToolTip( QObject::tr("When checked, this input of the group will be considered as a mask. A mask is always optional.") );
+    boost::shared_ptr<KnobBool> maskKnob = AppManager::createKnob<KnobBool>( this, tr("Mask") );
+    maskKnob->setHintToolTip( tr("When checked, this input of the group will be considered as a mask. A mask is always optional.") );
     maskKnob->setAnimationEnabled(false);
     maskKnob->setName(kNatronGroupInputIsMaskParamName);
     page->addKnob(maskKnob);
@@ -87,3 +87,6 @@ GroupInput::knobChanged(KnobI* k,
 }
 
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_GroupInput.cpp"

@@ -37,6 +37,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
 #include <QUndoCommand>
 #include <QList>
 CLANG_DIAG_ON(deprecated)
@@ -51,6 +52,8 @@ NATRON_NAMESPACE_ENTER;
 class MoveControlPointsUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveControlPointsUndoCommand)
+
 public:
 
     MoveControlPointsUndoCommand(RotoGui* roto,
@@ -85,6 +88,8 @@ private:
 class TransformUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(TransformUndoCommand)
+
 public:
 
     enum TransformPointsSelectionEnum
@@ -132,6 +137,8 @@ private:
 class AddPointUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddPointUndoCommand)
+
 public:
 
     AddPointUndoCommand(RotoGui* roto,
@@ -157,6 +164,9 @@ private:
 class RemovePointUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemovePointUndoCommand)
+
+private:
     struct CurveDesc
     {
         boost::shared_ptr<RotoDrawableItem> oldCurve, curve;
@@ -199,6 +209,9 @@ private:
 class RemoveCurveUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveCurveUndoCommand)
+
+private:
     struct RemovedCurve
     {
         boost::shared_ptr<RotoDrawableItem> curve;
@@ -226,6 +239,8 @@ private:
 class AddStrokeUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddStrokeUndoCommand)
+
 public:
 
     AddStrokeUndoCommand(RotoGui* roto, const boost::shared_ptr<RotoStrokeItem>& item);
@@ -246,6 +261,8 @@ private:
 class AddMultiStrokeUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddMultiStrokeUndoCommand)
+
 public:
 
     AddMultiStrokeUndoCommand(RotoGui* roto, const boost::shared_ptr<RotoStrokeItem>& item);
@@ -269,6 +286,8 @@ private:
 class MoveTangentUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveTangentUndoCommand)
+
 public:
 
     MoveTangentUndoCommand(RotoGui* roto,
@@ -305,6 +324,8 @@ private:
 class MoveFeatherBarUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveFeatherBarUndoCommand)
+
 public:
 
     MoveFeatherBarUndoCommand(RotoGui* roto,
@@ -335,6 +356,8 @@ private:
 class RemoveFeatherUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveFeatherUndoCommand)
+
 public:
 
     struct RemoveFeatherData
@@ -361,9 +384,9 @@ private:
 class OpenCloseUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(OpenCloseUndoCommand)
+
 public:
-
-
     OpenCloseUndoCommand(RotoGui* roto,
                          const boost::shared_ptr<Bezier> & curve);
 
@@ -373,7 +396,6 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-
     RotoGui* _roto;
     bool _firstRedoCalled;
     int _selectedTool;
@@ -384,6 +406,8 @@ private:
 class SmoothCuspUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(SmoothCuspUndoCommand)
+
 public:
 
     typedef std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > SelectedPointList;
@@ -420,6 +444,8 @@ private:
 class MakeBezierUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MakeBezierUndoCommand)
+
 public:
 
     MakeBezierUndoCommand(RotoGui* roto,
@@ -460,6 +486,8 @@ private:
 class MakeEllipseUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MakeEllipseUndoCommand)
+
 public:
 
     MakeEllipseUndoCommand(RotoGui* roto,
@@ -497,6 +525,8 @@ private:
 class MakeRectangleUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MakeRectangleUndoCommand)
+
 public:
 
     MakeRectangleUndoCommand(RotoGui* roto,
@@ -534,6 +564,9 @@ private:
 class RemoveItemsUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveItemsUndoCommand)
+
+private:
     struct RemovedItem
     {
         QTreeWidgetItem* treeItem;
@@ -553,8 +586,6 @@ class RemoveItemsUndoCommand
     };
 
 public:
-
-
     RemoveItemsUndoCommand(RotoPanel* roto,
                            const QList<QTreeWidgetItem*> & items);
 
@@ -564,7 +595,6 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-
     RotoPanel* _roto;
     std::list<RemovedItem> _items;
 };
@@ -572,9 +602,9 @@ private:
 class AddLayerUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddLayerUndoCommand)
+
 public:
-
-
     AddLayerUndoCommand(RotoPanel* roto);
 
     virtual ~AddLayerUndoCommand();
@@ -597,6 +627,8 @@ private:
 class DragItemsUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DragItemsUndoCommand)
+
 public:
 
     struct Item
@@ -636,6 +668,8 @@ private:
 class PasteItemUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(PasteItemUndoCommand)
+
 public:
 
     enum PasteModeEnum
@@ -675,6 +709,8 @@ private:
 class DuplicateItemUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DuplicateItemUndoCommand)
+
 public:
 
     struct DuplicatedItem
@@ -701,9 +737,9 @@ private:
 class LinkToTrackUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(LinkToTrackUndoCommand)
+
 public:
-
-
     LinkToTrackUndoCommand(RotoGui* roto,
                            const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points,
                            const boost::shared_ptr<KnobDouble> & track);
@@ -723,6 +759,9 @@ private:
 class UnLinkFromTrackUndoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(UnLinkFromTrackUndoCommand)
+
+private:
     struct PointToUnlink
     {
         boost::shared_ptr<BezierCP> cp;
@@ -731,8 +770,6 @@ class UnLinkFromTrackUndoCommand
     };
 
 public:
-
-
     UnLinkFromTrackUndoCommand(RotoGui* roto,
                                const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
 

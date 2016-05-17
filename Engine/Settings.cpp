@@ -1710,8 +1710,8 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                ( knobs[i] == _systemFontChoice.get() ) )
              && !didFontWarn ) {
             didOCIOWarn = true;
-            Dialogs::warningDialog( QObject::tr("Font change").toStdString(),
-                                    QObject::tr("Changing the font requires a restart of " NATRON_APPLICATION_NAME).toStdString() );
+            Dialogs::warningDialog( tr("Font change").toStdString(),
+                                    tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         } else if ( ( ( knobs[i] == _ocioConfigKnob.get() ) ||
                       ( knobs[i] == _customOcioConfigFile.get() ) )
                     && !didOCIOWarn ) {
@@ -1719,9 +1719,8 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
             if (warnOcioChanged) {
                 bool stopAsking = false;
-                Dialogs::warningDialog(QObject::tr("OCIO config changed").toStdString(),
-                                       QObject::tr("The OpenColorIO config change requires a restart of "
-                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(), &stopAsking);
+                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
+                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
                 if (stopAsking) {
                     _warnOcioConfigKnobChanged->setValue(false);
                     saveSetting( _warnOcioConfigKnobChanged.get() );
@@ -1736,8 +1735,8 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                 for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
                     if (isFirstViewer) {
                         if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
-                            Dialogs::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
-                                                                                                   "Reverting to 8bits textures.").toStdString() );
+                            Dialogs::errorDialog( tr("Viewer").toStdString(), tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
+                                                                                 "Reverting to 8bits textures.").toStdString() );
                             _texturesMode->setValue(0);
                             saveSetting( _texturesMode.get() );
 
@@ -1966,7 +1965,7 @@ Settings::tryLoadOpenColorIOConfig()
             return false;
         }
         if ( !QFile::exists( QString::fromUtf8( file.c_str() ) ) ) {
-            Dialogs::errorDialog( "OpenColorIO", file + QObject::tr(": No such file.").toStdString() );
+            Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file.").arg( QString::fromUtf8( file.c_str() ) ).toStdString() );
 
             return false;
         }
@@ -1989,12 +1988,12 @@ Settings::tryLoadOpenColorIOConfig()
                 if ( !defaultConfigsDir.exists(configFileName) ) {
                     QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
                     if ( !subDir.exists() ) {
-                        Dialogs::errorDialog( "OpenColorIO", subDir.absoluteFilePath( QString::fromUtf8("config.ocio") ).toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+                        Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file or directory.").arg( subDir.absoluteFilePath( QString::fromUtf8("config.ocio") ) ).toStdString() );
 
                         return false;
                     }
                     if ( !subDir.exists( QString::fromUtf8("config.ocio") ) ) {
-                        Dialogs::errorDialog( "OpenColorIO", subDir.absoluteFilePath( QString::fromUtf8("config.ocio") ).toStdString() + QObject::tr(": No such file or directory.").toStdString() );
+                        Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file or directory.").arg( subDir.absoluteFilePath( QString::fromUtf8("config.ocio") ) ).toStdString() );
 
                         return false;
                     }
@@ -2098,9 +2097,8 @@ Settings::onKnobValueChanged(KnobI* k,
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
             if ( warnOcioChanged && appPTR->getTopLevelInstance() ) {
                 bool stopAsking = false;
-                Dialogs::warningDialog(QObject::tr("OCIO config changed").toStdString(),
-                                       QObject::tr("The OpenColorIO config change requires a restart of "
-                                                   NATRON_APPLICATION_NAME " to be effective.").toStdString(), &stopAsking);
+                Dialogs::warningDialog(tr("OCIO config changed").toStdString(),
+                                       tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
                 if (stopAsking) {
                     _warnOcioConfigKnobChanged->setValue(false);
                 }
@@ -2160,10 +2158,9 @@ Settings::onKnobValueChanged(KnobI* k,
         bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _customHostName->setSecret(!isCustom);
     } else if ( ( k == _testCrashReportButton.get() ) && (reason == eValueChangedReasonUserEdited) ) {
-        StandardButtonEnum reply = Dialogs::questionDialog( QObject::tr("Crash Test").toStdString(),
-                                                            QObject::tr("You are about to make " NATRON_APPLICATION_NAME
-                                                                        " crash to test the reporting system. "
-                                                                        "Do you really want to crash?").toStdString(), false,
+        StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
+                                                            tr("You are about to make %1 crash to test the reporting system.\n"
+                                                               "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
                                                             StandardButtons(eStandardButtonYes | eStandardButtonNo) );
         if (reply == eStandardButtonYes) {
             crash_application();
@@ -2174,8 +2171,7 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
     }
     if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
-        Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of " NATRON_APPLICATION_NAME
-                                                                         " and clearing the OpenFX plug-ins load cache from the Cache menu.").toStdString() );
+        Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
     }
 } // onKnobValueChanged
 
@@ -2527,7 +2523,9 @@ Settings::populatePluginsTab()
             pluginActivation->setName(it->first + ".enabled");
             pluginActivation->setAnimationEnabled(false);
             pluginActivation->setAddNewLine(false);
-            pluginActivation->setHintToolTip( tr("When checked, %2 will be activated and you can create a node using this plug-in in %1. When unchecked, you'll be unable to create a node for this plug-in. Changing this parameter requires a restart of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( pluginName.c_str() ) ) );
+            pluginActivation->setHintToolTip( tr("When checked, %2 will be activated and you can create a node using this plug-in in %1.\n"
+                                                 "When unchecked, you'll be unable to create a node for this plug-in.\n"
+                                                 "Changing this parameter requires a restart of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( pluginName.c_str() ) ) );
             if (group) {
                 group->addKnob(pluginActivation);
             }
@@ -2538,7 +2536,7 @@ Settings::populatePluginsTab()
             zoomSupport->populateChoices(zoomSupportEntries);
             zoomSupport->setName(it->first + ".zoomSupport");
             zoomSupport->setDefaultValue( filterDefaultRenderScaleSupportPlugin( plugin->getPluginID() ) );
-            zoomSupport->setHintToolTip( tr("Controls whether the plug-in should have its default zoom support or it should be deactivated. "
+            zoomSupport->setHintToolTip( tr("Controls whether the plug-in should have its default zoom support or it should be deactivated.\n"
                                             "This parameter is useful because some plug-ins flag that they can support different level of zoom "
                                             "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
                                             "plug-in, hence making it work at different zoom levels."
@@ -2614,7 +2612,7 @@ Settings::makeHTMLDocumentation(bool menu,
         ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />\n<script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n<script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n";
         ts << "</head>\n<body>\n";
         ts << "<div class=\"related\">\n<h3>Navigation</h3>\n<ul>\n";
-        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>\n";
+        ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>\n";
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n<h1>Preferences</h1>\n";
@@ -3222,9 +3220,9 @@ Settings::doOCIOStartupCheckIfNeeded()
         std::vector<std::string> entries = _ocioConfigKnob->getEntries_mt_safe();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
-            warnText = QObject::tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
-            warnText = QObject::tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
+            warnText = tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
             return;
         }
@@ -3251,9 +3249,9 @@ Settings::doOCIOStartupCheckIfNeeded()
                 _ocioConfigKnob->setValue(defaultIndex);
                 saveSetting( _ocioConfigKnob.get() );
             } else {
-                Dialogs::warningDialog( "OCIO config", QObject::tr("The " NATRON_DEFAULT_OCIO_CONFIG_NAME " config could not be found. "
-                                                                   "This is probably because you're not using the OpenColorIO-Configs folder that should "
-                                                                   "be bundled with your " NATRON_APPLICATION_NAME " installation.").toStdString() );
+                Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
+                                                          "This is probably because you're not using the OpenColorIO-Configs folder that should "
+                                                          "be bundled with your %1 installation.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString() );
             }
         }
     }

@@ -37,6 +37,7 @@
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
 #include <QtCore/QString>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
@@ -1200,6 +1201,9 @@ struct KnobHelperPrivate;
 class KnobHelper
     : public KnobI
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobHelper)
+
+    // friends
     friend class KnobHolder;
 
 public:
@@ -2164,10 +2168,11 @@ private:
 class KnobHolder
     : public QObject
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class RecursionLevelRAII;
-
     struct KnobHolderPrivate;
     boost::scoped_ptr<KnobHolderPrivate> _imp;
 

@@ -176,11 +176,12 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
 
     _imp->knobSelectionCombo = new ComboBox(this);
     QObject::connect( _imp->knobSelectionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onKnobComboIndexChanged(int)) );
-    QString useAliasTt = GuiUtils::convertFromPlainText(QObject::tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
-                                                                    "Only the script-name, label and tooltip will be editable. For choice parameters this will also "
-                                                                    "dynamically refresh the menu entries when the original parameter's menu is changed.\n"
-                                                                    "When unchecked a simple expression will be set linking the 2 parameters but things such as  dynamic menus "
-                                                                    "will not be enabled."), Qt::WhiteSpaceNormal);
+    QString useAliasTt = GuiUtils::convertFromPlainText(tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
+                                                           "Only the script-name, label and tooltip will be editable.\n"
+                                                           "For choice parameters this will also "
+                                                           "dynamically refresh the menu entries when the original parameter's menu is changed.\n"
+                                                           "When unchecked, a simple expression will be set linking the two parameters, but things such as dynamic menus "
+                                                           "will be disabled."), Qt::WhiteSpaceNormal);
     _imp->useAliasLabel = new Label(tr("Make Alias:"), this);
     _imp->useAliasLabel->setToolTip(useAliasTt);
     _imp->useAliasCheckBox = new QCheckBox(this);
@@ -190,7 +191,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     QObject::connect( _imp->nodeSelectionCombo, SIGNAL(itemCompletionChosen()), this, SLOT(onNodeComboEditingFinished()) );
 
     _imp->destPageLabel = new Label(tr("Page:"), this);
-    QString pagett = GuiUtils::convertFromPlainText(QObject::tr("Select the page into which the parameter will be created"), Qt::WhiteSpaceNormal);
+    QString pagett = GuiUtils::convertFromPlainText(tr("Select the page into which the parameter will be created."), Qt::WhiteSpaceNormal);
     _imp->destPageLabel->setToolTip(pagett);
     _imp->destPageCombo = new ComboBox(this);
     _imp->destPageCombo->setToolTip(pagett);
@@ -217,7 +218,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
 
 
     _imp->groupLabel = new Label(tr("Group:"), this);
-    QString grouptt = GuiUtils::convertFromPlainText(QObject::tr("Select the group into which the parameter will be created"), Qt::WhiteSpaceNormal);
+    QString grouptt = GuiUtils::convertFromPlainText(tr("Select the group into which the parameter will be created."), Qt::WhiteSpaceNormal);
     _imp->groupCombo = new ComboBox(this);
     _imp->groupLabel->setToolTip(grouptt);
     _imp->groupCombo->setToolTip(grouptt);

@@ -416,6 +416,9 @@ ScriptEditor::onSaveScriptClicked()
 class InputScriptCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(InputScriptCommand)
+
+private:
     ScriptEditor* _editor;
     QString _script;
     bool _firstRedoCalled;
@@ -445,14 +448,14 @@ InputScriptCommand::redo()
         _editor->setInputScript(_script);
     }
     _firstRedoCalled = true;
-    setText( QObject::tr("Exec script") );
+    setText( tr("Exec script") );
 }
 
 void
 InputScriptCommand::undo()
 {
     _editor->setInputScript(_script);
-    setText( QObject::tr("Exec script") );
+    setText( tr("Exec script") );
 }
 
 void

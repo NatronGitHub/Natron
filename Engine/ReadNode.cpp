@@ -183,6 +183,9 @@ ReadNode::isBundledReader(const std::string& pluginID)
 
 struct ReadNodePrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(ReadNode)
+
+public:
     ReadNode* _publicInterface;
     NodePtr embeddedPlugin;
     std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
@@ -411,7 +414,7 @@ ReadNodePrivate::createDefaultReadNode()
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
 
     if (!embeddedPlugin) {
-        QString error = QObject::tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
+        QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
         throw std::runtime_error( error.toStdString() );
     }
 
@@ -434,15 +437,13 @@ ReadNodePrivate::checkDecoderCreated(double time,
     assert(fileKnob);
     std::string pattern = fileKnob->getFileName(std::floor(time + 0.5), view);
     if ( pattern.empty() ) {
-        _publicInterface->setPersistentMessage( eMessageTypeError, QObject::tr("Filename empty").toStdString() );
+        _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
 
         return false;
     }
     if (!embeddedPlugin) {
-        std::stringstream ss;
-        ss << QObject::tr("Decoder was not created for ").toStdString() << pattern;
-        ss << QObject::tr(" check that the file exists and its format is supported").toStdString();
-        _publicInterface->setPersistentMessage( eMessageTypeError, ss.str() );
+        QString s = tr("Decoder was not created for %1, check that the file exists and its format is supported.").arg( QString::fromUtf8( pattern.c_str() ) );
+        _publicInterface->setPersistentMessage( eMessageTypeError, s.toStdString() );
 
         return false;
     }
@@ -515,8 +516,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     if (readerPluginID.empty() && !serialization) {
         //Couldn't find any reader
         if ( !ext.empty() ) {
-            QString message = QObject::tr("No plugin capable of decoding") + QLatin1Char(' ') + QString::fromUtf8( ext.c_str() ) + QLatin1Char(' ') + QObject::tr("was found") + QLatin1Char('.');
-            //Dialogs::errorDialog(QObject::tr("Read").toStdString(), message.toStdString(), false);
+            QString message = tr("No plugin capable of decoding %1 was found.")
+                              .arg( QString::fromUtf8( ext.c_str() ) );
+            //Dialogs::errorDialog(tr("Read").toStdString(), message.toStdString(), false);
             if (throwErrors) {
                 throw std::runtime_error( message.toStdString() );
             }
@@ -1131,3 +1133,6 @@ ReadNode::getFramesNeeded(double time,
 }
 
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ReadNode.cpp"

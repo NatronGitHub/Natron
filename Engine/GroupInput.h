@@ -37,6 +37,11 @@ NATRON_NAMESPACE_ENTER;
 class GroupInput
     : public NoOpBase
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     boost::weak_ptr<KnobBool> optional;
     boost::weak_ptr<KnobBool> mask;
 

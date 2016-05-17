@@ -110,23 +110,19 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
     assert(knob);
     assert( _imp->targetDimension >= -1 && _imp->targetDimension < _imp->knob.lock()->getKnob()->getDimension() );
     assert( _imp->fromDimension >= -1 && _imp->fromDimension < _imp->fromKnob->getDimension() );
-    QString text = QObject::tr("Paste") + QLatin1Char(' ');
+    QString text;
     switch (type) {
     case eKnobClipBoardTypeCopyAnim:
-        text += QObject::tr("Animation");
+        text = tr("Paste Animation to %1");
         break;
     case eKnobClipBoardTypeCopyValue:
-        text += QObject::tr("Value");
+        text = tr("Paste Value to %1");
         break;
     case eKnobClipBoardTypeCopyLink:
-        text += QObject::tr("Link");
+        text = tr("Paste Link to %1");
         break;
     }
-    text += QLatin1Char(' ');
-    text += QObject::tr("to");
-    text += QLatin1Char(' ');
-    text += QString::fromUtf8( knob->getKnob()->getLabel().c_str() );
-    setText(text);
+    setText( text.arg( QString::fromUtf8( knob->getKnob()->getLabel().c_str() ) ) );
 }
 
 PasteUndoCommand::~PasteUndoCommand()
@@ -257,7 +253,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
     }
 
-    setText( QObject::tr("Multiple edits for %1").arg(holderName) );
+    setText( tr("Multiple edits for %1").arg(holderName) );
 }
 
 MultipleKnobEditsUndoCommand::~MultipleKnobEditsUndoCommand()
@@ -571,7 +567,7 @@ RestoreDefaultsCommand::undo()
         first->getHolder()->getApp()->redrawAllViewers();
     }
 
-    setText( QObject::tr("Restore default value(s)") );
+    setText( tr("Restore default value(s)") );
 }
 
 void
@@ -666,7 +662,7 @@ RestoreDefaultsCommand::redo()
             first->getHolder()->getApp()->redrawAllViewers();
         }
     }
-    setText( QObject::tr("Restore default value(s)") );
+    setText( tr("Restore default value(s)") );
 } // RestoreDefaultsCommand::redo
 
 SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
@@ -700,13 +696,13 @@ SetExpressionCommand::undo()
         try {
             knob->setExpression(i, _oldExprs[i], _hadRetVar[i], false);
         } catch (...) {
-            Dialogs::errorDialog( QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString() );
+            Dialogs::errorDialog( tr("Expression").toStdString(), tr("The expression is invalid.").toStdString() );
             break;
         }
     }
 
     knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
-    setText( QObject::tr("Set expression") );
+    setText( tr("Set expression") );
 }
 
 void
@@ -722,7 +718,7 @@ SetExpressionCommand::redo()
             try {
                 knob->setExpression(i, _newExpr, _hasRetVar, false);
             } catch (...) {
-                Dialogs::errorDialog( QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString() );
+                Dialogs::errorDialog( tr("Expression").toStdString(), tr("The expression is invalid.").toStdString() );
                 break;
             }
         }
@@ -730,11 +726,11 @@ SetExpressionCommand::redo()
         try {
             knob->setExpression(_dimension, _newExpr, _hasRetVar, false);
         } catch (...) {
-            Dialogs::errorDialog( QObject::tr("Expression").toStdString(), QObject::tr("The expression is invalid").toStdString() );
+            Dialogs::errorDialog( tr("Expression").toStdString(), tr("The expression is invalid.").toStdString() );
         }
     }
     knob->evaluateValueChange(_dimension == -1 ? 0 : _dimension, knob->getCurrentTime(), ViewIdx(0), eValueChangedReasonNatronGuiEdited);
-    setText( QObject::tr("Set expression") );
+    setText( tr("Set expression") );
 }
 
 NATRON_NAMESPACE_EXIT;

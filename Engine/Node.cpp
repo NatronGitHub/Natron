@@ -190,6 +190,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 struct Node::Implementation
 {
+    Q_DECLARE_TR_FUNCTIONS(Node)
+
+public:
     Implementation(Node* publicInterface,
                    AppInstance* app_,
                    const boost::shared_ptr<NodeCollection>& collection,
@@ -1788,9 +1791,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         } else if (isRegular) {
             KnobPtr knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
-                QString err = QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() );
-                err.append( QObject::tr(": Could not find a parameter named ") );
-                err.append( QString::fromUtf8( (*it)->getName().c_str() ) );
+                QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
                 appPTR->writeToErrorLog_mt_safe(err);
                 continue;
             }
@@ -1814,9 +1815,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         KnobPtr knob = getKnobByName( (*it)->getName() );
         if (!knob) {
-            QString err = QString::fromUtf8( getScriptName_mt_safe().c_str() );
-            err.append( QObject::tr(": Could not find a parameter named ") );
-            err.append( QString::fromUtf8( (*it)->getName().c_str() ) );
+            QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
             appPTR->writeToErrorLog_mt_safe(err);
             continue;
         }
@@ -2549,7 +2548,6 @@ Node::getPreferredInputInternal(bool connected) const
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
     }  else {
-#if 1
         if ( !optionalEmptyInputs.empty() ) {
             //We return the first optional empty input
             std::list<int>::iterator first = optionalEmptyInputs.begin();
@@ -2561,18 +2559,6 @@ Node::getPreferredInputInternal(bool connected) const
             } else {
                 return *first;
             }
-#else // previous version, not consistent with Node::getPreferredInputInternal()
-      //We return the last optional empty input
-        std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
-        while ( first != optionalEmptyInputs.rend() && _imp->effect->isInputRotoBrush(*first) ) {
-            ++first;
-        }
-        if ( first == optionalEmptyInputs.rend() ) {
-            return -1;
-        } else {
-            return *first;
-        }
-#endif
         } else if ( !optionalEmptyMasks.empty() ) {
             return optionalEmptyMasks.front();
         } else {
@@ -2933,7 +2919,7 @@ Node::setScriptName(const std::string& name)
     }
     //We do not allow setting the script-name of output nodes because we rely on it with NatronRenderer
     if ( dynamic_cast<GroupOutput*>( _imp->effect.get() ) ) {
-        throw std::runtime_error( QObject::tr("Changing the script-name of an Output node is not a valid operation").toStdString() );
+        throw std::runtime_error( tr("Changing the script-name of an Output node is not a valid operation.").toStdString() );
 
         return;
     }
@@ -3182,12 +3168,12 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
-    useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip( tr("This node doesn't support rendering images at a scale lower than 1, it "
+    useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip( tr("This node does not support rendering images at a scale lower than 1, it "
                                                                      "can only render high definition images. When checked this parameter controls "
                                                                      "whether the rest of the graph upstream should be rendered with a high quality too or at "
                                                                      "the most optimal resolution for the current viewer's viewport. Typically checking this "
                                                                      "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
-                                                                     "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
+                                                                     "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
                                                                      "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
     if ( (renderScaleSupportPref == 0) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
         useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
@@ -3581,11 +3567,11 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
         premultWarning->setAsLabel();
         premultWarning->setEvaluateOnChange(false);
         premultWarning->setIsPersistant(false);
-        premultWarning->setHintToolTip( QObject::tr("The alpha checkbox is checked and the RGB "
-                                                    "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
-                                                    "may be incorrect because the alpha channel changed but their value did not. "
-                                                    "To fix this, either check all RGB channels (or uncheck alpha) or unpremultiply the "
-                                                    "input image first.").toStdString() );
+        premultWarning->setHintToolTip( tr("The alpha checkbox is checked and the RGB "
+                                           "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
+                                           "may be incorrect because the alpha channel changed but their value did not. "
+                                           "To fix this, either check all RGB channels (or uncheck alpha) or unpremultiply the "
+                                           "input image first.").toStdString() );
         mainPage->insertKnob(4, premultWarning);
         _imp->premultWarning = premultWarning;
     }
@@ -3733,12 +3719,14 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
     createNodePage(settingsPage, renderScaleSupportPref);
     createInfoPage();
 
-    if ( _imp->effect->isWriter() ) {
+    if (_imp->effect->isWriter()
+#ifdef NATRON_ENABLE_IO_META_NODES
+        && !ioContainer
+#endif
+        ) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
 #ifndef NATRON_ENABLE_IO_META_NODES
         createWriterFrameStepKnob(mainPage);
-#else
-        if (!ioContainer) {
 #endif
 
         boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
@@ -3750,9 +3738,6 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
         mainPage->addKnob(renderButton);
 
         createPythonPage();
-#ifdef NATRON_ENABLE_IO_META_NODES
-    }
-#endif
     }
 } // Node::initializeDefaultKnobs
 
@@ -3967,30 +3952,30 @@ Node::makeHTMLDocumentation(bool offline) const
 
     ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
     ts << "<html><head>";
-    ts << "<title>" << pluginLabel << " - Natron 2.0 documentation</title>"; /// version string will be replaced in parser
+    ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>"; /// version string will be replaced in parser
     ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
     ts << "</head><body>";
 
-    ts << "<div class=\"related\"><h3>Navigation</h3><ul>";
+    ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
 
     if (offline) {
-        ts << "<li><a href=\"index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+        ts << "<li><a href=\"index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
     } else {
-        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+        ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
     }
     if (offline) {
-        ts << "<li><a href=\"_group.html\">Reference Guide</a> &raquo;</li>";
+        ts << "<li><a href=\"_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
     } else {
-        ts << "<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>";
+        ts << "<li><a href=\"/_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
     }
 
     if ( !pluginGroup.isEmpty() ) {
         QString group = pluginGroup.at(0);
         if ( !group.isEmpty() ) {
             if (offline) {
-                ts << "<li><a href=\"group" << group << ".html\">" << group << "</a> &raquo;</li>";
+                ts << "<li><a href=\"group" << group << ".html\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
             } else {
-                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
+                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
             }
         }
     }
@@ -4010,13 +3995,13 @@ Node::makeHTMLDocumentation(bool offline) const
     pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
 
     ts << "<p>" << pluginDescription << "</p>";
-    ts << "<h3>" << "Inputs & Controls" << "</h3>";
+    ts << "<h3>" << tr("Inputs & Controls") << "</h3>";
 
     ts << "<table class=\"knobsTable\">";
-    ts << "<td class=\"knobsTableHeader\">Label (UI Name)</td>";
-    ts << "<td class=\"knobsTableHeader\">Script-Name</td>";
-    ts << "<td class=\"knobsTableHeader\">Default-Value</td>";
-    ts << "<td class=\"knobsTableHeader\">Function</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Label (UI Name)") << "</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Script-Name") << "</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Default-Value") << "</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Function") << "</td>";
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -7835,11 +7820,9 @@ Node::refreshCreatedViews(KnobI* knob)
             }
             ss << std::endl;
             ss << std::endl;
-            ss << QObject::tr("These views are in").toStdString() << ' ' << filename << ' '
-               << QObject::tr("but do not exist in the project.").toStdString() << std::endl;
-            ss << QObject::tr("Would you like to create them?").toStdString();
+            ss << tr("These views are in %1 but do not exist in the project.\nWould you like to create them?").arg( QString::fromUtf8( filename.c_str() ) ).toStdString();
             std::string question  = ss.str();
-            StandardButtonEnum rep = Dialogs::questionDialog("Views available", question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
+            StandardButtonEnum rep = Dialogs::questionDialog(tr("Views available").toStdString(), question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
             if (rep == eStandardButtonYes) {
                 std::vector<std::string> viewsToCreate;
                 for (QStringList::Iterator it = missingViews.begin(); it != missingViews.end(); ++it) {
@@ -10000,7 +9983,7 @@ Node::Implementation::runInputChangedCallback(int index,
     std::string script = ss.str();
     std::string output;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
-        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + error);
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
     } else {
         if ( !output.empty() ) {
             _publicInterface->getApp()->appendToScriptEditor(output);

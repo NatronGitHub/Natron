@@ -58,6 +58,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct NodeViewerContextPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(NodeViewerContext)
+
+public:
     NodeViewerContext* publicInterface;
     NodeGuiWPtr node;
     ViewerGL* viewer;
@@ -290,8 +293,7 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
             std::list<QKeySequence> keybinds = getKeybind( shortcutGroup, QString::fromUtf8( toolID.c_str() ) );
             if (keybinds.size() >= 1) {
                 toolTip += QString::fromUtf8("<p><b>");
-                toolTip += QObject::tr("Keyboard shortcut: ");
-                toolTip += keybinds.front().toString(QKeySequence::NativeText);
+                toolTip += tr("Keyboard shortcut: %1").arg( keybinds.front().toString(QKeySequence::NativeText) );
                 toolTip += QString::fromUtf8("</b></p>");
             }
         }

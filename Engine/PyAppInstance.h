@@ -60,6 +60,9 @@ private:
 class App
     : public Group
 {
+    Q_DECLARE_TR_FUNCTIONS(App)
+
+private:
     AppInstance* _instance;
 
 public:

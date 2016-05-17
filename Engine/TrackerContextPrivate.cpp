@@ -169,7 +169,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.addToProject = false;
             NodePtr cpNode = node->getApp()->createNode(args);
             if (!cpNode) {
-                throw std::runtime_error( QObject::tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
+                throw std::runtime_error( tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
             }
             cpNode->setNodeDisabled(true);
             cornerPinNode = cpNode;

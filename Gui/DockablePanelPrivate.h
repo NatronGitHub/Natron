@@ -48,6 +48,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/DockablePanelI.h"
 
 #include "Gui/DockablePanel.h"
+#include "Gui/Button.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -173,6 +174,28 @@ struct DockablePanelPrivate
     PageMap::iterator getDefaultPage(const KnobPtr &knob);
 
     void refreshPagesSecretness();
+};
+
+class OverlayColorButton
+    : public Button
+{
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
+    DockablePanel* _panel;
+
+public:
+
+
+    OverlayColorButton(DockablePanel* panel,
+                       const QIcon& icon,
+                       QWidget* parent);
+
+private:
+
+    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

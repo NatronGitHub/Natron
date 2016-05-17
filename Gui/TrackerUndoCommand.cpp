@@ -39,7 +39,7 @@ AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
     , _context(context)
 {
     _markers.push_back(marker);
-    setText( QObject::tr("Add Track(s)") );
+    setText( tr("Add Track(s)") );
 }
 
 void
@@ -90,7 +90,7 @@ RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &marke
         t.prevTrack = context->getPrevMarker(t.track, false);
         _markers.push_back(t);
     }
-    setText( QObject::tr("Remove Track(s)") );
+    setText( tr("Remove Track(s)") );
 }
 
 void

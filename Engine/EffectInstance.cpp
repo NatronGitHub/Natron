@@ -1348,7 +1348,7 @@ getOrCreateFromCacheInternal(const ImageKey & key,
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+            Dialogs::errorDialog( QCoreApplication::translate("EffectInstance", "Out of memory").toStdString(), ss.str() );
 
             return;
         }
@@ -5034,9 +5034,9 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
 
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
-    QString bitDepthWarning;
-    bitDepthWarning.append( tr("This nodes converts higher bit depths images from its inputs to work. As "
-                               "a result of this process, the quality of the images is degraded. The following conversions are done: \n") );
+    QString bitDepthWarning = tr("This nodes converts higher bit depths images from its inputs to work. As "
+                                 "a result of this process, the quality of the images is degraded. The following conversions are done:");
+    bitDepthWarning.append( QChar::fromLatin1('\n') );
     bool setBitDepthWarning = false;
     const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
     const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();
@@ -5120,18 +5120,18 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     }
 
     if (mustWarnFPS) {
-        QString fpsWarning = QObject::tr("Several input with different different frame rates "
-                                         "is not handled correctly by this node. To remove this warning make sure all inputs have "
-                                         "the same frame-rate, either by adjusting project settings or the upstream Read node.");
+        QString fpsWarning = tr("Several input with different different frame rates "
+                                "is not handled correctly by this node. To remove this warning make sure all inputs have "
+                                "the same frame-rate, either by adjusting project settings or the upstream Read node.");
         warnings[Node::eStreamWarningFrameRate] = fpsWarning;
     } else {
         warnings[Node::eStreamWarningFrameRate] = QString();
     }
 
     if (mustWarnPar) {
-        QString parWarnings = QObject::tr("Several input with different pixel aspect ratio is not "
-                                          "handled correctly by this node and may yield unwanted results. Please adjust the "
-                                          "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
+        QString parWarnings = tr("Several input with different pixel aspect ratio is not "
+                                 "handled correctly by this node and may yield unwanted results. Please adjust the "
+                                 "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
         warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
     } else {
         warnings[Node::eStreamWarningPixelAspectRatio] = QString();
@@ -5204,4 +5204,7 @@ EffectInstance::setClipPreferencesRunning(bool running)
 }
 
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_EffectInstance.cpp"
 

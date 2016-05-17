@@ -77,13 +77,13 @@ mouseShortcutToString(const Qt::KeyboardModifiers & modifiers,
 
     switch (button) {
     case Qt::LeftButton:
-        ret.append( QObject::tr("LeftButton") );
+        ret.append( QCoreApplication::translate("ShortCutEditor", "LeftButton") );
         break;
     case Qt::MiddleButton:
-        ret.append( QObject::tr("MiddleButton") );
+        ret.append( QCoreApplication::translate("ShortCutEditor", "MiddleButton") );
         break;
     case Qt::RightButton:
-        ret.append( QObject::tr("RightButton") );
+        ret.append( QCoreApplication::translate("ShortCutEditor", "RightButton") );
         break;
     default:
         break;
@@ -119,6 +119,9 @@ public:
 
 struct ShortCutEditorPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(ShortCutEditor)
+
+public:
     QVBoxLayout* mainLayout;
     HackedTreeWidget* tree;
     QWidget* shortcutGroup;
@@ -295,10 +298,10 @@ ShortCutEditor::ShortCutEditor(QWidget* parent)
                                 tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
                                    " Note that this table also have some special assignments which also involve the mouse. "
                                    "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
-                                   "Note that internally " NATRON_APPLICATION_NAME " does an emulation of a three-button mouse "
+                                   "Note that internally %1 does an emulation of a three-button mouse "
                                    "if your computer doesn't have one, that is: \n"
                                    "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
-                                   "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click."), Qt::WhiteSpaceNormal) );
+                                   "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal) );
     _imp->tree->setItemDelegate( new ShortcutDelegate(_imp->tree) );
 
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
@@ -502,8 +505,8 @@ ShortCutEditorPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGrou
         assert(false);
     }
     if (!action->editable) {
-        guiAction.item->setToolTip( 0, QObject::tr("This action is standard and its shortcut cannot be edited.") );
-        guiAction.item->setToolTip( 1, QObject::tr("This action is standard and its shortcut cannot be edited.") );
+        guiAction.item->setToolTip( 0, tr("This action is standard and its shortcut cannot be edited.") );
+        guiAction.item->setToolTip( 1, tr("This action is standard and its shortcut cannot be edited.") );
         guiAction.item->setDisabled(true);
     }
     guiAction.item->setExpanded(true);

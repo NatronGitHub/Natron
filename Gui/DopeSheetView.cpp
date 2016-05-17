@@ -129,6 +129,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 class DopeSheetViewPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(DopeSheetView)
+
 public:
     enum KeyframeTexture
     {
@@ -1665,6 +1667,9 @@ DopeSheetViewPrivate::computeTimelinePositions()
 {
     running_in_main_thread();
 
+    if ( (zoomContext.screenWidth() <= 0) || (zoomContext.screenHeight() <= 0) ) {
+        return;
+    }
     double polyHalfWidth = 7.5;
     double polyHeight = 7.5;
     int bottom = zoomContext.toZoomCoordinates(q_ptr->width() - 1,
@@ -2302,19 +2307,19 @@ DopeSheetViewPrivate::createContextMenu()
 
     // Edit menu
     Menu *editMenu = new Menu(contextMenu);
-    editMenu->setTitle( QObject::tr("Edit") );
+    editMenu->setTitle( tr("Edit") );
 
     contextMenu->addAction( editMenu->menuAction() );
 
     // Interpolation menu
     Menu *interpMenu = new Menu(contextMenu);
-    interpMenu->setTitle( QObject::tr("Interpolation") );
+    interpMenu->setTitle( tr("Interpolation") );
 
     contextMenu->addAction( interpMenu->menuAction() );
 
     // View menu
     Menu *viewMenu = new Menu(contextMenu);
-    viewMenu->setTitle( QObject::tr("View") );
+    viewMenu->setTitle( tr("View") );
 
     contextMenu->addAction( viewMenu->menuAction() );
 

@@ -69,9 +69,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     if (isNodeGroup) {
         groupName = QString::fromUtf8( isNodeGroup->getNode()->getLabel().c_str() );
     } else {
-        groupName = QObject::tr("top-level");
+        groupName = tr("top-level");
     }
-    group->getApplication()->updateProjectLoadStatus(QObject::tr("Creating nodes in group: ") + groupName);
+    group->getApplication()->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupName) );
 
     ///If a parent of a multi-instance node doesn't exist anymore but the children do, we must recreate the parent.
     ///Problem: we have lost the nodes connections. To do so we restore them using the serialization of a child.
@@ -171,10 +171,10 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                                 usingPythonModule = true;
                             }
                         } else {
-                            StandardButtonEnum rep = Dialogs::questionDialog( QObject::tr("New PyPlug version").toStdString(),
-                                                                              ( QObject::tr("Version %1 of PyPlug \"%2\" was found.").arg(pyVersion).arg( QString::fromUtf8( stdModuleName.c_str() ) ).toStdString() + '\n' +
-                                                                                QObject::tr("You are currently using version %1.").arg(savedPythonModuleVersion).toStdString() + '\n' +
-                                                                                QObject::tr("Would you like to update your script to use the newer version?").toStdString() ),
+                            StandardButtonEnum rep = Dialogs::questionDialog( tr("New PyPlug version").toStdString(),
+                                                                              ( tr("Version %1 of PyPlug \"%2\" was found.").arg(pyVersion).arg( QString::fromUtf8( stdModuleName.c_str() ) ).toStdString() + '\n' +
+                                                                                tr("You are currently using version %1.").arg(savedPythonModuleVersion).toStdString() + '\n' +
+                                                                                tr("Would you like to update your script to use the newer version?").toStdString() ),
                                                                               false,
                                                                               StandardButtons(eStandardButtonYes | eStandardButtonNo) );
                             if (rep == eStandardButtonYes) {
@@ -216,11 +216,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             n = group->getApplication()->createNode(args);
         }
         if (!n) {
-            QString text( QObject::tr("ERROR: The node ") );
-            text.append( QString::fromUtf8( pluginID.c_str() ) );
-            text.append( QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion) );
-            text.append( QObject::tr(" was found in the script but does not"
-                                     " exist in the loaded plug-ins.") );
+            QString text( tr("ERROR: The node %1 version %2.%3"
+                             " was found in the script but does not"
+                             " exist in the loaded plug-ins.")
+                          .arg( QString::fromUtf8( pluginID.c_str() ) )
+                          .arg(majorVersion).arg(minorVersion) );
             appPTR->writeToErrorLog_mt_safe(text);
             mustShowErrorsLog = true;
             continue;
@@ -229,14 +229,15 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                  (n->getPlugin()->getMajorVersion() != (int)majorVersion) && ( n->getPluginID() == pluginID) ) {
                 // If the node has a IOContainer don't do this check: when loading older projects that had a
                 // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
-                QString text( QObject::tr("WARNING: The node ") );
-                text.append( QString::fromUtf8( (*it)->getNodeScriptName().c_str() ) );
-                text.append( QString::fromUtf8(" (") );
-                text.append( QString::fromUtf8( pluginID.c_str() ) );
-                text.append( QString::fromUtf8(")") );
-                text.append( QObject::tr(" version %1.%2").arg(majorVersion).arg(minorVersion) );
-                text.append( QObject::tr(" was found in the script but was loaded"
-                                         " with version %3.%4 instead").arg( n->getPlugin()->getMajorVersion() ).arg( n->getPlugin()->getMinorVersion() ) );
+                QString text( tr("WARNING: The node %1 (%2) version %3.%4 "
+                                 "was found in the script but was loaded "
+                                 "with version %5.%6 instead.")
+                              .arg( QString::fromUtf8( (*it)->getNodeScriptName().c_str() ) )
+                              .arg( QString::fromUtf8( pluginID.c_str() ) )
+                              .arg(majorVersion)
+                              .arg(minorVersion)
+                              .arg( n->getPlugin()->getMajorVersion() )
+                              .arg( n->getPlugin()->getMinorVersion() ) );
                 appPTR->writeToErrorLog_mt_safe(text);
                 mustShowErrorsLog = true;
             }
@@ -269,7 +270,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
     }
 
 
-    group->getApplication()->updateProjectLoadStatus(QObject::tr("Restoring graph links in group: ") + groupName);
+    group->getApplication()->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupName) );
 
 
     /// Connect the nodes together
@@ -294,7 +295,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
 
             if (!masterNode) {
-                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8("Cannot restore the link between ") + QString::fromUtf8( it->second->getNodeScriptName().c_str() ) + QString::fromUtf8(" and ") + QString::fromUtf8( masterNodeName.c_str() ) );
+                appPTR->writeToErrorLog_mt_safe( tr("Cannot restore the link between %1 and %2.")
+                                                 .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
+                                                 .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
                 mustShowErrorsLog = true;
             } else {
                 it->first->getEffectInstance()->slaveAllKnobs( masterNode->getEffectInstance().get(), true );

@@ -51,6 +51,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct PrecompNodePrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(PrecompNode)
+
+public:
     PrecompNode* _publicInterface;
     AppInstance* app;
     boost::weak_ptr<KnobFile> projectFileNameKnob;
@@ -386,7 +389,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
     QFileInfo file( QString::fromUtf8( filename.c_str() ) );
 
     if ( !file.exists() ) {
-        Dialogs::errorDialog( QObject::tr("Pre-Comp").toStdString(), QObject::tr("Pre-comp file not found.").toStdString() );
+        Dialogs::errorDialog( tr("Pre-Comp").toStdString(), tr("Pre-comp file not found.").toStdString() );
 
         return;
     }
@@ -482,10 +485,9 @@ PrecompNodePrivate::getWriteNodeFromPreComp() const
     NodePtr writeNode = app->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName);
     if (!writeNode) {
         std::stringstream ss;
-        ss << QObject::tr("Could not find a node named").toStdString();
-        ss << " " << userChoiceNodeName << " ";
-        ss << QObject::tr("in the pre-comp project").toStdString();
-        Dialogs::errorDialog( QObject::tr("Pre-Comp").toStdString(), ss.str() );
+        ss << tr("Could not find a node named %1 in the pre-comp project")
+            .arg( QString::fromUtf8( userChoiceNodeName.c_str() ) ).toStdString();
+        Dialogs::errorDialog( tr("Pre-Comp").toStdString(), ss.str() );
 
         return NodePtr();
     }
@@ -550,10 +552,9 @@ PrecompNodePrivate::createReadNode()
     std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
     if ( found == readersForFormat.end() ) {
         std::stringstream ss;
-        ss << QObject::tr("No plugin capable of decoding").toStdString();
-        ss << " " << ext << " ";
-        ss << QObject::tr("was found").toStdString();
-        Dialogs::errorDialog( QObject::tr("Pre-Comp").toStdString(), ss.str() );
+        ss << tr("No plugin capable of decoding %1 was found")
+            .arg( QString::fromUtf8( ext.c_str() ) ).toStdString();
+        Dialogs::errorDialog( tr("Pre-Comp").toStdString(), ss.str() );
 
         return;
     }
@@ -661,7 +662,7 @@ PrecompNodePrivate::launchPreRender()
     NodePtr output = getWriteNodeFromPreComp();
 
     if (!output) {
-        Dialogs::errorDialog( QObject::tr("Pre-Render").toStdString(), QObject::tr("Selected write node does not exist").toStdString() );
+        Dialogs::errorDialog( tr("Pre-Render").toStdString(), tr("Selected write node does not exist.").toStdString() );
 
         return;
     }

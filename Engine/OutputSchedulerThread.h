@@ -467,6 +467,10 @@ private:
 class DefaultScheduler
     : public OutputSchedulerThread
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     DefaultScheduler(RenderEngine* engine, const boost::shared_ptr<OutputEffectInstance>& effect);

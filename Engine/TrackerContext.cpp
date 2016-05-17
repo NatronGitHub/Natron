@@ -720,7 +720,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     TrackerMotionTypeEnum mt = (TrackerMotionTypeEnum)motionType_i;
 
     if (mt == eTrackerMotionTypeNone) {
-        Dialogs::errorDialog( QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Motion Type parameter").toStdString() );
+        Dialogs::errorDialog( tr("Tracker Export").toStdString(), tr("Please select the export mode with the Motion Type parameter").toStdString() );
 
         return;
     }
@@ -1132,7 +1132,7 @@ TrackerContext::solveTransformParams()
     bool robustModel;
     robustModel = _imp->robustModel.lock()->getValue();
 
-    node->getApp()->progressStart( node, QObject::tr("Solving transform parameters...").toStdString(), std::string() );
+    node->getApp()->progressStart( node, tr("Solving for transform parameters...").toStdString(), std::string() );
 
     _imp->lastSolveRequest.refTime = refTime;
     _imp->lastSolveRequest.jitterPeriod = jitterPeriod;
@@ -1695,8 +1695,13 @@ TrackScheduler::isWorking() const
     return _imp->isWorking;
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 class IsTrackingFlagSetter_RAII
 {
+    Q_DECLARE_TR_FUNCTIONS(TrackScheduler)
+
+private:
     ViewerInstance* _v;
     EffectInstPtr _effect;
     TrackSchedulerBase* _base;
@@ -1718,7 +1723,7 @@ public:
         , _doPartialUpdates(doPartialUpdates)
     {
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressStart(_effect->getNode(), QObject::tr("Tracking...").toStdString(), "");
+            _effect->getApp()->progressStart(_effect->getNode(), tr("Tracking...").toStdString(), "");
             _base->emit_trackingStarted(step);
         }
 
@@ -1738,6 +1743,8 @@ public:
         }
     }
 };
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
 TrackScheduler::run()

@@ -30,7 +30,11 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
+
 #include "Global/Macros.h"
+
+#include <QtCore/QCoreApplication>
+
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhImageEffect.h>
@@ -46,6 +50,8 @@ NATRON_NAMESPACE_ENTER;
 class OfxImageEffectInstance
     : public OFX::Host::ImageEffect::Instance
 {
+    Q_DECLARE_TR_FUNCTIONS(OfxImageEffectInstance)
+
 public:
     OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                            OFX::Host::ImageEffect::Descriptor & desc,

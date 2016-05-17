@@ -1859,12 +1859,11 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         if ( !getNode()->hasPersistentMessage() ) {
             QString err;
             if (stat == kOfxStatErrImageFormat) {
-                err.append( QObject::tr("Bad image format was supplied by ") );
-                err.append( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+                err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
             } else if (stat == kOfxStatErrMemory) {
-                err.append( QObject::tr("Out of memory!") );
+                err = tr("Out of memory!");
             } else {
-                err.append( QObject::tr("Unknown failure reason") );
+                err = tr("Unknown failure reason.");
             }
             setPersistentMessage( eMessageTypeError, err.toStdString() );
         }

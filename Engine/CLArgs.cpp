@@ -42,6 +42,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct CLArgsPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(CLArgs)
+
+public:
     QStringList args;
     QString filename;
     bool isPythonScript;
@@ -190,16 +193,16 @@ CLArgs::isEmpty() const
 void
 CLArgs::printBackGroundWelcomeMessage()
 {
-    QString msg = QObject::tr("%1 Version %2\n"
-                              "Copyright (C) 2016 the %1 developers\n"
-                              ">>>Use the --help or -h option to print usage.<<<").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) );
+    QString msg = tr("%1 Version %2\n"
+                     "Copyright (C) 2016 the %1 developers\n"
+                     ">>>Use the --help or -h option to print usage.<<<").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) );
     std::cout << msg.toStdString() << std::endl;
 }
 
 void
 CLArgs::printUsage(const std::string& programName)
 {
-    QString msg = QObject::tr(/* Text must hold in 80 columns ************************************************/
+    QString msg = tr(/* Text must hold in 80 columns ************************************************/
         "%3 usage:\n"
         "Three distinct execution modes exist in background mode:\n"
         "- The execution of %1 projects (.%2)\n"
@@ -534,7 +537,7 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
                 indexStr.toInt(&ok);
                 if (!ok) {
                     error = 1;
-                    std::cout << QObject::tr("Wrong formating for the -o option").toStdString() << std::endl;
+                    std::cout << tr("Wrong formating for the -o option").toStdString() << std::endl;
 
                     return args.end();
                 }
@@ -557,7 +560,7 @@ CLArgsPrivate::hasOutputToken(QString& indexStr)
                     indexStr.toInt(&ok);
                     if (!ok) {
                         error = 1;
-                        std::cout << QObject::tr("Wrong formating for the -o option").toStdString() << std::endl;
+                        std::cout << tr("Wrong formating for the -o option").toStdString() << std::endl;
 
                         return args.end();
                     }
@@ -651,7 +654,7 @@ CLArgsPrivate::parse()
     {
         QStringList::iterator it = hasToken( QString::fromUtf8("version"), QString::fromUtf8("v") );
         if ( it != args.end() ) {
-            QString msg = QObject::tr("%1 version %2 at commit %3 on branch %4 built on %4").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ).arg( QString::fromUtf8(GIT_COMMIT) ).arg( QString::fromUtf8(GIT_BRANCH) ).arg( QString::fromUtf8(__DATE__) );
+            QString msg = tr("%1 version %2 at commit %3 on branch %4 built on %4").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ).arg( QString::fromUtf8(GIT_COMMIT) ).arg( QString::fromUtf8(GIT_BRANCH) ).arg( QString::fromUtf8(__DATE__) );
             std::cout << msg.toStdString() << std::endl;
             error = 1;
 
@@ -682,7 +685,7 @@ CLArgsPrivate::parse()
         if ( it != args.end() ) {
             isInterpreterMode = true;
             isBackground = true;
-            std::cout << QObject::tr("Note: -t argument given, loading in command-line interpreter mode, only Python commands / scripts are accepted").toStdString()
+            std::cout << tr("Note: -t argument given, loading in command-line interpreter mode, only Python commands / scripts are accepted").toStdString()
                       << std::endl;
             args.erase(it);
         }
@@ -704,7 +707,7 @@ CLArgsPrivate::parse()
                 breakpadProcessPID = it->toLongLong();
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
+                std::cout << tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -720,7 +723,7 @@ CLArgsPrivate::parse()
                 breakpadProcessFilePath = *it;
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
+                std::cout << tr("You must specify the breakpad process executable file path").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -736,7 +739,7 @@ CLArgsPrivate::parse()
                 breakpadPipeClientID = it->toInt();
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the breakpad pipe client FD").toStdString() << std::endl;
+                std::cout << tr("You must specify the breakpad pipe client FD").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -752,7 +755,7 @@ CLArgsPrivate::parse()
                 breakpadPipeFilePath = *it;
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the breakpad pipe path").toStdString() << std::endl;
+                std::cout << tr("You must specify the breakpad pipe path").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -768,7 +771,7 @@ CLArgsPrivate::parse()
                 breakpadComPipeFilePath = *it;
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the breakpad communication pipe path").toStdString() << std::endl;
+                std::cout << tr("You must specify the breakpad communication pipe path").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -784,7 +787,7 @@ CLArgsPrivate::parse()
                 exportDocsPath = *it;
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the doc dir path").toStdString() << std::endl;
+                std::cout << tr("You must specify the doc dir path").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -800,7 +803,7 @@ CLArgsPrivate::parse()
                 ipcPipe = *it;
                 args.erase(it);
             } else {
-                std::cout << QObject::tr("You must specify the IPC pipe filename").toStdString() << std::endl;
+                std::cout << tr("You must specify the IPC pipe filename").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -819,7 +822,7 @@ CLArgsPrivate::parse()
 #endif
                 QFileInfo fi(defaultOnProjectLoadedScript);
                 if ( !fi.exists() ) {
-                    std::cout << QObject::tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
+                    std::cout << tr("WARNING: --onload %1 ignored because the file does not exist.").arg(defaultOnProjectLoadedScript).toStdString() << std::endl;
                     defaultOnProjectLoadedScript.clear();
                 } else {
                     defaultOnProjectLoadedScript = fi.canonicalFilePath();
@@ -827,13 +830,13 @@ CLArgsPrivate::parse()
 
                 args.erase(it);
                 if ( !defaultOnProjectLoadedScript.endsWith( QString::fromUtf8(".py") ) ) {
-                    std::cout << QObject::tr("The optional on project load script must be a Python script (.py).").toStdString() << std::endl;
+                    std::cout << tr("The optional on project load script must be a Python script (.py).").toStdString() << std::endl;
                     error = 1;
 
                     return;
                 }
             } else {
-                std::cout << QObject::tr("--onload or -l specified, you must enter a script filename afterwards.").toStdString() << std::endl;
+                std::cout << tr("--onload or -l specified, you must enter a script filename afterwards.").toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -846,7 +849,7 @@ CLArgsPrivate::parse()
         if ( it == args.end() ) {
             it = findFileNameWithExtension( QString::fromUtf8("py") );
             if ( ( it == args.end() ) && !isInterpreterMode && isBackground ) {
-                std::cout << QObject::tr("You must specify the filename of a script or %1 project. (.%2)").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ).toStdString() << std::endl;
+                std::cout << tr("You must specify the filename of a script or %1 project. (.%2)").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ).toStdString() << std::endl;
                 error = 1;
 
                 return;
@@ -883,7 +886,7 @@ CLArgsPrivate::parse()
         }
 
         if (!isBackground) {
-            std::cout << QObject::tr("You cannot use the -c option in interactive mode").toStdString() << std::endl;
+            std::cout << tr("You cannot use the -c option in interactive mode").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -894,7 +897,7 @@ CLArgsPrivate::parse()
             ++next;
         }
         if ( next == args.end() ) {
-            std::cout << QObject::tr("You must specify a command when using the -c option").toStdString() << std::endl;
+            std::cout << tr("You must specify a command when using the -c option").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -914,7 +917,7 @@ CLArgsPrivate::parse()
         }
 
         if (!isBackground || isInterpreterMode) {
-            std::cout << QObject::tr("You cannot use the -w option in interactive or interpreter mode").toStdString() << std::endl;
+            std::cout << tr("You cannot use the -w option in interactive or interpreter mode").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -925,7 +928,7 @@ CLArgsPrivate::parse()
             ++next;
         }
         if ( next == args.end() ) {
-            std::cout << QObject::tr("You must specify the name of a Write node when using the -w option").toStdString() << std::endl;
+            std::cout << tr("You must specify the name of a Write node when using the -w option").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -935,8 +938,8 @@ CLArgsPrivate::parse()
         //Check that the name is conform to a Python acceptable script name
         std::string pythonConform = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( next->toStdString() );
         if (next->toStdString() != pythonConform) {
-            std::cout << QObject::tr("The name of the Write node specified is not valid: it cannot contain non alpha-numerical "
-                                     "characters and must not start with a digit.").toStdString() << std::endl;
+            std::cout << tr("The name of the Write node specified is not valid: it cannot contain non alpha-numerical "
+                            "characters and must not start with a digit.").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -975,7 +978,7 @@ CLArgsPrivate::parse()
         }
 
         if (!isBackground || isInterpreterMode) {
-            std::cout << QObject::tr("You cannot use the -i option in interactive or interpreter mode").toStdString() << std::endl;
+            std::cout << tr("You cannot use the -i option in interactive or interpreter mode").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -986,7 +989,7 @@ CLArgsPrivate::parse()
             ++next;
         }
         if ( next == args.end() ) {
-            std::cout << QObject::tr("You must specify the name of a Read node when using the -i option").toStdString() << std::endl;
+            std::cout << tr("You must specify the name of a Read node when using the -i option").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -996,8 +999,8 @@ CLArgsPrivate::parse()
         //Check that the name is conform to a Python acceptable script name
         std::string pythonConform = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( next->toStdString() );
         if (next->toStdString() != pythonConform) {
-            std::cout << QObject::tr("The name of the Read node specified is not valid: it cannot contain non alpha-numerical "
-                                     "characters and must not start with a digit.").toStdString() << std::endl;
+            std::cout << tr("The name of the Read node specified is not valid: it cannot contain non alpha-numerical "
+                            "characters and must not start with a digit.").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -1011,7 +1014,7 @@ CLArgsPrivate::parse()
             ++nextNext;
         }
         if ( nextNext == args.end() ) {
-            std::cout << QObject::tr("You must specify the filename for the following Read node: ").toStdString()  << r.name.toStdString() << std::endl;
+            std::cout << tr("You must specify the filename for the following Read node: ").toStdString()  << r.name.toStdString() << std::endl;
             error = 1;
 
             return;
@@ -1025,7 +1028,7 @@ CLArgsPrivate::parse()
             r.filename = AppManager::qt_tildeExpansion(r.filename);
 #endif
         } else {
-            std::cout << QObject::tr("You must specify the filename for the following Read node: ").toStdString()  << r.name.toStdString() << std::endl;
+            std::cout << tr("You must specify the filename for the following Read node: ").toStdString()  << r.name.toStdString() << std::endl;
             error = 1;
 
             return;
@@ -1052,7 +1055,7 @@ CLArgsPrivate::parse()
         }
 
         if (!isBackground) {
-            std::cout << QObject::tr("You cannot use the -o option in interactive or interpreter mode").toStdString() << std::endl;
+            std::cout << tr("You cannot use the -o option in interactive or interpreter mode").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -1069,7 +1072,7 @@ CLArgsPrivate::parse()
             ++next;
         }
         if ( next == args.end() ) {
-            std::cout << QObject::tr("Filename is not optional with the -o option").toStdString() << std::endl;
+            std::cout << tr("Filename is not optional with the -o option").toStdString() << std::endl;
             error = 1;
 
             return;
@@ -1088,7 +1091,7 @@ CLArgsPrivate::parse()
     }
 
     if (atLeastOneOutput && !rangeSet) {
-        std::cout << QObject::tr("A frame range must be set when using the -o option").toStdString() << std::endl;
+        std::cout << tr("A frame range must be set when using the -o option").toStdString() << std::endl;
         error = 1;
 
         return;
