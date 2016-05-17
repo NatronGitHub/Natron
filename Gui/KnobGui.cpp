@@ -275,10 +275,16 @@ KnobGui::enableRightClickMenu(QWidget* widget,
 bool
 KnobGui::shouldCreateLabel() const
 {
+#if 0
     KnobPtr knob = getKnob();
     KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
 
     return isStringKnob;
+#else
+#pragma message WARN("KnobGui::shouldCreateLabel() hack")
+
+    return true;
+#endif
 }
 
 bool
