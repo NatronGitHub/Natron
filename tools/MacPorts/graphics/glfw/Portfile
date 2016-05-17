@@ -66,8 +66,8 @@ configure.args      -DBUILD_SHARED_LIBS=on \
                     -DGLFW_BUILD_EXAMPLES=off \
                     -DGLFW_BUILD_TESTS=off \
                     -DGLFW_CMAKE_CONFIG_PATH=share \
-                    -DGLFW_USE_CHDIR=off \
-                    -DGLFW_USE_MENUBAR=off \
+                    -DGLFW_USE_CHDIR=on \
+                    -DGLFW_USE_MENUBAR=on \
                     -DGLFW_USE_RETINA=on
 
 # remove top-level library path, such that internal libraries are used
@@ -85,6 +85,23 @@ if {[variant_isset docs]} {
 } else {
     configure.args-append -DDOXYGEN_EXECUTABLE=
 }
+
+variant nochdir description {disable chdir} {
+    configure.args-delete -DGLFW_USE_CHDIR=on
+    configure.args-append -DGLFW_USE_CHDIR=off
+}
+
+variant nomenubar description {disable menubar} {
+    configure.args-delete -DGLFW_USE_MENUBAR=on
+    configure.args-append -DGLFW_USE_MENUBAR=off
+}
+
+variant noretina description {disable retina} {
+    configure.args-delete -DGLFW_USE_RETINA=on
+    configure.args-append -DGLFW_USE_RETINA=off
+}
+
+variant natron conflicts noretina requires nochdir nomenubar {Natron version} {}
 
 platform darwin {
     pre-fetch {
