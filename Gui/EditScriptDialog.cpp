@@ -39,7 +39,7 @@
 #include <QFileDialog>
 #include <QTextEdit>
 #include <QStyle> // in QtGui on Qt4, in QtWidgets on Qt5
-#include <QTimer>
+#include <QtCore/QTimer>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -146,9 +146,9 @@ EditScriptDialog::create(const QString& initialScript,
     getImportedModules(modules);
     std::list<std::pair<QString, QString> > variables;
     getDeclaredVariables(variables);
-    QString labelHtml( tr("<b>Python</b> script:<br />") );
+    QString labelHtml( tr("%1 script:").arg( QString::fromUtf8("<b>Python</b>") ) + QString::fromUtf8("<br />") );
     if ( !modules.empty() ) {
-        labelHtml.append( tr("For convenience, the following module(s) have been imported:<br />") );
+        labelHtml.append( tr("For convenience, the following module(s) have been imported:") + QString::fromUtf8("<br />") );
         for (int i = 0; i < modules.size(); ++i) {
             QString toAppend = QString::fromUtf8("<i><font color=orange>from %1 import *</font></i><br />").arg(modules[i]);
             labelHtml.append(toAppend);
@@ -156,13 +156,13 @@ EditScriptDialog::create(const QString& initialScript,
         labelHtml.append( QString::fromUtf8("<br />") );
     }
     if ( !variables.empty() ) {
-        labelHtml.append( tr("Also the following variables have been declared:<br />") );
+        labelHtml.append( tr("Also the following variables have been declared:") + QString::fromUtf8("<br />") );
         for (std::list<std::pair<QString, QString> > ::iterator it = variables.begin(); it != variables.end(); ++it) {
             QString toAppend = QString::fromUtf8("<b>%1</b>: %2<br />").arg(it->first).arg(it->second);
             labelHtml.append(toAppend);
         }
         QKeySequence s(Qt::CTRL);
-        labelHtml.append( QString::fromUtf8("<p>") + tr("Note that parameters can be referenced by drag&dropping while holding %1 on their widget").arg( s.toString(QKeySequence::NativeText) ) + QString::fromUtf8("</p>") );
+        labelHtml.append( QString::fromUtf8("<p>") + tr("Note that parameters can be referenced by drag'n'dropping while holding %1 on their widget").arg( s.toString(QKeySequence::NativeText) ) + QString::fromUtf8("</p>") );
     }
 
     _imp->expressionLabel = new Label(labelHtml, this);

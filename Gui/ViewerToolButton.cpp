@@ -22,20 +22,26 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-
 #include "ViewerToolButton.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QStyle>
 #include <QMouseEvent>
+#include <QtCore/QTimer>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Gui/GuiMacros.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
 
 ViewerToolButton::ViewerToolButton(QWidget* parent)
-: QToolButton(parent)
-, isSelected(false)
-, wasMouseReleased(false)
+    : QToolButton(parent)
+    , isSelected(false)
+    , wasMouseReleased(false)
 {
     setFocusPolicy(Qt::ClickFocus);
 }

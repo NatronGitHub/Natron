@@ -29,7 +29,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTreeWidgetItem>
-#include <QDebug>
+#include <QtCore/QDebug>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -77,7 +77,7 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const boost::shared_p
     , _pointsToDrag(toDrag)
 {
 
-    setText( QObject::tr("Move control points").toStdString() );
+    setText( tr("Move control points").toStdString() );
 
     assert(roto);
 
@@ -142,6 +142,7 @@ MoveControlPointsUndoCommand::undo()
     roto->evaluate(true);
     roto->setCurrentTool(_selectedTool.lock());
     roto->setSelection(_selectedCurves, _selectedPoints);
+
 
 }
 
@@ -257,7 +258,7 @@ TransformUndoCommand::TransformUndoCommand(const boost::shared_ptr<RotoPaintInte
         _originalPoints.push_back( std::make_pair(first, second) );
     }
 
-    setText( QObject::tr("Transform control points").toStdString());
+    setText( tr("Transform control points").toStdString());
 }
 
 TransformUndoCommand::~TransformUndoCommand()
@@ -294,6 +295,7 @@ TransformUndoCommand::undo()
     roto->evaluate(true);
     roto->setCurrentTool(_selectedTool.lock());
     roto->setSelection(_selectedCurves, _selectedPoints);
+
 
 }
 
@@ -370,7 +372,7 @@ AddPointUndoCommand::AddPointUndoCommand(const boost::shared_ptr<RotoPaintIntera
     , _index(index)
     , _t(t)
 {
-    setText( QObject::tr("Add control point").toStdString());
+    setText( tr("Add control point").toStdString());
 }
 
 AddPointUndoCommand::~AddPointUndoCommand()
@@ -387,6 +389,7 @@ AddPointUndoCommand::undo()
     _curve->removeControlPointByIndex(_index + 1);
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
     roto->evaluate(true);
+
 
 }
 
@@ -488,7 +491,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
         it->points.sort();
     }
 
-    setText( QObject::tr("Remove control points").toStdString());
+    setText( tr("Remove control points").toStdString());
 
 }
 
@@ -589,7 +592,7 @@ RemoveCurveUndoCommand::RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaint
         assert(r.indexInLayer != -1);
         _curves.push_back(r);
     }
-    setText( QObject::tr("Remove shape(s)").toStdString());
+    setText( tr("Remove shape(s)").toStdString());
 
 }
 
@@ -636,6 +639,7 @@ RemoveCurveUndoCommand::redo()
     roto->evaluate(_firstRedoCalled);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
+
 }
 
 ////////////////////////////////
@@ -651,7 +655,8 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInte
     , _indexInLayer(_layer ? _layer->getChildIndex(_item) : -1)
 {
     assert(_indexInLayer != -1);
-    setText( QObject::tr("Paint Stroke").toStdString() );
+    setText( tr("Paint Stroke").toStdString() );
+
 }
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
@@ -698,7 +703,8 @@ AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(const boost::shared_ptr<Rot
     , isRemoved(false)
 {
     assert(_indexInLayer != -1);
-    setText( QObject::tr("Paint Stroke").toStdString() );
+    setText( tr("Paint Stroke").toStdString() );
+
 }
 
 AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
@@ -777,7 +783,7 @@ MoveTangentUndoCommand::MoveTangentUndoCommand(const boost::shared_ptr<RotoPaint
         }
     }
 
-    setText( QObject::tr("Move control point tangent").toStdString());
+    setText( tr("Move control point tangent").toStdString());
 }
 
 MoveTangentUndoCommand::~MoveTangentUndoCommand()
@@ -981,7 +987,7 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const boost::shared_ptr<Rot
     assert(_curve);
     _oldPoint.first.reset( new BezierCP(*_newPoint.first) );
     _oldPoint.second.reset( new BezierCP(*_newPoint.second) );
-    setText( QObject::tr("Move control point feather bar").toStdString());
+    setText( tr("Move control point feather bar").toStdString());
 
 }
 
@@ -1001,6 +1007,7 @@ MoveFeatherBarUndoCommand::undo()
     _newPoint.first->getBezier()->incrementNodesAge();
     roto->evaluate(true);
     roto->setSelection(_curve, _newPoint);
+
 }
 
 void
@@ -1135,7 +1142,7 @@ RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(const boost::shared_ptr<RotoP
             it->oldPoints.push_back( boost::shared_ptr<BezierCP>( new BezierCP(**it2) ) );
         }
     }
-    setText( QObject::tr("Remove feather").toStdString());
+    setText( tr("Remove feather").toStdString());
 }
 
 RemoveFeatherUndoCommand::~RemoveFeatherUndoCommand()
@@ -1158,7 +1165,6 @@ RemoveFeatherUndoCommand::undo()
         return;
     }
     roto->evaluate(true);
-
 
 }
 
@@ -1201,7 +1207,7 @@ OpenCloseUndoCommand::OpenCloseUndoCommand(const boost::shared_ptr<RotoPaintInte
     , _selectedTool(roto->selectedToolAction )
     , _curve(curve)
 {
-    setText( QObject::tr("Open/Close bezier").toStdString());
+    setText( tr("Open/Close bezier").toStdString());
 }
 
 OpenCloseUndoCommand::~OpenCloseUndoCommand()
@@ -1241,6 +1247,7 @@ OpenCloseUndoCommand::redo()
     roto->evaluate(_firstRedoCalled);
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
+
 }
 
 ////////////////////////////
@@ -1267,9 +1274,9 @@ SmoothCuspUndoCommand::SmoothCuspUndoCommand(const boost::shared_ptr<RotoPaintIn
         }
     }
     if (_cusp) {
-        setText( QObject::tr("Cusp points").toStdString());
+        setText( tr("Cusp points").toStdString());
     } else {
-        setText( QObject::tr("Smooth points").toStdString());
+        setText( tr("Smooth points").toStdString());
     }
 }
 
@@ -1328,6 +1335,7 @@ SmoothCuspUndoCommand::redo()
     roto->evaluate(_firstRedoCalled);
 
     _firstRedoCalled = true;
+
 
 }
 
@@ -1397,7 +1405,7 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(const boost::shared_ptr<RotoPaintIn
         _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer(), false) );
         _oldCurve->clone( _newCurve.get() );
     }
-    setText( QObject::tr("Draw Bezier").toStdString());
+    setText( tr("Draw Bezier").toStdString());
 
 }
 
@@ -1430,6 +1438,7 @@ MakeBezierUndoCommand::undo()
         roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     }
     roto->evaluate(true);
+
 }
 
 void
@@ -1492,7 +1501,6 @@ MakeBezierUndoCommand::redo()
     roto->autoSaveAndRedraw();
     _firstRedoCalled = true;
 
-
 } // redo
 
 
@@ -1546,7 +1554,7 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(const boost::shared_ptr<RotoPaint
     if (!_create) {
         _curve = roto->getBezierBeingBuild();
     }
-    setText( QObject::tr("Draw Ellipse").toStdString());
+    setText( tr("Draw Ellipse").toStdString());
 
 }
 
@@ -1564,6 +1572,7 @@ MakeEllipseUndoCommand::undo()
     roto->removeCurve(_curve);
     roto->evaluate(true);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
+
 }
 
 void
@@ -1703,7 +1712,7 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(const boost::shared_ptr<RotoP
     if (!_create) {
         _curve = roto->getBezierBeingBuild();
     }
-    setText( QObject::tr("Draw Rectangle").toStdString());
+    setText( tr("Draw Rectangle").toStdString());
 }
 
 MakeRectangleUndoCommand::~MakeRectangleUndoCommand()
@@ -1815,7 +1824,7 @@ LinkToTrackUndoCommand::LinkToTrackUndoCommand(const boost::shared_ptr<RotoPaint
     , _points(points)
     , _track(track)
 {
-    setText( QObject::tr("Link to track").toStdString() );
+    setText( tr("Link to track").toStdString() );
 
 }
 
@@ -1839,6 +1848,7 @@ LinkToTrackUndoCommand::undo()
         }
     }
     roto->evaluate(true);
+
 }
 
 void
@@ -1862,6 +1872,7 @@ LinkToTrackUndoCommand::redo()
         // }
     }
     roto->evaluate(true);
+
 }
 
 UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -1877,7 +1888,7 @@ UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(const boost::shared_ptr<R
         p.track = p.cp->isSlaved();
         _points.push_back(p);
     }
-    setText( QObject::tr("Unlink from track").toStdString() );
+    setText( tr("Unlink from track").toStdString() );
 }
 
 UnLinkFromTrackUndoCommand::~UnLinkFromTrackUndoCommand()
@@ -1903,8 +1914,6 @@ UnLinkFromTrackUndoCommand::undo()
             it->track->addSlavedTrack(it->fp);
         }
     }
-
-
     roto->evaluate(true);
 }
 

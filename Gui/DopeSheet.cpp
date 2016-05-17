@@ -33,7 +33,7 @@
 #endif
 
 // Qt includes
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QtEvents>
 #include <QTreeWidget>
 #include <QUndoStack>
@@ -330,7 +330,7 @@ DopeSheet::addNode(NodeGuiPtr nodeGui)
     if (pluginID == PLUGINID_NATRON_READ) {
 #endif
         nodeType = eDopeSheetItemTypeReader;
-    } else if ( effectInstance->getPluginID() == PLUGINID_NATRON_GROUP ) {
+    } else if (effectInstance->getPluginID() == PLUGINID_NATRON_GROUP) {
         nodeType = eDopeSheetItemTypeGroup;
     } else if (pluginID == PLUGINID_OFX_RETIME) {
         nodeType = eDopeSheetItemTypeRetime;

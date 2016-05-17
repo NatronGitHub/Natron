@@ -33,7 +33,7 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
@@ -323,7 +323,7 @@ OfxImageEffectInstance::getEffectDuration() const
 {
     assert( getOfxEffectInstance() );
 #ifdef DEBUG
-#pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain ?")
+#pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain?")
 #endif
 
     return 1.0;
@@ -657,7 +657,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         if (sep) {
                             sep->resetParent();
                         } else {
-                            sep = AppManager::createKnob<KnobSeparator>( knobHolder, "");
+                            sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
                             assert(sep);
                             sep->setName(separatorName);
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -683,7 +683,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     if ( !finalPages.empty() ) {
         mainPage = finalPages.begin();
     } else {
-        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(effect.get(), "Settings");
+        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
         boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
         pageData->page = page;
         finalPages.push_back(pageData);
@@ -776,7 +776,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                     if (sep) {
                         sep->resetParent();
                     } else {
-                        sep = AppManager::createKnob<KnobSeparator>( knobHolder, "");
+                        sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
                         assert(sep);
                         sep->setName(separatorName);
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -942,7 +942,10 @@ OfxImageEffectInstance::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
-        Dialogs::errorDialog(QObject::tr("Out of memory").toStdString(), getOfxEffectInstance()->getNode()->getLabel_mt_safe() + QObject::tr(" failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+        Dialogs::errorDialog( tr("Out of memory").toStdString(),
+                              tr("%1 failed to allocate memory (%2).")
+                              .arg( QString::fromUtf8( getOfxEffectInstance()->getNode()->getLabel_mt_safe().c_str() ) )
+                              .arg( printAsRAM(nBytes) ).toStdString() );
     }
 
     return ret;

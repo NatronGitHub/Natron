@@ -27,8 +27,8 @@
 
 #include "Global/Macros.h"
 
-#include <QMutex>
-#include <QWaitCondition>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 
 #include "Engine/EngineFwd.h"
 

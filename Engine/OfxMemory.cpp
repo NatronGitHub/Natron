@@ -29,7 +29,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
-#include <QMutex>
+#include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
 
 #include "Engine/PluginMemory.h"

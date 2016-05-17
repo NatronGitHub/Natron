@@ -91,12 +91,12 @@ FrameEntry::copy(const FrameEntry& other)
     //Fill with black and transparant because src might be smaller
     bool filledZero = false;
     if ( !srcBounds.contains(dstBounds) ) {
-        std::memset(dstPixels, 0, dstRowSize * dstBounds.height());
+        std::memset( dstPixels, 0, dstRowSize * dstBounds.height() );
         filledZero = true;
     }
     if ( other.getKey().getBitDepth() != _key.getBitDepth() ) {
         if (!filledZero) {
-            std::memset(dstPixels, 0, dstRowSize * dstBounds.height());
+            std::memset( dstPixels, 0, dstRowSize * dstBounds.height() );
         }
 
         return;

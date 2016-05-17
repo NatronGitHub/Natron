@@ -180,7 +180,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
 
     _curveWidget->update();
 
-    setText( QObject::tr("Add multiple keyframes") );
+    setText( tr("Add multiple keyframes") );
 } // addOrRemoveKeyframe
 
 void
@@ -334,7 +334,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
     }
 
     _curveWidget->update();
-    setText( QObject::tr("Remove multiple keyframes") );
+    setText( tr("Remove multiple keyframes") );
 } // RemoveKeysCommand::addOrRemoveKeyframe
 
 void
@@ -465,7 +465,7 @@ void
 MoveKeysCommand::undo()
 {
     move(-_dt, -_dv);
-    setText( QObject::tr("Move multiple keys") );
+    setText( tr("Move multiple keys") );
 }
 
 void
@@ -473,7 +473,7 @@ MoveKeysCommand::redo()
 {
     move(_dt, _dv);
     _firstRedoCalled = true;
-    setText( QObject::tr("Move multiple keys") );
+    setText( tr("Move multiple keys") );
 }
 
 bool
@@ -595,7 +595,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
     }
 
     _widget->refreshSelectedKeysAndUpdate();
-    setText( QObject::tr("Set multiple keys interpolation") );
+    setText( tr("Set multiple keys interpolation") );
 } // SetKeysInterpolationCommand::setNewInterpolation
 
 void
@@ -771,7 +771,7 @@ void
 MoveTangentCommand::undo()
 {
     setNewDerivatives(true);
-    setText( QObject::tr("Move keyframe slope") );
+    setText( tr("Move keyframe slope") );
 }
 
 void
@@ -779,7 +779,7 @@ MoveTangentCommand::redo()
 {
     setNewDerivatives(false);
     _firstRedoCalled = true;
-    setText( QObject::tr("Move keyframe slope") );
+    setText( tr("Move keyframe slope") );
 }
 
 int

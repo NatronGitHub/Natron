@@ -30,15 +30,15 @@
 #include <stdexcept>
 
 #include <QtCore/QTextStream>
-#include <QWaitCondition>
-#include <QMutex>
-#include <QCoreApplication>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QMutex>
+#include <QtCore/QCoreApplication>
 #include <QAction>
 #include <QSettings>
-#include <QDebug>
-#include <QThread>
+#include <QtCore/QDebug>
+#include <QtCore/QThread>
 #include <QCheckBox>
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QTextEdit>
 
 
@@ -311,7 +311,7 @@ GuiPrivate::createPropertiesBinGui()
 {
     _propertiesBin = new PropertiesBinWrapper(_gui);
     _propertiesBin->setScriptName(kPropertiesBinName);
-    _propertiesBin->setLabel( QObject::tr("Properties").toStdString() );
+    _propertiesBin->setLabel( tr("Properties").toStdString() );
 
     QVBoxLayout* mainPropertiesLayout = new QVBoxLayout(_propertiesBin);
     mainPropertiesLayout->setContentsMargins(0, 0, 0, 0);
@@ -348,7 +348,7 @@ GuiPrivate::createPropertiesBinGui()
 
     _clearAllPanelsButton->setFixedSize(smallButtonSize);
     _clearAllPanelsButton->setIconSize(smallButtonIconSize);
-    _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Clears all the panels in the properties bin pane."),
+    _clearAllPanelsButton->setToolTip( GuiUtils::convertFromPlainText(tr("Clears all the panels in the properties bin pane."),
                                                                       Qt::WhiteSpaceNormal) );
     _clearAllPanelsButton->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _clearAllPanelsButton, SIGNAL(clicked(bool)), _gui, SLOT(clearAllVisiblePanels()) );
@@ -363,7 +363,7 @@ GuiPrivate::createPropertiesBinGui()
     _minimizeAllPanelsButtons->setChecked(false);
     _minimizeAllPanelsButtons->setFixedSize(smallButtonSize);
     _minimizeAllPanelsButtons->setIconSize(smallButtonIconSize);
-    _minimizeAllPanelsButtons->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
+    _minimizeAllPanelsButtons->setToolTip( GuiUtils::convertFromPlainText(tr("Minimize / Maximize all panels."), Qt::WhiteSpaceNormal) );
     _minimizeAllPanelsButtons->setFocusPolicy(Qt::NoFocus);
     QObject::connect( _minimizeAllPanelsButtons, SIGNAL(clicked(bool)), _gui, SLOT(minimizeMaximizeAllPanels(bool)) );
 
@@ -371,9 +371,9 @@ GuiPrivate::createPropertiesBinGui()
     _maxPanelsOpenedSpinBox->setMaximumSize(smallButtonSize);
     _maxPanelsOpenedSpinBox->setMinimum(1);
     _maxPanelsOpenedSpinBox->setMaximum(100);
-    _maxPanelsOpenedSpinBox->setToolTip( GuiUtils::convertFromPlainText(_gui->tr("Set the maximum of panels that can be opened at the same time "
-                                                                                 "in the properties bin pane. The special value of 0 indicates "
-                                                                                 "that an unlimited number of panels can be opened."),
+    _maxPanelsOpenedSpinBox->setToolTip( GuiUtils::convertFromPlainText(tr("Set the maximum of panels that can be opened at the same time "
+                                                                           "in the properties bin pane. The special value of 0 indicates "
+                                                                           "that an unlimited number of panels can be opened."),
                                                                         Qt::WhiteSpaceNormal) );
     _maxPanelsOpenedSpinBox->setValue( appPTR->getCurrentSettings()->getMaxPanelsOpened() );
     QObject::connect( _maxPanelsOpenedSpinBox, SIGNAL(valueChanged(double)), _gui, SLOT(onMaxPanelsSpinBoxValueChanged(double)) );
@@ -398,7 +398,7 @@ GuiPrivate::createNodeGraphGui()
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
     _nodeGraphArea = new NodeGraph(_gui, _appInstance->getProject(), scene, _gui);
     _nodeGraphArea->setScriptName(kNodeGraphObjectName);
-    _nodeGraphArea->setLabel( QObject::tr("Node Graph").toStdString() );
+    _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
     _gui->registerTab(_nodeGraphArea, _nodeGraphArea);
 }
@@ -408,7 +408,7 @@ GuiPrivate::createCurveEditorGui()
 {
     _curveEditor = new CurveEditor(_gui, _appInstance->getTimeLine(), _gui);
     _curveEditor->setScriptName(kCurveEditorObjectName);
-    _curveEditor->setLabel( QObject::tr("Curve Editor").toStdString() );
+    _curveEditor->setLabel( tr("Curve Editor").toStdString() );
     _curveEditor->setVisible(false);
     _gui->registerTab(_curveEditor, _curveEditor);
 }
@@ -418,7 +418,7 @@ GuiPrivate::createDopeSheetGui()
 {
     _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance->getTimeLine(), _gui);
     _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
-    _dopeSheetEditor->setLabel( QObject::tr("Dope Sheet").toStdString() );
+    _dopeSheetEditor->setLabel( tr("Dope Sheet").toStdString() );
     _dopeSheetEditor->setVisible(false);
     _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
 }
@@ -428,7 +428,7 @@ GuiPrivate::createScriptEditorGui()
 {
     _scriptEditor = new ScriptEditor(_gui);
     _scriptEditor->setScriptName("scriptEditor");
-    _scriptEditor->setLabel( QObject::tr("Script Editor").toStdString() );
+    _scriptEditor->setLabel( tr("Script Editor").toStdString() );
     _scriptEditor->setVisible(false);
     _gui->registerTab(_scriptEditor, _scriptEditor);
 }
@@ -438,7 +438,7 @@ GuiPrivate::createProgressPanelGui()
 {
     _progressPanel = new ProgressPanel(_gui);
     _progressPanel->setScriptName("progress");
-    _progressPanel->setLabel( QObject::tr("Progress").toStdString() );
+    _progressPanel->setLabel( tr("Progress").toStdString() );
     _progressPanel->setVisible(false);
     _gui->registerTab(_progressPanel, _progressPanel);
 }
@@ -600,13 +600,13 @@ GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
         if (lockPID != curPid) {
             QString appFilePath = QCoreApplication::applicationFilePath();
             if ( ProcInfo::checkIfProcessIsRunning(appFilePath.toStdString().c_str(), (Q_PID)lockPID) ) {
-                StandardButtonEnum rep = Dialogs::questionDialog( QObject::tr("Project").toStdString(),
-                                                                  QObject::tr("This project may be open in another instance of Natron "
-                                                                              "running on %1 as process ID %2, "
-                                                                              "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
-                                                                                                                                   QString::number(lockPID),
-                                                                                                                                   author,
-                                                                                                                                   lockCreationDate).toStdString(),
+                StandardButtonEnum rep = Dialogs::questionDialog( tr("Project").toStdString(),
+                                                                  tr("This project may be open in another instance of Natron "
+                                                                     "running on %1 as process ID %2, "
+                                                                     "and was opened by %3 on %4.\nContinue anyway?").arg(lockHost,
+                                                                                                                          QString::number(lockPID),
+                                                                                                                          author,
+                                                                                                                          lockCreationDate).toStdString(),
                                                                   false,
                                                                   StandardButtons(eStandardButtonYes | eStandardButtonNo) );
                 if (rep == eStandardButtonYes) {

@@ -30,10 +30,10 @@
 #include <stdexcept>
 #include <iostream>
 
-#include <QLocalSocket>
-#include <QMutex>
-#include <QWaitCondition>
-#include <QDebug>
+#include <QtNetwork/QLocalSocket>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
 

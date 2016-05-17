@@ -27,8 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QTimer>
-#include <QAbstractNetworkCache>
+#include <QtCore/QTimer>
+#include <QtNetwork/QAbstractNetworkCache>
 
 #define NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS 5000
 

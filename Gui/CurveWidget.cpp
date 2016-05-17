@@ -324,7 +324,9 @@ CurveWidget::centerOn(double xmin,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
+    if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
+        _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
+    }
     _imp->zoomOrPannedSinceLastFit = false;
 
 
@@ -661,7 +663,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     if ( foundCurveNearby != _imp->_curves.end() ) {
         std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
         if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
-            QString err =  tr(" Out of curve y range ") +
+            QString err =  tr("Out of curve y range ") +
                           QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
             Dialogs::warningDialog( "", err.toStdString() );
             e->accept();
@@ -745,7 +747,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
 
             std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
             if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
-                QString err =  tr(" Out of curve y range ") +
+                QString err =  tr("Out of curve y range ") +
                               QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
                 Dialogs::warningDialog( "", err.toStdString() );
                 e->accept();
@@ -1179,63 +1181,64 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
         break;
     case eEventStateZooming: {
-        _imp->zoomOrPannedSinceLastFit = true;
+        if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
+            _imp->zoomOrPannedSinceLastFit = true;
 
-        int deltaX = 2 * ( e->x() - _imp->_lastMousePos.x() );
-        int deltaY = -2 * ( e->y() - _imp->_lastMousePos.y() );
-        // Wheel: zoom values and time, keep point under mouse
-        const double zoomFactor_min = 0.0001;
-        const double zoomFactor_max = 10000.;
-        const double par_min = 0.0001;
-        const double par_max = 10000.;
-        double zoomFactor;
-        double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
-        double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
-        QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
+            int deltaX = 2 * ( e->x() - _imp->_lastMousePos.x() );
+            int deltaY = -2 * ( e->y() - _imp->_lastMousePos.y() );
+            // Wheel: zoom values and time, keep point under mouse
+            const double zoomFactor_min = 0.0001;
+            const double zoomFactor_max = 10000.;
+            const double par_min = 0.0001;
+            const double par_max = 10000.;
+            double zoomFactor;
+            double scaleFactorX = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaX);
+            double scaleFactorY = std::pow( NATRON_WHEEL_ZOOM_PER_DELTA, deltaY);
+            QPointF zoomCenter = _imp->zoomCtx.toZoomCoordinates( _imp->_dragStartPoint.x(), _imp->_dragStartPoint.y() );
 
+            // Alt + Shift + Wheel: zoom values only, keep point under mouse
+            zoomFactor = _imp->zoomCtx.factor() * scaleFactorY;
 
-        // Alt + Shift + Wheel: zoom values only, keep point under mouse
-        zoomFactor = _imp->zoomCtx.factor() * scaleFactorY;
+            if (zoomFactor <= zoomFactor_min) {
+                zoomFactor = zoomFactor_min;
+                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+            } else if (zoomFactor > zoomFactor_max) {
+                zoomFactor = zoomFactor_max;
+                scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+            }
 
-        if (zoomFactor <= zoomFactor_min) {
-            zoomFactor = zoomFactor_min;
-            scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
-        } else if (zoomFactor > zoomFactor_max) {
-            zoomFactor = zoomFactor_max;
-            scaleFactorY = zoomFactor / _imp->zoomCtx.factor();
+            double par = _imp->zoomCtx.aspectRatio() / scaleFactorY;
+            if (par <= par_min) {
+                par = par_min;
+                scaleFactorY = par / _imp->zoomCtx.aspectRatio();
+            } else if (par > par_max) {
+                par = par_max;
+                scaleFactorY = par / _imp->zoomCtx.factor();
+            }
+            _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
+
+            // Alt + Wheel: zoom time only, keep point under mouse
+            par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
+            if (par <= par_min) {
+                par = par_min;
+                scaleFactorX = par / _imp->zoomCtx.aspectRatio();
+            } else if (par > par_max) {
+                par = par_max;
+                scaleFactorX = par / _imp->zoomCtx.factor();
+            }
+            _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
+
+            if (_imp->_drawSelectedKeyFramesBbox) {
+                refreshSelectedKeysBbox();
+            }
+
+            // Synchronize the dope sheet editor and opened viewers
+            if ( _imp->_gui->isTripleSyncEnabled() ) {
+                _imp->updateDopeSheetViewFrameRange();
+                _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
+            }
+            refreshDisplayedTangents();
         }
-
-        double par = _imp->zoomCtx.aspectRatio() / scaleFactorY;
-        if (par <= par_min) {
-            par = par_min;
-            scaleFactorY = par / _imp->zoomCtx.aspectRatio();
-        } else if (par > par_max) {
-            par = par_max;
-            scaleFactorY = par / _imp->zoomCtx.factor();
-        }
-        _imp->zoomCtx.zoomy(zoomCenter.x(), zoomCenter.y(), scaleFactorY);
-
-        // Alt + Wheel: zoom time only, keep point under mouse
-        par = _imp->zoomCtx.aspectRatio() * scaleFactorX;
-        if (par <= par_min) {
-            par = par_min;
-            scaleFactorX = par / _imp->zoomCtx.aspectRatio();
-        } else if (par > par_max) {
-            par = par_max;
-            scaleFactorX = par / _imp->zoomCtx.factor();
-        }
-        _imp->zoomCtx.zoomx(zoomCenter.x(), zoomCenter.y(), scaleFactorX);
-
-        if (_imp->_drawSelectedKeyFramesBbox) {
-            refreshSelectedKeysBbox();
-        }
-
-        // Synchronize the dope sheet editor and opened viewers
-        if ( _imp->_gui->isTripleSyncEnabled() ) {
-            _imp->updateDopeSheetViewFrameRange();
-            _imp->_gui->centerOpenedViewersOn( _imp->zoomCtx.left(), _imp->zoomCtx.right() );
-        }
-        refreshDisplayedTangents();
         break;
     }
     case eEventStateNone:
@@ -1656,7 +1659,7 @@ CurveWidget::pasteKeyFramesFromClipBoardToSelectedCurve()
         }
     }
     if (!curve) {
-        Dialogs::warningDialog( QObject::tr("Curve Editor").toStdString(), QObject::tr("You must select a curve first.").toStdString() );
+        Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("You must select a curve first.").toStdString() );
 
         return;
     }
@@ -1908,7 +1911,9 @@ CurveWidget::centerOn(double xmin,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    _imp->zoomCtx.fill( xmin, xmax, _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
+    if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
+        _imp->zoomCtx.fill( xmin, xmax, _imp->zoomCtx.bottom(), _imp->zoomCtx.top() );
+    }
 
     update();
 }
@@ -1995,7 +2000,7 @@ CurveWidget::exportCurveToAscii()
             double endInt = std::floor(end);
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) || ( endInt != end) ) ) {
-                Dialogs::warningDialog( tr("Curve Export").toStdString(), curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Export").toStdString(), tr("%1 doesn't support X values that are not integers.").arg( curves[i]->getName() ).toStdString() );
 
                 return;
             }

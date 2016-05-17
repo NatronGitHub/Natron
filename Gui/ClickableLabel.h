@@ -48,10 +48,12 @@ class ClickableLabel
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
-    Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY( bool readOnly READ isReadOnly WRITE setReadOnly)
-    Q_PROPERTY( bool sunkenStyle READ isSunken WRITE setSunken)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // properties
+    Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
+    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
+    Q_PROPERTY(bool readOnly READ isReadOnly WRITE setReadOnly)
+    Q_PROPERTY(bool sunkenStyle READ isSunken WRITE setSunken)
 
 public:
 

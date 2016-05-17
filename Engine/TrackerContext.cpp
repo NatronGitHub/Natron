@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -28,9 +27,9 @@
 #include <set>
 #include <sstream>
 
-#include <QWaitCondition>
-#include <QThread>
-#include <QCoreApplication>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
 
 
 #include "Engine/AppInstance.h"
@@ -441,6 +440,7 @@ void
 TrackerContext::beginEditSelection(TrackSelectionReason reason)
 {
     QMutexLocker k(&_imp->trackerContextMutex);
+
     k.unlock();
     Q_EMIT selectionAboutToChange( (int)reason );
     k.relock();
@@ -720,7 +720,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     TrackerMotionTypeEnum mt = (TrackerMotionTypeEnum)motionType_i;
 
     if (mt == eTrackerMotionTypeNone) {
-        Dialogs::errorDialog( QObject::tr("Tracker Export").toStdString(), QObject::tr("Please select the export mode with the Motion Type parameter").toStdString() );
+        Dialogs::errorDialog( tr("Tracker Export").toStdString(), tr("Please select the export mode with the Motion Type parameter").toStdString() );
 
         return;
     }
@@ -1132,7 +1132,7 @@ TrackerContext::solveTransformParams()
     bool robustModel;
     robustModel = _imp->robustModel.lock()->getValue();
 
-    node->getApp()->progressStart( node, QObject::tr("Solving transform parameters...").toStdString(), std::string() );
+    node->getApp()->progressStart( node, tr("Solving for transform parameters...").toStdString(), std::string() );
 
     _imp->lastSolveRequest.refTime = refTime;
     _imp->lastSolveRequest.jitterPeriod = jitterPeriod;
@@ -1539,7 +1539,7 @@ TrackArgs::getRedrawAreasNeeded(int time,
                                 std::list<RectD>* canonicalRects) const
 {
     for (std::vector<boost::shared_ptr<TrackMarkerAndOptions> >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {
-        if (!(*it)->natronMarker->isEnabled(time)) {
+        if ( !(*it)->natronMarker->isEnabled(time) ) {
             continue;
         }
         boost::shared_ptr<KnobDouble> searchBtmLeft = (*it)->natronMarker->getSearchWindowBottomLeftKnob();
@@ -1638,12 +1638,14 @@ struct TrackSchedulerPrivate
 TrackSchedulerBase::TrackSchedulerBase()
     : QThread()
 #ifdef QT_CUSTOM_THREADPOOL
-, AbortableThread(this)
+    , AbortableThread(this)
 #endif
 {
     QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
-    setThreadName("TrackScheduler");
 
+#ifdef QT_CUSTOM_THREADPOOL
+    setThreadName("TrackScheduler");
+#endif
 }
 
 TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
@@ -1666,7 +1668,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
     const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];
 
-    if (!track->natronMarker->isEnabled(time)) {
+    if ( !track->natronMarker->isEnabled(time) ) {
         return false;
     }
 
@@ -1696,8 +1698,13 @@ TrackScheduler::isWorking() const
     return _imp->isWorking;
 }
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 class IsTrackingFlagSetter_RAII
 {
+    Q_DECLARE_TR_FUNCTIONS(TrackScheduler)
+
+private:
     ViewerInstance* _v;
     EffectInstPtr _effect;
     TrackSchedulerBase* _base;
@@ -1719,7 +1726,7 @@ public:
         , _doPartialUpdates(doPartialUpdates)
     {
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressStart(_effect->getNode(), QObject::tr("Tracking...").toStdString(), "");
+            _effect->getApp()->progressStart(_effect->getNode(), tr("Tracking...").toStdString(), "");
             _base->emit_trackingStarted(step);
         }
 
@@ -1739,6 +1746,8 @@ public:
         }
     }
 };
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 void
 TrackScheduler::run()
@@ -1776,7 +1785,7 @@ TrackScheduler::run()
 
         const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = _imp->curArgs.getTracks();
         const int numTracks = (int)tracks.size();
-        std::vector<int> trackIndexes(tracks.size());
+        std::vector<int> trackIndexes( tracks.size() );
         for (std::size_t i = 0; i < tracks.size(); ++i) {
             trackIndexes[i] = i;
 
@@ -1784,7 +1793,6 @@ TrackScheduler::run()
             boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
             enabledKnob->unSlave(0, false);
         }
-
 
 
         // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
@@ -1903,8 +1911,6 @@ TrackScheduler::run()
             }
             contextEnabledKnob->setDirty(tracks.size() > 1);
         }
-        
-
 
 
         //Now that tracking is done update viewer once to refresh the whole visible portion

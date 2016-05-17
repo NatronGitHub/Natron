@@ -22,14 +22,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <bitset>
-
 #include "RenderStats.h"
 
+#include <bitset>
 #include <cassert>
 #include <stdexcept>
 
-#include <QMutex>
+#include <QtCore/QMutex>
 
 #include "Engine/Node.h"
 #include "Engine/Timer.h"

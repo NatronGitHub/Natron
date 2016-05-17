@@ -33,7 +33,7 @@
 #include <QFont>
 #include <QStyleOption>
 #include <QFontMetrics>
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QPainter>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated

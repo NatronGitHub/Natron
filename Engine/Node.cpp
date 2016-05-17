@@ -31,7 +31,13 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "Global/Macros.h"
+
 #include <boost/scoped_ptr.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QtCore/QDebug>
 #include <QtCore/QReadWriteLock>
@@ -40,10 +46,6 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QFile>
 #include <QtCore/QRegExp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
@@ -189,6 +191,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 struct Node::Implementation
 {
+    Q_DECLARE_TR_FUNCTIONS(Node)
+
+public:
     Implementation(Node* publicInterface,
                    AppInstance* app_,
                    const boost::shared_ptr<NodeCollection>& collection,
@@ -1787,9 +1792,7 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         } else if (isRegular) {
             KnobPtr knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
-                QString err = QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() );
-                err.append( QObject::tr(": Could not find a parameter named ") );
-                err.append( QString::fromUtf8( (*it)->getName().c_str() ) );
+                QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
                 appPTR->writeToErrorLog_mt_safe(err);
                 continue;
             }
@@ -1813,9 +1816,7 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         KnobPtr knob = getKnobByName( (*it)->getName() );
         if (!knob) {
-            QString err = QString::fromUtf8( getScriptName_mt_safe().c_str() );
-            err.append( QObject::tr(": Could not find a parameter named ") );
-            err.append( QString::fromUtf8( (*it)->getName().c_str() ) );
+            QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
             appPTR->writeToErrorLog_mt_safe(err);
             continue;
         }
@@ -2548,7 +2549,6 @@ Node::getPreferredInputInternal(bool connected) const
     if (firstNonOptionalEmptyInput != -1) {
         return firstNonOptionalEmptyInput;
     }  else {
-#if 1
         if ( !optionalEmptyInputs.empty() ) {
             //We return the first optional empty input
             std::list<int>::iterator first = optionalEmptyInputs.begin();
@@ -2560,18 +2560,6 @@ Node::getPreferredInputInternal(bool connected) const
             } else {
                 return *first;
             }
-#else // previous version, not consistent with Node::getPreferredInputInternal()
-      //We return the last optional empty input
-        std::list<int>::reverse_iterator first = optionalEmptyInputs.rbegin();
-        while ( first != optionalEmptyInputs.rend() && _imp->effect->isInputRotoBrush(*first) ) {
-            ++first;
-        }
-        if ( first == optionalEmptyInputs.rend() ) {
-            return -1;
-        } else {
-            return *first;
-        }
-#endif
         } else if ( !optionalEmptyMasks.empty() ) {
             return optionalEmptyMasks.front();
         } else {
@@ -2932,7 +2920,7 @@ Node::setScriptName(const std::string& name)
     }
     //We do not allow setting the script-name of output nodes because we rely on it with NatronRenderer
     if ( dynamic_cast<GroupOutput*>( _imp->effect.get() ) ) {
-        throw std::runtime_error( QObject::tr("Changing the script-name of an Output node is not a valid operation").toStdString() );
+        throw std::runtime_error( tr("Changing the script-name of an Output node is not a valid operation.").toStdString() );
 
         return;
     }
@@ -3145,7 +3133,7 @@ void
 Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                      int renderScaleSupportPref)
 {
-    boost::shared_ptr<KnobBool> hideInputs = AppManager::createKnob<KnobBool>(_imp->effect.get(), "Hide inputs", 1, false);
+    boost::shared_ptr<KnobBool> hideInputs = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Hide inputs"), 1, false);
 
     hideInputs->setName("hideInputs");
     hideInputs->setDefaultValue(false);
@@ -3153,12 +3141,12 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     hideInputs->setAddNewLine(false);
     hideInputs->setIsPersistant(true);
     hideInputs->setEvaluateOnChange(false);
-    hideInputs->setHintToolTip( tr("When checked, the input arrows of the node in the nodegraph will be hidden").toStdString() );
+    hideInputs->setHintToolTip( tr("When checked, the input arrows of the node in the nodegraph will be hidden") );
     _imp->hideInputs = hideInputs;
     settingsPage->addKnob(hideInputs);
 
 
-    boost::shared_ptr<KnobBool> fCaching = AppManager::createKnob<KnobBool>(_imp->effect.get(), "Force caching", 1, false);
+    boost::shared_ptr<KnobBool> fCaching = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Force caching"), 1, false);
     fCaching->setName("forceCaching");
     fCaching->setDefaultValue(false);
     fCaching->setAnimationEnabled(false);
@@ -3166,11 +3154,11 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     fCaching->setIsPersistant(true);
     fCaching->setEvaluateOnChange(false);
     fCaching->setHintToolTip( tr("When checked, the output of this node will always be kept in the RAM cache for fast access of already computed "
-                                 "images.").toStdString() );
+                                 "images.") );
     _imp->forceCaching = fCaching;
     settingsPage->addKnob(fCaching);
 
-    boost::shared_ptr<KnobBool> previewEnabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Preview").toStdString(), 1, false);
+    boost::shared_ptr<KnobBool> previewEnabled = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Preview"), 1, false);
     assert(previewEnabled);
     previewEnabled->setDefaultValue( makePreviewByDefault() );
     previewEnabled->setName(kEnablePreviewKnobName);
@@ -3178,39 +3166,39 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     previewEnabled->setAddNewLine(false);
     previewEnabled->setIsPersistant(false);
     previewEnabled->setEvaluateOnChange(false);
-    previewEnabled->setHintToolTip( tr("Whether to show a preview on the node box in the node-graph.").toStdString() );
+    previewEnabled->setHintToolTip( tr("Whether to show a preview on the node box in the node-graph.") );
     settingsPage->addKnob(previewEnabled);
     _imp->previewEnabledKnob = previewEnabled;
 
-    boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), "Disable", 1, false);
+    boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Disable"), 1, false);
     assert(disableNodeKnob);
     disableNodeKnob->setAnimationEnabled(false);
     disableNodeKnob->setDefaultValue(false);
     disableNodeKnob->setIsMetadataSlave(true);
     disableNodeKnob->setName(kDisableNodeKnobName);
     disableNodeKnob->setAddNewLine(false);
-    disableNodeKnob->setHintToolTip("When disabled, this node acts as a pass through.");
+    disableNodeKnob->setHintToolTip( tr("When disabled, this node acts as a pass through.") );
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
 
-    boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream").toStdString(), 1, false);
+    boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
-    useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip( tr("This node doesn't support rendering images at a scale lower than 1, it "
+    useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip( tr("This node does not support rendering images at a scale lower than 1, it "
                                                                      "can only render high definition images. When checked this parameter controls "
                                                                      "whether the rest of the graph upstream should be rendered with a high quality too or at "
                                                                      "the most optimal resolution for the current viewer's viewport. Typically checking this "
                                                                      "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
-                                                                     "whichever zoom level you're using on the Viewer, whereas when unchecked it will be much "
-                                                                     "faster to render but will have to be recomputed when zooming in/out in the Viewer.").toStdString() );
+                                                                     "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
+                                                                     "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
     if ( (renderScaleSupportPref == 0) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
         useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
 
-    boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
     knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
                                             "parameter change. Either define this function in the Script Editor "
                                             "or in the init.py script or even in the script of a Python group plug-in.\n"
@@ -3220,13 +3208,13 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                                             "because something internally triggered the change.\n"
                                             "- thisNode: The node holding the parameter\n"
                                             "- app: points to the current application instance\n"
-                                            "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString() );
+                                            "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)") );
     knobChangedCallback->setAnimationEnabled(false);
     knobChangedCallback->setName("onParamChanged");
     settingsPage->addKnob(knobChangedCallback);
     _imp->knobChangedCallback = knobChangedCallback;
 
-    boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> inputChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After input changed callback"), 1, false);
     inputChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called after "
                                              "each connection is changed for the inputs of the node. "
                                              "Either define this function in the Script Editor "
@@ -3236,7 +3224,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                                              "connected to the input by calling the getInput(...) function.\n"
                                              "- thisNode: The node holding the parameter\n"
                                              "- app: points to the current application instance\n"
-                                             "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)").toStdString() );
+                                             "- thisGroup: The group holding thisNode (only if thisNode belongs to a group)") );
 
     inputChangedCallback->setAnimationEnabled(false);
     inputChangedCallback->setName("onInputChanged");
@@ -3245,31 +3233,31 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
 
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>( _imp->effect.get() );
     if (isGroup) {
-        boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), "After Node Created", 1, false);
+        boost::shared_ptr<KnobString> onNodeCreated = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After Node Created"), 1, false);
         onNodeCreated->setName("afterNodeCreated");
-        onNodeCreated->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
-                                      "is created in the group. This will be called in addition to the After Node Created "
-                                      " callback of the project for the group node and all nodes within it (not recursively).\n"
-                                      "The boolean variable userEdited will be set to True if the node was created "
-                                      "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
-                                      "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
-                                      "- thisNode: the node which has just been created\n"
-                                      "- userEdited: a boolean indicating whether the node was created by user interaction or from "
-                                      "a script/project load/copy-paste\n"
-                                      "- app: points to the current application instance\n");
+        onNodeCreated->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
+                                          "is created in the group. This will be called in addition to the After Node Created "
+                                          " callback of the project for the group node and all nodes within it (not recursively).\n"
+                                          "The boolean variable userEdited will be set to True if the node was created "
+                                          "by the user or False otherwise (such as when loading a project, or pasting a node).\n"
+                                          "The signature of the callback is: callback(thisNode, app, userEdited) where:\n"
+                                          "- thisNode: the node which has just been created\n"
+                                          "- userEdited: a boolean indicating whether the node was created by user interaction or from "
+                                          "a script/project load/copy-paste\n"
+                                          "- app: points to the current application instance.") );
         onNodeCreated->setAnimationEnabled(false);
         _imp->nodeCreatedCallback = onNodeCreated;
         settingsPage->addKnob(onNodeCreated);
 
-        boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), "Before Node Removal", 1, false);
+        boost::shared_ptr<KnobString> onNodeDeleted = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before Node Removal"), 1, false);
         onNodeDeleted->setName("beforeNodeRemoval");
-        onNodeDeleted->setHintToolTip("Add here the name of a Python-defined function that will be called each time a node "
-                                      "is about to be deleted. This will be called in addition to the Before Node Removal "
-                                      " callback of the project for the group node and all nodes within it (not recursively).\n"
-                                      "This function will not be called when the project is closing.\n"
-                                      "The signature of the callback is: callback(thisNode, app) where:\n"
-                                      "- thisNode: the node about to be deleted\n"
-                                      "- app: points to the current application instance\n");
+        onNodeDeleted->setHintToolTip( tr("Add here the name of a Python-defined function that will be called each time a node "
+                                          "is about to be deleted. This will be called in addition to the Before Node Removal "
+                                          " callback of the project for the group node and all nodes within it (not recursively).\n"
+                                          "This function will not be called when the project is closing.\n"
+                                          "The signature of the callback is: callback(thisNode, app) where:\n"
+                                          "- thisNode: the node about to be deleted\n"
+                                          "- app: points to the current application instance.") );
         onNodeDeleted->setAnimationEnabled(false);
         _imp->nodeRemovalCallback = onNodeDeleted;
         settingsPage->addKnob(onNodeDeleted);
@@ -3284,19 +3272,19 @@ Node::createInfoPage()
     infoPage->setName(NATRON_PARAMETER_PAGE_NAME_INFO);
     _imp->infoPage = infoPage;
 
-    boost::shared_ptr<KnobString> nodeInfos = AppManager::createKnob<KnobString>(_imp->effect.get(), "", 1, false);
+    boost::shared_ptr<KnobString> nodeInfos = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
     nodeInfos->setName("nodeInfos");
     nodeInfos->setAnimationEnabled(false);
     nodeInfos->setIsPersistant(false);
     nodeInfos->setAsMultiLine();
     nodeInfos->setAsCustomHTMLText(true);
     nodeInfos->setEvaluateOnChange(false);
-    nodeInfos->setHintToolTip( tr("Input and output informations, press Refresh to update them with current values").toStdString() );
+    nodeInfos->setHintToolTip( tr("Input and output informations, press Refresh to update them with current values") );
     infoPage->addKnob(nodeInfos);
     _imp->nodeInfos = nodeInfos;
 
 
-    boost::shared_ptr<KnobButton> refreshInfoButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Refresh Info").toStdString(), 1, false);
+    boost::shared_ptr<KnobButton> refreshInfoButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Refresh Info"), 1, false);
     refreshInfoButton->setName("refreshButton");
     refreshInfoButton->setEvaluateOnChange(false);
     infoPage->addKnob(refreshInfoButton);
@@ -3306,8 +3294,8 @@ Node::createInfoPage()
 void
 Node::createPythonPage()
 {
-    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr("Python").toStdString(), 1, false);
-    boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render").toStdString(), 1, false);
+    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr("Python"), 1, false);
+    boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render"), 1, false);
 
     beforeFrameRender->setName("beforeFrameRender");
     beforeFrameRender->setAnimationEnabled(false);
@@ -3316,22 +3304,22 @@ Node::createPythonPage()
                                           "The signature of the callback is: callback(frame, thisNode, app) where:\n"
                                           "- frame: the frame to be rendered\n"
                                           "- thisNode: points to the writer node\n"
-                                          "- app: points to the current application instance").toStdString() );
+                                          "- app: points to the current application instance") );
     pythonPage->addKnob(beforeFrameRender);
     _imp->beforeFrameRender = beforeFrameRender;
 
-    boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render"), 1, false);
     beforeRender->setName("beforeRender");
     beforeRender->setAnimationEnabled(false);
     beforeRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
                                      "starting rendering.\n "
                                      "The signature of the callback is: callback(thisNode, app) where:\n"
                                      "- thisNode: points to the writer node\n"
-                                     "- app: points to the current application instance").toStdString() );
+                                     "- app: points to the current application instance") );
     pythonPage->addKnob(beforeRender);
     _imp->beforeRender = beforeRender;
 
-    boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render"), 1, false);
     afterFrameRender->setName("afterFrameRender");
     afterFrameRender->setAnimationEnabled(false);
     afterFrameRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
@@ -3339,11 +3327,11 @@ Node::createPythonPage()
                                          "The signature of the callback is: callback(frame, thisNode, app) where:\n"
                                          "- frame: the frame that has been rendered\n"
                                          "- thisNode: points to the writer node\n"
-                                         "- app: points to the current application instance").toStdString() );
+                                         "- app: points to the current application instance") );
     pythonPage->addKnob(afterFrameRender);
     _imp->afterFrameRender = afterFrameRender;
 
-    boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render").toStdString(), 1, false);
+    boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render"), 1, false);
     afterRender->setName("afterRender");
     afterRender->setAnimationEnabled(false);
     afterRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
@@ -3351,7 +3339,7 @@ Node::createPythonPage()
                                     "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
                                     "- aborted: True if the render ended because it was aborted, False upon completion\n"
                                     "- thisNode: points to the writer node\n"
-                                    "- app: points to the current application instance").toStdString() );
+                                    "- app: points to the current application instance") );
     pythonPage->addKnob(afterRender);
     _imp->afterRender = afterRender;
 } // Node::createPythonPage
@@ -3359,10 +3347,10 @@ Node::createPythonPage()
 void
 Node::createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage)
 {
-    boost::shared_ptr<KnobDouble> mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect.get(), "Mix", 1, false);
+    boost::shared_ptr<KnobDouble> mixKnob = AppManager::createKnob<KnobDouble>(_imp->effect.get(), tr("Mix"), 1, false);
 
     mixKnob->setName("hostMix");
-    mixKnob->setHintToolTip("Mix between the source image at 0 and the full effect at 1.");
+    mixKnob->setHintToolTip( tr("Mix between the source image at 0 and the full effect at 1.") );
     mixKnob->setMinimum(0.);
     mixKnob->setMaximum(1.);
     mixKnob->setDefaultValue(1.);
@@ -3396,12 +3384,12 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
             std::string enableMaskName(std::string(kEnableMaskKnobName) + "_" + inputLabels[i]);
             enabled->setName(enableMaskName);
             enabled->setHintToolTip( tr("Enable the mask to come from the channel named by the choice parameter on the right. "
-                                        "Turning this off will act as though the mask was disconnected.").toStdString() );
+                                        "Turning this off will act as though the mask was disconnected.") );
         } else {
             std::string enableMaskName(std::string(kEnableInputKnobName) + "_" + inputLabels[i]);
             enabled->setName(enableMaskName);
             enabled->setHintToolTip( tr("Enable the image to come from the channel named by the choice parameter on the right. "
-                                        "Turning this off will act as though the input was disconnected.").toStdString() );
+                                        "Turning this off will act as though the input was disconnected.") );
         }
         enabled->setAnimationEnabled(false);
         if (mainPage) {
@@ -3411,7 +3399,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
 
         sel.enabled = enabled;
 
-        boost::shared_ptr<KnobChoice> channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), "", 1, false);
+        boost::shared_ptr<KnobChoice> channel = AppManager::createKnob<KnobChoice>(_imp->effect.get(), std::string(), 1, false);
         std::vector<std::string> choices;
         choices.push_back("None");
 
@@ -3433,7 +3421,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
         channel->setDefaultValue(choices.size() - 1, 0);
         channel->setAnimationEnabled(false);
         channel->setHintToolTip( tr("Use this channel from the original input to mix the output with the original input. "
-                                    "Setting this to None is the same as disconnecting the input.").toStdString() );
+                                    "Setting this to None is the same as disconnecting the input.") );
         if (hasMaskChannelSelector[i].second) {
             std::string channelMaskName(std::string(kMaskChannelKnobName) + "_" + inputLabels[i]);
             channel->setName(channelMaskName);
@@ -3465,10 +3453,10 @@ void
 Node::createWriterFrameStepKnob(const boost::shared_ptr<KnobPage>& mainPage)
 {
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), kNatronWriteParamFrameStepLabel, 1, false);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr(kNatronWriteParamFrameStepLabel), 1, false);
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
-    frameIncrKnob->setHintToolTip(kNatronWriteParamFrameStepHint);
+    frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
@@ -3506,7 +3494,7 @@ Node::getOrCreateMainPage()
         }
     }
     if (!mainPage) {
-        mainPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), "Settings");
+        mainPage = AppManager::createKnob<KnobPage>( _imp->effect.get(), tr("Settings") );
     }
 
     return mainPage;
@@ -3524,7 +3512,7 @@ Node::createLabelKnob(const boost::shared_ptr<KnobPage>& settingsPage,
     nodeLabel->setEvaluateOnChange(false);
     nodeLabel->setAsMultiLine();
     nodeLabel->setUsesRichText(true);
-    nodeLabel->setHintToolTip( tr("This label gets appended to the node name on the node graph.").toStdString() );
+    nodeLabel->setHintToolTip( tr("This label gets appended to the node name on the node graph.") );
     settingsPage->addKnob(nodeLabel);
     _imp->nodeLabelKnob = nodeLabel;
 }
@@ -3590,17 +3578,17 @@ Node::findOrCreateChannelEnabled(const boost::shared_ptr<KnobPage>& mainPage)
     }
     if ( !isWriter && foundAll && !getApp()->isBackground() ) {
         _imp->enabledChan[3].lock()->setAddNewLine(false);
-        boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), "", 1, false);
+        boost::shared_ptr<KnobString> premultWarning = AppManager::createKnob<KnobString>(_imp->effect.get(), std::string(), 1, false);
         premultWarning->setIconLabel("dialog-warning");
         premultWarning->setSecretByDefault(true);
         premultWarning->setAsLabel();
         premultWarning->setEvaluateOnChange(false);
         premultWarning->setIsPersistant(false);
-        premultWarning->setHintToolTip( QObject::tr("The alpha checkbox is checked and the RGB "
-                                                    "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
-                                                    "may be incorrect because the alpha channel changed but their value did not. "
-                                                    "To fix this, either check all RGB channels (or uncheck alpha) or unpremultiply the "
-                                                    "input image first.").toStdString() );
+        premultWarning->setHintToolTip( tr("The alpha checkbox is checked and the RGB "
+                                           "channels in output are alpha-premultiplied. Any of the unchecked RGB channel "
+                                           "may be incorrect because the alpha channel changed but their value did not. "
+                                           "To fix this, either check all RGB channels (or uncheck alpha) or unpremultiply the "
+                                           "input image first.").toStdString() );
         mainPage->insertKnob(4, premultWarning);
         _imp->premultWarning = premultWarning;
     }
@@ -3632,7 +3620,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
 #endif
 
     //Add the "Node" page
-    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), NATRON_PARAMETER_PAGE_NAME_EXTRA, 1, false);
+    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr(NATRON_PARAMETER_PAGE_NAME_EXTRA), 1, false);
     _imp->nodeSettingsPage = settingsPage;
 
     //Create the "Label" knob
@@ -3733,7 +3721,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
                     KnobsVec::iterator prev = it;
                     --prev;
                     if ( !dynamic_cast<KnobSeparator*>( prev->get() ) ) {
-                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), "", 1, false);
+                        boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(_imp->effect.get(), std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
                     }
@@ -3748,16 +3736,18 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
     createNodePage(settingsPage, renderScaleSupportPref);
     createInfoPage();
 
-    if ( _imp->effect->isWriter() ) {
+    if (_imp->effect->isWriter()
+#ifdef NATRON_ENABLE_IO_META_NODES
+        && !ioContainer
+#endif
+        ) {
         //Create a frame step parameter for writers, and control it in OutputSchedulerThread.cpp
 #ifndef NATRON_ENABLE_IO_META_NODES
         createWriterFrameStepKnob(mainPage);
-#else
-        if (!ioContainer) {
 #endif
 
-        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), "Render", 1, false);
-        renderButton->setHintToolTip("Starts rendering the specified frame range.");
+        boost::shared_ptr<KnobButton> renderButton = AppManager::createKnob<KnobButton>(_imp->effect.get(), tr("Render"), 1, false);
+        renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
         renderButton->setName("startRender");
         renderButton->setEvaluateOnChange(false);
@@ -3765,9 +3755,6 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
         mainPage->addKnob(renderButton);
 
         createPythonPage();
-#ifdef NATRON_ENABLE_IO_META_NODES
-    }
-#endif
     }
 } // Node::initializeDefaultKnobs
 
@@ -3818,7 +3805,7 @@ Node::Implementation::createChannelSelector(int inputNb,
     ChannelSelector sel;
 
     sel.hasAllChoice = isOutput;
-    boost::shared_ptr<KnobChoice> layer = AppManager::createKnob<KnobChoice>(effect.get(), isOutput ? "Output Layer" : inputName + " Layer", 1, false);
+    boost::shared_ptr<KnobChoice> layer = AppManager::createKnob<KnobChoice>(effect.get(), isOutput ? tr("Output Layer") : tr("%1 Layer").arg( QString::fromUtf8( inputName.c_str() ) ), 1, false);
     layer->setHostCanAddOptions(isOutput);
     if (!isOutput) {
         layer->setName( inputName + std::string("_") + std::string(kOutputChannelsKnobName) );
@@ -3826,9 +3813,9 @@ Node::Implementation::createChannelSelector(int inputNb,
         layer->setName(kOutputChannelsKnobName);
     }
     if (isOutput) {
-        layer->setHintToolTip("Select here the layer onto which the processing should occur.");
+        layer->setHintToolTip( tr("Select here the layer onto which the processing should occur.") );
     } else {
-        layer->setHintToolTip("Select here the layer that will be used in input by " + inputName);
+        layer->setHintToolTip( tr("Select here the layer that will be used in input by %1.").arg( QString::fromUtf8( inputName.c_str() ) ) );
     }
     layer->setAnimationEnabled(false);
     layer->setSecretByDefault(!isOutput);
@@ -3982,30 +3969,30 @@ Node::makeHTMLDocumentation(bool offline) const
 
     ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
     ts << "<html><head>";
-    ts << "<title>" << pluginLabel << " - Natron 2.0 documentation</title>"; /// version string will be replaced in parser
+    ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>"; /// version string will be replaced in parser
     ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
     ts << "</head><body>";
 
-    ts << "<div class=\"related\"><h3>Navigation</h3><ul>";
+    ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
 
     if (offline) {
-        ts << "<li><a href=\"index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+        ts << "<li><a href=\"index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
     } else {
-        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
+        ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
     }
     if (offline) {
-        ts << "<li><a href=\"_group.html\">Reference Guide</a> &raquo;</li>";
+        ts << "<li><a href=\"_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
     } else {
-        ts << "<li><a href=\"/_group.html\">Reference Guide</a> &raquo;</li>";
+        ts << "<li><a href=\"/_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
     }
 
     if ( !pluginGroup.isEmpty() ) {
         QString group = pluginGroup.at(0);
         if ( !group.isEmpty() ) {
             if (offline) {
-                ts << "<li><a href=\"group" << group << ".html\">" << group << "</a> &raquo;</li>";
+                ts << "<li><a href=\"group" << group << ".html\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
             } else {
-                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
+                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
             }
         }
     }
@@ -4025,13 +4012,13 @@ Node::makeHTMLDocumentation(bool offline) const
     pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
 
     ts << "<p>" << pluginDescription << "</p>";
-    ts << "<h3>" << "Inputs & Controls" << "</h3>";
+    ts << "<h3>" << tr("Inputs & Controls") << "</h3>";
 
     ts << "<table class=\"knobsTable\">";
-    ts << "<td class=\"knobsTableHeader\">Label (UI Name)</td>";
-    ts << "<td class=\"knobsTableHeader\">Script-Name</td>";
-    ts << "<td class=\"knobsTableHeader\">Default-Value</td>";
-    ts << "<td class=\"knobsTableHeader\">Function</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Label (UI Name)") << "</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Script-Name") << "</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Default-Value") << "</td>";
+    ts << "<td class=\"knobsTableHeader\">" << tr("Function") << "</td>";
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -4459,7 +4446,7 @@ Node::initializeInputs()
     _imp->inputsInitialized = true;
 
     Q_EMIT inputsInitialized();
-}
+} // Node::initializeInputs
 
 NodePtr
 Node::getInput(int index) const
@@ -6036,9 +6023,9 @@ Node::makePreviewImage(SequenceTime time,
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
 #ifdef QT_CUSTOM_THREADPOOL
-        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, thisNode->getEffectInstance());
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
         }
 #endif
         ParallelRenderArgsSetter frameRenderArgs( time,
@@ -6547,13 +6534,12 @@ Node::notifyInputNIsRendering(int inputNb)
     gettimeofday(&now, 0);
 
     QMutexLocker l(&_imp->lastRenderStartedMutex);
-
     double t =  now.tv_sec  - _imp->lastInputNRenderStartedSlotCallTime.tv_sec +
                (now.tv_usec - _imp->lastInputNRenderStartedSlotCallTime.tv_usec) * 1e-6f;
 
-    assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
+    assert( inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size() );
 
-    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS || _imp->inputIsRenderingCounter[inputNb] == 0) {
+    if ( (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS) || (_imp->inputIsRenderingCounter[inputNb] == 0) ) {
         _imp->lastInputNRenderStartedSlotCallTime = now;
         ++_imp->inputIsRenderingCounter[inputNb];
 
@@ -6572,7 +6558,7 @@ Node::notifyInputNIsFinishedRendering(int inputNb)
 {
     {
         QMutexLocker l(&_imp->lastRenderStartedMutex);
-        assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
+        assert( inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size() );
         --_imp->inputIsRenderingCounter[inputNb];
     }
     Q_EMIT inputNIsFinishedRendering(inputNb);
@@ -6589,12 +6575,12 @@ Node::notifyRenderingStarted()
 
     gettimeofday(&now, 0);
 
-    
+
     QMutexLocker l(&_imp->lastRenderStartedMutex);
     double t =  now.tv_sec  - _imp->lastRenderStartedSlotCallTime.tv_sec +
                (now.tv_usec - _imp->lastRenderStartedSlotCallTime.tv_usec) * 1e-6f;
 
-    if (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS || _imp->renderStartedCounter == 0) {
+    if ( (t > NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS) || (_imp->renderStartedCounter == 0) ) {
         _imp->lastRenderStartedSlotCallTime = now;
         ++_imp->renderStartedCounter;
 
@@ -6623,7 +6609,9 @@ int
 Node::getIsInputNRenderingCounter(int inputNb) const
 {
     QMutexLocker l(&_imp->lastRenderStartedMutex);
-    assert(inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size());
+
+    assert( inputNb >= 0 && inputNb < (int)_imp->inputIsRenderingCounter.size() );
+
     return _imp->inputIsRenderingCounter[inputNb];
 }
 
@@ -6631,6 +6619,7 @@ int
 Node::getIsNodeRenderingCounter() const
 {
     QMutexLocker l(&_imp->lastRenderStartedMutex);
+
     return _imp->renderStartedCounter;
 }
 
@@ -7118,9 +7107,9 @@ Node::onInputChanged(int inputNb)
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
 #ifdef QT_CUSTOM_THREADPOOL
-        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+        AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
-            isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, getEffectInstance());
+            isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
         }
 #endif
         ParallelRenderArgsSetter frameRenderArgs( time,
@@ -7913,11 +7902,9 @@ Node::refreshCreatedViews(KnobI* knob)
             }
             ss << std::endl;
             ss << std::endl;
-            ss << QObject::tr("These views are in").toStdString() << ' ' << filename << ' '
-               << QObject::tr("but do not exist in the project.").toStdString() << std::endl;
-            ss << QObject::tr("Would you like to create them?").toStdString();
+            ss << tr("These views are in %1 but do not exist in the project.\nWould you like to create them?").arg( QString::fromUtf8( filename.c_str() ) ).toStdString();
             std::string question  = ss.str();
-            StandardButtonEnum rep = Dialogs::questionDialog("Views available", question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
+            StandardButtonEnum rep = Dialogs::questionDialog(tr("Views available").toStdString(), question, false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonYes);
             if (rep == eStandardButtonYes) {
                 std::vector<std::string> viewsToCreate;
                 for (QStringList::Iterator it = missingViews.begin(); it != missingViews.end(); ++it) {
@@ -10078,7 +10065,7 @@ Node::Implementation::runInputChangedCallback(int index,
     std::string script = ss.str();
     std::string output;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &error, &output) ) {
-        _publicInterface->getApp()->appendToScriptEditor(QObject::tr("Failed to execute callback: ").toStdString() + error);
+        _publicInterface->getApp()->appendToScriptEditor( tr("Failed to execute callback: %1").arg( QString::fromUtf8( error.c_str() ) ).toStdString() );
     } else {
         if ( !output.empty() ) {
             _publicInterface->getApp()->appendToScriptEditor(output);

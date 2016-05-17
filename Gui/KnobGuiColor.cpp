@@ -44,7 +44,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QFontComboBox>
 #include <QDialogButtonBox>
 CLANG_DIAG_ON(deprecated)
@@ -209,7 +209,7 @@ KnobGuiColor::KnobGuiColor(KnobPtr knob,
     , _colorLabel(0)
     , _colorDialogButton(0)
     , _lastColor( knob->getDimension() )
-    , _useSimplifiedUI(isViewerUIKnob() || _knob.lock()->isSimplified())
+    , _useSimplifiedUI( isViewerUIKnob() || _knob.lock()->isSimplified() )
 {
 }
 
@@ -250,7 +250,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     containerLayout->addSpacing( TO_DPIX(10) );
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     _colorLabel = new ColorPickerLabel( _useSimplifiedUI ? NULL : this, containerLayout->widget() );
-    if ( !_useSimplifiedUI ) {
+    if (!_useSimplifiedUI) {
         _colorLabel->setToolTip( GuiUtils::convertFromPlainText(tr("To pick a color on a viewer, click this and then press control + left click on any viewer.\n"
                                                                    "You can also pick the average color of a given rectangle by holding control + shift + left click\n. "
                                                                    "To deselect the picker left click anywhere."
@@ -266,7 +266,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     QObject::connect( _colorLabel, SIGNAL(pickingEnabled(bool)), this, SLOT(onPickingEnabled(bool)) );
     containerLayout->addWidget(_colorLabel);
 
-    if ( _useSimplifiedUI ) {
+    if (_useSimplifiedUI) {
         containerLayout->addSpacing( TO_DPIX(5) );
     }
 
@@ -280,7 +280,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     QObject::connect( _colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()) );
     containerLayout->addWidget(_colorDialogButton);
 
-    if ( _useSimplifiedUI ) {
+    if (_useSimplifiedUI) {
         KnobGuiValue::_hide();
         enableRightClickMenu(_colorLabel, -1);
     }
@@ -334,7 +334,7 @@ KnobGuiColor::onPickingEnabled(bool enabled)
 void
 KnobGuiColor::_hide()
 {
-    if ( !_useSimplifiedUI ) {
+    if (!_useSimplifiedUI) {
         KnobGuiValue::_hide();
     }
     _colorLabel->hide();
@@ -344,7 +344,7 @@ KnobGuiColor::_hide()
 void
 KnobGuiColor::_show()
 {
-    if ( !_useSimplifiedUI ) {
+    if (!_useSimplifiedUI) {
         KnobGuiValue::_show();
     }
     _colorLabel->show();

@@ -30,6 +30,7 @@
 #include <list>
 #include <map>
 
+
 #include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"
 
@@ -42,6 +43,8 @@ struct RotoPaintInteract;
 class MoveControlPointsUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveControlPointsUndoCommand)
+
 public:
 
     MoveControlPointsUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -75,6 +78,8 @@ private:
 class TransformUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(TransformUndoCommand)
+
 public:
 
     enum TransformPointsSelectionEnum
@@ -121,6 +126,8 @@ private:
 class AddPointUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddPointUndoCommand)
+
 public:
 
     AddPointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -146,6 +153,9 @@ private:
 class RemovePointUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemovePointUndoCommand)
+
+private:
     struct CurveDesc
     {
         boost::shared_ptr<RotoDrawableItem> oldCurve, curve;
@@ -188,6 +198,9 @@ private:
 class RemoveCurveUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveCurveUndoCommand)
+
+private:
     struct RemovedCurve
     {
         boost::shared_ptr<RotoDrawableItem> curve;
@@ -215,6 +228,8 @@ private:
 class AddStrokeUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddStrokeUndoCommand)
+
 public:
 
     AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto, const boost::shared_ptr<RotoStrokeItem>& item);
@@ -235,6 +250,8 @@ private:
 class AddMultiStrokeUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddMultiStrokeUndoCommand)
+
 public:
 
     AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto, const boost::shared_ptr<RotoStrokeItem>& item);
@@ -258,6 +275,8 @@ private:
 class MoveTangentUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveTangentUndoCommand)
+
 public:
 
     MoveTangentUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -293,6 +312,8 @@ private:
 class MoveFeatherBarUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveFeatherBarUndoCommand)
+
 public:
 
     MoveFeatherBarUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -322,6 +343,8 @@ private:
 class RemoveFeatherUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveFeatherUndoCommand)
+
 public:
 
     struct RemoveFeatherData
@@ -348,8 +371,9 @@ private:
 class OpenCloseUndoCommand
     : public UndoCommand
 {
-public:
+    Q_DECLARE_TR_FUNCTIONS(OpenCloseUndoCommand)
 
+public:
 
     OpenCloseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                          const boost::shared_ptr<Bezier> & curve);
@@ -371,6 +395,8 @@ private:
 class SmoothCuspUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(SmoothCuspUndoCommand)
+
 public:
 
     typedef std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > SelectedPointList;
@@ -406,6 +432,8 @@ private:
 class MakeBezierUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MakeBezierUndoCommand)
+
 public:
 
     MakeBezierUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -445,6 +473,8 @@ private:
 class MakeEllipseUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MakeEllipseUndoCommand)
+
 public:
 
     MakeEllipseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -481,6 +511,8 @@ private:
 class MakeRectangleUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MakeRectangleUndoCommand)
+
 public:
 
     MakeRectangleUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
@@ -515,11 +547,13 @@ private:
 
 
 
+
 class LinkToTrackUndoCommand
     : public UndoCommand
 {
-public:
+    Q_DECLARE_TR_FUNCTIONS(LinkToTrackUndoCommand)
 
+public:
 
     LinkToTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                            const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points,
@@ -540,6 +574,9 @@ private:
 class UnLinkFromTrackUndoCommand
     : public UndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(UnLinkFromTrackUndoCommand)
+
+private:
     struct PointToUnlink
     {
         boost::shared_ptr<BezierCP> cp;

@@ -27,7 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
@@ -134,6 +134,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , inputNamesMap()
     , compOperatorMutex()
     , compOperator(eViewerCompositingOperatorNone)
+    , compOperatorPrevious(eViewerCompositingOperatorWipeUnder)
     , viewerNode(node)
     , visibleToolbarsMutex()
     , infobarVisible(true)

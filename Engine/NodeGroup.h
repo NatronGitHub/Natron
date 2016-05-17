@@ -48,6 +48,8 @@ struct NodeCollectionPrivate;
 
 class NodeCollection
 {
+    Q_DECLARE_TR_FUNCTIONS(NodeCollection)
+
 public:
     NodeCollection(AppInstance* app);
 

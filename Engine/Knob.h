@@ -36,6 +36,8 @@
 
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QMutex>
+#include <QtCore/QString>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/Variant.h"
 #include "Engine/AppManager.h"
@@ -1013,6 +1015,16 @@ public:
      **/
     virtual void setHintToolTip(const std::string & hint) = 0;
 
+    void setHintToolTip(const QString & hint)
+    {
+        setHintToolTip( hint.toStdString() );
+    }
+
+    //void setHintToolTip(const char* hint)
+    //{
+    //    setHintToolTip(std::string(hint));
+    //}
+
     /**
      * @brief Get the tooltip text.
      **/
@@ -1200,6 +1212,9 @@ struct KnobHelperPrivate;
 class KnobHelper
     : public KnobI
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobHelper)
+
+    // friends
     friend class KnobHolder;
 
 public:
@@ -1398,7 +1413,7 @@ public:
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     void setLabel(const std::string& label) OVERRIDE FINAL;
-    virtual void setIconLabel(const std::string& iconFilePath,bool checked = false) OVERRIDE FINAL;
+    virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) OVERRIDE FINAL;
     virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHolder(KnobHolder* holder) OVERRIDE FINAL;
@@ -1449,6 +1464,9 @@ public:
     virtual void setIsMetadataSlave(bool slave) OVERRIDE FINAL;
     virtual bool getIsMetadataSlave() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setHintToolTip(const std::string & hint) OVERRIDE FINAL;
+    void setHintToolTip(const QString & hint) { setHintToolTip( hint.toStdString() ); }
+
+    //void setHintToolTip(const char* hint) { setHintToolTip(std::string(hint)); }
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
     virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -2165,10 +2183,11 @@ private:
 class KnobHolder
     : public QObject
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class RecursionLevelRAII;
-
     struct KnobHolderPrivate;
     boost::scoped_ptr<KnobHolderPrivate> _imp;
 

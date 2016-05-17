@@ -275,10 +275,16 @@ KnobGui::enableRightClickMenu(QWidget* widget,
 bool
 KnobGui::shouldCreateLabel() const
 {
+#if 0
     KnobPtr knob = getKnob();
     KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
 
     return isStringKnob;
+#else
+#pragma message WARN("KnobGui::shouldCreateLabel() hack")
+
+    return true;
+#endif
 }
 
 bool
@@ -749,7 +755,7 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
                 StandardButtonEnum rep = Dialogs::questionDialog( tr("Expression").toStdString(), tr("This operation will create "
                                                                                                      "an expression link between this parameter and the new parameter on the group"
                                                                                                      " which will wipe the current expression(s).\n"
-                                                                                                     "Continue anyway ?").toStdString(), false,
+                                                                                                     "Continue anyway?").toStdString(), false,
                                                                   StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
                 if (rep != eStandardButtonYes) {
                     return KnobPtr();

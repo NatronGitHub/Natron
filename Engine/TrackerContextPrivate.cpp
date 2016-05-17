@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
+
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -168,7 +169,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             args.addToProject = false;
             NodePtr cpNode = node->getApp()->createNode(args);
             if (!cpNode) {
-                throw std::runtime_error( QObject::tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
+                throw std::runtime_error( tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
             }
             cpNode->setNodeDisabled(true);
             cornerPinNode = cpNode;
@@ -191,15 +192,15 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         }
     }
 
-    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), "Tracking", 1, false);
-    boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), "Transform", 1, false);
+    boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Tracking"), 1, false);
+    boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Transform"), 1, false);
     transformPageKnob = transformPage;
 
 
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
-    boost::shared_ptr<KnobBool> enablePatternMatching = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamUsePatternMatchingLabel, 1);
+    boost::shared_ptr<KnobBool> enablePatternMatching = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamUsePatternMatchingLabel), 1);
     enablePatternMatching->setName(kTrackerParamUsePatternMatching);
-    enablePatternMatching->setHintToolTip(kTrackerParamUsePatternMatchingHint);
+    enablePatternMatching->setHintToolTip( tr(kTrackerParamUsePatternMatchingHint) );
     enablePatternMatching->setDefaultValue(false);
     enablePatternMatching->setAnimationEnabled(false);
     enablePatternMatching->setAddNewLine(false);
@@ -207,9 +208,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(enablePatternMatching);
     usePatternMatching = enablePatternMatching;
 
-    boost::shared_ptr<KnobChoice> patternMatchingScoreKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamPatternMatchingScoreTypeLabel, 1, false);
+    boost::shared_ptr<KnobChoice> patternMatchingScoreKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kTrackerParamPatternMatchingScoreTypeLabel), 1, false);
     patternMatchingScoreKnob->setName(kTrackerParamPatternMatchingScoreType);
-    patternMatchingScoreKnob->setHintToolTip(kTrackerParamPatternMatchingScoreTypeHint);
+    patternMatchingScoreKnob->setHintToolTip( tr(kTrackerParamPatternMatchingScoreTypeHint) );
     {
         std::vector<std::string> choices, helps;
         choices.push_back(kTrackerParamPatternMatchingScoreOptionSSD);
@@ -229,9 +230,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     patternMatchingScore = patternMatchingScoreKnob;
 #endif
 
-    boost::shared_ptr<KnobBool> enableTrackRedKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackRedLabel, 1, false);
+    boost::shared_ptr<KnobBool> enableTrackRedKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamTrackRedLabel), 1, false);
     enableTrackRedKnob->setName(kTrackerParamTrackRed);
-    enableTrackRedKnob->setHintToolTip(kTrackerParamTrackRedHint);
+    enableTrackRedKnob->setHintToolTip( tr(kTrackerParamTrackRedHint) );
     enableTrackRedKnob->setDefaultValue(true);
     enableTrackRedKnob->setAnimationEnabled(false);
     enableTrackRedKnob->setAddNewLine(false);
@@ -239,9 +240,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(enableTrackRedKnob);
     enableTrackRed = enableTrackRedKnob;
 
-    boost::shared_ptr<KnobBool> enableTrackGreenKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackGreenLabel, 1, false);
+    boost::shared_ptr<KnobBool> enableTrackGreenKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamTrackGreenLabel), 1, false);
     enableTrackGreenKnob->setName(kTrackerParamTrackGreen);
-    enableTrackGreenKnob->setHintToolTip(kTrackerParamTrackGreenHint);
+    enableTrackGreenKnob->setHintToolTip( tr(kTrackerParamTrackGreenHint) );
     enableTrackGreenKnob->setDefaultValue(true);
     enableTrackGreenKnob->setAnimationEnabled(false);
     enableTrackGreenKnob->setAddNewLine(false);
@@ -249,18 +250,18 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(enableTrackGreenKnob);
     enableTrackGreen = enableTrackGreenKnob;
 
-    boost::shared_ptr<KnobBool> enableTrackBlueKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamTrackBlueLabel, 1, false);
+    boost::shared_ptr<KnobBool> enableTrackBlueKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamTrackBlueLabel), 1, false);
     enableTrackBlueKnob->setName(kTrackerParamTrackBlue);
-    enableTrackBlueKnob->setHintToolTip(kTrackerParamTrackBlueHint);
+    enableTrackBlueKnob->setHintToolTip( tr(kTrackerParamTrackBlueHint) );
     enableTrackBlueKnob->setDefaultValue(true);
     enableTrackBlueKnob->setAnimationEnabled(false);
     enableTrackBlueKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(enableTrackBlueKnob);
     enableTrackBlue = enableTrackBlueKnob;
 
-    boost::shared_ptr<KnobDouble> maxErrorKnob = AppManager::createKnob<KnobDouble>(effect.get(), kTrackerParamMaxErrorLabel, 1, false);
+    boost::shared_ptr<KnobDouble> maxErrorKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kTrackerParamMaxErrorLabel), 1, false);
     maxErrorKnob->setName(kTrackerParamMaxError);
-    maxErrorKnob->setHintToolTip(kTrackerParamMaxErrorHint);
+    maxErrorKnob->setHintToolTip( tr(kTrackerParamMaxErrorHint) );
     maxErrorKnob->setAnimationEnabled(false);
     maxErrorKnob->setMinimum(0.);
     maxErrorKnob->setMaximum(1.);
@@ -269,9 +270,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(maxErrorKnob);
     maxError = maxErrorKnob;
 
-    boost::shared_ptr<KnobInt> maxItKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamMaximumIterationLabel, 1, false);
+    boost::shared_ptr<KnobInt> maxItKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamMaximumIterationLabel), 1, false);
     maxItKnob->setName(kTrackerParamMaximumIteration);
-    maxItKnob->setHintToolTip(kTrackerParamMaximumIterationHint);
+    maxItKnob->setHintToolTip( tr(kTrackerParamMaximumIterationHint) );
     maxItKnob->setAnimationEnabled(false);
     maxItKnob->setMinimum(0);
     maxItKnob->setMaximum(150);
@@ -280,9 +281,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(maxItKnob);
     maxIterations = maxItKnob;
 
-    boost::shared_ptr<KnobBool> usePretTrackBF = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamBruteForcePreTrackLabel, 1, false);
+    boost::shared_ptr<KnobBool> usePretTrackBF = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamBruteForcePreTrackLabel), 1, false);
     usePretTrackBF->setName(kTrackerParamBruteForcePreTrack);
-    usePretTrackBF->setHintToolTip(kTrackerParamBruteForcePreTrackHint);
+    usePretTrackBF->setHintToolTip( tr(kTrackerParamBruteForcePreTrackHint) );
     usePretTrackBF->setDefaultValue(true);
     usePretTrackBF->setAnimationEnabled(false);
     usePretTrackBF->setEvaluateOnChange(false);
@@ -290,18 +291,18 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(usePretTrackBF);
     bruteForcePreTrack = usePretTrackBF;
 
-    boost::shared_ptr<KnobBool> useNormalizedInt = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamNormalizeIntensitiesLabel, 1, false);
+    boost::shared_ptr<KnobBool> useNormalizedInt = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamNormalizeIntensitiesLabel), 1, false);
     useNormalizedInt->setName(kTrackerParamNormalizeIntensities);
-    useNormalizedInt->setHintToolTip(kTrackerParamNormalizeIntensitiesHint);
+    useNormalizedInt->setHintToolTip( tr(kTrackerParamNormalizeIntensitiesHint) );
     useNormalizedInt->setDefaultValue(false);
     useNormalizedInt->setAnimationEnabled(false);
     useNormalizedInt->setEvaluateOnChange(false);
     settingsPage->addKnob(useNormalizedInt);
     useNormalizedIntensities = useNormalizedInt;
 
-    boost::shared_ptr<KnobDouble> preBlurSigmaKnob = AppManager::createKnob<KnobDouble>(effect.get(), kTrackerParamPreBlurSigmaLabel, 1, false);
+    boost::shared_ptr<KnobDouble> preBlurSigmaKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kTrackerParamPreBlurSigmaLabel), 1, false);
     preBlurSigmaKnob->setName(kTrackerParamPreBlurSigma);
-    preBlurSigmaKnob->setHintToolTip(kTrackerParamPreBlurSigmaHint);
+    preBlurSigmaKnob->setHintToolTip( tr(kTrackerParamPreBlurSigmaHint) );
     preBlurSigmaKnob->setAnimationEnabled(false);
     preBlurSigmaKnob->setMinimum(0);
     preBlurSigmaKnob->setMaximum(10.);
@@ -310,14 +311,14 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(preBlurSigmaKnob);
     preBlurSigma = preBlurSigmaKnob;
 
-    boost::shared_ptr<KnobSeparator>  perTrackSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), kTrackerParamPerTrackParamsSeparatorLabel, 3);
+    boost::shared_ptr<KnobSeparator>  perTrackSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), tr(kTrackerParamPerTrackParamsSeparatorLabel), 3);
     perTrackSeparatorKnob->setName(kTrackerParamPerTrackParamsSeparator);
     settingsPage->addKnob(perTrackSeparatorKnob);
     perTrackParamsSeparator = perTrackSeparatorKnob;
 
-    boost::shared_ptr<KnobBool> enableTrackKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamEnabledLabel, 1, false);
+    boost::shared_ptr<KnobBool> enableTrackKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamEnabledLabel), 1, false);
     enableTrackKnob->setName(kTrackerParamEnabled);
-    enableTrackKnob->setHintToolTip(kTrackerParamEnabledHint);
+    enableTrackKnob->setHintToolTip( tr(kTrackerParamEnabledHint) );
     enableTrackKnob->setAnimationEnabled(true);
     enableTrackKnob->setDefaultValue(true);
     enableTrackKnob->setEvaluateOnChange(false);
@@ -327,9 +328,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     activateTrack = enableTrackKnob;
     perTrackKnobs.push_back(enableTrackKnob);
 
-    boost::shared_ptr<KnobChoice> motionModelKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamMotionModelLabel, 1, false);
+    boost::shared_ptr<KnobChoice> motionModelKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kTrackerParamMotionModelLabel), 1, false);
     motionModelKnob->setName(kTrackerParamMotionModel);
-    motionModelKnob->setHintToolTip(kTrackerParamMotionModelHint);
+    motionModelKnob->setHintToolTip( tr(kTrackerParamMotionModelHint) );
     {
         std::vector<std::string> choices, helps;
         TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
@@ -343,13 +344,13 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(motionModelKnob);
 
 
-    boost::shared_ptr<KnobSeparator>  transformGenerationSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Generation", 3);
+    boost::shared_ptr<KnobSeparator>  transformGenerationSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), tr("Transform Generation"), 3);
     transformPage->addKnob(transformGenerationSeparatorKnob);
     transformGenerationSeparator = transformGenerationSeparatorKnob;
 
-    boost::shared_ptr<KnobChoice> motionTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamMotionTypeLabel, 1);
+    boost::shared_ptr<KnobChoice> motionTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kTrackerParamMotionTypeLabel), 1);
     motionTypeKnob->setName(kTrackerParamMotionType);
-    motionTypeKnob->setHintToolTip(kTrackerParamMotionTypeHint);
+    motionTypeKnob->setHintToolTip( tr(kTrackerParamMotionTypeHint) );
     {
         std::vector<std::string> choices, helps;
         choices.push_back(kTrackerParamMotionTypeNone);
@@ -369,9 +370,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     motionType = motionTypeKnob;
     transformPage->addKnob(motionTypeKnob);
 
-    boost::shared_ptr<KnobChoice> transformTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), kTrackerParamTransformTypeLabel, 1);
+    boost::shared_ptr<KnobChoice> transformTypeKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kTrackerParamTransformTypeLabel), 1);
     transformTypeKnob->setName(kTrackerParamTransformType);
-    transformTypeKnob->setHintToolTip(kTrackerParamTransformTypeHint);
+    transformTypeKnob->setHintToolTip( tr(kTrackerParamTransformTypeHint) );
     {
         std::vector<std::string> choices, helps;
         choices.push_back(kTrackerParamTransformTypeTransform);
@@ -384,9 +385,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformType = transformTypeKnob;
     transformPage->addKnob(transformTypeKnob);
 
-    boost::shared_ptr<KnobInt> referenceFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamReferenceFrameLabel, 1);
+    boost::shared_ptr<KnobInt> referenceFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamReferenceFrameLabel), 1);
     referenceFrameKnob->setName(kTrackerParamReferenceFrame);
-    referenceFrameKnob->setHintToolTip(kTrackerParamReferenceFrameHint);
+    referenceFrameKnob->setHintToolTip( tr(kTrackerParamReferenceFrameHint) );
     referenceFrameKnob->setAnimationEnabled(false);
     referenceFrameKnob->setDefaultValue(0);
     referenceFrameKnob->setAddNewLine(false);
@@ -394,15 +395,15 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(referenceFrameKnob);
     referenceFrame = referenceFrameKnob;
 
-    boost::shared_ptr<KnobButton> setCurrentFrameKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamSetReferenceFrameLabel, 1);
+    boost::shared_ptr<KnobButton> setCurrentFrameKnob = AppManager::createKnob<KnobButton>(effect.get(), tr(kTrackerParamSetReferenceFrameLabel), 1);
     setCurrentFrameKnob->setName(kTrackerParamSetReferenceFrame);
-    setCurrentFrameKnob->setHintToolTip(kTrackerParamSetReferenceFrameHint);
+    setCurrentFrameKnob->setHintToolTip( tr(kTrackerParamSetReferenceFrameHint) );
     transformPage->addKnob(setCurrentFrameKnob);
     setCurrentFrameButton = setCurrentFrameKnob;
 
-    boost::shared_ptr<KnobInt>  jitterPeriodKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamJitterPeriodLabel, 1);
+    boost::shared_ptr<KnobInt>  jitterPeriodKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamJitterPeriodLabel), 1);
     jitterPeriodKnob->setName(kTrackerParamJitterPeriod);
-    jitterPeriodKnob->setHintToolTip(kTrackerParamJitterPeriodHint);
+    jitterPeriodKnob->setHintToolTip( tr(kTrackerParamJitterPeriodHint) );
     jitterPeriodKnob->setAnimationEnabled(false);
     jitterPeriodKnob->setDefaultValue(10);
     jitterPeriodKnob->setMinimum(0, 0);
@@ -410,9 +411,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(jitterPeriodKnob);
     jitterPeriod = jitterPeriodKnob;
 
-    boost::shared_ptr<KnobInt>  smoothTransformKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamSmoothLabel, 3);
+    boost::shared_ptr<KnobInt>  smoothTransformKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamSmoothLabel), 3);
     smoothTransformKnob->setName(kTrackerParamSmooth);
-    smoothTransformKnob->setHintToolTip(kTrackerParamSmoothHint);
+    smoothTransformKnob->setHintToolTip( tr(kTrackerParamSmoothHint) );
     smoothTransformKnob->setAnimationEnabled(false);
     smoothTransformKnob->disableSlider();
     smoothTransformKnob->setDimensionName(0, "t");
@@ -425,9 +426,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(smoothTransformKnob);
     smoothTransform = smoothTransformKnob;
 
-    boost::shared_ptr<KnobInt>  smoothCornerPinKnob = AppManager::createKnob<KnobInt>(effect.get(), kTrackerParamSmoothCornerPinLabel, 1);
+    boost::shared_ptr<KnobInt>  smoothCornerPinKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamSmoothCornerPinLabel), 1);
     smoothCornerPinKnob->setName(kTrackerParamSmoothCornerPin);
-    smoothCornerPinKnob->setHintToolTip(kTrackerParamSmoothCornerPinHint);
+    smoothCornerPinKnob->setHintToolTip( tr(kTrackerParamSmoothCornerPinHint) );
     smoothCornerPinKnob->setAnimationEnabled(false);
     smoothCornerPinKnob->disableSlider();
     smoothCornerPinKnob->setMinimum(0, 0);
@@ -436,9 +437,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(smoothCornerPinKnob);
     smoothCornerPin = smoothCornerPinKnob;
 
-    boost::shared_ptr<KnobBool>  autoGenerateTransformKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamAutoGenerateTransformLabel, 1);
+    boost::shared_ptr<KnobBool>  autoGenerateTransformKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamAutoGenerateTransformLabel), 1);
     autoGenerateTransformKnob->setName(kTrackerParamAutoGenerateTransform);
-    autoGenerateTransformKnob->setHintToolTip(kTrackerParamAutoGenerateTransformHint);
+    autoGenerateTransformKnob->setHintToolTip( tr(kTrackerParamAutoGenerateTransformHint) );
     autoGenerateTransformKnob->setAnimationEnabled(false);
     autoGenerateTransformKnob->setEvaluateOnChange(false);
     autoGenerateTransformKnob->setDefaultValue(true);
@@ -447,17 +448,17 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     autoGenerateTransform = autoGenerateTransformKnob;
 
 
-    boost::shared_ptr<KnobButton> computeTransformKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamGenerateTransformLabel, 1);
+    boost::shared_ptr<KnobButton> computeTransformKnob = AppManager::createKnob<KnobButton>(effect.get(), tr(kTrackerParamGenerateTransformLabel), 1);
     computeTransformKnob->setName(kTrackerParamGenerateTransform);
-    computeTransformKnob->setHintToolTip(kTrackerParamGenerateTransformHint);
+    computeTransformKnob->setHintToolTip( tr(kTrackerParamGenerateTransformHint) );
     computeTransformKnob->setEvaluateOnChange(false);
     //computeTransformKnob->setAddNewLine(false);
     transformPage->addKnob(computeTransformKnob);
     generateTransformButton = computeTransformKnob;
 
-    boost::shared_ptr<KnobBool>  robustModelKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamRobustModelLabel, 1);
+    boost::shared_ptr<KnobBool>  robustModelKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamRobustModelLabel), 1);
     robustModelKnob->setName(kTrackerParamRobustModel);
-    robustModelKnob->setHintToolTip(kTrackerParamRobustModelHint);
+    robustModelKnob->setHintToolTip( tr(kTrackerParamRobustModelHint) );
     robustModelKnob->setAnimationEnabled(false);
     robustModelKnob->setEvaluateOnChange(false);
     robustModelKnob->setDefaultValue(true);
@@ -465,9 +466,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(robustModelKnob);
     robustModel = robustModelKnob;
 
-    boost::shared_ptr<KnobString>  fittingErrorKnob = AppManager::createKnob<KnobString>(effect.get(), kTrackerParamFittingErrorLabel, 1);
+    boost::shared_ptr<KnobString>  fittingErrorKnob = AppManager::createKnob<KnobString>(effect.get(), tr(kTrackerParamFittingErrorLabel), 1);
     fittingErrorKnob->setName(kTrackerParamFittingError);
-    fittingErrorKnob->setHintToolTip(kTrackerParamFittingErrorHint);
+    fittingErrorKnob->setHintToolTip( tr(kTrackerParamFittingErrorHint) );
     fittingErrorKnob->setAnimationEnabled(false);
     fittingErrorKnob->setEvaluateOnChange(false);
     fittingErrorKnob->setAsLabel();
@@ -475,9 +476,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     fittingError = fittingErrorKnob;
 
 
-    boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), "", 1);
+    boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), std::string(), 1);
     transformOutOfDateLabelKnob->setName(kTrackerParamTransformOutOfDate);
-    transformOutOfDateLabelKnob->setHintToolTip(kTrackerParamTransformOutOfDateHint);
+    transformOutOfDateLabelKnob->setHintToolTip( tr(kTrackerParamTransformOutOfDateHint) );
     transformOutOfDateLabelKnob->setIconLabel("dialog-warning");
     transformOutOfDateLabelKnob->setAsLabel();
     transformOutOfDateLabelKnob->setEvaluateOnChange(false);
@@ -486,7 +487,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformOutOfDateLabel = transformOutOfDateLabelKnob;
 
 
-    boost::shared_ptr<KnobSeparator>  transformSeparator = AppManager::createKnob<KnobSeparator>(effect.get(), "Transform Controls", 3);
+    boost::shared_ptr<KnobSeparator>  transformSeparator = AppManager::createKnob<KnobSeparator>(effect.get(), tr("Transform Controls"), 3);
     transformPage->addKnob(transformSeparator);
     transformSeparator->setSecret(true);
     transformControlsSeparator = transformSeparator;
@@ -522,14 +523,14 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     } // tNode
     NodePtr cNode = cornerPinNode.lock();
     if (cNode) {
-        boost::shared_ptr<KnobGroup>  toGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), kCornerPinParamTo, 1);
+        boost::shared_ptr<KnobGroup>  toGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), tr(kCornerPinParamTo), 1);
         toGroupKnob->setName(kCornerPinParamTo);
         toGroupKnob->setAsTab();
         toGroupKnob->setSecret(true);
         transformPage->addKnob(toGroupKnob);
         toGroup = toGroupKnob;
 
-        boost::shared_ptr<KnobGroup>  fromGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), kCornerPinParamFrom, 1);
+        boost::shared_ptr<KnobGroup>  fromGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), tr(kCornerPinParamFrom), 1);
         fromGroupKnob->setName(kCornerPinParamFrom);
         fromGroupKnob->setAsTab();
         fromGroupKnob->setSecret(true);
@@ -594,23 +595,23 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
                                    enableToPoint[0].lock(), enableToPoint[1].lock(), enableToPoint[2].lock(), enableToPoint[3].lock(), cornerPinOverlayPoints.lock(), invertTransform.lock(), boost::shared_ptr<KnobBool>() /*interactive*/);
     }
 
-    boost::shared_ptr<KnobSeparator> exportDataSepKnob = AppManager::createKnob<KnobSeparator>(effect.get(), kTrackerParamExportDataSeparatorLabel, 1, false);
+    boost::shared_ptr<KnobSeparator> exportDataSepKnob = AppManager::createKnob<KnobSeparator>(effect.get(), tr(kTrackerParamExportDataSeparatorLabel), 1, false);
     exportDataSepKnob->setName(kTrackerParamExportDataSeparator);
     transformPage->addKnob(exportDataSepKnob);
     exportDataSep = exportDataSepKnob;
 
-    boost::shared_ptr<KnobBool> exporLinkKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamExportLinkLabel, 1, false);
+    boost::shared_ptr<KnobBool> exporLinkKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamExportLinkLabel), 1, false);
     exporLinkKnob->setName(kTrackerParamExportLink);
-    exporLinkKnob->setHintToolTip(kTrackerParamExportLinkHint);
+    exporLinkKnob->setHintToolTip( tr(kTrackerParamExportLinkHint) );
     exporLinkKnob->setAnimationEnabled(false);
     exporLinkKnob->setAddNewLine(false);
     exporLinkKnob->setDefaultValue(true);
     transformPage->addKnob(exporLinkKnob);
     exportLink = exporLinkKnob;
 
-    /* boost::shared_ptr<KnobBool> exporUseCurFrameKnob = AppManager::createKnob<KnobBool>(effect.get(), kTrackerParamExportUseCurrentFrameLabel, 1, false);
+    /* boost::shared_ptr<KnobBool> exporUseCurFrameKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamExportUseCurrentFrameLabel), 1, false);
        exporUseCurFrameKnob->setName(kTrackerParamExportUseCurrentFrame);
-       exporUseCurFrameKnob->setHintToolTip(kTrackerParamExportUseCurrentFrameHint);
+       exporUseCurFrameKnob->setHintToolTip(tr(kTrackerParamExportUseCurrentFrameHint));
        exporUseCurFrameKnob->setAnimationEnabled(false);
        exporUseCurFrameKnob->setAddNewLine(false);
        exporUseCurFrameKnob->setDefaultValue(false);
@@ -618,9 +619,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
        exportUseCurrentFrame = exporUseCurFrameKnob;
        knobs.push_back(exporUseCurFrameKnob);*/
 
-    boost::shared_ptr<KnobButton> exportButtonKnob = AppManager::createKnob<KnobButton>(effect.get(), kTrackerParamExportButtonLabel, 1);
+    boost::shared_ptr<KnobButton> exportButtonKnob = AppManager::createKnob<KnobButton>(effect.get(), tr(kTrackerParamExportButtonLabel), 1);
     exportButtonKnob->setName(kTrackerParamExportButton);
-    exportButtonKnob->setHintToolTip(kTrackerParamExportButtonHint);
+    exportButtonKnob->setHintToolTip( tr(kTrackerParamExportButtonHint) );
     exportButtonKnob->setAllDimensionsEnabled(false);
     transformPage->addKnob(exportButtonKnob);
     exportButton = exportButtonKnob;
@@ -1903,7 +1904,7 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
     // signals to create keyframes in keyframeSet
     Curve tmpToPointsCurveX[4], tmpToPointsCurveY[4];
-    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, "", 1, false) );
+    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, std::string(), 1, false) );
     tmpFitErrorKnob->populate();
 
     QString rmsErrorPrefix = QLatin1String("Fitting Error: ");
@@ -2129,7 +2130,7 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
 
 
     Curve tmpTXCurve, tmpTYCurve, tmpRotateCurve, tmpScaleCurve;
-    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, "", 1, false) );
+    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, std::string(), 1, false) );
     tmpFitErrorKnob->populate();
 
     QString rmsErrorPrefix = QLatin1String("Fitting Error: ");

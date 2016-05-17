@@ -31,10 +31,10 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDateTime>
-#include <QString>
+#include <QtCore/QString>
 #include <QFuture>
 #include <QFutureWatcher>
-#include <QMutex>
+#include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -52,6 +52,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct ProjectPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(Project)
+
+public:
     Project* _publicInterface;
     mutable QMutex projectLock; //< protects the whole project
     QString lastAutoSaveFilePath; //< absolute file path of the last auto-save file

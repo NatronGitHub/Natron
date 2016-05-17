@@ -93,7 +93,7 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 {
     glGenBuffers(1, &pboID);
     selectedMarkerScale.x = selectedMarkerScale.y = 1.;
-    QObject::connect( p->publicInterface->getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), this, SLOT(rebuildMarkerTextures()) );
+    
 }
 
 

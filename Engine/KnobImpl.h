@@ -38,10 +38,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include <QString>
-#include <QDebug>
-#include <QCoreApplication>
-#include <QThread>
+#include <QtCore/QString>
+#include <QtCore/QDebug>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
@@ -2360,13 +2360,13 @@ Knob<double>::resetToDefaultValue(int dimension)
             if (isDouble->getValueIsNormalized(dimension) == eValueIsNormalizedNone) {
                 // default is normalized, value is non-normalized: denormalize it!
                 double time = getCurrentTime();
-                isDouble->denormalize(dimension, time, &def);
+                def = isDouble->denormalize(dimension, time, def);
             }
         } else {
             if (isDouble->getValueIsNormalized(dimension) != eValueIsNormalizedNone) {
                 // default is non-normalized, value is normalized: normalize it!
                 double time = getCurrentTime();
-                isDouble->normalize(dimension, time, &def);
+                def = isDouble->normalize(dimension, time, def);
             }
         }
     }

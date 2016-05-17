@@ -68,6 +68,7 @@
 #include "Global/Macros.h"
 #include <QtCore/QString>
 #include <QtCore/QLocale>
+#include <QtCore/QCoreApplication>
 
 #include "Global/GlobalDefines.h"
 
@@ -135,19 +136,19 @@ printAsRAM(U64 bytes)
     const U64 tb = 1024 * gb;
 
     if (bytes >= tb) {
-        return QObject::tr("%1 TB").arg( QLocale().toString(qreal(bytes) / tb, 'f', 3) );
+        return QCoreApplication::translate("MemoryInfo", "%1 TB").arg( QLocale().toString(qreal(bytes) / tb, 'f', 3) );
     }
     if (bytes >= gb) {
-        return QObject::tr("%1 GB").arg( QLocale().toString(qreal(bytes) / gb, 'f', 2) );
+        return QCoreApplication::translate("MemoryInfo", "%1 GB").arg( QLocale().toString(qreal(bytes) / gb, 'f', 2) );
     }
     if (bytes >= mb) {
-        return QObject::tr("%1 MB").arg( QLocale().toString(qreal(bytes) / mb, 'f', 1) );
+        return QCoreApplication::translate("MemoryInfo", "%1 MB").arg( QLocale().toString(qreal(bytes) / mb, 'f', 1) );
     }
     if (bytes >= kb) {
-        return QObject::tr("%1 KB").arg( QLocale().toString( (uint)(bytes / kb) ) );
+        return QCoreApplication::translate("MemoryInfo", "%1 KB").arg( QLocale().toString( (uint)(bytes / kb) ) );
     }
 
-    return QObject::tr("%1 byte(s)").arg( QLocale().toString( (uint)bytes ) );
+    return QCoreApplication::translate("MemoryInfo", "%1 byte(s)").arg( QLocale().toString( (uint)bytes ) );
 }
 
 /**

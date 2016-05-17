@@ -351,6 +351,7 @@ getHostNameProxy(const std::string& pluginID,
     static const std::string hitfilm("com.FXHOME.HitFilm");
     static const std::string redgiant("com.redgiantsoftware.Universe_");
     static const std::string digitalfilmtools("com.digitalfilmtools.");
+    static const std::string tiffen("com.tiffen.");
     //static const std::string digitalanarchy("com.digitalanarchy.");
 
     if ( !pluginID.compare(0, neatvideo.size(), neatvideo) ) {
@@ -375,7 +376,8 @@ getHostNameProxy(const std::string& pluginID,
     } else if ( !pluginID.compare(0, redgiant.size(), redgiant) ) {
         // Red Giant Universe plugins 1.5 work with Vegas and Resolve
         return Settings::eKnownHostNameVegas;
-    } else if ( !pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools) ) {
+    } else if ( !pluginID.compare(0, digitalfilmtools.size(), digitalfilmtools) ||
+                !pluginID.compare(0, tiffen.size(), tiffen) ) {
         // Digital film tools plug-ins work with Nuke, Vegas, Scratch and Resolve
 
         // http://www.digitalfilmtools.com/supported-hosts/ofx-host-plugins.php
@@ -388,7 +390,7 @@ getHostNameProxy(const std::string& pluginID,
     //printf("%s v%d.%d\n", pluginID.c_str(), pluginVersionMajor, pluginVersionMinor);
 
     return Settings::eKnownHostNameNone;
-}
+} // getHostNameProxy
 
 const std::string &
 OfxHost::getStringProperty(const std::string &name,
@@ -630,18 +632,20 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     try {
         pluginHandle = plugin->getPluginHandle();
     } catch (...) {
-        throw std::runtime_error( QObject::tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading ").toStdString() + plugin->getIdentifier() );
+        throw std::runtime_error( tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading %1.")
+                                  .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
     }
 
     if (!pluginHandle) {
-        throw std::runtime_error( QObject::tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading ").toStdString() + plugin->getIdentifier() );
+        throw std::runtime_error( tr("Error: Description (kOfxActionLoad and kOfxActionDescribe) failed while loading %1.")
+                                  .arg( QString::fromUtf8( plugin->getIdentifier().c_str() ) ).toStdString() );
     }
     assert(pluginHandle->getOfxPlugin() && pluginHandle->getOfxPlugin()->mainEntry);
 
     const std::set<std::string> & contexts = plugin->getContexts();
     std::string context = getContext_internal(contexts);
     if ( context.empty() ) {
-        throw std::invalid_argument( QObject::tr("OpenFX plug-in does not have any valid context.").toStdString() );
+        throw std::invalid_argument( tr("OpenFX plug-in does not have any valid context.").toStdString() );
     }
 
     OFX::Host::PluginHandle* ph = plugin->getPluginHandle();
@@ -652,7 +656,8 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
     //This will call kOfxImageEffectActionDescribeInContext
     desc = plugin->getContext(context);
     if (!desc) {
-        throw std::runtime_error(std::string("Plug-in parameters and inputs description (kOfxImageEffectActionDescribeInContext) failed in context ") + context);
+        throw std::runtime_error( tr("Plug-in parameters and inputs description (kOfxImageEffectActionDescribeInContext) failed in context %1.")
+                                  .arg( QString::fromUtf8( context.c_str() ) ).toStdString() );
     }
 
     //Create the mask clip if needed
@@ -798,7 +803,7 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
             try {
                 OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
             } catch (const std::exception& e) {
-                appPTR->writeToErrorLog_mt_safe( QObject::tr("Failure to read OpenFX plug-ins cache: ") + QString::fromUtf8( e.what() ) );
+                appPTR->writeToErrorLog_mt_safe( tr("Failure to read OpenFX plug-ins cache: %1").arg( QString::fromUtf8( e.what() ) ) );
             }
         }
     }
@@ -1022,8 +1027,8 @@ OfxHost::newMemoryInstance(size_t nBytes)
     bool allocated = ret->alloc(nBytes);
 
     if ( ( (nBytes != 0) && !ret->getPtr() ) || !allocated ) {
-        Dialogs::errorDialog(QObject::tr("Out of memory").toStdString(),
-                             QObject::tr("Failed to allocate memory (").toStdString() + printAsRAM(nBytes).toStdString() + ").");
+        Dialogs::errorDialog( tr("Out of memory").toStdString(),
+                              tr("Failed to allocate memory (%1).").arg( printAsRAM(nBytes) ).toStdString() );
     }
 
     return ret;
@@ -1107,7 +1112,9 @@ public:
               void *customArg,
               OfxStatus *stat)
         : QThread()
+#ifdef QT_CUSTOM_THREADPOOL
         , AbortableThread(this)
+#endif
         , _func(func)
         , _threadIndex(threadIndex)
         , _threadMax(threadMax)
@@ -1115,7 +1122,9 @@ public:
         , _customArg(customArg)
         , _stat(stat)
     {
+#ifdef QT_CUSTOM_THREADPOOL
         setThreadName("Multi-thread suite");
+#endif
     }
 
     void run() OVERRIDE

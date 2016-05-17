@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -57,29 +56,28 @@ TrackerNode::getPluginLabel() const
 std::string
 TrackerNode::getPluginDescription() const
 {
-    return
-    "<p>Track one or more 2D point(s) using LibMV from the Blender open-source software.</p>"
-    "<br/>"
-    "<p><b>Goal:</b></p>"
-    "<ul>"
-    "<li> Track one or more 2D point and use them to either make another object/image match-move their motion or to stabilize the input image.</li>"
-    "</ul>"
-    "<br/>"
-    "<p><b>Tracking:</b></p>"
-    "<ul>"
-    "<li> Connect a Tracker node to the image containing the item you need to track </li>"
-    "<li> Place tracking markers with CTRL+ALT+Click on the Viewer or by clicking the \"+\" button below the track table in the settings panel </li>"
-    "<li> Setup the motion model to match the motion type of the item you need to track. By default the tracker will only assume the item is underoing a translation. Other motion models can be used for complex tracks but may be slower. </li>"
-    "<li> Select in the settings panel or on the Viewer the markers you want to track and then start tracking with the player buttons on the top of the Viewer. </li>"
-    "<li> If a track is getting lost or fails at some point, you may refine it by moving the marker at its correct position, this will force a new keyframe on the pattern which will be visible in the Viewer and on the timeline. </li>"
-    "</ul>"
-    "<p><b>Using the tracks data:</b></p>"
-    "<p>You can either use the Tracker node itself to use the track data or you may export it to another node.</p>"
-    "<p><b>Using the Transform within the Tracker node:</b></p>"
-    "<p>Go to the Transform tab in the settings panel, and set the Transform Type to the operation you want to achieve. During tracking, the Transform Type should always been set to None if you want to correctly see the tracks on the Viewer."
-    "You will notice that the transform parameters will be set automatically when the tracking is finished. Depending on the Transform Type, the values will be computed either to match-move the motion of the tracked points or to stabilize the image.</p>"
-    "<p><b>Exporting the tracking data:</b></p>"
-    "<p>You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.<p>";
+    return "<p>Track one or more 2D point(s) using LibMV from the Blender open-source software.</p>"
+           "<br/>"
+           "<p><b>Goal:</b></p>"
+           "<ul>"
+           "<li> Track one or more 2D point and use them to either make another object/image match-move their motion or to stabilize the input image.</li>"
+           "</ul>"
+           "<br/>"
+           "<p><b>Tracking:</b></p>"
+           "<ul>"
+           "<li> Connect a Tracker node to the image containing the item you need to track </li>"
+           "<li> Place tracking markers with CTRL+ALT+Click on the Viewer or by clicking the \"+\" button below the track table in the settings panel </li>"
+           "<li> Setup the motion model to match the motion type of the item you need to track. By default the tracker will only assume the item is underoing a translation. Other motion models can be used for complex tracks but may be slower. </li>"
+           "<li> Select in the settings panel or on the Viewer the markers you want to track and then start tracking with the player buttons on the top of the Viewer. </li>"
+           "<li> If a track is getting lost or fails at some point, you may refine it by moving the marker at its correct position, this will force a new keyframe on the pattern which will be visible in the Viewer and on the timeline. </li>"
+           "</ul>"
+           "<p><b>Using the tracks data:</b></p>"
+           "<p>You can either use the Tracker node itself to use the track data or you may export it to another node.</p>"
+           "<p><b>Using the Transform within the Tracker node:</b></p>"
+           "<p>Go to the Transform tab in the settings panel, and set the Transform Type to the operation you want to achieve. During tracking, the Transform Type should always been set to None if you want to correctly see the tracks on the Viewer."
+           "You will notice that the transform parameters will be set automatically when the tracking is finished. Depending on the Transform Type, the values will be computed either to match-move the motion of the tracked points or to stabilize the image.</p>"
+           "<p><b>Exporting the tracking data:</b></p>"
+           "<p>You may export the tracking data either to a CornerPin node or to a Transform node. The CornerPin node performs a warp that may be more stable than a Transform node when using 4 or more tracks: it retains more information than the Transform node.<p>";
 }
 
 void
@@ -98,9 +96,9 @@ TrackerNode::initializeKnobs()
         trackingPage = boost::dynamic_pointer_cast<KnobPage>(page);
     }
 
-    boost::shared_ptr<KnobButton> addMarker = AppManager::createKnob<KnobButton>(this, kTrackerUIParamAddTrackLabel);
+    boost::shared_ptr<KnobButton> addMarker = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamAddTrackLabel));
     addMarker->setName(kTrackerUIParamAddTrack);
-    addMarker->setHintToolTip(kTrackerUIParamAddTrackHint);
+    addMarker->setHintToolTip(tr(kTrackerUIParamAddTrackHint));
     addMarker->setEvaluateOnChange(false);
     addMarker->setCheckable(true);
     addMarker->setDefaultValue(false);
@@ -110,9 +108,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(addMarker);
     _imp->ui->addTrackButton = addMarker;
 
-    boost::shared_ptr<KnobButton> trackBw = AppManager::createKnob<KnobButton>(this, kTrackerUIParamTrackBWLabel);
+    boost::shared_ptr<KnobButton> trackBw = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackBWLabel));
     trackBw->setName(kTrackerUIParamTrackBW);
-    trackBw->setHintToolTip(kTrackerUIParamTrackBWHint);
+    trackBw->setHintToolTip(tr(kTrackerUIParamTrackBWHint));
     trackBw->setEvaluateOnChange(false);
     trackBw->setCheckable(true);
     trackBw->setDefaultValue(false);
@@ -123,9 +121,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackBw);
     _imp->ui->trackBwButton = trackBw;
 
-    boost::shared_ptr<KnobButton> trackPrev = AppManager::createKnob<KnobButton>(this, kTrackerUIParamTrackPreviousLabel);
+    boost::shared_ptr<KnobButton> trackPrev = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackPreviousLabel));
     trackPrev->setName(kTrackerUIParamTrackPrevious);
-    trackPrev->setHintToolTip(kTrackerUIParamTrackPreviousHint);
+    trackPrev->setHintToolTip(tr(kTrackerUIParamTrackPreviousHint));
     trackPrev->setEvaluateOnChange(false);
     trackPrev->setSecretByDefault(true);
     trackPrev->setInViewerContextCanHaveShortcut(true);
@@ -133,9 +131,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackPrev);
     _imp->ui->trackPrevButton = trackPrev;
 
-    boost::shared_ptr<KnobButton> trackNext = AppManager::createKnob<KnobButton>(this, kTrackerUIParamTrackNextLabel);
+    boost::shared_ptr<KnobButton> trackNext = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackNextLabel));
     trackNext->setName(kTrackerUIParamTrackNext);
-    trackNext->setHintToolTip(kTrackerUIParamTrackNextHint);
+    trackNext->setHintToolTip(tr(kTrackerUIParamTrackNextHint));
     trackNext->setEvaluateOnChange(false);
     trackNext->setSecretByDefault(true);
     trackNext->setInViewerContextCanHaveShortcut(true);
@@ -143,9 +141,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackNext);
     _imp->ui->trackNextButton = trackNext;
 
-    boost::shared_ptr<KnobButton> trackFw = AppManager::createKnob<KnobButton>(this, kTrackerUIParamTrackFWLabel);
+    boost::shared_ptr<KnobButton> trackFw = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackFWLabel));
     trackFw->setName(kTrackerUIParamTrackFW);
-    trackFw->setHintToolTip(kTrackerUIParamTrackFWHint);
+    trackFw->setHintToolTip(tr(kTrackerUIParamTrackFWHint));
     trackFw->setEvaluateOnChange(false);
     trackFw->setCheckable(true);
     trackFw->setDefaultValue(false);
@@ -156,9 +154,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackFw);
     _imp->ui->trackFwButton = trackFw;
 
-    boost::shared_ptr<KnobButton> trackRange = AppManager::createKnob<KnobButton>(this, kTrackerUIParamTrackRangeLabel);
+    boost::shared_ptr<KnobButton> trackRange = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackRangeLabel));
     trackRange->setName(kTrackerUIParamTrackRange);
-    trackRange->setHintToolTip(kTrackerUIParamTrackRangeHint);
+    trackRange->setHintToolTip(tr(kTrackerUIParamTrackRangeHint));
     trackRange->setEvaluateOnChange(false);
     trackRange->setSecretByDefault(true);
     trackRange->setInViewerContextCanHaveShortcut(true);
@@ -166,9 +164,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackRange);
     _imp->ui->trackRangeButton = trackRange;
 
-    boost::shared_ptr<KnobButton> trackAllKeys = AppManager::createKnob<KnobButton>(this, kTrackerUIParamTrackAllKeyframesLabel);
+    boost::shared_ptr<KnobButton> trackAllKeys = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackAllKeyframesLabel));
     trackAllKeys->setName(kTrackerUIParamTrackAllKeyframes);
-    trackAllKeys->setHintToolTip(kTrackerUIParamTrackAllKeyframesHint);
+    trackAllKeys->setHintToolTip(tr(kTrackerUIParamTrackAllKeyframesHint));
     trackAllKeys->setEvaluateOnChange(false);
     trackAllKeys->setSecretByDefault(true);
     trackAllKeys->setInViewerContextCanHaveShortcut(true);
@@ -177,9 +175,9 @@ TrackerNode::initializeKnobs()
     _imp->ui->trackAllKeyframesButton = trackAllKeys;
 
 
-    boost::shared_ptr<KnobButton> trackCurKey = AppManager::createKnob<KnobButton>(this, kTrackerUIParamTrackCurrentKeyframeLabel);
+    boost::shared_ptr<KnobButton> trackCurKey = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackCurrentKeyframeLabel));
     trackCurKey->setName(kTrackerUIParamTrackCurrentKeyframe);
-    trackCurKey->setHintToolTip(kTrackerUIParamTrackCurrentKeyframeHint);
+    trackCurKey->setHintToolTip(tr(kTrackerUIParamTrackCurrentKeyframeHint));
     trackCurKey->setEvaluateOnChange(false);
     trackCurKey->setSecretByDefault(true);
     trackCurKey->setInViewerContextCanHaveShortcut(true);
@@ -187,9 +185,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(trackCurKey);
     _imp->ui->trackCurrentKeyframeButton = trackCurKey;
 
-    boost::shared_ptr<KnobButton> clearAllAnimation = AppManager::createKnob<KnobButton>(this, kTrackerUIParamClearAllAnimationLabel);
+    boost::shared_ptr<KnobButton> clearAllAnimation = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamClearAllAnimationLabel));
     clearAllAnimation->setName(kTrackerUIParamClearAllAnimation);
-    clearAllAnimation->setHintToolTip(kTrackerUIParamClearAllAnimationHint);
+    clearAllAnimation->setHintToolTip(tr(kTrackerUIParamClearAllAnimationHint));
     clearAllAnimation->setEvaluateOnChange(false);
     clearAllAnimation->setSecretByDefault(true);
     clearAllAnimation->setInViewerContextCanHaveShortcut(true);
@@ -197,9 +195,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(clearAllAnimation);
     _imp->ui->clearAllAnimationButton = clearAllAnimation;
 
-    boost::shared_ptr<KnobButton> clearBackwardAnim = AppManager::createKnob<KnobButton>(this, kTrackerUIParamClearAnimationBwLabel);
+    boost::shared_ptr<KnobButton> clearBackwardAnim = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamClearAnimationBwLabel));
     clearBackwardAnim->setName(kTrackerUIParamClearAnimationBw);
-    clearBackwardAnim->setHintToolTip(kTrackerUIParamClearAnimationBwHint);
+    clearBackwardAnim->setHintToolTip(tr(kTrackerUIParamClearAnimationBwHint));
     clearBackwardAnim->setEvaluateOnChange(false);
     clearBackwardAnim->setSecretByDefault(true);
     clearBackwardAnim->setInViewerContextCanHaveShortcut(true);
@@ -207,9 +205,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(clearBackwardAnim);
     _imp->ui->clearBwAnimationButton = clearBackwardAnim;
 
-    boost::shared_ptr<KnobButton> clearForwardAnim = AppManager::createKnob<KnobButton>(this, kTrackerUIParamClearAnimationFwLabel);
+    boost::shared_ptr<KnobButton> clearForwardAnim = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamClearAnimationFwLabel));
     clearForwardAnim->setName(kTrackerUIParamClearAnimationFw);
-    clearForwardAnim->setHintToolTip(kTrackerUIParamClearAnimationFwHint);
+    clearForwardAnim->setHintToolTip(tr(kTrackerUIParamClearAnimationFwHint));
     clearForwardAnim->setEvaluateOnChange(false);
     clearForwardAnim->setSecretByDefault(true);
     clearForwardAnim->setInViewerContextCanHaveShortcut(true);
@@ -217,9 +215,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(clearForwardAnim);
     _imp->ui->clearFwAnimationButton = clearForwardAnim;
 
-    boost::shared_ptr<KnobButton> updateViewer = AppManager::createKnob<KnobButton>(this, kTrackerUIParamRefreshViewerLabel);
+    boost::shared_ptr<KnobButton> updateViewer = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamRefreshViewerLabel));
     updateViewer->setName(kTrackerUIParamRefreshViewer);
-    updateViewer->setHintToolTip(kTrackerUIParamRefreshViewerHint);
+    updateViewer->setHintToolTip(tr(kTrackerUIParamRefreshViewerHint));
     updateViewer->setEvaluateOnChange(false);
     updateViewer->setCheckable(true);
     updateViewer->setDefaultValue(true);
@@ -230,9 +228,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(updateViewer);
     _imp->ui->updateViewerButton = updateViewer;
 
-    boost::shared_ptr<KnobButton> centerViewer = AppManager::createKnob<KnobButton>(this, kTrackerUIParamCenterViewerLabel);
+    boost::shared_ptr<KnobButton> centerViewer = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamCenterViewerLabel));
     centerViewer->setName(kTrackerUIParamCenterViewer);
-    centerViewer->setHintToolTip(kTrackerUIParamCenterViewerHint);
+    centerViewer->setHintToolTip(tr(kTrackerUIParamCenterViewerHint));
     centerViewer->setEvaluateOnChange(false);
     centerViewer->setCheckable(true);
     centerViewer->setDefaultValue(false);
@@ -242,9 +240,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(centerViewer);
     _imp->ui->centerViewerButton = centerViewer;
 
-    boost::shared_ptr<KnobButton> createKeyOnMove = AppManager::createKnob<KnobButton>(this, kTrackerUIParamCreateKeyOnMoveLabel);
+    boost::shared_ptr<KnobButton> createKeyOnMove = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamCreateKeyOnMoveLabel));
     createKeyOnMove->setName(kTrackerUIParamCreateKeyOnMove);
-    createKeyOnMove->setHintToolTip(kTrackerUIParamCreateKeyOnMoveHint);
+    createKeyOnMove->setHintToolTip(tr(kTrackerUIParamCreateKeyOnMoveHint));
     createKeyOnMove->setEvaluateOnChange(false);
     createKeyOnMove->setCheckable(true);
     createKeyOnMove->setDefaultValue(true);
@@ -255,9 +253,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(createKeyOnMove);
     _imp->ui->createKeyOnMoveButton = createKeyOnMove;
 
-    boost::shared_ptr<KnobButton> showError = AppManager::createKnob<KnobButton>(this, kTrackerUIParamShowErrorLabel);
+    boost::shared_ptr<KnobButton> showError = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamShowErrorLabel));
     showError->setName(kTrackerUIParamShowError);
-    showError->setHintToolTip(kTrackerUIParamShowErrorHint);
+    showError->setHintToolTip(tr(kTrackerUIParamShowErrorHint));
     showError->setEvaluateOnChange(false);
     showError->setCheckable(true);
     showError->setDefaultValue(false);
@@ -269,9 +267,9 @@ TrackerNode::initializeKnobs()
     _imp->ui->showCorrelationButton = showError;
 
 
-    boost::shared_ptr<KnobButton> addKeyframe = AppManager::createKnob<KnobButton>(this, kTrackerUIParamSetPatternKeyFrameLabel);
+    boost::shared_ptr<KnobButton> addKeyframe = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamSetPatternKeyFrameLabel));
     addKeyframe->setName(kTrackerUIParamSetPatternKeyFrame);
-    addKeyframe->setHintToolTip(kTrackerUIParamSetPatternKeyFrameHint);
+    addKeyframe->setHintToolTip(tr(kTrackerUIParamSetPatternKeyFrameHint));
     addKeyframe->setEvaluateOnChange(false);
     addKeyframe->setSecretByDefault(true);
     addKeyframe->setInViewerContextCanHaveShortcut(true);
@@ -279,9 +277,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(addKeyframe);
     _imp->ui->setKeyFrameButton = addKeyframe;
 
-    boost::shared_ptr<KnobButton> removeKeyframe = AppManager::createKnob<KnobButton>(this, kTrackerUIParamRemovePatternKeyFrameLabel);
+    boost::shared_ptr<KnobButton> removeKeyframe = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamRemovePatternKeyFrameLabel));
     removeKeyframe->setName(kTrackerUIParamRemovePatternKeyFrame);
-    removeKeyframe->setHintToolTip(kTrackerUIParamRemovePatternKeyFrameHint);
+    removeKeyframe->setHintToolTip(tr(kTrackerUIParamRemovePatternKeyFrameHint));
     removeKeyframe->setEvaluateOnChange(false);
     removeKeyframe->setSecretByDefault(true);
     removeKeyframe->setInViewerContextCanHaveShortcut(true);
@@ -289,9 +287,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(removeKeyframe);
     _imp->ui->removeKeyFrameButton = removeKeyframe;
 
-    boost::shared_ptr<KnobButton> resetOffset = AppManager::createKnob<KnobButton>(this, kTrackerUIParamResetOffsetLabel);
+    boost::shared_ptr<KnobButton> resetOffset = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamResetOffsetLabel));
     resetOffset->setName(kTrackerUIParamResetOffset);
-    resetOffset->setHintToolTip(kTrackerUIParamResetOffsetHint);
+    resetOffset->setHintToolTip(tr(kTrackerUIParamResetOffsetHint));
     resetOffset->setEvaluateOnChange(false);
     resetOffset->setSecretByDefault(true);
     resetOffset->setInViewerContextCanHaveShortcut(true);
@@ -299,9 +297,9 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(resetOffset);
     _imp->ui->resetOffsetButton = resetOffset;
 
-    boost::shared_ptr<KnobButton> resetTrack = AppManager::createKnob<KnobButton>(this, kTrackerUIParamResetTrackLabel);
+    boost::shared_ptr<KnobButton> resetTrack = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamResetTrackLabel));
     resetTrack->setName(kTrackerUIParamResetTrack);
-    resetTrack->setHintToolTip(kTrackerUIParamResetTrackHint);
+    resetTrack->setHintToolTip(tr(kTrackerUIParamResetTrackHint));
     resetTrack->setEvaluateOnChange(false);
     resetTrack->setSecretByDefault(true);
     resetTrack->setInViewerContextCanHaveShortcut(true);
@@ -338,6 +336,7 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(resetOffset);
     addKnobToViewerUI(resetTrack);
 
+    QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
 }
 
 void

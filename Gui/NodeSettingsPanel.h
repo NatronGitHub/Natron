@@ -57,7 +57,9 @@ class NodeSettingsPanel
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY( bool _selected READ isSelected WRITE setSelected)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // properties
+    Q_PROPERTY(bool _selected READ isSelected WRITE setSelected)
 
     /*Pointer to the node GUI*/
     boost::weak_ptr<NodeGui> _nodeGUI;

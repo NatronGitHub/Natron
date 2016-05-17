@@ -16,13 +16,11 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
-
 
 #include "OneViewNode.h"
 
@@ -109,13 +107,13 @@ OneViewNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 OneViewNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
 
     page->setName("controls");
 
-    boost::shared_ptr<KnobChoice> viewKnob = AppManager::createKnob<KnobChoice>(this, "View");
+    boost::shared_ptr<KnobChoice> viewKnob = AppManager::createKnob<KnobChoice>( this, tr("View") );
     viewKnob->setName("view");
-    viewKnob->setHintToolTip("View to take from the input");
+    viewKnob->setHintToolTip( tr("View to take from the input") );
     page->addKnob(viewKnob);
 
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();

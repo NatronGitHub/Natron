@@ -29,7 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 
 // disable some warnings due to unused parameters

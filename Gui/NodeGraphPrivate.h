@@ -39,7 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QGraphicsLineItem>
 #include <QGraphicsPixmapItem>
 #include <QPainter>
-#include <QPointF>
+#include <QtCore/QPointF>
 #include <QColor>
 #include <QPen>
 #include <QStyleOptionGraphicsItem>
@@ -204,7 +204,6 @@ public:
     ///True when the graph is rendered from the getFullSceneScreenShot() function
     bool isDoingPreviewRender;
     QTimer autoScrollTimer;
-
     QTimer refreshRenderStateTimer;
 
 

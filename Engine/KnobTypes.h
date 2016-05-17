@@ -33,8 +33,9 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QVector>
-#include <QMutex>
+#include <QtCore/QVector>
+#include <QtCore/QMutex>
+#include <QtCore/QString>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/Knob.h"
@@ -73,6 +74,11 @@ public:
 
     KnobInt(KnobHolder* holder,
             const std::string &label,
+            int dimension,
+            bool declaredByPlugin);
+
+    KnobInt(KnobHolder* holder,
+            const QString &label,
             int dimension,
             bool declaredByPlugin);
 
@@ -148,6 +154,11 @@ public:
              int dimension,
              bool declaredByPlugin);
 
+    KnobBool(KnobHolder* holder,
+             const QString &label,
+             int dimension,
+             bool declaredByPlugin);
+
     /// Can this type be animated?
     /// BooleanParam animation may not be quite perfect yet,
     /// @see Curve::getValueAt() for the animation code.
@@ -157,7 +168,6 @@ public:
     }
 
     static const std::string & typeNameStatic();
-
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
@@ -197,13 +207,17 @@ public:
                int dimension,
                bool declaredByPlugin );
 
+    KnobDouble(KnobHolder* holder,
+               const QString &label,
+               int dimension,
+               bool declaredByPlugin );
+
     virtual ~KnobDouble();
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-
 
     void disableSlider();
 
@@ -287,13 +301,13 @@ public:
      * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void denormalize(int dimension, double time, double* value) const;
+    double denormalize(int dimension, double time, double value) const;
 
     /**
      * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void normalize(int dimension, double time, double* value) const;
+    double normalize(int dimension, double time, double value) const;
 
     void addSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
     {
@@ -405,6 +419,11 @@ public:
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
+
+    KnobButton(KnobHolder* holder,
+               const QString &label,
+               int dimension,
+               bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
     void setAsRenderButton()
@@ -443,6 +462,7 @@ public:
     {
         return _isToolButtonAction;
     }
+
 
 private:
 
@@ -501,13 +521,17 @@ public:
                int dimension,
                bool declaredByPlugin);
 
+    KnobChoice(KnobHolder* holder,
+               const QString &label,
+               int dimension,
+               bool declaredByPlugin);
+
     virtual ~KnobChoice();
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
-
 
     /**
      * @brief Fills-up the menu with the given entries and optionnally their tooltip.
@@ -635,8 +659,12 @@ public:
                   const std::string &label,
                   int dimension,
                   bool declaredByPlugin);
-    static const std::string & typeNameStatic();
 
+    KnobSeparator(KnobHolder* holder,
+                  const QString &label,
+                  int dimension,
+                  bool declaredByPlugin);
+    static const std::string & typeNameStatic();
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
@@ -681,6 +709,11 @@ public:
               const std::string &label,
               int dimension,
               bool declaredByPlugin);
+
+    KnobColor(KnobHolder* holder,
+              const QString &label,
+              int dimension,
+              bool declaredByPlugin);
     static const std::string & typeNameStatic();
 
     bool areAllDimensionsEnabled() const;
@@ -705,7 +738,6 @@ public:
     {
         return true;
     }
-
 
 public Q_SLOTS:
 
@@ -749,10 +781,14 @@ public:
     {
         return new KnobString(holder, label, dimension, declaredByPlugin);
     }
-    
 
     KnobString(KnobHolder* holder,
                const std::string &label,
+               int dimension,
+               bool declaredByPlugin);
+
+    KnobString(KnobHolder* holder,
+               const QString &label,
                int dimension,
                bool declaredByPlugin);
 
@@ -821,7 +857,6 @@ public:
         return !_multiLine;
     }
 
-
     /**
      * @brief Relevant for multi-lines with rich text enables. It tells if
      * the string has content without the html tags
@@ -866,6 +901,11 @@ public:
 
     KnobGroup(KnobHolder* holder,
               const std::string &label,
+              int dimension,
+              bool declaredByPlugin);
+
+    KnobGroup(KnobHolder* holder,
+              const QString &label,
               int dimension,
               bool declaredByPlugin);
 
@@ -920,6 +960,11 @@ public:
 
     KnobPage(KnobHolder* holder,
              const std::string &label,
+             int dimension,
+             bool declaredByPlugin);
+
+    KnobPage(KnobHolder* holder,
+             const QString &label,
              int dimension,
              bool declaredByPlugin);
 
@@ -981,6 +1026,11 @@ public:
 
     KnobParametric(KnobHolder* holder,
                    const std::string &label,
+                   int dimension,
+                   bool declaredByPlugin );
+
+    KnobParametric(KnobHolder* holder,
+                   const QString &label,
                    int dimension,
                    bool declaredByPlugin );
 
@@ -1080,10 +1130,13 @@ class KnobTable
     : public Knob<std::string>
 {
 public:
-
-
     KnobTable(KnobHolder* holder,
               const std::string &description,
+              int dimension,
+              bool declaredByPlugin);
+
+    KnobTable(KnobHolder* holder,
+              const QString &description,
               int dimension,
               bool declaredByPlugin);
 
@@ -1135,6 +1188,8 @@ private:
 class KnobLayers
     : public KnobTable
 {
+    Q_DECLARE_TR_FUNCTIONS(KnobLayers)
+
 public:
 
     static KnobHelper * BuildKnob(KnobHolder* holder,
@@ -1165,11 +1220,11 @@ public:
     virtual std::string getColumnLabel(int col) const OVERRIDE FINAL
     {
         if (col == 0) {
-            return "Name";
+            return tr("Name").toStdString();
         } else if (col == 1) {
-            return "Channels";
+            return tr("Channels").toStdString();
         } else {
-            return "";
+            return std::string();
         }
     }
 

@@ -22,11 +22,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Transform.h"
+
 /*
  * This file was taken from https://github.com/devernay/openfx-misc
  * Maybe we should make this a git submodule instead.
  */
-#include "Transform.h"
 
 #include <cassert>
 #include <cstdlib>

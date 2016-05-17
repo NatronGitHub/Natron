@@ -34,12 +34,12 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QLayout>
 #include <QAction>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QFontMetrics>
 #include <QTextBlockFormat>
 #include <QTextCursor>
 #include <QGridLayout>
-#include <QFile>
+#include <QtCore/QFile>
 #include <QDialogButtonBox>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
@@ -2137,7 +2137,6 @@ NodeGui::getUndoStack() const
     return _undoStack;
 }
 
-
 void
 NodeGui::refreshStateIndicator()
 {
@@ -2192,6 +2191,7 @@ void
 NodeGui::refreshRenderingIndicator()
 {
     NodePtr node = getNode();
+
     if (!node) {
         return;
     }
@@ -2208,15 +2208,14 @@ NodeGui::refreshRenderingIndicator()
             _inputEdges[i]->turnOffRenderingColor();
         }
     }
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(effect.get());
+    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( effect.get() );
     if (isViewer) {
-        ViewerGL* hasUI = dynamic_cast<ViewerGL*>(isViewer->getUiContext());
+        ViewerGL* hasUI = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (hasUI) {
             hasUI->getViewerTab()->refreshViewerRenderingState();
         }
     }
 }
-
 
 void
 NodeGui::moveBelowPositionRecursively(const QRectF & r)
@@ -2436,10 +2435,10 @@ NodeGui::onKnobsLinksChanged()
                 k.dimensions.insert(it->dimension);
                 k.linkInValid = 0;
                 foundGuiLink->second.knobs.push_back(k);
-                QString fullTooltip;
+                QString fullToolTip;
                 for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
                     QString tt = makeLinkString( masterNode.get(), it2->master.lock().get(), node.get(), it2->slave.lock().get() );
-                    fullTooltip.append(tt);
+                    fullToolTip.append(tt);
                 }
             } else {
                 found->dimensions.insert(it->dimension);
@@ -3641,9 +3640,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
 
     _passThroughIndicator->setActive(ptInput.get() != 0);
     if (ptInput) {
-        QString tooltip = tr("This node is a pass-through and produces the same results as");
-        tooltip += QLatin1Char(' ');
-        tooltip += QString::fromUtf8( ptInput->getLabel().c_str() );
+        QString tooltip = tr("This node is a pass-through and produces the same results as %1.").arg( QString::fromUtf8( ptInput->getLabel().c_str() ) );
         _passThroughIndicator->setToolTip(tooltip);
         for (std::size_t i = 0; i < _inputEdges.size(); ++i) {
             if ( (int)i != inputNb ) {

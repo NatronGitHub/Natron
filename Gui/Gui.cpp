@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QMenuBar>
 #include <QUndoGroup>
 #include <QDesktopServices>
-#include <QUrl>
+#include <QtCore/QUrl>
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
@@ -400,17 +400,17 @@ Gui::createMenuActions()
     _imp->menubar = new QMenuBar(this);
     setMenuBar(_imp->menubar);
 
-    _imp->menuFile = new Menu(QObject::tr("File"), _imp->menubar);
-    _imp->menuRecentFiles = new Menu(QObject::tr("Open Recent"), _imp->menuFile);
-    _imp->menuEdit = new Menu(QObject::tr("Edit"), _imp->menubar);
-    _imp->menuLayout = new Menu(QObject::tr("Layout"), _imp->menubar);
-    _imp->menuDisplay = new Menu(QObject::tr("Display"), _imp->menubar);
-    _imp->menuRender = new Menu(QObject::tr("Render"), _imp->menubar);
-    _imp->viewersMenu = new Menu(QObject::tr("Viewer(s)"), _imp->menuDisplay);
-    _imp->viewerInputsMenu = new Menu(QObject::tr("Connect Current Viewer"), _imp->viewersMenu);
-    _imp->viewersViewMenu = new Menu(QObject::tr("Display View Number"), _imp->viewersMenu);
-    _imp->cacheMenu = new Menu(QObject::tr("Cache"), _imp->menubar);
-    _imp->menuHelp = new Menu(QObject::tr("Help"), _imp->menubar);
+    _imp->menuFile = new Menu(tr("File"), _imp->menubar);
+    _imp->menuRecentFiles = new Menu(tr("Open Recent"), _imp->menuFile);
+    _imp->menuEdit = new Menu(tr("Edit"), _imp->menubar);
+    _imp->menuLayout = new Menu(tr("Layout"), _imp->menubar);
+    _imp->menuDisplay = new Menu(tr("Display"), _imp->menubar);
+    _imp->menuRender = new Menu(tr("Render"), _imp->menubar);
+    _imp->viewersMenu = new Menu(tr("Viewer(s)"), _imp->menuDisplay);
+    _imp->viewerInputsMenu = new Menu(tr("Connect Current Viewer"), _imp->viewersMenu);
+    _imp->viewersViewMenu = new Menu(tr("Display View Number"), _imp->viewersMenu);
+    _imp->cacheMenu = new Menu(tr("Cache"), _imp->menubar);
+    _imp->menuHelp = new Menu(tr("Help"), _imp->menubar);
 
 
     _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewProject, kShortcutDescActionNewProject, this);
@@ -634,22 +634,22 @@ Gui::createMenuActions()
 
     // Help menu
     _imp->actionHelpDocumentation = new QAction(this);
-    _imp->actionHelpDocumentation->setText( QObject::tr("Documentation") );
+    _imp->actionHelpDocumentation->setText( tr("Documentation") );
     _imp->menuHelp->addAction(_imp->actionHelpDocumentation);
     QObject::connect( _imp->actionHelpDocumentation, SIGNAL(triggered()), this, SLOT(openHelpDocumentation()) );
 
     _imp->actionHelpWebsite = new QAction(this);
-    _imp->actionHelpWebsite->setText( QObject::tr("Website") );
+    _imp->actionHelpWebsite->setText( tr("Website") );
     _imp->menuHelp->addAction(_imp->actionHelpWebsite);
     QObject::connect( _imp->actionHelpWebsite, SIGNAL(triggered()), this, SLOT(openHelpWebsite()) );
 
     _imp->actionHelpForum = new QAction(this);
-    _imp->actionHelpForum->setText( QObject::tr("Forum") );
+    _imp->actionHelpForum->setText( tr("Forum") );
     _imp->menuHelp->addAction(_imp->actionHelpForum);
     QObject::connect( _imp->actionHelpForum, SIGNAL(triggered()), this, SLOT(openHelpForum()) );
 
     _imp->actionHelpIssues = new QAction(this);
-    _imp->actionHelpIssues->setText( QObject::tr("Issues") );
+    _imp->actionHelpIssues->setText( tr("Issues") );
     _imp->menuHelp->addAction(_imp->actionHelpIssues);
     QObject::connect( _imp->actionHelpIssues, SIGNAL(triggered()), this, SLOT(openHelpIssues()) );
 
@@ -699,7 +699,7 @@ Gui::openHelpDocumentation()
         QDesktopServices::openUrl( QUrl(remoteUrl) );
         break;
     case 2:
-        Dialogs::informationDialog(tr("Missing documentation").toStdString(), QObject::tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
+        Dialogs::informationDialog(tr("Missing documentation").toStdString(), tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
         break;
     }
 }

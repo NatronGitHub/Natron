@@ -40,8 +40,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCursor>
 #include <QMouseEvent>
 #include <QApplication>
-#include <QDataStream>
-#include <QMimeData>
+#include <QtCore/QDataStream>
+#include <QtCore/QMimeData>
 #include <QImage>
 #include <QPainter>
 #include <QUndoCommand>
@@ -96,6 +96,9 @@ NATRON_NAMESPACE_ENTER;
 class RemoveItemsUndoCommand
 : public QUndoCommand
 {
+
+    Q_DECLARE_TR_FUNCTIONS(RemoveItemsUndoCommand)
+    
     struct RemovedItem
     {
         QTreeWidgetItem* treeItem;
@@ -134,6 +137,8 @@ private:
 class AddLayerUndoCommand
 : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddLayerUndoCommand)
+
 public:
 
 
@@ -159,6 +164,8 @@ private:
 class DragItemsUndoCommand
 : public QUndoCommand
 {
+
+    Q_DECLARE_TR_FUNCTIONS(DragItemsUndoCommand)
 public:
 
     struct Item
@@ -198,6 +205,8 @@ private:
 class PasteItemUndoCommand
 : public QUndoCommand
 {
+
+    Q_DECLARE_TR_FUNCTIONS(PasteItemUndoCommand)
 public:
 
     enum PasteModeEnum
@@ -237,6 +246,7 @@ private:
 class DuplicateItemUndoCommand
 : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DuplicateItemUndoCommand)
 public:
 
     struct DuplicatedItem
@@ -342,6 +352,9 @@ enum ColorDialogEditingEnum
 
 struct RotoPanelPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(RotoPanel)
+
+public:
     RotoPanel* publicInterface;
     boost::weak_ptr<NodeGui> node;
     boost::shared_ptr<RotoContext> context;
@@ -1097,7 +1110,10 @@ expandRecursively(QTreeWidgetItem* item)
 static QString
 scriptNameToolTipFromItem(const boost::shared_ptr<RotoItem>& item)
 {
-    return QString::fromUtf8("<p><b>") + QString::fromUtf8( item->getScriptName().c_str() ) + QString::fromUtf8("</b></p>") +  GuiUtils::convertFromPlainText(QObject::tr("The label of the item."), Qt::WhiteSpaceNormal);
+    return ( QString::fromUtf8("<p><b>")
+             + QString::fromUtf8( item->getScriptName().c_str() )
+             + QString::fromUtf8("</b></p>")
+             +  GuiUtils::convertFromPlainText(QCoreApplication::translate("RotoPanel", "The label of the item."), Qt::WhiteSpaceNormal) );
 }
 
 void
@@ -1124,10 +1140,10 @@ RotoPanelPrivate::insertItemRecursively(double time,
 
 
     treeItem->setIcon(COL_ACTIVATED, item->isGloballyActivated() ? iconVisible : iconUnvisible);
-    treeItem->setToolTip( COL_ACTIVATED, GuiUtils::convertFromPlainText(publicInterface->tr("Controls whether the overlay should be visible on the viewer for "
-                                                                                            "the shape."), Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_ACTIVATED, GuiUtils::convertFromPlainText(tr("Controls whether the overlay should be visible on the viewer for "
+                                                                           "the shape."), Qt::WhiteSpaceNormal) );
     treeItem->setIcon(COL_LOCKED, item->getLocked() ? iconLocked : iconUnlocked);
-    treeItem->setToolTip( COL_LOCKED, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoLockedHint), Qt::WhiteSpaceNormal) );
+    treeItem->setToolTip( COL_LOCKED, GuiUtils::convertFromPlainText(tr(kRotoLockedHint), Qt::WhiteSpaceNormal) );
 
     boost::shared_ptr<RotoDrawableItem> drawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
     boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
@@ -1172,16 +1188,16 @@ RotoPanelPrivate::insertItemRecursively(double time,
             }
         }
         treeItem->setIcon(COL_OVERLAY, overlayIcon);
-        treeItem->setToolTip( COL_OVERLAY, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_OVERLAY, GuiUtils::convertFromPlainText(tr(kRotoOverlayHint), Qt::WhiteSpaceNormal) );
         double shapeColor[3];
         drawable->getColor(time, shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
-        treeItem->setToolTip( COL_COLOR, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoColorHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_COLOR, GuiUtils::convertFromPlainText(tr(kRotoColorHint), Qt::WhiteSpaceNormal) );
 #ifdef NATRON_ROTO_INVERTIBLE
         treeItem->setIcon(COL_INVERTED, drawable->getInverted(time)  ? iconInverted : iconUninverted);
-        treeItem->setToolTip( COL_INVERTED, GuiUtils::convertFromPlainText(publicInterface->tr(kRotoInvertedHint), Qt::WhiteSpaceNormal) );
+        treeItem->setToolTip( COL_INVERTED, GuiUtils::convertFromPlainText(tr(kRotoInvertedHint), Qt::WhiteSpaceNormal) );
 #endif
 
         publicInterface->makeCustomWidgetsForItem(drawable, treeItem);
@@ -2562,7 +2578,7 @@ RemoveItemsUndoCommand::undo()
         it->treeItem->setHidden(false);
     }
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 void
@@ -2583,7 +2599,7 @@ RemoveItemsUndoCommand::redo()
         }
     }
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 /////////////////////////////
@@ -2615,7 +2631,7 @@ AddLayerUndoCommand::undo()
     _roto->getContext()->removeItem(_layer, RotoItem::eSelectionReasonSettingsPanel);
     _roto->clearSelection();
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 void
@@ -2640,7 +2656,7 @@ AddLayerUndoCommand::redo()
     _roto->clearSelection();
     _roto->getContext()->select(_layer, RotoItem::eSelectionReasonOther);
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
     _firstRedoCalled = true;
 }
 
@@ -2714,7 +2730,7 @@ DragItemsUndoCommand::undo()
     _roto->getContext()->refreshRotoPaintTree();
     _roto->getContext()->evaluateChange();
 
-    setText( QObject::tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 void
@@ -2735,7 +2751,7 @@ DragItemsUndoCommand::redo()
     }
     _roto->getContext()->refreshRotoPaintTree();
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 //////////////////////
@@ -2867,7 +2883,7 @@ PasteItemUndoCommand::undo()
         }
     }
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 void
@@ -2909,7 +2925,7 @@ PasteItemUndoCommand::redo()
     }
 
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 //////////////////
@@ -2964,7 +2980,7 @@ DuplicateItemUndoCommand::undo()
 {
     _roto->getContext()->removeItem(_item.duplicatedItem, RotoItem::eSelectionReasonOther);
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 void
@@ -2974,7 +2990,7 @@ DuplicateItemUndoCommand::redo()
                                  0, _item.duplicatedItem, RotoItem::eSelectionReasonOther);
 
     _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    setText( tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
 
 

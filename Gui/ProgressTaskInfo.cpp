@@ -32,10 +32,10 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QProgressBar>
 #include <QApplication>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QProgressBar>
 #include <QHBoxLayout>
 CLANG_DIAG_ON(deprecated)
@@ -84,6 +84,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 static MetaTypesRegistration registration;
 struct ProgressTaskInfoPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(ProgressTaskInfo)
+
+public:
     ProgressPanel* panel;
     NodeWPtr node;
     ProgressTaskInfo* _publicInterface;
@@ -445,7 +448,7 @@ ProgressTaskInfoPrivate::createItems()
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
         item->setTextColor(Qt::yellow);
-        item->setText( QObject::tr("Queued") );
+        item->setText( tr("Queued") );
         statusItem = item;
     }
     {
@@ -455,14 +458,14 @@ ProgressTaskInfoPrivate::createItems()
         if (nodeUI) {
             item->setIcon( QIcon() );
         }
-        item->setText( canBePaused ? QObject::tr("Yes") : QObject::tr("No") );
+        item->setText( canBePaused ? tr("Yes") : tr("No") );
         controlsItem = item;
     }
     {
         TableItem* item = new TableItem;
         item->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
         assert(item);
-        item->setText( QObject::tr("N/A") );
+        item->setText( tr("N/A") );
         timeRemainingItem = item;
     }
     {
@@ -472,11 +475,11 @@ ProgressTaskInfoPrivate::createItems()
         if ( getNode()->getEffectInstance()->isOutput() ) {
             QString frames;
             frames.append( QString::number(firstFrame) );
-            frames.append( QObject::tr("-") );
+            frames.append( QChar::fromLatin1('-') );
             frames.append( QString::number(lastFrame) );
             item->setText(frames);
         } else {
-            item->setText( QObject::tr("N/A") );
+            item->setText( tr("N/A") );
         }
         frameRangeItem = item;
     }

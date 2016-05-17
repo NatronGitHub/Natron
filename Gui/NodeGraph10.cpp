@@ -31,7 +31,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QMouseEvent>
-#include <QString>
+#include <QtCore/QString>
 #include <QAction>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)

@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QApplication>
 #include <QToolButton>
 #include <QActionGroup>
@@ -86,6 +86,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 struct HistogramPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(Histogram)
+
+public:
     HistogramPrivate(Histogram* widget)
         : mainLayout(NULL)
         , rightClickMenu(NULL)
@@ -1621,7 +1624,7 @@ HistogramPrivate::drawWarnings()
     assert( QGLContext::currentContext() == widget->context() );
     if (mipMapLevel > 0) {
         QFontMetrics m(_font);
-        QString str( QObject::tr("Image downscaled") );
+        QString str( tr("Image downscaled") );
         int strWidth = m.width(str);
         QPointF pos = zoomCtx.toZoomCoordinates(widget->width() - strWidth - 10, 5 * m.height() + 30);
         glCheckError();
@@ -1650,7 +1653,7 @@ HistogramPrivate::drawMissingImage()
         glEnd();
         glLineWidth(1.);
     }
-    QString txt( QObject::tr("Missing image") );
+    QString txt( tr("Missing image") );
     QFontMetrics m(_font);
     int strWidth = m.width(txt);
     QPointF pos = zoomCtx.toZoomCoordinates(widget->width() / 2. - strWidth / 2., m.height() + 10);

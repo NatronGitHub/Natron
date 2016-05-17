@@ -25,7 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QString>
+#include <QtCore/QString>
 
 #include "Global/Macros.h"
 

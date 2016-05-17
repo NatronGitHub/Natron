@@ -29,7 +29,7 @@
 #include <cstring> // for std::memcpy, std::memset
 #include <stdexcept>
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
 #include "Engine/ViewIdx.h"

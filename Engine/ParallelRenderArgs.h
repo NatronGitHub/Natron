@@ -61,7 +61,6 @@ struct InputMatrix
 typedef std::map<int, InputMatrix> InputMatrixMap;
 
 
-
 struct NodeFrameRequest;
 
 /**
@@ -142,7 +141,7 @@ struct ParallelRenderArgs
 
 
     ParallelRenderArgs();
-    
+
     bool isCurrentFrameRenderNotAbortable() const;
 };
 

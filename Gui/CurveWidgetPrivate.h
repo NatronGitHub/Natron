@@ -76,6 +76,8 @@ enum EventStateEnum
 // (in fact, many members could probably be made private)
 class CurveWidgetPrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(CurveWidget)
+
 public:
     CurveWidgetPrivate(Gui* gui,
                        CurveSelection* selection,

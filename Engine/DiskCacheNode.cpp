@@ -85,8 +85,8 @@ DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
 void
 DiskCacheNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
-    boost::shared_ptr<KnobChoice> frameRange = AppManager::createKnob<KnobChoice>(this, "Frame range");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    boost::shared_ptr<KnobChoice> frameRange = AppManager::createKnob<KnobChoice>( this, tr("Frame range") );
 
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
@@ -100,7 +100,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
 
-    boost::shared_ptr<KnobInt> firstFrame = AppManager::createKnob<KnobInt>(this, "First frame");
+    boost::shared_ptr<KnobInt> firstFrame = AppManager::createKnob<KnobInt>( this, tr("First Frame") );
     firstFrame->setAnimationEnabled(false);
     firstFrame->setName("firstFrame");
     firstFrame->disableSlider();
@@ -111,7 +111,7 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
 
-    boost::shared_ptr<KnobInt> lastFrame = AppManager::createKnob<KnobInt>(this, "Last frame");
+    boost::shared_ptr<KnobInt> lastFrame = AppManager::createKnob<KnobInt>( this, tr("Last Frame") );
     lastFrame->setAnimationEnabled(false);
     lastFrame->setName("LastFrame");
     lastFrame->disableSlider();
@@ -121,10 +121,10 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
 
-    boost::shared_ptr<KnobButton> preRender = AppManager::createKnob<KnobButton>(this, "Pre-cache");
+    boost::shared_ptr<KnobButton> preRender = AppManager::createKnob<KnobButton>( this, tr("Pre-cache") );
     preRender->setName("preRender");
     preRender->setEvaluateOnChange(false);
-    preRender->setHintToolTip("Cache the frame range specified by rendering images at zoom-level 100% only.");
+    preRender->setHintToolTip( tr("Cache the frame range specified by rendering images at zoom-level 100% only.") );
     page->addKnob(preRender);
     _imp->preRender = preRender;
 }
@@ -234,3 +234,4 @@ DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 }
 
 NATRON_NAMESPACE_EXIT;
+

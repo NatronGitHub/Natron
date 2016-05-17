@@ -31,9 +31,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-#include <QThread>
+
+#include <QtCore/QThread>
+#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/BufferableObject.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -72,7 +75,7 @@ struct RenderThreadTaskPrivate;
 class RenderThreadTask
     :  public QThread
 #ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
+      , public AbortableThread
 #endif
 #else
 class RenderThreadTask
@@ -464,6 +467,10 @@ private:
 class DefaultScheduler
     : public OutputSchedulerThread
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     DefaultScheduler(RenderEngine* engine, const boost::shared_ptr<OutputEffectInstance>& effect);

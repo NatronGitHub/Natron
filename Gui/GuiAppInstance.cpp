@@ -26,10 +26,10 @@
 
 #include <stdexcept>
 
-#include <QDir>
+#include <QtCore/QDir>
 #include <QSettings>
-#include <QMutex>
-#include <QCoreApplication>
+#include <QtCore/QMutex>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
@@ -245,7 +245,7 @@ GuiAppInstance::load(const CLArgs& cl,
                      bool makeEmptyInstance)
 {
     if (getAppID() == 0) {
-        appPTR->setLoadingStatus( QObject::tr("Creating user interface...") );
+        appPTR->setLoadingStatus( tr("Creating user interface...") );
     }
 
     try {
@@ -279,8 +279,8 @@ GuiAppInstance::load(const CLArgs& cl,
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
         if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
-                                                               tr("Do you want " NATRON_APPLICATION_NAME " to check for updates "
-                                                                  "on launch of the application ?").toStdString(), false);
+                                                               tr("Do you want %1 to check for updates "
+                                                                  "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
             bool checkForUpdates = reply == eStandardButtonYes;
             nSettings->setCheckUpdatesEnabled(checkForUpdates);
         }
@@ -293,8 +293,8 @@ GuiAppInstance::load(const CLArgs& cl,
 
     if ( nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
-                                                           tr(NATRON_APPLICATION_NAME " default appearance changed since last version.\n"
-                                                              "Would you like to set the new default appearance?").toStdString(), false);
+                                                           tr("The default appearance of %1 changed since last version.\n"
+                                                              "Would you like to use the new default appearance?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
         if (reply == eStandardButtonYes) {
             nSettings->restoreDefaultAppearance();
         }
@@ -316,10 +316,10 @@ GuiAppInstance::load(const CLArgs& cl,
 
         if ( !appPTR->isShorcutVersionUpToDate() ) {
             StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
-                                                      tr("Default shortcuts for " NATRON_APPLICATION_NAME " have changed, "
-                                                         "would you like to set them to their defaults ? "
+                                                      tr("Default shortcuts for %1 have changed, "
+                                                         "would you like to set them to their defaults?\n"
                                                          "Clicking no will keep the old shortcuts hence if a new shortcut has been "
-                                                         "set to something else than an empty shortcut you won't benefit of it.").toStdString(),
+                                                         "set to something else than an empty shortcut you will not benefit of it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(),
                                                       false,
                                                       StandardButtons(eStandardButtonYes | eStandardButtonNo),
                                                       eStandardButtonNo);
@@ -370,7 +370,7 @@ GuiAppInstance::load(const CLArgs& cl,
             appPTR->setFileToOpen( QString() );
         } else {
             Dialogs::errorDialog( tr("Invalid file").toStdString(),
-                                  tr(NATRON_APPLICATION_NAME " only accepts python scripts or .ntp project files").toStdString() );
+                                  tr("%1 only accepts python scripts or .ntp project files").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
             execOnProjectCreatedCallback();
         }
     }
@@ -411,8 +411,8 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
     }
 
     QString text = tr("An auto-saved project was found with no associated project file.\n"
-                      "Would you like to restore it? Clicking No will remove this auto-save.");
-
+                      "Would you like to restore it?\n"
+                      "Clicking No will remove this auto-save.");
 
     appPTR->hideSplashScreen();
 

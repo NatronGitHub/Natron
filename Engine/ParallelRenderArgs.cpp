@@ -172,10 +172,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                 continue;
             }
             if ( foundInputRoI->second.isInfinite() ) {
-                std::stringstream ss;
-                ss << node->getScriptName_mt_safe();
-                ss << QObject::tr(" asked for an infinite region of interest upstream").toStdString();
-                effect->setPersistentMessage( eMessageTypeError, ss.str() );
+                effect->setPersistentMessage( eMessageTypeError, tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
 
                 return EffectInstance::eRenderRoIRetCodeFailed;
             }
@@ -846,32 +843,32 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 }
 
 ParallelRenderArgs::ParallelRenderArgs()
-: time(0)
-, timeline(0)
-, nodeHash(0)
-, request()
-, view(0)
-, abortInfo()
-, treeRoot()
-, rotoPaintNodes()
-, stats()
-, textureIndex(0)
-, currentThreadSafety(eRenderSafetyInstanceSafe)
-, isRenderResponseToUserInteraction(false)
-, isSequentialRender(false)
-, isAnalysis(false)
-, isDuringPaintStrokeCreation(false)
-, doNansHandling(true)
-, draftMode(false)
-, tilesSupported(false)
-, viewerProgressReportEnabled(false)
+    : time(0)
+    , timeline(0)
+    , nodeHash(0)
+    , request()
+    , view(0)
+    , abortInfo()
+    , treeRoot()
+    , rotoPaintNodes()
+    , stats()
+    , textureIndex(0)
+    , currentThreadSafety(eRenderSafetyInstanceSafe)
+    , isRenderResponseToUserInteraction(false)
+    , isSequentialRender(false)
+    , isAnalysis(false)
+    , isDuringPaintStrokeCreation(false)
+    , doNansHandling(true)
+    , draftMode(false)
+    , tilesSupported(false)
+    , viewerProgressReportEnabled(false)
 {
 }
 
 bool
 ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
 {
-    return isRenderResponseToUserInteraction && (!abortInfo || !abortInfo->canAbort());
+    return isRenderResponseToUserInteraction && ( !abortInfo || !abortInfo->canAbort() );
 }
 
 NATRON_NAMESPACE_EXIT;

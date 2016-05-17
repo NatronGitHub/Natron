@@ -28,15 +28,15 @@
 
 #include <QApplication> // qApp
 #include <QColorDialog>
-#include <QTimer>
+#include <QtCore/QTimer>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QFile>
-#include <QTextStream>
+#include <QtCore/QFile>
+#include <QtCore/QTextStream>
 #include <QDesktopServices>
 #include <QTextDocument>
 
@@ -86,45 +86,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 using std::make_pair;
 
+
 NATRON_NAMESPACE_ENTER;
-
-
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-class OverlayColorButton
-    : public Button
-{
-    DockablePanel* _panel;
-
-public:
-
-
-    OverlayColorButton(DockablePanel* panel,
-                       const QIcon& icon,
-                       QWidget* parent)
-        : Button(icon, QString(), parent)
-        , _panel(panel)
-    {
-    }
-
-private:
-
-    virtual void mousePressEvent(QMouseEvent* e) OVERRIDE FINAL
-    {
-        if ( triggerButtonIsRight(e) ) {
-            StandardButtonEnum rep = Dialogs::questionDialog(tr("Warning").toStdString(),
-                                                             tr("Are you sure you want to reset the overlay color ?").toStdString(),
-                                                             false);
-            if (rep == eStandardButtonYes) {
-                _panel->resetHostOverlayColor();
-            }
-        } else {
-            Button::mousePressEvent(e);
-        }
-    }
-};
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 DockablePanel::DockablePanel(Gui* gui,
@@ -872,7 +835,8 @@ DockablePanel::helpString() const
 {
     //Base help
     QString tt;
-    if (Qt::mightBeRichText(_imp->_helpToolTip)) {
+
+    if ( Qt::mightBeRichText(_imp->_helpToolTip) ) {
         tt = _imp->_helpToolTip;
     } else {
         tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
@@ -1767,7 +1731,7 @@ DockablePanel::recreateKnobs(const QString& curTabName,
     ///Refresh the curve editor with potential new animated knobs
     if (isNodePanel) {
         NodeGuiPtr node = isNodePanel->getNode();
-        
+
         getGui()->getCurveEditor()->removeNode( node.get() );
         getGui()->getCurveEditor()->addNode(node);
 

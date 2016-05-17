@@ -29,7 +29,7 @@
 #include <set>
 #include <map>
 #include <list>
-#include <QString>
+#include <QtCore/QString>
 #include <QStringList>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -153,6 +153,7 @@ public:
 };
 
 
+
 class Plugin
 {
     LibraryBinary* _binary;
@@ -185,7 +186,7 @@ class Plugin
     mutable bool _activated;
 
     /*
-      These are shortcuts that the plug-in registered
+       These are shortcuts that the plug-in registered
      */
     std::list<PluginActionShortcut> _shortcuts;
 
@@ -264,7 +265,8 @@ public:
 
     ~Plugin();
 
-    void setShorcuts(const std::list<PluginActionShortcut>& shortcuts) {
+    void setShorcuts(const std::list<PluginActionShortcut>& shortcuts)
+    {
         _shortcuts = shortcuts;
     }
 

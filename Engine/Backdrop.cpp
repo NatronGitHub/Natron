@@ -55,20 +55,20 @@ Backdrop::~Backdrop()
 std::string
 Backdrop::getPluginDescription() const
 {
-    return QObject::tr("The node backdrop is useful to group nodes and identify them in the node graph. You can also "
-                       "move all the nodes inside the backdrop.").toStdString();
+    return tr("The Backdrop node is useful to group nodes and identify them in the node graph.\n"
+              "You can also move all the nodes inside the backdrop.").toStdString();
 }
 
 void
 Backdrop::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>(this, "Controls");
-    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, "Label");
+    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    boost::shared_ptr<KnobString> knobLabel = AppManager::createKnob<KnobString>( this, tr("Label") );
 
     knobLabel->setAnimationEnabled(false);
     knobLabel->setAsMultiLine();
     knobLabel->setUsesRichText(true);
-    knobLabel->setHintToolTip( QObject::tr("Text to display on the backdrop.").toStdString() );
+    knobLabel->setHintToolTip( tr("Text to display on the backdrop.") );
     knobLabel->setEvaluateOnChange(false);
     page->addKnob(knobLabel);
     _imp->knobLabel = knobLabel;

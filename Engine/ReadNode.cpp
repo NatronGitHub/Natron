@@ -16,13 +16,11 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
-
 
 #include "ReadNode.h"
 
@@ -34,8 +32,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include <QCoreApplication>
-#include <QProcess>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QProcess>
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -185,6 +183,9 @@ ReadNode::isBundledReader(const std::string& pluginID)
 
 struct ReadNodePrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(ReadNode)
+
+public:
     ReadNode* _publicInterface;
     NodePtr embeddedPlugin;
     std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
@@ -413,7 +414,7 @@ ReadNodePrivate::createDefaultReadNode()
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
 
     if (!embeddedPlugin) {
-        QString error = QObject::tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
+        QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
         throw std::runtime_error( error.toStdString() );
     }
 
@@ -436,15 +437,13 @@ ReadNodePrivate::checkDecoderCreated(double time,
     assert(fileKnob);
     std::string pattern = fileKnob->getFileName(std::floor(time + 0.5), view);
     if ( pattern.empty() ) {
-        _publicInterface->setPersistentMessage( eMessageTypeError, QObject::tr("Filename empty").toStdString() );
+        _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
 
         return false;
     }
     if (!embeddedPlugin) {
-        std::stringstream ss;
-        ss << QObject::tr("Decoder was not created for ").toStdString() << pattern;
-        ss << QObject::tr(" check that the file exists and its format is supported").toStdString();
-        _publicInterface->setPersistentMessage( eMessageTypeError, ss.str() );
+        QString s = tr("Decoder was not created for %1, check that the file exists and its format is supported.").arg( QString::fromUtf8( pattern.c_str() ) );
+        _publicInterface->setPersistentMessage( eMessageTypeError, s.toStdString() );
 
         return false;
     }
@@ -517,8 +516,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     if (readerPluginID.empty() && !serialization) {
         //Couldn't find any reader
         if ( !ext.empty() ) {
-            QString message = QObject::tr("No plugin capable of decoding") + QLatin1Char(' ') + QString::fromUtf8( ext.c_str() ) + QLatin1Char(' ') + QObject::tr("was found") + QLatin1Char('.');
-            //Dialogs::errorDialog(QObject::tr("Read").toStdString(), message.toStdString(), false);
+            QString message = tr("No plugin capable of decoding %1 was found.")
+                              .arg( QString::fromUtf8( ext.c_str() ) );
+            //Dialogs::errorDialog(tr("Read").toStdString(), message.toStdString(), false);
             if (throwErrors) {
                 throw std::runtime_error( message.toStdString() );
             }
@@ -851,34 +851,34 @@ ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
 void
 ReadNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>(this, "Controls");
-    boost::shared_ptr<KnobButton> fileInfos = AppManager::createKnob<KnobButton>(this, "File Info...");
+    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    boost::shared_ptr<KnobButton> fileInfos = AppManager::createKnob<KnobButton>( this, tr("File Info...") );
 
     fileInfos->setName("fileInfo");
-    fileInfos->setHintToolTip("Press to display informations about the file");
+    fileInfos->setHintToolTip( tr("Press to display informations about the file") );
     controlpage->addKnob(fileInfos);
     _imp->fileInfosKnob = fileInfos;
     _imp->readNodeKnobs.push_back(fileInfos);
 
-    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>(this, "Decoder");
+    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>( this, tr("Decoder") );
     pluginSelector->setAnimationEnabled(false);
     pluginSelector->setName(kNatronReadNodeParamDecodingPluginChoice);
-    pluginSelector->setHintToolTip("Select the internal decoder plug-in used for this file format. By default this uses "
-                                   "the plug-in selected for this file extension in the Preferences of Natron");
+    pluginSelector->setHintToolTip( tr("Select the internal decoder plug-in used for this file format. By default this uses "
+                                       "the plug-in selected for this file extension in the Preferences of Natron") );
     pluginSelector->setEvaluateOnChange(false);
     _imp->pluginSelectorKnob = pluginSelector;
     controlpage->addKnob(pluginSelector);
 
     _imp->readNodeKnobs.push_back(pluginSelector);
 
-    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>(this, "Decoder Options");
+    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>( this, tr("Decoder Options") );
     separator->setName("decoderOptionsSeparator");
-    separator->setHintToolTip("Below can be found parameters that are specific to the Reader plug-in.");
+    separator->setHintToolTip( tr("Below can be found parameters that are specific to the Reader plug-in.") );
     controlpage->addKnob(separator);
     _imp->separatorKnob = separator;
     _imp->readNodeKnobs.push_back(separator);
 
-    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>(this, "PluginID");
+    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>( this, tr("PluginID") );
     pluginID->setAnimationEnabled(false);
     pluginID->setName(kNatronReadNodeParamDecodingPluginID);
     pluginID->setSecretByDefault(true);
@@ -1133,3 +1133,6 @@ ReadNode::getFramesNeeded(double time,
 }
 
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_ReadNode.cpp"

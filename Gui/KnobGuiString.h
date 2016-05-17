@@ -64,8 +64,10 @@ class AnimatingTextEdit
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY( int animation READ getAnimation WRITE setAnimation)
-    Q_PROPERTY( bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // properties
+    Q_PROPERTY(int animation READ getAnimation WRITE setAnimation)
+    Q_PROPERTY(bool readOnlyNatron READ isReadOnlyNatron WRITE setReadOnlyNatron)
     Q_PROPERTY(bool dirty READ getDirty WRITE setDirty)
 
 public:

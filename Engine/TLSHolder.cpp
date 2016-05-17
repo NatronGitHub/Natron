@@ -34,9 +34,9 @@
 #include "Engine/Project.h"
 #include "Engine/ThreadPool.h"
 
-#include <QWaitCondition>
-#include <QThread>
-#include <QDebug>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QThread>
+#include <QtCore/QDebug>
 
 NATRON_NAMESPACE_ENTER;
 
@@ -65,8 +65,9 @@ AppTLS::registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder)
     }
 }
 
-static void copyAbortInfo(QThread* fromThread,
-                          QThread* toThread)
+static void
+copyAbortInfo(QThread* fromThread,
+              QThread* toThread)
 {
 #ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* fromAbortable = dynamic_cast<AbortableThread*>(fromThread);
@@ -78,6 +79,9 @@ static void copyAbortInfo(QThread* fromThread,
         fromAbortable->getAbortInfo(&isRenderResponseToUserInteraction, &abortInfo, &treeRoot);
         toAbortable->setAbortInfo(isRenderResponseToUserInteraction, abortInfo, treeRoot);
     }
+#else
+    Q_UNUSED(fromThread);
+    Q_UNUSED(toThread);
 #endif
 }
 
@@ -111,7 +115,7 @@ AppTLS::softCopy(QThread* fromThread,
     }
 
     copyAbortInfo(fromThread, toThread);
-    
+
     QWriteLocker k(&_spawnsMutex);
     _spawns[toThread] = fromThread;
 }

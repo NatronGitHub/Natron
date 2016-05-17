@@ -29,7 +29,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QDebug>
+#include <QtCore/QDebug>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -82,7 +82,7 @@ void
 MoveMultipleNodesCommand::undo()
 {
     move(-_dx, -_dy);
-    setText( QObject::tr("Move nodes") );
+    setText( tr("Move nodes") );
 }
 
 void
@@ -92,7 +92,7 @@ MoveMultipleNodesCommand::redo()
         move(_dx, _dy);
     }
     _firstRedoCalled = true;
-    setText( QObject::tr("Move nodes") );
+    setText( tr("Move nodes") );
 }
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
@@ -166,7 +166,7 @@ AddMultipleNodesCommand::undo()
     }
 
 
-    setText( QObject::tr("Add node") );
+    setText( tr("Add node") );
 }
 
 void
@@ -214,7 +214,7 @@ AddMultipleNodesCommand::redo()
 
 
     _firstRedoCalled = true;
-    setText( QObject::tr("Add node") );
+    setText( tr("Add node") );
 }
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
@@ -312,7 +312,7 @@ RemoveMultipleNodesCommand::undo()
 
     _isRedone = false;
     _graph->scene()->update();
-    setText( QObject::tr("Remove node") );
+    setText( tr("Remove node") );
 } // RemoveMultipleNodesCommand::undo
 
 void
@@ -405,7 +405,7 @@ RemoveMultipleNodesCommand::redo()
     _graph->updateNavigator();
 
     _graph->scene()->update();
-    setText( QObject::tr("Remove node") );
+    setText( tr("Remove node") );
 } // redo
 
 ConnectCommand::ConnectCommand(NodeGraph* graph,
@@ -436,10 +436,10 @@ ConnectCommand::undo()
               _inputNb);
 
     if (newSrc) {
-        setText( QObject::tr("Connect %1 to %2")
+        setText( tr("Connect %1 to %2")
                  .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
     } else {
-        setText( QObject::tr("Disconnect %1")
+        setText( tr("Disconnect %1")
                  .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
     }
 
@@ -464,10 +464,10 @@ ConnectCommand::redo()
               _inputNb);
 
     if (newSrc) {
-        setText( QObject::tr("Connect %1 to %2")
+        setText( tr("Connect %1 to %2")
                  .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ).arg( QString::fromUtf8( newSrc->getNode()->getLabel().c_str() ) ) );
     } else {
-        setText( QObject::tr("Disconnect %1")
+        setText( tr("Disconnect %1")
                  .arg( QString::fromUtf8( dst->getNode()->getLabel().c_str() ) ) );
     }
 
@@ -546,7 +546,7 @@ InsertNodeCommand::InsertNodeCommand(NodeGraph* graph,
     , _inputEdge(0)
 {
     assert(newSrc);
-    setText( QObject::tr("Insert node") );
+    setText( tr("Insert node") );
 }
 
 void
@@ -661,14 +661,14 @@ void
 ResizeBackdropCommand::undo()
 {
     _bd->resize(_oldW, _oldH);
-    setText( QObject::tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
+    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 void
 ResizeBackdropCommand::redo()
 {
     _bd->resize(_w, _h);
-    setText( QObject::tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
+    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
 }
 
 bool
@@ -716,7 +716,7 @@ DecloneMultipleNodesCommand::undo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( QObject::tr("Declone node") );
+    setText( tr("Declone node") );
 }
 
 void
@@ -727,7 +727,7 @@ DecloneMultipleNodesCommand::redo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( QObject::tr("Declone node") );
+    setText( tr("Declone node") );
 }
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -1055,7 +1055,7 @@ RearrangeNodesCommand::undo()
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node->refreshPosition(it->oldPos.x(), it->oldPos.y(), true);
     }
-    setText( QObject::tr("Rearrange nodes") );
+    setText( tr("Rearrange nodes") );
 }
 
 void
@@ -1064,7 +1064,7 @@ RearrangeNodesCommand::redo()
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->node->refreshPosition(it->newPos.x(), it->newPos.y(), true);
     }
-    setText( QObject::tr("Rearrange nodes") );
+    setText( tr("Rearrange nodes") );
 }
 
 DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr > & nodes,
@@ -1083,7 +1083,7 @@ DisableNodesCommand::undo()
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
-    setText( QObject::tr("Disable nodes") );
+    setText( tr("Disable nodes") );
 }
 
 void
@@ -1092,7 +1092,7 @@ DisableNodesCommand::redo()
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
-    setText( QObject::tr("Disable nodes") );
+    setText( tr("Disable nodes") );
 }
 
 EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr > & nodes,
@@ -1111,7 +1111,7 @@ EnableNodesCommand::undo()
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(true);
     }
-    setText( QObject::tr("Enable nodes") );
+    setText( tr("Enable nodes") );
 }
 
 void
@@ -1120,7 +1120,7 @@ EnableNodesCommand::redo()
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         it->lock()->getNode()->setNodeDisabled(false);
     }
-    setText( QObject::tr("Enable nodes") );
+    setText( tr("Enable nodes") );
 }
 
 LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
@@ -1166,7 +1166,7 @@ LoadNodePresetsCommand::undo()
     }
     internalNode->getEffectInstance()->incrHashAndEvaluate(true, true);
     internalNode->getApp()->triggerAutoSave();
-    setText( QObject::tr("Load presets") );
+    setText( tr("Load presets") );
 }
 
 void
@@ -1226,7 +1226,7 @@ LoadNodePresetsCommand::redo()
     internalNode->getApp()->triggerAutoSave();
     _firstRedoCalled = true;
 
-    setText( QObject::tr("Load presets") );
+    setText( tr("Load presets") );
 } // LoadNodePresetsCommand::redo
 
 RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
@@ -1238,7 +1238,7 @@ RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
     , _newName(newName)
 {
     assert(node);
-    setText( QObject::tr("Rename node") );
+    setText( tr("Rename node") );
 }
 
 RenameNodeUndoRedoCommand::~RenameNodeUndoRedoCommand()
@@ -1407,7 +1407,7 @@ ExtractNodeUndoRedoCommand::undo()
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    setText( QObject::tr("Extract node") );
+    setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::undo
 
 void
@@ -1497,7 +1497,7 @@ ExtractNodeUndoRedoCommand::redo()
     _graph->getGui()->getApp()->triggerAutoSave();
 
 
-    setText( QObject::tr("Extract node") );
+    setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::redo
 
 GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,
@@ -1508,7 +1508,7 @@ GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,
     , _firstRedoCalled(false)
     , _isRedone(false)
 {
-    setText( QObject::tr("Group from selection") );
+    setText( tr("Group from selection") );
 
     assert( !nodes.empty() );
 
@@ -1716,7 +1716,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
     , _groupNodes()
     , _firstRedoCalled(false)
 {
-    setText( QObject::tr("Inline group(s)") );
+    setText( tr("Inline group(s)") );
 
     for (std::list<NodeGuiPtr >::const_iterator it = groupNodes.begin(); it != groupNodes.end(); ++it) {
         NodeGroup* group = (*it)->getNode()->isEffectGroup();

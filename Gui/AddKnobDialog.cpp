@@ -617,7 +617,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         }
     }
     {
-        _imp->tooltipLabel = new Label(tr("Tooltip:"), this);
+        _imp->tooltipLabel = new Label(tr("ToolTip:"), this);
         _imp->tooltipArea = new QTextEdit(this);
         _imp->tooltipArea->setToolTip( GuiUtils::convertFromPlainText(tr("The help tooltip that will appear when hovering the parameter with the mouse."), Qt::WhiteSpaceNormal) );
         _imp->mainLayout->addRow(_imp->tooltipLabel, _imp->tooltipArea);
@@ -660,7 +660,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
         _imp->multiLineLabel = new Label(tr("Multi-line:"), optContainer);
         _imp->multiLine = new QCheckBox(optContainer);
-        _imp->multiLine->setToolTip( GuiUtils::convertFromPlainText(tr("Should this text be multi-line or single-line ?"), Qt::WhiteSpaceNormal) );
+        _imp->multiLine->setToolTip( GuiUtils::convertFromPlainText(tr("Should this text be multi-line or single-line?"), Qt::WhiteSpaceNormal) );
         optLayout->addWidget(_imp->multiLine);
         _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
 
@@ -1877,13 +1877,8 @@ AddKnobDialog::onOkClicked()
                 }
             }
             if (defIndex == -1) {
-                std::stringstream ss;
-                ss << QObject::tr("The default value").toStdString();
-                ss << " \"";
-                ss << defValue;
-                ss << "\" ";
-                ss << QObject::tr("does not exist in the defined menu items").toStdString();
-                Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), ss.str() );
+                QString s = tr("The default value \"%1\" does not exist in the defined menu items.").arg( _imp->defaultStr->text() );
+                Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), s.toStdString() );
 
                 return;
             }

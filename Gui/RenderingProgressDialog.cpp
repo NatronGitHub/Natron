@@ -37,11 +37,11 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
 #include <QTextBrowser>
 #include <QApplication>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QKeyEvent>
-#include <QMutex>
-#include <QString>
-#include <QTimer>
+#include <QtCore/QMutex>
+#include <QtCore/QString>
+#include <QtCore/QTimer>
 #include <QProgressBar>
 #include <QtCore/QTextStream>
 CLANG_DIAG_ON(deprecated)
@@ -169,7 +169,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
         if (retCode == 0) {
             if (_imp->_process) {
                 StandardButtonEnum reply = Dialogs::questionDialog( tr("Render").toStdString(), tr("The render ended successfully.\n"
-                                                                                                   "Would you like to see the log ?").toStdString(), false );
+                                                                                                   "Would you like to see the log?").toStdString(), false );
                 if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
@@ -180,7 +180,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
             if (_imp->_process) {
                 StandardButtonEnum reply = Dialogs::questionDialog( tr("Render").toStdString(),
                                                                     tr("The render ended with a return code of 1, a problem occured.\n"
-                                                                       "Would you like to see the log ?").toStdString(), false );
+                                                                       "Would you like to see the log?").toStdString(), false );
                 if (reply == eStandardButtonYes) {
                     showLog = true;
                 }
@@ -190,7 +190,7 @@ RenderingProgressDialog::onProcessFinished(int retCode)
         } else {
             if (_imp->_process) {
                 StandardButtonEnum reply = Dialogs::questionDialog( tr("Render").toStdString(), tr("The render crashed.\n"
-                                                                                                   "Would you like to see the log ?").toStdString(), false);
+                                                                                                   "Would you like to see the log?").toStdString(), false);
                 if (reply == eStandardButtonYes) {
                     showLog = true;
                 }

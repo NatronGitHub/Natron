@@ -30,9 +30,9 @@
 #include <stdexcept>
 
 #include <QtCore/QDebug>
-#include <QByteArray>
-#include <QReadWriteLock>
-#include <QPointF>
+#include <QtCore/QByteArray>
+#include <QtCore/QReadWriteLock>
+#include <QtCore/QPointF>
 
 
 #include "Global/Macros.h"
@@ -1015,7 +1015,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     {
         RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-        REPORT_CURRENT_THREAD_ACTION("kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+        REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
         SET_CAN_SET_VALUE(true);
         ClipsThreadStorageSetter clipSetter(effectInstance(),
@@ -1859,12 +1859,11 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         if ( !getNode()->hasPersistentMessage() ) {
             QString err;
             if (stat == kOfxStatErrImageFormat) {
-                err.append( QObject::tr("Bad image format was supplied by ") );
-                err.append( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+                err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
             } else if (stat == kOfxStatErrMemory) {
-                err.append( QObject::tr("Out of memory!") );
+                err = tr("Out of memory!");
             } else {
-                err.append( QObject::tr("Unknown failure reason") );
+                err = tr("Unknown failure reason.");
             }
             setPersistentMessage( eMessageTypeError, err.toStdString() );
         }

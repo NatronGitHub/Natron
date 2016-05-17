@@ -29,8 +29,8 @@
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset
 
-#include <QWaitCondition>
-#include <QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QMutex>
 
 #include "Gui/GuiDefines.h"
 #include "Gui/NodeGui.h"
@@ -71,11 +71,13 @@ struct PreviewThreadPrivate
 PreviewThread::PreviewThread()
     : QThread()
 #ifdef QT_CUSTOM_THREADPOOL
-, AbortableThread(this)
+    , AbortableThread(this)
 #endif
     , _imp( new PreviewThreadPrivate() )
 {
+#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("PreviewThread");
+#endif
 }
 
 PreviewThread::~PreviewThread()

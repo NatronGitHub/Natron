@@ -31,7 +31,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 #include <QPixmap>
-#include <QString>
+#include <QtCore/QString>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -42,6 +42,11 @@ NATRON_NAMESPACE_ENTER;
 class SplashScreen
     : public QWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     QPixmap _pixmap;
     QString _text;
     QString _versionString;
@@ -65,6 +70,11 @@ private:
 class LoadProjectSplashScreen
     : public QWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     QPixmap _pixmap;
     QString _text;
     QString _projectName;

@@ -40,6 +40,11 @@ NATRON_NAMESPACE_ENTER;
 class EditExpressionDialog
     : public EditScriptDialog
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     int _dimension;
     KnobGuiPtr _knob;
 

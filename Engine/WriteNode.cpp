@@ -16,13 +16,11 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
-
 
 #include "WriteNode.h"
 
@@ -166,6 +164,9 @@ WriteNode::isBundledWriter(const std::string& pluginID)
 
 struct WriteNodePrivate
 {
+    Q_DECLARE_TR_FUNCTIONS(WriteNode)
+
+public:
     WriteNode* _publicInterface;
     NodeWPtr embeddedPlugin, readBackNode, inputNode, outputNode;
     std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
@@ -398,7 +399,7 @@ WriteNodePrivate::createDefaultWriteNode()
     embeddedPlugin = _publicInterface->getApp()->createNode(args);
 
     if ( !embeddedPlugin.lock() ) {
-        QString error = QObject::tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
+        QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
         throw std::runtime_error( error.toStdString() );
     }
 
@@ -421,15 +422,14 @@ WriteNodePrivate::checkEncoderCreated(double time,
     assert(fileKnob);
     std::string pattern = fileKnob->generateFileNameAtTime( std::floor(time + 0.5), ViewSpec( view.value() ) ).toStdString();
     if ( pattern.empty() ) {
-        _publicInterface->setPersistentMessage( eMessageTypeError, QObject::tr("Filename empty").toStdString() );
+        _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 
         return false;
     }
     if ( !embeddedPlugin.lock() ) {
-        std::stringstream ss;
-        ss << QObject::tr("Encoder was not created for ").toStdString() << pattern;
-        ss << QObject::tr(" check that the file exists and its format is supported").toStdString();
-        _publicInterface->setPersistentMessage( eMessageTypeError, ss.str() );
+        QString s = tr("Encoder was not created for %1. Check that the file exists and its format is supported.")
+                    .arg( QString::fromUtf8( pattern.c_str() ) );
+        _publicInterface->setPersistentMessage( eMessageTypeError, s.toStdString() );
 
         return false;
     }
@@ -633,8 +633,8 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     if (writerPluginID.empty() && !serialization) {
         //Couldn't find any reader
         if ( !ext.empty() ) {
-            QString message = QObject::tr("No plugin capable of encoding") + QLatin1Char(' ') + QString::fromUtf8( ext.c_str() ) + QLatin1Char(' ') + QObject::tr("was found") + QLatin1Char('.');
-            //Dialogs::errorDialog(QObject::tr("Read").toStdString(), message.toStdString(), false);
+            QString message = tr("No plugin capable of encoding %1 was found.").arg( QString::fromUtf8( ext.c_str() ) );
+            //Dialogs::errorDialog(tr("Read").toStdString(), message.toStdString(), false);
             if (throwErrors) {
                 throw std::runtime_error( message.toStdString() );
             }
@@ -839,14 +839,14 @@ WriteNode::getPluginGrouping(std::list<std::string>* grouping) const
 void
 WriteNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>(this, "Controls");
+    boost::shared_ptr<KnobPage> controlpage = AppManager::createKnob<KnobPage>( this, tr("Controls") );
 
 
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(this, kNatronWriteParamFrameStepLabel, 1, false);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(this, tr(kNatronWriteParamFrameStepLabel), 1, false);
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
-    frameIncrKnob->setHintToolTip(kNatronWriteParamFrameStepHint);
+    frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
@@ -867,10 +867,10 @@ WriteNode::initializeKnobs()
     _imp->frameIncrKnob = frameIncrKnob;
     _imp->writeNodeKnobs.push_back(frameIncrKnob);
 
-    boost::shared_ptr<KnobBool> readBack = AppManager::createKnob<KnobBool>(this, kNatronWriteParamReadBackLabel);
+    boost::shared_ptr<KnobBool> readBack = AppManager::createKnob<KnobBool>( this, tr(kNatronWriteParamReadBackLabel) );
     readBack->setAnimationEnabled(false);
     readBack->setName(kNatronWriteParamReadBack);
-    readBack->setHintToolTip(kNatronWriteParamReadBackHint);
+    readBack->setHintToolTip( tr(kNatronWriteParamReadBackHint) );
     readBack->setEvaluateOnChange(false);
     readBack->setDefaultValue(false);
     controlpage->addKnob(readBack);
@@ -878,25 +878,25 @@ WriteNode::initializeKnobs()
     _imp->writeNodeKnobs.push_back(readBack);
 
 
-    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>(this, "Encoder");
+    boost::shared_ptr<KnobChoice> pluginSelector = AppManager::createKnob<KnobChoice>( this, tr("Encoder") );
     pluginSelector->setAnimationEnabled(false);
     pluginSelector->setName(kNatronWriteNodeParamEncodingPluginChoice);
-    pluginSelector->setHintToolTip("Select the internal encoder plug-in used for this file format. By default this uses "
-                                   "the plug-in selected for this file extension in the Preferences of Natron");
+    pluginSelector->setHintToolTip( tr("Select the internal encoder plug-in used for this file format. By default this uses "
+                                       "the plug-in selected for this file extension in the Preferences.") );
     pluginSelector->setEvaluateOnChange(false);
     _imp->pluginSelectorKnob = pluginSelector;
     controlpage->addKnob(pluginSelector);
 
     _imp->writeNodeKnobs.push_back(pluginSelector);
 
-    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>(this, "Encoder Options");
+    boost::shared_ptr<KnobSeparator> separator = AppManager::createKnob<KnobSeparator>( this, tr("Encoder Options") );
     separator->setName("encoderOptionsSeparator");
-    separator->setHintToolTip("Below can be found parameters that are specific to the Writer plug-in.");
+    separator->setHintToolTip( tr("Below can be found parameters that are specific to the Writer plug-in.") );
     controlpage->addKnob(separator);
     _imp->separatorKnob = separator;
     _imp->writeNodeKnobs.push_back(separator);
 
-    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>(this, "PluginID");
+    boost::shared_ptr<KnobString> pluginID = AppManager::createKnob<KnobString>( this, tr("PluginID") );
     pluginID->setAnimationEnabled(false);
     pluginID->setName(kNatronWriteNodeParamEncodingPluginID);
     pluginID->setSecretByDefault(true);
@@ -1063,3 +1063,6 @@ WriteNode::renderSequenceEnd()
 }
 
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_WriteNode.cpp"

@@ -25,10 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+#include "Global/GlobalDefines.h"
+
+#include <QtCore/QObject>
+#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #include "Engine/EngineFwd.h"
-#include "Global/GlobalDefines.h"
-#include <QObject>
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -36,7 +40,8 @@ NATRON_NAMESPACE_ENTER;
  * @brief Holds infos necessary to identify one render request and whether it was aborted or not.
  **/
 struct AbortableRenderInfoPrivate;
-class AbortableRenderInfo : public QObject
+class AbortableRenderInfo
+    : public QObject
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

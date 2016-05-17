@@ -29,7 +29,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
-#include <QDebug>
+#include <QtCore/QDebug>
 CLANG_DIAG_ON(deprecated-register)
 
 #include "Engine/AppManager.h"

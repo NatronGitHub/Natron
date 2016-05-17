@@ -42,15 +42,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
-
-#if QT_VERSION >= 0x050000
-#include <QtConcurrent/QtConcurrentRun>
-#else
-#include <QtCore/QtConcurrentRun>
-#endif
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
+#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
 #include <SequenceParsing.h>
 
@@ -287,6 +282,7 @@ void
 EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+
     assert(args->abortInfo);
     tls->frameArgs.push_back(args);
 }
@@ -356,7 +352,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 {
     if (!isRenderResponseToUserInteraction) {
         // Rendering is playback or render on disk
-        if (  abortInfo && abortInfo->isAborted()) {
+        if ( abortInfo && abortInfo->isAborted() ) {
             return true;
         }
 
@@ -372,7 +368,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
     } else {
         // This is a render issued to refresh the image on the Viewer
 
-        if (!abortInfo || !abortInfo->canAbort()) {
+        if ( !abortInfo || !abortInfo->canAbort() ) {
             return false;
         }
 
@@ -1353,7 +1349,7 @@ getOrCreateFromCacheInternal(const ImageKey & key,
             std::stringstream ss;
             ss << "Failed to allocate an image of ";
             ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
-            Dialogs::errorDialog( QObject::tr("Out of memory").toStdString(), ss.str() );
+            Dialogs::errorDialog( QCoreApplication::translate("EffectInstance", "Out of memory").toStdString(), ss.str() );
 
             return;
         }
@@ -1846,7 +1842,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
 EffectInstance::RenderingFunctorRetEnum
 EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementation::TiledRenderingFunctorArgs & args,
                                                       const RectToRender & specificData,
-                                                       QThread* callingThread)
+                                                      QThread* callingThread)
 {
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     QThread* curThread = QThread::currentThread();
@@ -3281,8 +3277,9 @@ EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
+
     return render(args);
 }
 
@@ -3559,7 +3556,7 @@ EffectInstance::beginSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionBeginSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -3582,7 +3579,7 @@ EffectInstance::endSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION("kOfxImageEffectActionEndSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -4199,9 +4196,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             const bool isRenderUserInteraction = true;
             const bool isSequentialRender = false;
 #ifdef QT_CUSTOM_THREADPOOL
-            AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+            AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
             if (isAbortable) {
-                isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, node->getEffectInstance());
+                isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
 #endif
             setter.reset( new ParallelRenderArgsSetter( time,
@@ -4221,7 +4218,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         {
             RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-            REPORT_CURRENT_THREAD_ACTION("kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID());
+            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
 #endif
             knobChanged(k, reason, view, time, originatedFromMainThread);
         }
@@ -5123,9 +5120,9 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
 
     ///Set a warning on the node if the bitdepth conversion from one of the input clip to the output clip is lossy
-    QString bitDepthWarning;
-    bitDepthWarning.append( tr("This nodes converts higher bit depths images from its inputs to work. As "
-                               "a result of this process, the quality of the images is degraded. The following conversions are done: \n") );
+    QString bitDepthWarning = tr("This nodes converts higher bit depths images from its inputs to work. As "
+                                 "a result of this process, the quality of the images is degraded. The following conversions are done:");
+    bitDepthWarning.append( QChar::fromLatin1('\n') );
     bool setBitDepthWarning = false;
     const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
     const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();
@@ -5209,18 +5206,18 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     }
 
     if (mustWarnFPS) {
-        QString fpsWarning = QObject::tr("Several input with different different frame rates "
-                                         "is not handled correctly by this node. To remove this warning make sure all inputs have "
-                                         "the same frame-rate, either by adjusting project settings or the upstream Read node.");
+        QString fpsWarning = tr("Several input with different different frame rates "
+                                "is not handled correctly by this node. To remove this warning make sure all inputs have "
+                                "the same frame-rate, either by adjusting project settings or the upstream Read node.");
         warnings[Node::eStreamWarningFrameRate] = fpsWarning;
     } else {
         warnings[Node::eStreamWarningFrameRate] = QString();
     }
 
     if (mustWarnPar) {
-        QString parWarnings = QObject::tr("Several input with different pixel aspect ratio is not "
-                                          "handled correctly by this node and may yield unwanted results. Please adjust the "
-                                          "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
+        QString parWarnings = tr("Several input with different pixel aspect ratio is not "
+                                 "handled correctly by this node and may yield unwanted results. Please adjust the "
+                                 "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
         warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
     } else {
         warnings[Node::eStreamWarningPixelAspectRatio] = QString();
@@ -5293,4 +5290,7 @@ EffectInstance::setClipPreferencesRunning(bool running)
 }
 
 NATRON_NAMESPACE_EXIT;
+
+NATRON_NAMESPACE_USING;
+#include "moc_EffectInstance.cpp"
 

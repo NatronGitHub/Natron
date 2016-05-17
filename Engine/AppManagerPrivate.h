@@ -60,6 +60,10 @@ NATRON_NAMESPACE_ENTER;
 
 struct AppManagerPrivate
 {
+
+    Q_DECLARE_TR_FUNCTIONS(AppManagerPrivate)
+public:
+    
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;

@@ -36,7 +36,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPixmapCache>
 #include <QApplication>
 #include <QFontDatabase>
-#include <QtConcurrentRun>
+#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -925,7 +925,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
     _imp->fontconfigUpdateWatcher.reset(new QFutureWatcher<void>);
     QObject::connect( _imp->fontconfigUpdateWatcher.get(), SIGNAL(finished()), this, SLOT(onFontconfigCacheUpdateFinished()) );
-    setLoadingStatus( QObject::tr("Updating fontconfig cache...") );
+    setLoadingStatus( tr("Updating fontconfig cache...") );
 
     QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()) );
     _imp->updateSplashscreenTimer.start(1000);

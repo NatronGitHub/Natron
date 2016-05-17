@@ -143,10 +143,14 @@ private:
 };
 
 
-struct EffectInstance::Implementation
+class EffectInstance::Implementation
 {
+    Q_DECLARE_TR_FUNCTIONS(EffectInstance)
+
+public:
     Implementation(EffectInstance* publicInterface);
 
+public:
     EffectInstance* _publicInterface;
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
@@ -208,6 +212,7 @@ struct EffectInstance::Implementation
 
     void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, bool renderFailed);
 #endif
+
     /**
      * @brief This function sets on the thread storage given in parameter all the arguments which
      * are used to render an image.
@@ -245,8 +250,6 @@ struct EffectInstance::Implementation
         EffectDataTLSPtr tlsData;
 
 public:
-
-
         ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                          const RectD & rod,
                          const RectI & renderWindow,
@@ -260,7 +263,6 @@ public:
                          const RoIMap & roiMap,
                          int firstFrame,
                          int lastFrame);
-
 
         ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                          const EffectDataTLSPtr& otherThreadData);
@@ -296,7 +298,7 @@ public:
     };
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
-                                                QThread* callingThread);
+                                                  QThread* callingThread);
 
     RenderingFunctorRetEnum tiledRenderingFunctor(const RectToRender & rectToRender,
                                                   const bool renderFullScaleThenDownscale,

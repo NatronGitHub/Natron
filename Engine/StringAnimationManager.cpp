@@ -29,8 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
-
-#include <QMutex>
+#include <QtCore/QMutex>
 
 #include "Engine/Knob.h"
 

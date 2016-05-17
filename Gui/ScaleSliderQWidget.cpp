@@ -29,6 +29,10 @@
 #include <cassert>
 #include <stdexcept>
 
+#ifndef NDEBUG
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif
+
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QPaintEvent>
@@ -109,6 +113,7 @@ struct ScaleSliderQWidgetPrivate
         , allowDraftModeSetting(allowDraftModeSetting)
     {
         font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12 );
+        assert( boost::math::isfinite(minimum) && boost::math::isfinite(maximum) && boost::math::isfinite(initialPos) );
     }
 };
 
@@ -125,7 +130,9 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
-    _imp->zoomCtx.setScreenSize( sizeh.width(), sizeh.height() );
+    if ( (sizeh.width() > 0) && (sizeh.height() > 0) ) {
+        _imp->zoomCtx.setScreenSize( sizeh.width(), sizeh.height() );
+    }
     setFocusPolicy(Qt::ClickFocus);
 }
 
@@ -256,7 +263,9 @@ ScaleSliderQWidget::zoomRange()
     } else {
         _imp->zoomCtx.zoomx(_imp->value, 0, 1. / _imp->currentZoom);
         _imp->currentZoom = 1.;
-        centerOn(_imp->minimum, _imp->maximum);
+        if (_imp->minimum < _imp->maximum) {
+            centerOn(_imp->minimum, _imp->maximum);
+        }
     }
     update();
 }
@@ -343,6 +352,7 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 void
 ScaleSliderQWidget::seekScalePosition(double v)
 {
+    assert( boost::math::isfinite(v) );
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -363,6 +373,7 @@ ScaleSliderQWidget::seekScalePosition(double v)
 void
 ScaleSliderQWidget::seekInternal(double v)
 {
+    assert( boost::math::isfinite(v) );
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -383,16 +394,20 @@ void
 ScaleSliderQWidget::setMinimumAndMaximum(double min,
                                          double max)
 {
+    assert(boost::math::isfinite(min) && boost::math::isfinite(max) && min < max);
     _imp->minimum = min;
     _imp->maximum = max;
-    centerOn(_imp->minimum, _imp->maximum);
+    if (_imp->minimum < _imp->maximum) {
+        centerOn(_imp->minimum, _imp->maximum);
+    }
 }
 
 void
 ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
-    if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) ) {
+    assert(boost::math::isfinite(left) && boost::math::isfinite(right) && left < right);
+    if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) || (left < right) ) {
         return;
     }
     double w = right - left;
@@ -404,8 +419,10 @@ ScaleSliderQWidget::centerOn(double left,
 void
 ScaleSliderQWidget::resizeEvent(QResizeEvent* e)
 {
-    _imp->zoomCtx.setScreenSize( e->size().width(), e->size().height() );
-    if (!_imp->mustInitializeSliderPosition) {
+    if ( (e->size().width() > 0) && (e->size().height() > 0) ) {
+        _imp->zoomCtx.setScreenSize( e->size().width(), e->size().height() );
+    }
+    if ( !_imp->mustInitializeSliderPosition && (_imp->minimum < _imp->maximum) ) {
         centerOn(_imp->minimum, _imp->maximum);
     }
     QWidget::resizeEvent(e);
@@ -415,7 +432,9 @@ void
 ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 {
     if (_imp->mustInitializeSliderPosition) {
-        centerOn(_imp->minimum, _imp->maximum);
+        if (_imp->minimum < _imp->maximum) {
+            centerOn(_imp->minimum, _imp->maximum);
+        }
         _imp->mustInitializeSliderPosition = false;
         seekScalePosition(_imp->value);
         _imp->initialized = true;

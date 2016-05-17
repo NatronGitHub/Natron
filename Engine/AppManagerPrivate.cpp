@@ -542,7 +542,7 @@ AppManagerPrivate::initGlfw()
 
     if (glfwInit() != GL_TRUE) {
         hasRequiredOpenGLVersionAndExtensions = false;
-        missingOpenglError = QObject::tr("Failed to initialize OpenGL requirements of the GLFW library on your platform.");
+        missingOpenglError = tr("Failed to initialize OpenGL requirements of the GLFW library on your platform.");
         return;
     }
 
@@ -558,7 +558,7 @@ AppManagerPrivate::initGlfw()
     GLFWwindow* offscreen_window = glfwCreateWindow(200, 200  , "", NULL, NULL);
     if (!offscreen_window) {
         hasRequiredOpenGLVersionAndExtensions = false;
-        missingOpenglError = QObject::tr("Failed to create GLFW window.");
+        missingOpenglError = tr("Failed to create GLFW window.");
         return;
     }
 
@@ -566,10 +566,10 @@ AppManagerPrivate::initGlfw()
 
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        missingOpenglError = QObject::tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
+        missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
         missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object,GL_ARB_framebuffer_object,GL_ARB_texture_float");
         missingOpenglError += QLatin1String("\n");
-        missingOpenglError += QObject::tr("Your OpenGL version ");
+        missingOpenglError += tr("Your OpenGL version ");
         missingOpenglError += appPTR->getOpenGLVersion();
         hasRequiredOpenGLVersionAndExtensions = false;
         return;

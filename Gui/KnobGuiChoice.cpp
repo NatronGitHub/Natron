@@ -46,7 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-#include <QDebug>
+#include <QtCore/QDebug>
 #include <QFontComboBox>
 #include <QDialogButtonBox>
 CLANG_DIAG_ON(deprecated)
@@ -283,9 +283,9 @@ KnobGuiChoice::addRightClickMenuEntries(QMenu* menu)
         return;
     }
 
-    QAction* refreshMenuAction = new QAction(QObject::tr("Refresh Menu"), menu);
+    QAction* refreshMenuAction = new QAction(tr("Refresh Menu"), menu);
     QObject::connect( refreshMenuAction, SIGNAL(triggered()), this, SLOT(onRefreshMenuActionTriggered()) );
-    refreshMenuAction->setToolTip( QObject::tr("Synchronize the menu with the actual state of the parameter") );
+    refreshMenuAction->setToolTip( tr("Synchronize the menu with the actual state of the parameter") );
     menu->addAction(refreshMenuAction);
 }
 

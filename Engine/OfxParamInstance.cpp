@@ -38,7 +38,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxParametricParam.h>
 #include "ofxNatron.h"
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/AppManager.h"

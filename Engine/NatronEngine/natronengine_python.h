@@ -30,7 +30,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <PyNodeGroup.h>
 #include <PyNode.h>
 // Conversion Includes - Primitive Types
-#include <QString>
+#include <QtCore/QString>
 #include <signalmanager.h>
 #include <typeresolver.h>
 #include <QtConcurrentFilter>

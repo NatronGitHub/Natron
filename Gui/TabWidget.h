@@ -38,7 +38,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QFrame>
 #include <QTabBar>
-#include <QMutex>
+#include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -73,7 +73,9 @@ class TabBar
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON Q_PROPERTY(bool mouseOverFocus READ hasMouseOverFocus WRITE setMouseOverFocus)
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // properties
+    Q_PROPERTY(bool mouseOverFocus READ hasMouseOverFocus WRITE setMouseOverFocus)
     Q_PROPERTY(bool clickFocus READ hasClickFocus WRITE setClickFocus)
 
 public:

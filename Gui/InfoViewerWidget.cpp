@@ -29,10 +29,10 @@
 
 #include <QtGui/QImage>
 #include <QHBoxLayout>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QPaintEvent>
 #include <QPainter>
-#include <QCoreApplication>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/ViewerInstance.h"
 #include "Engine/Lut.h"

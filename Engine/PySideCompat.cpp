@@ -16,13 +16,13 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifdef PYSIDE_OLD
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#ifdef PYSIDE_OLD
 
 #include <cassert>
 #include <stdexcept>
@@ -53,8 +53,8 @@ GCC_DIAG_ON(missing-field-initializers)
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QStack>
-#include <QCoreApplication>
-#include <QDebug>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 #include <QSharedPointer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)

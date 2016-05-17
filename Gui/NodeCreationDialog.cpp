@@ -32,12 +32,12 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QStringList>
 #include <QKeyEvent>
 #include <QAbstractItemView>
-#include <QTimer>
+#include <QtCore/QTimer>
 #include <QApplication>
 #include <QListView>
 #include <QSettings>
 #include <QDesktopWidget>
-#include <QRegExp>
+#include <QtCore/QRegExp>
 #include <QApplication>
 #include <QStringListModel>
 CLANG_DIAG_ON(deprecated)

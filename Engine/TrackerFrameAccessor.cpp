@@ -34,7 +34,7 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 
-#include <QDebug>
+#include <QtCore/QDebug>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
@@ -342,15 +342,13 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     components.push_back( ImageComponents::getRGBComponents() );
 
     NodePtr node = _imp->context->getNode();
-
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
-
     AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
 #ifdef QT_CUSTOM_THREADPOOL
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
-        isAbortable->setAbortInfo(isRenderUserInteraction, abortInfo, node->getEffectInstance());
+        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
     }
 #endif
     ParallelRenderArgsSetter frameRenderArgs( frame,

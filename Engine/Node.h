@@ -38,7 +38,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QMetaType>
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
-#include <QMutex>
+#include <QtCore/QMutex>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>

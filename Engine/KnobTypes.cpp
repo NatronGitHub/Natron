@@ -39,9 +39,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include <QDebug>
-#include <QThread>
-#include <QCoreApplication>
+#include <QtCore/QDebug>
+#include <QtCore/QThread>
+#include <QtCore/QCoreApplication>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
@@ -70,13 +70,21 @@ KnobInt::KnobInt(KnobHolder* holder,
                  int dimension,
                  bool declaredByPlugin)
     : Knob<int>(holder, label, dimension, declaredByPlugin)
-    , _increments(dimension)
+    , _increments(dimension, 1)
     , _disableSlider(false)
     , _isRectangle(false)
 {
-    for (int i = 0; i < dimension; ++i) {
-        _increments[i] = 1;
-    }
+}
+
+KnobInt::KnobInt(KnobHolder* holder,
+                 const QString &label,
+                 int dimension,
+                 bool declaredByPlugin)
+    : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
+    , _increments(dimension, 1)
+    , _disableSlider(false)
+    , _isRectangle(false)
+{
 }
 
 void
@@ -157,6 +165,14 @@ KnobBool::KnobBool(KnobHolder* holder,
 {
 }
 
+KnobBool::KnobBool(KnobHolder* holder,
+                   const QString &label,
+                   int dimension,
+                   bool declaredByPlugin)
+    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+{
+}
+
 bool
 KnobBool::canAnimate() const
 {
@@ -186,18 +202,28 @@ KnobDouble::KnobDouble(KnobHolder* holder,
     : Knob<double>(holder, label, dimension, declaredByPlugin)
     , _spatial(false)
     , _isRectangle(false)
-    , _increments(dimension)
-    , _decimals(dimension)
+    , _increments(dimension, 1)
+    , _decimals(dimension, 2)
     , _disableSlider(false)
-    , _valueIsNormalized(dimension)
+    , _valueIsNormalized(dimension, eValueIsNormalizedNone)
     , _defaultValuesAreNormalized(false)
     , _hasHostOverlayHandle(false)
 {
-    for (int i = 0; i < dimension; ++i) {
-        _increments[i] = 1.;
-        _decimals[i] = 2;
-        _valueIsNormalized[i] = eValueIsNormalizedNone;
-    }
+}
+
+KnobDouble::KnobDouble(KnobHolder* holder,
+                       const QString &label,
+                       int dimension,
+                       bool declaredByPlugin)
+    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
+    , _spatial(false)
+    , _increments(dimension, 1)
+    , _decimals(dimension, 2)
+    , _disableSlider(false)
+    , _valueIsNormalized(dimension, eValueIsNormalizedNone)
+    , _defaultValuesAreNormalized(false)
+    , _hasHostOverlayHandle(false)
+{
     if (dimension >= 4) {
         disableSlider();
     }
@@ -467,50 +493,54 @@ getInputRoD(EffectInstance* effect,
 #endif
 }
 
-void
-KnobDouble::denormalize(int dimension,
-                        double time,
-                        double* value) const
+double
+KnobDouble::denormalize(const int dimension,
+                        const double time,
+                        const double value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
 
     assert(effect);
     if (!effect) {
         // coverity[dead_error_line]
-        return;
+        return value;
     }
     RectD rod;
     getInputRoD(effect, time, rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when denormalizing default values
     if ( (e == eValueIsNormalizedX) || ( (e == eValueIsNormalizedNone) && (dimension == 0) ) ) {
-        *value *= rod.width();
+        return value * rod.width();
     } else if ( (e == eValueIsNormalizedY) || ( (e == eValueIsNormalizedNone) && (dimension == 1) ) ) {
-        *value *= rod.height();
+        return value * rod.height();
     }
+
+    return value;
 }
 
-void
-KnobDouble::normalize(int dimension,
-                      double time,
-                      double* value) const
+double
+KnobDouble::normalize(const int dimension,
+                      const double time,
+                      const double value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
 
     assert(effect);
     if (!effect) {
         // coverity[dead_error_line]
-        return;
+        return value;
     }
     RectD rod;
     getInputRoD(effect, time, rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when normalizing default values
     if ( (e == eValueIsNormalizedX) || ( (e == eValueIsNormalizedNone) && (dimension == 0) ) ) {
-        *value /= rod.width();
+        return value / rod.width();
     } else if ( (e == eValueIsNormalizedY) || ( (e == eValueIsNormalizedNone) && (dimension == 1) ) ) {
-        *value /= rod.height();
+        return value / rod.height();
     }
+
+    return value;
 }
 
 bool
@@ -519,8 +549,7 @@ KnobDouble::computeValuesHaveModifications(int dimension,
                                            const double& defaultValue) const
 {
     if (_defaultValuesAreNormalized) {
-        double tmp = defaultValue;
-        denormalize(dimension, 0, &tmp);
+        double tmp = denormalize(dimension, 0, defaultValue);
 
         return value != tmp;
     } else {
@@ -538,6 +567,16 @@ KnobButton::KnobButton(KnobHolder*  holder,
     , _renderButton(false)
     , _checkable(false)
     , _isToolButtonAction(false)
+{
+    //setIsPersistant(false);
+}
+
+KnobButton::KnobButton(KnobHolder*  holder,
+                       const QString &label,
+                       int dimension,
+                       bool declaredByPlugin)
+    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    , _renderButton(false)
 {
     //setIsPersistant(false);
 }
@@ -578,6 +617,18 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<int>(holder, label, dimension, declaredByPlugin)
+    , _entriesMutex()
+    , _currentEntryLabel()
+    , _addNewChoice(false)
+    , _isCascading(false)
+{
+}
+
+KnobChoice::KnobChoice(KnobHolder* holder,
+                       const QString &label,
+                       int dimension,
+                       bool declaredByPlugin)
+    : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _entriesMutex()
     , _currentEntryLabel()
     , _addNewChoice(false)
@@ -1200,6 +1251,14 @@ KnobSeparator::KnobSeparator(KnobHolder* holder,
 {
 }
 
+KnobSeparator::KnobSeparator(KnobHolder* holder,
+                             const QString &label,
+                             int dimension,
+                             bool declaredByPlugin)
+    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+{
+}
+
 bool
 KnobSeparator::canAnimate() const
 {
@@ -1233,6 +1292,18 @@ KnobColor::KnobColor(KnobHolder* holder,
                      int dimension,
                      bool declaredByPlugin)
     : Knob<double>(holder, label, dimension, declaredByPlugin)
+    , _allDimensionsEnabled(true)
+    , _simplifiedMode(false)
+{
+    //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
+    assert(dimension <= 4 && dimension != 2);
+}
+
+KnobColor::KnobColor(KnobHolder* holder,
+                     const QString &label,
+                     int dimension,
+                     bool declaredByPlugin)
+    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _allDimensionsEnabled(true)
     , _simplifiedMode(false)
 {
@@ -1292,6 +1363,19 @@ KnobString::KnobString(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : AnimatingKnobStringHelper(holder, label, dimension, declaredByPlugin)
+    , _multiLine(false)
+    , _richText(false)
+    , _customHtmlText(false)
+    , _isLabel(false)
+    , _isCustom(false)
+{
+}
+
+KnobString::KnobString(KnobHolder* holder,
+                       const QString &label,
+                       int dimension,
+                       bool declaredByPlugin)
+    : AnimatingKnobStringHelper(holder, label.toStdString(), dimension, declaredByPlugin)
     , _multiLine(false)
     , _richText(false)
     , _customHtmlText(false)
@@ -1385,6 +1469,15 @@ KnobGroup::KnobGroup(KnobHolder* holder,
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _isTab(false)
     , _isToolButton(false)
+{
+}
+
+KnobGroup::KnobGroup(KnobHolder* holder,
+                     const QString &label,
+                     int dimension,
+                     bool declaredByPlugin)
+    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    , _isTab(false)
 {
 }
 
@@ -1543,6 +1636,15 @@ KnobPage::KnobPage(KnobHolder* holder,
     setIsPersistant(false);
 }
 
+KnobPage::KnobPage(KnobHolder* holder,
+                   const QString &label,
+                   int dimension,
+                   bool declaredByPlugin)
+    : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+{
+    setIsPersistant(false);
+}
+
 bool
 KnobPage::canAnimate() const
 {
@@ -1671,6 +1773,25 @@ KnobParametric::KnobParametric(KnobHolder* holder,
                                int dimension,
                                bool declaredByPlugin)
     : Knob<double>(holder, label, dimension, declaredByPlugin)
+    , _curvesMutex()
+    , _curves(dimension)
+    , _defaultCurves(dimension)
+    , _curvesColor(dimension)
+{
+    for (int i = 0; i < dimension; ++i) {
+        RGBAColourD color;
+        color.r = color.g = color.b = color.a = 1.;
+        _curvesColor[i] = color;
+        _curves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+        _defaultCurves[i] = boost::shared_ptr<Curve>( new Curve(this, i) );
+    }
+}
+
+KnobParametric::KnobParametric(KnobHolder* holder,
+                               const QString &label,
+                               int dimension,
+                               bool declaredByPlugin)
+    : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _curvesMutex()
     , _curves(dimension)
     , _defaultCurves(dimension)
@@ -2167,11 +2288,22 @@ KnobParametric::onKnobAboutToAlias(const KnobPtr& slave)
     }
 }
 
+/******************************KnobTable**************************************/
+
+
 KnobTable::KnobTable(KnobHolder* holder,
-                     const std::string &description,
+                     const std::string &label,
                      int dimension,
                      bool declaredByPlugin)
-    : Knob<std::string>(holder, description, dimension, declaredByPlugin)
+    : Knob<std::string>(holder, label, dimension, declaredByPlugin)
+{
+}
+
+KnobTable::KnobTable(KnobHolder* holder,
+                     const QString &label,
+                     int dimension,
+                     bool declaredByPlugin)
+    : Knob<std::string>(holder, label.toStdString(), dimension, declaredByPlugin)
 {
 }
 

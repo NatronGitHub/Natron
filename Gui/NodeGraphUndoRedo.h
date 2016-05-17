@@ -29,11 +29,14 @@
 
 #include <list>
 #include <vector>
-#include <QPointF>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #endif
+
+#include <QtCore/QPointF>
+#include <QtCore/QCoreApplication>
 #include <QUndoCommand>
 
 #include "Global/GlobalDefines.h"
@@ -53,6 +56,8 @@ NATRON_NAMESPACE_ENTER;
 class MoveMultipleNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(MoveMultipleNodesCommand)
+
 public:
 
     MoveMultipleNodesCommand(const NodesGuiList & nodes,
@@ -81,6 +86,8 @@ private:
 class AddMultipleNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(AddMultipleNodesCommand)
+
 public:
 
     AddMultipleNodesCommand(NodeGraph* graph,
@@ -109,6 +116,8 @@ private:
 class RemoveMultipleNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RemoveMultipleNodesCommand)
+
 public:
 
     RemoveMultipleNodesCommand(NodeGraph* graph,
@@ -138,6 +147,8 @@ private:
 class ConnectCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(ConnectCommand)
+
 public:
     ConnectCommand(NodeGraph* graph,
                    Edge* edge,
@@ -166,6 +177,8 @@ protected:
 class InsertNodeCommand
     : public ConnectCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(InsertNodeCommand)
+
 public:
 
     InsertNodeCommand(NodeGraph* graph,
@@ -185,6 +198,8 @@ private:
 class ResizeBackdropCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(ResizeBackdropCommand)
+
 public:
 
     ResizeBackdropCommand(const NodeGuiPtr& bd,
@@ -213,6 +228,8 @@ private:
 class DecloneMultipleNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DecloneMultipleNodesCommand)
+
 public:
 
     DecloneMultipleNodesCommand(NodeGraph* graph,
@@ -241,6 +258,8 @@ private:
 class RearrangeNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RearrangeNodesCommand)
+
 public:
 
     struct NodeToRearrange
@@ -262,6 +281,8 @@ private:
 class DisableNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(DisableNodesCommand)
+
 public:
 
     DisableNodesCommand(const NodesGuiList & nodes,
@@ -277,6 +298,8 @@ private:
 class EnableNodesCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(EnableNodesCommand)
+
 public:
 
     EnableNodesCommand(const NodesGuiList & nodes,
@@ -293,6 +316,8 @@ private:
 class LoadNodePresetsCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(LoadNodePresetsCommand)
+
 public:
 
     LoadNodePresetsCommand(const NodeGuiPtr & node,
@@ -318,6 +343,8 @@ private:
 class RenameNodeUndoRedoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(RenameNodeUndoRedoCommand)
+
 public:
 
     RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
@@ -357,6 +384,8 @@ struct ExtractedTree
 class ExtractNodeUndoRedoCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(ExtractNodeUndoRedoCommand)
+
 public:
 
     ExtractNodeUndoRedoCommand(NodeGraph* graph, const NodesGuiList & nodes);
@@ -375,6 +404,8 @@ private:
 class GroupFromSelectionCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(GroupFromSelectionCommand)
+
 public:
 
     GroupFromSelectionCommand(NodeGraph* graph, const NodesGuiList & nodes);
@@ -396,6 +427,8 @@ private:
 class InlineGroupCommand
     : public QUndoCommand
 {
+    Q_DECLARE_TR_FUNCTIONS(InlineGroupCommand)
+
 public:
 
     InlineGroupCommand(NodeGraph* graph, const NodesGuiList & nodes);

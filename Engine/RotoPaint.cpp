@@ -193,7 +193,7 @@ RotoPaint::initializeKnobs()
     assert(generalPage);
 
 
-    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(this, "Output", 1, false);
+    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(this, tr("Output"), 1, false);
     generalPage->addKnob(sep);
 
 
@@ -209,17 +209,17 @@ RotoPaint::initializeKnobs()
         enabled->setAnimationEnabled(false);
         enabled->setAddNewLine(i == 3);
         enabled->setDefaultValue(defaultValues[i]);
-        enabled->setHintToolTip("Enable drawing onto this channel");
+        enabled->setHintToolTip( tr("Enable drawing onto this channel") );
         generalPage->addKnob(enabled);
         _imp->enabledKnobs[i] = enabled;
     }
 
 
-    boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, "Premultiply", 1, false);
+    boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, tr("Premultiply"), 1, false);
     premultKnob->setName("premultiply");
-    premultKnob->setHintToolTip("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
-                                " This will result in the pixels outside of the shapes and paint strokes "
-                                "being black and transparant.");
+    premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
+                                    " This will result in the pixels outside of the shapes and paint strokes "
+                                    "being black and transparant.") );
     premultKnob->setDefaultValue(false);
     premultKnob->setAnimationEnabled(false);
     premultKnob->setIsMetadataSlave(true);
@@ -235,9 +235,9 @@ RotoPaint::initializeKnobs()
 
 
     /// Initializing the viewer interface
-    boost::shared_ptr<KnobButton> autoKeyingEnabled = AppManager::createKnob<KnobButton>(this, kRotoUIParamAutoKeyingEnabledLabel);
+    boost::shared_ptr<KnobButton> autoKeyingEnabled = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamAutoKeyingEnabledLabel));
     autoKeyingEnabled->setName(kRotoUIParamAutoKeyingEnabled);
-    autoKeyingEnabled->setHintToolTip(kRotoUIParamAutoKeyingEnabledHint);
+    autoKeyingEnabled->setHintToolTip(tr(kRotoUIParamAutoKeyingEnabledHint));
     autoKeyingEnabled->setEvaluateOnChange(false);
     autoKeyingEnabled->setCheckable(true);
     autoKeyingEnabled->setDefaultValue(true);
@@ -248,22 +248,22 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(autoKeyingEnabled);
     _imp->ui->autoKeyingEnabledButton = autoKeyingEnabled;
 
-    boost::shared_ptr<KnobButton> featherLinkEnabled = AppManager::createKnob<KnobButton>(this, kRotoUIParamFeatherLinkEnabledLabel);
+    boost::shared_ptr<KnobButton> featherLinkEnabled = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamFeatherLinkEnabledLabel));
     featherLinkEnabled->setName(kRotoUIParamFeatherLinkEnabled);
     featherLinkEnabled->setCheckable(true);
     featherLinkEnabled->setEvaluateOnChange(false);
     featherLinkEnabled->setDefaultValue(true);
     featherLinkEnabled->setSecretByDefault(true);
     featherLinkEnabled->setInViewerContextCanHaveShortcut(true);
-    featherLinkEnabled->setHintToolTip(kRotoUIParamFeatherLinkEnabledHint);
+    featherLinkEnabled->setHintToolTip(tr(kRotoUIParamFeatherLinkEnabledHint));
     featherLinkEnabled->setIconLabel(NATRON_IMAGES_PATH "featherLinkEnabled.png", true);
     featherLinkEnabled->setIconLabel(NATRON_IMAGES_PATH "featherLinkDisabled.png", false);
     generalPage->addKnob(featherLinkEnabled);
     _imp->ui->featherLinkEnabledButton = featherLinkEnabled;
 
-    boost::shared_ptr<KnobButton> displayFeatherEnabled = AppManager::createKnob<KnobButton>(this, kRotoUIParamDisplayFeatherLabel);
+    boost::shared_ptr<KnobButton> displayFeatherEnabled = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamDisplayFeatherLabel));
     displayFeatherEnabled->setName(kRotoUIParamDisplayFeather);
-    displayFeatherEnabled->setHintToolTip(kRotoUIParamDisplayFeatherHint);
+    displayFeatherEnabled->setHintToolTip(tr(kRotoUIParamDisplayFeatherHint));
     displayFeatherEnabled->setEvaluateOnChange(false);
     displayFeatherEnabled->setCheckable(true);
     displayFeatherEnabled->setDefaultValue(true);
@@ -275,9 +275,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(displayFeatherEnabled);
     _imp->ui->displayFeatherEnabledButton = displayFeatherEnabled;
 
-    boost::shared_ptr<KnobButton> stickySelection = AppManager::createKnob<KnobButton>(this, kRotoUIParamStickySelectionEnabledLabel);
+    boost::shared_ptr<KnobButton> stickySelection = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamStickySelectionEnabledLabel));
     stickySelection->setName(kRotoUIParamStickySelectionEnabled);
-    stickySelection->setHintToolTip(kRotoUIParamStickySelectionEnabledHint);
+    stickySelection->setHintToolTip(tr(kRotoUIParamStickySelectionEnabledHint));
     stickySelection->setEvaluateOnChange(false);
     stickySelection->setCheckable(true);
     stickySelection->setDefaultValue(false);
@@ -288,9 +288,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(stickySelection);
     _imp->ui->stickySelectionEnabledButton = stickySelection;
 
-    boost::shared_ptr<KnobButton> bboxClickAnywhere = AppManager::createKnob<KnobButton>(this, kRotoUIParamStickyBboxLabel);
+    boost::shared_ptr<KnobButton> bboxClickAnywhere = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamStickyBboxLabel));
     bboxClickAnywhere->setName(kRotoUIParamStickyBbox);
-    bboxClickAnywhere->setHintToolTip(kRotoUIParamStickyBboxHint);
+    bboxClickAnywhere->setHintToolTip(tr(kRotoUIParamStickyBboxHint));
     bboxClickAnywhere->setEvaluateOnChange(false);
     bboxClickAnywhere->setCheckable(true);
     bboxClickAnywhere->setDefaultValue(false);
@@ -301,9 +301,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(bboxClickAnywhere);
     _imp->ui->bboxClickAnywhereButton = bboxClickAnywhere;
 
-    boost::shared_ptr<KnobButton> rippleEditEnabled = AppManager::createKnob<KnobButton>(this, kRotoUIParamRippleEditLabel);
+    boost::shared_ptr<KnobButton> rippleEditEnabled = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRippleEditLabel));
     rippleEditEnabled->setName(kRotoUIParamRippleEdit);
-    rippleEditEnabled->setHintToolTip(kRotoUIParamRippleEditLabelHint);
+    rippleEditEnabled->setHintToolTip(tr(kRotoUIParamRippleEditLabelHint));
     rippleEditEnabled->setEvaluateOnChange(false);
     rippleEditEnabled->setCheckable(true);
     rippleEditEnabled->setDefaultValue(false);
@@ -314,19 +314,19 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(rippleEditEnabled);
     _imp->ui->rippleEditEnabledButton = rippleEditEnabled;
 
-    boost::shared_ptr<KnobButton> addKeyframe = AppManager::createKnob<KnobButton>(this, kRotoUIParamAddKeyFrameLabel);
+    boost::shared_ptr<KnobButton> addKeyframe = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamAddKeyFrameLabel));
     addKeyframe->setName(kRotoUIParamAddKeyFrame);
     addKeyframe->setEvaluateOnChange(false);
-    addKeyframe->setHintToolTip(kRotoUIParamAddKeyFrameHint);
+    addKeyframe->setHintToolTip(tr(kRotoUIParamAddKeyFrameHint));
     addKeyframe->setSecretByDefault(true);
     addKeyframe->setInViewerContextCanHaveShortcut(true);
     addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addKF.png");
     generalPage->addKnob(addKeyframe);
     _imp->ui->addKeyframeButton = bboxClickAnywhere;
 
-    boost::shared_ptr<KnobButton> removeKeyframe = AppManager::createKnob<KnobButton>(this, kRotoUIParamRemoveKeyframeLabel);
+    boost::shared_ptr<KnobButton> removeKeyframe = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRemoveKeyframeLabel));
     removeKeyframe->setName(kRotoUIParamRemoveKeyframe);
-    removeKeyframe->setHintToolTip(kRotoUIParamRemoveKeyframeHint);
+    removeKeyframe->setHintToolTip(tr(kRotoUIParamRemoveKeyframeHint));
     removeKeyframe->setEvaluateOnChange(false);
     removeKeyframe->setSecretByDefault(true);
     removeKeyframe->setInViewerContextCanHaveShortcut(true);
@@ -337,18 +337,18 @@ RotoPaint::initializeKnobs()
 
     // RotoPaint
 
-    boost::shared_ptr<KnobBool> multiStroke = AppManager::createKnob<KnobBool>(this, kRotoUIParamMultiStrokeEnabledLabel);
+    boost::shared_ptr<KnobBool> multiStroke = AppManager::createKnob<KnobBool>(this, tr(kRotoUIParamMultiStrokeEnabledLabel));
     multiStroke->setName(kRotoUIParamMultiStrokeEnabled);
-    multiStroke->setHintToolTip(kRotoUIParamMultiStrokeEnabledHint);
+    multiStroke->setHintToolTip(tr(kRotoUIParamMultiStrokeEnabledHint));
     multiStroke->setEvaluateOnChange(false);
     multiStroke->setDefaultValue(true);
     multiStroke->setSecretByDefault(true);
     generalPage->addKnob(multiStroke);
     _imp->ui->multiStrokeEnabled = multiStroke;
 
-    boost::shared_ptr<KnobColor> colorWheel = AppManager::createKnob<KnobColor>(this, kRotoUIParamColorWheelLabel, 3);
+    boost::shared_ptr<KnobColor> colorWheel = AppManager::createKnob<KnobColor>(this, tr(kRotoUIParamColorWheelLabel), 3);
     colorWheel->setName(kRotoUIParamColorWheel);
-    colorWheel->setHintToolTip(kRotoUIParamColorWheelHint);
+    colorWheel->setHintToolTip(tr(kRotoUIParamColorWheelHint));
     colorWheel->setEvaluateOnChange(false);
     colorWheel->setDefaultValue(1.,0);
     colorWheel->setDefaultValue(1.,1);
@@ -357,9 +357,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(colorWheel);
     _imp->ui->colorWheelButton = colorWheel;
 
-    boost::shared_ptr<KnobChoice> blendingModes = AppManager::createKnob<KnobChoice>(this, kRotoUIParamBlendingOpLabel);
+    boost::shared_ptr<KnobChoice> blendingModes = AppManager::createKnob<KnobChoice>(this, tr(kRotoUIParamBlendingOpLabel));
     blendingModes->setName(kRotoUIParamBlendingOp);
-    blendingModes->setHintToolTip(kRotoUIParamBlendingOpHint);
+    blendingModes->setHintToolTip(tr(kRotoUIParamBlendingOpHint));
     blendingModes->setEvaluateOnChange(false);
     blendingModes->setSecretByDefault(true);
     {
@@ -372,9 +372,9 @@ RotoPaint::initializeKnobs()
     _imp->ui->compositingOperatorChoice = blendingModes;
 
 
-    boost::shared_ptr<KnobDouble> opacityKnob = AppManager::createKnob<KnobDouble>(this, kRotoUIParamOpacityLabel);
+    boost::shared_ptr<KnobDouble> opacityKnob = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamOpacityLabel));
     opacityKnob->setName(kRotoUIParamOpacity);
-    opacityKnob->setHintToolTip(kRotoUIParamOpacityHint);
+    opacityKnob->setHintToolTip(tr(kRotoUIParamOpacityHint));
     opacityKnob->setEvaluateOnChange(false);
     opacityKnob->setSecretByDefault(true);
     opacityKnob->setDefaultValue(1.);
@@ -384,9 +384,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(opacityKnob);
     _imp->ui->opacitySpinbox = opacityKnob;
 
-    boost::shared_ptr<KnobButton> pressureOpacity = AppManager::createKnob<KnobButton>(this, kRotoUIParamPressureOpacityLabel);
+    boost::shared_ptr<KnobButton> pressureOpacity = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamPressureOpacityLabel));
     pressureOpacity->setName(kRotoUIParamPressureOpacity);
-    pressureOpacity->setHintToolTip(kRotoUIParamPressureOpacityHint);
+    pressureOpacity->setHintToolTip(tr(kRotoUIParamPressureOpacityHint));
     pressureOpacity->setEvaluateOnChange(false);
     pressureOpacity->setCheckable(true);
     pressureOpacity->setDefaultValue(true);
@@ -397,9 +397,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(rippleEditEnabled);
     _imp->ui->pressureOpacityButton = rippleEditEnabled;
 
-    boost::shared_ptr<KnobDouble> sizeKnob = AppManager::createKnob<KnobDouble>(this, kRotoUIParamSizeLabel);
+    boost::shared_ptr<KnobDouble> sizeKnob = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamSizeLabel));
     sizeKnob->setName(kRotoUIParamSize);
-    sizeKnob->setHintToolTip(kRotoUIParamSizeHint);
+    sizeKnob->setHintToolTip(tr(kRotoUIParamSizeHint));
     sizeKnob->setEvaluateOnChange(false);
     sizeKnob->setSecretByDefault(true);
     sizeKnob->setDefaultValue(25.);
@@ -409,9 +409,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(sizeKnob);
     _imp->ui->sizeSpinbox = sizeKnob;
 
-    boost::shared_ptr<KnobButton> pressureSize = AppManager::createKnob<KnobButton>(this, kRotoUIParamPressureSizeLabel);
+    boost::shared_ptr<KnobButton> pressureSize = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamPressureSizeLabel));
     pressureSize->setName(kRotoUIParamPressureSize);
-    pressureSize->setHintToolTip(kRotoUIParamPressureSizeHint);
+    pressureSize->setHintToolTip(tr(kRotoUIParamPressureSizeHint));
     pressureSize->setEvaluateOnChange(false);
     pressureSize->setCheckable(true);
     pressureSize->setDefaultValue(false);
@@ -422,9 +422,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(pressureSize);
     _imp->ui->pressureSizeButton = pressureSize;
 
-    boost::shared_ptr<KnobDouble> hardnessKnob = AppManager::createKnob<KnobDouble>(this, kRotoUIParamHardnessLabel);
+    boost::shared_ptr<KnobDouble> hardnessKnob = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamHardnessLabel));
     hardnessKnob->setName(kRotoUIParamHardness);
-    hardnessKnob->setHintToolTip(kRotoUIParamHardnessHint);
+    hardnessKnob->setHintToolTip(tr(kRotoUIParamHardnessHint));
     hardnessKnob->setEvaluateOnChange(false);
     hardnessKnob->setSecretByDefault(true);
     hardnessKnob->setDefaultValue(.2);
@@ -434,9 +434,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(hardnessKnob);
     _imp->ui->hardnessSpinbox = hardnessKnob;
 
-    boost::shared_ptr<KnobButton> pressureHardness = AppManager::createKnob<KnobButton>(this, kRotoUIParamPressureHardnessLabel);
+    boost::shared_ptr<KnobButton> pressureHardness = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamPressureHardnessLabel));
     pressureHardness->setName(kRotoUIParamPressureHardness);
-    pressureHardness->setHintToolTip(kRotoUIParamPressureHardnessHint);
+    pressureHardness->setHintToolTip(tr(kRotoUIParamPressureHardnessHint));
     pressureHardness->setEvaluateOnChange(false);
     pressureHardness->setCheckable(true);
     pressureHardness->setDefaultValue(false);
@@ -447,9 +447,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(pressureHardness);
     _imp->ui->pressureHardnessButton = pressureHardness;
 
-    boost::shared_ptr<KnobButton> buildUp = AppManager::createKnob<KnobButton>(this, kRotoUIParamBuildUpLabel);
+    boost::shared_ptr<KnobButton> buildUp = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamBuildUpLabel));
     buildUp->setName(kRotoUIParamBuildUp);
-    buildUp->setHintToolTip(kRotoUIParamBuildUpHint);
+    buildUp->setHintToolTip(tr(kRotoUIParamBuildUpHint));
     buildUp->setEvaluateOnChange(false);
     buildUp->setCheckable(true);
     buildUp->setDefaultValue(true);
@@ -460,9 +460,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(buildUp);
     _imp->ui->buildUpButton = buildUp;
 
-    boost::shared_ptr<KnobDouble> effectStrength = AppManager::createKnob<KnobDouble>(this, kRotoUIParamEffectLabel);
+    boost::shared_ptr<KnobDouble> effectStrength = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamEffectLabel));
     effectStrength->setName(kRotoUIParamEffect);
-    effectStrength->setHintToolTip(kRotoUIParamEffectHint);
+    effectStrength->setHintToolTip(tr(kRotoUIParamEffectHint));
     effectStrength->setEvaluateOnChange(false);
     effectStrength->setSecretByDefault(true);
     effectStrength->setDefaultValue(15);
@@ -472,9 +472,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(effectStrength);
     _imp->ui->effectSpinBox = effectStrength;
 
-    boost::shared_ptr<KnobInt> timeOffsetSb = AppManager::createKnob<KnobInt>(this, kRotoUIParamTimeOffsetLabel);
+    boost::shared_ptr<KnobInt> timeOffsetSb = AppManager::createKnob<KnobInt>(this, tr(kRotoUIParamTimeOffsetLabel));
     timeOffsetSb->setName(kRotoUIParamTimeOffset);
-    timeOffsetSb->setHintToolTip(kRotoUIParamTimeOffsetHint);
+    timeOffsetSb->setHintToolTip(tr(kRotoUIParamTimeOffsetHint));
     timeOffsetSb->setEvaluateOnChange(false);
     timeOffsetSb->setSecretByDefault(true);
     timeOffsetSb->setDefaultValue(0);
@@ -482,9 +482,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(timeOffsetSb);
     _imp->ui->timeOffsetSpinBox = timeOffsetSb;
 
-    boost::shared_ptr<KnobChoice> timeOffsetMode = AppManager::createKnob<KnobChoice>(this, kRotoUIParamTimeOffsetLabel);
+    boost::shared_ptr<KnobChoice> timeOffsetMode = AppManager::createKnob<KnobChoice>(this, tr(kRotoUIParamTimeOffsetLabel));
     timeOffsetMode->setName(kRotoUIParamTimeOffset);
-    timeOffsetMode->setHintToolTip(kRotoUIParamTimeOffsetHint);
+    timeOffsetMode->setHintToolTip(tr(kRotoUIParamTimeOffsetHint));
     timeOffsetMode->setEvaluateOnChange(false);
     timeOffsetMode->setSecretByDefault(true);
     {
@@ -499,9 +499,9 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(timeOffsetMode);
     _imp->ui->timeOffsetModeChoice = timeOffsetMode;
 
-    boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>(this, kRotoUIParamSourceTypeLabel);
+    boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>(this, tr(kRotoUIParamSourceTypeLabel));
     sourceType->setName(kRotoUIParamSourceType);
-    sourceType->setHintToolTip(kRotoUIParamSourceTypeHint);
+    sourceType->setHintToolTip(tr(kRotoUIParamSourceTypeHint));
     sourceType->setEvaluateOnChange(false);
     sourceType->setSecretByDefault(true);
     {
@@ -519,9 +519,9 @@ RotoPaint::initializeKnobs()
     _imp->ui->sourceTypeChoice = sourceType;
 
 
-    boost::shared_ptr<KnobButton> resetCloneOffset = AppManager::createKnob<KnobButton>(this, kRotoUIParamResetCloneOffsetLabel);
+    boost::shared_ptr<KnobButton> resetCloneOffset = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamResetCloneOffsetLabel));
     resetCloneOffset->setName(kRotoUIParamResetCloneOffset);
-    resetCloneOffset->setHintToolTip(kRotoUIParamResetCloneOffsetHint);
+    resetCloneOffset->setHintToolTip(tr(kRotoUIParamResetCloneOffsetHint));
     resetCloneOffset->setEvaluateOnChange(false);
     resetCloneOffset->setSecretByDefault(true);
     resetCloneOffset->setInViewerContextCanHaveShortcut(true);
@@ -566,12 +566,13 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(resetCloneOffset);
 
 
-    boost::shared_ptr<KnobPage> toolbar = AppManager::createKnob<KnobPage>(this, kRotoUIParamToolbar);
+    boost::shared_ptr<KnobPage> toolbar = AppManager::createKnob<KnobPage>(this, std::string(kRotoUIParamToolbar));
     toolbar->setAsToolBar(true);
     toolbar->setEvaluateOnChange(false);
     toolbar->setSecretByDefault(true);
     _imp->ui->toolbarPage = toolbar;
-    boost::shared_ptr<KnobGroup> selectionToolButton = AppManager::createKnob<KnobGroup>(this, kRotoUIParamSelectionToolButton);
+    boost::shared_ptr<KnobGroup> selectionToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamSelectionToolButtonLabel));
+    selectionToolButton->setName(kRotoUIParamSelectionToolButton);
     selectionToolButton->setAsToolButton(true);
     selectionToolButton->setDefaultValue(true);
     selectionToolButton->setEvaluateOnChange(false);
@@ -579,21 +580,24 @@ RotoPaint::initializeKnobs()
     selectionToolButton->setInViewerContextCanHaveShortcut(true);
     toolbar->addKnob(selectionToolButton);
     _imp->ui->selectToolGroup = selectionToolButton;
-    boost::shared_ptr<KnobGroup> editPointsToolButton = AppManager::createKnob<KnobGroup>(this, kRotoUIParamEditPointsToolButton);
+    boost::shared_ptr<KnobGroup> editPointsToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamEditPointsToolButtonLabel));
+    editPointsToolButton->setName(kRotoUIParamEditPointsToolButton);
     editPointsToolButton->setAsToolButton(true);
     editPointsToolButton->setEvaluateOnChange(false);
     editPointsToolButton->setSecretByDefault(true);
     editPointsToolButton->setInViewerContextCanHaveShortcut(true);
     toolbar->addKnob(editPointsToolButton);
     _imp->ui->pointsEditionToolGroup = editPointsToolButton;
-    boost::shared_ptr<KnobGroup> editBezierToolButton = AppManager::createKnob<KnobGroup>(this, kRotoUIParamBezierEditionToolButton);
+    boost::shared_ptr<KnobGroup> editBezierToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamBezierEditionToolButtonLabel));
+    editBezierToolButton->setName(kRotoUIParamBezierEditionToolButton);
     editBezierToolButton->setAsToolButton(true);
     editBezierToolButton->setEvaluateOnChange(false);
     editBezierToolButton->setSecretByDefault(true);
     editBezierToolButton->setInViewerContextCanHaveShortcut(true);
     toolbar->addKnob(editBezierToolButton);
     _imp->ui->bezierEditionToolGroup = editBezierToolButton;
-    boost::shared_ptr<KnobGroup> paintToolButton = AppManager::createKnob<KnobGroup>(this, kRotoUIParamPaintBrushToolButton);
+    boost::shared_ptr<KnobGroup> paintToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamPaintBrushToolButtonLabel));
+    paintToolButton->setName(kRotoUIParamPaintBrushToolButton);
     paintToolButton->setAsToolButton(true);
     paintToolButton->setEvaluateOnChange(false);
     paintToolButton->setSecretByDefault(true);
@@ -603,21 +607,24 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobGroup> cloneToolButton, effectToolButton, mergeToolButton;
     if (_imp->isPaintByDefault) {
-        cloneToolButton = AppManager::createKnob<KnobGroup>(this, kRotoUIParamCloneBrushToolButton);
+        cloneToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamCloneBrushToolButtonLabel));
+        cloneToolButton->setName(kRotoUIParamCloneBrushToolButton);
         cloneToolButton->setAsToolButton(true);
         cloneToolButton->setEvaluateOnChange(false);
         cloneToolButton->setSecretByDefault(true);
         cloneToolButton->setInViewerContextCanHaveShortcut(true);
         toolbar->addKnob(cloneToolButton);
         _imp->ui->cloneBrushToolGroup = cloneToolButton;
-        effectToolButton = AppManager::createKnob<KnobGroup>(this, kRotoUIParamEffectBrushToolButton);
+        effectToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamEffectBrushToolButtonLabel));
+        effectToolButton->setName(kRotoUIParamEffectBrushToolButton);
         effectToolButton->setAsToolButton(true);
         effectToolButton->setEvaluateOnChange(false);
         effectToolButton->setSecretByDefault(true);
         effectToolButton->setInViewerContextCanHaveShortcut(true);
         toolbar->addKnob(effectToolButton);
         _imp->ui->effectBrushToolGroup = effectToolButton;
-        mergeToolButton = AppManager::createKnob<KnobGroup>(this, kRotoUIParamMergeBrushToolButton);
+        mergeToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamMergeBrushToolButtonLabel));
+        mergeToolButton->setName(kRotoUIParamMergeBrushToolButton);
         mergeToolButton->setAsToolButton(true);
         mergeToolButton->setEvaluateOnChange(false);
         mergeToolButton->setSecretByDefault(true);
@@ -628,8 +635,9 @@ RotoPaint::initializeKnobs()
 
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamSelectAllToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamSelectAllToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamSelectAllToolButtonActionLabel));
+        tool->setName(kRotoUIParamSelectAllToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamSelectAllToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(true);
         tool->setSecretByDefault(true);
@@ -639,8 +647,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectAllAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamSelectPointsToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamSelectPointsToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamSelectPointsToolButtonActionLabel));
+        tool->setName(kRotoUIParamSelectPointsToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamSelectPointsToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -650,8 +659,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamSelectShapesToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamSelectShapesToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamSelectShapesToolButtonActionLabel));
+        tool->setName(kRotoUIParamSelectShapesToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamSelectShapesToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -661,8 +671,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectCurvesAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamSelectFeatherPointsToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamSelectFeatherPointsToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamSelectFeatherPointsToolButtonActionLabel));
+        tool->setName(kRotoUIParamSelectFeatherPointsToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamSelectFeatherPointsToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -672,8 +683,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectFeatherPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamAddPointsToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamAddPointsToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamAddPointsToolButtonActionLabel));
+        tool->setName(kRotoUIParamAddPointsToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamAddPointsToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(true);
         tool->setSecretByDefault(true);
@@ -683,8 +695,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->addPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamRemovePointsToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamRemovePointsToolButtonAction);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRemovePointsToolButtonActionLabel));
+        tool->setName(kRotoUIParamRemovePointsToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamRemovePointsToolButtonAction));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -694,8 +707,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->removePointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamCuspPointsToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamCuspPointsToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamCuspPointsToolButtonActionLabel));
+        tool->setName(kRotoUIParamCuspPointsToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamCuspPointsToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -705,8 +719,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->cuspPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamSmoothPointsToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamSmoothPointsToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamSmoothPointsToolButtonActionLabel));
+        tool->setName(kRotoUIParamSmoothPointsToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamSmoothPointsToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -716,8 +731,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->smoothPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamOpenCloseCurveToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamOpenCloseCurveToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamOpenCloseCurveToolButtonActionLabel));
+        tool->setName(kRotoUIParamOpenCloseCurveToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamOpenCloseCurveToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -728,8 +744,9 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamRemoveFeatherToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamRemoveFeatherToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRemoveFeatherToolButtonAction));
+        tool->setName(kRotoUIParamRemoveFeatherToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamRemoveFeatherToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -740,8 +757,9 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamDrawBezierToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamDrawBezierToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamDrawBezierToolButtonActionLabel));
+        tool->setName(kRotoUIParamDrawBezierToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamDrawBezierToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(true);
         tool->setSecretByDefault(true);
@@ -752,8 +770,9 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamDrawEllipseToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamDrawEllipseToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamDrawEllipseToolButtonActionLabel));
+        tool->setName(kRotoUIParamDrawEllipseToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamDrawEllipseToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -764,8 +783,9 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamDrawRectangleToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamDrawRectangleToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamDrawRectangleToolButtonActionLabel));
+        tool->setName(kRotoUIParamDrawRectangleToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamDrawRectangleToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -775,8 +795,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->drawRectangleAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamDrawBrushToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamDrawBrushToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamDrawBrushToolButtonActionLabel));
+        tool->setName(kRotoUIParamDrawBrushToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamDrawBrushToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(true);
         tool->setSecretByDefault(true);
@@ -786,8 +807,9 @@ RotoPaint::initializeKnobs()
         _imp->ui->brushAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamPencilToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamPencilToolButtonAction);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamPencilToolButtonActionLabel));
+        tool->setName(kRotoUIParamPencilToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamPencilToolButtonAction));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -798,8 +820,9 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamEraserToolButtonAction);
-        tool->setHintToolTip(kRotoUIParamEraserToolButtonActionHint);
+        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamEraserToolButtonActionLabel));
+        tool->setName(kRotoUIParamEraserToolButtonAction);
+        tool->setHintToolTip(tr(kRotoUIParamEraserToolButtonActionHint));
         tool->setCheckable(true);
         tool->setDefaultValue(false);
         tool->setSecretByDefault(true);
@@ -810,8 +833,9 @@ RotoPaint::initializeKnobs()
     }
     if (_imp->isPaintByDefault) {
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamCloneToolButtonAction);
-            tool->setHintToolTip(kRotoUIParamCloneToolButtonActionHint);
+            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamCloneToolButtonActionLabel));
+            tool->setName(kRotoUIParamCloneToolButtonAction);
+            tool->setHintToolTip(tr(kRotoUIParamCloneToolButtonActionHint));
             tool->setCheckable(true);
             tool->setDefaultValue(true);
             tool->setSecretByDefault(true);
@@ -821,8 +845,9 @@ RotoPaint::initializeKnobs()
             _imp->ui->cloneAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamRevealToolButtonAction);
-            tool->setHintToolTip(kRotoUIParamRevealToolButtonActionHint);
+            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRevealToolButtonAction));
+            tool->setName(kRotoUIParamRevealToolButtonAction);
+            tool->setHintToolTip(tr(kRotoUIParamRevealToolButtonActionHint));
             tool->setCheckable(true);
             tool->setDefaultValue(false);
             tool->setSecretByDefault(true);
@@ -834,8 +859,9 @@ RotoPaint::initializeKnobs()
 
 
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamBlurToolButtonAction);
-            tool->setHintToolTip(kRotoUIParamBlurToolButtonActionHint);
+            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamBlurToolButtonActionLabel));
+            tool->setName(kRotoUIParamBlurToolButtonAction);
+            tool->setHintToolTip(tr(kRotoUIParamBlurToolButtonActionHint));
             tool->setCheckable(true);
             tool->setDefaultValue(true);
             tool->setSecretByDefault(true);
@@ -845,8 +871,9 @@ RotoPaint::initializeKnobs()
             _imp->ui->blurAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamSmearToolButtonAction);
-            tool->setHintToolTip(kRotoUIParamSmearToolButtonActionHint);
+            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamSmearToolButtonActionLabel));
+            tool->setName(kRotoUIParamSmearToolButtonAction);
+            tool->setHintToolTip(tr(kRotoUIParamSmearToolButtonActionHint));
             tool->setCheckable(true);
             tool->setDefaultValue(false);
             tool->setSecretByDefault(true);
@@ -856,8 +883,9 @@ RotoPaint::initializeKnobs()
             _imp->ui->smearAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamDodgeToolButtonAction);
-            tool->setHintToolTip(kRotoUIParamDodgeToolButtonActionHint);
+            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamDodgeToolButtonActionLabel));
+            tool->setName(kRotoUIParamDodgeToolButtonAction);
+            tool->setHintToolTip(tr(kRotoUIParamDodgeToolButtonActionHint));
             tool->setCheckable(true);
             tool->setDefaultValue(true);
             tool->setSecretByDefault(true);
@@ -867,8 +895,9 @@ RotoPaint::initializeKnobs()
             _imp->ui->dodgeAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, kRotoUIParamBurnToolButtonAction);
-            tool->setHintToolTip(kRotoUIParamBurnToolButtonActionHint);
+            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamBurnToolButtonActionLabel));
+            tool->setName(kRotoUIParamBurnToolButtonAction);
+            tool->setHintToolTip(tr(kRotoUIParamBurnToolButtonActionHint));
             tool->setCheckable(true);
             tool->setDefaultValue(false);
             tool->setSecretByDefault(true);
@@ -880,13 +909,13 @@ RotoPaint::initializeKnobs()
     } // if (_imp->isPaintByDefault) {
 
     // Right click menu
-    boost::shared_ptr<KnobChoice> rightClickMenu = AppManager::createKnob<KnobChoice>(this, kRotoUIParamRightClickMenu);
+    boost::shared_ptr<KnobChoice> rightClickMenu = AppManager::createKnob<KnobChoice>(this, std::string(kRotoUIParamRightClickMenu));
     rightClickMenu->setSecretByDefault(true);
     rightClickMenu->setEvaluateOnChange(false);
     generalPage->addKnob(rightClickMenu);
     _imp->ui->rightClickMenuKnob = rightClickMenu;
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionRemoveItemsLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionRemoveItemsLabel));
         action->setName(kRotoUIParamRightClickMenuActionRemoveItems);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -895,7 +924,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->removeItemsMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionCuspItemsLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionCuspItemsLabel));
         action->setName(kRotoUIParamRightClickMenuActionCuspItems);
         action->setEvaluateOnChange(false);
         action->setSecretByDefault(true);
@@ -904,7 +933,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->cuspItemMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionSmoothItemsLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionSmoothItemsLabel));
         action->setName(kRotoUIParamRightClickMenuActionSmoothItems);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -913,7 +942,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->smoothItemMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel));
         action->setName(kRotoUIParamRightClickMenuActionRemoveItemsFeather);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -922,7 +951,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->removeItemFeatherMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionLinkItemsToTrackLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionLinkItemsToTrackLabel));
         action->setName(kRotoUIParamRightClickMenuActionLinkItemsToTrack);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -931,7 +960,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->linkPointMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionUnlinkItemsFromTrackLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionUnlinkItemsFromTrackLabel));
         action->setName(kRotoUIParamRightClickMenuActionUnlinkItemsFromTrack);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -940,7 +969,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->unlinkPointMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionNudgeBottomLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionNudgeBottomLabel));
         action->setName(kRotoUIParamRightClickMenuActionNudgeBottom);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -949,7 +978,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeBottomMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionNudgeLeftLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionNudgeLeftLabel));
         action->setName(kRotoUIParamRightClickMenuActionNudgeLeft);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -958,7 +987,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeLeftMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionNudgeTopLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionNudgeTopLabel));
         action->setName(kRotoUIParamRightClickMenuActionNudgeTop);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -967,7 +996,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeTopMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionNudgeRightLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionNudgeRightLabel));
         action->setName(kRotoUIParamRightClickMenuActionNudgeRight);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -976,7 +1005,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeRightMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionSelectAllLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionSelectAllLabel));
         action->setName(kRotoUIParamRightClickMenuActionSelectAll);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -984,7 +1013,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectAllMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionOpenCloseLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionOpenCloseLabel));
         action->setName(kRotoUIParamRightClickMenuActionOpenClose);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -993,7 +1022,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->openCloseMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, kRotoUIParamRightClickMenuActionLockShapesLabel);
+        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionLockShapesLabel));
         action->setName(kRotoUIParamRightClickMenuActionLockShapes);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -3201,3 +3230,4 @@ RotoPaint::onSelectionChanged(int reason)
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;
 #include "moc_Rotopaint.cpp"
+

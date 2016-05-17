@@ -86,7 +86,9 @@ struct AppManagerPrivate;
 class AppManager
     : public QObject, public boost::noncopyable
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -281,6 +283,18 @@ public:
     {
         return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
     }
+
+    template <class K>
+    static
+    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+                                    const QString &label,
+                                    int dimension = 1,
+                                    bool declaredByPlugin = true)
+    {
+        return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
+    }
+
+
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the

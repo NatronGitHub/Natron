@@ -26,7 +26,7 @@
 
 #include <stdexcept>
 
-#include <QMutex>
+#include <QtCore/QMutex>
 
 NATRON_NAMESPACE_ENTER;
 

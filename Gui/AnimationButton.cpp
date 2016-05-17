@@ -39,7 +39,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QDropEvent>
 #include <QDrag>
 #include <QPainter>
-#include <QMimeData>
+#include <QtCore/QMimeData>
 #include <QKeyEvent>
 CLANG_DIAG_ON(deprecated)
 

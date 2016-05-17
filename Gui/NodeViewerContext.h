@@ -43,11 +43,10 @@ class NodeViewerContext
 , public KnobGuiContainerI
 , public boost::enable_shared_from_this<NodeViewerContext>
 {
-
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
-    
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     NodeViewerContext(const NodeGuiPtr& node, ViewerTab* viewer);
@@ -70,13 +69,9 @@ public:
      * @brief The selected tool ID
      **/
     const QString& getCurrentTool() const;
-
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
-
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setCurrentTool(const QString& toolID, bool notifyNode);

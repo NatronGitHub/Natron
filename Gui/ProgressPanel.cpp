@@ -30,18 +30,18 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QMutex>
+#include <QtCore/QMutex>
 #include <QProgressBar>
 #include <QVBoxLayout>
 #include <QKeyEvent>
 #include <QItemSelectionModel>
 #include <QTextEdit>
 #include <QApplication>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QHeaderView>
 #include <QCheckBox>
 #include <QCursor>
-#include <QTimer>
+#include <QtCore/QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

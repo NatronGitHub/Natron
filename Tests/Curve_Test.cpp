@@ -24,8 +24,8 @@
 
 #include <gtest/gtest.h>
 
-#include <QString>
-#include <QDir>
+#include <QtCore/QString>
+#include <QtCore/QDir>
 
 #include "Engine/Curve.h"
 

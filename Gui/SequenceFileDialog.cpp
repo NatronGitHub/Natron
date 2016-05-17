@@ -74,7 +74,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #endif
 #include <QtCore/QEvent>
 #include <QtCore/QMimeData>
-#include <QtConcurrentRun>
+#include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QSettings>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -1569,13 +1569,9 @@ SequenceFileDialog::openSelectedFiles()
                         std::map<int, std::string> & views = sequence.begin()->second;
                         assert( !views.empty() );
 
-                        text = tr("The file ");
-                        text.append( QString::fromUtf8( views.begin()->second.c_str() ) );
-                        text.append( tr(" already exists.\n Would you like to replace it ?") );
+                        text = tr("The file %1 already exists.\nWould you like to replace it?").arg( QString::fromUtf8( views.begin()->second.c_str() ) );
                     } else {
-                        text = tr("The sequence ");
-                        text.append(str);
-                        text.append( tr(" already exists.\n Would you like to replace it ?") );
+                        text = tr("The sequence %1 already exists.\nWould you like to replace it?").arg(str);
                     }
 
                     QMessageBox ques(QMessageBox::Question, tr("Existing file"), text, QMessageBox::Yes | QMessageBox::No,
@@ -2755,7 +2751,7 @@ FileDialogComboBox::showPopup()
         model()->insertRow( model()->rowCount() );
         idx = model()->index(model()->rowCount() - 1, 0);
         // ### TODO maybe add a horizontal line before this
-        model()->setData( idx, QObject::tr("Recent Places") );
+        model()->setData( idx, tr("Recent Places") );
         QStandardItemModel *m = qobject_cast<QStandardItemModel*>( model() );
         if (m) {
             Qt::ItemFlags flags = m->flags(idx);

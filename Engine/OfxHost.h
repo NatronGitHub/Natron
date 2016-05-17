@@ -31,6 +31,9 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 #include "Global/Macros.h"
+
+#include <QtCore/QCoreApplication>
+
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhPluginCache.h>
@@ -51,6 +54,8 @@ class OfxHost
     : public OFX::Host::ImageEffect::Host
       , private OFX::Host::Property::GetHook
 {
+    Q_DECLARE_TR_FUNCTIONS(OfxHost)
+
 public:
 
     OfxHost();

@@ -39,7 +39,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QKeyEvent>
 #include <QMouseEvent>
-#include <QString>
+#include <QtCore/QString>
 #include <QAction>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -673,6 +673,11 @@ public:
 class ActionWithShortcut
     : public QAction
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+private:
     QString _group;
 
 protected:
@@ -709,10 +714,10 @@ public:
  * @brief Set the widget's tooltip and append in the tooltip the shortcut associated to the action.
  * This will be dynamically changed when the user edits the shortcuts from the editor.
  **/
-#define setTooltipWithShortcut(group, actionID, tooltip, widget) ( widget->addAction( new TooltipActionShortcut(group, actionID, tooltip, widget) ) )
-#define setTooltipWithShortcut2(group, actionIDs, tooltip, widget) ( widget->addAction( new TooltipActionShortcut(group, actionIDs, tooltip, widget) ) )
+#define setToolTipWithShortcut(group, actionID, tooltip, widget) ( widget->addAction( new ToolTipActionShortcut(group, actionID, tooltip, widget) ) )
+#define setToolTipWithShortcut2(group, actionIDs, tooltip, widget) ( widget->addAction( new ToolTipActionShortcut(group, actionIDs, tooltip, widget) ) )
 
-class TooltipActionShortcut
+class ToolTipActionShortcut
     : public ActionWithShortcut
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -720,7 +725,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     QWidget* _widget;
-    QString _originalTooltip;
+    QString _originalToolTip;
     bool _tooltipSetInternally;
 
 public:
@@ -728,7 +733,7 @@ public:
     /**
      * @brief Set a dynamic shortcut in the tooltip. Reference it with %1 where you want to place the shortcut.
      **/
-    TooltipActionShortcut(const std::string & group,
+    ToolTipActionShortcut(const std::string & group,
                           const std::string & actionID,
                           const std::string & toolip,
                           QWidget* parent);
@@ -738,12 +743,12 @@ public:
      * In that case the tooltip should reference shortcuts by doing so %1, %2 etc... where
      * %1 references the first actionID, %2 the second ,etc...
      **/
-    TooltipActionShortcut(const std::string & group,
+    ToolTipActionShortcut(const std::string & group,
                           const std::list<std::string> & actionIDs,
                           const std::string & toolip,
                           QWidget* parent);
 
-    virtual ~TooltipActionShortcut()
+    virtual ~ToolTipActionShortcut()
     {
     }
 
@@ -754,7 +759,7 @@ private:
     virtual bool eventFilter(QObject* watched, QEvent* event) OVERRIDE FINAL;
 
 
-    void setTooltipFromOriginalTooltip();
+    void setToolTipFromOriginalToolTip();
 };
 
 class KeyBoundAction

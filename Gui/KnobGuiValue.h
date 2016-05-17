@@ -103,16 +103,18 @@ protected:
         return eValueIsNormalizedNone;
     }
 
-    virtual void denormalize(int /*dimension*/,
-                             double /*time*/,
-                             double* /*value*/) const
+    virtual double denormalize(int /*dimension*/,
+                               double /*time*/,
+                               double value) const
     {
+        return value;
     }
 
-    virtual void normalize(int /*dimension*/,
-                           double /*time*/,
-                           double* /*value*/) const
+    virtual double normalize(int /*dimension*/,
+                             double /*time*/,
+                             double value) const
     {
+        return value;
     }
 
     virtual void connectKnobSignalSlots() {}
@@ -144,7 +146,7 @@ private:
      * @param dimension Must be either 0 and 1
      * @note If the dimension of the knob is not 1 or 2 this function does nothing.
      **/
-    void valueAccordingToType(bool normalize, int dimension, double* value);
+    double valueAccordingToType(bool normalize, int dimension, double value);
 
 
     void expandAllDimensions();
@@ -198,8 +200,8 @@ private:
     virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ValueIsNormalizedEnum getNormalizationPolicy(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void denormalize(int dimension, double time, double* value) const OVERRIDE FINAL;
-    virtual void normalize(int dimension, double time, double* value) const OVERRIDE FINAL;
+    virtual double denormalize(int dimension, double time, double value) const OVERRIDE FINAL;
+    virtual double normalize(int dimension, double time, double value) const OVERRIDE FINAL;
     virtual void connectKnobSignalSlots() OVERRIDE FINAL;
     virtual void disableSlider() OVERRIDE FINAL;
     virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;

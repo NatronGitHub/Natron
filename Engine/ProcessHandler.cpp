@@ -27,15 +27,15 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QProcess>
-#include <QLocalServer>
-#include <QLocalSocket>
-#include <QCoreApplication>
-#include <QTemporaryFile>
-#include <QWaitCondition>
-#include <QMutex>
-#include <QDir>
-#include <QDebug>
+#include <QtCore/QProcess>
+#include <QtNetwork/QLocalServer>
+#include <QtNetwork/QLocalSocket>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QTemporaryFile>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QMutex>
+#include <QtCore/QDir>
+#include <QtCore/QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -249,7 +249,7 @@ void
 ProcessHandler::onProcessError(QProcess::ProcessError err)
 {
     if (err == QProcess::FailedToStart) {
-        Dialogs::errorDialog( _writer->getScriptName(), QObject::tr("The render process failed to start").toStdString() );
+        Dialogs::errorDialog( _writer->getScriptName(), tr("The render process failed to start.").toStdString() );
     } else if (err == QProcess::Crashed) {
         //@TODO: find out a way to get the backtrace
     }
