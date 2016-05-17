@@ -154,10 +154,6 @@ CurveWidget::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if ( !glewIsSupported("GL_ARB_vertex_array_object "  // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
-                          ) ) {
-        _imp->_hasOpenGLVAOSupport = false;
-    }
 }
 
 void
@@ -399,6 +395,29 @@ CurveWidget::getBackgroundColour(double &r,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
+}
+
+RectD
+CurveWidget::getViewportRect() const
+{
+    RectD bbox;
+    {
+        bbox.x1 = _imp->zoomCtx.left();
+        bbox.y1 = _imp->zoomCtx.bottom();
+        bbox.x2 = _imp->zoomCtx.right();
+        bbox.y2 = _imp->zoomCtx.top();
+    }
+    return bbox;
+}
+
+void
+CurveWidget::getCursorPosition(double& x, double& y) const
+{
+    QPoint p = QCursor::pos();
+    p = mapFromGlobal(p);
+    QPointF mappedPos = toZoomCoordinates(p.x(), p.y());
+    x = mappedPos.x();
+    y = mappedPos.y();
 }
 
 void
@@ -1871,15 +1890,6 @@ CurveWidget::getSelectedKeyFrames() const
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     return _imp->_selectedKeyFrames;
-}
-
-bool
-CurveWidget::isSupportingOpenGLVAO() const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return _imp->_hasOpenGLVAOSupport;
 }
 
 const QFont &

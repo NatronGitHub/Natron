@@ -369,50 +369,22 @@ public:
 
     void setUndoRedoStackLimit(int limit);
 
-    void setGlewVersion(const QString & version);
-
-    void setOpenGLVersion(const QString & version);
-
-    QString getGlewVersion() const;
-
-    QString getOpenGLVersion() const;
-
-    QString getBoostVersion() const;
-
-    QString getQtVersion() const;
-
-    QString getCairoVersion() const;
-
     /**
-     * @brief Make a new rotoscoping/painting interface for the given node.
+     * @brief Make a new viewer interface for the given node.
      * This will create new widgets and enrich the interface of the viewer tab.
      **/
-    void createNewRotoInterface(NodeGui* n);
+    void createNodeViewerInterface(const NodeGuiPtr& n);
 
     /**
-     * @brief Set the RotoGui for the node n to be active on all viewers.
+     * @brief Set the viewer interface for a plug-in to be the one of the node n to be active on all viewers.
      **/
-    void setRotoInterface(NodeGui* n);
+    void setNodeViewerInterface(const NodeGuiPtr& n);
 
     /**
-     * @brief Called by Gui::deactivateRotoInterface and by NodeGraph::deleteNodepluginsly
+     * @brief Removes the interface for this node of any viewer
+     * @bool permanantly If true, the interface will be destroyed instead of hidden
      **/
-    void removeRotoInterface(NodeGui* n, bool pluginsly);
-
-    void onViewerRotoEvaluated(ViewerTab* viewer);
-
-    /**
-     * @brief Make a new tracker interface for the given node.
-     * This will create new widgets and enrich the interface of the viewer tab.
-     **/
-    void createNewTrackerInterface(NodeGui* n);
-
-    /**
-     * @brief Set the TrackerGui for the node n to be active on all viewers.
-     **/
-    void setTrackerInterface(NodeGui* n);
-
-    void removeTrackerInterface(NodeGui* n, bool pluginsly);
+    void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanantly);
 
     void progressStart(const NodePtr& node, const std::string &message, const std::string &messageid, bool canCancel = true);
 
@@ -678,8 +650,6 @@ public Q_SLOTS:
     void renderSelectedNode();
 
     void onEnableRenderStatsActionTriggered();
-
-    void onRotoSelectedToolChanged(int tool);
 
     void onMaxVisibleDockablePanelChanged(int maxPanels);
 

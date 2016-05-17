@@ -103,28 +103,29 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 
 
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
-        ///Search all natron paths for a file
 
-        QStringList paths = appPTR->getAllNonOFXPluginsPaths();
-        for (int i = 0; i < paths.size(); ++i) {
-            QString tmp = paths[i] + QLatin1Char('/') + onIconFilePath;
-            if ( QFile::exists(tmp) ) {
-                onIconFilePath = tmp;
-                break;
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
+        if (isEffect) {
+            //Prepend the resources path
+            QString resourcesPath = QString::fromUtf8(isEffect->getNode()->getPluginResourcesPath().c_str());
+            if (!resourcesPath.endsWith(QLatin1Char('/'))) {
+                resourcesPath += QLatin1Char('/');
             }
+            onIconFilePath.prepend(resourcesPath);
         }
+
     }
     if ( !offIconFilePath.isEmpty() && !QFile::exists(offIconFilePath) ) {
-        ///Search all natron paths for a file
-
-        QStringList paths = appPTR->getAllNonOFXPluginsPaths();
-        for (int i = 0; i < paths.size(); ++i) {
-            QString tmp = paths[i] + QLatin1Char('/') + offIconFilePath;
-            if ( QFile::exists(tmp) ) {
-                offIconFilePath = tmp;
-                break;
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
+        if (isEffect) {
+            //Prepend the resources path
+            QString resourcesPath = QString::fromUtf8(isEffect->getNode()->getPluginResourcesPath().c_str());
+            if (!resourcesPath.endsWith(QLatin1Char('/'))) {
+                resourcesPath += QLatin1Char('/');
             }
+            offIconFilePath.prepend(resourcesPath);
         }
+
     }
 
     bool checkable = knob->getIsCheckable();

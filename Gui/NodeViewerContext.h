@@ -27,6 +27,10 @@
 
 #include <QObject>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
 
@@ -37,6 +41,7 @@ struct NodeViewerContextPrivate;
 class NodeViewerContext
 : public QObject
 , public KnobGuiContainerI
+, public boost::enable_shared_from_this<NodeViewerContext>
 {
 
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -47,13 +52,10 @@ public:
 
     NodeViewerContext(const NodeGuiPtr& node, ViewerTab* viewer);
 
+    void createGui();
+
     virtual ~NodeViewerContext();
-
-    /**
-     * @brief Return the container widget for the controls of the node on the viewer
-     **/
-    QWidget* getButtonsContainer() const;
-
+    
     /**
      * @brief If this node's viewer context has a toolbar, this will return it
      **/
@@ -79,18 +81,40 @@ public:
 
     void setCurrentTool(const QString& toolID, bool notifyNode);
 
+    void notifyGuiClosing();
+
 Q_SIGNALS:
 
     /**
      * @brief Emitted when the selected role changes
      **/
     void roleChanged(int previousRole, int newRole);
-
+    
 public Q_SLOTS:
+
+    /**
+     * @brief Received when the selection rectangle has changed on the viewer.
+     * @param onRelease When true, this signal is emitted on the mouse release event
+     * which means this is the last selection desired by the user.
+     * Receivers can either update the selection always or just on mouse release.
+     **/
+    void updateSelectionFromViewerSelectionRectangle(bool onRelease);
+
+    void onViewerSelectionCleared();
 
     void onToolActionTriggered();
 
     void onToolActionTriggered(QAction* act);
+
+    void onToolGroupValueChanged(ViewSpec view,
+                                 int dimension,
+                                 int reason);
+
+    void onToolActionValueChanged(ViewSpec view,
+                                  int dimension,
+                                  int reason);
+
+    void onNodeSettingsPanelClosed(bool closed);
 
 private:
 

@@ -1196,6 +1196,7 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
                                               const QPointF & viewportPos,
                                               const QPointF & pos,
                                               double pressure,
+                                              double timestamp, PenType pen,
                                               OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1205,7 +1206,7 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, pen) ) {
             return true;
         }
     }
@@ -1220,6 +1221,7 @@ TrackerContext::onOverlayPenMotionInternalNodes(double time,
                                                 const QPointF & viewportPos,
                                                 const QPointF & pos,
                                                 double pressure,
+                                                double timestamp,
                                                 OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1229,7 +1231,7 @@ TrackerContext::onOverlayPenMotionInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
     }
@@ -1244,6 +1246,7 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
+                                            double timestamp,
                                             OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1253,7 +1256,7 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
     }

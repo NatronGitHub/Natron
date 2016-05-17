@@ -247,31 +247,39 @@ win32-msvc* {
 
 
 win32-g++ {
-	# On MingW everything is defined with pkgconfig except boost
-	QT_CONFIG -= no-pkg-config
+   # On MingW everything is defined with pkgconfig except boost
+    QT_CONFIG -= no-pkg-config
     CONFIG += link_pkgconfig
-	glew:      PKGCONFIG += glew
+
+    # GLFW requires a link to opengl32.dll
+    glfw {
+        PKGCONFIG += glfw3
+        LIBS += -lopengl32 -lGLU
+    }
     expat:     PKGCONFIG += expat
-	cairo:     PKGCONFIG += cairo
-	shiboken:  PKGCONFIG += shiboken-py2
+    cairo:     PKGCONFIG += cairo
+    shiboken:  PKGCONFIG += shiboken-py2
     pyside:    PKGCONFIG += pyside-py2
-	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtCore
-	INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui
-	python:    PKGCONFIG += python-2.7
-	boost:     LIBS += -lboost_serialization-mt
-	boost:     LIBS += -lboost_serialization-mt
+    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtCore
+    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui
+    python:    PKGCONFIG += python-2.7
+    boost:     LIBS += -lboost_serialization-mt
+    boost:     LIBS += -lboost_serialization-mt
 	
-	#See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
-	Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj 
+    #See http://stackoverflow.com/questions/16596876/object-file-has-too-many-sections
+    Debug:	QMAKE_CXXFLAGS += -Wa,-mbig-obj
 }
 
 unix {
      #  on Unix systems, only the "boost" option needs to be defined in config.pri
      QT_CONFIG -= no-pkg-config
      CONFIG += link_pkgconfig
-     glew:      PKGCONFIG += glew
      expat:     PKGCONFIG += expat
+
+     # GLFW will require a link to X11 on linux and OpenGL framework on OS X
+     glfw:      PKGCONFIG += glfw3
      linux-* {
+         glfw:      LIBS += -lX11 -lGLU
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
          cairo {
              PKGCONFIG += pixman-1 freetype2 fontconfig
@@ -280,6 +288,7 @@ unix {
          LIBS += -ldl
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
+         glfw:      LIBS += -framework OpenGL
          cairo:     PKGCONFIG += cairo
      }
 

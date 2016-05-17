@@ -45,6 +45,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/HistogramCPU.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/Texture.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/ActionShortcuts.h"
@@ -59,7 +60,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeGraph.h"
 #include "Gui/Shaders.h"
 #include "Gui/TextRenderer.h"
-#include "Gui/Texture.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ZoomContext.h"
@@ -102,8 +102,6 @@ struct HistogramPrivate
         , mode(Histogram::eDisplayModeRGB)
         , oldClick()
         , zoomCtx()
-        , supportsGLSL(true)
-        , hasOpenGLVAOSupport(true)
         , state(eEventStateNone)
         , hasBeenModifiedSinceResize(false)
         , _baseAxisColor(118, 215, 90, 255)
@@ -190,8 +188,6 @@ struct HistogramPrivate
     Histogram::DisplayModeEnum mode;
     QPoint oldClick; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
-    bool supportsGLSL;
-    bool hasOpenGLVAOSupport;
     EventStateEnum state;
     bool hasBeenModifiedSinceResize; //< true if the user panned or zoomed since the last resize
     QColor _baseAxisColor;
@@ -679,55 +675,37 @@ Histogram::initializeGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    GLenum err = glewInit();
-    if (GLEW_OK != err) {
-        /* Problem: glewInit failed, something is seriously wrong. */
-        Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
-                              (const char*)glewGetErrorString(err) );
-    }
-
-    if ( !QGLShaderProgram::hasOpenGLShaderPrograms( context() ) ) {
-        _imp->supportsGLSL = false;
-    } else {
-#ifdef NATRON_HISTOGRAM_USING_OPENGL
-        _imp->histogramComputingShader.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramComputationVertex_vert) ) {
-            qDebug() << _imp->histogramComputingShader->log();
-        }
-        if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramComputation_frag) ) {
-            qDebug() << _imp->histogramComputingShader->log();
-        }
-        if ( !_imp->histogramComputingShader->link() ) {
-            qDebug() << _imp->histogramComputingShader->log();
-        }
-
-        _imp->histogramMaximumShader.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->histogramMaximumShader->addShaderFromSourceCode(QGLShader::Fragment, histogramMaximum_frag) ) {
-            qDebug() << _imp->histogramMaximumShader->log();
-        }
-        if ( !_imp->histogramMaximumShader->link() ) {
-            qDebug() << _imp->histogramMaximumShader->log();
-        }
-
-        _imp->histogramRenderingShader.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramRenderingVertex_vert) ) {
-            qDebug() << _imp->histogramRenderingShader->log();
-        }
-        if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramRendering_frag) ) {
-            qDebug() << _imp->histogramRenderingShader->log();
-        }
-        if ( !_imp->histogramRenderingShader->link() ) {
-            qDebug() << _imp->histogramRenderingShader->log();
-        }
-#endif
-    }
-
-    if ( !glewIsSupported("GL_ARB_vertex_array_object "  // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
-                          ) ) {
-        _imp->hasOpenGLVAOSupport = false;
-    }
 
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
+    _imp->histogramComputingShader.reset( new QGLShaderProgram( context() ) );
+    if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramComputationVertex_vert) ) {
+        qDebug() << _imp->histogramComputingShader->log();
+    }
+    if ( !_imp->histogramComputingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramComputation_frag) ) {
+        qDebug() << _imp->histogramComputingShader->log();
+    }
+    if ( !_imp->histogramComputingShader->link() ) {
+        qDebug() << _imp->histogramComputingShader->log();
+    }
+
+    _imp->histogramMaximumShader.reset( new QGLShaderProgram( context() ) );
+    if ( !_imp->histogramMaximumShader->addShaderFromSourceCode(QGLShader::Fragment, histogramMaximum_frag) ) {
+        qDebug() << _imp->histogramMaximumShader->log();
+    }
+    if ( !_imp->histogramMaximumShader->link() ) {
+        qDebug() << _imp->histogramMaximumShader->log();
+    }
+
+    _imp->histogramRenderingShader.reset( new QGLShaderProgram( context() ) );
+    if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Vertex, histogramRenderingVertex_vert) ) {
+        qDebug() << _imp->histogramRenderingShader->log();
+    }
+    if ( !_imp->histogramRenderingShader->addShaderFromSourceCode(QGLShader::Fragment, histogramRendering_frag) ) {
+        qDebug() << _imp->histogramRenderingShader->log();
+    }
+    if ( !_imp->histogramRenderingShader->link() ) {
+        qDebug() << _imp->histogramRenderingShader->log();
+    }
 
     // enable globally : no glPushAttrib()
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
@@ -1550,12 +1528,6 @@ HistogramPrivate::drawScale()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == widget->context() );
 
-    {
-        GLenum _glerror_ = glGetError();
-        if (_glerror_ != GL_NO_ERROR) {
-            std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
-        }
-    }
 
     glCheckError();
     QPointF btmLeft = zoomCtx.toZoomCoordinates(0, widget->height() - 1);

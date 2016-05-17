@@ -355,6 +355,9 @@ public:
     virtual bool onOverlayPenDownDefault(double time,
                                          const RenderScale& renderScale,
                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClickedDefault(double time,
+                                         const RenderScale& renderScale,
+                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenMotionDefault(double time,
                                            const RenderScale& renderScale,
                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -389,6 +392,17 @@ public:
 
     void onKnobExpressionChanged(const KnobGui* knob);
 
+    virtual void pushUndoCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
+
+    /**
+     * @brief Set the cursor to be one of the default cursor.
+     * @returns True if it successfully set the cursor, false otherwise.
+     * Note: this can only be called during an overlay interact action.
+     **/
+    virtual void setCurrentCursor(CursorEnum defaultCursor) OVERRIDE FINAL;
+
+    virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
+
 protected:
 
     virtual int getBaseDepth() const { return 20; }
@@ -409,6 +423,10 @@ protected:
                                     bool /*forceResize*/) {}
 
 public Q_SLOTS:
+
+    void onRightClickActionTriggered();
+
+    void onRightClickMenuKnobPopulated();
 
     void setColorFromGrouping();
 

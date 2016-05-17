@@ -47,11 +47,10 @@
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/MultiInstancePanel.h"
 #include "Gui/NodeGui.h"
-#include "Gui/RotoGui.h"
+#include "Gui/NodeViewerContext.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/TrackerGui.h"
 #include "Gui/ViewerGL.h"
 
 
@@ -340,11 +339,11 @@ ViewerTab::setInfoBarResolution(const Format & f)
     _imp->infoWidget[0]->setResolution(f);
     _imp->infoWidget[1]->setResolution(f);
 }
-
+#if 0
 void
-ViewerTab::createTrackerInterface(NodeGui* n)
+ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
 {
-    std::map<NodeGui*, TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
+    std::map<NodeGuiWPtr, TrackerGui*>::iterator found = _imp->trackerNodes.find(n);
 
     if ( found != _imp->trackerNodes.end() ) {
         return;
@@ -375,7 +374,7 @@ ViewerTab::createTrackerInterface(NodeGui* n)
 
         return;
     }
-    QObject::connect( n, SIGNAL(settingsPanelClosed(bool)), this, SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
+    QObject::connect( n.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setTrackerInterface(n);
     } else if (tracker) {
@@ -388,18 +387,18 @@ ViewerTab::createTrackerInterface(NodeGui* n)
 }
 
 void
-ViewerTab::setTrackerInterface(NodeGui* n)
+ViewerTab::setTrackerInterface(const NodeGuiPtr& n)
 {
     assert(n);
-    std::map<NodeGui*, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
+    std::map<NodeGuiWPtr, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
     if ( it != _imp->trackerNodes.end() ) {
-        if (_imp->currentTracker.first == n) {
+        if (_imp->currentTracker.first.lock() == n) {
             return;
         }
 
         ///remove any existing tracker gui
-        if (_imp->currentTracker.first != NULL) {
-            removeTrackerInterface(_imp->currentTracker.first, false, true);
+        if (_imp->currentTracker.first.lock()) {
+            removeTrackerInterface(_imp->currentTracker.first.lock(), false, true);
         }
 
         ///Add the widgets
@@ -433,11 +432,11 @@ ViewerTab::setTrackerInterface(NodeGui* n)
 }
 
 void
-ViewerTab::removeTrackerInterface(NodeGui* n,
+ViewerTab::removeTrackerInterface(const NodeGuiPtr& n,
                                   bool permanently,
                                   bool removeAndDontSetAnother)
 {
-    std::map<NodeGui*, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
+    std::map<NodeGuiWPtr, TrackerGui*>::iterator it = _imp->trackerNodes.find(n);
 
     if ( it != _imp->trackerNodes.end() ) {
         if ( !getGui() ) {
@@ -448,7 +447,7 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
             return;
         }
 
-        if (_imp->currentTracker.first == n) {
+        if (_imp->currentTracker.first .lock()== n) {
             ///Remove the widgets of the current tracker node
 
             int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentTracker.second->getButtonsBar() );
@@ -463,19 +462,19 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
             }
             if (!removeAndDontSetAnother) {
                 ///If theres another tracker node, set it as the current tracker interface
-                std::map<NodeGui*, TrackerGui*>::iterator newTracker = _imp->trackerNodes.end();
-                for (std::map<NodeGui*, TrackerGui*>::iterator it2 = _imp->trackerNodes.begin(); it2 != _imp->trackerNodes.end(); ++it2) {
-                    if ( (it2->second != it->second) && it2->first->isSettingsPanelVisible() ) {
+                std::map<NodeGuiWPtr, TrackerGui*>::iterator newTracker = _imp->trackerNodes.end();
+                for (std::map<NodeGuiWPtr, TrackerGui*>::iterator it2 = _imp->trackerNodes.begin(); it2 != _imp->trackerNodes.end(); ++it2) {
+                    if ( (it2->second != it->second) && it2->first.lock()->isSettingsPanelVisible() ) {
                         newTracker = it2;
                         break;
                     }
                 }
 
-                _imp->currentTracker.first = 0;
+                _imp->currentTracker.first.reset();
                 _imp->currentTracker.second = 0;
 
                 if ( newTracker != _imp->trackerNodes.end() ) {
-                    setTrackerInterface(newTracker->first);
+                    setTrackerInterface(newTracker->first.lock());
                 }
             }
         }
@@ -487,253 +486,262 @@ ViewerTab::removeTrackerInterface(NodeGui* n,
     }
 } // ViewerTab::removeTrackerInterface
 
+
+#endif
+
+/**
+ * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
+ **/
 void
-ViewerTab::createRotoInterface(NodeGui* n)
+ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
 {
-    RotoGui* roto = new RotoGui( n, this, getRotoGuiSharedData(n) );
-    QObject::connect( roto, SIGNAL(selectedToolChanged(int)), getGui(), SLOT(onRotoSelectedToolChanged(int)) );
-    std::pair<std::map<NodeGui*, RotoGui*>::iterator, bool> ret = _imp->rotoNodes.insert( std::make_pair(n, roto) );
-
-    assert(ret.second);
-    if (!ret.second) {
-        qDebug() << "ViewerTab::createRotoInterface() failed";
-        delete roto;
-
+    if (!n) {
         return;
     }
-    QObject::connect( n, SIGNAL(settingsPanelClosed(bool)), this, SLOT(onRotoNodeGuiSettingsPanelClosed(bool)) );
-    if ( n->isSettingsPanelVisible() ) {
-        setRotoInterface(n);
-    } else {
-        roto->getToolBar()->hide();
-        roto->getCurrentButtonsBar()->hide();
+    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
+    if (found != _imp->nodesContext.end()) {
+        // Already exists
+        return;
     }
+
+    boost::shared_ptr<NodeViewerContext> nodeContext(new NodeViewerContext(n, this));
+    nodeContext->createGui();
+    _imp->nodesContext.insert(std::make_pair(n, nodeContext));
+
+    if ( n->isSettingsPanelVisible() ) {
+        setPluginViewerInterface(n);
+    } else {
+        QToolBar *toolbar = nodeContext->getToolBar();
+        if (toolbar) {
+            toolbar->hide();
+        }
+        QWidget* w = nodeContext->getContainerWidget();
+        if (w) {
+            w->hide();
+        }
+    }
+
 }
 
+/**
+ * @brief Set the current viewer interface for a given plug-in to be the one of the given node
+ **/
 void
-ViewerTab::setRotoInterface(NodeGui* n)
+ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
 {
-    assert(n);
-    std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.find(n);
-    if ( it != _imp->rotoNodes.end() ) {
-        if (_imp->currentRoto.first == n) {
-            return;
-        }
+    if (!n) {
+        return;
+    }
+    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it = _imp->nodesContext.find(n);
+    if ( it == _imp->nodesContext.end() ) {
+        return;
+    }
 
-        ///remove any existing roto gui
-        if (_imp->currentRoto.first != NULL) {
-            removeRotoInterface(_imp->currentRoto.first, false, true);
-        }
+    std::string pluginID = n->getNode()->getPluginID();
+    std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
+    NodeGuiPtr activeNodeForPlugin;
+    if (foundActive != _imp->currentNodeContext.end()) {
+        activeNodeForPlugin = foundActive->currentNode.lock();
+    }
 
-        ///Add the widgets
-        QToolBar* toolBar = it->second->getToolBar();
-        _imp->viewerLayout->insertWidget(0, toolBar);
+    // If already active, return
+    if (activeNodeForPlugin == n) {
+        return;
+    }
+
+    QToolBar* newToolbar = it->second->getToolBar();
+    QWidget* newContainer = it->second->getContainerWidget();
+
+    // Plugin has no viewer interface
+    if (!newToolbar && !newContainer) {
+        return;
+    }
+
+    ///remove any existing roto gui
+    if (activeNodeForPlugin) {
+        removeNodeViewerInterface(activeNodeForPlugin, false /*permanantly*/, /*setAnother*/ false);
+    }
+
+    // Add the widgets
+
+    if (newToolbar) {
+        _imp->viewerLayout->insertWidget(0, newToolbar);
 
         {
             QMutexLocker l(&_imp->visibleToolbarsMutex);
             if (_imp->leftToolbarVisible) {
-                toolBar->show();
-            }
-        }
-
-        ///If there's a tracker add it right after the tracker
-        int index;
-        if (_imp->currentTracker.second) {
-            index = _imp->mainLayout->indexOf( _imp->currentTracker.second->getButtonsBar() );
-            assert(index != -1);
-            if (index >= 0) {
-                ++index;
-            }
-        } else {
-            index = _imp->mainLayout->indexOf(_imp->viewerContainer);
-        }
-        assert(index >= 0);
-        if (index >= 0) {
-            QWidget* buttonsBar = it->second->getCurrentButtonsBar();
-            assert(buttonsBar);
-            if (buttonsBar) {
-                _imp->mainLayout->insertWidget(index, buttonsBar);
-                {
-                    QMutexLocker l(&_imp->visibleToolbarsMutex);
-                    if (_imp->topToolbarVisible) {
-                        buttonsBar->show();
-                    }
-                }
-            }
-        }
-        QObject::connect( it->second, SIGNAL(roleChanged(int,int)), this, SLOT(onRotoRoleChanged(int,int)) );
-        _imp->currentRoto.first = n;
-        _imp->currentRoto.second = it->second;
-        _imp->viewer->redraw();
-    }
-} // ViewerTab::setRotoInterface
-
-void
-ViewerTab::removeRotoInterface(NodeGui* n,
-                               bool permanently,
-                               bool removeAndDontSetAnother)
-{
-    std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.find(n);
-
-    if ( it != _imp->rotoNodes.end() ) {
-        if (_imp->currentRoto.first == n) {
-            QObject::disconnect( _imp->currentRoto.second, SIGNAL(roleChanged(int,int)), this, SLOT(onRotoRoleChanged(int,int)) );
-            ///Remove the widgets of the current roto node
-            assert(_imp->viewerLayout->count() > 1);
-            QLayoutItem* currentToolBarItem = _imp->viewerLayout->itemAt(0);
-            QToolBar* currentToolBar = qobject_cast<QToolBar*>( currentToolBarItem->widget() );
-            currentToolBar->hide();
-            assert( currentToolBar == _imp->currentRoto.second->getToolBar() );
-            _imp->viewerLayout->removeItem(currentToolBarItem);
-            int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentRoto.second->getCurrentButtonsBar() );
-            assert(buttonsBarIndex >= 0);
-            QLayoutItem* buttonsBar = _imp->mainLayout->itemAt(buttonsBarIndex);
-            assert(buttonsBar);
-            _imp->mainLayout->removeItem(buttonsBar);
-            buttonsBar->widget()->hide();
-
-            if (!removeAndDontSetAnother) {
-                ///If theres another roto node, set it as the current roto interface
-                std::map<NodeGui*, RotoGui*>::iterator newRoto = _imp->rotoNodes.end();
-                for (std::map<NodeGui*, RotoGui*>::iterator it2 = _imp->rotoNodes.begin(); it2 != _imp->rotoNodes.end(); ++it2) {
-                    if ( (it2->second != it->second) && it2->first->isSettingsPanelVisible() ) {
-                        newRoto = it2;
-                        break;
-                    }
-                }
-
-                _imp->currentRoto.first = 0;
-                _imp->currentRoto.second = 0;
-
-                if ( newRoto != _imp->rotoNodes.end() ) {
-                    setRotoInterface(newRoto->first);
-                }
-            }
-        }
-
-        if (permanently) {
-            delete it->second;
-            _imp->rotoNodes.erase(it);
-        }
-    }
-}
-
-void
-ViewerTab::getRotoContext(std::map<NodeGui*, RotoGui*>* rotoNodes,
-                          std::pair<NodeGui*, RotoGui*>* currentRoto) const
-{
-    *rotoNodes = _imp->rotoNodes;
-    *currentRoto = _imp->currentRoto;
-}
-
-void
-ViewerTab::getTrackerContext(std::map<NodeGui*, TrackerGui*>* trackerNodes,
-                             std::pair<NodeGui*, TrackerGui*>* currentTracker) const
-{
-    *trackerNodes = _imp->trackerNodes;
-    *currentTracker = _imp->currentTracker;
-}
-
-void
-ViewerTab::onRotoRoleChanged(int previousRole,
-                             int newRole)
-{
-    RotoGui* roto = qobject_cast<RotoGui*>( sender() );
-
-    if (roto) {
-        assert(roto == _imp->currentRoto.second);
-
-        ///Remove the previous buttons bar
-        QWidget* previousBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)previousRole );
-        assert(previousBar);
-        if (previousBar) {
-            int buttonsBarIndex = _imp->mainLayout->indexOf(previousBar);
-            assert(buttonsBarIndex >= 0);
-            if (buttonsBarIndex >= 0) {
-                _imp->mainLayout->removeItem( _imp->mainLayout->itemAt(buttonsBarIndex) );
-            }
-            previousBar->hide();
-        }
-
-        ///Set the new buttons bar
-        int viewerIndex = _imp->mainLayout->indexOf(_imp->viewerContainer);
-        assert(viewerIndex >= 0);
-        if (viewerIndex >= 0) {
-            QWidget* currentBar = _imp->currentRoto.second->getButtonsBar( (RotoGui::RotoRoleEnum)newRole );
-            assert(currentBar);
-            if (currentBar) {
-                _imp->mainLayout->insertWidget( viewerIndex, currentBar);
-                currentBar->show();
-                assert(_imp->mainLayout->itemAt(viewerIndex)->widget() == currentBar);
+                newToolbar->show();
             }
         }
     }
-}
-
-void
-ViewerTab::updateRotoSelectedTool(int tool,
-                                  RotoGui* sender)
-{
-    if ( _imp->currentRoto.second && (_imp->currentRoto.second != sender) ) {
-        _imp->currentRoto.second->setCurrentTool( (RotoGui::RotoToolEnum)tool, false );
-    }
-}
-
-boost::shared_ptr<RotoGuiSharedData>
-ViewerTab::getRotoGuiSharedData(NodeGui* node) const
-{
-    std::map<NodeGui*, RotoGui*>::const_iterator found = _imp->rotoNodes.find(node);
-
-    if ( found == _imp->rotoNodes.end() ) {
-        return boost::shared_ptr<RotoGuiSharedData>();
+    
+    // If there are other interface active, add it after them
+    int index;
+    if (_imp->currentNodeContext.empty()) {
+        // insert before the viewer
+        index = _imp->mainLayout->indexOf(_imp->viewerContainer);
     } else {
-        return found->second->getRotoGuiSharedData();
+        // Remove the oldest opened interface if we reached the maximum
+        int maxNodeContextOpened = appPTR->getCurrentSettings()->getMaxOpenedNodesViewerContext();
+        if ((int)_imp->currentNodeContext.size() == maxNodeContextOpened) {
+            const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
+            removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanantly*/, false /*setAnother*/);
+        }
+
+        QWidget* container = _imp->currentNodeContext.back().currentContext->getContainerWidget();
+        index = _imp->mainLayout->indexOf(container);
+        assert(index != -1);
+        if (index >= 0) {
+            ++index;
+        }
     }
-}
-
-void
-ViewerTab::onRotoEvaluatedForThisViewer()
-{
-    getGui()->onViewerRotoEvaluated(this);
-}
-
-void
-ViewerTab::onRotoNodeGuiSettingsPanelClosed(bool closed)
-{
-    NodeGui* n = qobject_cast<NodeGui*>( sender() );
-
-    if (n) {
-        if (closed) {
-            removeRotoInterface(n, false, false);
-        } else {
-            if (n != _imp->currentRoto.first) {
-                setRotoInterface(n);
+    assert(index >= 0);
+    if (index >= 0) {
+        assert(newContainer);
+        if (newContainer) {
+            _imp->mainLayout->insertWidget(index, newContainer);
+            {
+                QMutexLocker l(&_imp->visibleToolbarsMutex);
+                if (_imp->topToolbarVisible) {
+                    newContainer->show();
+                }
             }
+        }
+    }
+    ViewerTabPrivate::PluginViewerContext p;
+    p.pluginID = pluginID;
+    p.currentNode = n;
+    p.currentContext = it->second;
+    _imp->currentNodeContext.push_back(p);
+
+    _imp->viewer->redraw();
+
+}
+
+/**
+ * @brief Removes the interface associated to the given node.
+ * @param permanently The interface is destroyed instead of being hidden
+ * @param setAnotherFromSamePlugin If true, if another node of the same plug-in is a candidate for a viewer interface, it will replace the existing
+ * viewer interface for this plug-in
+ **/
+void
+ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently, bool setAnotherFromSamePlugin)
+{
+    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
+    if ( found == _imp->nodesContext.end() ) {
+        return;
+    }
+
+    std::string pluginID = n->getNode()->getPluginID();
+    NodeGuiPtr activeNodeForPlugin;
+    QToolBar* activeItemToolBar = 0;
+    QWidget* activeItemContainer = 0;
+
+    {
+        // Keep the iterator under this scope since we erase it
+        std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
+        if (foundActive != _imp->currentNodeContext.end()) {
+            activeNodeForPlugin = foundActive->currentNode.lock();
+            activeItemToolBar = foundActive->currentContext->getToolBar();
+            activeItemContainer = foundActive->currentContext->getContainerWidget();
+            _imp->currentNodeContext.erase(foundActive);
+        }
+    }
+
+    // Remove the widgets of the current node
+    if (activeItemToolBar) {
+        int nLayoutItems = _imp->viewerLayout->count();
+        for (int i = 0; i < nLayoutItems; ++i) {
+            QLayoutItem* item = _imp->viewerLayout->itemAt(i);
+            if (item->widget() == activeItemToolBar) {
+                activeItemToolBar->hide();
+                _imp->viewerLayout->removeItem(item);
+                break;
+            }
+        }
+    }
+    if (activeItemContainer) {
+        int buttonsBarIndex = _imp->mainLayout->indexOf(activeItemContainer);
+        assert(buttonsBarIndex >= 0);
+        if (buttonsBarIndex >= 0) {
+            _imp->mainLayout->removeWidget(activeItemContainer);
+        }
+        activeItemContainer->hide();
+    }
+
+    if (setAnotherFromSamePlugin) {
+        ///If theres another roto node, set it as the current roto interface
+        std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator newInterface = _imp->nodesContext.end();
+        for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it2 = _imp->nodesContext.begin(); it2 != _imp->nodesContext.end(); ++it2) {
+            NodeGuiPtr otherNode = it2->first.lock();
+            if (!otherNode) {
+                continue;
+            }
+            if (otherNode == n) {
+                continue;
+            }
+            if (otherNode->getNode()->getPluginID() != pluginID) {
+                continue;
+            }
+            if ( (it2->second != found->second) && it2->first.lock()->isSettingsPanelVisible() ) {
+                newInterface = it2;
+                break;
+            }
+        }
+
+        if ( newInterface != _imp->nodesContext.end() ) {
+            setPluginViewerInterface(newInterface->first.lock());
+        }
+    }
+
+
+    if (permanently) {
+        found->second.reset();
+        _imp->nodesContext.erase(found);
+    }
+
+}
+
+/**
+ * @brief Get the list of all nodes that have a user interface created on this viewer (but not necessarily displayed)
+ * and a list for each plug-in of the active node.
+ **/
+void
+ViewerTab::getNodesViewerInterface(std::list<NodeGuiPtr>* nodesWithUI,
+                                   std::list<NodeGuiPtr>* perPluginActiveUI) const
+{
+    for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::const_iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
+        NodeGuiPtr n = it->first.lock();
+        if (n) {
+            nodesWithUI->push_back(n);
+        }
+    }
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin() ; it != _imp->currentNodeContext.end(); ++it) {
+        NodeGuiPtr n = it->currentNode.lock();
+        if (n) {
+            perPluginActiveUI->push_back(n);
         }
     }
 }
 
-void
-ViewerTab::onTrackerNodeGuiSettingsPanelClosed(bool closed)
-{
-    NodeGui* n = qobject_cast<NodeGui*>( sender() );
 
-    if (n) {
-        if (closed) {
-            removeTrackerInterface(n, false, false);
-        } else {
-            if (n != _imp->currentTracker.first) {
-                setTrackerInterface(n);
-            }
-        }
+void
+ViewerTab::updateSelectedToolForNode(const QString& toolID, const NodeGuiPtr& node)
+{
+    std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(node);
+    if (found == _imp->nodesContext.end()) {
+        // Already exists
+        return;
     }
+    found->second->setCurrentTool(toolID, false /*notifyNode*/);
 }
+
 
 void
 ViewerTab::notifyGuiClosing()
 {
     _imp->timeLineGui->discardGuiPointer();
-    for (std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.begin(); it != _imp->rotoNodes.end(); ++it) {
+    for (std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator it = _imp->nodesContext.begin(); it != _imp->nodesContext.end(); ++it) {
         it->second->notifyGuiClosing();
     }
 }

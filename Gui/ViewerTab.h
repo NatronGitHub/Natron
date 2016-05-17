@@ -55,10 +55,11 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
-                       NodeGui* currentRoto,
-                       const std::list<NodeGui*> & existingTrackerNodes,
-                       NodeGui* currentTracker,
+
+   
+
+    explicit ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
+                       const std::list<NodeGuiPtr>& activePluginsContext,
                        Gui* gui,
                        ViewerInstance* node,
                        QWidget* parent = 0);
@@ -86,13 +87,13 @@ public:
     /*All the overlay methods are forwarding calls to the default node instance*/
     void drawOverlays(double time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
 
-    bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, QMouseEvent* e);
+    bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos);
 
-    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
+    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
 
-    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
 
     bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
@@ -106,13 +107,13 @@ public:
 
 private:
 
-    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, bool isTabletEvent, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QMouseEvent* e);
+    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
 
-    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, QInputEvent* e);
-    bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
-                                        KeyboardModifiers km);
-    bool notifyOverlaysKeyRepeat_internal(const NodePtr& node, const RenderScale & renderScale, QKeyEvent* e, Key k,
-                                          KeyboardModifiers km);
+    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
+                                        KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
+    bool notifyOverlaysKeyRepeat_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
+                                          KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
 public:
 
@@ -171,32 +172,35 @@ public:
 
     void setInfoBarResolution(const Format & f);
 
-    void createRotoInterface(NodeGui* n);
+    /**
+     * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
+     **/
+    void createNodeViewerInterface(const NodeGuiPtr& n);
 
     /**
-     * @brief Set the current roto interface
+     * @brief Set the current viewer interface for a given plug-in to be the one of the given node
      **/
-    void setRotoInterface(NodeGui* n);
+    void setPluginViewerInterface(const NodeGuiPtr& n);
 
-    void removeRotoInterface(NodeGui* n, bool permanently, bool removeAndDontSetAnother);
+    /**
+     * @brief Removes the interface associated to the given node. 
+     * @param permanently The interface is destroyed instead of being hidden
+     * @param setAnotherFromSamePlugin If true, if another node of the same plug-in is a candidate for a viewer interface, it will replace the existing
+     * viewer interface for this plug-in
+     **/
+    void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently, bool setAnotherFromSamePlugin);
 
-    void getRotoContext(std::map<NodeGui*, RotoGui*>* rotoNodes, std::pair<NodeGui*, RotoGui*>* currentRoto) const;
+    /**
+     * @brief Get the list of all nodes that have a user interface created on this viewer (but not necessarily displayed)
+     * and a list for each plug-in of the active node.
+     **/
+    void getNodesViewerInterface(std::list<NodeGuiPtr>* nodesWithUI,
+                                 std::list<NodeGuiPtr>* perPluginActiveUI) const;
 
-    void updateRotoSelectedTool(int tool, RotoGui* sender);
-
-    boost::shared_ptr<RotoGuiSharedData> getRotoGuiSharedData(NodeGui* node) const;
-
-    void onRotoEvaluatedForThisViewer();
-
-
-    void createTrackerInterface(NodeGui* n);
-
-    void setTrackerInterface(NodeGui* n);
-
-    void removeTrackerInterface(NodeGui* n, bool permanently, bool removeAndDontSetAnother);
-
-    void getTrackerContext(std::map<NodeGui*, TrackerGui*>* trackerNodes, std::pair<NodeGui*, TrackerGui*>* currentTracker) const;
-
+    /**
+     * @brief Called to refresh the current selected tool on the toolbar
+     **/
+    void updateSelectedToolForNode(const QString& toolID, const NodeGuiPtr& node);
 
     ViewerCompositingOperatorEnum getCompositingOperator() const;
 
@@ -337,12 +341,6 @@ public Q_SLOTS:
     void onAutoContrastChanged(bool b);
 
     void onRenderScaleButtonClicked(bool checked);
-
-    void onRotoRoleChanged(int previousRole, int newRole);
-
-    void onRotoNodeGuiSettingsPanelClosed(bool closed);
-
-    void onTrackerNodeGuiSettingsPanelClosed(bool closed);
 
     void onColorSpaceComboBoxChanged(int v);
 

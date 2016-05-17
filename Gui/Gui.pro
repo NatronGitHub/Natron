@@ -20,7 +20,7 @@ TARGET = Gui
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
-CONFIG += boost glew opengl qt cairo python shiboken pyside
+CONFIG += boost opengl qt cairo python shiboken pyside glfw
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
@@ -58,6 +58,8 @@ INCLUDEPATH += $$PWD/../libs/qhttpserver/src
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronGui
 DEPENDPATH += $$PWD/NatronGui
+
+CONFIG += glad-flags
 
 win32-msvc* {
         CONFIG(64bit) {
@@ -185,9 +187,7 @@ SOURCES += \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
-    RotoGui.cpp \
     RotoPanel.cpp \
-    RotoUndoCommand.cpp \
     ScaleSliderQWidget.cpp \
     ScriptEditor.cpp \
     ScriptTextEdit.cpp \
@@ -203,12 +203,10 @@ SOURCES += \
     TableModelView.cpp \
     TabWidget.cpp \
     TextRenderer.cpp \
-    Texture.cpp \
     ticks.cpp \
     ToolButton.cpp \
     TimeLineGui.cpp \
     TrackerPanel.cpp \
-    TrackerGui.cpp \
     TrackerUndoCommand.cpp \
     Utils.cpp \
     VerticalColorBar.cpp \
@@ -334,9 +332,7 @@ HEADERS += \
     RenderStatsDialog.h \
     ResizableMessageBox.h \
     RightClickableWidget.h \
-    RotoGui.h \
     RotoPanel.h \
-    RotoUndoCommand.h \
     ScaleSliderQWidget.h \
     ScriptEditor.h \
     ScriptTextEdit.h \
@@ -352,12 +348,10 @@ HEADERS += \
     TableModelView.h \
     TabWidget.h \
     TextRenderer.h \
-    Texture.h \
     ticks.h \
     TimeLineGui.h \
     ToolButton.h \
     TrackerPanel.h \
-    TrackerGui.h \
     TrackerUndoCommand.h \
     Utils.h \
     VerticalColorBar.h \

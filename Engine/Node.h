@@ -51,7 +51,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-
 #define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
 #define NATRON_PARAMETER_PAGE_NAME_INFO "Info"
 
@@ -634,6 +633,11 @@ public:
      **/
     std::string getPluginLabel() const;
 
+    /**
+     * @brief Returns the path to where the resources are stored for this plug-in
+     **/
+    std::string getPluginResourcesPath() const;
+
     void getPluginGrouping(std::list<std::string>* grouping) const;
 
     /**
@@ -954,6 +958,8 @@ private:
 
     void findPluginFormatKnobs(const KnobsVec & knobs, bool loadingSerialization);
 
+    void findRightClickMenuKnob(const KnobsVec& knobs);
+
     void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int renderScaleSupportPref);
 
     void createInfoPage();
@@ -1078,6 +1084,22 @@ public:
 
     bool canHandleRenderScaleForOverlays() const;
 
+    /**
+     * @brief Push a new undo command to the undo/redo stack associated to this node.
+     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
+     * If no undo/redo stack is present, the command will just be redone once then destroyed.
+     **/
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+
+    /**
+     * @brief Set the cursor to be one of the default cursor.
+     * @returns True if it successfully set the cursor, false otherwise.
+     * Note: this can only be called during an overlay interact action.
+     **/
+    void setCurrentCursor(CursorEnum defaultCursor);
+    bool setCurrentCursor(const QString& customCursorFilePath);
+
     bool shouldDrawOverlay() const;
 
 
@@ -1088,6 +1110,11 @@ public:
     bool onOverlayPenDownDefault(double time,
                                  const RenderScale& renderScale,
                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+
+    bool onOverlayPenDoubleClickedDefault(double time,
+                                 const RenderScale& renderScale,
+                                 ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+
 
     bool onOverlayPenMotionDefault(double time,
                                    const RenderScale& renderScale,
@@ -1282,6 +1309,7 @@ private:
 
 public Q_SLOTS:
 
+
     void onRefreshIdentityStateRequestReceived();
 
     void setKnobsAge(U64 newAge);
@@ -1320,6 +1348,8 @@ public Q_SLOTS:
     void doComputeHashOnMainThread();
 
 Q_SIGNALS:
+
+    void rightClickMenuKnobPopulated();
 
     void s_refreshPreviewsAfterProjectLoadRequested();
 

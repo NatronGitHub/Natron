@@ -62,6 +62,10 @@ public:
     virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const = 0;
     virtual bool getAllDimensionsVisible() const = 0;
 
+    virtual RectD getViewportRect() const = 0;
+    virtual void getCursorPosition(double& x, double& y) const = 0;
+
+
 protected:
 
     ///Should set to the underlying knob the gui ptr

@@ -1145,15 +1145,7 @@ LoadNodePresetsCommand::getListAsShared(const std::list< NodeWPtr >& original,
 
 LoadNodePresetsCommand::~LoadNodePresetsCommand()
 {
-//    if (_isUndone) {
-//        for (NodesList::iterator it = _newChildren.begin(); it != _newChildren.end(); ++it) {
-//            (*it)->getDagGui()->deleteNodepluginsly(*it);
-//        }
-//    } else {
-//        for (NodesList::iterator it = _oldChildren.begin(); it != _oldChildren.end(); ++it) {
-//            (*it)->getDagGui()->deleteNodepluginsly(*it);
-//        }
-//    }
+
 }
 
 void

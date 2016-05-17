@@ -87,6 +87,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
@@ -3078,6 +3079,22 @@ Node::findPluginFormatKnobs()
 }
 
 void
+Node::findRightClickMenuKnob(const KnobsVec& knobs)
+{
+
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->getName() == kNatronOfxParamRightClickMenu) {
+            KnobPtr rightClickKnob = knobs[i];
+            KnobChoice* isChoice = dynamic_cast<KnobChoice*>(rightClickKnob.get());
+            if (isChoice) {
+                QObject::connect(isChoice, SIGNAL(populated()), this, SLOT(rightClickMenuKnobPopulated()));
+            }
+            break;
+        }
+    }
+}
+
+void
 Node::findPluginFormatKnobs(const KnobsVec & knobs,
                             bool loadingSerialization)
 {
@@ -3633,7 +3650,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
     const KnobsVec & knobs = _imp->effect->getKnobs();
 
     findPluginFormatKnobs(knobs, loadingSerialization);
-
+    findRightClickMenuKnob(knobs);
 
     // Scan all inputs to find masks and get inputs labels
     //Pair hasMaskChannelSelector, isMask
@@ -6246,6 +6263,21 @@ Node::getPluginLabel() const
 }
 
 std::string
+Node::getPluginResourcesPath() const
+{
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if ( !_imp->pluginPythonModule.empty() ) {
+            std::size_t foundSlash = _imp->pluginPythonModule.find_last_of("/");
+            if (foundSlash != std::string::npos) {
+                return _imp->pluginPythonModule.substr(0, foundSlash);
+            }
+        }
+    }
+    return _imp->plugin->getResourcesPath().toStdString();
+}
+
+std::string
 Node::getPluginDescription() const
 {
     {
@@ -7408,6 +7440,21 @@ Node::onOverlayPenDownDefault(double time,
 }
 
 bool
+Node::onOverlayPenDoubleClickedDefault(double time,
+                                      const RenderScale& renderScale,
+                                      ViewIdx view, const QPointF & viewportPos, const QPointF & pos)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        return nodeGui->onOverlayPenDoubleClickedDefault(time, renderScale, view, viewportPos, pos);
+    }
+
+    return false;
+}
+
+
+bool
 Node::onOverlayPenMotionDefault(double time,
                                 const RenderScale& renderScale,
                                 ViewIdx view,
@@ -7760,6 +7807,41 @@ Node::hasHostOverlay() const
 
     return false;
 }
+
+void
+Node::pushUndoCommand(const UndoCommandPtr& command)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        nodeGui->pushUndoCommand(command);
+    } else {
+        command->redo();
+    }
+}
+
+
+void
+Node::setCurrentCursor(CursorEnum defaultCursor)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        nodeGui->setCurrentCursor(defaultCursor);
+    }
+}
+
+bool
+Node::setCurrentCursor(const QString& customCursorFilePath)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        return nodeGui->setCurrentCursor(customCursorFilePath);
+    }
+    return false;
+}
+
 
 void
 Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)

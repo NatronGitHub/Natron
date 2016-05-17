@@ -433,6 +433,17 @@ public:
     {
         return _checkable;
     }
+
+    void setAsToolButtonAction(bool b)
+    {
+        _isToolButtonAction = b;
+    }
+
+    bool getIsToolButtonAction() const
+    {
+        return _isToolButtonAction;
+    }
+
 private:
 
 
@@ -443,6 +454,7 @@ private:
     static const std::string _typeNameStr;
     bool _renderButton;
     bool _checkable;
+    bool _isToolButtonAction;
 };
 
 /******************************KnobChoice**************************************/
@@ -840,6 +852,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     std::vector< boost::weak_ptr<KnobI> > _children;
     bool _isTab;
+    bool _isToolButton;
 
 public:
 
@@ -870,6 +883,9 @@ public:
 
     bool isTab() const;
 
+    void setAsToolButton(bool b);
+    bool getIsToolButton() const;
+
     static const std::string & typeNameStatic();
 
 private:
@@ -878,6 +894,7 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
 private:
+
     static const std::string _typeNameStr;
 };
 
@@ -908,6 +925,14 @@ public:
 
     void addKnob(const KnobPtr& k);
 
+    void setAsToolBar(bool b)
+    {
+        _isToolBar = b;
+    }
+    bool getIsToolBar() const
+    {
+        return _isToolBar;
+    }
 
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
@@ -925,6 +950,7 @@ private:
 
 private:
 
+    bool _isToolBar;
     std::vector< boost::weak_ptr<KnobI> > _children;
     static const std::string _typeNameStr;
 };

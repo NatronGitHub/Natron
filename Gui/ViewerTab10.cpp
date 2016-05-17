@@ -52,11 +52,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeViewerContext.h"
 #include "Gui/RenderStatsDialog.h"
-#include "Gui/RotoGui.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/TrackerGui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
@@ -490,12 +489,8 @@ ViewerTab::~ViewerTab()
             graph->setLastSelectedViewer(0);
         }
     }
-    for (std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.begin(); it != _imp->rotoNodes.end(); ++it) {
-        delete it->second;
-    }
-    for (std::map<NodeGui*, TrackerGui*>::iterator it = _imp->trackerNodes.begin(); it != _imp->trackerNodes.end(); ++it) {
-        delete it->second;
-    }
+    _imp->nodesContext.clear();
+
 }
 
 void
@@ -774,6 +769,9 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
         update();
     } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
+        update();
+    } else if (key == Qt::Key_Escape) {
+        _imp->viewer->s_selectionCleared();
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter

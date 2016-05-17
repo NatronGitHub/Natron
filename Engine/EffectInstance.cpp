@@ -81,6 +81,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -2908,8 +2909,17 @@ EffectInstance::onKnobSlaved(const KnobPtr& slave,
 void
 EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 {
+    assert(QThread::currentThread() == qApp->thread());
     getNode()->setCurrentViewportForHostOverlays(viewport);
+    _imp->overlaysViewport = viewport;
     setCurrentViewportForOverlays(viewport);
+}
+
+OverlaySupport*
+EffectInstance::getCurrentViewportForOverlays() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->overlaysViewport;
 }
 
 void
@@ -2950,7 +2960,9 @@ EffectInstance::onOverlayPenDown_public(double time,
                                         ViewIdx view,
                                         const QPointF & viewportPos,
                                         const QPointF & pos,
-                                        double pressure)
+                                        double pressure,
+                                        double timestamp,
+                                        PenType pen)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2969,9 +2981,40 @@ EffectInstance::onOverlayPenDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure);
+        ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
         if (!ret) {
             ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
+        }
+        _imp->setDuringInteractAction(false);
+    }
+    checkIfRenderNeeded();
+
+    return ret;
+}
+
+bool
+EffectInstance::onOverlayPenDoubleClicked_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos)
+{
+    ///cannot be run in another thread
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
+        return false;
+    }
+
+    RenderScale actualScale;
+    if ( !canHandleRenderScaleForOverlays() ) {
+        actualScale.x = actualScale.y = 1.;
+    } else {
+        actualScale = renderScale;
+    }
+
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayPenDoubleClicked(time, actualScale, view, viewportPos, pos);
+        if (!ret) {
+            ret |= getNode()->onOverlayPenDoubleClickedDefault(time, actualScale, view, viewportPos, pos);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2986,7 +3029,8 @@ EffectInstance::onOverlayPenMotion_public(double time,
                                           ViewIdx view,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
-                                          double pressure)
+                                          double pressure,
+                                          double timestamp)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3004,7 +3048,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure);
+    bool ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
     if (!ret) {
         ret |= getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure);
     }
@@ -3021,7 +3065,8 @@ EffectInstance::onOverlayPenUp_public(double time,
                                       ViewIdx view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
-                                      double pressure)
+                                      double pressure,
+                                      double timestamp)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3040,7 +3085,7 @@ EffectInstance::onOverlayPenUp_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure);
+        ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
         if (!ret) {
             ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
         }
@@ -4053,9 +4098,50 @@ EffectInstance::redrawOverlayInteract()
 RenderScale
 EffectInstance::getOverlayInteractRenderScale() const
 {
+    RenderScale renderScale(1.);
+
+    if (isDoingInteractAction() && _imp->overlaysViewport) {
+        unsigned int mmLevel = _imp->overlaysViewport->getCurrentRenderScale();
+        renderScale.x = renderScale.y = 1 << mmLevel;
+    }
+
+    return renderScale;
+
     RenderScale r(1.);
 
     return r;
+}
+
+void
+EffectInstance::pushUndoCommand(UndoCommand* command)
+{
+    UndoCommandPtr ptr(command);
+    getNode()->pushUndoCommand(ptr);
+}
+
+void
+EffectInstance::pushUndoCommand(const UndoCommandPtr& command)
+{
+    getNode()->pushUndoCommand(command);
+}
+
+bool
+EffectInstance::setCurrentCursor(CursorEnum defaultCursor)
+{
+    if (!isDoingInteractAction()) {
+        return  false;
+    }
+    getNode()->setCurrentCursor(defaultCursor);
+    return true;
+}
+
+bool
+EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
+{
+    if (!isDoingInteractAction()) {
+        return  false;
+    }
+    return getNode()->setCurrentCursor(customCursorFilePath);
 }
 
 void

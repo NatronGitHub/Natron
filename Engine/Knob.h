@@ -828,10 +828,18 @@ public:
     virtual void setSpacingBetweenItems(int spacing) = 0;
 
     /**
-     * @brief Set whether the knob should have a GUI on the viewer, if so set at which index
+     * @brief Set the label of the knob on the viewer
      **/
-    virtual void setInViewerContextIndex(int index) = 0;
-    virtual int  getInViewerContextIndex() const = 0;
+    virtual std::string getInViewerContextLabel() const = 0;
+    virtual void setInViewerContextLabel(const std::string& label) = 0;
+
+    /**
+     * @brief Determines whether this knob can be assigned a shortcut or not via the shortcut editor.
+     * If true, Natron will look for a shortcut in the shortcuts database with an ID matching the name of this
+     * parameter. To set default values for shortcuts, implement EffectInstance::getPluginShortcuts(...)
+     **/
+    virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) = 0;
+    virtual bool getInViewerContextHasShortcut() const = 0;
 
     /**
      * @brief Returns whether this type of knob can be instantiated in the viewer UI
@@ -1021,6 +1029,9 @@ public:
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
+
+    virtual RectD getViewportRect() const OVERRIDE = 0;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;
 
     virtual void saveOpenGLContext() OVERRIDE = 0;
     virtual void restoreOpenGLContext() OVERRIDE = 0;
@@ -1397,8 +1408,10 @@ public:
     virtual bool isNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSeparatorActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
-    virtual void setInViewerContextIndex(int index) OVERRIDE FINAL;
-    virtual int  getInViewerContextIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getInViewerContextLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextLabel(const std::string& label) OVERRIDE FINAL;
+    virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;
+    virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;
     virtual int  getInViewerContextItemSpacing() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextAddSeparator(bool addSeparator) OVERRIDE FINAL;
@@ -1444,6 +1457,8 @@ public:
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
@@ -2244,7 +2259,9 @@ public:
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
 
-    bool hasKnobWithViewerInContextUI() const;
+    void addKnobToViewerUI(const KnobPtr& knob);
+    KnobsVec getViewerUIKnobs() const;
+
 
 protected:
 

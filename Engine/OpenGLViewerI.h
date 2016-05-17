@@ -33,35 +33,11 @@
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/TextureRect.h"
+#include "Engine/Texture.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
-class OpenGLTextureI
-{
-public:
-
-
-    OpenGLTextureI()
-        : _texID(0)
-    {
-    }
-
-    U32 getTexID() const
-    {
-        return _texID;
-    }
-
-    virtual ~OpenGLTextureI()
-    {
-    }
-
-protected:
-
-
-    U32 _texID;
-};
 
 class OpenGLViewerI
     : public OverlaySupport
@@ -137,9 +113,9 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
-                                            boost::shared_ptr<OpenGLTextureI>* texture) = 0;
+                                            boost::shared_ptr<Texture>* texture) = 0;
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<OpenGLTextureI>& texture,
+                                               const boost::shared_ptr<Texture>& texture,
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
@@ -177,11 +153,6 @@ public:
      * @brief Make the OpenGL context current to the thread.
      **/
     virtual void makeOpenGLcontextCurrent()  = 0;
-
-    /**
-     * @brief Must return true if the current platform supports GLSL.
-     **/
-    virtual bool supportsGLSL() const = 0;
 
 
     /**
@@ -239,6 +210,7 @@ public:
      *@brief To be called if redraw needs to  be called now without waiting the end of the event loop
      **/
     virtual void redrawNow() = 0;
+
 };
 
 NATRON_NAMESPACE_EXIT;

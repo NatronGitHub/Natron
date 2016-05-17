@@ -117,7 +117,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/PythonPanels.h"
 #include "Gui/RenderingProgressDialog.h"
 #include "Gui/RightClickableWidget.h"
-#include "Gui/RotoGui.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/ShortCutEditor.h"
@@ -249,8 +248,6 @@ GuiPrivate::GuiPrivate(GuiAppInstance* app,
     , _aboutWindow(0)
     , openedPanelsMutex()
     , openedPanels()
-    , _openGLVersion()
-    , _glewVersion()
     , _toolButtonMenuOpened(NULL)
     , aboutToCloseMutex()
     , _aboutToClose(false)

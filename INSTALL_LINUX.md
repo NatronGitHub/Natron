@@ -8,7 +8,6 @@ Natron on GNU/Linux.
     - [Qt4](#qt-486)
     - [Boost](#boost)
     - [Expat](#expat)
-    - [Glew](#glew)
     - [Cairo](#cairo)
     - [Pyside](#pyside)
     - [Shiboken](#shiboken)
@@ -51,11 +50,6 @@ You can download boost with your package manager.
 Alternatively you can install boost from [boost download](http://www.boost.org/users/download/)
 
 ### Expat
-
-You can download it with your package manager.
-The package depends on your distribution.
-
-### GLEW
 
 You can download it with your package manager.
 The package depends on your distribution.
@@ -174,7 +168,7 @@ global.pri file. To enable an option just add `CONFIG+=<option>` in the qmake ca
 
 On Arch Linux you can do the following:
 ```
-sudo pacman -S qt4 glew expat boost python2-pyside python2-shiboken
+sudo pacman -S qt4 expat boost python2-pyside python2-shiboken
 ```
 
 Cairo has to be build from source, because Arch Linux does not provide a static version (as far as we know). It is fairly easy to do:
@@ -232,7 +226,7 @@ sudo add-apt-repository -y ppa:irie/boost
 ```
 Install the required packages:
 ```
-sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
+sudo apt-get install libqt4-dev libboost-serialization-dev libexpat1-dev libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
 ```
 
 For the config.pri use:
@@ -256,7 +250,7 @@ yum install epel-release
 Install required packages:
 
 ```
-yum install fontconfig-devel gcc-c++ expat-devel python-pyside-devel shiboken-devel qt-devel boost-devel pixman-devel glew-devel cairo-devel
+yum install fontconfig-devel gcc-c++ expat-devel python-pyside-devel shiboken-devel qt-devel boost-devel pixman-devel cairo-devel
 ```
 
 config.pri:

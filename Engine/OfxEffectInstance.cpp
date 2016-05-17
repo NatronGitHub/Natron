@@ -1967,7 +1967,9 @@ OfxEffectInstance::onOverlayPenDown(double time,
                                     ViewIdx view,
                                     const QPointF & viewportPos,
                                     const QPointF & pos,
-                                    double pressure)
+                                    double pressure,
+                                    double /*timestamp*/,
+                                    PenType /*pen*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2007,7 +2009,8 @@ OfxEffectInstance::onOverlayPenMotion(double time,
                                       ViewIdx view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
-                                      double pressure)
+                                      double pressure,
+                                      double /*timestamp*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2043,7 +2046,8 @@ OfxEffectInstance::onOverlayPenUp(double time,
                                   ViewIdx view,
                                   const QPointF & viewportPos,
                                   const QPointF & pos,
-                                  double pressure)
+                                  double pressure,
+                                  double /*timestamp*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2215,20 +2219,6 @@ OfxEffectInstance::redrawOverlayInteract()
     Q_UNUSED(st);
 }
 
-RenderScale
-OfxEffectInstance::getOverlayInteractRenderScale() const
-{
-    RenderScale renderScale(1.);
-
-    if (isDoingInteractAction() && _imp->overlayInteract) {
-        OverlaySupport* lastInteract = _imp->overlayInteract->getLastCallingViewport();
-        assert(lastInteract);
-        unsigned int mmLevel = lastInteract->getCurrentRenderScale();
-        renderScale.x = renderScale.y = 1 << mmLevel;
-    }
-
-    return renderScale;
-}
 
 std::string
 OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)

@@ -336,48 +336,44 @@ ViewerTab*
 Gui::addNewViewerTab(ViewerInstance* viewer,
                      TabWidget* where)
 {
-    std::map<NodeGui*, RotoGui*> rotoNodes;
-    std::list<NodeGui*> rotoNodesList;
-    std::pair<NodeGui*, RotoGui*> currentRoto;
-    std::map<NodeGui*, TrackerGui*> trackerNodes;
-    std::list<NodeGui*> trackerNodesList;
-    std::pair<NodeGui*, TrackerGui*> currentTracker;
 
     if (!viewer) {
         return 0;
     }
 
+    NodesGuiList activeNodeViewerUi, nodeViewerUi;
+
     //Don't create tracker & roto interface for file dialog preview viewer
-    if (viewer->getNode()->getScriptName() != NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME) {
+    boost::shared_ptr<NodeCollection> group = viewer->getNode()->getGroup();
+    if (group) {
         if ( !_imp->_viewerTabs.empty() ) {
-            ( *_imp->_viewerTabs.begin() )->getRotoContext(&rotoNodes, &currentRoto);
-            ( *_imp->_viewerTabs.begin() )->getTrackerContext(&trackerNodes, &currentTracker);
+            ( *_imp->_viewerTabs.begin() )->getNodesViewerInterface(&nodeViewerUi, &activeNodeViewerUi);
         } else {
-            const NodesGuiList & allNodes = _imp->_nodeGraphArea->getAllActiveNodes();
-            for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-                if ( (*it)->getNode()->getRotoContext() ) {
-                    rotoNodesList.push_back( it->get() );
-                    if (!currentRoto.first) {
-                        currentRoto.first = it->get();
+            NodeGraph* graph = dynamic_cast<NodeGraph*>(group->getNodeGraph());
+            if (!graph) {
+                graph = _imp->_nodeGraphArea;
+            }
+
+            if (graph) {
+                const NodesGuiList & allNodes = graph->getAllActiveNodes();
+
+                std::set<std::string> activeNodesPluginID;
+
+                for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
+                        nodeViewerUi.push_back( *it );
+                        std::string pluginID = (*it)->getNode()->getPluginID();
+                        std::set<std::string>::iterator found = activeNodesPluginID.find(pluginID);
+                        if (found == activeNodesPluginID.end()) {
+                            activeNodesPluginID.insert(pluginID);
+                            activeNodeViewerUi.push_back(*it);
+                        }
                     }
-                } else if ( (*it)->getNode()->isPointTrackerNode() ) {
-                    trackerNodesList.push_back( it->get() );
-                    if (!currentTracker.first) {
-                        currentTracker.first = it->get();
-                    }
-                }
+                
             }
         }
     }
-    for (std::map<NodeGui*, RotoGui*>::iterator it = rotoNodes.begin(); it != rotoNodes.end(); ++it) {
-        rotoNodesList.push_back(it->first);
-    }
 
-    for (std::map<NodeGui*, TrackerGui*>::iterator it = trackerNodes.begin(); it != trackerNodes.end(); ++it) {
-        trackerNodesList.push_back(it->first);
-    }
-
-    ViewerTab* tab = new ViewerTab(rotoNodesList, currentRoto.first, trackerNodesList, currentTracker.first, this, viewer, where);
+    ViewerTab* tab = new ViewerTab(nodeViewerUi,activeNodeViewerUi, this, viewer, where);
     QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);

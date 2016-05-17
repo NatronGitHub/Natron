@@ -1,0 +1,96 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
+# $Id: Portfile 146477 2016-03-09 13:36:57Z michaelld@macports.org $
+
+PortSystem          1.0
+PortGroup           cmake 1.0
+PortGroup           github 1.0
+
+name                glfw
+categories          graphics
+maintainers         michaelld openmaintainer
+description         GLFW is a free, open-source, portable library for OpenGL and OpenGL ES application development
+license             zlib
+platforms           darwin macosx
+
+subport glfw-devel {}
+
+if {${subport} eq ${name}} {
+
+    # release
+
+    github.setup    glfw glfw 3.1.2
+    revision        2
+    # bump the epoch because I moved the version from 20151012 to 3.1.2
+    epoch           1
+    checksums       rmd160 f0a34fda090c5d5e7aef2c916d6160faf777842f \
+                    sha256 a956537ed306746cf0bfe3e4a71758bff6d2a9e25f51fe718516f5b49ad9bfc5
+
+    # patch to fix install directory for cmake files and docs
+
+    patchfiles-append patch-CMakeLists.txt.release.diff
+
+    conflicts       glfw-devel
+    long_description ${description}: \
+        This port follows the release version of GLFW, which is typically updated every 6 months. If for some reason this port does not build or function as desired, try the ${name}-devel port.
+
+} else {
+
+    # devel
+
+    github.setup    glfw glfw 793eef1d0a7e09bab2e9fcb89fd27c904e9bad17
+    version         20160307
+    checksums       rmd160 fce4f3b7125448d00ae74d6ffe94cf13a3d42ee1 \
+                    sha256 99761cadb239d567b39f5d863defb68dffa7ed94a902464c571696547da43990
+
+    # patch to fix install directory for cmake files and docs
+
+    patchfiles-append patch-CMakeLists.txt.devel.diff
+
+    conflicts       glfw
+    long_description ${description}: \
+    This port follows the GIT master version of GLFW, which is typically updated every few days to weeks.
+
+}
+
+# use the real home page, not github's
+
+homepage            http://www.glfw.org/
+
+# do VPATH (out of source tree) build
+
+cmake.out_of_source yes
+
+# configuration arguments for MacPorts build
+
+configure.args      -DBUILD_SHARED_LIBS=on \
+                    -DGLFW_BUILD_EXAMPLES=off \
+                    -DGLFW_BUILD_TESTS=off \
+                    -DGLFW_CMAKE_CONFIG_PATH=share \
+                    -DGLFW_USE_CHDIR=off \
+                    -DGLFW_USE_MENUBAR=off \
+                    -DGLFW_USE_RETINA=on
+
+# remove top-level library path, such that internal libraries are used
+# instead of any already-installed ones.
+
+configure.ldflags-delete -L${prefix}/lib
+
+variant docs description {build documentation} {}
+
+default_variants    +docs
+
+if {[variant_isset docs]} {
+    depends_build-append  port:doxygen
+    configure.args-append -DDOXYGEN_EXECUTABLE=${prefix}/bin/doxygen
+} else {
+    configure.args-append -DDOXYGEN_EXECUTABLE=
+}
+
+platform darwin {
+    pre-fetch {
+        if {${os.major} < 10} {
+            ui_error "\n\n${name} does not support Mac OS X 10.6 or earlier.\n"
+            return -code error "Unsupported Mac OS X version."
+        }
+    }
+}

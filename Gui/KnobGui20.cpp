@@ -541,6 +541,23 @@ KnobGui::restoreOpenGLContext()
     }
 }
 
+RectD
+KnobGui::getViewportRect() const
+{
+    if (_imp->customInteract) {
+        return _imp->customInteract->getViewportRect();
+    }
+    return RectD();
+}
+
+void
+KnobGui::getCursorPosition(double& x, double& y) const
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->getCursorPosition(x, y);
+    }
+}
+
 ///Should set to the underlying knob the gui ptr
 void
 KnobGui::setKnobGuiPointer()

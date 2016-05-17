@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/EngineFwd.h"
+#include "Engine/RectD.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -85,6 +86,26 @@ public:
      * @brief Get the current mipmapLevel applied by the viewer
      **/
     virtual unsigned int getCurrentRenderScale() const = 0;
+
+    /**
+     * @brief Returns whether the given rectangle in canonical coords is visible in the viewport
+     **/
+    bool isVisibleInViewport(const RectD& rect) const
+    {
+        RectD visiblePortion = getViewportRect();
+        return visiblePortion.intersects(rect);
+    }
+
+    /**
+     * @brief Returns the viewport visible portion in canonical coordinates
+     **/
+    virtual RectD getViewportRect() const = 0;
+
+    /**
+     * @brief Returns the cursor position in canonical coordinates
+     **/
+    virtual void getCursorPosition(double& x, double& y) const = 0;
+
 };
 
 NATRON_NAMESPACE_EXIT;

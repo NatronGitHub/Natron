@@ -64,6 +64,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/ViewerInstance.h"
 
+#include "Gui/ActionShortcuts.h"
 #include "Gui/BackdropGui.h"
 #include "Gui/Button.h"
 #include "Gui/CurveEditor.h"
@@ -77,9 +78,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiString.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/MultiInstancePanel.h"
+#include "Gui/Menu.h"
 #include "Gui/NodeClipBoard.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
@@ -237,6 +240,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(rightClickMenuKnobPopulated()), this, SLOT(onRightClickMenuKnobPopulated()));
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
@@ -409,12 +413,8 @@ NodeGui::ensurePanelCreated()
         QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
         QObject::connect( _settingsPanel, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
         QObject::connect( _settingsPanel, SIGNAL(colorChanged(QColor)), this, SLOT(onSettingsPanelColorChanged(QColor)) );
-        if ( getNode()->isRotoPaintingNode() ) {
-            _graph->getGui()->setRotoInterface(this);
-        }
-        if ( ( getNode()->isTrackerNodePlugin() && !getNode()->getParentMultiInstance() ) || getNode()->getEffectInstance()->isBuiltinTrackerNode() ) {
-            _graph->getGui()->setTrackerInterface(this);
-        }
+
+        _graph->getGui()->setNodeViewerInterface(thisShared);
     }
 
     gui->addNodeGuiToCurveEditor(thisShared);
@@ -1658,12 +1658,8 @@ NodeGui::setUserSelected(bool b)
         _settingsPanel->setSelected(b);
         _settingsPanel->update();
         if ( b && isSettingsPanelVisible() ) {
-            if ( getNode()->isRotoPaintingNode() ) {
-                _graph->getGui()->setRotoInterface(this);
-            }
-            if ( ( getNode()->isTrackerNodePlugin() && !getNode()->getParentMultiInstance() ) || getNode()->getEffectInstance()->isBuiltinTrackerNode() ) {
-                _graph->getGui()->setTrackerInterface(this);
-            }
+            NodeGuiPtr thisShared = shared_from_this();
+            _graph->getGui()->setNodeViewerInterface(thisShared);
         }
     }
 
@@ -1843,12 +1839,9 @@ NodeGui::showGui()
         if (_panelOpenedBeforeDeactivate) {
             setVisibleSettingsPanel(true);
         }
-        if ( node->isRotoPaintingNode() ) {
-            _graph->getGui()->setRotoInterface(this);
-        }
-        if ( ( node->isTrackerNodePlugin() && !node->getParentMultiInstance() ) || node->getEffectInstance()->isBuiltinTrackerNode() ) {
-            _graph->getGui()->setTrackerInterface(this);
-        }
+        NodeGuiPtr thisShared = shared_from_this();
+        _graph->getGui()->setNodeViewerInterface(thisShared);
+
         OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
@@ -1937,12 +1930,8 @@ NodeGui::hideGui()
             setVisibleSettingsPanel(false);
         }
 
-        if ( node->isRotoPaintingNode() ) {
-            _graph->getGui()->removeRotoInterface(this, false);
-        }
-        if ( node->isPointTrackerNode() && node->getParentMultiInstanceName().empty() ) {
-            _graph->getGui()->removeTrackerInterface(this, false);
-        }
+        NodeGuiPtr thisShared = shared_from_this();
+        _graph->getGui()->removeNodeViewerInterface(thisShared, false);
 
         NodeGroup* isGrp = node->isEffectGroup();
         if ( isGrp && isGrp->isSubGraphUserVisible() ) {
@@ -2526,9 +2515,10 @@ NodeGui::destroyGui()
     removeUndoStack();
 
 
+    NodeGuiPtr thisShared = shared_from_this();
+
     {
         ///Remove from the nodegraph containers
-        NodeGuiPtr thisShared = shared_from_this();
         _graph->deleteNodePermanantly(thisShared);
     }
 
@@ -2536,15 +2526,8 @@ NodeGui::destroyGui()
     NodePtr internalNode = _internalNode.lock();
     assert(internalNode);
 
-    //Remove roto
-    if ( internalNode->isRotoPaintingNode() ) {
-        guiObj->removeRotoInterface(this, true);
-    }
-
-    //Remove tracker
-    if ( internalNode->isTrackerNodePlugin() || internalNode->getEffectInstance()->isBuiltinTrackerNode() ) {
-        guiObj->removeTrackerInterface(this, true);
-    }
+    //Remove viewer UI
+    guiObj->removeNodeViewerInterface(thisShared, true);
 
 
     //Remove from curve editor
@@ -3381,6 +3364,18 @@ NodeGui::onOverlayPenDownDefault(double time,
 }
 
 bool
+NodeGui::onOverlayPenDoubleClickedDefault(double time,
+                                      const RenderScale& renderScale,
+                                      ViewIdx view, const QPointF & viewportPos, const QPointF & pos)
+{
+    if (_hostOverlay) {
+        return _hostOverlay->penDoubleClicked(time, renderScale, view, pos, viewportPos.toPoint());
+    }
+
+    return false;
+}
+
+bool
 NodeGui::onOverlayPenMotionDefault(double time,
                                    const RenderScale& renderScale,
                                    ViewIdx view,
@@ -3669,6 +3664,219 @@ void
 NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)
 {
     refreshEdgesVisility();
+}
+
+class NodeUndoRedoCommand : public QUndoCommand
+{
+
+    boost::shared_ptr<UndoCommand> _command;
+public:
+
+    NodeUndoRedoCommand(const UndoCommandPtr& command)
+    : QUndoCommand()
+    , _command(command)
+    {
+        setText(QString::fromUtf8(command->getText().c_str()));
+    }
+
+    virtual ~NodeUndoRedoCommand()
+    {
+
+    }
+
+
+    virtual void redo() OVERRIDE FINAL
+    {
+        _command->redo();
+    }
+
+    virtual void undo() OVERRIDE FINAL
+    {
+        _command->undo();
+    }
+
+    virtual int id() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return kNodeUndoChangeCommandCompressionID;
+    }
+
+    virtual bool mergeWith(const QUndoCommand* other) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        const NodeUndoRedoCommand* o = dynamic_cast<const NodeUndoRedoCommand*>(other);
+        if (!o) {
+            return false;
+        }
+        return _command->mergeWith(o->_command);
+    }
+};
+
+void
+NodeGui::pushUndoCommand(const UndoCommandPtr& command)
+{
+    NodeSettingsPanel* panel = getSettingPanel();
+    if (!panel) {
+        command->redo();
+    } else {
+        panel->pushUndoCommand(new NodeUndoRedoCommand(command));
+    }
+}
+
+void
+NodeGui::setCurrentCursor(CursorEnum defaultCursor)
+{
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    OverlaySupport* overlayInteract= node->getEffectInstance()->getCurrentViewportForOverlays();
+    if (!overlayInteract) {
+        return;
+    }
+    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
+    if (!isViewer) {
+        return;
+    }
+
+    if (defaultCursor == eCursorDefault) {
+        isViewer->unsetCursor();
+    }
+    Qt::CursorShape qtCursor;
+    bool ok = QtEnumConvert::toQtCursor(defaultCursor, &qtCursor);
+    if (!ok) {
+        return;
+    }
+    isViewer->setCursor(qtCursor);
+}
+
+bool
+NodeGui::setCurrentCursor(const QString& customCursorFilePath)
+{
+    NodePtr node = getNode();
+    if (!node) {
+        return false;
+    }
+    OverlaySupport* overlayInteract= node->getEffectInstance()->getCurrentViewportForOverlays();
+    if (!overlayInteract) {
+        return false;
+    }
+    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
+    if (!isViewer) {
+        return false;
+    }
+    if (customCursorFilePath.isEmpty()) {
+        return false;
+    }
+
+    QString cursorFilePath = customCursorFilePath;
+
+    if (!QFile::exists(customCursorFilePath)) {
+        QString resourcesPath = QString::fromUtf8(getNode()->getPluginResourcesPath().c_str());
+        if (!resourcesPath.endsWith(QLatin1Char('/'))) {
+            resourcesPath += QLatin1Char('/');
+        }
+        cursorFilePath.prepend(resourcesPath);
+    }
+
+    if (!QFile::exists(cursorFilePath)) {
+        return false;
+    }
+
+    QPixmap pix(cursorFilePath);
+    if (pix.isNull()) {
+        return false;
+    }
+    QCursor c(pix);
+    isViewer->setCursor(c);
+    return true;
+
+}
+
+void
+NodeGui::onRightClickMenuKnobPopulated()
+{
+    NodePtr node = getNode();
+    if (!node) {
+        return;
+    }
+    OverlaySupport* overlayInteract= node->getEffectInstance()->getCurrentViewportForOverlays();
+    if (!overlayInteract) {
+        return;
+    }
+    ViewerGL* isViewer = dynamic_cast<ViewerGL*>(overlayInteract);
+    if (!isViewer) {
+        return;
+    }
+
+    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
+    if (!handler) {
+        return;
+    }
+    KnobPtr rightClickKnob = handler->getKnob();
+    if (!rightClickKnob) {
+        return;
+    }
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(rightClickKnob.get());
+    if (!isChoice) {
+        return;
+    }
+    std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+    if (entries.empty()) {
+        return;
+    }
+
+    Menu m(isViewer);
+    for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
+        KnobPtr knob = node->getKnobByName(*it);
+        if(!knob) {
+            // Plug-in specified invalid knob name in the menu
+            continue;
+        }
+        KnobButton* button = dynamic_cast<KnobButton*>(knob.get());
+        if (!button) {
+            // Plug-in must only use buttons inside menu
+            continue;
+        }
+        bool checkable = button->getIsCheckable();
+        ActionWithShortcut* action = new ActionWithShortcut(node->getPlugin()->getPluginShortcutGroup().toStdString(),
+                                                            button->getName(),
+                                                            button->getLabel(),
+                                                            &m);
+        if (checkable) {
+            action->setCheckable(true);
+            action->setChecked(button->getValue());
+        }
+        QObject::connect(action, SIGNAL(triggered()), this, SLOT(onRightClickActionTriggered()));
+        m.addAction(action);
+    }
+    
+    m.exec(QCursor::pos());
+}
+
+void
+NodeGui::onRightClickActionTriggered()
+{
+    ActionWithShortcut* action = dynamic_cast<ActionWithShortcut*>(sender());
+    if (!action) {
+        return;
+    }
+    const std::vector<std::pair<QString, QKeySequence> >& shortcuts = action->getShortcuts();
+    assert(!shortcuts.empty());
+    std::string knobName = shortcuts.front().first.toStdString();
+    KnobPtr knob = getNode()->getKnobByName(knobName);
+    if (!knob) {
+        // Plug-in specified invalid knob name in the menu
+        return;
+    }
+    KnobButton* button = dynamic_cast<KnobButton*>(knob.get());
+    if (!button) {
+        // Plug-in must only use buttons inside menu
+        return;
+    }
+    if (button->getIsCheckable()) {
+        button->setValue(!button->getValue());
+    } else {
+        button->trigger();
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

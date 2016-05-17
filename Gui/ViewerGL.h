@@ -176,9 +176,9 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
-                                            boost::shared_ptr<OpenGLTextureI>* texture) OVERRIDE FINAL;
+                                            boost::shared_ptr<Texture>* texture) OVERRIDE FINAL;
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<OpenGLTextureI>& texture,
+                                               const boost::shared_ptr<Texture>& texture,
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
@@ -196,10 +196,7 @@ public:
                                                bool isPartialRect) OVERRIDE FINAL;
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
-    /**
-     *@returns Returns true if the graphic card supports GLSL.
-     **/
-    virtual bool supportsGLSL() const OVERRIDE FINAL;
+
 
     /**
      *@brief Disconnects the viewer.
@@ -275,11 +272,6 @@ public:
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
 
-    /**
-     * @brief Returns whether the given rectangle is visible in the viewport, in zoom (OpenGL) coordinates.
-     **/
-    bool isVisibleInViewport(const RectD& rectangle) const;
-
     void setUserRoIEnabled(bool b);
 
     void setBuildNewUserRoI(bool b);
@@ -321,6 +313,17 @@ public:
     virtual void getTextureColorAt(int x, int y, double* r, double *g, double *b, double *a) OVERRIDE FINAL;
     ViewerInstance* getInternalNode() const;
     ViewerTab* getViewerTab() const;
+
+    /**
+     * @brief Returns the viewport visible portion in canonical coordinates
+     **/
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the cursor position in canonical coordinates
+     **/
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+
 
     /**
      * @brief can only be called on the main-thread
@@ -392,6 +395,10 @@ public:
 
     void checkIfViewPortRoIValidOrRender();
 
+    void s_selectionCleared()
+    {
+        Q_EMIT selectionCleared();
+    }
 
 Q_SIGNALS:
 

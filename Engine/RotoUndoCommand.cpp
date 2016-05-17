@@ -44,12 +44,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/RotoContext.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoStrokeItem.h"
+#include "Engine/RotoPaintInteract.h"
+#include "Engine/RotoPaint.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
-#include "Gui/GuiAppInstance.h"
-#include "Gui/RotoGui.h"
-#include "Gui/RotoPanel.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -60,23 +59,26 @@ typedef std::list<SelectedCp> SelectedCpList;
 typedef boost::shared_ptr<Bezier> BezierPtr;
 typedef std::list<BezierPtr> BezierList;
 
-MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(RotoGui* roto,
+MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                            const std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & toDrag
                                                            ,
                                                            double dx,
                                                            double dy,
                                                            double time)
-    : QUndoCommand()
+    : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
     , _dx(dx)
     , _dy(dy)
     , _featherLinkEnabled( roto->getContext()->isFeatherLinkEnabled() )
     , _rippleEditEnabled( roto->getContext()->isRippleEditEnabled() )
-    , _selectedTool( (int)roto->getSelectedTool() )
+    , _selectedTool(roto->selectedToolAction )
     , _time(time)
     , _pointsToDrag(toDrag)
 {
+
+    setText( QObject::tr("Move control points").toStdString() );
+
     assert(roto);
 
     roto->getSelection(&_selectedCurves, &_selectedPoints);
@@ -136,10 +138,11 @@ MoveControlPointsUndoCommand::undo()
         (*it)->incrementNodesAge();
     }
 
-    _roto->evaluate(true);
-    _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool, true );
-    _roto->setSelection(_selectedCurves, _selectedPoints);
-    setText( QObject::tr("Move points of %1").arg( _roto->getNodeName() ) );
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    roto->evaluate(true);
+    roto->setCurrentTool(_selectedTool.lock());
+    roto->setSelection(_selectedCurves, _selectedPoints);
+
 }
 
 void
@@ -149,18 +152,25 @@ MoveControlPointsUndoCommand::redo()
 
     assert( _pointsToDrag.size() == _indexesToMove.size() );
 
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+    RotoToolEnum selectedTool;
+    bool ok = roto->getToolForAction(_selectedTool.lock(), &selectedTool);
+
     try {
         for (std::list<int>::iterator it = _indexesToMove.begin(); it != _indexesToMove.end(); ++it, ++itPoints) {
             if ( itPoints->first->isFeatherPoint() ) {
-                if ( ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectFeatherPoints ) ||
-                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectAll ) ||
-                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolDrawBezier ) ) {
+                if ( ok && (( selectedTool == eRotoToolSelectFeatherPoints ) ||
+                     ( selectedTool == eRotoToolSelectAll ) ||
+                     ( selectedTool == eRotoToolDrawBezier )) ) {
                     itPoints->first->getBezier()->moveFeatherByIndex(*it, _time, _dx, _dy);
                 }
             } else {
-                if ( ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectPoints ) ||
-                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolSelectAll ) ||
-                     ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolDrawBezier ) ) {
+                if ( ok && (( selectedTool == eRotoToolSelectPoints ) ||
+                     ( selectedTool == eRotoToolSelectAll ) ||
+                     ( selectedTool == eRotoToolDrawBezier )) ) {
                     itPoints->first->getBezier()->movePointByIndex(*it, _time, _dx, _dy);
                 }
             }
@@ -170,30 +180,23 @@ MoveControlPointsUndoCommand::redo()
     }
 
     if (_firstRedoCalled) {
-        _roto->setSelection(_selectedCurves, _selectedPoints);
-        _roto->evaluate(true);
+        roto->setSelection(_selectedCurves, _selectedPoints);
+        roto->evaluate(true);
     }
 
     _firstRedoCalled = true;
-    setText( QObject::tr("Move points of %1").arg( _roto->getNodeName() ) );
-}
-
-int
-MoveControlPointsUndoCommand::id() const
-{
-    return kRotoMoveControlPointsCompressionID;
 }
 
 bool
-MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
+MoveControlPointsUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const MoveControlPointsUndoCommand* mvCmd = dynamic_cast<const MoveControlPointsUndoCommand*>(other);
+    const MoveControlPointsUndoCommand* mvCmd = dynamic_cast<const MoveControlPointsUndoCommand*>(other.get());
 
     if (!mvCmd) {
         return false;
     }
 
-    if ( ( mvCmd->_pointsToDrag.size() != _pointsToDrag.size() ) || (mvCmd->_time != _time) || (mvCmd->_selectedTool != _selectedTool)
+    if ( ( mvCmd->_pointsToDrag.size() != _pointsToDrag.size() ) || (mvCmd->_time != _time) || (mvCmd->_selectedTool.lock() != _selectedTool.lock())
          || ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) || ( mvCmd->_featherLinkEnabled != _featherLinkEnabled) ) {
         return false;
     }
@@ -214,7 +217,7 @@ MoveControlPointsUndoCommand::mergeWith(const QUndoCommand *other)
 
 ////////////////////////
 
-TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
+TransformUndoCommand::TransformUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                            double centerX,
                                            double centerY,
                                            double rot,
@@ -225,11 +228,11 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
                                            double sx,
                                            double sy,
                                            double time)
-    : QUndoCommand()
+    : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
     , _rippleEditEnabled( roto->getContext()->isRippleEditEnabled() )
-    , _selectedTool( (int)roto->getSelectedTool() )
+    , _selectedTool(roto->selectedToolAction)
     , _matrix(new Transform::Matrix3x3)
     , _time(time)
     , _selectedCurves()
@@ -253,6 +256,8 @@ TransformUndoCommand::TransformUndoCommand(RotoGui* roto,
         }
         _originalPoints.push_back( std::make_pair(first, second) );
     }
+
+    setText( QObject::tr("Transform control points").toStdString());
 }
 
 TransformUndoCommand::~TransformUndoCommand()
@@ -281,10 +286,15 @@ TransformUndoCommand::undo()
         }
     }
 
-    _roto->evaluate(true);
-    _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool, true );
-    _roto->setSelection(_selectedCurves, _selectedPoints);
-    setText( QObject::tr("Transform points of %1").arg( _roto->getNodeName() ) );
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
+    roto->evaluate(true);
+    roto->setCurrentTool(_selectedTool.lock());
+    roto->setSelection(_selectedCurves, _selectedPoints);
+
 }
 
 void
@@ -303,34 +313,32 @@ TransformUndoCommand::redo()
         }
     }
 
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     if (_firstRedoCalled) {
-        _roto->setSelection(_selectedCurves, _selectedPoints);
-        _roto->evaluate(true);
+        roto->setSelection(_selectedCurves, _selectedPoints);
+        roto->evaluate(true);
     } else {
-        _roto->refreshSelectionBBox();
-        _roto->onRefreshAsked();
+        roto->computeSelectedCpsBBOX();
+        roto->redrawOverlays();
     }
 
     _firstRedoCalled = true;
-    setText( QObject::tr("Transform points of %1").arg( _roto->getNodeName() ) );
 }
 
-int
-TransformUndoCommand::id() const
-{
-    return kRotoTransformCompressionID;
-}
 
 bool
-TransformUndoCommand::mergeWith(const QUndoCommand *other)
+TransformUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const TransformUndoCommand* cmd = dynamic_cast<const TransformUndoCommand*>(other);
+    const TransformUndoCommand* cmd = dynamic_cast<const TransformUndoCommand*>(other.get());
 
     if (!cmd) {
         return false;
     }
 
-    if ( ( cmd->_selectedPoints.size() != _selectedPoints.size() ) || (cmd->_time != _time) || (cmd->_selectedTool != _selectedTool)
+    if ( ( cmd->_selectedPoints.size() != _selectedPoints.size() ) || (cmd->_time != _time) || (cmd->_selectedTool.lock() != _selectedTool.lock())
          || ( cmd->_rippleEditEnabled != _rippleEditEnabled) ) {
         return false;
     }
@@ -351,17 +359,18 @@ TransformUndoCommand::mergeWith(const QUndoCommand *other)
 ////////////////////////
 
 
-AddPointUndoCommand::AddPointUndoCommand(RotoGui* roto,
+AddPointUndoCommand::AddPointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                          const boost::shared_ptr<Bezier> & curve,
                                          int index,
                                          double t)
-    : QUndoCommand()
+    : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
     , _curve(curve)
     , _index(index)
     , _t(t)
 {
+    setText( QObject::tr("Add control point").toStdString());
 }
 
 AddPointUndoCommand::~AddPointUndoCommand()
@@ -371,10 +380,14 @@ AddPointUndoCommand::~AddPointUndoCommand()
 void
 AddPointUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     _curve->removeControlPointByIndex(_index + 1);
-    _roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-    _roto->evaluate(true);
-    setText( QObject::tr("Add point to %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+    roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
+    roto->evaluate(true);
+
 }
 
 void
@@ -383,21 +396,25 @@ AddPointUndoCommand::redo()
     boost::shared_ptr<BezierCP> cp = _curve->addControlPointAfterIndex(_index, _t);
     boost::shared_ptr<BezierCP> newFp = _curve->getFeatherPointAtIndex(_index + 1);
 
-    _roto->setSelection( _curve, std::make_pair(cp, newFp) );
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+    roto->setSelection( _curve, std::make_pair(cp, newFp) );
     if (_firstRedoCalled) {
-        _roto->evaluate(true);
+        roto->evaluate(true);
     }
 
     _firstRedoCalled = true;
-    setText( QObject::tr("Add point to %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+
 }
 
 ////////////////////////
 
-RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
+RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                const boost::shared_ptr<Bezier> & curve,
                                                const boost::shared_ptr<BezierCP> & cp)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _curves()
@@ -408,7 +425,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
     int indexToRemove = curve->getControlPointIndex(cp);
     desc.curveRemoved = false; //set in the redo()
     desc.parentLayer =
-        boost::dynamic_pointer_cast<RotoLayer>( _roto->getContext()->getItemByName( curve->getParentLayer()->getScriptName() ) );
+        boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( curve->getParentLayer()->getScriptName() ) );
     assert(desc.parentLayer);
     desc.curve = curve;
     desc.points.push_back(indexToRemove);
@@ -417,9 +434,9 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
     _curves.push_back(desc);
 }
 
-RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
+RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                const SelectedCpList & points)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _curves()
@@ -431,8 +448,8 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
         } else {
             cp = it->first;
         }
-        assert( cp && cp->getBezier() && _roto && _roto->getContext() );
-        BezierPtr curve = boost::dynamic_pointer_cast<Bezier>( _roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
+        assert( cp && cp->getBezier() && roto && roto->getContext() );
+        BezierPtr curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( cp->getBezier()->getScriptName() ) );
         assert(curve);
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( curve.get() );
         std::list< CurveDesc >::iterator foundCurve = _curves.end();
@@ -452,7 +469,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
             CurveDesc curveDesc;
             curveDesc.curveRemoved = false; //set in the redo()
             curveDesc.parentLayer =
-                boost::dynamic_pointer_cast<RotoLayer>( _roto->getContext()->getItemByName( cp->getBezier()->getParentLayer()->getScriptName() ) );
+                boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( cp->getBezier()->getParentLayer()->getScriptName() ) );
             assert(curveDesc.parentLayer);
             curveDesc.points.push_back(indexToRemove);
             curveDesc.curve = curve;
@@ -470,6 +487,9 @@ RemovePointUndoCommand::RemovePointUndoCommand(RotoGui* roto,
     for (std::list<CurveDesc>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         it->points.sort();
     }
+
+    setText( QObject::tr("Remove control points").toStdString());
+
 }
 
 RemovePointUndoCommand::~RemovePointUndoCommand()
@@ -479,6 +499,11 @@ RemovePointUndoCommand::~RemovePointUndoCommand()
 void
 RemovePointUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     std::list<boost::shared_ptr<RotoDrawableItem> > selection;
     SelectedCpList cpSelection;
 
@@ -486,20 +511,25 @@ RemovePointUndoCommand::undo()
         ///clone the curve
         it->curve->clone( it->oldCurve.get() );
         if (it->curveRemoved) {
-            _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
+            roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
         }
         selection.push_back(it->curve);
     }
 
-    _roto->setSelection(selection, cpSelection);
-    _roto->evaluate(true);
+    roto->setSelection(selection, cpSelection);
+    roto->evaluate(true);
 
-    setText( QObject::tr("Remove points to %1").arg( _roto->getNodeName() ) );
 }
 
 void
 RemovePointUndoCommand::redo()
 {
+
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     ///clone the curve
     for (std::list< CurveDesc >::iterator it = _curves.begin(); it != _curves.end(); ++it) {
         it->oldCurve->clone( it->curve.get() );
@@ -531,22 +561,21 @@ RemovePointUndoCommand::redo()
     }
 
     for (std::list<boost::shared_ptr<Bezier> >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
-        _roto->removeCurve(*it);
+        roto->removeCurve(*it);
     }
 
 
-    _roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
-    _roto->evaluate(_firstRedoCalled);
+    roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
+    roto->evaluate(_firstRedoCalled);
     _firstRedoCalled = true;
 
-    setText( QObject::tr("Remove points to %1").arg( _roto->getNodeName() ) );
 }
 
 //////////////////////////
 
-RemoveCurveUndoCommand::RemoveCurveUndoCommand(RotoGui* roto,
+RemoveCurveUndoCommand::RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                const std::list<boost::shared_ptr<RotoDrawableItem> > & curves)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _curves()
@@ -554,12 +583,14 @@ RemoveCurveUndoCommand::RemoveCurveUndoCommand(RotoGui* roto,
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
         RemovedCurve r;
         r.curve = *it;
-        r.layer = boost::dynamic_pointer_cast<RotoLayer>( _roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
+        r.layer = boost::dynamic_pointer_cast<RotoLayer>( roto->getContext()->getItemByName( (*it)->getParentLayer()->getScriptName() ) );
         assert(r.layer);
         r.indexInLayer = r.layer->getChildIndex(*it);
         assert(r.indexInLayer != -1);
         _curves.push_back(r);
     }
+    setText( QObject::tr("Remove shape(s)").toStdString());
+
 }
 
 RemoveCurveUndoCommand::~RemoveCurveUndoCommand()
@@ -569,10 +600,14 @@ RemoveCurveUndoCommand::~RemoveCurveUndoCommand()
 void
 RemoveCurveUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     std::list<boost::shared_ptr<RotoDrawableItem> > selection;
 
     for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-        _roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
+        roto->getContext()->addItem(it->layer, it->indexInLayer, it->curve, RotoItem::eSelectionReasonOverlayInteract);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(it->curve);
         if (isBezier) {
             selection.push_back(isBezier);
@@ -581,31 +616,34 @@ RemoveCurveUndoCommand::undo()
 
     SelectedCpList cpList;
     if ( !selection.empty() ) {
-        _roto->setSelection(selection, cpList);
+        roto->setSelection(selection, cpList);
     }
-    _roto->evaluate(true);
+    roto->evaluate(true);
 
-    setText( QObject::tr("Remove curves to %1").arg( _roto->getNodeName() ) );
 }
 
 void
 RemoveCurveUndoCommand::redo()
 {
-    for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
-        _roto->removeCurve(it->curve);
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
     }
-    _roto->evaluate(_firstRedoCalled);
-    _roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
+
+    for (std::list<RemovedCurve>::iterator it = _curves.begin(); it != _curves.end(); ++it) {
+        roto->removeCurve(it->curve);
+    }
+    roto->evaluate(_firstRedoCalled);
+    roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
-    setText( QObject::tr("Remove curves to %1").arg( _roto->getNodeName() ) );
 }
 
 ////////////////////////////////
 
 
-AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,
+AddStrokeUndoCommand::AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                            const boost::shared_ptr<RotoStrokeItem>& item)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _item(item)
@@ -613,7 +651,7 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(RotoGui* roto,
     , _indexInLayer(_layer ? _layer->getChildIndex(_item) : -1)
 {
     assert(_indexInLayer != -1);
-    setText( QObject::tr("Paint Stroke") );
+    setText( QObject::tr("Paint Stroke").toStdString() );
 }
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
@@ -623,25 +661,35 @@ AddStrokeUndoCommand::~AddStrokeUndoCommand()
 void
 AddStrokeUndoCommand::undo()
 {
-    _roto->removeCurve(_item);
-    _roto->evaluate(true);
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
+    roto->removeCurve(_item);
+    roto->evaluate(true);
 }
 
 void
 AddStrokeUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     if (_firstRedoCalled) {
-        _roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
+        roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
     }
     if (_firstRedoCalled) {
-        _roto->evaluate(true);
+        roto->evaluate(true);
     }
     _firstRedoCalled = true;
 }
 
-AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(RotoGui* roto,
+AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                      const boost::shared_ptr<RotoStrokeItem>& item)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _item(item)
@@ -650,7 +698,7 @@ AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(RotoGui* roto,
     , isRemoved(false)
 {
     assert(_indexInLayer != -1);
-    setText( QObject::tr("Paint Stroke") );
+    setText( QObject::tr("Paint Stroke").toStdString() );
 }
 
 AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
@@ -660,38 +708,48 @@ AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
 void
 AddMultiStrokeUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     if ( _item->removeLastStroke(&_xCurve, &_yCurve, &_pCurve) ) {
-        _roto->removeCurve(_item);
+        roto->removeCurve(_item);
         isRemoved = true;
     }
 
-    _roto->evaluate(true);
+    roto->evaluate(true);
 }
 
 void
 AddMultiStrokeUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     if (_firstRedoCalled) {
         if (_xCurve) {
             _item->addStroke(_xCurve, _yCurve, _pCurve);
         }
         if (isRemoved) {
-            _roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
+            roto->getContext()->addItem(_layer, _indexInLayer, _item, RotoItem::eSelectionReasonOverlayInteract);
         }
-        _roto->evaluate(true);
+        roto->evaluate(true);
     }
 
     _firstRedoCalled = true;
 }
 
-MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,
+MoveTangentUndoCommand::MoveTangentUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                double dx,
                                                double dy,
                                                double time,
                                                const boost::shared_ptr<BezierCP> & cp,
                                                bool left,
                                                bool breakTangents)
-    : QUndoCommand()
+    : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
     , _dx(dx)
@@ -718,6 +776,8 @@ MoveTangentUndoCommand::MoveTangentUndoCommand(RotoGui* roto,
             _oldFp.reset( new BezierCP(*counterPart) );
         }
     }
+
+    setText( QObject::tr("Move control point tangent").toStdString());
 }
 
 MoveTangentUndoCommand::~MoveTangentUndoCommand()
@@ -802,6 +862,11 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 void
 MoveTangentUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     boost::shared_ptr<BezierCP> counterPart;
 
     if ( _tangentBeingDragged->isFeatherPoint() ) {
@@ -819,17 +884,22 @@ MoveTangentUndoCommand::undo()
     }
     _tangentBeingDragged->getBezier()->incrementNodesAge();
     if (_firstRedoCalled) {
-        _roto->setSelection(_selectedCurves, _selectedPoints);
+        roto->setSelection(_selectedCurves, _selectedPoints);
     }
 
-    _roto->evaluate(true);
+    roto->evaluate(true);
 
-    setText( QObject::tr("Move tangent of %1 of %2").arg( QString::fromUtf8( _tangentBeingDragged->getBezier()->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
 }
 
 void
 MoveTangentUndoCommand::redo()
 {
+
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     boost::shared_ptr<BezierCP> cp, fp;
 
     if ( _tangentBeingDragged->isFeatherPoint() ) {
@@ -851,35 +921,29 @@ MoveTangentUndoCommand::redo()
     Transform::Matrix3x3 transform;
     _tangentBeingDragged->getBezier()->getTransformAtTime(_time, &transform);
 
-    bool autoKeying = _roto->getContext()->isAutoKeyingEnabled();
+    bool autoKeying = roto->getContext()->isAutoKeyingEnabled();
 
 
     dragTangent( _time, *cp, *fp, transform, _dx, _dy, _left, autoKeying, _breakTangents, _tangentBeingDragged->isFeatherPoint() );
 
 
     if (_firstRedoCalled) {
-        _roto->setSelection(_selectedCurves, _selectedPoints);
-        _roto->evaluate(true);
+        roto->setSelection(_selectedCurves, _selectedPoints);
+        roto->evaluate(true);
     } else {
-        _roto->refreshSelectionBBox();
+        roto->computeSelectedCpsBBOX();
     }
 
 
     _firstRedoCalled = true;
 
-    setText( QObject::tr("Move tangent of %1 of %2").arg( QString::fromUtf8( _tangentBeingDragged->getBezier()->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
 }
 
-int
-MoveTangentUndoCommand::id() const
-{
-    return kRotoMoveTangentCompressionID;
-}
 
 bool
-MoveTangentUndoCommand::mergeWith(const QUndoCommand *other)
+MoveTangentUndoCommand::mergeWith(const UndoCommandPtr &other)
 {
-    const MoveTangentUndoCommand* mvCmd = dynamic_cast<const MoveTangentUndoCommand*>(other);
+    const MoveTangentUndoCommand* mvCmd = dynamic_cast<const MoveTangentUndoCommand*>(other.get());
 
     if (!mvCmd) {
         return false;
@@ -897,12 +961,12 @@ MoveTangentUndoCommand::mergeWith(const QUndoCommand *other)
 //////////////////////////
 
 
-MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(RotoGui* roto,
+MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                      double dx,
                                                      double dy,
                                                      const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point,
                                                      double time)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _dx(dx)
@@ -913,10 +977,12 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(RotoGui* roto,
     , _oldPoint()
     , _newPoint(point)
 {
-    _curve = boost::dynamic_pointer_cast<Bezier>( _roto->getContext()->getItemByName( point.first->getBezier()->getScriptName() ) );
+    _curve = boost::dynamic_pointer_cast<Bezier>( roto->getContext()->getItemByName( point.first->getBezier()->getScriptName() ) );
     assert(_curve);
     _oldPoint.first.reset( new BezierCP(*_newPoint.first) );
     _oldPoint.second.reset( new BezierCP(*_newPoint.second) );
+    setText( QObject::tr("Move control point feather bar").toStdString());
+
 }
 
 MoveFeatherBarUndoCommand::~MoveFeatherBarUndoCommand()
@@ -926,17 +992,24 @@ MoveFeatherBarUndoCommand::~MoveFeatherBarUndoCommand()
 void
 MoveFeatherBarUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     _newPoint.first->clone(*_oldPoint.first);
     _newPoint.second->clone(*_oldPoint.second);
     _newPoint.first->getBezier()->incrementNodesAge();
-    _roto->evaluate(true);
-    _roto->setSelection(_curve, _newPoint);
-    setText( QObject::tr("Move feather bar of %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+    roto->evaluate(true);
+    roto->setSelection(_curve, _newPoint);
 }
 
 void
 MoveFeatherBarUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     boost::shared_ptr<BezierCP> p = _newPoint.first->isFeatherPoint() ?
                                     _newPoint.second : _newPoint.first;
     boost::shared_ptr<BezierCP> fp = _newPoint.first->isFeatherPoint() ?
@@ -1014,31 +1087,25 @@ MoveFeatherBarUndoCommand::redo()
         delta.y = delta.y * dotProduct;
     }
 
-    if (_roto->getContext()->isAutoKeyingEnabled() || isOnKeyframe) {
+    if (roto->getContext()->isAutoKeyingEnabled() || isOnKeyframe) {
         int index = fp->getBezier()->getFeatherPointIndex(fp);
         fp->getBezier()->moveFeatherByIndex(index, _time, delta.x, delta.y);
     }
 
     if (_firstRedoCalled) {
-        _roto->evaluate(true);
+        roto->evaluate(true);
     }
 
-    _roto->setSelection(_curve, _newPoint);
+    roto->setSelection(_curve, _newPoint);
 
     _firstRedoCalled = true;
-    setText( QObject::tr("Move feather bar of %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
 } // redo
 
-int
-MoveFeatherBarUndoCommand::id() const
-{
-    return kRotoMoveFeatherBarCompressionID;
-}
 
 bool
-MoveFeatherBarUndoCommand::mergeWith(const QUndoCommand *other)
+MoveFeatherBarUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const MoveFeatherBarUndoCommand* mvCmd = dynamic_cast<const MoveFeatherBarUndoCommand*>(other);
+    const MoveFeatherBarUndoCommand* mvCmd = dynamic_cast<const MoveFeatherBarUndoCommand*>(other.get());
 
     if (!mvCmd) {
         return false;
@@ -1056,9 +1123,9 @@ MoveFeatherBarUndoCommand::mergeWith(const QUndoCommand *other)
 
 /////////////////////////
 
-RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(RotoGui* roto,
+RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                    const std::list<RemoveFeatherData> & datas)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedocalled(false)
     , _datas(datas)
@@ -1068,6 +1135,7 @@ RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(RotoGui* roto,
             it->oldPoints.push_back( boost::shared_ptr<BezierCP>( new BezierCP(**it2) ) );
         }
     }
+    setText( QObject::tr("Remove feather").toStdString());
 }
 
 RemoveFeatherUndoCommand::~RemoveFeatherUndoCommand()
@@ -1085,9 +1153,13 @@ RemoveFeatherUndoCommand::undo()
         }
         it->curve->incrementNodesAge();
     }
-    _roto->evaluate(true);
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+    roto->evaluate(true);
 
-    setText( QObject::tr("Remove feather of %1").arg( _roto->getNodeName() ) );
+
 }
 
 void
@@ -1106,27 +1178,30 @@ RemoveFeatherUndoCommand::redo()
             }
         }
     }
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
 
-
-    _roto->evaluate(_firstRedocalled);
+    roto->evaluate(_firstRedocalled);
 
 
     _firstRedocalled = true;
 
-    setText( QObject::tr("Remove feather of %1").arg( _roto->getNodeName() ) );
 }
 
 ////////////////////////////
 
 
-OpenCloseUndoCommand::OpenCloseUndoCommand(RotoGui* roto,
+OpenCloseUndoCommand::OpenCloseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                            const boost::shared_ptr<Bezier> & curve)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
-    , _selectedTool( (int)roto->getSelectedTool() )
+    , _selectedTool(roto->selectedToolAction )
     , _curve(curve)
 {
+    setText( QObject::tr("Open/Close bezier").toStdString());
 }
 
 OpenCloseUndoCommand::~OpenCloseUndoCommand()
@@ -1136,39 +1211,46 @@ OpenCloseUndoCommand::~OpenCloseUndoCommand()
 void
 OpenCloseUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     if (_firstRedoCalled) {
-        _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool, true );
-        if ( (RotoGui::RotoToolEnum)_selectedTool == RotoGui::eRotoToolDrawBezier ) {
-            _roto->setBuiltBezier(_curve);
+        roto->setCurrentTool( _selectedTool.lock() );
+        if ( _selectedTool.lock() == roto->drawBezierAction.lock() ) {
+            roto->setBuiltBezier(_curve);
         }
     }
     _curve->setCurveFinished( !_curve->isCurveFinished() );
-    _roto->evaluate(true);
-    _roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-    setText( QObject::tr("Open/Close %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+    roto->evaluate(true);
+    roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
+
 }
 
 void
 OpenCloseUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     if (_firstRedoCalled) {
-        _roto->setCurrentTool( (RotoGui::RotoToolEnum)_selectedTool, true );
+        roto->setCurrentTool(_selectedTool.lock() );
     }
     _curve->setCurveFinished( !_curve->isCurveFinished() );
-    _roto->evaluate(_firstRedoCalled);
-    _roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
+    roto->evaluate(_firstRedoCalled);
+    roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
-    setText( QObject::tr("Open/Close %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
 }
 
 ////////////////////////////
 
-SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,
+SmoothCuspUndoCommand::SmoothCuspUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                              const std::list<SmoothCuspCurveData> & data,
                                              double time,
                                              bool cusp,
                                              const std::pair<double, double>& pixelScale)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
     , _time(time)
@@ -1184,6 +1266,11 @@ SmoothCuspUndoCommand::SmoothCuspUndoCommand(RotoGui* roto,
             it->oldPoints.push_back( std::make_pair(firstCpy, secondCpy) );
         }
     }
+    if (_cusp) {
+        setText( QObject::tr("Cusp points").toStdString());
+    } else {
+        setText( QObject::tr("Smooth points").toStdString());
+    }
 }
 
 SmoothCuspUndoCommand::~SmoothCuspUndoCommand()
@@ -1193,6 +1280,10 @@ SmoothCuspUndoCommand::~SmoothCuspUndoCommand()
 void
 SmoothCuspUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it != curves.end(); ++it) {
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
@@ -1203,17 +1294,17 @@ SmoothCuspUndoCommand::undo()
         }
     }
 
-    _roto->evaluate(true);
-    if (_cusp) {
-        setText( QObject::tr("Cusp points of %1").arg( _roto->getNodeName() ) );
-    } else {
-        setText( QObject::tr("Smooth points of %1").arg( _roto->getNodeName() ) );
-    }
+    roto->evaluate(true);
+
 }
 
 void
 SmoothCuspUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     for (std::list<SmoothCuspCurveData>::iterator it = curves.begin(); it != curves.end(); ++it) {
         SelectedPointList::const_iterator itOld = it->oldPoints.begin();
         for (SelectedPointList::const_iterator itNew = it->newPoints.begin();
@@ -1234,26 +1325,18 @@ SmoothCuspUndoCommand::redo()
         }
     }
 
-    _roto->evaluate(_firstRedoCalled);
+    roto->evaluate(_firstRedoCalled);
 
     _firstRedoCalled = true;
-    if (_cusp) {
-        setText( QObject::tr("Cusp points of %1").arg( _roto->getNodeName() ) );
-    } else {
-        setText( QObject::tr("Smooth points of %1").arg( _roto->getNodeName() ) );
-    }
+
 }
 
-int
-SmoothCuspUndoCommand::id() const
-{
-    return kRotoCuspSmoothCompressionID;
-}
+
 
 bool
-SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
+SmoothCuspUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const SmoothCuspUndoCommand* sCmd = dynamic_cast<const SmoothCuspUndoCommand*>(other);
+    const SmoothCuspUndoCommand* sCmd = dynamic_cast<const SmoothCuspUndoCommand*>(other.get());
 
     if (!sCmd) {
         return false;
@@ -1284,14 +1367,14 @@ SmoothCuspUndoCommand::mergeWith(const QUndoCommand *other)
 
 /////////////////////////
 
-MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
+MakeBezierUndoCommand::MakeBezierUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                              const boost::shared_ptr<Bezier> & curve,
                                              bool isOpenBezier,
                                              bool createPoint,
                                              double dx,
                                              double dy,
                                              double time)
-    : QUndoCommand()
+    : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
     , _parentLayer()
@@ -1314,6 +1397,8 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(RotoGui* roto,
         _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer(), false) );
         _oldCurve->clone( _newCurve.get() );
     }
+    setText( QObject::tr("Draw Bezier").toStdString());
+
 }
 
 MakeBezierUndoCommand::~MakeBezierUndoCommand()
@@ -1323,38 +1408,46 @@ MakeBezierUndoCommand::~MakeBezierUndoCommand()
 void
 MakeBezierUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+
     assert(_createdPoint);
-    _roto->setCurrentTool(RotoGui::eRotoToolDrawBezier, true);
+    roto->setCurrentTool(roto->drawBezierAction.lock());
     assert(_lastPointAdded != -1);
     _oldCurve->clone( _newCurve.get() );
     if (_newCurve->getControlPointsCount() == 1) {
         _curveNonExistant = true;
-        _roto->removeCurve(_newCurve);
+        roto->removeCurve(_newCurve);
     }
     _newCurve->removeControlPointByIndex(_lastPointAdded);
 
     if (!_curveNonExistant) {
-        _roto->setSelection( _newCurve, std::make_pair( CpPtr(), CpPtr() ) );
-        _roto->setBuiltBezier(_newCurve);
+        roto->setSelection( _newCurve, std::make_pair( CpPtr(), CpPtr() ) );
+        roto->setBuiltBezier(_newCurve);
     } else {
-        _roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
+        roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     }
-    _roto->evaluate(true);
-    setText( QObject::tr("Build bezier %1 of %2").arg( QString::fromUtf8( _newCurve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+    roto->evaluate(true);
 }
 
 void
 MakeBezierUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     if (_firstRedoCalled) {
-        _roto->setCurrentTool(RotoGui::eRotoToolDrawBezier, true);
+        roto->setCurrentTool(roto->drawBezierAction.lock());
     }
 
 
     if (!_firstRedoCalled) {
         if (_createdPoint) {
             if (!_newCurve) {
-                _newCurve = _roto->getContext()->makeBezier(_x, _y, _isOpenBezier ? kRotoOpenBezierBaseName : kRotoBezierBaseName, _time, _isOpenBezier);
+                _newCurve = roto->getContext()->makeBezier(_x, _y, _isOpenBezier ? kRotoOpenBezierBaseName : kRotoBezierBaseName, _time, _isOpenBezier);
                 assert(_newCurve);
                 _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer(), false) );
                 _oldCurve->clone( _newCurve.get() );
@@ -1379,7 +1472,7 @@ MakeBezierUndoCommand::redo()
 
         boost::shared_ptr<RotoItem> parentItem;
         if ( _newCurve->getParentLayer() ) {
-            parentItem =  _roto->getContext()->getItemByName( _newCurve->getParentLayer()->getScriptName() );
+            parentItem =  roto->getContext()->getItemByName( _newCurve->getParentLayer()->getScriptName() );
         }
         if (parentItem) {
             _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
@@ -1388,31 +1481,25 @@ MakeBezierUndoCommand::redo()
     } else {
         _newCurve->clone( _oldCurve.get() );
         if (_curveNonExistant) {
-            _roto->getContext()->addItem(_parentLayer, _indexInLayer, _newCurve, RotoItem::eSelectionReasonOverlayInteract);
+            roto->getContext()->addItem(_parentLayer, _indexInLayer, _newCurve, RotoItem::eSelectionReasonOverlayInteract);
         }
     }
 
 
     boost::shared_ptr<BezierCP> cp = _newCurve->getControlPointAtIndex(_lastPointAdded);
     boost::shared_ptr<BezierCP> fp = _newCurve->getFeatherPointAtIndex(_lastPointAdded);
-    _roto->setSelection( _newCurve, std::make_pair(cp, fp) );
-    _roto->autoSaveAndRedraw();
+    roto->setSelection( _newCurve, std::make_pair(cp, fp) );
+    roto->autoSaveAndRedraw();
     _firstRedoCalled = true;
 
 
-    setText( QObject::tr("Build bezier %1 of %2").arg( QString::fromUtf8( _newCurve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
 } // redo
 
-int
-MakeBezierUndoCommand::id() const
-{
-    return kRotoMakeBezierCompressionID;
-}
 
 bool
-MakeBezierUndoCommand::mergeWith(const QUndoCommand *other)
+MakeBezierUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const MakeBezierUndoCommand* sCmd = dynamic_cast<const MakeBezierUndoCommand*>(other);
+    const MakeBezierUndoCommand* sCmd = dynamic_cast<const MakeBezierUndoCommand*>(other.get());
 
     if (!sCmd) {
         return false;
@@ -1433,7 +1520,7 @@ MakeBezierUndoCommand::mergeWith(const QUndoCommand *other)
 //////////////////////////////
 
 
-MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
+MakeEllipseUndoCommand::MakeEllipseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                bool create,
                                                bool fromCenter,
                                                bool constrained,
@@ -1442,7 +1529,7 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
                                                double tox,
                                                double toy,
                                                double time)
-    : QUndoCommand()
+    : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
     , _indexInLayer(-1)
@@ -1457,8 +1544,10 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(RotoGui* roto,
     , _time(time)
 {
     if (!_create) {
-        _curve = _roto->getBezierBeingBuild();
+        _curve = roto->getBezierBeingBuild();
     }
+    setText( QObject::tr("Draw Ellipse").toStdString());
+
 }
 
 MakeEllipseUndoCommand::~MakeEllipseUndoCommand()
@@ -1468,18 +1557,25 @@ MakeEllipseUndoCommand::~MakeEllipseUndoCommand()
 void
 MakeEllipseUndoCommand::undo()
 {
-    _roto->removeCurve(_curve);
-    _roto->evaluate(true);
-    _roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
-    setText( QObject::tr("Build Ellipse %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+    roto->removeCurve(_curve);
+    roto->evaluate(true);
+    roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
 }
 
 void
 MakeEllipseUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     if (_firstRedoCalled) {
-        _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
-        _roto->evaluate(true);
+        roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
+        roto->evaluate(true);
     } else {
         double ytop, xright, ybottom, xleft;
         xright = _tox;
@@ -1506,7 +1602,7 @@ MakeEllipseUndoCommand::redo()
         double xmid = (xleft + xright) / 2.;
         double ymid = (ytop + ybottom) / 2.;
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(xmid, ytop, kRotoEllipseBaseName, _time, false); //top
+            _curve = roto->getContext()->makeBezier(xmid, ytop, kRotoEllipseBaseName, _time, false); //top
             assert(_curve);
             _curve->addControlPoint(xright, ymid, _time); // right
             _curve->addControlPoint(xmid, ybottom, _time); // bottom
@@ -1540,28 +1636,23 @@ MakeEllipseUndoCommand::redo()
             _curve->setLeftBezierPoint(3, _time,   leftX, (btmY + leftY) / 2.);
             _curve->setRightBezierPoint(3, _time, leftX, (topY + leftY) / 2.);
         }
-        boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
+        boost::shared_ptr<RotoItem> parentItem =  roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
             _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_curve);
         }
     }
-    _roto->setBuiltBezier(_curve);
+    roto->setBuiltBezier(_curve);
     _firstRedoCalled = true;
-    _roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-    setText( QObject::tr("Build Ellipse %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+    roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
+
 } // redo
 
-int
-MakeEllipseUndoCommand::id() const
-{
-    return kRotoMakeEllipseCompressionID;
-}
 
 bool
-MakeEllipseUndoCommand::mergeWith(const QUndoCommand *other)
+MakeEllipseUndoCommand::mergeWith(const UndoCommandPtr &other)
 {
-    const MakeEllipseUndoCommand* sCmd = dynamic_cast<const MakeEllipseUndoCommand*>(other);
+    const MakeEllipseUndoCommand* sCmd = dynamic_cast<const MakeEllipseUndoCommand*>(other.get());
 
     if (!sCmd) {
         return false;
@@ -1585,7 +1676,7 @@ MakeEllipseUndoCommand::mergeWith(const QUndoCommand *other)
 ////////////////////////////////////
 
 
-MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,
+MakeRectangleUndoCommand::MakeRectangleUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                    bool create,
                                                    bool fromCenter,
                                                    bool constrained,
@@ -1594,7 +1685,7 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,
                                                    double tox,
                                                    double toy,
                                                    double time)
-    : QUndoCommand()
+    : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
     , _parentLayer()
@@ -1610,8 +1701,9 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(RotoGui* roto,
     , _time(time)
 {
     if (!_create) {
-        _curve = _roto->getBezierBeingBuild();
+        _curve = roto->getBezierBeingBuild();
     }
+    setText( QObject::tr("Draw Rectangle").toStdString());
 }
 
 MakeRectangleUndoCommand::~MakeRectangleUndoCommand()
@@ -1621,18 +1713,26 @@ MakeRectangleUndoCommand::~MakeRectangleUndoCommand()
 void
 MakeRectangleUndoCommand::undo()
 {
-    _roto->removeCurve(_curve);
-    _roto->evaluate(true);
-    _roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
-    setText( QObject::tr("Build Ellipse %1 of %2").arg( QString::fromUtf8( _curve->getLabel().c_str() ) ).arg( _roto->getNodeName() ) );
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+    roto->removeCurve(_curve);
+    roto->evaluate(true);
+    roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
+
 }
 
 void
 MakeRectangleUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     if (_firstRedoCalled) {
-        _roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
-        _roto->evaluate(true);
+        roto->getContext()->addItem(_parentLayer, _indexInLayer, _curve, RotoItem::eSelectionReasonOverlayInteract);
+        roto->evaluate(true);
     } else {
         double ytop, xright, ybottom, xleft;
         xright = _tox;
@@ -1657,7 +1757,7 @@ MakeRectangleUndoCommand::redo()
             ybottom -= 1.;
         }
         if (_create) {
-            _curve = _roto->getContext()->makeBezier(xleft, ytop, kRotoRectangleBaseName, _time, false); //topleft
+            _curve = roto->getContext()->makeBezier(xleft, ytop, kRotoRectangleBaseName, _time, false); //topleft
             assert(_curve);
             _curve->addControlPoint(xright, ytop, _time); // topright
             _curve->addControlPoint(xright, ybottom, _time); // bottomright
@@ -1669,28 +1769,23 @@ MakeRectangleUndoCommand::redo()
             _curve->setPointByIndex(2, _time, xright, ybottom); // bottomright
             _curve->setPointByIndex(3, _time, xleft, ybottom); // bottomleft
         }
-        boost::shared_ptr<RotoItem> parentItem =  _roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
+        boost::shared_ptr<RotoItem> parentItem =  roto->getContext()->getItemByName( _curve->getParentLayer()->getScriptName() );
         if (parentItem) {
             _parentLayer = boost::dynamic_pointer_cast<RotoLayer>(parentItem);
             _indexInLayer = _parentLayer->getChildIndex(_curve);
         }
     }
-    _roto->setBuiltBezier(_curve);
+    roto->setBuiltBezier(_curve);
     _firstRedoCalled = true;
-    _roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-    setText( QObject::tr("Build Rectangle %1 of %2").arg( QString::fromUtf8( _curve->getScriptName().c_str() ) ).arg( _roto->getNodeName() ) );
+    roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
+
 } // MakeRectangleUndoCommand::redo
 
-int
-MakeRectangleUndoCommand::id() const
-{
-    return kRotoMakeRectangleCompressionID;
-}
 
 bool
-MakeRectangleUndoCommand::mergeWith(const QUndoCommand *other)
+MakeRectangleUndoCommand::mergeWith(const UndoCommandPtr &other)
 {
-    const MakeRectangleUndoCommand* sCmd = dynamic_cast<const MakeRectangleUndoCommand*>(other);
+    const MakeRectangleUndoCommand* sCmd = dynamic_cast<const MakeRectangleUndoCommand*>(other.get());
 
     if (!sCmd) {
         return false;
@@ -1711,481 +1806,17 @@ MakeRectangleUndoCommand::mergeWith(const QUndoCommand *other)
     return true;
 }
 
-//////////////////////////////
 
-
-RemoveItemsUndoCommand::RemoveItemsUndoCommand(RotoPanel* roto,
-                                               const QList<QTreeWidgetItem*> & items)
-    : QUndoCommand()
-    , _roto(roto)
-    , _items()
-{
-    for (QList<QTreeWidgetItem*>::const_iterator it = items.begin(); it != items.end(); ++it) {
-        QTreeWidgetItem* parentItem = (*it)->parent();
-        bool foundParent = false;
-        for (QList<QTreeWidgetItem*>::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
-            if ( (*it2) == parentItem ) {
-                foundParent = true;
-                break;
-            }
-        }
-        if (foundParent) {
-            //Not necessary to add this item to the list since the parent is going to remove it anyway
-            continue;
-        }
-        RemovedItem r;
-        r.treeItem = *it;
-        r.parentTreeItem = parentItem;
-        r.item = _roto->getRotoItemForTreeItem(r.treeItem);
-        assert(r.item);
-        if (r.parentTreeItem) {
-            r.parentLayer = boost::dynamic_pointer_cast<RotoLayer>( _roto->getRotoItemForTreeItem(r.parentTreeItem) );
-            assert(r.parentLayer);
-            r.indexInLayer = r.parentLayer->getChildIndex(r.item);
-        }
-        _items.push_back(r);
-    }
-}
-
-RemoveItemsUndoCommand::~RemoveItemsUndoCommand()
-{
-}
-
-void
-RemoveItemsUndoCommand::undo()
-{
-    for (std::list<RemovedItem>::iterator it = _items.begin(); it != _items.end(); ++it) {
-        if (it->parentTreeItem) {
-            it->parentTreeItem->addChild(it->treeItem);
-        }
-        _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->item, RotoItem::eSelectionReasonSettingsPanel);
-
-        it->treeItem->setHidden(false);
-    }
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-void
-RemoveItemsUndoCommand::redo()
-{
-    if ( _items.empty() ) {
-        return;
-    }
-    _roto->clearAndSelectPreviousItem(_items.back().item);
-    for (std::list<RemovedItem>::iterator it = _items.begin(); it != _items.end(); ++it) {
-        _roto->getContext()->removeItem(it->item, RotoItem::eSelectionReasonSettingsPanel);
-        it->treeItem->setHidden(true);
-        if ( it->treeItem->isSelected() ) {
-            it->treeItem->setSelected(false);
-        }
-        if (it->parentTreeItem) {
-            it->parentTreeItem->removeChild(it->treeItem);
-        }
-    }
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-/////////////////////////////
-
-
-AddLayerUndoCommand::AddLayerUndoCommand(RotoPanel* roto)
-    : QUndoCommand()
-    , _roto(roto)
-    , _firstRedoCalled(false)
-    , _parentLayer()
-    , _parentTreeItem(0)
-    , _treeItem(0)
-    , _layer()
-    , _indexInParentLayer(-1)
-{
-}
-
-AddLayerUndoCommand::~AddLayerUndoCommand()
-{
-}
-
-void
-AddLayerUndoCommand::undo()
-{
-    _treeItem->setHidden(true);
-    if (_parentTreeItem) {
-        _parentTreeItem->removeChild(_treeItem);
-    }
-    _roto->getContext()->removeItem(_layer, RotoItem::eSelectionReasonSettingsPanel);
-    _roto->clearSelection();
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-void
-AddLayerUndoCommand::redo()
-{
-    if (!_firstRedoCalled) {
-        _layer = _roto->getContext()->addLayer();
-        _parentLayer = _layer->getParentLayer();
-        _treeItem = _roto->getTreeItemForRotoItem(_layer);
-        _parentTreeItem = _treeItem->parent();
-        if (_parentLayer) {
-            _indexInParentLayer = _parentLayer->getChildIndex(_layer);
-        }
-    } else {
-        _roto->getContext()->addLayer(_layer);
-        _treeItem->setHidden(false);
-        if (_parentLayer) {
-            _roto->getContext()->addItem(_parentLayer, _indexInParentLayer, _layer, RotoItem::eSelectionReasonSettingsPanel);
-            _parentTreeItem->addChild(_treeItem);
-        }
-    }
-    _roto->clearSelection();
-    _roto->getContext()->select(_layer, RotoItem::eSelectionReasonOther);
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-    _firstRedoCalled = true;
-}
-
-/////////////////////////////////
-
-DragItemsUndoCommand::DragItemsUndoCommand(RotoPanel* roto,
-                                           const std::list< boost::shared_ptr<DroppedTreeItem> > & items)
-    : QUndoCommand()
-    , _roto(roto)
-    , _items()
-{
-    for (std::list< boost::shared_ptr<DroppedTreeItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        assert( (*it)->newParentLayer && (*it)->newParentItem && (*it)->insertIndex != -1 );
-        Item i;
-        i.dropped = *it;
-        i.oldParentItem = (*it)->dropped->parent();
-        if (!i.oldParentItem) {
-            continue;
-        }
-        i.oldParentLayer = (*it)->droppedRotoItem->getParentLayer();
-        if (i.oldParentLayer) {
-            i.indexInOldLayer = i.oldParentLayer->getChildIndex( (*it)->droppedRotoItem );
-        } else {
-            i.indexInOldLayer = -1;
-        }
-        _items.push_back(i);
-    }
-}
-
-DragItemsUndoCommand::~DragItemsUndoCommand()
-{
-}
-
-static void
-createCustomWidgetRecursively(RotoPanel* panel,
-                              const boost::shared_ptr<RotoItem>& item)
-{
-    const boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
-
-    if (isDrawable) {
-        panel->makeCustomWidgetsForItem(isDrawable);
-    }
-    const boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
-    if (isLayer) {
-        const std::list<boost::shared_ptr<RotoItem> > & children = isLayer->getItems();
-        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it != children.end(); ++it) {
-            createCustomWidgetRecursively( panel, *it );
-        }
-    }
-}
-
-void
-DragItemsUndoCommand::undo()
-{
-    for (std::list<Item>::iterator it = _items.begin(); it != _items.end(); ++it) {
-        assert(it->dropped->newParentItem);
-        it->dropped->newParentItem->removeChild(it->dropped->dropped);
-        it->dropped->newParentLayer->removeItem(it->dropped->droppedRotoItem);
-        if (it->oldParentItem) {
-            it->oldParentItem->insertChild(it->indexInOldLayer, it->dropped->dropped);
-
-            createCustomWidgetRecursively( _roto, it->dropped->droppedRotoItem );
-
-            assert(it->oldParentLayer);
-            it->dropped->droppedRotoItem->setParentLayer(it->oldParentLayer);
-            _roto->getContext()->addItem(it->oldParentLayer, it->indexInOldLayer, it->dropped->droppedRotoItem, RotoItem::eSelectionReasonSettingsPanel);
-        } else {
-            it->dropped->droppedRotoItem->setParentLayer( boost::shared_ptr<RotoLayer>() );
-        }
-    }
-    _roto->getContext()->refreshRotoPaintTree();
-    _roto->getContext()->evaluateChange();
-
-    setText( QObject::tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-void
-DragItemsUndoCommand::redo()
-{
-    for (std::list<Item>::iterator it = _items.begin(); it != _items.end(); ++it) {
-        it->oldParentItem->removeChild(it->dropped->dropped);
-        if (it->oldParentLayer) {
-            it->oldParentLayer->removeItem(it->dropped->droppedRotoItem);
-        }
-        assert(it->dropped->newParentItem);
-        it->dropped->newParentItem->insertChild(it->dropped->insertIndex, it->dropped->dropped);
-
-        createCustomWidgetRecursively( _roto, it->dropped->droppedRotoItem );
-
-        it->dropped->newParentItem->setExpanded(true);
-        it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
-    }
-    _roto->getContext()->refreshRotoPaintTree();
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-//////////////////////
-
-static std::string
-getItemCopyName(RotoPanel* roto,
-                const boost::shared_ptr<RotoItem>& originalItem)
-{
-    int i = 1;
-    std::string name = originalItem->getScriptName() + "_copy";
-    boost::shared_ptr<RotoItem> foundItemWithName = roto->getContext()->getItemByName(name);
-
-    while (foundItemWithName && foundItemWithName != originalItem) {
-        std::stringstream ss;
-        ss << originalItem->getScriptName()  << "_copy " << i;
-        name = ss.str();
-        foundItemWithName = roto->getContext()->getItemByName(name);
-        ++i;
-    }
-
-    return name;
-}
-
-static
-void
-setItemCopyNameRecursive(RotoPanel* panel,
-                         const boost::shared_ptr<RotoItem>& item)
-{
-    item->setScriptName( getItemCopyName(panel, item) );
-    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
-
-    if (isLayer) {
-        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = isLayer->getItems().begin(); it != isLayer->getItems().end(); ++it) {
-            setItemCopyNameRecursive( panel, *it );
-        }
-    }
-}
-
-PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
-                                           QTreeWidgetItem* target,
-                                           QList<QTreeWidgetItem*> source)
-    : QUndoCommand()
-    , _roto(roto)
-    , _mode()
-    , _targetTreeItem(target)
-    , _targetItem()
-    , _pastedItems()
-{
-    _targetItem = roto->getRotoItemForTreeItem(target);
-    assert(_targetItem);
-
-    for (int i  = 0; i < source.size(); ++i) {
-        PastedItem item;
-        item.treeItem = source[i];
-        item.rotoItem = roto->getRotoItemForTreeItem(item.treeItem);
-        assert(item.rotoItem);
-        _pastedItems.push_back(item);
-    }
-
-    boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(_targetItem);
-
-    if (isDrawable) {
-        _mode = ePasteModeCopyToItem;
-        assert(source.size() == 1 && _pastedItems.size() == 1);
-        assert( dynamic_cast<RotoDrawableItem*>( _pastedItems.front().rotoItem.get() ) );
-    } else {
-        _mode = ePasteModeCopyToLayer;
-        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
-            boost::shared_ptr<Bezier> srcBezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
-            boost::shared_ptr<RotoLayer> srcLayer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
-            boost::shared_ptr<RotoStrokeItem> srcStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
-            if (srcBezier) {
-                std::string name = getItemCopyName(roto, it->rotoItem);
-                boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(), name,
-                                                           srcBezier->getParentLayer(), false) );
-                copy->clone( srcBezier.get() );
-                copy->createNodes();
-                //clone overwrittes the script name, don't forget to set it back
-                copy->setScriptName(name);
-                copy->setLabel(name);
-                it->itemCopy = copy;
-            } else if (srcStroke) {
-                std::string name = getItemCopyName(roto, it->rotoItem);
-                boost::shared_ptr<RotoStrokeItem> copy( new RotoStrokeItem( srcStroke->getBrushType(),
-                                                                            srcStroke->getContext(),
-                                                                            name,
-                                                                            boost::shared_ptr<RotoLayer>() ) );
-                copy->createNodes();
-                if ( srcStroke->getParentLayer() ) {
-                    srcStroke->getParentLayer()->insertItem(copy, 0);
-                }
-                copy->clone( srcStroke.get() );
-                copy->createNodes();
-                //clone overwrittes the script name, don't forget to set it back
-                copy->setScriptName(name);
-                copy->setLabel(name);
-                it->itemCopy = copy;
-            } else {
-                assert(srcLayer);
-                boost::shared_ptr<RotoLayer> copy( new RotoLayer( srcLayer->getContext(),
-                                                                  "",
-                                                                  boost::shared_ptr<RotoLayer>() ) );
-                copy->clone( srcLayer.get() );
-                setItemCopyNameRecursive( roto, copy );
-                it->itemCopy = copy;
-            }
-        }
-    }
-}
-
-PasteItemUndoCommand::~PasteItemUndoCommand()
-{
-}
-
-void
-PasteItemUndoCommand::undo()
-{
-    if (_mode == ePasteModeCopyToItem) {
-        assert(_oldTargetItem);
-        _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
-        _targetItem->clone( _oldTargetItem.get() );
-        _roto->updateItemGui(_targetTreeItem);
-        _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
-    } else {
-        // check that it is a RotoLayer
-        assert( dynamic_cast<RotoLayer*>( _targetItem.get() ) );
-        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
-            _roto->getContext()->removeItem(it->itemCopy, RotoItem::eSelectionReasonOther);
-        }
-    }
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-void
-PasteItemUndoCommand::redo()
-{
-    if (_mode == ePasteModeCopyToItem) {
-        Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( _targetItem.get() );
-        if (isBezier) {
-            boost::shared_ptr<Bezier> oldBezier( new Bezier(isBezier->getContext(), isBezier->getScriptName(), isBezier->getParentLayer(), false) );
-            oldBezier->createNodes();
-            _oldTargetItem = oldBezier;
-        } else if (isStroke) {
-            boost::shared_ptr<RotoStrokeItem> oldStroke( new RotoStrokeItem( isStroke->getBrushType(), isStroke->getContext(), isStroke->getScriptName(), boost::shared_ptr<RotoLayer>() ) );
-            oldStroke->createNodes();
-            _oldTargetItem = oldStroke;
-            if ( isStroke->getParentLayer() ) {
-                //isStroke->getParentLayer()->insertItem(_oldTargetItem, 0);
-            }
-        }
-        _oldTargetItem->clone( _targetItem.get() );
-        assert(_pastedItems.size() == 1);
-        PastedItem & front = _pastedItems.front();
-        ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
-        ///have not been refreshed and the selected item is linked to those dirty knobs
-        _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
-        _targetItem->clone( front.rotoItem.get() );
-        _targetItem->setScriptName( _oldTargetItem->getScriptName() );
-        _roto->updateItemGui(_targetTreeItem);
-        _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
-    } else {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(_targetItem);
-        assert(isLayer);
-        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
-            assert(it->itemCopy);
-            //it->itemCopy->setParentLayer(isLayer);
-            _roto->getContext()->addItem(isLayer, 0, it->itemCopy, RotoItem::eSelectionReasonOther);
-        }
-    }
-
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-//////////////////
-
-
-DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
-                                                   QTreeWidgetItem* items)
-    : QUndoCommand()
-    , _roto(roto)
-    , _item()
-{
-    _item.treeItem = items;
-    _item.item = _roto->getRotoItemForTreeItem(_item.treeItem);
-    assert( _item.item->getParentLayer() );
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>( _item.item );
-    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( _item.item);
-    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>( _item.item);
-    if (isBezier) {
-        std::string name = getItemCopyName(roto, isBezier);
-        boost::shared_ptr<Bezier> bezierCopy( new Bezier(isBezier->getContext(), name, isBezier->getParentLayer(), false) );
-        bezierCopy->createNodes();
-        _item.duplicatedItem = bezierCopy;
-        _item.duplicatedItem->clone( isBezier.get() );
-        //clone has overwritten the name
-        _item.duplicatedItem->setScriptName(name);
-        _item.duplicatedItem->setLabel(name);
-    } else if (isStroke) {
-        std::string name = getItemCopyName(roto, isStroke);
-        boost::shared_ptr<RotoStrokeItem> strokeCopy( new RotoStrokeItem( isStroke->getBrushType(), isStroke->getContext(), name, boost::shared_ptr<RotoLayer>() ) );
-        strokeCopy->createNodes();
-        _item.duplicatedItem = strokeCopy;
-        if ( isStroke->getParentLayer() ) {
-            isStroke->getParentLayer()->insertItem(_item.duplicatedItem, 0);
-        }
-        _item.duplicatedItem->clone( isStroke.get() );
-        //clone has overwritten the name
-        _item.duplicatedItem->setScriptName(name);
-        _item.duplicatedItem->setLabel(name);
-    } else {
-        assert(isLayer);
-        _item.duplicatedItem.reset( new RotoLayer(*isLayer) );
-        setItemCopyNameRecursive( roto, _item.duplicatedItem );
-    }
-}
-
-DuplicateItemUndoCommand::~DuplicateItemUndoCommand()
-{
-}
-
-void
-DuplicateItemUndoCommand::undo()
-{
-    _roto->getContext()->removeItem(_item.duplicatedItem, RotoItem::eSelectionReasonOther);
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-void
-DuplicateItemUndoCommand::redo()
-{
-    _roto->getContext()->addItem(_item.item->getParentLayer(),
-                                 0, _item.duplicatedItem, RotoItem::eSelectionReasonOther);
-
-    _roto->getContext()->evaluateChange();
-    setText( QObject::tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
-}
-
-LinkToTrackUndoCommand::LinkToTrackUndoCommand(RotoGui* roto,
+LinkToTrackUndoCommand::LinkToTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                const SelectedCpList & points,
                                                const boost::shared_ptr<KnobDouble> & track)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _points(points)
     , _track(track)
 {
+    setText( QObject::tr("Link to track").toStdString() );
+
 }
 
 LinkToTrackUndoCommand::~LinkToTrackUndoCommand()
@@ -2195,6 +1826,10 @@ LinkToTrackUndoCommand::~LinkToTrackUndoCommand()
 void
 LinkToTrackUndoCommand::undo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     for (SelectedCpList::iterator it = _points.begin(); it != _points.end(); ++it) {
         it->first->unslave();
         _track->removeSlavedTrack(it->first);
@@ -2203,14 +1838,17 @@ LinkToTrackUndoCommand::undo()
             _track->removeSlavedTrack(it->second);
         }
     }
-    setText( QObject::tr("Link to track") );
-    _roto->evaluate(true);
+    roto->evaluate(true);
 }
 
 void
 LinkToTrackUndoCommand::redo()
 {
-    SequenceTime time = _roto->getContext()->getTimelineCurrentTime();
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+    SequenceTime time = roto->getContext()->getTimelineCurrentTime();
 
     //bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
 
@@ -2223,13 +1861,12 @@ LinkToTrackUndoCommand::redo()
         _track->addSlavedTrack(it->second);
         // }
     }
-    setText( QObject::tr("Link to track") );
-    _roto->evaluate(true);
+    roto->evaluate(true);
 }
 
-UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(RotoGui* roto,
+UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                                        const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points)
-    : QUndoCommand()
+    : UndoCommand()
     , _roto(roto)
     , _points()
 {
@@ -2240,6 +1877,7 @@ UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(RotoGui* roto,
         p.track = p.cp->isSlaved();
         _points.push_back(p);
     }
+    setText( QObject::tr("Unlink from track").toStdString() );
 }
 
 UnLinkFromTrackUndoCommand::~UnLinkFromTrackUndoCommand()
@@ -2249,8 +1887,12 @@ UnLinkFromTrackUndoCommand::~UnLinkFromTrackUndoCommand()
 void
 UnLinkFromTrackUndoCommand::undo()
 {
-    SequenceTime time = _roto->getContext()->getTimelineCurrentTime();
-    bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
+    SequenceTime time = roto->getContext()->getTimelineCurrentTime();
+    bool featherLinkEnabled = roto->getContext()->isFeatherLinkEnabled();
 
     for (std::list<PointToUnlink>::iterator it = _points.begin(); it != _points.end(); ++it) {
         it->cp->slaveTo(time, it->track);
@@ -2261,14 +1903,18 @@ UnLinkFromTrackUndoCommand::undo()
             it->track->addSlavedTrack(it->fp);
         }
     }
-    setText( QObject::tr("Unlink from track") );
 
-    _roto->evaluate(true);
+
+    roto->evaluate(true);
 }
 
 void
 UnLinkFromTrackUndoCommand::redo()
 {
+    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+    if (!roto) {
+        return;
+    }
     for (std::list<PointToUnlink>::iterator it = _points.begin(); it != _points.end(); ++it) {
         it->cp->unslave();
         it->track->removeSlavedTrack(it->cp);
@@ -2277,8 +1923,7 @@ UnLinkFromTrackUndoCommand::redo()
             it->track->removeSlavedTrack(it->fp);
         }
     }
-    _roto->evaluate(true);
-    setText( QObject::tr("Unlink from track") );
+    roto->evaluate(true);
 }
 
 NATRON_NAMESPACE_EXIT;

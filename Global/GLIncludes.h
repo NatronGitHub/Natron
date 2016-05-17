@@ -19,7 +19,18 @@
 #ifndef NATRON_GLOBAL_GLINCLUDES_H
 #define NATRON_GLOBAL_GLINCLUDES_H
 
-#include <GL/glew.h>
+#include "Global/glad_include.h"
+
+// On OSX GLFW should be compiled with -DGLFW_USE_CHDIR=off -DGLFW_USE_MENUBAR=off -DGLFW_USE_RETINA=on
+#include <GLFW/glfw3.h>
+
+/* this is where we can safely include GLU */
+#  if defined(__APPLE__) && defined(__MACH__)
+#    include <OpenGL/glu.h>
+#  else
+#    include <GL/glu.h>
+#  endif
+
 #define QT_NO_OPENGL_ES_2
 
 #include "Global/Macros.h"
@@ -27,9 +38,27 @@
 #ifdef DEBUG
 #include <iostream>
 
-// put a breakpoint in glError to halt the debugger
+
+// put a breakpoint in glError to halt the debugger on opengl errors
 inline void
 glError() {}
+
+#ifdef GL_TRACE_CALLS
+// logs every gl call to the console
+void pre_gl_call(const char *name, void *funcptr, int len_args, ...) {
+    printf("Calling: %s (%d arguments)\n", name, len_args);
+}
+// logs every gl call to the console
+void post_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args*/, ...) {
+
+    GLenum _glerror_ = glGetError();
+    if (_glerror_ != GL_NO_ERROR) {
+        std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
+        glError();
+    }
+
+}
+#endif
 
 #define glCheckError()                                                  \
     {                                                                   \
@@ -94,10 +123,6 @@ glError() {}
             } \
             else if (error == GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE) { \
                 std::cout << "Framebuffer incomplete multisample" << std::endl; \
-                glError();                                              \
-            } \
-            else if (error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT) { \
-                std::cout << "Framebuffer incomplete layer targets" << std::endl; \
                 glError();                                              \
             } \
             else if (error == 0) {                                    \

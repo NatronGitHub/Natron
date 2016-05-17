@@ -1085,6 +1085,15 @@ Settings::initializeKnobsViewers()
     autoProxyChoices.push_back("32");
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _viewersTab->addKnob(_autoProxyLevel);
+
+
+    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>(this, "Max. opened node viewer interface");
+    _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
+    _maximumNodeViewerUIOpened->setMinimum(1);
+    _maximumNodeViewerUIOpened->setAnimationEnabled(false);
+    _maximumNodeViewerUIOpened->disableSlider();
+    _maximumNodeViewerUIOpened->setHintToolTip("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer");
+    _viewersTab->addKnob(_maximumNodeViewerUIOpened);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1493,6 +1502,7 @@ Settings::setDefaultValues()
     _autoWipe->setDefaultValue(true);
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
+    _maximumNodeViewerUIOpened->setDefaultValue(2);
 
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -1740,21 +1750,10 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
             }
         } else if ( knobs[i] == _texturesMode.get() ) {
             std::map<int, AppInstanceRef> apps = appPTR->getAppInstances();
-            bool isFirstViewer = true;
             for (std::map<int, AppInstanceRef>::iterator it = apps.begin(); it != apps.end(); ++it) {
                 std::list<ViewerInstance*> allViewers;
                 it->second.app->getProject()->getViewers(&allViewers);
                 for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
-                    if (isFirstViewer) {
-                        if ( !(*it)->supportsGLSL() && (_texturesMode->getValue() != 0) ) {
-                            Dialogs::errorDialog( QObject::tr("Viewer").toStdString(), QObject::tr("You need OpenGL GLSL in order to use 32 bit fp textures.\n"
-                                                                                                   "Reverting to 8bits textures.").toStdString() );
-                            _texturesMode->setValue(0);
-                            saveSetting( _texturesMode.get() );
-
-                            return;
-                        }
-                    }
                     (*it)->renderCurrentFrame(true);
                 }
             }
@@ -3744,6 +3743,12 @@ int
 Settings::getDopeSheetEditorNodeSeparationWith() const
 {
     return 4;
+}
+
+int
+Settings::getMaxOpenedNodesViewerContext() const
+{
+    return _maximumNodeViewerUIOpened->getValue();
 }
 
 bool

@@ -1249,4 +1249,55 @@ OfxImageEffectInstance::paramChangedByPlugin(OFX::Host::Param::Instance */*param
      */
 }
 
+
+bool
+OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor, CursorEnum* cursor)
+{
+    bool ret = true;
+    if (ofxCursor == kNatronOfxDefaultCursor) {
+        *cursor = eCursorDefault;
+    } else if (ofxCursor == kNatronOfxBlankCursor) {
+        *cursor =  eCursorBlank;
+    } else if (ofxCursor == kNatronOfxArrowCursor) {
+        *cursor =  eCursorArrow;
+    } else if (ofxCursor == kNatronOfxUpArrowCursor) {
+        *cursor =  eCursorUpArrow;
+    } else if (ofxCursor == kNatronOfxCrossCursor) {
+        *cursor =  eCursorCross;
+    } else if (ofxCursor == kNatronOfxIBeamCursor) {
+        *cursor =  eCursorIBeam;
+    } else if (ofxCursor == kNatronOfxWaitCursor) {
+        *cursor =  eCursorWait;
+    } else if (ofxCursor == kNatronOfxBusyCursor) {
+        *cursor =  eCursorBusy;
+    } else if (ofxCursor == kNatronOfxForbiddenCursor) {
+        *cursor =  eCursorForbidden;
+    } else if (ofxCursor == kNatronOfxPointingHandCursor) {
+        *cursor =  eCursorPointingHand;
+    } else if (ofxCursor == kNatronOfxWhatsThisCursor) {
+        *cursor =  eCursorWhatsThis;
+    } else if (ofxCursor == kNatronOfxSizeVerCursor) {
+        *cursor =  eCursorSizeVer;
+    } else if (ofxCursor == kNatronOfxSizeHorCursor) {
+        *cursor =  eCursorSizeHor;
+    } else if (ofxCursor == kNatronOfxSizeBDiagCursor) {
+        *cursor =  eCursorBDiag;
+    } else if (ofxCursor == kNatronOfxSizeFDiagCursor) {
+        *cursor =  eCursorFDiag;
+    } else if (ofxCursor == kNatronOfxSizeAllCursor) {
+        *cursor =  eCursorSizeAll;
+    } else if (ofxCursor == kNatronOfxSplitVCursor) {
+        *cursor =  eCursorSplitV;
+    } else if (ofxCursor == kNatronOfxSplitHCursor) {
+        *cursor =  eCursorSplitH;
+    } else if (ofxCursor == kNatronOfxOpenHandCursor) {
+        *cursor =  eCursorOpenHand;
+    } else if (ofxCursor == kNatronOfxClosedHandCursor) {
+        *cursor =  eCursorClosedHand;
+    } else {
+        ret = false;
+    }
+    return ret;
+}
+
 NATRON_NAMESPACE_EXIT;

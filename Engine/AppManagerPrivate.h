@@ -137,6 +137,10 @@ struct AppManagerPrivate
     // Copy of the setting knob for faster access from OfxImage constructor
     bool pluginsUseInputImageCopyToRender;
 
+    // True if we can use OpenGL
+    bool hasRequiredOpenGLVersionAndExtensions;
+    QString missingOpenglError;
+
     AppManagerPrivate();
 
     ~AppManagerPrivate();
@@ -167,6 +171,10 @@ struct AppManagerPrivate
 
     void createBreakpadHandler(const QString& breakpadPipePath, int breakpad_client_fd);
 #endif
+
+    void initGlfw();
+
+    void teardownGlfw();
 };
 
 NATRON_NAMESPACE_EXIT;

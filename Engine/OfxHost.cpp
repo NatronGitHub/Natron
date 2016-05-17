@@ -312,6 +312,27 @@ OfxHost::setProperties()
     _properties.setStringProperty(kNatronOfxImageEffectPropChannelSelector, kOfxImageComponentRGBA);
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMasking, 1);
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
+
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxArrowCursor, 0);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxUpArrowCursor, 1);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxCrossCursor, 2);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxIBeamCursor, 3);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxWaitCursor, 4);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxBusyCursor, 5);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxForbiddenCursor, 6);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxPointingHandCursor, 7);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxWhatsThisCursor, 8);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeVerCursor, 9);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeHorCursor, 10);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeBDiagCursor, 11);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeFDiagCursor, 12);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSizeAllCursor, 13);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSplitVCursor, 14);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxSplitHCursor, 15);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxOpenHandCursor, 16);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxClosedHandCursor, 17);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxBlankCursor, 18);
+    _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxDefaultCursor, 19);
 #endif
 } // OfxHost::setProperties
 
@@ -816,7 +837,7 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
         }
 
         assert( p->getBinary() );
-        QString iconPath = QString::fromUtf8( bundlePath.c_str() ) + QString::fromUtf8("/Contents/Resources/");
+        QString resourcesPath = QString::fromUtf8( bundlePath.c_str() ) + QString::fromUtf8("/Contents/Resources/");
         QString iconFileName;
         std::string pngIcon;
         try {
@@ -831,11 +852,11 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
             // no icon defined by kOfxPropIcon, use the default value
             pngIcon = openfxId + ".png";
         }
-        iconFileName.append(iconPath);
+        iconFileName.append(resourcesPath);
         iconFileName.append( QString::fromUtf8( pngIcon.c_str() ) );
         QString groupIconFilename;
         if (groups.size() > 0) {
-            groupIconFilename = iconPath;
+            groupIconFilename = resourcesPath;
             // the plugin grouping has no descriptor, just try the default filename.
             groupIconFilename.append(groups[0]);
             groupIconFilename.append( QString::fromUtf8(".png") );
@@ -846,7 +867,7 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
         QStringList groupIcons;
         groupIcons << groupIconFilename;
         for (int i = 1; i < groups.size(); ++i) {
-            QString groupIconPath = iconPath;
+            QString groupIconPath = resourcesPath;
             for (int j = 0; j <= i; ++j) {
                 groupIconPath += groups[j];
                 if (j < i) {
@@ -862,7 +883,8 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
         std::set<std::string>::const_iterator foundReader = contexts.find(kOfxImageEffectContextReader);
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         const bool isDeprecated = p->getDescriptor().isDeprecated();
-        Plugin* natronPlugin = appPTR->registerPlugin( groups,
+        Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
+                                                      groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
                                                        QString::fromUtf8( pluginLabel.c_str() ),
                                                        iconFileName,

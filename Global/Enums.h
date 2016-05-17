@@ -527,6 +527,9 @@ enum RenderSafetyEnum
 
 enum PenType
 {
+    ePenTypeLMB,
+    ePenTypeMMB,
+    ePenTypeRMB,
     ePenTypePen,
     ePenTypeCursor,
     ePenTypeEraser
@@ -590,6 +593,31 @@ enum ValueIsNormalizedEnum
     eValueIsNormalizedX, ///< indicating that the dimension holds a value normalized against the X dimension of the project format
     eValueIsNormalizedY ///< indicating that the dimension holds a value normalized against the Y dimension of the project format
 };
+
+enum CursorEnum
+{
+    eCursorDefault,
+    eCursorBlank,
+    eCursorArrow,
+    eCursorUpArrow,
+    eCursorCross,
+    eCursorIBeam,
+    eCursorWait,
+    eCursorBusy,
+    eCursorForbidden,
+    eCursorPointingHand,
+    eCursorWhatsThis,
+    eCursorSizeVer,
+    eCursorSizeHor,
+    eCursorBDiag,
+    eCursorFDiag,
+    eCursorSizeAll,
+    eCursorSplitV,
+    eCursorSplitH,
+    eCursorOpenHand,
+    eCursorClosedHand
+};
+
 
 //typedef QFlags<StandardButtonEnum> StandardButtons;
 Q_DECLARE_FLAGS(StandardButtons, StandardButtonEnum)

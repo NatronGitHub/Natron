@@ -50,6 +50,10 @@
 #endif
 #endif
 
+
+#include <cairo/cairo.h>
+#include <boost/version.hpp>
+
 #include <QtCore/QDebug>
 #include <QtCore/QDir>
 #include <QtCore/QTextCodec>
@@ -63,7 +67,7 @@
 
 
 #include "Global/ProcInfo.h"
-
+#include "Global/GLIncludes.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -96,6 +100,11 @@
 #include "Engine/WriteNode.h"
 
 #include "sbkversion.h" // shiboken/pyside version
+
+#define GLFW_VERSION_STRING NATRON_VERSION_STRINGIZE( \
+GLFW_VERSION_MAJOR, \
+GLFW_VERSION_MINOR, \
+GLFW_VERSION_REVISION)
 
 #if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
@@ -375,6 +384,8 @@ AppManager::~AppManager()
     _imp->_viewerCache.reset();
     _imp->_diskCache.reset();
 
+    // free OpenGL resources of glfw
+    _imp->teardownGlfw();
     tearDownPython();
 
     _instance = 0;
@@ -544,6 +555,9 @@ AppManager::loadInternal(const CLArgs& cl)
     Q_UNUSED(mustSetSignalsHandlers);
 # endif
 
+
+    // Initialize OpenGL
+    _imp->initGlfw();
 
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
@@ -1129,8 +1143,17 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
     for (std::list<std::string>::iterator it = grouping.begin(); it != grouping.end(); ++it) {
         qgrouping.push_back( QString::fromUtf8( it->c_str() ) );
     }
-    Plugin* p = registerPlugin(qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
+
+    // Empty since statically bundled
+    QString resourcesPath = QString();
+
+    Plugin* p = registerPlugin(resourcesPath,qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
                                iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
+
+    std::list<PluginActionShortcut> shortcuts;
+    node->getPluginShortcuts(&shortcuts);
+    p->setShorcuts(shortcuts);
+    
     if (internalUseOnly) {
         p->setForInternalUseOnly(true);
     }
@@ -1528,7 +1551,7 @@ AppManager::loadPythonGroups()
         if (gotInfos) {
             qDebug() << "Loading " << moduleName;
             QStringList grouping = QString::fromUtf8( pluginGrouping.c_str() ).split( QChar::fromLatin1('/') );
-            Plugin* p = registerPlugin(grouping, QString::fromUtf8( pluginID.c_str() ), QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( iconFilePath.c_str() ), QStringList(), false, false, 0, false, version, 0, false);
+            Plugin* p = registerPlugin(modulePath, grouping, QString::fromUtf8( pluginID.c_str() ), QString::fromUtf8( pluginLabel.c_str() ), QString::fromUtf8( iconFilePath.c_str() ), QStringList(), false, false, 0, false, version, 0, false);
 
             p->setPythonModule(modulePath + moduleName);
             p->setToolsetScript(isToolset);
@@ -1537,7 +1560,8 @@ AppManager::loadPythonGroups()
 } // AppManager::loadPythonGroups
 
 Plugin*
-AppManager::registerPlugin(const QStringList & groups,
+AppManager::registerPlugin(const QString& resourcesPath,
+                           const QStringList & groups,
                            const QString & pluginID,
                            const QString & pluginLabel,
                            const QString & pluginIconPath,
@@ -1555,7 +1579,7 @@ AppManager::registerPlugin(const QStringList & groups,
     if (mustCreateMutex) {
         pluginMutex = new QMutex(QMutex::Recursive);
     }
-    Plugin* plugin = new Plugin(binary, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, pluginMutex, major, minor,
+    Plugin* plugin = new Plugin(binary, resourcesPath, pluginID, pluginLabel, pluginIconPath, groupIconPath, groups, pluginMutex, major, minor,
                                 isReader, isWriter, isDeprecated);
     std::string stdID = pluginID.toStdString();
 
@@ -2983,6 +3007,55 @@ AppManager::hasThreadsRendering() const
     }
 
     return false;
+}
+
+
+
+QString
+AppManager::getGlfwVersion() const
+{
+    return QString::fromUtf8(GLFW_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( glfwGetVersionString() );
+}
+
+bool
+AppManager::hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError) const
+{
+    if (missingOpenGLError) {
+        *missingOpenGLError = _imp->missingOpenglError;
+    }
+    return _imp->hasRequiredOpenGLVersionAndExtensions;
+}
+
+QString
+AppManager::getOpenGLVersion() const
+{
+    QString glslVer = QString::fromUtf8((const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
+    QString openglVer = QString::fromUtf8((const char*)glGetString(GL_VERSION));
+    return openglVer + QString::fromUtf8(", GLSL ") + glslVer;
+}
+
+QString
+AppManager::getBoostVersion() const
+{
+    return QString::fromUtf8(BOOST_LIB_VERSION);
+}
+
+QString
+AppManager::getQtVersion() const
+{
+    return QString::fromUtf8(QT_VERSION_STR) + QString::fromUtf8(" / ") + QString::fromUtf8( qVersion() );
+}
+
+QString
+AppManager::getCairoVersion() const
+{
+    return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
+}
+
+QString
+AppManager::getPySideVersion() const
+{
+    return QString::fromUtf8(SHIBOKEN_VERSION);
 }
 
 const NATRON_NAMESPACE::OfxHost*

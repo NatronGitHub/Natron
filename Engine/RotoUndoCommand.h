@@ -30,30 +30,21 @@
 #include <list>
 #include <map>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QUndoCommand>
-#include <QList>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
 #include "Engine/EngineFwd.h"
+#include "Engine/UndoCommand.h"
 
-#include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
+struct RotoPaintInteract;
+
+
 class MoveControlPointsUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    MoveControlPointsUndoCommand(RotoGui* roto,
+    MoveControlPointsUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                  const std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & toDrag
                                  ,
                                  double dx,
@@ -64,17 +55,16 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
 
     bool _firstRedoCalled; //< false by default
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
-    int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
+    boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
@@ -83,7 +73,7 @@ private:
 
 
 class TransformUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
@@ -96,7 +86,7 @@ public:
         eTransformMidTop
     };
 
-    TransformUndoCommand(RotoGui* roto,
+    TransformUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                          double centerX,
                          double centerY,
                          double rot,
@@ -112,17 +102,16 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
 
     void transformPoint(const boost::shared_ptr<BezierCP> & point);
 
     bool _firstRedoCalled; //< false by default
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _rippleEditEnabled;
-    int _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
+    boost::weak_ptr<KnobButton> _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
     double _time; //< the time at which the change was made
     std::list<boost::shared_ptr<RotoDrawableItem> > _selectedCurves;
@@ -130,11 +119,11 @@ private:
 };
 
 class AddPointUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    AddPointUndoCommand(RotoGui* roto,
+    AddPointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                         const boost::shared_ptr<Bezier> & curve,
                         int index,
                         double t);
@@ -147,7 +136,7 @@ public:
 private:
 
     bool _firstRedoCalled; //< false by default
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     boost::shared_ptr<Bezier> _curve;
     int _index;
     double _t;
@@ -155,7 +144,7 @@ private:
 
 
 class RemovePointUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     struct CurveDesc
     {
@@ -168,11 +157,11 @@ class RemovePointUndoCommand
 
 public:
 
-    RemovePointUndoCommand(RotoGui* roto,
+    RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                            const boost::shared_ptr<Bezier> & curve,
                            const boost::shared_ptr<BezierCP> & cp);
 
-    RemovePointUndoCommand(RotoGui* roto,
+    RemovePointUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                            const std::list< std::pair < boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
 
     virtual ~RemovePointUndoCommand();
@@ -181,7 +170,7 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     struct CurveOrdering
     {
         bool operator() (const CurveDesc & lhs,
@@ -197,7 +186,7 @@ private:
 
 
 class RemoveCurveUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     struct RemovedCurve
     {
@@ -209,7 +198,7 @@ class RemoveCurveUndoCommand
 public:
 
 
-    RemoveCurveUndoCommand(RotoGui* roto,
+    RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                            const std::list<boost::shared_ptr<RotoDrawableItem> > & curves);
 
     virtual ~RemoveCurveUndoCommand();
@@ -218,17 +207,17 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
     std::list<RemovedCurve> _curves;
 };
 
 class AddStrokeUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    AddStrokeUndoCommand(RotoGui* roto, const boost::shared_ptr<RotoStrokeItem>& item);
+    AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto, const boost::shared_ptr<RotoStrokeItem>& item);
 
     virtual ~AddStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;
@@ -236,7 +225,7 @@ public:
 
 private:
 
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
     boost::shared_ptr<RotoStrokeItem> _item;
     boost::shared_ptr<RotoLayer> _layer;
@@ -244,11 +233,11 @@ private:
 };
 
 class AddMultiStrokeUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    AddMultiStrokeUndoCommand(RotoGui* roto, const boost::shared_ptr<RotoStrokeItem>& item);
+    AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto, const boost::shared_ptr<RotoStrokeItem>& item);
 
     virtual ~AddMultiStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;
@@ -256,7 +245,7 @@ public:
 
 private:
 
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
     boost::shared_ptr<RotoStrokeItem> _item;
     boost::shared_ptr<RotoLayer> _layer;
@@ -267,11 +256,11 @@ private:
 
 
 class MoveTangentUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    MoveTangentUndoCommand(RotoGui* roto,
+    MoveTangentUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                            double dx,
                            double dy,
                            double time,
@@ -283,13 +272,12 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
 
     bool _firstRedoCalled; //< false by default
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
@@ -303,11 +291,11 @@ private:
 
 
 class MoveFeatherBarUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    MoveFeatherBarUndoCommand(RotoGui* roto,
+    MoveFeatherBarUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                               double dx,
                               double dy,
                               const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point,
@@ -317,12 +305,11 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
 
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
     double _dx, _dy;
     bool _rippleEditEnabled;
@@ -333,7 +320,7 @@ private:
 
 
 class RemoveFeatherUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
@@ -344,7 +331,7 @@ public:
     };
 
 
-    RemoveFeatherUndoCommand(RotoGui* roto,
+    RemoveFeatherUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                              const std::list<RemoveFeatherData> & datas);
 
     virtual ~RemoveFeatherUndoCommand();
@@ -353,18 +340,18 @@ public:
     virtual void redo() OVERRIDE FINAL;
 
 private:
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedocalled;
     std::list<RemoveFeatherData> _datas;
 };
 
 class OpenCloseUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
 
-    OpenCloseUndoCommand(RotoGui* roto,
+    OpenCloseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                          const boost::shared_ptr<Bezier> & curve);
 
     virtual ~OpenCloseUndoCommand();
@@ -374,15 +361,15 @@ public:
 
 private:
 
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
-    int _selectedTool;
+    boost::weak_ptr<KnobButton> _selectedTool;
     boost::shared_ptr<Bezier> _curve;
 };
 
 
 class SmoothCuspUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
@@ -393,7 +380,7 @@ public:
         SelectedPointList newPoints, oldPoints;
     };
 
-    SmoothCuspUndoCommand(RotoGui* roto,
+    SmoothCuspUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                           const std::list<SmoothCuspCurveData> & data,
                           double time,
                           bool cusp,
@@ -403,11 +390,10 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
     double _time;
     int _count;
@@ -418,11 +404,11 @@ private:
 
 
 class MakeBezierUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    MakeBezierUndoCommand(RotoGui* roto,
+    MakeBezierUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                           const boost::shared_ptr<Bezier> & curve,
                           bool isOpenBezier,
                           bool createPoint,
@@ -434,8 +420,7 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
     boost::shared_ptr<Bezier>  getCurve() const
     {
         return _newCurve;
@@ -443,7 +428,7 @@ public:
 
 private:
     bool _firstRedoCalled;
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _oldCurve, _newCurve;
@@ -458,11 +443,11 @@ private:
 
 
 class MakeEllipseUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    MakeEllipseUndoCommand(RotoGui* roto,
+    MakeEllipseUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                            bool create,
                            bool fromCenter,
                            bool constrained,
@@ -476,12 +461,11 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
     bool _firstRedoCalled;
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _curve;
@@ -495,11 +479,11 @@ private:
 
 
 class MakeRectangleUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
-    MakeRectangleUndoCommand(RotoGui* roto,
+    MakeRectangleUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                              bool create,
                              bool fromCenter,
                              bool constrained,
@@ -513,12 +497,11 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    virtual int id() const OVERRIDE FINAL;
-    virtual bool mergeWith(const QUndoCommand *other) OVERRIDE FINAL;
+    virtual bool mergeWith(const UndoCommandPtr& other) OVERRIDE FINAL;
 
 private:
     bool _firstRedoCalled;
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     boost::shared_ptr<RotoLayer> _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _curve;
@@ -531,180 +514,14 @@ private:
 };
 
 
-class RemoveItemsUndoCommand
-    : public QUndoCommand
-{
-    struct RemovedItem
-    {
-        QTreeWidgetItem* treeItem;
-        QTreeWidgetItem* parentTreeItem;
-        boost::shared_ptr<RotoLayer> parentLayer;
-        int indexInLayer;
-        boost::shared_ptr<RotoItem> item;
-
-        RemovedItem()
-            : treeItem(0)
-            , parentTreeItem(0)
-            , parentLayer()
-            , indexInLayer(-1)
-            , item()
-        {
-        }
-    };
-
-public:
-
-
-    RemoveItemsUndoCommand(RotoPanel* roto,
-                           const QList<QTreeWidgetItem*> & items);
-
-    virtual ~RemoveItemsUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    RotoPanel* _roto;
-    std::list<RemovedItem> _items;
-};
-
-class AddLayerUndoCommand
-    : public QUndoCommand
-{
-public:
-
-
-    AddLayerUndoCommand(RotoPanel* roto);
-
-    virtual ~AddLayerUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    RotoPanel* _roto;
-    bool _firstRedoCalled;
-    boost::shared_ptr<RotoLayer> _parentLayer;
-    QTreeWidgetItem* _parentTreeItem;
-    QTreeWidgetItem* _treeItem;
-    boost::shared_ptr<RotoLayer> _layer;
-    int _indexInParentLayer;
-};
-
-
-class DragItemsUndoCommand
-    : public QUndoCommand
-{
-public:
-
-    struct Item
-    {
-        boost::shared_ptr<DroppedTreeItem> dropped;
-        boost::shared_ptr<RotoLayer> oldParentLayer;
-        int indexInOldLayer;
-        QTreeWidgetItem* oldParentItem;
-    };
-
-
-    DragItemsUndoCommand(RotoPanel* roto,
-                         const std::list< boost::shared_ptr<DroppedTreeItem> > & items);
-
-    virtual ~DragItemsUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    RotoPanel* _roto;
-    std::list < Item > _items;
-};
-
-
-/**
- * @class This class supports 2 behaviours:
- * 1) The user pastes one item upon another. The target's shape and attributes are copied and the
- * name is the source's name plus "- copy" at the end.
- * 2) The user pastes several items upon a layer in which case the items are copied into that layer and
- * the new items name is the same than the original appeneded with "- copy".
- *
- * Anything else will not do anything and you should not issue a command which will yield an unsupported behaviour
- * otherwise you'll create an empty action in the undo/redo stack.
- **/
-class PasteItemUndoCommand
-    : public QUndoCommand
-{
-public:
-
-    enum PasteModeEnum
-    {
-        ePasteModeCopyToLayer = 0,
-        ePasteModeCopyToItem
-    };
-
-    struct PastedItem
-    {
-        QTreeWidgetItem* treeItem;
-        boost::shared_ptr<RotoItem> rotoItem;
-        boost::shared_ptr<RotoItem> itemCopy;
-    };
-
-
-    PasteItemUndoCommand(RotoPanel* roto,
-                         QTreeWidgetItem* target,
-                         QList<QTreeWidgetItem*> source);
-
-    virtual ~PasteItemUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    RotoPanel* _roto;
-    PasteModeEnum _mode;
-    QTreeWidgetItem* _targetTreeItem;
-    boost::shared_ptr<RotoItem> _targetItem;
-    boost::shared_ptr<RotoItem> _oldTargetItem;
-    std::list < PastedItem > _pastedItems;
-};
-
-
-class DuplicateItemUndoCommand
-    : public QUndoCommand
-{
-public:
-
-    struct DuplicatedItem
-    {
-        QTreeWidgetItem* treeItem;
-        boost::shared_ptr<RotoItem> item;
-        boost::shared_ptr<RotoItem> duplicatedItem;
-    };
-
-    DuplicateItemUndoCommand(RotoPanel* roto,
-                             QTreeWidgetItem* items);
-
-    virtual ~DuplicateItemUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    RotoPanel* _roto;
-    DuplicatedItem _item;
-};
 
 class LinkToTrackUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
 public:
 
 
-    LinkToTrackUndoCommand(RotoGui* roto,
+    LinkToTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                            const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points,
                            const boost::shared_ptr<KnobDouble> & track);
 
@@ -715,13 +532,13 @@ public:
 
 private:
 
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _points;
     boost::shared_ptr<KnobDouble> _track;
 };
 
 class UnLinkFromTrackUndoCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     struct PointToUnlink
     {
@@ -733,7 +550,7 @@ class UnLinkFromTrackUndoCommand
 public:
 
 
-    UnLinkFromTrackUndoCommand(RotoGui* roto,
+    UnLinkFromTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
                                const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
 
     virtual ~UnLinkFromTrackUndoCommand();
@@ -743,7 +560,7 @@ public:
 
 private:
 
-    RotoGui* _roto;
+    boost::weak_ptr<RotoPaintInteract> _roto;
     std::list<PointToUnlink> _points;
 };
 

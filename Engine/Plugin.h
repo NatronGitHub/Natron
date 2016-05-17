@@ -39,6 +39,7 @@
 
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/PluginActionShortcut.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -151,22 +152,11 @@ public:
     }
 };
 
-class PluginActionShortcut
-{
-    std::string actionID;
-    std::string actionLabel;
-
-    struct ShortCut {
-        std::list<int> modifiers;
-        int symbol;
-    };
-
-    ShortCut shortcut;
-};
 
 class Plugin
 {
     LibraryBinary* _binary;
+    QString _resourcesPath; // Path to the resources (images etc..) of the plug-in, or empty if statically linked  (epxected to be found in resources)
     QString _id;
     QString _label;
     QString _iconFilePath;
@@ -199,10 +189,13 @@ class Plugin
      */
     std::list<PluginActionShortcut> _shortcuts;
 
+
+
 public:
 
     Plugin()
         : _binary(NULL)
+        , _resourcesPath()
         , _id()
         , _label()
         , _iconFilePath()
@@ -228,6 +221,7 @@ public:
     }
 
     Plugin(LibraryBinary* binary,
+           const QString& resourcesPath,
            const QString & id,
            const QString & label,
            const QString & iconFilePath,
@@ -240,6 +234,7 @@ public:
            bool isWriter,
            bool isDeprecated)
         : _binary(binary)
+        , _resourcesPath(resourcesPath)
         , _id(id)
         , _label(label)
         , _iconFilePath(iconFilePath)
@@ -262,6 +257,9 @@ public:
         , _activatedSet(false)
         , _activated(true)
     {
+        if (_resourcesPath.isEmpty()) {
+            _resourcesPath = QLatin1String(":/Resources/");
+        }
     }
 
     ~Plugin();
@@ -273,6 +271,11 @@ public:
     const std::list<PluginActionShortcut>& getShortcuts() const
     {
         return _shortcuts;
+    }
+
+    const QString& getResourcesPath() const
+    {
+        return _resourcesPath;
     }
 
     QString getPluginShortcutGroup() const;

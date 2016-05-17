@@ -46,6 +46,7 @@
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/ParallelRenderArgs.h"
+#include "Engine/PluginActionShortcut.h"
 #include "Engine/ViewIdx.h"
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
@@ -488,6 +489,14 @@ public:
      **/
     virtual std::string getPluginDescription() const WARN_UNUSED_RETURN = 0;
 
+    /**
+     * @brief Must returns the shortcuts that are going to be used for this plug-in. Each shortcut
+     * will be added to the shortcut editor and must have an ID and a description label.
+     * Make sure that within the same plug-in there are no conflicting shortcuts.
+     * Each shortcut ID can then be set to KnobButton used to indicate they have a shortcut.
+     **/
+    virtual void getPluginShortcuts(std::list<PluginActionShortcut>* /*shortcuts*/) {}
+
 
     /**
      * @bried Returns the effect render order preferences:
@@ -775,7 +784,7 @@ public:
         return false;
     }
 
-    virtual RenderScale getOverlayInteractRenderScale() const;
+    RenderScale getOverlayInteractRenderScale() const;
 
     SequenceTime getFrameRenderArgsCurrentTime() const;
 
@@ -1042,6 +1051,8 @@ public:
     }
 
     void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
+
+    OverlaySupport* getCurrentViewportForOverlays() const;
 
 protected:
 
@@ -1434,6 +1445,25 @@ public:
 
 public:
 
+    /**
+     * @brief Push a new undo command to the undo/redo stack associated to this node.
+     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
+     * If no undo/redo stack is present, the command will just be redone once then destroyed.
+     **/
+    void pushUndoCommand(const UndoCommandPtr& command);
+
+    // Same as the version above, do NOT derefence command after this call as it will be destroyed already, usually this call is
+    // made as such: pushUndoCommand(new MyCommand(...))
+    void pushUndoCommand(UndoCommand* command);
+
+    /**
+     * @brief Set the cursor to be one of the default cursor.
+     * @returns True if it successfully set the cursor, false otherwise.
+     * Note: this can only be called during an overlay interact action.
+     **/
+    bool setCurrentCursor(CursorEnum defaultCursor);
+    bool setCurrentCursor(const QString& customCursorFilePath);
+
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
     virtual void onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
@@ -1456,11 +1486,13 @@ public:
 
     void drawOverlay_public(double time, const RenderScale & renderScale, ViewIdx view);
 
-    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
+    bool onOverlayPenDoubleClicked_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+
+    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
@@ -1473,6 +1505,10 @@ public:
     bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual void onInteractViewportSelectionCleared() {}
+
+    virtual void onInteractViewportSelectionUpdated(const RectD& /*rectangle*/, bool /*onRelease*/) {}
 
     void setDoingInteractAction(bool doing);
 
@@ -1763,7 +1799,18 @@ protected:
                                   ViewIdx /*view*/,
                                   const QPointF & /*viewportPos*/,
                                   const QPointF & /*pos*/,
-                                  double /*pressure*/) WARN_UNUSED_RETURN
+                                  double /*pressure*/,
+                                  double /*timestamp*/,
+                                  PenType /*pen*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayPenDoubleClicked(double /*time*/,
+                                  const RenderScale & /*renderScale*/,
+                                  ViewIdx /*view*/,
+                                  const QPointF & /*viewportPos*/,
+                                  const QPointF & /*pos*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1773,7 +1820,7 @@ protected:
                                     ViewIdx /*view*/,
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/,
-                                    double /*pressure*/) WARN_UNUSED_RETURN
+                                    double /*pressure*/, double /*timestamp*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1783,7 +1830,7 @@ protected:
                                 ViewIdx /*view*/,
                                 const QPointF & /*viewportPos*/,
                                 const QPointF & /*pos*/,
-                                double /*pressure*/) WARN_UNUSED_RETURN
+                                double /*pressure*/, double /*timestamp*/) WARN_UNUSED_RETURN
     {
         return false;
     }

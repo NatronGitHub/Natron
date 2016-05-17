@@ -9,7 +9,7 @@ Natron on FreeBSD.
 In order to have Natron compiling, first you need to install the required libraries.
 
 ```
-pkg install qt4 boost-all pyside-py27 glew expat cairo pkgconf
+pkg install qt4 boost-all pyside-py27 expat cairo pkgconf
 ```
 
 ### Submodules

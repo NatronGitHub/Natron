@@ -131,6 +131,10 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
 
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+
+
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
 
@@ -220,8 +224,6 @@ private:
     const QColor & getSelectedCurveColor() const;
     const QFont & getFont() const;
     const SelectedKeys & getSelectedKeyFrames() const;
-
-    bool isSupportingOpenGLVAO() const;
 
 private:
 

@@ -537,6 +537,7 @@ KnobButton::KnobButton(KnobHolder*  holder,
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _renderButton(false)
     , _checkable(false)
+    , _isToolButtonAction(false)
 {
     //setIsPersistant(false);
 }
@@ -565,6 +566,8 @@ KnobButton::trigger()
 {
     evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
 }
+
+
 
 /******************************KnobChoice**************************************/
 
@@ -1381,6 +1384,7 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _isTab(false)
+    , _isToolButton(false)
 {
 }
 
@@ -1394,6 +1398,18 @@ bool
 KnobGroup::isTab() const
 {
     return _isTab;
+}
+
+void
+KnobGroup::setAsToolButton(bool b)
+{
+    _isToolButton = b;
+}
+
+bool
+KnobGroup::getIsToolButton() const
+{
+    return _isToolButton;
 }
 
 bool
@@ -1522,6 +1538,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    , _isToolBar(false)
 {
     setIsPersistant(false);
 }

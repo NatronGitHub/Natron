@@ -144,6 +144,10 @@ public:
     void restoreOpenGLContext() OVERRIDE FINAL;
     unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
 
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+
+
     void refreshSelectionBboxAndRedraw();
 
 public Q_SLOTS:

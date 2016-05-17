@@ -240,12 +240,6 @@ public:
 
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief This is a short-cut, this is primarily used when the user switch the
-     * texture mode in the preferences menu. If the hardware doesn't support GLSL
-     * it returns false, true otherwise. @see Settings::onKnobValueChanged
-     **/
-    bool supportsGLSL() const WARN_UNUSED_RETURN;
 
     virtual bool supportsMultipleClipsPAR() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

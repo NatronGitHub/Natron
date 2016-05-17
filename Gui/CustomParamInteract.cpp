@@ -227,6 +227,29 @@ CustomParamInteract::restoreOpenGLContext()
     glPopAttrib();
 }
 
+RectD
+CustomParamInteract::getViewportRect() const
+{
+    RectD bbox;
+    {
+        bbox.x1 = -0.5;
+        bbox.y1 = -0.5;
+        bbox.x2 = width() + 0.5;
+        bbox.y2 = height() + 0.5;
+    }
+    return bbox;
+}
+
+void
+CustomParamInteract::getCursorPosition(double& x, double& y) const
+{
+    QPoint p = QCursor::pos();
+    p = mapFromGlobal(p);
+    x = p.x();
+    y = p.y();
+}
+
+
 void
 CustomParamInteract::mousePressEvent(QMouseEvent* e)
 {

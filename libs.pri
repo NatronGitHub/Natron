@@ -25,6 +25,11 @@ INCLUDEPATH += $$PWD/libs/libmv/third_party
 INCLUDEPATH += $$PWD/libs/libmv
 }
 
+glad-flags {
+CONFIG(debug, debug|release): INCLUDEPATH += $$PWD/Global/glad_debug/include
+CONFIG(release, debug|release): INCLUDEPATH += $$PWD/Global/glad_release/include
+}
+
 openmvg-flags {
 CONFIG += ceres-flags boost
 # Make openMVG use openmp

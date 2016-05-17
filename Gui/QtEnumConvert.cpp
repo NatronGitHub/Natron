@@ -1819,5 +1819,57 @@ QtEnumConvert::toQtStandarButtons(StandardButtons buttons)
     return ret;
 } // toQtStandarButtons
 
+
+bool
+QtEnumConvert::toQtCursor(CursorEnum c, Qt::CursorShape* ret)
+{
+    bool b = true;
+    switch (c) {
+        case eCursorArrow:
+            *ret = Qt::ArrowCursor;
+        case eCursorBDiag:
+            *ret = Qt::SizeBDiagCursor;
+        case eCursorFDiag:
+            *ret = Qt::SizeFDiagCursor;
+        case eCursorBlank:
+            *ret = Qt::BlankCursor;
+        case eCursorBusy:
+            *ret = Qt::BusyCursor;
+        case eCursorClosedHand:
+            *ret = Qt::ClosedHandCursor;
+        case eCursorCross:
+            *ret = Qt::CrossCursor;
+        case eCursorForbidden:
+            *ret = Qt::ForbiddenCursor;
+        case eCursorIBeam:
+            *ret = Qt::IBeamCursor;
+        case eCursorOpenHand:
+            *ret = Qt::OpenHandCursor;
+        case eCursorPointingHand:
+            *ret = Qt::PointingHandCursor;
+        case eCursorSizeAll:
+            *ret = Qt::SizeAllCursor;
+        case eCursorSizeHor:
+            *ret = Qt::SizeHorCursor;
+        case eCursorSizeVer:
+            *ret = Qt::SizeVerCursor;
+        case eCursorSplitH:
+            *ret = Qt::SplitHCursor;
+        case eCursorSplitV:
+            *ret = Qt::SplitVCursor;
+        case eCursorUpArrow:
+            *ret = Qt::UpArrowCursor;
+        case eCursorWait:
+            *ret = Qt::WaitCursor;
+        case eCursorWhatsThis:
+            *ret = Qt::WhatsThisCursor;
+        case eCursorDefault:
+        default:
+            b = false;
+            break;
+    }
+    return b;
+} // toQtCursor
+
 NATRON_NAMESPACE_EXIT;
 

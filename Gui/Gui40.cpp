@@ -44,9 +44,6 @@
 #include <QAction>
 #include <QApplication> // qApp
 
-#include <cairo/cairo.h>
-
-#include <boost/version.hpp>
 
 #include "Engine/CLArgs.h"
 #include "Engine/Image.h"
@@ -736,49 +733,6 @@ Gui::ensureProgressPanelVisible()
     }
 }
 
-void
-Gui::setGlewVersion(const QString & version)
-{
-    _imp->_glewVersion = version;
-    _imp->_aboutWindow->updateLibrariesVersions();
-}
-
-void
-Gui::setOpenGLVersion(const QString & version)
-{
-    _imp->_openGLVersion = version;
-    _imp->_aboutWindow->updateLibrariesVersions();
-}
-
-QString
-Gui::getGlewVersion() const
-{
-    return _imp->_glewVersion;
-}
-
-QString
-Gui::getOpenGLVersion() const
-{
-    return _imp->_openGLVersion;
-}
-
-QString
-Gui::getBoostVersion() const
-{
-    return QString::fromUtf8(BOOST_LIB_VERSION);
-}
-
-QString
-Gui::getQtVersion() const
-{
-    return QString::fromUtf8(QT_VERSION_STR) + QString::fromUtf8(" / ") + QString::fromUtf8( qVersion() );
-}
-
-QString
-Gui::getCairoVersion() const
-{
-    return QString::fromUtf8(CAIRO_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( cairo_version_string() );
-}
 
 void
 Gui::onNodeNameChanged(const QString & /*name*/)

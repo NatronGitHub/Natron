@@ -162,7 +162,6 @@ public:
     QFont* _font;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;
-    bool _hasOpenGLVAOSupport;
     bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
     ///the value is either (1,0) or (0,1)

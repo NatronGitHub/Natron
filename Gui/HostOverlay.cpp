@@ -151,6 +151,19 @@ DefaultInteractI::penDown(double /*time*/,
     return false;
 }
 
+
+bool
+DefaultInteractI::penDoubleClicked(double /*time*/,
+                          const RenderScale& /*renderScale*/,
+                          ViewIdx /*view*/,
+                          const OfxPointD& /*pscale*/,
+                          const QPointF& /*lastPenPos*/,
+                          const QPointF & /*penPos*/,
+                          const QPoint & /*penPosViewport*/)
+{
+    return false;
+}
+
 bool
 DefaultInteractI::keyDown(double /*time*/,
                           const RenderScale& /*renderScale*/,
@@ -2701,6 +2714,29 @@ HostOverlay::penDown(double time,
 
     _imp->lastPenPos = penPos;
 
+    return false;
+}
+
+bool
+HostOverlay::penDoubleClicked(double time,
+                      const RenderScale& renderScale,
+                      ViewIdx view,
+                      const QPointF &penPos,
+                      const QPoint &penPosViewport)
+{
+    OfxPointD pscale;
+
+    n_getPixelScale(pscale.x, pscale.y);
+    for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
+        if ( (*it)->penDoubleClicked(time, renderScale, view, pscale, _imp->lastPenPos, penPos, penPosViewport) ) {
+            _imp->lastPenPos = penPos;
+
+            return true;
+        }
+    }
+
+    _imp->lastPenPos = penPos;
+    
     return false;
 }
 

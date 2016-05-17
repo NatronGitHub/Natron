@@ -308,8 +308,6 @@ public:
     // for clip (Reader, Time nodes) user interaction
     boost::shared_ptr<DSNode> currentEditedReader;
 
-    // others
-    bool hasOpenGLVAOSupport;
 
     // UI
     Menu *contextMenu;
@@ -336,7 +334,6 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
     keyDragLastMovement(),
     eventState(DopeSheetView::esNoEditingState),
     currentEditedReader(),
-    hasOpenGLVAOSupport(true),
     contextMenu( new Menu(q_ptr) )
 {
 }
@@ -2654,6 +2651,29 @@ DopeSheetView::getBackgroundColour(double &r,
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
 }
 
+RectD
+DopeSheetView::getViewportRect() const
+{
+    RectD bbox;
+    {
+        bbox.x1 = _imp->zoomContext.left();
+        bbox.y1 = _imp->zoomContext.bottom();
+        bbox.x2 = _imp->zoomContext.right();
+        bbox.y2 = _imp->zoomContext.top();
+    }
+    return bbox;
+}
+
+void
+DopeSheetView::getCursorPosition(double& x, double& y) const
+{
+    QPoint p = QCursor::pos();
+    p = mapFromGlobal(p);
+    QPointF mappedPos = _imp->zoomContext.toZoomCoordinates(p.x(), p.y());
+    x = mappedPos.x();
+    y = mappedPos.y();
+}
+
 /**
  * @brief DopeSheetView::saveOpenGLContext
  *
@@ -3066,11 +3086,6 @@ void
 DopeSheetView::initializeGL()
 {
     running_in_main_thread();
-
-    if ( !glewIsSupported("GL_ARB_vertex_array_object ") ) {
-        _imp->hasOpenGLVAOSupport = false;
-    }
-
     _imp->generateKeyframeTextures();
 }
 

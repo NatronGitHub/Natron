@@ -26,20 +26,13 @@
 
 #include <stdexcept>
 
-#include "Global/GLIncludes.h"
-#include "Gui/ViewerGL.h"
-
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
-
 NATRON_NAMESPACE_ENTER;
 
 Texture::Texture(U32 target,
                  int minFilter,
                  int magFilter,
                  int clamp)
-    : OpenGLTextureI()
+    : _texID(0)
     , _target(target)
     , _minFilter(minFilter)
     , _magFilter(magFilter)

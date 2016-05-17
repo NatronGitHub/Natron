@@ -82,7 +82,6 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _font( new QFont(appFont, appFontSize) )
     , _curves()
     , _selectedKeyFrames()
-    , _hasOpenGLVAOSupport(true)
     , _mustSetDragOrientation(false)
     , _mouseDragOrientation()
     , _keyFramesClipBoard()

@@ -88,6 +88,10 @@ public:
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
 
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+
+
 private:
 
     virtual void paintGL() OVERRIDE FINAL;

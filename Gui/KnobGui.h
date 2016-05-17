@@ -243,6 +243,8 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
 
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;

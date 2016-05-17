@@ -338,7 +338,8 @@ public:
     {
     }
 
-    Plugin* registerPlugin(const QStringList & groups,
+    Plugin* registerPlugin(const QString& resourcesPath,
+                           const QStringList & groups,
                            const QString & pluginID,
                            const QString & pluginLabel,
                            const QString & pluginIconPath,
@@ -511,6 +512,20 @@ public:
 
     void setPluginsUseInputImageCopyToRender(bool b);
     bool isCopyInputImageForPluginRenderEnabled() const;
+
+    bool hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError = 0) const;
+
+    QString getGlfwVersion() const;
+
+    QString getOpenGLVersion() const;
+
+    QString getBoostVersion() const;
+
+    QString getQtVersion() const;
+
+    QString getCairoVersion() const;
+
+    QString getPySideVersion() const;
 
 public Q_SLOTS:
 

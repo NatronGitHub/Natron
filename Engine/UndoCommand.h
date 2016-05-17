@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GUI_TEXTURE_H
-#define NATRON_GUI_TEXTURE_H
+#ifndef UNDOCOMMAND_H
+#define UNDOCOMMAND_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,74 +25,54 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
 
-#include "Global/GlobalDefines.h"
-
-#include "Engine/TextureRect.h"
+#include <string>
 #include "Engine/EngineFwd.h"
-#include "Engine/OpenGLViewerI.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
-class Texture
-    : public OpenGLTextureI
-{
+class UndoCommand {
+
+    std::string _text;
 public:
 
-    enum DataTypeEnum
+    UndoCommand(const std::string& text = std::string())
+    : _text(text)
+    {}
+
+    virtual ~UndoCommand() {}
+
+    std::string getText() const
     {
-        eDataTypeNone,
-        eDataTypeByte,
-        eDataTypeFloat,
-        eDataTypeHalf,
-    };
-
-
-    Texture(U32 target,
-            int minFilter,
-            int magFilter,
-            int clamp);
-
-    int w() const
-    {
-        return _textureRect.width();
+        return _text;
     }
 
-    int h() const
+    // Must be called before pushUndoCommand() otherwise the text does not get updated
+    void setText(const std::string& text)
     {
-        return _textureRect.height();
+        _text = text;
     }
 
-    DataTypeEnum type() const
+    /**
+     * @brief Called to redo the action
+     **/
+    virtual void redo() = 0;
+
+    /**
+     * @brief Called to undo the action
+     **/
+    virtual void undo() = 0;
+
+    /**
+     * @brief Called to merge the other action in this action (other is the newest action)
+     **/
+    virtual bool mergeWith(const UndoCommandPtr& /*other*/)
     {
-        return _type;
+        return false;
     }
-
-    /*
-     * @brief Ensures that the texture is of size texRect and of the given type
-     * @returns True if something changed, false otherwise
-     */
-    bool ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type);
-
-    /*allocates the texture*/
-    void fillOrAllocateTexture(const TextureRect & texRect, DataTypeEnum type, const RectI& roi, bool updateOnlyRoi);
-
-    const TextureRect & getTextureRect() const
-    {
-        return _textureRect;
-    }
-
-    virtual ~Texture();
-
-private:
-
-    U32 _target;
-    int _minFilter, _magFilter, _clamp;
-    TextureRect _textureRect;
-    DataTypeEnum _type;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif /* defined(NATRON_GUI_TEXTURE_H_) */
+#endif // UNDOCOMMAND_H

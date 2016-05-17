@@ -251,7 +251,7 @@ GuiAppInstance::load(const CLArgs& cl,
     try {
         declareCurrentAppVariable_Python();
     } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
+        throw std::runtime_error(e.what());
     }
 
     _imp->_gui = new Gui(this);
@@ -306,6 +306,12 @@ GuiAppInstance::load(const CLArgs& cl,
 
 
     if (getAppID() == 0) {
+
+        QString missingOpenGLError;
+        if (!appPTR->hasPlatformNecessaryOpenGLRequirements(&missingOpenGLError)) {
+            throw std::runtime_error(missingOpenGLError.toStdString());
+        }
+
         appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
 
         if ( !appPTR->isShorcutVersionUpToDate() ) {
@@ -460,8 +466,8 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
     NodesGuiList selectedNodes = graph->getSelectedNodes();
     NodeGuiPtr nodegui = _imp->_gui->createNodeGUI(node, args);
-
     assert(nodegui);
+
     if (parentMultiInstance && nodegui) {
         nodegui->hideGui();
 
@@ -471,20 +477,14 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
 
-    ///It needs to be here because we rely on the _nodeMapping member
     bool isViewer = node->isEffectViewer() != 0;
     if (isViewer) {
         _imp->_gui->createViewerGui(node);
     }
 
-    ///must be done after the viewer gui has been created
-    if ( node->isRotoPaintingNode() ) {
-        _imp->_gui->createNewRotoInterface( nodegui.get() );
-    }
+    // Must be done after the viewer gui has been created
+    _imp->_gui->createNodeViewerInterface(nodegui);
 
-    if ( node->getEffectInstance()->isBuiltinTrackerNode() ) {
-        _imp->_gui->createNewTrackerInterface( nodegui.get() );
-    }
 
     NodeGroup* isGroup = node->isEffectGroup();
     if ( isGroup && isGroup->isSubGraphUserVisible() ) {

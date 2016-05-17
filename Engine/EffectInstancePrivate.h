@@ -194,6 +194,8 @@ struct EffectInstance::Implementation
     NodeMetadata metadatas;
     bool runningClipPreferences; //only used on main thread
 
+    // set during interact actions on main-thread
+    OverlaySupport* overlaysViewport;
 
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
 

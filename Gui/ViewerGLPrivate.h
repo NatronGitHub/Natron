@@ -144,9 +144,6 @@ struct ViewerGL::Implementation
     QFont* textFont;
     bool overlay; /*!< True if the user enabled overlay dispay*/
 
-    // supportsGLSL is accessed from several threads, but is set only once at startup
-    bool supportsOpenGL;
-    bool supportsGLSL; /*!< True if the user has a GLSL version supporting everything requested.*/
     bool updatingTexture;
     QColor clearColor;
     QMenu* menu;
@@ -196,7 +193,6 @@ struct ViewerGL::Implementation
     mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
     QSize sizeH;
     PenType pointerTypeOnPress;
-    bool subsequentMousePressIsTablet;
     double pressureOnPress, pressureOnRelease;
     int wheelDeltaSeekFrame; // accumulated wheel delta for frame seeking (crtl+wheel)
     bool isUpdatingTexture;

@@ -44,6 +44,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QMimeData>
 #include <QImage>
 #include <QPainter>
+#include <QUndoCommand>
 #include <QByteArray>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -70,7 +71,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Menu.h"
 #include "Gui/NodeGui.h"
 #include "Gui/NodeSettingsPanel.h"
-#include "Gui/RotoUndoCommand.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Utils.h"
 
@@ -90,6 +90,175 @@ CLANG_DIAG_ON(uninitialized)
 #endif
 
 NATRON_NAMESPACE_ENTER;
+
+
+
+class RemoveItemsUndoCommand
+: public QUndoCommand
+{
+    struct RemovedItem
+    {
+        QTreeWidgetItem* treeItem;
+        QTreeWidgetItem* parentTreeItem;
+        boost::shared_ptr<RotoLayer> parentLayer;
+        int indexInLayer;
+        boost::shared_ptr<RotoItem> item;
+
+        RemovedItem()
+        : treeItem(0)
+        , parentTreeItem(0)
+        , parentLayer()
+        , indexInLayer(-1)
+        , item()
+        {
+        }
+    };
+
+public:
+
+
+    RemoveItemsUndoCommand(RotoPanel* roto,
+                           const QList<QTreeWidgetItem*> & items);
+
+    virtual ~RemoveItemsUndoCommand();
+
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+
+private:
+
+    RotoPanel* _roto;
+    std::list<RemovedItem> _items;
+};
+
+class AddLayerUndoCommand
+: public QUndoCommand
+{
+public:
+
+
+    AddLayerUndoCommand(RotoPanel* roto);
+
+    virtual ~AddLayerUndoCommand();
+
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+
+private:
+
+    RotoPanel* _roto;
+    bool _firstRedoCalled;
+    boost::shared_ptr<RotoLayer> _parentLayer;
+    QTreeWidgetItem* _parentTreeItem;
+    QTreeWidgetItem* _treeItem;
+    boost::shared_ptr<RotoLayer> _layer;
+    int _indexInParentLayer;
+};
+
+
+class DragItemsUndoCommand
+: public QUndoCommand
+{
+public:
+
+    struct Item
+    {
+        boost::shared_ptr<DroppedTreeItem> dropped;
+        boost::shared_ptr<RotoLayer> oldParentLayer;
+        int indexInOldLayer;
+        QTreeWidgetItem* oldParentItem;
+    };
+
+
+    DragItemsUndoCommand(RotoPanel* roto,
+                         const std::list< boost::shared_ptr<DroppedTreeItem> > & items);
+
+    virtual ~DragItemsUndoCommand();
+
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+
+private:
+
+    RotoPanel* _roto;
+    std::list < Item > _items;
+};
+
+
+/**
+ * @class This class supports 2 behaviours:
+ * 1) The user pastes one item upon another. The target's shape and attributes are copied and the
+ * name is the source's name plus "- copy" at the end.
+ * 2) The user pastes several items upon a layer in which case the items are copied into that layer and
+ * the new items name is the same than the original appeneded with "- copy".
+ *
+ * Anything else will not do anything and you should not issue a command which will yield an unsupported behaviour
+ * otherwise you'll create an empty action in the undo/redo stack.
+ **/
+class PasteItemUndoCommand
+: public QUndoCommand
+{
+public:
+
+    enum PasteModeEnum
+    {
+        ePasteModeCopyToLayer = 0,
+        ePasteModeCopyToItem
+    };
+
+    struct PastedItem
+    {
+        QTreeWidgetItem* treeItem;
+        boost::shared_ptr<RotoItem> rotoItem;
+        boost::shared_ptr<RotoItem> itemCopy;
+    };
+
+
+    PasteItemUndoCommand(RotoPanel* roto,
+                         QTreeWidgetItem* target,
+                         QList<QTreeWidgetItem*> source);
+
+    virtual ~PasteItemUndoCommand();
+
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+
+private:
+
+    RotoPanel* _roto;
+    PasteModeEnum _mode;
+    QTreeWidgetItem* _targetTreeItem;
+    boost::shared_ptr<RotoItem> _targetItem;
+    boost::shared_ptr<RotoItem> _oldTargetItem;
+    std::list < PastedItem > _pastedItems;
+};
+
+
+class DuplicateItemUndoCommand
+: public QUndoCommand
+{
+public:
+
+    struct DuplicatedItem
+    {
+        QTreeWidgetItem* treeItem;
+        boost::shared_ptr<RotoItem> item;
+        boost::shared_ptr<RotoItem> duplicatedItem;
+    };
+
+    DuplicateItemUndoCommand(RotoPanel* roto,
+                             QTreeWidgetItem* items);
+
+    virtual ~DuplicateItemUndoCommand();
+
+    virtual void undo() OVERRIDE FINAL;
+    virtual void redo() OVERRIDE FINAL;
+    
+private:
+    
+    RotoPanel* _roto;
+    DuplicatedItem _item;
+};
 
 
 class TreeWidget
@@ -2338,6 +2507,476 @@ RotoPanel::onOperatorColMinimumSizeChanged(const QSize& size)
     _imp->tree->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 #endif
 }
+
+
+
+//////////////////////////////
+
+
+RemoveItemsUndoCommand::RemoveItemsUndoCommand(RotoPanel* roto,
+                                               const QList<QTreeWidgetItem*> & items)
+: QUndoCommand()
+, _roto(roto)
+, _items()
+{
+    for (QList<QTreeWidgetItem*>::const_iterator it = items.begin(); it != items.end(); ++it) {
+        QTreeWidgetItem* parentItem = (*it)->parent();
+        bool foundParent = false;
+        for (QList<QTreeWidgetItem*>::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
+            if ( (*it2) == parentItem ) {
+                foundParent = true;
+                break;
+            }
+        }
+        if (foundParent) {
+            //Not necessary to add this item to the list since the parent is going to remove it anyway
+            continue;
+        }
+        RemovedItem r;
+        r.treeItem = *it;
+        r.parentTreeItem = parentItem;
+        r.item = _roto->getRotoItemForTreeItem(r.treeItem);
+        assert(r.item);
+        if (r.parentTreeItem) {
+            r.parentLayer = boost::dynamic_pointer_cast<RotoLayer>( _roto->getRotoItemForTreeItem(r.parentTreeItem) );
+            assert(r.parentLayer);
+            r.indexInLayer = r.parentLayer->getChildIndex(r.item);
+        }
+        _items.push_back(r);
+    }
+}
+
+RemoveItemsUndoCommand::~RemoveItemsUndoCommand()
+{
+}
+
+void
+RemoveItemsUndoCommand::undo()
+{
+    for (std::list<RemovedItem>::iterator it = _items.begin(); it != _items.end(); ++it) {
+        if (it->parentTreeItem) {
+            it->parentTreeItem->addChild(it->treeItem);
+        }
+        _roto->getContext()->addItem(it->parentLayer, it->indexInLayer, it->item, RotoItem::eSelectionReasonSettingsPanel);
+
+        it->treeItem->setHidden(false);
+    }
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+void
+RemoveItemsUndoCommand::redo()
+{
+    if ( _items.empty() ) {
+        return;
+    }
+    _roto->clearAndSelectPreviousItem(_items.back().item);
+    for (std::list<RemovedItem>::iterator it = _items.begin(); it != _items.end(); ++it) {
+        _roto->getContext()->removeItem(it->item, RotoItem::eSelectionReasonSettingsPanel);
+        it->treeItem->setHidden(true);
+        if ( it->treeItem->isSelected() ) {
+            it->treeItem->setSelected(false);
+        }
+        if (it->parentTreeItem) {
+            it->parentTreeItem->removeChild(it->treeItem);
+        }
+    }
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Remove items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+/////////////////////////////
+
+
+AddLayerUndoCommand::AddLayerUndoCommand(RotoPanel* roto)
+: QUndoCommand()
+, _roto(roto)
+, _firstRedoCalled(false)
+, _parentLayer()
+, _parentTreeItem(0)
+, _treeItem(0)
+, _layer()
+, _indexInParentLayer(-1)
+{
+}
+
+AddLayerUndoCommand::~AddLayerUndoCommand()
+{
+}
+
+void
+AddLayerUndoCommand::undo()
+{
+    _treeItem->setHidden(true);
+    if (_parentTreeItem) {
+        _parentTreeItem->removeChild(_treeItem);
+    }
+    _roto->getContext()->removeItem(_layer, RotoItem::eSelectionReasonSettingsPanel);
+    _roto->clearSelection();
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+void
+AddLayerUndoCommand::redo()
+{
+    if (!_firstRedoCalled) {
+        _layer = _roto->getContext()->addLayer();
+        _parentLayer = _layer->getParentLayer();
+        _treeItem = _roto->getTreeItemForRotoItem(_layer);
+        _parentTreeItem = _treeItem->parent();
+        if (_parentLayer) {
+            _indexInParentLayer = _parentLayer->getChildIndex(_layer);
+        }
+    } else {
+        _roto->getContext()->addLayer(_layer);
+        _treeItem->setHidden(false);
+        if (_parentLayer) {
+            _roto->getContext()->addItem(_parentLayer, _indexInParentLayer, _layer, RotoItem::eSelectionReasonSettingsPanel);
+            _parentTreeItem->addChild(_treeItem);
+        }
+    }
+    _roto->clearSelection();
+    _roto->getContext()->select(_layer, RotoItem::eSelectionReasonOther);
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Add layer to %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+    _firstRedoCalled = true;
+}
+
+/////////////////////////////////
+
+DragItemsUndoCommand::DragItemsUndoCommand(RotoPanel* roto,
+                                           const std::list< boost::shared_ptr<DroppedTreeItem> > & items)
+: QUndoCommand()
+, _roto(roto)
+, _items()
+{
+    for (std::list< boost::shared_ptr<DroppedTreeItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
+        assert( (*it)->newParentLayer && (*it)->newParentItem && (*it)->insertIndex != -1 );
+        Item i;
+        i.dropped = *it;
+        i.oldParentItem = (*it)->dropped->parent();
+        if (!i.oldParentItem) {
+            continue;
+        }
+        i.oldParentLayer = (*it)->droppedRotoItem->getParentLayer();
+        if (i.oldParentLayer) {
+            i.indexInOldLayer = i.oldParentLayer->getChildIndex( (*it)->droppedRotoItem );
+        } else {
+            i.indexInOldLayer = -1;
+        }
+        _items.push_back(i);
+    }
+}
+
+DragItemsUndoCommand::~DragItemsUndoCommand()
+{
+}
+
+static void
+createCustomWidgetRecursively(RotoPanel* panel,
+                              const boost::shared_ptr<RotoItem>& item)
+{
+    const boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
+
+    if (isDrawable) {
+        panel->makeCustomWidgetsForItem(isDrawable);
+    }
+    const boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    if (isLayer) {
+        const std::list<boost::shared_ptr<RotoItem> > & children = isLayer->getItems();
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = children.begin(); it != children.end(); ++it) {
+            createCustomWidgetRecursively( panel, *it );
+        }
+    }
+}
+
+void
+DragItemsUndoCommand::undo()
+{
+    for (std::list<Item>::iterator it = _items.begin(); it != _items.end(); ++it) {
+        assert(it->dropped->newParentItem);
+        it->dropped->newParentItem->removeChild(it->dropped->dropped);
+        it->dropped->newParentLayer->removeItem(it->dropped->droppedRotoItem);
+        if (it->oldParentItem) {
+            it->oldParentItem->insertChild(it->indexInOldLayer, it->dropped->dropped);
+
+            createCustomWidgetRecursively( _roto, it->dropped->droppedRotoItem );
+
+            assert(it->oldParentLayer);
+            it->dropped->droppedRotoItem->setParentLayer(it->oldParentLayer);
+            _roto->getContext()->addItem(it->oldParentLayer, it->indexInOldLayer, it->dropped->droppedRotoItem, RotoItem::eSelectionReasonSettingsPanel);
+        } else {
+            it->dropped->droppedRotoItem->setParentLayer( boost::shared_ptr<RotoLayer>() );
+        }
+    }
+    _roto->getContext()->refreshRotoPaintTree();
+    _roto->getContext()->evaluateChange();
+
+    setText( QObject::tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+void
+DragItemsUndoCommand::redo()
+{
+    for (std::list<Item>::iterator it = _items.begin(); it != _items.end(); ++it) {
+        it->oldParentItem->removeChild(it->dropped->dropped);
+        if (it->oldParentLayer) {
+            it->oldParentLayer->removeItem(it->dropped->droppedRotoItem);
+        }
+        assert(it->dropped->newParentItem);
+        it->dropped->newParentItem->insertChild(it->dropped->insertIndex, it->dropped->dropped);
+
+        createCustomWidgetRecursively( _roto, it->dropped->droppedRotoItem );
+
+        it->dropped->newParentItem->setExpanded(true);
+        it->dropped->newParentLayer->insertItem(it->dropped->droppedRotoItem, it->dropped->insertIndex);
+    }
+    _roto->getContext()->refreshRotoPaintTree();
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Re-organize items of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+//////////////////////
+
+static std::string
+getItemCopyName(RotoPanel* roto,
+                const boost::shared_ptr<RotoItem>& originalItem)
+{
+    int i = 1;
+    std::string name = originalItem->getScriptName() + "_copy";
+    boost::shared_ptr<RotoItem> foundItemWithName = roto->getContext()->getItemByName(name);
+
+    while (foundItemWithName && foundItemWithName != originalItem) {
+        std::stringstream ss;
+        ss << originalItem->getScriptName()  << "_copy " << i;
+        name = ss.str();
+        foundItemWithName = roto->getContext()->getItemByName(name);
+        ++i;
+    }
+
+    return name;
+}
+
+static
+void
+setItemCopyNameRecursive(RotoPanel* panel,
+                         const boost::shared_ptr<RotoItem>& item)
+{
+    item->setScriptName( getItemCopyName(panel, item) );
+    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+
+    if (isLayer) {
+        for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = isLayer->getItems().begin(); it != isLayer->getItems().end(); ++it) {
+            setItemCopyNameRecursive( panel, *it );
+        }
+    }
+}
+
+PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
+                                           QTreeWidgetItem* target,
+                                           QList<QTreeWidgetItem*> source)
+: QUndoCommand()
+, _roto(roto)
+, _mode()
+, _targetTreeItem(target)
+, _targetItem()
+, _pastedItems()
+{
+    _targetItem = roto->getRotoItemForTreeItem(target);
+    assert(_targetItem);
+
+    for (int i  = 0; i < source.size(); ++i) {
+        PastedItem item;
+        item.treeItem = source[i];
+        item.rotoItem = roto->getRotoItemForTreeItem(item.treeItem);
+        assert(item.rotoItem);
+        _pastedItems.push_back(item);
+    }
+
+    boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(_targetItem);
+
+    if (isDrawable) {
+        _mode = ePasteModeCopyToItem;
+        assert(source.size() == 1 && _pastedItems.size() == 1);
+        assert( dynamic_cast<RotoDrawableItem*>( _pastedItems.front().rotoItem.get() ) );
+    } else {
+        _mode = ePasteModeCopyToLayer;
+        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
+            boost::shared_ptr<Bezier> srcBezier = boost::dynamic_pointer_cast<Bezier>(it->rotoItem);
+            boost::shared_ptr<RotoLayer> srcLayer = boost::dynamic_pointer_cast<RotoLayer>(it->rotoItem);
+            boost::shared_ptr<RotoStrokeItem> srcStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(it->rotoItem);
+            if (srcBezier) {
+                std::string name = getItemCopyName(roto, it->rotoItem);
+                boost::shared_ptr<Bezier> copy( new Bezier(srcBezier->getContext(), name,
+                                                           srcBezier->getParentLayer(), false) );
+                copy->clone( srcBezier.get() );
+                copy->createNodes();
+                //clone overwrittes the script name, don't forget to set it back
+                copy->setScriptName(name);
+                copy->setLabel(name);
+                it->itemCopy = copy;
+            } else if (srcStroke) {
+                std::string name = getItemCopyName(roto, it->rotoItem);
+                boost::shared_ptr<RotoStrokeItem> copy( new RotoStrokeItem( srcStroke->getBrushType(),
+                                                                           srcStroke->getContext(),
+                                                                           name,
+                                                                           boost::shared_ptr<RotoLayer>() ) );
+                copy->createNodes();
+                if ( srcStroke->getParentLayer() ) {
+                    srcStroke->getParentLayer()->insertItem(copy, 0);
+                }
+                copy->clone( srcStroke.get() );
+                copy->createNodes();
+                //clone overwrittes the script name, don't forget to set it back
+                copy->setScriptName(name);
+                copy->setLabel(name);
+                it->itemCopy = copy;
+            } else {
+                assert(srcLayer);
+                boost::shared_ptr<RotoLayer> copy( new RotoLayer( srcLayer->getContext(),
+                                                                 "",
+                                                                 boost::shared_ptr<RotoLayer>() ) );
+                copy->clone( srcLayer.get() );
+                setItemCopyNameRecursive( roto, copy );
+                it->itemCopy = copy;
+            }
+        }
+    }
+}
+
+PasteItemUndoCommand::~PasteItemUndoCommand()
+{
+}
+
+void
+PasteItemUndoCommand::undo()
+{
+    if (_mode == ePasteModeCopyToItem) {
+        assert(_oldTargetItem);
+        _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
+        _targetItem->clone( _oldTargetItem.get() );
+        _roto->updateItemGui(_targetTreeItem);
+        _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
+    } else {
+        // check that it is a RotoLayer
+        assert( dynamic_cast<RotoLayer*>( _targetItem.get() ) );
+        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
+            _roto->getContext()->removeItem(it->itemCopy, RotoItem::eSelectionReasonOther);
+        }
+    }
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+void
+PasteItemUndoCommand::redo()
+{
+    if (_mode == ePasteModeCopyToItem) {
+        Bezier* isBezier = dynamic_cast<Bezier*>( _targetItem.get() );
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( _targetItem.get() );
+        if (isBezier) {
+            boost::shared_ptr<Bezier> oldBezier( new Bezier(isBezier->getContext(), isBezier->getScriptName(), isBezier->getParentLayer(), false) );
+            oldBezier->createNodes();
+            _oldTargetItem = oldBezier;
+        } else if (isStroke) {
+            boost::shared_ptr<RotoStrokeItem> oldStroke( new RotoStrokeItem( isStroke->getBrushType(), isStroke->getContext(), isStroke->getScriptName(), boost::shared_ptr<RotoLayer>() ) );
+            oldStroke->createNodes();
+            _oldTargetItem = oldStroke;
+            if ( isStroke->getParentLayer() ) {
+                //isStroke->getParentLayer()->insertItem(_oldTargetItem, 0);
+            }
+        }
+        _oldTargetItem->clone( _targetItem.get() );
+        assert(_pastedItems.size() == 1);
+        PastedItem & front = _pastedItems.front();
+        ///If we don't deselct the updateItemGUI call will not function correctly because the knobs GUI
+        ///have not been refreshed and the selected item is linked to those dirty knobs
+        _roto->getContext()->deselect(_targetItem, RotoItem::eSelectionReasonOther);
+        _targetItem->clone( front.rotoItem.get() );
+        _targetItem->setScriptName( _oldTargetItem->getScriptName() );
+        _roto->updateItemGui(_targetTreeItem);
+        _roto->getContext()->select(_targetItem, RotoItem::eSelectionReasonOther);
+    } else {
+        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(_targetItem);
+        assert(isLayer);
+        for (std::list<PastedItem>::iterator it = _pastedItems.begin(); it != _pastedItems.end(); ++it) {
+            assert(it->itemCopy);
+            //it->itemCopy->setParentLayer(isLayer);
+            _roto->getContext()->addItem(isLayer, 0, it->itemCopy, RotoItem::eSelectionReasonOther);
+        }
+    }
+
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Paste item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+//////////////////
+
+
+DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
+                                                   QTreeWidgetItem* items)
+: QUndoCommand()
+, _roto(roto)
+, _item()
+{
+    _item.treeItem = items;
+    _item.item = _roto->getRotoItemForTreeItem(_item.treeItem);
+    assert( _item.item->getParentLayer() );
+    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>( _item.item );
+    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( _item.item);
+    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>( _item.item);
+    if (isBezier) {
+        std::string name = getItemCopyName(roto, isBezier);
+        boost::shared_ptr<Bezier> bezierCopy( new Bezier(isBezier->getContext(), name, isBezier->getParentLayer(), false) );
+        bezierCopy->createNodes();
+        _item.duplicatedItem = bezierCopy;
+        _item.duplicatedItem->clone( isBezier.get() );
+        //clone has overwritten the name
+        _item.duplicatedItem->setScriptName(name);
+        _item.duplicatedItem->setLabel(name);
+    } else if (isStroke) {
+        std::string name = getItemCopyName(roto, isStroke);
+        boost::shared_ptr<RotoStrokeItem> strokeCopy( new RotoStrokeItem( isStroke->getBrushType(), isStroke->getContext(), name, boost::shared_ptr<RotoLayer>() ) );
+        strokeCopy->createNodes();
+        _item.duplicatedItem = strokeCopy;
+        if ( isStroke->getParentLayer() ) {
+            isStroke->getParentLayer()->insertItem(_item.duplicatedItem, 0);
+        }
+        _item.duplicatedItem->clone( isStroke.get() );
+        //clone has overwritten the name
+        _item.duplicatedItem->setScriptName(name);
+        _item.duplicatedItem->setLabel(name);
+    } else {
+        assert(isLayer);
+        _item.duplicatedItem.reset( new RotoLayer(*isLayer) );
+        setItemCopyNameRecursive( roto, _item.duplicatedItem );
+    }
+}
+
+DuplicateItemUndoCommand::~DuplicateItemUndoCommand()
+{
+}
+
+void
+DuplicateItemUndoCommand::undo()
+{
+    _roto->getContext()->removeItem(_item.duplicatedItem, RotoItem::eSelectionReasonOther);
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
+void
+DuplicateItemUndoCommand::redo()
+{
+    _roto->getContext()->addItem(_item.item->getParentLayer(),
+                                 0, _item.duplicatedItem, RotoItem::eSelectionReasonOther);
+
+    _roto->getContext()->evaluateChange();
+    setText( QObject::tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

@@ -249,10 +249,12 @@ struct KnobHelperPrivate
     int itemSpacing;
 
     // If this knob is supposed to be visible in the Viewer UI, this is the index at which it should be positioned
-    int inViewerContextIndex;
     int inViewerContextAddSeparator;
     int inViewerContextItemSpacing;
     int inViewerContextAddNewLine;
+    std::string inViewerContextLabel;
+    bool inViewerContextHasShortcut;
+
 
     boost::weak_ptr<KnobI> parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
@@ -335,10 +337,11 @@ struct KnobHelperPrivate
         , newLine(true)
         , addSeparator(false)
         , itemSpacing(0)
-        , inViewerContextIndex(-1)
         , inViewerContextAddSeparator(false)
         , inViewerContextItemSpacing(1)
         , inViewerContextAddNewLine(false)
+        , inViewerContextLabel()
+        , inViewerContextHasShortcut(false)
         , parentKnob()
         , stateMutex()
         , IsSecret(false)
@@ -1724,16 +1727,31 @@ KnobHelper::setSpacingBetweenItems(int spacing)
     _imp->itemSpacing = spacing;
 }
 
-void
-KnobHelper::setInViewerContextIndex(int index)
+
+std::string
+KnobHelper::getInViewerContextLabel() const
 {
-    _imp->inViewerContextIndex = index;
+    QMutexLocker k(&_imp->labelMutex);
+    return _imp->inViewerContextLabel;
 }
 
-int
-KnobHelper::getInViewerContextIndex() const
+void
+KnobHelper::setInViewerContextLabel(const std::string& label)
 {
-    return _imp->inViewerContextIndex;
+    QMutexLocker k(&_imp->labelMutex);
+    _imp->inViewerContextLabel = label;
+}
+
+void
+KnobHelper::setInViewerContextCanHaveShortcut(bool haveShortcut)
+{
+    _imp->inViewerContextHasShortcut = haveShortcut;
+}
+
+bool
+KnobHelper::getInViewerContextHasShortcut() const
+{
+    return _imp->inViewerContextHasShortcut;
 }
 
 void
@@ -3158,6 +3176,32 @@ KnobHelper::getBackgroundColour(double &r,
     }
 }
 
+RectD
+KnobHelper::getViewportRect() const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        return hasGui->getViewportRect();
+    } else {
+        return RectD();
+    }
+}
+
+void
+KnobHelper::getCursorPosition(double& x, double& y) const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        return hasGui->getCursorPosition(x, y);
+    } else {
+        x = 0;
+        y = 0;
+    }
+
+}
+
 void
 KnobHelper::saveOpenGLContext()
 {
@@ -4383,7 +4427,7 @@ struct KnobHolder::KnobHolderPrivate
     bool knobsInitialized;
     bool isInitializingKnobs;
     bool isSlave;
-
+    std::vector<KnobWPtr> knobsWithViewerUI;
 
     ///Count how many times an overlay needs to be redrawn for the instanceChanged/penMotion/penDown etc... actions
     ///to just redraw it once when the recursion level is back to 0
@@ -4459,17 +4503,25 @@ KnobHolder::~KnobHolder()
     }
 }
 
-bool
-KnobHolder::hasKnobWithViewerInContextUI() const
+void
+KnobHolder::addKnobToViewerUI(const KnobPtr& knob)
 {
-    QMutexLocker k(&_imp->knobsMutex);
-    for (KnobsVec::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        int index = (*it)->getInViewerContextIndex();
-        if (index != -1) {
-            return true;
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->knobsWithViewerUI.push_back(knob);
+}
+
+KnobsVec
+KnobHolder::getViewerUIKnobs() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    KnobsVec ret;
+    for (std::vector<KnobWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
+        KnobPtr k = it->lock();
+        if (k) {
+            ret.push_back(k);
         }
     }
-    return false;
+    return ret;
 }
 
 void
@@ -5689,12 +5741,10 @@ KnobHolder::restoreDefaultValues()
 
     for (U32 i = 0; i < _imp->knobs.size(); ++i) {
         KnobButton* isBtn = dynamic_cast<KnobButton*>( _imp->knobs[i].get() );
-        KnobPage* isPage = dynamic_cast<KnobPage*>( _imp->knobs[i].get() );
-        KnobGroup* isGroup = dynamic_cast<KnobGroup*>( _imp->knobs[i].get() );
         KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( _imp->knobs[i].get() );
 
         ///Don't restore buttons and the node label
-        if ( !isBtn && !isPage && !isGroup && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
+        if ( (!isBtn || isBtn->getIsCheckable()) && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
             for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
                 _imp->knobs[i]->resetToDefaultValue(d);
             }
