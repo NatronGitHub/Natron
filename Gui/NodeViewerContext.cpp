@@ -157,12 +157,13 @@ NodeViewerContext::createGui()
 
 
     if (!knobsOrdered.empty()) {
-        _imp->createKnobs(knobsOrdered);
         _imp->mainContainer = new QWidget(_imp->viewer);
         _imp->mainContainerLayout = new QVBoxLayout(_imp->mainContainer);
         _imp->mainContainerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->mainContainerLayout->setSpacing(0);
         setContainerWidget(_imp->mainContainer);
+        _imp->createKnobs(knobsOrdered);
+
     }
 
     const KnobsVec& allKnobs = node->getNode()->getKnobs();

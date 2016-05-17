@@ -688,11 +688,11 @@ KnobGuiValue::onDisplayMinMaxChanged(const double mini,
             double min, max;
             if (doubleKnob) {
                 max = valueAccordingToType( false, index, doubleKnob->getMaximum(index) );
-                min = valueAccordingToType( false, index, doubleKnob->getMaximum(index) );
+                min = valueAccordingToType( false, index, doubleKnob->getMinimum(index) );
             } else {
                 assert(intKnob);
                 max = valueAccordingToType( false, index, intKnob->getMaximum(index) );
-                min = valueAccordingToType( false, index, intKnob->getMaximum(index) );
+                min = valueAccordingToType( false, index, intKnob->getMinimum(index) );
             }
             if ( (max - min) < SLIDER_MAX_RANGE ) {
                 sliderMin = min;

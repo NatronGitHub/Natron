@@ -43,22 +43,6 @@
 inline void
 glError() {}
 
-#ifdef GL_TRACE_CALLS
-// logs every gl call to the console
-void pre_gl_call(const char *name, void *funcptr, int len_args, ...) {
-    printf("Calling: %s (%d arguments)\n", name, len_args);
-}
-// logs every gl call to the console
-void post_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args*/, ...) {
-
-    GLenum _glerror_ = glGetError();
-    if (_glerror_ != GL_NO_ERROR) {
-        std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
-        glError();
-    }
-
-}
-#endif
 
 #define glCheckError()                                                  \
     {                                                                   \

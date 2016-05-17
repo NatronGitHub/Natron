@@ -524,7 +524,24 @@ static void glfw_error_callback(int error, const char* description)
 {
     qDebug() << "GLFW ERROR: " << __FILE__ << __LINE__ <<  error << description;
 }
+// logs every gl call to the console
+static void pre_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args*/, ...) {
+#ifdef GL_TRACE_CALLS
+    printf("Calling: %s (%d arguments)\n", name, len_args);
 #endif
+}
+// logs every gl call to the console
+static void post_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args*/, ...) {
+#ifdef GL_TRACE_CALLS
+    GLenum _glerror_ = glGetError();
+    if (_glerror_ != GL_NO_ERROR) {
+        std::cout << "GL_ERROR :" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl;
+        glError();
+    }
+#endif
+}
+
+#endif // debug
 
 void
 AppManagerPrivate::initGlfw()
@@ -547,7 +564,7 @@ AppManagerPrivate::initGlfw()
     }
 
 
-#ifdef GL_TRACE_CALLS
+#ifdef DEBUG
     glad_set_pre_callback(pre_gl_call);
     glad_set_post_callback(post_gl_call);
 #endif
