@@ -529,7 +529,6 @@ public:
 
     bool hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError = 0) const;
 
-    QString getGlfwVersion() const;
 
     QString getOpenGLVersion() const;
 
@@ -540,6 +539,10 @@ public:
     QString getCairoVersion() const;
 
     QString getPySideVersion() const;
+
+    void initializeOpenGLFunctionsOnce();
+
+    virtual void updateAboutWindowLibrariesVersion() {}
 
 public Q_SLOTS:
 

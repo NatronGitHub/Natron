@@ -44,6 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/EffectInstance.h" // PLUGINID_OFX_*
 #include "Engine/PluginActionShortcut.h"
 #include "Gui/QtEnumConvert.h"
+#include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiDefines.h"
 #include "Gui/KnobGuiFactory.h"
@@ -1115,6 +1116,21 @@ GuiApplicationManager::setCurrentLogicalDPI(double dpiX,
 {
     _imp->dpiX = dpiX;
     _imp->dpiY = dpiY;
+}
+
+void
+GuiApplicationManager::updateAboutWindowLibrariesVersion()
+{
+    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+    for ( std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
+        if (isGuiInstance) {
+            Gui* gui = isGuiInstance->getGui();
+            if (gui) {
+                gui->updateAboutWindowLibrariesVersion();
+            }
+        }
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

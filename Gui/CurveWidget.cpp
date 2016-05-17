@@ -153,7 +153,7 @@ CurveWidget::initializeGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    appPTR->initializeOpenGLFunctionsOnce();
 }
 
 void

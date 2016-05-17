@@ -74,6 +74,9 @@ public:
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+
+    virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     void setCurrentTool(const QString& toolID, bool notifyNode);
 
     void notifyGuiClosing();

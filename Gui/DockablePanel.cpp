@@ -443,6 +443,12 @@ DockablePanel::~DockablePanel()
     }
 }
 
+int
+DockablePanel::getItemsSpacingOnSameLine() const
+{
+    return 15;
+}
+
 void
 DockablePanel::onPageLabelChangedInternally()
 {

@@ -538,6 +538,8 @@ public:
 
     static void setQMessageBoxAppropriateFont(QMessageBox* widget);
 
+    void updateAboutWindowLibrariesVersion();
+
 protected:
     // Reimplemented Protected Functions
 

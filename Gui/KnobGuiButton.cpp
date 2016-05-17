@@ -97,8 +97,8 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobButton> knob = _knob.lock();
     QString label = QString::fromUtf8( knob->getLabel().c_str() );
-    QString onIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
-    QString offIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
+    QString onIconFilePath = QString::fromUtf8( knob->getIconLabel(true).c_str() );
+    QString offIconFilePath = QString::fromUtf8( knob->getIconLabel(false).c_str() );
 
 
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {

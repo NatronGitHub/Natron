@@ -189,6 +189,14 @@ Gui::onPropertiesScrolled()
 }
 
 void
+Gui::updateAboutWindowLibrariesVersion()
+{
+    if (_imp->_aboutWindow) {
+        _imp->_aboutWindow->updateLibrariesVersions();
+    }
+}
+
+void
 Gui::createGroupGui(const NodePtr & group,
                     CreateNodeReason reason)
 {

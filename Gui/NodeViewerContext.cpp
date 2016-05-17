@@ -229,6 +229,12 @@ NodeViewerContext::onNodeSettingsPanelClosed(bool closed)
 
 }
 
+int
+NodeViewerContext::getItemsSpacingOnSameLine() const
+{
+    return 0;
+}
+
 void
 NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 {
@@ -262,13 +268,16 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
 
         bool makeNewLine = (*it)->getInViewerContextNewLineActivated();
 
-        QWidget* labelContainer = 0;
         KnobClickableLabel* label = 0;
-
-        ret->createGUI(lastRowContainer, labelContainer, label, 0 /*warningIndicator*/, lastRowLayout, makeNewLine, knobsOnSameLine);
+        std::string inViewerLabel = (*it)->getInViewerContextLabel();
+        if (!inViewerLabel.empty()) {
+            label = new KnobClickableLabel(QString::fromUtf8(inViewerLabel.c_str()), ret, mainContainer);
+        }
+        ret->createGUI(lastRowContainer, 0, label, 0 /*warningIndicator*/, lastRowLayout, makeNewLine, knobsOnSameLine);
 
         if (makeNewLine) {
             knobsOnSameLine.clear();
+            lastRowLayout->addStretch();
             lastRowContainer = new QWidget(mainContainer);
             lastRowLayout = new QHBoxLayout(lastRowContainer);
             lastRowLayout->setContentsMargins(TO_DPIX(3), TO_DPIY(2), 0, 0);
@@ -291,6 +300,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             ++next;
         }
     }
+    lastRowLayout->addStretch();
 } // NodeViewerContextPrivate::createKnobs
 
 void

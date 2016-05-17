@@ -274,7 +274,7 @@ unix {
      CONFIG += link_pkgconfig
      expat:     PKGCONFIG += expat
 
-     # GLFW will require a link to X11 on linux and OpenGL framework on OS X
+     # Natron will require a link to X11 on linux and OpenGL framework on OS X
      linux-* {
           LIBS += -lGL -lX11 -lGLU
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
@@ -285,7 +285,7 @@ unix {
          LIBS += -ldl
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
-         glfw:      LIBS += -framework OpenGL
+         LIBS += -framework OpenGL
          cairo:     PKGCONFIG += cairo
      }
 

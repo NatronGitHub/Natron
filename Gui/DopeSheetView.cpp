@@ -3091,6 +3091,7 @@ void
 DopeSheetView::initializeGL()
 {
     running_in_main_thread();
+    appPTR->initializeOpenGLFunctionsOnce();
     _imp->generateKeyframeTextures();
 }
 

@@ -201,7 +201,10 @@ KnobGui::createGUI(QWidget* fieldContainer,
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
         //layout->addStretch();
-        layout->addSpacing( TO_DPIX(15) );
+        int spacing = _imp->container->getItemsSpacingOnSameLine();
+        if (spacing > 0) {
+            layout->addSpacing( TO_DPIX(spacing) );
+        }
         if (label) {
             layout->addWidget(_imp->warningIndicator);
             layout->addWidget(label);

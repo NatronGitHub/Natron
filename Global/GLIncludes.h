@@ -21,9 +21,6 @@
 
 #include "Global/glad_include.h"
 
-// On OSX GLFW should be compiled with -DGLFW_USE_CHDIR=off -DGLFW_USE_MENUBAR=off -DGLFW_USE_RETINA=on
-#include <GLFW/glfw3.h>
-
 /* this is where we can safely include GLU */
 #  if defined(__APPLE__) && defined(__MACH__)
 #    include <OpenGL/glu.h>

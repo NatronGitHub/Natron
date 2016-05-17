@@ -339,6 +339,7 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobBool> multiStroke = AppManager::createKnob<KnobBool>(this, tr(kRotoUIParamMultiStrokeEnabledLabel));
     multiStroke->setName(kRotoUIParamMultiStrokeEnabled);
+    multiStroke->setInViewerContextLabel(tr(kRotoUIParamMultiStrokeEnabledLabel));
     multiStroke->setHintToolTip(tr(kRotoUIParamMultiStrokeEnabledHint));
     multiStroke->setEvaluateOnChange(false);
     multiStroke->setDefaultValue(true);
@@ -374,6 +375,7 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobDouble> opacityKnob = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamOpacityLabel));
     opacityKnob->setName(kRotoUIParamOpacity);
+    opacityKnob->setInViewerContextLabel(tr(kRotoUIParamOpacityLabel));
     opacityKnob->setHintToolTip(tr(kRotoUIParamOpacityHint));
     opacityKnob->setEvaluateOnChange(false);
     opacityKnob->setSecretByDefault(true);
@@ -399,6 +401,7 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobDouble> sizeKnob = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamSizeLabel));
     sizeKnob->setName(kRotoUIParamSize);
+    sizeKnob->setInViewerContextLabel(tr(kRotoUIParamSizeLabel));
     sizeKnob->setHintToolTip(tr(kRotoUIParamSizeHint));
     sizeKnob->setEvaluateOnChange(false);
     sizeKnob->setSecretByDefault(true);
@@ -424,6 +427,7 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobDouble> hardnessKnob = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamHardnessLabel));
     hardnessKnob->setName(kRotoUIParamHardness);
+    hardnessKnob->setInViewerContextLabel(tr(kRotoUIParamHardnessLabel));
     hardnessKnob->setHintToolTip(tr(kRotoUIParamHardnessHint));
     hardnessKnob->setEvaluateOnChange(false);
     hardnessKnob->setSecretByDefault(true);
@@ -449,6 +453,7 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobButton> buildUp = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamBuildUpLabel));
     buildUp->setName(kRotoUIParamBuildUp);
+    buildUp->setInViewerContextLabel(tr(kRotoUIParamBuildUpLabel));
     buildUp->setHintToolTip(tr(kRotoUIParamBuildUpHint));
     buildUp->setEvaluateOnChange(false);
     buildUp->setCheckable(true);
@@ -474,6 +479,7 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobInt> timeOffsetSb = AppManager::createKnob<KnobInt>(this, tr(kRotoUIParamTimeOffsetLabel));
     timeOffsetSb->setName(kRotoUIParamTimeOffset);
+    timeOffsetSb->setInViewerContextLabel(tr(kRotoUIParamTimeOffsetLabel));
     timeOffsetSb->setHintToolTip(tr(kRotoUIParamTimeOffsetHint));
     timeOffsetSb->setEvaluateOnChange(false);
     timeOffsetSb->setSecretByDefault(true);
@@ -542,24 +548,24 @@ RotoPaint::initializeKnobs()
 
     // RotoPaint
     addKnobToViewerUI(multiStroke);
-    multiStroke->setInViewerContextItemSpacing(10);
+    multiStroke->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(colorWheel);
-    colorWheel->setInViewerContextItemSpacing(5);
+    colorWheel->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(blendingModes);
-    blendingModes->setInViewerContextItemSpacing(5);
+    blendingModes->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(opacityKnob);
     addKnobToViewerUI(pressureOpacity);
-    pressureOpacity->setInViewerContextItemSpacing(5);
+    pressureOpacity->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(sizeKnob);
     addKnobToViewerUI(pressureSize);
-    pressureSize->setInViewerContextItemSpacing(5);
+    pressureSize->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(hardnessKnob);
     addKnobToViewerUI(pressureHardness);
-    pressureHardness->setInViewerContextItemSpacing(5);
+    pressureHardness->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(buildUp);
-    buildUp->setInViewerContextItemSpacing(5);
+    buildUp->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(effectStrength);
-    effectStrength->setInViewerContextItemSpacing(5);
+    effectStrength->setInViewerContextItemSpacing(3);
     addKnobToViewerUI(timeOffsetSb);
     addKnobToViewerUI(timeOffsetMode);
     addKnobToViewerUI(sourceType);

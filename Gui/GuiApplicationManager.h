@@ -217,6 +217,8 @@ public:
         return y * getLogicalDPIYRATIO();
     }
 
+    virtual void updateAboutWindowLibrariesVersion() OVERRIDE FINAL;
+
 public Q_SLOTS:
 
     void onFontconfigCacheUpdateFinished();

@@ -239,6 +239,7 @@ TimeLineGui::sizeHint() const
 void
 TimeLineGui::initializeGL()
 {
+    appPTR->initializeOpenGLFunctionsOnce();
 }
 
 void

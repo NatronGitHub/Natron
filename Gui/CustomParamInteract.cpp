@@ -33,6 +33,7 @@
 
 #include "Gui/KnobGui.h"
 #include "Gui/QtEnumConvert.h"
+#include "Gui/GuiApplicationManager.h"
 
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Knob.h"
@@ -126,6 +127,7 @@ CustomParamInteract::initializeGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    appPTR->initializeOpenGLFunctionsOnce();
 }
 
 void

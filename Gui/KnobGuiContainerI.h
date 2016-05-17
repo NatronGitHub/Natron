@@ -54,6 +54,8 @@ public:
         return _containerWidget;
     }
 
+    virtual int getItemsSpacingOnSameLine() const = 0;
+
 protected:
 
     void setContainerWidget(QWidget* widget)

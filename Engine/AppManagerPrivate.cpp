@@ -113,6 +113,9 @@ AppManagerPrivate::AppManagerPrivate()
     , natronPythonGIL(QMutex::Recursive)
     , pluginsUseInputImageCopyToRender(false)
     , hasRequiredOpenGLVersionAndExtensions(true)
+    , missingOpenglError()
+    , hasInitializedOpenGLFunctions(false)
+    , openGLFunctionsMutex()
 {
     setMaxCacheFiles();
 
@@ -520,10 +523,6 @@ AppManagerPrivate::setMaxCacheFiles()
 
 
 #ifdef DEBUG
-static void glfw_error_callback(int error, const char* description)
-{
-    qDebug() << "GLFW ERROR: " << __FILE__ << __LINE__ <<  error << description;
-}
 // logs every gl call to the console
 static void pre_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args*/, ...) {
 #ifdef GL_TRACE_CALLS
@@ -544,24 +543,15 @@ static void post_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args
 #endif // debug
 
 void
-AppManagerPrivate::initGlfw()
+AppManagerPrivate::initGl()
 {
-
+    // Private should not lock
+    assert(!openGLFunctionsMutex.tryLock());
 
     assert(QThread::currentThread() == qApp->thread());
-    
-#ifdef DEBUG
-    // May be called before glfwInit()
-    glfwSetErrorCallback(glfw_error_callback);
-#endif
 
+    hasInitializedOpenGLFunctions = true;
     hasRequiredOpenGLVersionAndExtensions = true;
-
-    if (glfwInit() != GL_TRUE) {
-        hasRequiredOpenGLVersionAndExtensions = false;
-        missingOpenglError = tr("Failed to initialize OpenGL requirements of the GLFW library on your platform.");
-        return;
-    }
 
 
 #ifdef DEBUG
@@ -569,20 +559,8 @@ AppManagerPrivate::initGlfw()
     glad_set_post_callback(post_gl_call);
 #endif
 
-    // gladLoadGLLoader needs a window, so create a hidden one
 
-    glfwWindowHint(GLFW_VISIBLE, GL_FALSE);
-    GLFWwindow* offscreen_window = glfwCreateWindow(200, 200  , "", NULL, NULL);
-    if (!offscreen_window) {
-        hasRequiredOpenGLVersionAndExtensions = false;
-        missingOpenglError = tr("Failed to create GLFW window.");
-        return;
-    }
-
-    glfwMakeContextCurrent(offscreen_window);
-
-
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
+    if (!gladLoadGL()) {
         missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
         missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object,GL_ARB_framebuffer_object,GL_ARB_texture_float");
         missingOpenglError += QLatin1String("\n");
@@ -595,11 +573,6 @@ AppManagerPrivate::initGlfw()
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }
 
-void
-AppManagerPrivate::teardownGlfw()
-{
-    // Terminates GLFW, clearing any resources allocated by GLFW.
-    glfwTerminate();
-}
+
 
 NATRON_NAMESPACE_EXIT;

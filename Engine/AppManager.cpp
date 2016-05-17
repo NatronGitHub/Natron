@@ -101,11 +101,6 @@
 
 #include "sbkversion.h" // shiboken/pyside version
 
-#define GLFW_VERSION_STRING NATRON_VERSION_STRINGIZE( \
-GLFW_VERSION_MAJOR, \
-GLFW_VERSION_MINOR, \
-GLFW_VERSION_REVISION)
-
 #if QT_VERSION < 0x050000
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 #endif
@@ -384,8 +379,6 @@ AppManager::~AppManager()
     _imp->_viewerCache.reset();
     _imp->_diskCache.reset();
 
-    // free OpenGL resources of glfw
-    _imp->teardownGlfw();
     tearDownPython();
 
     _instance = 0;
@@ -556,9 +549,6 @@ AppManager::loadInternal(const CLArgs& cl)
 # endif
 
 
-    // Initialize OpenGL
-    _imp->initGlfw();
-
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
     ///Call restore after initializing knobs
@@ -590,6 +580,16 @@ bool
 AppManager::isCopyInputImageForPluginRenderEnabled() const
 {
     return _imp->pluginsUseInputImageCopyToRender;
+}
+
+void
+AppManager::initializeOpenGLFunctionsOnce()
+{
+    QMutexLocker k(&_imp->openGLFunctionsMutex);
+    if (!_imp->hasInitializedOpenGLFunctions) {
+        _imp->initGl();
+        updateAboutWindowLibrariesVersion();
+    }
 }
 
 bool
@@ -3006,13 +3006,6 @@ AppManager::hasThreadsRendering() const
 }
 
 
-
-QString
-AppManager::getGlfwVersion() const
-{
-    return QString::fromUtf8(GLFW_VERSION_STRING) + QString::fromUtf8(" / ") + QString::fromUtf8( glfwGetVersionString() );
-}
-
 bool
 AppManager::hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError) const
 {
@@ -3025,6 +3018,9 @@ AppManager::hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError) 
 QString
 AppManager::getOpenGLVersion() const
 {
+    if (!glad_glGetString) {
+        return QString();
+    }
     QString glslVer = QString::fromUtf8((const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
     QString openglVer = QString::fromUtf8((const char*)glGetString(GL_VERSION));
     return openglVer + QString::fromUtf8(", GLSL ") + glslVer;

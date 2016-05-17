@@ -833,7 +833,7 @@ public:
      * @brief Set the label of the knob on the viewer
      **/
     virtual std::string getInViewerContextLabel() const = 0;
-    virtual void setInViewerContextLabel(const std::string& label) = 0;
+    virtual void setInViewerContextLabel(const QString& label) = 0;
 
     /**
      * @brief Determines whether this knob can be assigned a shortcut or not via the shortcut editor.
@@ -1424,7 +1424,7 @@ public:
     virtual bool isSeparatorActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
     virtual std::string getInViewerContextLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setInViewerContextLabel(const std::string& label) OVERRIDE FINAL;
+    virtual void setInViewerContextLabel(const QString& label) OVERRIDE FINAL;
     virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;
     virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;

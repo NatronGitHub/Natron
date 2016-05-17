@@ -337,6 +337,7 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(resetTrack);
 
     QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
+    
 }
 
 void

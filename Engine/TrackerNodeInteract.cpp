@@ -91,7 +91,6 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 , lastTrackRangeLastFrame(INT_MIN)
 , lastTrackRangeStep(INT_MIN)
 {
-    glGenBuffers(1, &pboID);
     selectedMarkerScale.x = selectedMarkerScale.y = 1.;
     
 }
@@ -99,7 +98,9 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 
 TrackerNodeInteract::~TrackerNodeInteract()
 {
-    glDeleteBuffers(1, &pboID);
+    if (pboID != 0) {
+        glDeleteBuffers(1, &pboID);
+    }
 }
 
 void
@@ -1268,6 +1269,10 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Ima
 
     GLint currentBoundPBO = 0;
     glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
+
+    if (pboID == 0) {
+        glGenBuffers(1, &pboID);
+    }
 
     glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboID );
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);

@@ -342,13 +342,11 @@ AboutWindow::updateLibrariesVersions()
     QString libsText = QString::fromUtf8("<p> Python %1 </p>"
                                          "<p> Qt %2 </p>"
                                          "<p> Boost %3 </p>"
-                                         "<p> GLFW %4 </p>"
                                          "<p> OpenGL %5 </p>"
                                          "<p> Cairo %6 </p>")
                        .arg( QString::fromUtf8(PY_VERSION) )
                        .arg( appPTR->getQtVersion() )
                        .arg( appPTR->getBoostVersion() )
-                       .arg( appPTR->getGlfwVersion() )
                        .arg( appPTR->getOpenGLVersion() )
                        .arg( appPTR->getCairoVersion() );
 
