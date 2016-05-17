@@ -102,13 +102,13 @@ using std::make_pair;
    - the first one is used ONLY when setting the *DEFAULT* value
    - the second is used ONLY by the GUI
  */
-void
-KnobGuiDouble::valueAccordingToType(bool normalize,
-                                    int dimension,
-                                    double* value)
+double
+KnobGuiDouble::valueAccordingToType(const bool normalize,
+                                    const int dimension,
+                                    const double value)
 {
     if ( (dimension != 0) && (dimension != 1) ) {
-        return;
+        return value;
     }
 
     KnobDouble::ValueIsNormalizedEnum state = _knob.lock()->getValueIsNormalized(dimension);
@@ -118,12 +118,13 @@ KnobGuiDouble::valueAccordingToType(bool normalize,
         time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
         if (state != KnobDouble::eValueIsNormalizedNone) {
             if (normalize) {
-                knob->normalize(dimension, time, value);
+                return knob->normalize(dimension, time, value);
             } else {
-                knob->denormalize(dimension, time, value);
+                return knob->denormalize(dimension, time, value);
             }
         }
     }
+    return value;
 }
 
 bool
@@ -224,15 +225,12 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         enableRightClickMenu(box, i);
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
-        double min = mins[i];
-        double max = maxs[i];
-        valueAccordingToType(false, i, &min);
-        valueAccordingToType(false, i, &max);
+        double min = valueAccordingToType(false, i, mins[i]);
+        double max = valueAccordingToType(false, i, maxs[i]);
         box->setMaximum(max);
         box->setMinimum(min);
 #endif
-        double incr = increments[i];
-        valueAccordingToType(false, i, &incr);
+        double incr = valueAccordingToType(false, i, increments[i]);
         ///set the number of digits after the decimal point
         box->decimals(decimals[i]);
 
@@ -256,10 +254,8 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         }
 
         // denormalize if necessary
-        double dispminGui = dispmin;
-        double dispmaxGui = dispmax;
-        valueAccordingToType(false, 0, &dispminGui);
-        valueAccordingToType(false, 0, &dispmaxGui);
+        double dispminGui = valueAccordingToType(false, 0, dispmin);
+        double dispmaxGui = valueAccordingToType(false, 0, dispmax);
 
         bool spatial = knob->getIsSpatial();
         Format f;
@@ -318,7 +314,7 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         for (int i = 0; i < dim; ++i) {
             double v = knob->getValue(i);
             if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
-                knob->denormalize(i, time, &v);
+                v = knob->denormalize(i, time, v);
             }
             if (i == 0) {
                 firstDimensionValue = v;
@@ -390,13 +386,13 @@ KnobGuiDouble::onDimensionSwitchClicked()
             SequenceTime time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
             double firstDimensionValue = _spinBoxes[0].first->value();
             if (knob->getValueIsNormalized(0) != KnobDouble::eValueIsNormalizedNone) {
-                knob->denormalize(0, time, &firstDimensionValue);
+                firstDimensionValue = knob->denormalize(0, time, firstDimensionValue);
             }
             knob->beginChanges();
             for (int i = 1; i < dim; ++i) {
                 double v = firstDimensionValue;
                 if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
-                    knob->normalize(i, time, &v);
+                    v = knob->normalize(i, time, v);
                 }
                 knob->setValue(v, ViewSpec::all(), i);
             }
@@ -447,36 +443,31 @@ KnobGuiDouble::foldAllDimensions()
 
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
 void
-KnobGuiDouble::onMinMaxChanged(double mini,
-                               double maxi,
-                               int index)
+KnobGuiDouble::onMinMaxChanged(const double mini,
+                               const double maxi,
+                               const int index)
 {
     assert(_spinBoxes.size() > (U32)index);
-    valueAccordingToType(false, index, &mini);
-    valueAccordingToType(false, index, &maxi);
-    _spinBoxes[index].first->setMinimum(mini);
-    _spinBoxes[index].first->setMaximum(maxi);
+    _spinBoxes[index].first->setMinimum(valueAccordingToType(false, index, mini));
+    _spinBoxes[index].first->setMaximum(valueAccordingToType(false, index, maxi));
 }
 
 #endif
 
 void
-KnobGuiDouble::onDisplayMinMaxChanged(double mini,
-                                      double maxi,
-                                      int index )
+KnobGuiDouble::onDisplayMinMaxChanged(const double mini,
+                                      const double maxi,
+                                      const int index )
 {
     if (_slider) {
-        valueAccordingToType(false, index, &mini);
-        valueAccordingToType(false, index, &maxi);
-
-        double sliderMin = mini;
-        double sliderMax = maxi;
+        double sliderMin = valueAccordingToType(false, index, mini);
+        double sliderMax = valueAccordingToType(false, index, maxi);
         boost::shared_ptr<KnobDouble> knob = _knob.lock();
-        if ( (maxi - mini) >= SLIDER_MAX_RANGE ) {
+        if ( (sliderMax - sliderMin) >= SLIDER_MAX_RANGE ) {
             ///use min max for slider if dispmin/dispmax was not set
             assert( index < (int)knob->getMinimums().size() && index < (int)knob->getMaximums().size() );
-            double max = knob->getMaximums()[index];
-            double min = knob->getMinimums()[index];
+            double max = valueAccordingToType(false, index, knob->getMaximums()[index]);
+            double min = valueAccordingToType(false, index, knob->getMinimums()[index]);
             if ( (max - min) < SLIDER_MAX_RANGE ) {
                 sliderMin = min;
                 sliderMax = max;
@@ -514,24 +505,23 @@ KnobGuiDouble::onDisplayMinMaxChanged(double mini,
 }
 
 void
-KnobGuiDouble::onIncrementChanged(double incr,
-                                  int index)
+KnobGuiDouble::onIncrementChanged(const double incr,
+                                  const int index)
 {
     assert(_spinBoxes.size() > (U32)index);
-    valueAccordingToType(false, index, &incr);
-    _spinBoxes[index].first->setIncrement(incr);
+    _spinBoxes[index].first->setIncrement(valueAccordingToType(false, index, incr));
 }
 
 void
-KnobGuiDouble::onDecimalsChanged(int deci,
-                                 int index)
+KnobGuiDouble::onDecimalsChanged(const int deci,
+                                 const int index)
 {
     assert(_spinBoxes.size() > (U32)index);
     _spinBoxes[index].first->decimals(deci);
 }
 
 void
-KnobGuiDouble::updateGUI(int dimension)
+KnobGuiDouble::updateGUI(const int dimension)
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
     const int knobDim = knob->getDimension();
@@ -552,7 +542,7 @@ KnobGuiDouble::updateGUI(int dimension)
     for (int i = 0; i < knobDim; ++i) {
         double v = knob->getValue(i);
         if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
-            knob->denormalize(i, time, &v);
+            v = knob->denormalize(i, time, v);
         }
         values[i] = v;
         expressions[i] = knob->getExpression(i);
@@ -641,7 +631,7 @@ KnobGuiDouble::reflectAnimationLevel(int dimension,
 }
 
 void
-KnobGuiDouble::onSliderValueChanged(double d)
+KnobGuiDouble::onSliderValueChanged(const double d)
 {
     assert( _knob.lock()->isEnabled(0) );
     bool penUpOnly = appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
@@ -682,7 +672,7 @@ KnobGuiDouble::sliderEditingEnd(double d)
         for (int i = 0; i < dims; ++i) {
             _spinBoxes[i].first->setValue(d);
         }
-        valueAccordingToType(true, 0, &d);
+        d = valueAccordingToType(true, 0, d);
         std::list<double> oldValues, newValues;
         for (int i = 0; i < dims; ++i) {
             oldValues.push_back( knob->getValue(i) );
@@ -691,7 +681,7 @@ KnobGuiDouble::sliderEditingEnd(double d)
         pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValues, newValues, false) );
     } else {
         _spinBoxes[0].first->setValue(d);
-        valueAccordingToType(true, 0, &d);
+        d = valueAccordingToType(true, 0, d);
         pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), knob->getValue(0), d, 0, false) );
     }
 }
@@ -713,8 +703,7 @@ KnobGuiDouble::onSpinBoxValueChanged()
         // each spinbox has a different value
         for (U32 i = 0; i < _spinBoxes.size(); ++i) {
             if (_spinBoxes[i].first == box) {
-                newValue = _spinBoxes[i].first->value();
-                valueAccordingToType(true, i, &newValue);
+                valueAccordingToType(true, i, _spinBoxes[i].first->value());
                 oldValue = _knob.lock()->getValue(i);
                 spinBoxDim = i;
             }
@@ -722,8 +711,7 @@ KnobGuiDouble::onSpinBoxValueChanged()
         pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValue, newValue, spinBoxDim, false) );
     } else {
         // use the value of the first dimension only, and set all spinboxes
-        newValue = _spinBoxes[0].first->value();
-        valueAccordingToType(true, 0, &newValue);
+        newValue = valueAccordingToType(true, 0, _spinBoxes[0].first->value());
         std::list<double> oldValues, newValues;
 
         oldValues = _knob.lock()->getValueForEachDimension_mt_safe();

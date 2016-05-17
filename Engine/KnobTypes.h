@@ -279,13 +279,13 @@ public:
      * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void denormalize(int dimension, double time, double* value) const;
+    double denormalize(int dimension, double time, double value) const;
 
     /**
      * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    void normalize(int dimension, double time, double* value) const;
+    double normalize(int dimension, double time, double value) const;
 
     void addSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
     {

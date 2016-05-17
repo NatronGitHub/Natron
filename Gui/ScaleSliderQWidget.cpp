@@ -130,7 +130,9 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
-    _imp->zoomCtx.setScreenSize( sizeh.width(), sizeh.height() );
+    if (sizeh.width() > 0 && sizeh.height() > 0) {
+        _imp->zoomCtx.setScreenSize( sizeh.width(), sizeh.height() );
+    }
     setFocusPolicy(Qt::ClickFocus);
 }
 
@@ -261,7 +263,9 @@ ScaleSliderQWidget::zoomRange()
     } else {
         _imp->zoomCtx.zoomx(_imp->value, 0, 1. / _imp->currentZoom);
         _imp->currentZoom = 1.;
-        centerOn(_imp->minimum, _imp->maximum);
+        if (_imp->minimum < _imp->maximum) {
+            centerOn(_imp->minimum, _imp->maximum);
+        }
     }
     update();
 }
@@ -393,15 +397,17 @@ ScaleSliderQWidget::setMinimumAndMaximum(double min,
     assert(boost::math::isfinite(min) && boost::math::isfinite(max));
     _imp->minimum = min;
     _imp->maximum = max;
-    centerOn(_imp->minimum, _imp->maximum);
+    if (_imp->minimum < _imp->maximum) {
+        centerOn(_imp->minimum, _imp->maximum);
+    }
 }
 
 void
 ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
-    assert(boost::math::isfinite(left) && boost::math::isfinite(right));
-    if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) ) {
+    assert(boost::math::isfinite(left) && boost::math::isfinite(right) && left < right);
+    if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) || (left < right) ) {
         return;
     }
     double w = right - left;
@@ -413,8 +419,10 @@ ScaleSliderQWidget::centerOn(double left,
 void
 ScaleSliderQWidget::resizeEvent(QResizeEvent* e)
 {
-    _imp->zoomCtx.setScreenSize( e->size().width(), e->size().height() );
-    if (!_imp->mustInitializeSliderPosition) {
+    if (e->size().width() > 0 && e->size().height() > 0) {
+        _imp->zoomCtx.setScreenSize( e->size().width(), e->size().height() );
+    }
+    if (!_imp->mustInitializeSliderPosition && _imp->minimum < _imp->maximum) {
         centerOn(_imp->minimum, _imp->maximum);
     }
     QWidget::resizeEvent(e);
@@ -424,7 +432,9 @@ void
 ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 {
     if (_imp->mustInitializeSliderPosition) {
-        centerOn(_imp->minimum, _imp->maximum);
+        if (_imp->minimum < _imp->maximum) {
+            centerOn(_imp->minimum, _imp->maximum);
+        }
         _imp->mustInitializeSliderPosition = false;
         seekScalePosition(_imp->value);
         _imp->initialized = true;

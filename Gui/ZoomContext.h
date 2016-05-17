@@ -123,12 +123,14 @@ public:
     /// width of a screen pixel in zoom coordinates
     double screenPixelWidth() const
     {
+        assert(_zoomFactor > 0 && _zoomAspectRatio > 0);
         return 1. / (_zoomFactor * _zoomAspectRatio);
     }
 
     /// height of a screen pixel in zoom coordinates
     double screenPixelHeight() const
     {
+        assert(_zoomFactor > 0);
         return 1. / _zoomFactor;
     }
 
@@ -139,7 +141,8 @@ public:
 
     double right() const
     {
-        return _zoomLeft + _screenWidth / (_zoomFactor * _zoomAspectRatio);
+        assert(_zoomFactor > 0 && _zoomAspectRatio > 0);
+        return _zoomLeft + _screenWidth * screenPixelWidth();
     }
 
     double bottom() const
@@ -149,7 +152,7 @@ public:
 
     double top() const
     {
-        return _zoomBottom + _screenHeight / _zoomFactor;
+        return _zoomBottom + _screenHeight * screenPixelHeight();
     }
 
     double factor() const
@@ -181,6 +184,7 @@ public:
                  double zoomFactor,
                  double zoomAspectRatio)
     {
+        assert(boost::math::isfinite(zoomLeft) && boost::math::isfinite(zoomBottom) && boost::math::isfinite(zoomFactor) && boost::math::isfinite(zoomAspectRatio) && zoomFactor > 0 && zoomAspectRatio > 0);
         _zoomLeft = zoomLeft;
         _zoomBottom = zoomBottom;
         _zoomFactor = zoomFactor;
@@ -191,6 +195,7 @@ public:
     void translate(double dx,
                    double dy)
     {
+        assert(boost::math::isfinite(dx) && boost::math::isfinite(dy));
         _zoomLeft += dx;
         _zoomBottom += dy;
         check();
@@ -200,6 +205,7 @@ public:
               double centerY,
               double scale)
     {
+        assert(boost::math::isfinite(centerX) && boost::math::isfinite(centerY) && boost::math::isfinite(scale) && scale > 0);
         _zoomLeft = centerX - ( centerX - left() ) / scale;
         _zoomBottom = centerY - ( centerY - bottom() ) / scale;
         _zoomFactor *= scale;
@@ -211,6 +217,7 @@ public:
                double /*centerY*/,
                double scale)
     {
+        assert(boost::math::isfinite(centerX) && /*boost::math::isfinite(centerY) &&*/ boost::math::isfinite(scale) && scale > 0);
         _zoomLeft = centerX - ( centerX - left() ) / scale;
         _zoomAspectRatio *= scale;
         check();
@@ -221,6 +228,7 @@ public:
                double centerY,
                double scale)
     {
+        assert(/*boost::math::isfinite(centerX) &&*/ boost::math::isfinite(centerY) && boost::math::isfinite(scale) && scale > 0);
         _zoomBottom = centerY - ( centerY - bottom() ) / scale;
         _zoomAspectRatio /= scale;
         _zoomFactor *= scale;
@@ -233,6 +241,7 @@ public:
              double ymin,
              double ymax)
     {
+        assert(boost::math::isfinite(xmin) && boost::math::isfinite(xmax) && boost::math::isfinite(ymin) && boost::math::isfinite(ymax) && xmin < xmax && ymin < ymax);
         double width = xmax - xmin;
         double height = ymax - ymin;
 
@@ -254,6 +263,7 @@ public:
               double ymin,
               double ymax)
     {
+        assert(boost::math::isfinite(xmin) && boost::math::isfinite(xmax) && boost::math::isfinite(ymin) && boost::math::isfinite(ymax) && xmin < xmax && ymin < ymax);
         double width = xmax - xmin;
         double height = ymax - ymin;
 
@@ -269,6 +279,14 @@ public:
                        bool alignTop = false,
                        bool alignRight = false)
     {
+        assert(boost::math::isfinite(screenWidth) && boost::math::isfinite(screenHeight) && screenWidth > 0 && screenHeight > 0);
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            _screenWidth = 0;
+            _screenHeight = 0;
+            check();
+            return;
+        }
+        assert(screenWidth > 0 && screenHeight > 0);
         if (alignTop) {
             // old top: _zoomBottom + _screenHeight / _zoomFactor
             // new top: _zoomBottom + screenHeight / _zoomFactor
@@ -295,6 +313,10 @@ public:
     QPointF toZoomCoordinates(double widgetX,
                               double widgetY) const
     {
+        assert(boost::math::isfinite(widgetX) && boost::math::isfinite(widgetY) && _screenWidth > 0 && _screenHeight > 0);
+        if (_screenWidth <= 0 || _screenHeight <= 0) {
+            return QPointF( left(), top() );
+        }
         return QPointF( ( ( ( right() - left() ) * widgetX ) / screenWidth() ) + left(),
                         ( ( ( bottom() - top() ) * widgetY ) / screenHeight() ) + top() );
     }
@@ -309,6 +331,7 @@ public:
     QPointF toWidgetCoordinates(double zoomX,
                                 double zoomY) const
     {
+        assert(boost::math::isfinite(zoomX) && boost::math::isfinite(zoomY));
         return QPointF( ( ( zoomX - left() ) / ( right() - left() ) ) * screenWidth(),
                         ( ( zoomY - top() ) / ( bottom() - top() ) ) * screenHeight() );
     }

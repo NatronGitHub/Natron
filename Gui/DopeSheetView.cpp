@@ -1664,6 +1664,9 @@ DopeSheetViewPrivate::computeTimelinePositions()
 {
     running_in_main_thread();
 
+    if (zoomContext.screenWidth() <= 0 || zoomContext.screenHeight() <= 0) {
+        return;
+    }
     double polyHalfWidth = 7.5;
     double polyHeight = 7.5;
     int bottom = zoomContext.toZoomCoordinates(q_ptr->width() - 1,

@@ -544,7 +544,7 @@ HostOverlayPrivate::drawPosition(const PositionInteract& p,
         for (int i = 0; i < 2; ++i) {
             p[i] = knob->getValueAtTime(time, i);
             if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
-                knob->denormalize(i, time, &p[i]);
+                p[i] = knob->denormalize(i, time, p[i]);
             }
         }
         pos.setX(p[0]);
@@ -1098,7 +1098,7 @@ HostOverlayPrivate::penMotion(double time,
             for (int i = 0; i < 2; ++i) {
                 p[i] = knob->getValueAtTime(time, i);
                 if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
-                    knob->denormalize(i, time, &p[i]);
+                    p[i] = knob->denormalize(i, time, p[i]);
                 }
             }
             pos.setX(p[0]);
@@ -1145,7 +1145,7 @@ HostOverlayPrivate::penMotion(double time,
             p[1] = fround(lastPenPos.y(), pscale.y);
             for (int i = 0; i < 2; ++i) {
                 if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
-                    knob->normalize(i, time, &p[i]);
+                    p[i] = knob->normalize(i, time, p[i]);
                 }
             }
 
@@ -1678,7 +1678,7 @@ HostOverlayPrivate::penUp(double time,
                 p[1] = fround(lastPenPos.y(), pscale.y);
                 for (int i = 0; i < 2; ++i) {
                     if (knob->getValueIsNormalized(i) != KnobDouble::eValueIsNormalizedNone) {
-                        knob->normalize(i, time, &p[i]);
+                        p[i] = knob->normalize(i, time, p[i]);
                     }
                 }
 

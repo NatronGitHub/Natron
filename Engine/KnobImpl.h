@@ -2277,13 +2277,13 @@ Knob<double>::resetToDefaultValue(int dimension)
             if (isDouble->getValueIsNormalized(dimension) == KnobDouble::eValueIsNormalizedNone) {
                 // default is normalized, value is non-normalized: denormalize it!
                 double time = getCurrentTime();
-                isDouble->denormalize(dimension, time, &def);
+                def = isDouble->denormalize(dimension, time, def);
             }
         } else {
             if (isDouble->getValueIsNormalized(dimension) != KnobDouble::eValueIsNormalizedNone) {
                 // default is non-normalized, value is normalized: normalize it!
                 double time = getCurrentTime();
-                isDouble->normalize(dimension, time, &def);
+                def = isDouble->normalize(dimension, time, def);
             }
         }
     }
