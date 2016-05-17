@@ -325,7 +325,9 @@ CurveWidgetPrivate::refreshTimelinePositions()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-
+    if ( (zoomCtx.screenWidth() <= 0) || (zoomCtx.screenWidth() <= 0) ) {
+        return;
+    }
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);
     QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, _widget->height() - 1);
     QPointF btmCursorBtm( _timeline->currentFrame(), btmRight.y() );

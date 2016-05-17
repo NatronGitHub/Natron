@@ -493,50 +493,54 @@ getInputRoD(EffectInstance* effect,
 #endif
 }
 
-void
-KnobDouble::denormalize(int dimension,
-                        double time,
-                        double* value) const
+double
+KnobDouble::denormalize(const int dimension,
+                        const double time,
+                        const double value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
 
     assert(effect);
     if (!effect) {
         // coverity[dead_error_line]
-        return;
+        return value;
     }
     RectD rod;
     getInputRoD(effect, time, rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when denormalizing default values
     if ( (e == eValueIsNormalizedX) || ( (e == eValueIsNormalizedNone) && (dimension == 0) ) ) {
-        *value *= rod.width();
+        return value * rod.width();
     } else if ( (e == eValueIsNormalizedY) || ( (e == eValueIsNormalizedNone) && (dimension == 1) ) ) {
-        *value *= rod.height();
+        return value * rod.height();
     }
+
+    return value;
 }
 
-void
-KnobDouble::normalize(int dimension,
-                      double time,
-                      double* value) const
+double
+KnobDouble::normalize(const int dimension,
+                      const double time,
+                      const double value) const
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
 
     assert(effect);
     if (!effect) {
         // coverity[dead_error_line]
-        return;
+        return value;
     }
     RectD rod;
     getInputRoD(effect, time, rod);
     ValueIsNormalizedEnum e = getValueIsNormalized(dimension);
     // the second expression (with e == eValueIsNormalizedNone) is used when normalizing default values
     if ( (e == eValueIsNormalizedX) || ( (e == eValueIsNormalizedNone) && (dimension == 0) ) ) {
-        *value /= rod.width();
+        return value / rod.width();
     } else if ( (e == eValueIsNormalizedY) || ( (e == eValueIsNormalizedNone) && (dimension == 1) ) ) {
-        *value /= rod.height();
+        return value / rod.height();
     }
+
+    return value;
 }
 
 bool
@@ -545,8 +549,7 @@ KnobDouble::computeValuesHaveModifications(int dimension,
                                            const double& defaultValue) const
 {
     if (_defaultValuesAreNormalized) {
-        double tmp = defaultValue;
-        denormalize(dimension, 0, &tmp);
+        double tmp = denormalize(dimension, 0, defaultValue);
 
         return value != tmp;
     } else {
