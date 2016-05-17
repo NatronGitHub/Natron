@@ -1,0 +1,23 @@
+--- Portfile.orig	2016-05-17 17:23:49.000000000 +0200
++++ Portfile	2016-05-17 17:26:25.000000000 +0200
+@@ -19,7 +19,7 @@
+     # release
+ 
+     github.setup    glfw glfw 3.1.2
+-    revision        1
++    revision        101
+     # bump the epoch because I moved the version from 20151012 to 3.1.2
+     epoch           1
+     checksums       rmd160 f0a34fda090c5d5e7aef2c916d6160faf777842f \
+@@ -65,7 +65,10 @@
+ configure.args      -DBUILD_SHARED_LIBS=on \
+                     -DGLFW_BUILD_EXAMPLES=off \
+                     -DGLFW_BUILD_TESTS=off \
+-                    -DGLFW_CMAKE_CONFIG_PATH=share
++                    -DGLFW_CMAKE_CONFIG_PATH=share \
++                    -DGLFW_USE_CHDIR=off \
++                    -DGLFW_USE_MENUBAR=off \
++                    -DGLFW_USE_RETINA=on
+ 
+ # remove top-level library path, such that internal libraries are used
+ # instead of any already-installed ones.
