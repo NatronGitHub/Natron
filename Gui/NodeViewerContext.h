@@ -81,6 +81,12 @@ public:
 
     void notifyGuiClosing();
 
+    virtual bool isInViewerUIKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+
 Q_SIGNALS:
 
     /**

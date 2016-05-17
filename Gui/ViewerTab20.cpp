@@ -694,7 +694,13 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                     pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
                 }
                 if (isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey)) {
-                    effect->onKnobValueChanged_public(it->get(), eValueChangedReasonUserEdited, time, ViewSpec(0), true);
+
+                    // This only works for booleans, as defined in the spec
+                    Knob<bool>* isBoolean = dynamic_cast<Knob<bool>*>(it->get());
+                    if (isBoolean) {
+                        isBoolean->onValueChanged(<#const bool &v#>, <#Natron::ViewSpec view#>, <#int dimension#>, <#Natron::ValueChangedReasonEnum reason#>, <#Natron::KeyFrame *newKey#>)
+                        effect->onKnobValueChanged_public(it->get(), eValueChangedReasonUserEdited, time, ViewSpec(0), true);
+                    }
                     return true;
                 }
             }

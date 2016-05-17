@@ -336,7 +336,7 @@ struct KnobHelperPrivate
         , addSeparator(false)
         , itemSpacing(0)
         , inViewerContextAddSeparator(false)
-        , inViewerContextItemSpacing(1)
+        , inViewerContextItemSpacing(5)
         , inViewerContextAddNewLine(false)
         , inViewerContextLabel()
         , inViewerContextHasShortcut(false)

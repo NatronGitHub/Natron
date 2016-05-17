@@ -100,6 +100,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(hasModificationsChanged()), this, SLOT(onHasModificationsChanged()) );
         QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
         QObject::connect( handler, SIGNAL(dimensionNameChanged(int)), this, SLOT(onDimensionNameChanged(int)) );
+        QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()));
     }
     if (!_imp->isInViewerUIKnob) {
         _imp->guiCurves.resize( knob->getDimension() );
@@ -206,7 +207,9 @@ KnobGui::createGUI(QWidget* fieldContainer,
             layout->addSpacing( TO_DPIX(spacing) );
         }
         if (label) {
-            layout->addWidget(_imp->warningIndicator);
+            if (_imp->warningIndicator) {
+                layout->addWidget(_imp->warningIndicator);
+            }
             layout->addWidget(label);
         }
     }

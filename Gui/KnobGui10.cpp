@@ -184,6 +184,12 @@ KnobGui::setSecret()
     }
 }
 
+void
+KnobGui::onViewerContextSecretChanged()
+{
+    setSecret();
+}
+
 bool
 KnobGui::isSecretRecursive() const
 {
@@ -193,14 +199,16 @@ KnobGui::isSecretRecursive() const
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
     KnobPtr knob = getKnob();
-    bool showit = !knob->getIsSecret();
+    bool isViewerKnob = _imp->container->isInViewerUIKnob();
+    bool showit = isViewerKnob ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
     KnobPtr parentKnob = knob->getParentKnob();
     KnobGroup* parentIsGroup = dynamic_cast<KnobGroup*>( parentKnob.get() );
 
     while (showit && parentKnob && parentIsGroup) {
         KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob).get() );
         // check for secretness and visibility of the group
-        if ( parentKnob->getIsSecret() || ( parentGui && !parentGui->isChecked() ) ) {
+        bool parentSecret = isViewerKnob ? parentKnob->getInViewerContextSecret() : parentKnob->getIsSecret();
+        if ( parentSecret || ( parentGui && !parentGui->isChecked() ) ) {
             showit = false; // one of the including groups is folder, so this item is hidden
         }
         // prepare for next loop iteration

@@ -3277,7 +3277,7 @@ EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode() );
 #endif
 
     return render(args);
@@ -3556,7 +3556,7 @@ EffectInstance::beginSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -3579,7 +3579,7 @@ EffectInstance::endSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -4218,7 +4218,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         {
             RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode());
 #endif
             knobChanged(k, reason, view, time, originatedFromMainThread);
         }

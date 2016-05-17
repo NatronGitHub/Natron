@@ -3075,7 +3075,7 @@ Node::findRightClickMenuKnob(const KnobsVec& knobs)
             KnobPtr rightClickKnob = knobs[i];
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>(rightClickKnob.get());
             if (isChoice) {
-                QObject::connect(isChoice, SIGNAL(populated()), this, SLOT(rightClickMenuKnobPopulated()));
+                QObject::connect(isChoice, SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()));
             }
             break;
         }

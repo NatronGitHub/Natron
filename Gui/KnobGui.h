@@ -314,6 +314,8 @@ public Q_SLOTS:
 
     void setSecret();
 
+    void onViewerContextSecretChanged();
+
     void onRightClickClicked(const QPoint & pos);
 
     void showRightClickMenuForDimension(const QPoint & pos, int dimension);

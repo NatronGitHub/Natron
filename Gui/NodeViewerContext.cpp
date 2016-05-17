@@ -107,12 +107,13 @@ public:
      * will receive the hintToolTip help.
      * Optionnally, a path to an icon can be specified for this button.
      **/
-    void addToolBarTool(const std::string& toolID,
+    QAction* addToolBarTool(const std::string& toolID,
                         const std::string& roleID,
                         const std::string& roleShortcutID,
                         const std::string& label,
                         const std::string& hintToolTip,
-                        const std::string& iconPath);
+                        const std::string& iconPath,
+                            ViewerToolButton** toolButton);
 
     void onToolActionTriggeredInternal(QAction* action, bool notifyNode);
 
@@ -189,8 +190,16 @@ NodeViewerContext::createGui()
                         KnobButton* isButton = dynamic_cast<KnobButton*>(toolButtonChildren[j].get());
                         if (isButton) {
                             const std::string& roleShortcutID = isGroup->getName();
-                            _imp->addToolBarTool(isButton->getName(), isGroup->getName(), roleShortcutID, isButton->getLabel(), isButton->getHintToolTip(), isButton->getIconLabel());
+                            ViewerToolButton* createdToolButton = 0;
+                            QAction* act = _imp->addToolBarTool(isButton->getName(), isGroup->getName(), roleShortcutID, isButton->getLabel(), isButton->getHintToolTip(), isButton->getIconLabel(), &createdToolButton);
+                            if (act && createdToolButton && isButton->getValue()) {
+                                createdToolButton->setDefaultAction(act);
+                                _imp->currentTool = QString::fromUtf8(isButton->getName().c_str());
+                            }
                         }
+                    }
+                    if (isGroup->getValue()) {
+                        _imp->currentRole = QString::fromUtf8(isGroup->getName().c_str());
                     }
                 }
             }
@@ -296,6 +305,9 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
             }
         } // makeNewLine
 
+        ret->setEnabledSlot();
+        ret->setSecret();
+
         if ( next == knobsOrdered.end() ) {
             ++next;
         }
@@ -303,13 +315,14 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
     lastRowLayout->addStretch();
 } // NodeViewerContextPrivate::createKnobs
 
-void
+QAction*
 NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
                                          const std::string& roleID,
                                          const std::string& roleShortcutID,
                                          const std::string& label,
                                          const std::string& hintToolTip,
-                                         const std::string& iconPath)
+                                         const std::string& iconPath,
+                                         ViewerToolButton** createdToolButton)
 {
     QString qRoleId = QString::fromUtf8( roleID.c_str() );
     std::map<QString, ViewerToolButton*>::iterator foundToolButton = toolButtons.find(qRoleId);
@@ -319,6 +332,7 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
         toolButton = foundToolButton->second;
     } else {
         toolButton = new ViewerToolButton(toolbar);
+        toolbar->addWidget(toolButton);
         toolButtons.insert( std::make_pair(qRoleId, toolButton) );
         QSize rotoToolSize( TO_DPIX(NATRON_LARGE_BUTTON_SIZE), TO_DPIY(NATRON_LARGE_BUTTON_SIZE) );
         toolButton->setFixedSize(rotoToolSize);
@@ -326,6 +340,8 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
         toolButton->setPopupMode(QToolButton::InstantPopup);
         QObject::connect( toolButton, SIGNAL(triggered(QAction*)), publicInterface, SLOT(onToolActionTriggered(QAction*)) );
     }
+
+    *createdToolButton = toolButton;
 
 
     QString shortcutGroup = getNode()->getNode()->getPlugin()->getPluginShortcutGroup();
@@ -341,8 +357,8 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
         }
     }
 
-    QString labelTouse = icon.isNull() ? QString::fromUtf8(label.c_str()) : QString();
-    QAction* action = new QAction(icon, labelTouse, toolButton);
+    //QString labelTouse = icon.isNull() ? QString::fromUtf8(label.c_str()) : QString();
+    QAction* action = new QAction(icon, QString::fromUtf8(label.c_str()), toolButton);
 
 
 
@@ -367,6 +383,8 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
     }
     QObject::connect( action, SIGNAL(triggered()), publicInterface, SLOT(onToolActionTriggered()) );
     toolButton->addAction(action);
+    return action;
+
 } // NodeViewerContextPrivate::addToolBarTool
 
 QToolBar*
@@ -556,6 +574,9 @@ NodeViewerContext::onToolActionValueChanged(ViewSpec /*view*/,
 void
 NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action, bool notifyNode)
 {
+    if (!action) {
+        return;
+    }
     QStringList actionData = action->data().toStringList();
 
     if (actionData.size() != 2) {

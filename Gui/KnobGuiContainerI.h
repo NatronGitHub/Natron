@@ -49,6 +49,11 @@ public:
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const = 0;
     virtual void refreshTabWidgetMaxHeight() {}
 
+    virtual bool isInViewerUIKnob() const
+    {
+        return false;
+    }
+
     QWidget* getContainerWidget() const
     {
         return _containerWidget;

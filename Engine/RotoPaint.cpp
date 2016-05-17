@@ -56,6 +56,8 @@
 
 #define ROTOPAINT_MASK_INPUT_INDEX 10
 
+#define ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX 5
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -322,7 +324,7 @@ RotoPaint::initializeKnobs()
     addKeyframe->setInViewerContextCanHaveShortcut(true);
     addKeyframe->setIconLabel(NATRON_IMAGES_PATH "addKF.png");
     generalPage->addKnob(addKeyframe);
-    _imp->ui->addKeyframeButton = bboxClickAnywhere;
+    _imp->ui->addKeyframeButton = addKeyframe;
 
     boost::shared_ptr<KnobButton> removeKeyframe = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRemoveKeyframeLabel));
     removeKeyframe->setName(kRotoUIParamRemoveKeyframe);
@@ -396,8 +398,8 @@ RotoPaint::initializeKnobs()
     pressureOpacity->setInViewerContextCanHaveShortcut(true);
     pressureOpacity->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_on.png", true);
     pressureOpacity->setIconLabel(NATRON_IMAGES_PATH "rotopaint_pressure_off.png", false);
-    generalPage->addKnob(rippleEditEnabled);
-    _imp->ui->pressureOpacityButton = rippleEditEnabled;
+    generalPage->addKnob(pressureOpacity);
+    _imp->ui->pressureOpacityButton = pressureOpacity;
 
     boost::shared_ptr<KnobDouble> sizeKnob = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamSizeLabel));
     sizeKnob->setName(kRotoUIParamSize);
@@ -548,25 +550,29 @@ RotoPaint::initializeKnobs()
 
     // RotoPaint
     addKnobToViewerUI(multiStroke);
-    multiStroke->setInViewerContextItemSpacing(3);
+    multiStroke->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(colorWheel);
-    colorWheel->setInViewerContextItemSpacing(3);
+    colorWheel->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(blendingModes);
-    blendingModes->setInViewerContextItemSpacing(3);
+    blendingModes->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(opacityKnob);
+    opacityKnob->setInViewerContextItemSpacing(1);
     addKnobToViewerUI(pressureOpacity);
-    pressureOpacity->setInViewerContextItemSpacing(3);
+    pressureOpacity->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(sizeKnob);
+    sizeKnob->setInViewerContextItemSpacing(1);
     addKnobToViewerUI(pressureSize);
-    pressureSize->setInViewerContextItemSpacing(3);
+    pressureSize->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(hardnessKnob);
+    hardnessKnob->setInViewerContextItemSpacing(1);
     addKnobToViewerUI(pressureHardness);
-    pressureHardness->setInViewerContextItemSpacing(3);
+    pressureHardness->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(buildUp);
-    buildUp->setInViewerContextItemSpacing(3);
+    buildUp->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(effectStrength);
-    effectStrength->setInViewerContextItemSpacing(3);
+    effectStrength->setInViewerContextItemSpacing(ROTOPAINT_VIEWER_UI_SECTIONS_SPACING_PX);
     addKnobToViewerUI(timeOffsetSb);
+    timeOffsetSb->setInViewerContextItemSpacing(1);
     addKnobToViewerUI(timeOffsetMode);
     addKnobToViewerUI(sourceType);
     addKnobToViewerUI(resetCloneOffset);
@@ -1037,7 +1043,18 @@ RotoPaint::initializeKnobs()
         _imp->ui->lockShapeMenuAction = action;
     }
 
-    _imp->ui->setCurrentTool(_imp->ui->selectAllAction.lock());
+    boost::shared_ptr<KnobButton> defaultAction;
+    boost::shared_ptr<KnobGroup> defaultRole;
+    if (_imp->isPaintByDefault) {
+        defaultAction = _imp->ui->brushAction.lock();
+        defaultRole = _imp->ui->paintBrushToolGroup.lock();
+    } else {
+        defaultAction = _imp->ui->drawBezierAction.lock();
+        defaultRole = _imp->ui->bezierEditionToolGroup.lock();
+    }
+    _imp->ui->setCurrentTool(defaultAction);
+    _imp->ui->onRoleChangedInternal(defaultRole);
+    _imp->ui->setCurrentTool(defaultAction);
 }
 
 void
@@ -1087,6 +1104,29 @@ void
 RotoPaint::onKnobsLoaded()
 {
     _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
+
+    // Figure out which toolbutton was selected last
+    boost::shared_ptr<KnobPage> toolbar = _imp->ui->toolbarPage.lock();
+    if (toolbar) {
+
+        std::vector<KnobPtr> toolbarChildren = toolbar->getChildren();
+        for (std::size_t i = 0; i < toolbarChildren.size(); ++i) {
+            boost::shared_ptr<KnobGroup> isChildGroup = boost::dynamic_pointer_cast<KnobGroup>(toolbarChildren[i]);
+            if (isChildGroup && isChildGroup->getValue()) {
+                std::vector<KnobPtr> toolbuttonsChildren = isChildGroup->getChildren();
+                for (std::vector<KnobPtr>::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
+                    boost::shared_ptr<KnobButton> isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
+                    if (isButton && isButton->getValue()) {
+                        _imp->ui->setCurrentTool(isButton);
+                        _imp->ui->onRoleChangedInternal(isChildGroup);
+                        _imp->ui->setCurrentTool(isButton);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
 }
 
 void
@@ -1116,9 +1156,9 @@ RotoPaint::knobChanged(KnobI* k,
     } else if (k == _imp->ui->featherLinkEnabledButton.lock().get()) {
         ctx->onFeatherLinkChanged(_imp->ui->featherLinkEnabledButton.lock()->getValue());
     } else if (k == _imp->ui->autoKeyingEnabledButton.lock().get()) {
-        ctx->onFeatherLinkChanged(_imp->ui->autoKeyingEnabledButton.lock()->getValue());
+        ctx->onAutoKeyingChanged(_imp->ui->autoKeyingEnabledButton.lock()->getValue());
     } else if (k == _imp->ui->rippleEditEnabledButton.lock().get()) {
-        ctx->onFeatherLinkChanged(_imp->ui->rippleEditEnabledButton.lock()->getValue());
+        ctx->onRippleEditChanged(_imp->ui->rippleEditEnabledButton.lock()->getValue());
     } else if (k == _imp->ui->colorWheelButton.lock().get()) {
         _imp->ui->onBreakMultiStrokeTriggered();
     } else if (k == _imp->ui->pressureOpacityButton.lock().get()) {
