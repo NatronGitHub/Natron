@@ -2862,7 +2862,7 @@ AppManager::onCrashReporterNoLongerResponding()
                        "communication between the 2 processes is failing.")
                     .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
     std::cerr << error.toStdString() << std::endl;
-    writeToErrorLog_mt_safe( error ) );
+    writeToErrorLog_mt_safe( error );
 #endif
 }
 
