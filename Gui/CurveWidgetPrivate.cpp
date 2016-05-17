@@ -325,7 +325,7 @@ CurveWidgetPrivate::refreshTimelinePositions()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (zoomCtx.screenWidth() <= 0 || zoomCtx.screenWidth() <= 0) {
+    if ( (zoomCtx.screenWidth() <= 0) || (zoomCtx.screenWidth() <= 0) ) {
         return;
     }
     QPointF topLeft = zoomCtx.toZoomCoordinates(0, 0);

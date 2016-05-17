@@ -124,6 +124,7 @@ public:
     double screenPixelWidth() const
     {
         assert(_zoomFactor > 0 && _zoomAspectRatio > 0);
+
         return 1. / (_zoomFactor * _zoomAspectRatio);
     }
 
@@ -131,6 +132,7 @@ public:
     double screenPixelHeight() const
     {
         assert(_zoomFactor > 0);
+
         return 1. / _zoomFactor;
     }
 
@@ -141,7 +143,6 @@ public:
 
     double right() const
     {
-        assert(_zoomFactor > 0 && _zoomAspectRatio > 0);
         return _zoomLeft + _screenWidth * screenPixelWidth();
     }
 
@@ -195,7 +196,7 @@ public:
     void translate(double dx,
                    double dy)
     {
-        assert(boost::math::isfinite(dx) && boost::math::isfinite(dy));
+        assert( boost::math::isfinite(dx) && boost::math::isfinite(dy) );
         _zoomLeft += dx;
         _zoomBottom += dy;
         check();
@@ -280,10 +281,11 @@ public:
                        bool alignRight = false)
     {
         assert(boost::math::isfinite(screenWidth) && boost::math::isfinite(screenHeight) && screenWidth > 0 && screenHeight > 0);
-        if (screenWidth <= 0 || screenHeight <= 0) {
+        if ( (screenWidth <= 0) || (screenHeight <= 0) ) {
             _screenWidth = 0;
             _screenHeight = 0;
             check();
+
             return;
         }
         assert(screenWidth > 0 && screenHeight > 0);
@@ -314,9 +316,10 @@ public:
                               double widgetY) const
     {
         assert(boost::math::isfinite(widgetX) && boost::math::isfinite(widgetY) && _screenWidth > 0 && _screenHeight > 0);
-        if (_screenWidth <= 0 || _screenHeight <= 0) {
+        if ( (_screenWidth <= 0) || (_screenHeight <= 0) ) {
             return QPointF( left(), top() );
         }
+
         return QPointF( ( ( ( right() - left() ) * widgetX ) / screenWidth() ) + left(),
                         ( ( ( bottom() - top() ) * widgetY ) / screenHeight() ) + top() );
     }
@@ -331,7 +334,8 @@ public:
     QPointF toWidgetCoordinates(double zoomX,
                                 double zoomY) const
     {
-        assert(boost::math::isfinite(zoomX) && boost::math::isfinite(zoomY));
+        assert( boost::math::isfinite(zoomX) && boost::math::isfinite(zoomY) );
+
         return QPointF( ( ( zoomX - left() ) / ( right() - left() ) ) * screenWidth(),
                         ( ( zoomY - top() ) / ( bottom() - top() ) ) * screenHeight() );
     }
@@ -339,7 +343,7 @@ public:
 private:
     void check()
     {
-        assert(boost::math::isfinite(_zoomLeft) && boost::math::isfinite(_zoomBottom) && boost::math::isfinite(_zoomFactor) && boost::math::isfinite(_zoomAspectRatio)&& boost::math::isfinite(_screenWidth)&& boost::math::isfinite(_screenHeight));
+        assert( boost::math::isfinite(_zoomLeft) && boost::math::isfinite(_zoomBottom) && boost::math::isfinite(_zoomFactor) && boost::math::isfinite(_zoomAspectRatio) && boost::math::isfinite(_screenWidth) && boost::math::isfinite(_screenHeight) );
     }
 
 private:

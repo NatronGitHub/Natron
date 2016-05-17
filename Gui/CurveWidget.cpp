@@ -328,7 +328,7 @@ CurveWidget::centerOn(double xmin,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (_imp->zoomCtx.screenWidth() > 0 && _imp->zoomCtx.screenHeight() > 0) {
+    if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
         _imp->zoomCtx.fit(xmin, xmax, ymin, ymax);
     }
     _imp->zoomOrPannedSinceLastFit = false;
@@ -1162,7 +1162,7 @@ CurveWidget::mouseMoveEvent(QMouseEvent* e)
         _imp->_timeline->seekFrame( (SequenceTime)newClick_opengl.x(), false, 0,  eTimelineChangeReasonCurveEditorSeek );
         break;
     case eEventStateZooming: {
-        if (_imp->zoomCtx.screenWidth() > 0 && _imp->zoomCtx.screenHeight() > 0) {
+        if ( (_imp->zoomCtx.screenWidth() > 0) && (_imp->zoomCtx.screenHeight() > 0) ) {
             _imp->zoomOrPannedSinceLastFit = true;
 
             int deltaX = 2 * ( e->x() - _imp->_lastMousePos.x() );

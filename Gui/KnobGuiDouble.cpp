@@ -124,6 +124,7 @@ KnobGuiDouble::valueAccordingToType(const bool normalize,
             }
         }
     }
+
     return value;
 }
 
@@ -256,7 +257,6 @@ KnobGuiDouble::createWidget(QHBoxLayout* layout)
         // denormalize if necessary
         double dispminGui = valueAccordingToType(false, 0, dispmin);
         double dispmaxGui = valueAccordingToType(false, 0, dispmax);
-
         bool spatial = knob->getIsSpatial();
         Format f;
         if (spatial) {
@@ -448,8 +448,8 @@ KnobGuiDouble::onMinMaxChanged(const double mini,
                                const int index)
 {
     assert(_spinBoxes.size() > (U32)index);
-    _spinBoxes[index].first->setMinimum(valueAccordingToType(false, index, mini));
-    _spinBoxes[index].first->setMaximum(valueAccordingToType(false, index, maxi));
+    _spinBoxes[index].first->setMinimum( valueAccordingToType(false, index, mini) );
+    _spinBoxes[index].first->setMaximum( valueAccordingToType(false, index, maxi) );
 }
 
 #endif
@@ -509,7 +509,7 @@ KnobGuiDouble::onIncrementChanged(const double incr,
                                   const int index)
 {
     assert(_spinBoxes.size() > (U32)index);
-    _spinBoxes[index].first->setIncrement(valueAccordingToType(false, index, incr));
+    _spinBoxes[index].first->setIncrement( valueAccordingToType(false, index, incr) );
 }
 
 void
@@ -703,7 +703,7 @@ KnobGuiDouble::onSpinBoxValueChanged()
         // each spinbox has a different value
         for (U32 i = 0; i < _spinBoxes.size(); ++i) {
             if (_spinBoxes[i].first == box) {
-                valueAccordingToType(true, i, _spinBoxes[i].first->value());
+                valueAccordingToType( true, i, _spinBoxes[i].first->value() );
                 oldValue = _knob.lock()->getValue(i);
                 spinBoxDim = i;
             }
@@ -711,7 +711,7 @@ KnobGuiDouble::onSpinBoxValueChanged()
         pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValue, newValue, spinBoxDim, false) );
     } else {
         // use the value of the first dimension only, and set all spinboxes
-        newValue = valueAccordingToType(true, 0, _spinBoxes[0].first->value());
+        newValue = valueAccordingToType( true, 0, _spinBoxes[0].first->value() );
         std::list<double> oldValues, newValues;
 
         oldValues = _knob.lock()->getValueForEachDimension_mt_safe();

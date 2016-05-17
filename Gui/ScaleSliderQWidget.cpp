@@ -113,7 +113,7 @@ struct ScaleSliderQWidgetPrivate
         , allowDraftModeSetting(allowDraftModeSetting)
     {
         font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_8) / NATRON_FONT_SIZE_12 );
-        assert(boost::math::isfinite(minimum) && boost::math::isfinite(maximum) && boost::math::isfinite(initialPos));
+        assert( boost::math::isfinite(minimum) && boost::math::isfinite(maximum) && boost::math::isfinite(initialPos) );
     }
 };
 
@@ -130,7 +130,7 @@ ScaleSliderQWidget::ScaleSliderQWidget(double min,
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     QSize sizeh = sizeHint();
-    if (sizeh.width() > 0 && sizeh.height() > 0) {
+    if ( (sizeh.width() > 0) && (sizeh.height() > 0) ) {
         _imp->zoomCtx.setScreenSize( sizeh.width(), sizeh.height() );
     }
     setFocusPolicy(Qt::ClickFocus);
@@ -352,7 +352,7 @@ ScaleSliderQWidget::keyReleaseEvent(QKeyEvent* e)
 void
 ScaleSliderQWidget::seekScalePosition(double v)
 {
-    assert(boost::math::isfinite(v));
+    assert( boost::math::isfinite(v) );
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -373,7 +373,7 @@ ScaleSliderQWidget::seekScalePosition(double v)
 void
 ScaleSliderQWidget::seekInternal(double v)
 {
-    assert(boost::math::isfinite(v));
+    assert( boost::math::isfinite(v) );
     if (v < _imp->minimum) {
         v = _imp->minimum;
     }
@@ -394,7 +394,7 @@ void
 ScaleSliderQWidget::setMinimumAndMaximum(double min,
                                          double max)
 {
-    assert(boost::math::isfinite(min) && boost::math::isfinite(max));
+    assert( boost::math::isfinite(min) && boost::math::isfinite(max) );
     _imp->minimum = min;
     _imp->maximum = max;
     if (_imp->minimum < _imp->maximum) {
@@ -419,10 +419,10 @@ ScaleSliderQWidget::centerOn(double left,
 void
 ScaleSliderQWidget::resizeEvent(QResizeEvent* e)
 {
-    if (e->size().width() > 0 && e->size().height() > 0) {
+    if ( (e->size().width() > 0) && (e->size().height() > 0) ) {
         _imp->zoomCtx.setScreenSize( e->size().width(), e->size().height() );
     }
-    if (!_imp->mustInitializeSliderPosition && _imp->minimum < _imp->maximum) {
+    if ( !_imp->mustInitializeSliderPosition && (_imp->minimum < _imp->maximum) ) {
         centerOn(_imp->minimum, _imp->maximum);
     }
     QWidget::resizeEvent(e);

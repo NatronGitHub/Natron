@@ -507,6 +507,7 @@ KnobDouble::denormalize(const int dimension,
     } else if ( (e == eValueIsNormalizedY) || ( (e == eValueIsNormalizedNone) && (dimension == 1) ) ) {
         return value * rod.height();
     }
+
     return value;
 }
 
@@ -531,6 +532,7 @@ KnobDouble::normalize(const int dimension,
     } else if ( (e == eValueIsNormalizedY) || ( (e == eValueIsNormalizedNone) && (dimension == 1) ) ) {
         return value / rod.height();
     }
+
     return value;
 }
 
