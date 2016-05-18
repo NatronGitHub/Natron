@@ -3441,7 +3441,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
             channel->setAddNewLine(false);
         }
         if (!*lastKnobCreated) {
-            *lastKnobCreated = channel;
+            *lastKnobCreated = enabled;
         }
 
         _imp->maskSelectors[i] = sel;
