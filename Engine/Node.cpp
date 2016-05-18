@@ -6394,6 +6394,16 @@ Node::message(MessageTypeEnum type,
         return false;
     }
 
+    // See https://github.com/MrKepzie/Natron/issues/1313
+    // Messages posted from a separate thread should be logged and not show a pop-up
+    if (QThread::currentThread() != qApp->thread()) {
+        QString message = QString::fromUtf8(getLabel_mt_safe().c_str());
+        message += QString::fromUtf8(": ");
+        message += QString::fromUtf8(content.c_str());
+        appPTR->writeToErrorLog_mt_safe(message);
+        return true;
+    }
+
     switch (type) {
     case eMessageTypeInfo:
         Dialogs::informationDialog(getLabel_mt_safe(), content);
