@@ -3308,5 +3308,5 @@ RotoPaint::onSelectionChanged(int reason)
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;
-#include "moc_Rotopaint.cpp"
+#include "moc_RotoPaint.cpp"
 
