@@ -154,8 +154,8 @@ win32-msvc*{
         else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Gui/build/Debug/ -lGui
         else:unix {
             LIBS += -L$$OUT_PWD/../Gui/ -lGui
-            # GLU is required by ViewerGL, but some versions of glew don't link it (e.g. Ubuntu 12.04)
-            !macx: LIBS += -lGLU
+            ## GLU is required by ViewerGL, but some versions of glew don't link it (e.g. Ubuntu 12.04)
+            #!macx: LIBS += -lGLU
         }
 }
 INCLUDEPATH += $$PWD/Gui
