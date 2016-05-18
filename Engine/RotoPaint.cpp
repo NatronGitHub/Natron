@@ -1275,7 +1275,7 @@ RotoPaint::knobChanged(KnobI* k,
             _imp->ui->computeSelectedCpsBBOX();
         }
 
-    } else if (k == _imp->ui->openCloseCurveAction.lock().get()) {
+    } else if (k == _imp->ui->openCloseMenuAction.lock().get()) {
         if ( ( (_imp->ui->selectedTool == eRotoToolDrawBezier) || (_imp->ui->selectedTool == eRotoToolOpenBezier) ) && _imp->ui->builtBezier && !_imp->ui->builtBezier->isCurveFinished() ) {
             pushUndoCommand( new OpenCloseUndoCommand(_imp->ui, _imp->ui->builtBezier) );
 
@@ -3136,7 +3136,7 @@ RotoPaint::onOverlayKeyDown(double /*time*/, const RenderScale & /*renderScale*/
 
             _imp->ui->builtBezier.reset();
             _imp->ui->selectedCps.clear();
-            _imp->ui->onToolChangedInternal(_imp->ui->selectAllAction.lock());
+            _imp->ui->setCurrentTool(_imp->ui->selectAllAction.lock());
             getNode()->getRotoContext()->evaluateChange();
             didSomething = true;
         }

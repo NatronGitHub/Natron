@@ -974,6 +974,9 @@ ViewerTab::switchInputAAndB()
             inputBIndex = it->first;
         }
     }
+    if (inputBIndex == inputAIndex) {
+        return;
+    }
     _imp->viewerNode->setInputA(inputBIndex);
     _imp->viewerNode->setInputB(inputAIndex);
 
