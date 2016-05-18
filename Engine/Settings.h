@@ -370,7 +370,7 @@ public:
     int getServerPort() const;
     void setServerPort(int port) const;
 
-    QString makeHTMLDocumentation(bool menu, bool staticPages) const;
+    QString makeHTMLDocumentation(bool genHTML) const;
 
 Q_SIGNALS:
 

@@ -50,6 +50,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/CacheEntryHolder.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/Markdown.h"
 
 #define NATRON_PARAMETER_PAGE_NAME_EXTRA "Node"
 #define NATRON_PARAMETER_PAGE_NAME_INFO "Info"
@@ -1243,7 +1244,7 @@ public:
 
     bool handleFormatKnob(KnobI* knob);
 
-    QString makeHTMLDocumentation(bool offline) const;
+    QString makeHTMLDocumentation(bool genHTML) const;
 
     void refreshPreviewsAfterProjectLoad();
 

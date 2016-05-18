@@ -2591,32 +2591,22 @@ Settings::setServerPort(int port) const
 }
 
 QString
-Settings::makeHTMLDocumentation(bool menu,
-                                bool staticPages) const
+Settings::makeHTMLDocumentation(bool genHTML) const
 {
     QString ret;
     QTextStream ts(&ret);
-    QString pageName;
 
-    if (staticPages) {
-        pageName = QString::fromUtf8("preferences.html");
-    } else {
-        pageName = QString::fromUtf8("/_prefs.html");
-    }
-
-    if (!menu) {
+    if (genHTML) {
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n";
         ts << "<html>\n<head>\n";
         ts << "<title>Natron Preferences</title>\n";
         ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />\n<script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n<script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n";
         ts << "</head>\n<body>\n";
         ts << "<div class=\"related\">\n<h3>Navigation</h3>\n<ul>\n";
-        ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>\n";
+        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>\n";
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n<h1>Preferences</h1>\n";
-    } else {
-        ts << "<li class=\"toctree-l1\"><a href='" << pageName << "'>Preferences</a>\n<ul>\n";
     }
 
     const KnobsVec& knobs = getKnobs_mt_safe();
@@ -2630,28 +2620,37 @@ Settings::makeHTMLDocumentation(bool menu,
         KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
 
-        if (!menu) {
             if (isPage) {
-                ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
+                if (genHTML) {
+                    ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
+                }
+                else {
+                    ts << knobLabel << "\n==========\n\n";
+                }
             } else if (isSep) {
-                ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
+                if (genHTML) {
+                    ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
+                }
+                else {
+                    ts << knobLabel << "\n----------\n\n";
+                }
             } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
                 if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
-                    ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
-                    ts << "<p>" << knobHint << "</p>\n";
+                    if (genHTML) {
+                        ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
+                        Markdown markdown;
+                        ts << markdown.convert2html(knobHint);
+                    }
+                    else {
+                        ts << "**" << knobLabel << "**\n\n";
+                        ts << knobHint << "\n\n";
+                    }
                 }
             }
-        } else {
-            if (isPage) {
-                ts << "<li class='toctree-l2'><a href='" << pageName << "#" << knobScriptName << "'>" << knobLabel << "</a></li>\n";
-            }
-        }
     }
 
-    if (!menu) {
+    if (genHTML) {
         ts << "</div>\n</div>\n</div>\n<div class=\"clearer\"></div>\n</div>\n<div class=\"footer\"></div>\n</body>\n</html>\n";
-    } else {
-        ts << "</ul></li>";
     }
 
     return ret;

@@ -3946,10 +3946,12 @@ Node::refreshPreviewsAfterProjectLoad()
 }
 
 QString
-Node::makeHTMLDocumentation(bool offline) const
+Node::makeHTMLDocumentation(bool genHTML) const
 {
     QString ret;
     QTextStream ts(&ret);
+    Markdown markdown;
+    QVector<QStringList> items;
 
     //bool isPyPlug;
     QString pluginID, pluginLabel, pluginDescription, pluginIcon;
@@ -3967,62 +3969,73 @@ Node::makeHTMLDocumentation(bool offline) const
         pluginGroup = _imp->plugin->getGrouping();
     }
 
-    ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
-    ts << "<html><head>";
-    ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>"; /// version string will be replaced in parser
-    ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
-    ts << "</head><body>";
-
-    ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
-
-    if (offline) {
-        ts << "<li><a href=\"index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
-    } else {
-        ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
-    }
-    if (offline) {
-        ts << "<li><a href=\"_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
-    } else {
+    if (genHTML) {
+        ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
+        ts << "<html><head>";
+        ts << "<title>" << pluginLabel << " - Natron 2.0 documentation</title>"; /// version string will be replaced in parser
+        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
+        ts << "</head><body>";
+        ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
+        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>";
         ts << "<li><a href=\"/_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
     }
 
     if ( !pluginGroup.isEmpty() ) {
         QString group = pluginGroup.at(0);
-        if ( !group.isEmpty() ) {
-            if (offline) {
-                ts << "<li><a href=\"group" << group << ".html\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
-            } else {
-                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
-            }
+        if ( !group.isEmpty() && genHTML ) {
+            ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
         }
     }
-    ts << "</ul></div>";
+    if (genHTML) {
+        ts << "</ul></div>";
+        ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
+        ts << "<h1>" << pluginLabel << " " + tr("version") + " " << majorVersion << "." << minorVersion << "</h1>";
+    }
+    else {
+        ts << pluginLabel << " " + tr("version") + " " << majorVersion << "." << minorVersion << "\n==========\n\n";
+    }
 
-
-    ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
-    ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
     if ( !pluginIcon.isEmpty() ) {
         QFile iconFile(pluginIcon);
         if ( iconFile.exists() ) {
-            ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+            if (genHTML) {
+                ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+            }
+            /// Should support images in markdown also.....
         }
     }
 
-    // replace urls with a href's
-    pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+    if (genHTML) {
+        //ts << markdown.convert2html(pluginDescription);
+        pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+        ts << "<p>" << pluginDescription << "</p>";
+    }
+    else {
+        ts << pluginDescription;
+    }
 
-    ts << "<p>" << pluginDescription << "</p>";
-    ts << "<h3>" << tr("Inputs & Controls") << "</h3>";
+    // Plugin knobs
+    QString inputControlHeader = tr("Inputs & Controls");
+    if (genHTML) {
+        ts << "<h3>" << inputControlHeader << "</h3>";
+    }
+    else {
+        ts << "\n\n" << inputControlHeader << "\n----------\n\n";
+    }
 
-    ts << "<table class=\"knobsTable\">";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Label (UI Name)") << "</td>";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Script-Name") << "</td>";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Default-Value") << "</td>";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Function") << "</td>";
+    if (genHTML) {
+        ts << "<table class=\"knobsTable\">";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Label (UI Name)") << "</td>";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Script-Name") << "</td>";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Default-Value") << "</td>";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Function") << "</td>";
+    }
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ts << "<tr>";
+        if (genHTML) {
+            ts << "<tr>";
+        }
 
         if ( (*it)->getDefaultIsSecret() ) {
             continue;
@@ -4031,8 +4044,10 @@ Node::makeHTMLDocumentation(bool offline) const
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
 
-        ts << "<td class=\"knobsTableValueLabel\">" << knobLabel << "</td>";
-        ts << "<td class=\"knobsTableValueScript\">" << knobScriptName << "</td>";
+        if (genHTML) {
+            ts << "<td class=\"knobsTableValueLabel\">" << knobLabel << "</td>";
+            ts << "<td class=\"knobsTableValueScript\">" << knobScriptName << "</td>";
+        }
 
         QString defValuesStr;
         std::vector<std::pair<QString, QString> > dimsDefaultValueStr;
@@ -4089,25 +4104,33 @@ Node::makeHTMLDocumentation(bool offline) const
             }
         }
 
-        ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
-
-        // replace urls with a href's
-        knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
-
-        ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
-        ts << "</tr>";
+        if (genHTML) {
+            ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
+            //ts << "<td class=\"knobsTableValue\">" << markdown.convert2html(knobHint) << "</td>";
+            knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+            ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
+            ts << "</tr>";
+        }
+        else {
+            QStringList row;
+            row.append(knobLabel);
+            row.append(knobScriptName);
+            row.append(defValuesStr);
+            row.append(knobHint);
+            items.append(row);
+        }
     } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
 
-    ts << "</table>";
-    //ts << "<!--ADD_MORE_HERE-->";
-    //ts << "</div></div></div>";
-
-    if ( !pluginIcon.isEmpty() ) {
-        QString tmp = pluginIcon;
-        tmp.replace( pluginID + QString::fromUtf8(".png"), pluginID + QString::fromUtf8(".html") );
+    if (genHTML) {
+        ts << "</table>";
+        ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     }
-
-    ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
+    else {
+        // create markdown table
+        if (items.size()>0) {
+            ts << markdown.genPluginKnobsTable(items);
+        }
+    }
 
     return ret;
 } // Node::makeHTMLDocumentation

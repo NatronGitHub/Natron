@@ -557,7 +557,7 @@ AppInstance::load(const CLArgs& cl,
 
     QString exportDocPath = cl.getExportDocsPath();
     if ( !exportDocPath.isEmpty() ) {
-        exportHTMLDocs(exportDocPath);
+        exportDocs(exportDocPath);
 
         return;
     }
@@ -1323,13 +1323,13 @@ AppInstance::getAppID() const
 }
 
 void
-AppInstance::exportHTMLDocs(const QString path)
+AppInstance::exportDocs(const QString path)
 {
     if ( !path.isEmpty() ) {
         QStringList categories;
         QVector<QStringList> plugins;
 
-        // Generate a HTML for each plugin
+        // Generate a MD for each plugin
         std::list<std::string> pluginIDs = appPTR->getPluginIDs();
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
@@ -1338,8 +1338,7 @@ AppInstance::exportHTMLDocs(const QString path)
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                 if (plugin) {
-                    // blacklist pyplugs and some other nodes due to crash ...
-                    if ( !plugin->getIsForInternalUseOnly() && plugin->getPythonModule().isEmpty() && ( pluginID != QString::fromUtf8("fr.inria.built-in.Tracker") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferRead") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferWrite") ) ) {
+                    if ( !plugin->getIsForInternalUseOnly() && plugin->getPythonModule().isEmpty() /*&& ( pluginID != QString::fromUtf8("fr.inria.built-in.Tracker") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferRead") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferWrite") )*/ ) {
                         QStringList groups = plugin->getGrouping();
                         categories << groups.at(0);
                         QStringList plugList;
@@ -1351,16 +1350,16 @@ AppInstance::exportHTMLDocs(const QString path)
                         qDebug() << pluginID;
                         NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                         if (node) {
-                            QString html = node->makeHTMLDocumentation(true);
-                            QDir htmlDir(path);
-                            if ( !htmlDir.exists() ) {
-                                htmlDir.mkdir(path);
+                            QString md = node->makeHTMLDocumentation(false);
+                            QDir mdDir(path);
+                            if ( !mdDir.exists() ) {
+                                mdDir.mkdir(path);
                             }
-                            QFile htmlFile( path + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".html") );
-                            if ( htmlFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
-                                QTextStream out(&htmlFile);
-                                out << parseHTMLDoc(html, path, true);
-                                htmlFile.close();
+                            QFile mdFile( path + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
+                            if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
+                                QTextStream out(&mdFile);
+                                out << md;
+                                mdFile.close();
                             }
                         }
                     }
@@ -1368,154 +1367,63 @@ AppInstance::exportHTMLDocs(const QString path)
             }
         }
 
-        // Generate a HTML for each parent category
+        // Generate RST for plugin categories
         categories.removeDuplicates();
-        QString categoriesHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Natron User Guide Menu</title><link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script></head><body>");
-        QString categoryBodyEnd = QString::fromUtf8("</ul></div></div></div></div>");
-        QString categoriesFooter = QString::fromUtf8("</body></html>");
+        QString groupMD;
+        groupMD.append(tr("Reference"));
+        groupMD.append(QString::fromUtf8("\n"));
+        groupMD.append(QString::fromUtf8("=========\n\n"));
+        groupMD.append(QString::fromUtf8("Contents:\n\n"));
+        groupMD.append(QString::fromUtf8(".. toctree::\n"));
+        groupMD.append(QString::fromUtf8("    :maxdepth: 1\n\n"));
+
         for (int i = 0; i < categories.size(); ++i) {
-            QString categoriesBodyStart = QString::fromUtf8("<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>") + categories.at(0) + QString::fromUtf8("</h1><p>") + tr("This manual is intended as a reference for all the parameters within each node in %1.").arg( categories.at(0) ) + QString::fromUtf8("</p><div class=\"toctree-wrapper compound\"><ul>");
-            QString html;
-            html.append(categoriesHeader);
-            html.append(categoriesBodyStart);
+            QString plugMD;
+            plugMD.append(categories.at(i));
+            plugMD.append(QString::fromUtf8("\n==========\n\n"));
+            plugMD.append(QString::fromUtf8("Contents:\n\n"));
+            plugMD.append(QString::fromUtf8(".. toctree::\n"));
+            plugMD.append(QString::fromUtf8("    :maxdepth: 1\n\n"));
+
             for (int y = 0; y < plugins.size(); ++y) {
                 QStringList currPlugin = plugins.at(y);
                 if (currPlugin.size() == 3) {
                     if ( categories.at(i) == currPlugin.at(0) ) {
-                        html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='") + currPlugin.at(1) + QString::fromUtf8(".html'>") + currPlugin.at(2) + QString::fromUtf8("</a></li>") );
+                        plugMD.append(QString::fromUtf8("    ")+currPlugin.at(1)+QString::fromUtf8(".rst\n"));
                     }
                 }
             }
-            html.append(categoryBodyEnd);
-            html.append(categoriesFooter);
-            QFile htmlFile( path + QString::fromUtf8("/group") + categories.at(i) + QString::fromUtf8(".html") );
-            if ( htmlFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
-                QTextStream out(&htmlFile);
-                out << parseHTMLDoc(html, path, true);
-                htmlFile.close();
+            groupMD.append(QString::fromUtf8("    _group")+categories.at(i)+QString::fromUtf8(".rst\n"));
+
+            QFile plugFile( path + QString::fromUtf8("/_group") + categories.at(i) + QString::fromUtf8(".rst") );
+            plugMD.append(QString::fromUtf8("\n"));
+            if ( plugFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
+                QTextStream out(&plugFile);
+                out << plugMD;
+                plugFile.close();
             }
         }
 
-        // Generate prefs
+        // Generate RST for plugins ToC
+        QFile groupFile( path + QString::fromUtf8("/_group.rst") );
+        groupMD.append(QString::fromUtf8("\n"));
+        if ( groupFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
+            QTextStream out(&groupFile);
+            out << groupMD;
+            groupFile.close();
+        }
+
+        // Generate MD for settings
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-        QString prefsHTML = settings->makeHTMLDocumentation(false, true);
-        prefsHTML = parseHTMLDoc(prefsHTML, path, true);
-        QFile prefsHTMLFile( path + QString::fromUtf8("/_prefs.html") );
-        if ( prefsHTMLFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
-            QTextStream out(&prefsHTMLFile);
-            out << parseHTMLDoc(prefsHTML, path, false);
-            prefsHTMLFile.close();
-        }
-
-        // Add menu to existing sphinx html's in path
-        QDir htmlDir(path);
-        QFileInfoList dirList = htmlDir.entryInfoList();
-        for (int x = 0; x < dirList.size(); ++x) {
-            QFileInfo sphinxInfo = dirList.at(x);
-            if ( sphinxInfo.exists() && ( sphinxInfo.suffix() == QString::fromUtf8("html") ) && ( sphinxInfo.fileName() != QString::fromUtf8("_group.html") ) && ( sphinxInfo.fileName() != QString::fromUtf8("_prefs.html") ) ) {
-                QFile sphinxFile( sphinxInfo.absoluteFilePath() );
-                QString input;
-                if ( sphinxFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-                    input = QString::fromUtf8( sphinxFile.readAll() );
-                    sphinxFile.close();
-                }
-                if ( input.contains( QString::fromUtf8("http://sphinx.pocoo.org/") ) && !input.contains( QString::fromUtf8("mainMenu") ) ) {
-                    if ( sphinxFile.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text) ) {
-                        QTextStream output(&sphinxFile);
-                        output << parseHTMLDoc(input, path, false);
-                        sphinxFile.close();
-                    }
-                }
-            }
+        QString prefsMD = settings->makeHTMLDocumentation(false);
+        QFile prefsFile( path + QString::fromUtf8("/_prefs.md") );
+        if ( prefsFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
+            QTextStream out(&prefsFile);
+            out << prefsMD;
+            prefsFile.close();
         }
     }
-} // AppInstance::exportHTMLDocs
-
-QString
-AppInstance::parseHTMLDoc(const QString html,
-                          const QString path,
-                          bool replaceNewline) const
-{
-    QString result = html;
-
-    if ( html.contains( QString::fromUtf8("mainMenu") ) ) {
-        return result;
-    }
-
-    // get static menu from index.html and make a header+menu
-    QFile indexFile( path + QString::fromUtf8("/index.html") );
-    QString menuHTML;
-    menuHTML.append( QString::fromUtf8("<body>\n") );
-    menuHTML.append( QString::fromUtf8("<div id=\"header\"><a href=\"/\"><div id=\"logo\"></div></a><div id=\"mainMenu\">\n") );
-    menuHTML.append( QString::fromUtf8("<ul>\n") );
-    if ( indexFile.exists() ) {
-        if ( indexFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
-            QStringList menuResult;
-            bool getMenu = false;
-            while ( !indexFile.atEnd() ) {
-                QString line = QString::fromUtf8( indexFile.readLine() );
-                if ( line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">\n") ) {
-                    getMenu = true;
-                }
-                if (getMenu) {
-                    menuResult << line;
-                }
-                if ( line == QString::fromUtf8("</div>\n") ) {
-                    getMenu = false;
-                }
-            }
-            if ( !menuResult.isEmpty() ) {
-                int menuEnd = menuResult.size() - 2;
-                for (int i = 0; i < menuEnd; ++i) {
-                    QString tmp = menuResult.at(i);
-                    //tmp.replace(QString::fromUtf8("href=\""),QString::fromUtf8("href=\"/"));
-                    menuHTML.append(tmp);
-                }
-            }
-            indexFile.close();
-            menuHTML.append( QString::fromUtf8("</div>\n</div></div>\n") );
-        }
-    } else {
-        menuHTML.append( QString::fromUtf8("</ul></div></div>") );
-    }
-
-    // preferences
-    /*boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-       QString prefsHTML = settings->makeHTMLDocumentation(true, true);
-       menuHTML.append(prefsHTML);*/
-
-    /*/// TODO probably a better way to get categories...
-       QStringList groups;
-       std::list<std::string> pluginIDs = appPTR->getPluginIDs();
-       for (std::list<std::string>::iterator it=pluginIDs.begin(); it != pluginIDs.end(); ++it) {
-        Plugin* plugin = 0;
-        QString pluginID = QString::fromUtf8(it->c_str());
-        plugin = appPTR->getPluginBinary(pluginID,-1,-1,false);
-        if (plugin) {
-            QStringList groupList = plugin->getGrouping();
-            groups << groupList.at(0);
-        }
-       }
-       groups.removeDuplicates();
-       QString refHTML;
-       refHTML.append(QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"#\">Reference Guide</a>\n"));
-       refHTML.append(QString::fromUtf8("<ul>\n"));
-       for (int i = 0; i < groups.size(); ++i) {
-        refHTML.append(QString::fromUtf8("<li class='toctree-l2'><a href='group")+groups.at(i)+QString::fromUtf8(".html'>")+groups.at(i)+QString::fromUtf8("</a></li>\n"));
-       }
-       refHTML.append(QString::fromUtf8("\n</ul>\n</li>\n</ul>\n"));*/
-
-    // return result
-    //menuHTML.append(refHTML);
-    //menuHTML.append(QString::fromUtf8("</div>\n</div>\n"));
-    if (replaceNewline) {
-        result.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
-    }
-    result.replace(QString::fromUtf8("<body>"), menuHTML);
-    result.replace( QString::fromUtf8("NATRON_DOCUMENTATION"), tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) );
-
-    return result;
-} // AppInstance::parseHTMLDoc
+} // AppInstance::exportDocs
 
 NodePtr
 AppInstance::getNodeByFullySpecifiedName(const std::string & name) const
