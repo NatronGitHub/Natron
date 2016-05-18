@@ -1768,7 +1768,7 @@ RotoPaintInteract::lockSelectedCurves()
     clearSelection();
 }
 
-void
+bool
 RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                       int y)
 {
@@ -1784,7 +1784,8 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                 const std::list< boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
 
                 std::list< boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=fps.end(); ++it) {
+                assert(fps.empty() || fps.size() == cps.size());
+                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=cps.end(); ++it) {
 
                     points.push_back(std::make_pair(*it, *fpIt));
                     if (!fps.empty()) {
@@ -1805,7 +1806,9 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                                               (double)y * pixelScale.second, time) );
         computeSelectedCpsBBOX();
         p->publicInterface->getNode()->getRotoContext()->evaluateChange();
+        return true;
     }
+    return false;
 }
 
 

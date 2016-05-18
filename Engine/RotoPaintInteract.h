@@ -759,7 +759,7 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
      *@brief Moves of the given pixel the selected control points.
      * This takes into account the zoom factor.
      **/
-    void moveSelectedCpsWithKeyArrows(int x, int y);
+    bool moveSelectedCpsWithKeyArrows(int x, int y);
 
 
     void evaluate(bool redraw);

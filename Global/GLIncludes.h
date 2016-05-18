@@ -59,8 +59,8 @@ glErrorString(GLenum errorCode)
 #ifdef GL_EXT_histogram
         {GL_TABLE_TOO_LARGE, "table too large"},
 #endif
-#ifdef GL_EXT_framebuffer_object
-        {GL_INVALID_FRAMEBUFFER_OPERATION_EXT, "invalid framebuffer operation"},
+#ifdef GL_ARB_framebuffer_object
+        {GL_INVALID_FRAMEBUFFER_OPERATION, "invalid framebuffer operation"},
 #endif
 
         {0, NULL }
@@ -77,11 +77,24 @@ glErrorString(GLenum errorCode)
     return NULL;
 }
 
+inline std::string
+glErrorStringSafe(GLenum errorCode)
+{
+    const char* c = glErrorString(errorCode);
+    if (c) {
+        return std::string(c);
+    } else {
+        std::stringstream ss;
+        ss << errorCode;
+        return ss.str();
+    }
+}
+
 #define glCheckError()                                                  \
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorString(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorStringSafe(_glerror_) << std::endl; \
             glError();                                                  \
         }                                                               \
     }
@@ -90,7 +103,7 @@ glErrorString(GLenum errorCode)
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR && _glerror_ != GL_INVALID_FRAMEBUFFER_OPERATION) { \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorString(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorStringSafe(_glerror_) << std::endl; \
             glError();                                                  \
         }                                                               \
     }
@@ -101,7 +114,7 @@ glErrorString(GLenum errorCode)
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorString(_glerror_) << std::endl; abort(); \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorStringSafe(_glerror_) << std::endl; abort(); \
             glError();                                                  \
         }                                                               \
     }
