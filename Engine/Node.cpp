@@ -4107,7 +4107,29 @@ Node::makeHTMLDocumentation(bool genHTML) const
         }
 
         if (genHTML) {
-            ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
+            if (isChoice) {
+                ts << "<td class=\"knobsTableValue\">";
+                std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                if (entries.size() > 1) {
+                    ts << "<select name=\"entries\">";
+                    for (size_t i = 0; i < entries.size(); ++i) {
+                        QString choiceValue = QString::fromUtf8( entries[i].c_str() );
+                        QString optionTag;
+                        if (choiceValue != defValuesStr) {
+                            optionTag = QString::fromUtf8("<option>");
+                        } else {
+                            optionTag = QString::fromUtf8("<option selected>");
+                        }
+                        ts << optionTag << choiceValue << "</option>";
+                    }
+                    ts << "</select>";
+                } else {
+                    ts << defValuesStr;
+                }
+                ts << "</td>";
+            } else {
+                ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
+            }
             //ts << "<td class=\"knobsTableValue\">" << markdown.convert2html(knobHint) << "</td>";
             knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
             ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
