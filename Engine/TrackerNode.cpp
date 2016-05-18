@@ -105,6 +105,7 @@ TrackerNode::initializeKnobs()
     addMarker->setSecretByDefault(true);
     addMarker->setInViewerContextCanHaveShortcut(true);
     addMarker->setIconLabel(NATRON_IMAGES_PATH "addTrack.png");
+    addOverlaySlaveParam(addMarker);
     trackingPage->addKnob(addMarker);
     _imp->ui->addTrackButton = addMarker;
 
@@ -261,6 +262,7 @@ TrackerNode::initializeKnobs()
     showError->setDefaultValue(false);
     showError->setSecretByDefault(true);
     showError->setInViewerContextCanHaveShortcut(true);
+    addOverlaySlaveParam(showError);
     showError->setIconLabel(NATRON_IMAGES_PATH "showTrackError.png", true);
     showError->setIconLabel(NATRON_IMAGES_PATH "hideTrackError.png", false);
     trackingPage->addKnob(showError);
@@ -293,6 +295,7 @@ TrackerNode::initializeKnobs()
     resetOffset->setEvaluateOnChange(false);
     resetOffset->setSecretByDefault(true);
     resetOffset->setInViewerContextCanHaveShortcut(true);
+    addOverlaySlaveParam(resetOffset);
     resetOffset->setIconLabel(NATRON_IMAGES_PATH "resetTrackOffset.png");
     trackingPage->addKnob(resetOffset);
     _imp->ui->resetOffsetButton = resetOffset;
@@ -303,6 +306,7 @@ TrackerNode::initializeKnobs()
     resetTrack->setEvaluateOnChange(false);
     resetTrack->setSecretByDefault(true);
     resetTrack->setInViewerContextCanHaveShortcut(true);
+    addOverlaySlaveParam(resetTrack);
     resetTrack->setIconLabel(NATRON_IMAGES_PATH "restoreDefaultEnabled.png");
     trackingPage->addKnob(resetTrack);
     _imp->ui->resetTrackButton = resetTrack;

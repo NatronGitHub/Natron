@@ -1032,6 +1032,12 @@ public:
     virtual const std::string & getHintToolTip() const = 0;
 
     /**
+     * @brief Returns whether the hint is encoded in markdown or not
+     **/
+    virtual bool isHintInMarkdown() const = 0;
+    virtual void setHintIsMarkdown(bool b) = 0;
+
+    /**
      * @brief Call this to set a custom interact entry point, replacing any existing gui.
      **/
     virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) = 0;
@@ -1469,6 +1475,8 @@ public:
 
     //void setHintToolTip(const char* hint) { setHintToolTip(std::string(hint)); }
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isHintInMarkdown() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setHintIsMarkdown(bool b) OVERRIDE FINAL;
     virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
     virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;

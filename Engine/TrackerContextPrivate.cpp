@@ -1049,11 +1049,17 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                              int start,
                              int end,
                              int frameStep,
-                             ViewerInstance* viewer)
+                             OverlaySupport* overlayInteract)
 {
     if ( markers.empty() ) {
         return;
     }
+
+    ViewerInstance* viewer = 0;
+    if (overlayInteract) {
+        viewer = overlayInteract->getInternalViewerNode();
+    }
+    
 
     /// The channels we are going to use for tracking
     bool enabledChannels[3];

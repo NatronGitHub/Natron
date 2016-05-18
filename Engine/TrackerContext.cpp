@@ -406,7 +406,7 @@ void
 TrackerContext::trackSelectedMarkers(int start,
                                      int end,
                                      int frameStep,
-                                     ViewerInstance* viewer)
+                                     OverlaySupport* viewer)
 {
     std::list<TrackMarkerPtr > markers;
     {

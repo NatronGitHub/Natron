@@ -159,12 +159,12 @@ public:
      * @brief Tracks the selected markers over the range defined by [start,end[ (end pointing to the frame
      * after the last one, a la STL).
      **/
-    void trackSelectedMarkers(int start, int end, int frameStep, ViewerInstance* viewer);
+    void trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer);
     void trackMarkers(const std::list<TrackMarkerPtr >& marks,
                       int start,
                       int end,
                       int frameStep,
-                      ViewerInstance* viewer);
+                      OverlaySupport* viewer);
 
 
     void abortTracking();

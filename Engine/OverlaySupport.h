@@ -106,6 +106,13 @@ public:
      **/
     virtual void getCursorPosition(double& x, double& y) const = 0;
 
+    /**
+     * @brief Returns for a viewer the internal viewer node
+     **/
+    virtual ViewerInstance* getInternalViewerNode() const {
+        return 0;
+    }
+
 };
 
 NATRON_NAMESPACE_EXIT;

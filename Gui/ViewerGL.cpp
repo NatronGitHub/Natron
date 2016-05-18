@@ -1203,6 +1203,12 @@ ViewerGL::getPboID(int index)
     }
 }
 
+ViewerInstance*
+ViewerGL::getInternalViewerNode() const
+{
+    return getInternalNode();
+}
+
 /**
  *@returns Returns the current zoom factor that is applied to the display.
  **/

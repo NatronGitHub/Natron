@@ -492,6 +492,13 @@ public:
     virtual std::string getPluginDescription() const WARN_UNUSED_RETURN = 0;
 
     /**
+     * @brief Returns whether the plugin  description is written in markdown or not
+     **/
+    virtual bool isPluginDescriptionInMarkdown() const  {
+        return false;
+    }
+
+    /**
      * @brief Must returns the shortcuts that are going to be used for this plug-in. Each shortcut
      * will be added to the shortcut editor and must have an ID and a description label.
      * Make sure that within the same plug-in there are no conflicting shortcuts.
