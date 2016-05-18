@@ -33,9 +33,10 @@
 #include "Global/Macros.h"
 
 #ifdef DEBUG
+#ifdef __cplusplus
 #include <iostream>
 #include <sstream>
-
+#endif
 
 // put a breakpoint in glError to halt the debugger on opengl errors
 inline void
@@ -54,14 +55,27 @@ glErrorString(GLenum errorCode)
         {GL_INVALID_ENUM, "invalid enumerant"},
         {GL_INVALID_VALUE, "invalid value"},
         {GL_INVALID_OPERATION, "invalid operation"},
+#ifndef GL_ES_VERSION_2_0
         {GL_STACK_OVERFLOW, "stack overflow"},
         {GL_STACK_UNDERFLOW, "stack underflow"},
+#endif
         {GL_OUT_OF_MEMORY, "out of memory"},
-#ifdef GL_EXT_histogram
+#ifdef GL_ARB_imaging
         {GL_TABLE_TOO_LARGE, "table too large"},
+#else
+#ifdef GL_EXT_histogram
+        {GL_TABLE_TOO_LARGE_EXT, "table too large"},
+#endif
 #endif
 #ifdef GL_ARB_framebuffer_object
         {GL_INVALID_FRAMEBUFFER_OPERATION, "invalid framebuffer operation"},
+#else
+#ifdef GL_EXT_framebuffer_object
+        {GL_INVALID_FRAMEBUFFER_OPERATION_EXT, "invalid framebuffer operation"},
+#endif
+#endif
+#ifdef GL_EXT_texture
+        {GL_TEXTURE_TOO_LARGE_EXT, "texture too large"},
 #endif
 
         {0, NULL }
@@ -78,24 +92,17 @@ glErrorString(GLenum errorCode)
     return NULL;
 }
 
-inline std::string
-glErrorStringSafe(GLenum errorCode)
-{
-    const char* c = glErrorString(errorCode);
-    if (c) {
-        return std::string(c);
-    } else {
-        std::stringstream ss;
-        ss << errorCode;
-        return ss.str();
-    }
-}
-
 #define glCheckError()                                                  \
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorStringSafe(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            const char* _glerror_s_ = glErrorString(_glerror_);         \
+            if (_glerror_s_) {                                          \
+                std::cout << _glerror_s_ << std::endl;   \
+            } else {                                                    \
+                std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
+            }                                                           \
             glError();                                                  \
         }                                                               \
     }
@@ -104,7 +111,13 @@ glErrorStringSafe(GLenum errorCode)
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR && _glerror_ != GL_INVALID_FRAMEBUFFER_OPERATION) { \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorStringSafe(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            const char* _glerror_s_ = glErrorString(_glerror_);         \
+            if (_glerror_s_) {                                          \
+                std::cout << _glerror_s_ << std::endl;   \
+            } else {                                                    \
+                std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
+            }                                                           \
             glError();                                                  \
         }                                                               \
     }
@@ -115,8 +128,15 @@ glErrorStringSafe(GLenum errorCode)
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << glErrorStringSafe(_glerror_) << std::endl; abort(); \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            const char* _glerror_s_ = glErrorString(_glerror_);         \
+            if (_glerror_s_) {                                          \
+                std::cout << _glerror_s_ << std::endl;   \
+            } else {                                                    \
+                std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
+            }                                                           \
             glError();                                                  \
+            abort();                                                    \
         }                                                               \
     }
 #define glCheckFramebufferError()                                       \
@@ -161,7 +181,7 @@ glErrorStringSafe(GLenum errorCode)
                 glError();                                              \
             } \
             else {                                                    \
-                std::cout << "undefined framebuffer status (" << error << ")" << std::endl; \
+                std::cout << "undefined framebuffer status (" << std::hex << (unsigned)error << ")" << std::endl; \
                 glError();                                              \
             }                                                           \
             glCheckError();                                             \

@@ -25,11 +25,18 @@
 
 #include "TrackerNodeInteract.h"
 
+#ifndef NDEBUG
+#include <boost/math/special_functions/fpclassify.hpp>
+#endif
+
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
+#include "Engine/OpenGLViewerI.h"
+#include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TrackMarker.h"
+#include "Engine/ViewerInstance.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -103,6 +110,12 @@ TrackerNodeInteract::~TrackerNodeInteract()
     }
 }
 
+boost::shared_ptr<TrackerContext>
+TrackerNodeInteract::getContext() const
+{
+    return _p->publicInterface->getNode()->getTrackerContext();
+}
+
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
@@ -156,8 +169,8 @@ TrackerNodeInteract::onTrackRangeClicked()
 void
 TrackerNodeInteract::onTrackAllKeyframesClicked()
 {
-#if 0
-    boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
+
+    boost::shared_ptr<TrackerContext> ctx = getContext();
     std::list<TrackMarkerPtr> selectedMarkers;
 
     ctx->getSelectedMarkers(&selectedMarkers);
@@ -175,16 +188,15 @@ TrackerNodeInteract::onTrackAllKeyframesClicked()
 
     int first = *userKeys.begin();
     int last = *userKeys.rbegin() + 1;
-    ctx->trackSelectedMarkers( first, last, 1,  _imp->viewer->getInternalNode() );
-#endif
+    ctx->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getCurrentViewportForOverlays() );
 }
 
 void
 TrackerNodeInteract::onTrackCurrentKeyframeClicked()
 {
-#if 0
-    boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-    SequenceTime currentFrame = _imp->viewer->getTimeLine()->currentFrame();
+
+    boost::shared_ptr<TrackerContext> ctx = getContext();
+    SequenceTime currentFrame = _p->publicInterface->getCurrentTime();
     std::list<TrackMarkerPtr> selectedMarkers;
 
     ctx->getSelectedMarkers(&selectedMarkers);
@@ -214,258 +226,170 @@ TrackerNodeInteract::onTrackCurrentKeyframeClicked()
         first = *it;
     }
 
-    ctx->trackSelectedMarkers( first, last, 1,  _imp->viewer->getInternalNode() );
-#endif
+    ctx->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getCurrentViewportForOverlays());
 }
 
 void
 TrackerNodeInteract::onTrackBwClicked()
 {
-#if 0
-    _imp->trackBwButton->setDown(false);
-    _imp->trackBwButton->setChecked(false);
 
-    if (_imp->panelv1) {
-        if ( _imp->panelv1->isTracking() ) {
-            _imp->panelv1->stopTracking();
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    assert(viewer);
+    int first,last;
+    viewer->getUiContext()->getViewerFrameRange(&first, &last);
 
-            return;
-        }
-        if ( !_imp->panelv1->trackBackward( _imp->viewer->getInternalNode() ) ) {
-            _imp->panelv1->stopTracking();
-        }
+    int startFrame = viewer->getTimeline()->currentFrame();
+    boost::shared_ptr<TrackerContext> ctx = getContext();
+    if ( ctx->isCurrentlyTracking() ) {
+        ctx->abortTracking();
     } else {
-        boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
-        int startFrame = timeline->currentFrame();
-        SequenceTime first, last;
-        _imp->viewer->getTimelineBounds(&first, &last);
-        boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        if ( ctx->isCurrentlyTracking() ) {
-            ctx->abortTracking();
-        } else {
-            ctx->trackSelectedMarkers( startFrame, first - 1, false,  _imp->viewer->getInternalNode() );
-        }
+        ctx->trackSelectedMarkers( startFrame, first - 1, false,  overlay );
     }
-#endif
+
 }
 
 void
 TrackerNodeInteract::onTrackPrevClicked()
 {
-#if 0
-    if (_imp->panelv1) {
-        _imp->panelv1->trackPrevious( _imp->viewer->getInternalNode() );
-    } else {
-        boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
-        int startFrame = timeline->currentFrame();
-        boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        ctx->trackSelectedMarkers( startFrame, startFrame - 2, false,  _imp->viewer->getInternalNode() );
-    }
-#endif
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    assert(viewer);
+    int startFrame = viewer->getTimeline()->currentFrame();
+    boost::shared_ptr<TrackerContext> ctx = getContext();
+    ctx->trackSelectedMarkers( startFrame, startFrame - 2, false, overlay );
 }
 
 void
 TrackerNodeInteract::onStopButtonClicked()
 {
-#if 0
-    _imp->trackBwButton->setDown(false);
-    _imp->trackFwButton->setDown(false);
-    if (_imp->panelv1) {
-        _imp->panelv1->stopTracking();
-    } else {
-        _imp->panel->getContext()->abortTracking();
-    }
-#endif
+    getContext()->abortTracking();
 }
 
 void
 TrackerNodeInteract::onTrackNextClicked()
 {
-#if 0
-    if (_imp->panelv1) {
-        _imp->panelv1->trackNext( _imp->viewer->getInternalNode() );
-    } else {
-        int startFrame = _imp->viewer->getGui()->getApp()->getTimeLine()->currentFrame();
-        boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        ctx->trackSelectedMarkers( startFrame, startFrame + 2, true,  _imp->viewer->getInternalNode() );
-    }
-#endif
+
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    assert(viewer);
+    int startFrame = viewer->getTimeline()->currentFrame();
+    boost::shared_ptr<TrackerContext> ctx = getContext();
+    ctx->trackSelectedMarkers( startFrame, startFrame + 2, true, overlay );
+
 }
 
 void
 TrackerNodeInteract::onTrackFwClicked()
 {
-#if 0
-    _imp->trackFwButton->setDown(false);
-    _imp->trackFwButton->setChecked(false);
-    if (_imp->panelv1) {
-        if ( _imp->panelv1->isTracking() ) {
-            _imp->panelv1->stopTracking();
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    assert(viewer);
+    int first,last;
+    viewer->getUiContext()->getViewerFrameRange(&first, &last);
 
-            return;
-        }
-
-        if ( !_imp->panelv1->trackForward( _imp->viewer->getInternalNode() ) ) {
-            _imp->panelv1->stopTracking();
-        }
+    int startFrame = viewer->getTimeline()->currentFrame();
+    boost::shared_ptr<TrackerContext> ctx = getContext();
+    if ( ctx->isCurrentlyTracking() ) {
+        ctx->abortTracking();
     } else {
-        boost::shared_ptr<TimeLine> timeline = _imp->viewer->getGui()->getApp()->getTimeLine();
-        int startFrame = timeline->currentFrame();
-        SequenceTime first, last;
-        _imp->viewer->getTimelineBounds(&first, &last);
-        boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        if ( ctx->isCurrentlyTracking() ) {
-            ctx->abortTracking();
-        } else {
-            ctx->trackSelectedMarkers( startFrame, last + 1, true, _imp->viewer->getInternalNode() );
-        }
+        ctx->trackSelectedMarkers( startFrame, first + 1, true,  overlay );
     }
-#endif
+
 }
 
 void
 TrackerNodeInteract::onUpdateViewerClicked(bool clicked)
 {
-#if 0
-    _imp->updateViewerButton->setDown(clicked);
-    _imp->updateViewerButton->setChecked(clicked);
-    if (_imp->panelv1) {
-        _imp->panelv1->setUpdateViewer(clicked);
-    } else {
-        _imp->panel->getContext()->setUpdateViewer(clicked);
-    }
-#endif
+
+    getContext()->setUpdateViewer(clicked);
+
 }
 
 
 void
 TrackerNodeInteract::onAddTrackClicked(bool clicked)
 {
-#if 0
-    _imp->clickToAddTrackEnabled = !_imp->clickToAddTrackEnabled;
-    _imp->addTrackButton->setDown(clicked);
-    _imp->addTrackButton->setChecked(clicked);
-    _imp->viewer->getViewer()->redraw();
-#endif
+    clickToAddTrackEnabled = clicked;
 }
 
 
 void
 TrackerNodeInteract::onClearAllAnimationClicked()
 {
-    #if 0
-    if (_imp->panelv1) {
-        _imp->panelv1->clearAllAnimationForSelection();
-    } else {
-        std::list<TrackMarkerPtr > markers;
-        _imp->panel->getContext()->getSelectedMarkers(&markers);
-        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            (*it)->clearAnimation();
-        }
+    std::list<TrackMarkerPtr > markers;
+    getContext()->getSelectedMarkers(&markers);
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        (*it)->clearAnimation();
     }
-    #endif
+
 }
 
 void
 TrackerNodeInteract::onClearBwAnimationClicked()
 {
-    #if 0
-    if (_imp->panelv1) {
-        _imp->panelv1->clearBackwardAnimationForSelection();
-    } else {
-        int time = _imp->panel->getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
-        std::list<TrackMarkerPtr > markers;
-        _imp->panel->getContext()->getSelectedMarkers(&markers);
-        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            (*it)->clearAnimationBeforeTime(time);
-        }
+
+    int time = _p->publicInterface->getCurrentTime();
+    std::list<TrackMarkerPtr > markers;
+    getContext()->getSelectedMarkers(&markers);
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        (*it)->clearAnimationBeforeTime(time);
     }
-    #endif
+
 }
 
 void
 TrackerNodeInteract::onClearFwAnimationClicked()
 {
-    #if 0
-    if (_imp->panelv1) {
-        _imp->panelv1->clearForwardAnimationForSelection();
-    } else {
-        int time = _imp->panel->getContext()->getNode()->getApp()->getTimeLine()->currentFrame();
-        std::list<TrackMarkerPtr > markers;
-        _imp->panel->getContext()->getSelectedMarkers(&markers);
-        for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
-            (*it)->clearAnimationAfterTime(time);
-        }
+    int time = _p->publicInterface->getCurrentTime();
+    std::list<TrackMarkerPtr > markers;
+    getContext()->getSelectedMarkers(&markers);
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        (*it)->clearAnimationAfterTime(time);
     }
-    #endif
 }
 
-void
-TrackerNodeInteract::onCreateKeyOnMoveButtonClicked(bool clicked)
-{
-    #if 0
-    _imp->createKeyOnMoveButton->setDown(clicked);
-    _imp->createKeyOnMoveButton->setChecked(clicked);
-    #endif
-}
-
-void
-TrackerNodeInteract::onShowCorrelationButtonClicked(bool clicked)
-{
-    #if 0
-    _imp->showCorrelationButton->setDown(clicked);
-    _imp->viewer->getViewer()->redraw();
-    #endif
-}
 
 void
 TrackerNodeInteract::onCenterViewerButtonClicked(bool clicked)
 {
-    #if 0
-    _imp->centerViewerButton->setDown(clicked);
-    if (_imp->panelv1) {
-        _imp->panelv1->setCenterOnTrack(clicked);
-    } else {
-        _imp->panel->getContext()->setCenterOnTrack(clicked);
-    }
-    #endif
+    getContext()->setCenterOnTrack(clicked);
 }
 
 void
 TrackerNodeInteract::onSetKeyframeButtonClicked()
 {
-    #if 0
-    int time = _imp->panel->getNode()->getNode()->getApp()->getTimeLine()->currentFrame();
+    int time = _p->publicInterface->getCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
-    _imp->panel->getContext()->getSelectedMarkers(&markers);
+    getContext()->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->setUserKeyframe(time);
     }
-    #endif
 }
 
 void
 TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 {
-    #if 0
-    int time = _imp->panel->getNode()->getNode()->getApp()->getTimeLine()->currentFrame();
+    int time = _p->publicInterface->getCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
-    _imp->panel->getContext()->getSelectedMarkers(&markers);
+    getContext()->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         (*it)->removeUserKeyframe(time);
     }
-    #endif
 }
 
 void
 TrackerNodeInteract::onResetOffsetButtonClicked()
 {
-    #if 0
     std::list<TrackMarkerPtr > markers;
 
-    _imp->panel->getContext()->getSelectedMarkers(&markers);
+    getContext()->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         boost::shared_ptr<KnobDouble> offsetKnob = (*it)->getOffsetKnob();
         assert(offsetKnob);
@@ -473,16 +397,25 @@ TrackerNodeInteract::onResetOffsetButtonClicked()
             offsetKnob->resetToDefaultValue(i);
         }
     }
-    _imp->viewer->getGui()->redrawAllViewers();
-    #endif
 }
 
 void
 TrackerNodeInteract::onResetTrackButtonClicked()
 {
-    #if 0
-    _imp->panel->onResetButtonClicked();
-#endif
+    boost::shared_ptr<TrackerContext> context = getContext();
+
+    assert(context);
+    std::list<TrackMarkerPtr > markers;
+    context->getSelectedMarkers(&markers);
+    context->clearSelection(TrackerContext::eTrackSelectionInternal);
+    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
+
+    for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+        (*it)->resetTrack();
+    }
+    context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
+    context->addTracksToSelection(markers, TrackerContext::eTrackSelectionInternal);
+    context->endEditSelection(TrackerContext::eTrackSelectionInternal);
 }
 
 
@@ -493,7 +426,6 @@ TrackerNodeInteract::computeMidPointExtent(const QPointF& prev,
                       const QPointF& point,
                       const QPointF& handleSize)
 {
-#if 0
     Point leftDeriv, rightDeriv;
 
     leftDeriv.x = prev.x() - point.x();
@@ -519,16 +451,16 @@ TrackerNodeInteract::computeMidPointExtent(const QPointF& prev,
     }
 
     return ret;
-#endif
 }
 
 
 int
 TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
-                                           const QPointF& pos,
-                                           const QPointF& viewportPos) const
+                                             const QPointF& pos,
+                                             const QPointF& viewportPos,
+                                             const std::pair<double, double>& pixelScale) const
 {
-    #if 0
+#if 0
     if (!showMarkerTexture) {
         return INT_MAX;
     }

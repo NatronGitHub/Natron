@@ -263,6 +263,7 @@ struct KnobHelperPrivate
     bool evaluateOnChange; //< if true, a value change will never trigger an evaluation
     bool IsPersistant; //will it be serialized?
     std::string tooltipHint;
+    bool hintIsMarkdown;
     bool isAnimationEnabled;
     int dimension;
     /* the keys for a specific dimension*/
@@ -352,6 +353,7 @@ struct KnobHelperPrivate
         , evaluateOnChange(true)
         , IsPersistant(true)
         , tooltipHint()
+        , hintIsMarkdown(false)
         , isAnimationEnabled(true)
         , dimension(dimension_)
         , curves(dimension_)
@@ -3104,6 +3106,18 @@ const std::string &
 KnobHelper::getHintToolTip() const
 {
     return _imp->tooltipHint;
+}
+
+bool
+KnobHelper::isHintInMarkdown() const
+{
+    return _imp->hintIsMarkdown;
+}
+
+void
+KnobHelper::setHintIsMarkdown(bool b)
+{
+    _imp->hintIsMarkdown = b;
 }
 
 void

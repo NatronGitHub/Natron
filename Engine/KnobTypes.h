@@ -890,6 +890,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     std::vector< boost::weak_ptr<KnobI> > _children;
     bool _isTab;
     bool _isToolButton;
+    bool _isDialog;
 
 public:
 
@@ -927,6 +928,9 @@ public:
 
     void setAsToolButton(bool b);
     bool getIsToolButton() const;
+
+    void setAsDialog(bool b);
+    bool getIsDialog() const;
 
     static const std::string & typeNameStatic();
 

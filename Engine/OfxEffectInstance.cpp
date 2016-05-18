@@ -527,6 +527,17 @@ OfxEffectInstance::isEffectCreated() const
     return _imp->created;
 }
 
+bool
+OfxEffectInstance::isPluginDescriptionInMarkdown() const
+{
+    assert(_imp->context != eContextNone);
+    if ( effectInstance() ) {
+        return effectInstance()->getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
+    } else {
+        return false;
+    }
+}
+
 std::string
 OfxEffectInstance::getPluginDescription() const
 {

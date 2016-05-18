@@ -1469,6 +1469,7 @@ KnobGroup::KnobGroup(KnobHolder* holder,
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _isTab(false)
     , _isToolButton(false)
+    , _isDialog(false)
 {
 }
 
@@ -1478,6 +1479,8 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isTab(false)
+    , _isToolButton(false)
+    , _isDialog(false)
 {
 }
 
@@ -1503,6 +1506,18 @@ bool
 KnobGroup::getIsToolButton() const
 {
     return _isToolButton;
+}
+
+void
+KnobGroup::setAsDialog(bool b)
+{
+    _isDialog = b;
+}
+
+bool
+KnobGroup::getIsDialog() const
+{
+    return _isDialog;
 }
 
 bool

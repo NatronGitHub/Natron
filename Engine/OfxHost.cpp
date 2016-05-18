@@ -313,6 +313,8 @@ OfxHost::setProperties()
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMasking, 1);
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 
+    _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
+
     _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxArrowCursor, 0);
     _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxUpArrowCursor, 1);
     _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxCrossCursor, 2);
