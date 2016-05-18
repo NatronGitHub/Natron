@@ -3986,13 +3986,15 @@ Node::makeHTMLDocumentation(bool genHTML) const
             ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
         }
     }
+
+    QString versionString = tr("version");
     if (genHTML) {
         ts << "</ul></div>";
         ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
-        ts << "<h1>" << pluginLabel << " " + tr("version") + " " << majorVersion << "." << minorVersion << "</h1>";
+        ts << "<h1>" << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "</h1>";
     }
     else {
-        ts << pluginLabel << " " + tr("version") + " " << majorVersion << "." << minorVersion << "\n==========\n\n";
+        ts << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "\n==========\n\n";
     }
 
     if ( !pluginIcon.isEmpty() ) {
