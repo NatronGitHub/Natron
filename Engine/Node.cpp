@@ -3441,7 +3441,7 @@ Node::createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChan
             channel->setAddNewLine(false);
         }
         if (!*lastKnobCreated) {
-            *lastKnobCreated = channel;
+            *lastKnobCreated = enabled;
         }
 
         _imp->maskSelectors[i] = sel;
@@ -6414,6 +6414,16 @@ Node::message(MessageTypeEnum type,
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
     if ( _imp->effect->aborted() ) {
         return false;
+    }
+
+    // See https://github.com/MrKepzie/Natron/issues/1313
+    // Messages posted from a separate thread should be logged and not show a pop-up
+    if (QThread::currentThread() != qApp->thread()) {
+        QString message = QString::fromUtf8(getLabel_mt_safe().c_str());
+        message += QString::fromUtf8(": ");
+        message += QString::fromUtf8(content.c_str());
+        appPTR->writeToErrorLog_mt_safe(message);
+        return true;
     }
 
     switch (type) {
