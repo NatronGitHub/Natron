@@ -325,13 +325,14 @@ PrecompNode::onKnobsLoaded()
     _imp->refreshKnobsVisibility();
 }
 
-void
+bool
 PrecompNode::knobChanged(KnobI* k,
                          ValueChangedReasonEnum reason,
                          ViewSpec /*view*/,
                          double /*time*/,
                          bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( (reason != eValueChangedReasonTimeChanged) && ( k == _imp->projectFileNameKnob.lock().get() ) ) {
         _imp->reloadProject(true);
     } else if ( k == _imp->editProjectKnob.lock().get() ) {
@@ -350,7 +351,10 @@ PrecompNode::knobChanged(KnobI* k,
     } else if ( k == _imp->enablePreRenderKnob.lock().get() ) {
         _imp->refreshKnobsVisibility();
         _imp->refreshOutputNode();
+    } else {
+        ret = false;
     }
+    return ret;
 }
 
 void

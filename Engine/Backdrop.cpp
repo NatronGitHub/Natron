@@ -74,7 +74,7 @@ Backdrop::initializeKnobs()
     _imp->knobLabel = knobLabel;
 }
 
-void
+bool
 Backdrop::knobChanged(KnobI* k,
                       ValueChangedReasonEnum /*reason*/,
                       ViewSpec /*view*/,
@@ -84,7 +84,9 @@ Backdrop::knobChanged(KnobI* k,
     if ( k == _imp->knobLabel.lock().get() ) {
         QString text = QString::fromUtf8( _imp->knobLabel.lock()->getValue().c_str() );
         Q_EMIT labelChanged(text);
+        return true;
     }
+    return false;
 }
 
 NATRON_NAMESPACE_EXIT;

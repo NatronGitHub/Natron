@@ -933,20 +933,21 @@ ReadNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& ser
     _imp->refreshPluginSelectorKnob();
 }
 
-void
+bool
 ReadNode::knobChanged(KnobI* k,
                       ValueChangedReasonEnum reason,
                       ViewSpec view,
                       double time,
                       bool originatedFromMainThread)
 {
+    bool ret =  true;
     if ( ( k == _imp->inputFileKnob.lock().get() ) && (reason != eValueChangedReasonTimeChanged) ) {
         if (_imp->creatingReadNode) {
             if (_imp->embeddedPlugin) {
                 _imp->embeddedPlugin->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
             }
 
-            return;
+            return false;
         }
         _imp->refreshPluginSelectorKnob();
         boost::shared_ptr<KnobFile> fileKnob = _imp->inputFileKnob.lock();
@@ -958,12 +959,11 @@ ReadNode::knobChanged(KnobI* k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
 
-        return;
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
         if ( entry == pluginIDKnob->getValue() ) {
-            return;
+            return false;
         }
 
         pluginIDKnob->setValue(entry);
@@ -978,10 +978,9 @@ ReadNode::knobChanged(KnobI* k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
 
-        return;
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
         if (!_imp->embeddedPlugin) {
-            return;
+            return false;
         }
 
 
@@ -1010,11 +1009,13 @@ ReadNode::knobChanged(KnobI* k,
             }
         }
 
-        return;
+    } else {
+        ret = false;
     }
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
+    if (!ret && _imp->embeddedPlugin) {
+        ret |= _imp->embeddedPlugin->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
+    return ret;
 } // ReadNode::knobChanged
 
 StatusEnum

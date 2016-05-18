@@ -256,7 +256,7 @@ public:
 
     void inputChanged(int inputNb);
 
-    void knobChanged(KnobI* k,
+    bool knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
                      double time,

@@ -185,7 +185,7 @@ public:
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
     virtual void endKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
-    virtual void knobChanged(KnobI* k,
+    virtual bool knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,

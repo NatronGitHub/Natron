@@ -2242,15 +2242,16 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
     }
 }
 
-void
+bool
 OfxEffectInstance::knobChanged(KnobI* k,
                                ValueChangedReasonEnum reason,
                                ViewSpec view,
                                double time,
                                bool /*originatedFromMainThread*/)
 {
+
     if (!_imp->initialized) {
-        return;
+        return false;
     }
 
 
@@ -2281,10 +2282,11 @@ OfxEffectInstance::knobChanged(KnobI* k,
         stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
     }
 
-    /*if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        return;
-       }*/
+    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        return false;
+    }
     Q_UNUSED(stat);
+    return true;
 } // knobChanged
 
 void

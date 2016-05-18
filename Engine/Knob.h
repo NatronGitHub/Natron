@@ -472,8 +472,9 @@ public:
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
+     * @returns true if the knobChanged handler was called once for this knob
      **/
-    virtual void evaluateValueChange(int dimension, double time, ViewSpec view, ValueChangedReasonEnum reason) = 0;
+    virtual bool evaluateValueChange(int dimension, double time, ViewSpec view, ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -1296,11 +1297,11 @@ public:
     virtual void blockListenersNotification() OVERRIDE FINAL;
     virtual void unblockListenersNotification() OVERRIDE FINAL;
     virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void evaluateValueChange(int dimension, double time, ViewSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual bool evaluateValueChange(int dimension, double time, ViewSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 protected:
-
-    void evaluateValueChangeInternal(int dimension,
+    // Returns true if the knobChanged handler was called
+    bool evaluateValueChangeInternal(int dimension,
                                      double time,
                                      ViewSpec view,
                                      ValueChangedReasonEnum reason,
@@ -2438,7 +2439,9 @@ public:
      * if needed when endChanges() is called
      **/
     void beginChanges();
-    void endChanges(bool discardEverything = false);
+
+    // Returns true if at least 1 knob changed handler was called
+    bool endChanges(bool discardEverything = false);
 
 
     /**
@@ -2462,7 +2465,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view,
+    virtual bool onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view,
                                            bool originatedFromMainThread);
 
 
@@ -2559,12 +2562,13 @@ protected:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged(KnobI* /*k*/,
+    virtual bool onKnobValueChanged(KnobI* /*k*/,
                                     ValueChangedReasonEnum /*reason*/,
                                     double /*time*/,
                                     ViewSpec /*view*/,
                                     bool /*originatedFromMainThread*/)
     {
+        return false;
     }
 
     virtual void onSignificantEvaluateAboutToBeCalled(KnobI* /*knob*/) {}

@@ -163,13 +163,14 @@ QtReader::initializeKnobs()
     _timeOffset->setSecretByDefault(true);
 } // initializeKnobs
 
-void
+bool
 QtReader::knobChanged(KnobI* k,
                       ValueChangedReasonEnum /*reason*/,
                       ViewSpec /*view*/,
                       double /*time*/,
                       bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == _fileKnob.get() ) {
         SequenceTime first, last;
         getSequenceTimeDomain(first, last);
@@ -222,7 +223,10 @@ QtReader::knobChanged(KnobI* k,
         _settingFrameRange = true;
         _startingFrame->setValue(offset + first, 0);
         _settingFrameRange = false;
+    } else {
+        ret = false;
     }
+    return ret;
 } // knobChanged
 
 void

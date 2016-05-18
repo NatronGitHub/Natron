@@ -8011,12 +8011,12 @@ Node::refreshIdentityState()
 /*
    This is called AFTER the instanceChanged action has been called on the plug-in
  */
-void
+bool
 Node::onEffectKnobValueChanged(KnobI* what,
                                ValueChangedReasonEnum reason)
 {
     if (!what) {
-        return;
+        return false;
     }
     for (std::map<int, MaskSelector >::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
         if (it->second.channel.lock().get() == what) {
@@ -8025,6 +8025,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
     }
 
+    bool ret = true;
     if ( what == _imp->previewEnabledKnob.lock().get() ) {
         if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
             Q_EMIT previewKnobToggled();
@@ -8090,38 +8091,52 @@ Node::onEffectKnobValueChanged(KnobI* what,
         std::string cacheInfo = makeCacheInfo();
         ssinfo << cacheInfo;
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
+    } else {
+        ret = false;
     }
 
-    for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
-        if (it->second.layer.lock().get() == what) {
-            _imp->onLayerChanged(it->first, it->second);
-        }
-    }
-
-    for (int i = 0; i < 4; ++i) {
-        boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
-        if (!enabled) {
-            break;
-        }
-        if (enabled.get() == what) {
-            checkForPremultWarningAndCheckboxes();
-        }
-    }
-
-    GroupInput* isInput = dynamic_cast<GroupInput*>( _imp->effect.get() );
-    if (isInput) {
-        if ( (what->getName() == kNatronGroupInputIsOptionalParamName)
-             || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
-            boost::shared_ptr<NodeCollection> col = isInput->getNode()->getGroup();
-            assert(col);
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>( col.get() );
-            assert(isGrp);
-            if (isGrp) {
-                ///Refresh input arrows of the node to reflect the state
-                isGrp->getNode()->initializeInputs();
+    if (!ret) {
+        for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
+            if (it->second.layer.lock().get() == what) {
+                _imp->onLayerChanged(it->first, it->second);
+                ret = true;
+                break;
             }
         }
     }
+
+    if (!ret) {
+        for (int i = 0; i < 4; ++i) {
+            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            if (!enabled) {
+                break;
+            }
+            if (enabled.get() == what) {
+                checkForPremultWarningAndCheckboxes();
+                ret = true;
+                break;
+            }
+        }
+    }
+
+    if (!ret) {
+        GroupInput* isInput = dynamic_cast<GroupInput*>( _imp->effect.get() );
+        if (isInput) {
+            if ( (what->getName() == kNatronGroupInputIsOptionalParamName)
+                || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
+                boost::shared_ptr<NodeCollection> col = isInput->getNode()->getGroup();
+                assert(col);
+                NodeGroup* isGrp = dynamic_cast<NodeGroup*>( col.get() );
+                assert(isGrp);
+                if (isGrp) {
+                    ///Refresh input arrows of the node to reflect the state
+                    isGrp->getNode()->initializeInputs();
+                    ret = true;
+                }
+            }
+        }
+    }
+    return ret;
 } // Node::onEffectKnobValueChanged
 
 bool

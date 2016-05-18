@@ -153,7 +153,7 @@ private:
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
 
 
-    virtual void knobChanged(KnobI* k,
+    virtual bool knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,

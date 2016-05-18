@@ -600,10 +600,10 @@ KnobButton::typeName() const
     return typeNameStatic();
 }
 
-void
+bool
 KnobButton::trigger()
 {
-    evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
+    return evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
 }
 
 

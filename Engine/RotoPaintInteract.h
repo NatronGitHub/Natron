@@ -748,10 +748,10 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
 
     boost::shared_ptr<Bezier> getBezierBeingBuild() const;
 
-    void smoothSelectedCurve();
-    void cuspSelectedCurve();
-    void removeFeatherForSelectedCurve();
-    void lockSelectedCurves();
+    bool smoothSelectedCurve();
+    bool cuspSelectedCurve();
+    bool removeFeatherForSelectedCurve();
+    bool lockSelectedCurves();
 
 
 

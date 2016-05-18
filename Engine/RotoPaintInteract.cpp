@@ -1651,7 +1651,7 @@ boost::shared_ptr<Bezier> RotoPaintInteract::getBezierBeingBuild() const
 
 
 
-void
+bool
 RotoPaintInteract::smoothSelectedCurve()
 {
     std::pair<double, double> pixelScale;
@@ -1687,10 +1687,12 @@ RotoPaintInteract::smoothSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new SmoothCuspUndoCommand(shared_from_this(), datas, time, false, pixelScale) );
+        return true;
     }
+    return false;
 }
 
-void
+bool
 RotoPaintInteract::cuspSelectedCurve()
 {
     std::pair<double, double> pixelScale;
@@ -1725,10 +1727,12 @@ RotoPaintInteract::cuspSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new SmoothCuspUndoCommand(shared_from_this(), datas, time, true, pixelScale) );
+        return true;
     }
+    return false;
 }
 
-void
+bool
 RotoPaintInteract::removeFeatherForSelectedCurve()
 {
     std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;
@@ -1753,19 +1757,24 @@ RotoPaintInteract::removeFeatherForSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new RemoveFeatherUndoCommand(shared_from_this(), datas) );
+        return true;
     }
+    return false;
 }
 
-void
+bool
 RotoPaintInteract::lockSelectedCurves()
 {
     ///Make a copy because setLocked will change the selection internally and invalidate the iterator
     SelectedItems selection = selectedItems;
-
+    if (selection.empty()) {
+        return false;
+    }
     for (SelectedItems::const_iterator it = selection.begin(); it != selection.end(); ++it) {
         (*it)->setLocked(true, false, RotoItem::eSelectionReasonOverlayInteract);
     }
     clearSelection();
+    return true;
 }
 
 bool

@@ -161,7 +161,7 @@ private:
     void removeInstancesInternal();
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,

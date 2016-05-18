@@ -2036,7 +2036,7 @@ crash_application()
     *a = 1;
 }
 
-void
+bool
 Settings::onKnobValueChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
@@ -2045,6 +2045,7 @@ Settings::onKnobValueChanged(KnobI* k,
 {
     Q_EMIT settingChanged(k);
 
+    bool ret = true;
     if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
@@ -2168,10 +2169,15 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->reloadScriptEditorFonts();
     } else if ( k == _pluginUseImageCopyForSource.get() ) {
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
+    } else {
+        ret = false;
     }
-    if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
-        Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+    if (ret) {
+        if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
+            Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
+        }
     }
+    return ret;
 } // onKnobValueChanged
 
 ImageBitDepthEnum

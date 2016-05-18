@@ -1143,7 +1143,7 @@ RotoPaint::onKnobsLoaded()
     }
 }
 
-void
+bool
 RotoPaint::knobChanged(KnobI* k,
                        ValueChangedReasonEnum reason,
                        ViewSpec view,
@@ -1152,21 +1152,23 @@ RotoPaint::knobChanged(KnobI* k,
 {
 
     if (!k) {
-        return;
+        return false;
     }
+
 
     boost::shared_ptr<RotoContext> ctx = getNode()->getRotoContext();
 
     if (!ctx) {
-        return;
+        return false;
     }
+    bool ret = true;
     KnobPtr kShared = k->shared_from_this();
     boost::shared_ptr<KnobButton> isBtn = boost::dynamic_pointer_cast<KnobButton>(kShared);
     boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(kShared);
     if (isBtn && _imp->ui->onToolChangedInternal(isBtn)) {
-        return;
+        return true;
     } else if (isGrp && _imp->ui->onRoleChangedInternal(isGrp)) {
-        return;
+        return true;
     } else if (k == _imp->ui->featherLinkEnabledButton.lock().get()) {
         ctx->onFeatherLinkChanged(_imp->ui->featherLinkEnabledButton.lock()->getValue());
     } else if (k == _imp->ui->autoKeyingEnabledButton.lock().get()) {
@@ -1213,25 +1215,37 @@ RotoPaint::knobChanged(KnobI* k,
             pushUndoCommand( new RemoveCurveUndoCommand(_imp->ui, _imp->ui->selectedItems) );
         }
     } else if (k == _imp->ui->smoothItemMenuAction.lock().get()) {
-        _imp->ui->smoothSelectedCurve();
+        if (!_imp->ui->smoothSelectedCurve()) {
+            return false;
+        }
     } else if (k == _imp->ui->cuspItemMenuAction.lock().get()) {
-        _imp->ui->cuspSelectedCurve();
+        if (!_imp->ui->cuspSelectedCurve()) {
+            return false;
+        }
     } else if (k == _imp->ui->removeItemFeatherMenuAction.lock().get()) {
-
-        _imp->ui->removeFeatherForSelectedCurve();
-
+        if (!_imp->ui->removeFeatherForSelectedCurve()) {
+            return false;
+        }
     } else if (k == _imp->ui->linkPointMenuAction.lock().get()) {
 
     } else if (k == _imp->ui->unlinkPointMenuAction.lock().get()) {
 
     } else if (k == _imp->ui->nudgeLeftMenuAction.lock().get()) {
-        _imp->ui->moveSelectedCpsWithKeyArrows(-1, 0);
+        if (!_imp->ui->moveSelectedCpsWithKeyArrows(-1, 0)) {
+            return false;
+        }
     } else if (k == _imp->ui->nudgeRightMenuAction.lock().get()) {
-        _imp->ui->moveSelectedCpsWithKeyArrows(1, 0);
+        if (!_imp->ui->moveSelectedCpsWithKeyArrows(1, 0)) {
+            return false;
+        }
     } else if (k == _imp->ui->nudgeBottomMenuAction.lock().get()) {
-        _imp->ui->moveSelectedCpsWithKeyArrows(0, -1);
+        if (!_imp->ui->moveSelectedCpsWithKeyArrows(0, -1)) {
+            return false;
+        }
     } else if (k == _imp->ui->nudgeTopMenuAction.lock().get()) {
-        _imp->ui->moveSelectedCpsWithKeyArrows(0, 1);
+        if (!_imp->ui->moveSelectedCpsWithKeyArrows(0, 1)) {
+            return false;
+        }
     } else if (k == _imp->ui->selectAllMenuAction.lock().get()) {
         _imp->ui->iSelectingwithCtrlA = true;
         ///if no bezier are selected, select all beziers
@@ -1272,10 +1286,14 @@ RotoPaint::knobChanged(KnobI* k,
         }
     } else if (k == _imp->ui->lockShapeMenuAction.lock().get()) {
         _imp->ui->lockSelectedCurves();
+    } else {
+        ret = false;
     }
 
-
-    ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
+    if (!ret) {
+        ret |= ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
+    }
+    return ret;
 }
 
 void
@@ -3112,89 +3130,17 @@ RotoPaint::onOverlayKeyDown(double /*time*/, const RenderScale & /*renderScale*/
         }
     }
 
-    /*if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoDelete, modifiers, key) ) {
-        ///if control points are selected, delete them, otherwise delete the selected beziers
-        if ( !_imp->rotoData->selectedCps.empty() ) {
-            pushUndoCommand( new RemovePointUndoCommand(this, _imp->rotoData->selectedCps) );
-            didSomething = true;
-        } else if ( !_imp->rotoData->selectedItems.empty() ) {
-            pushUndoCommand( new RemoveCurveUndoCommand(this, _imp->rotoData->selectedItems) );
-            didSomething = true;
-        }
-    } else if ( ( (key == Qt::Key_Escape) && ( (_imp->selectedTool == eRotoToolDrawBezier) || (_imp->selectedTool == eRotoToolOpenBezier) ) ) || isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, modifiers, key) ) {
-        if ( ( (_imp->selectedTool == eRotoToolDrawBezier) || (_imp->selectedTool == eRotoToolOpenBezier) ) && _imp->rotoData->builtBezier && !_imp->rotoData->builtBezier->isCurveFinished() ) {
-            pushUndoCommand( new OpenCloseUndoCommand(this, _imp->rotoData->builtBezier) );
+    if ( ( (key == Key_Escape) && ( (_imp->ui->selectedTool == eRotoToolDrawBezier) || (_imp->ui->selectedTool == eRotoToolOpenBezier) ) )) {
+        if ( ( (_imp->ui->selectedTool == eRotoToolDrawBezier) || (_imp->ui->selectedTool == eRotoToolOpenBezier) ) && _imp->ui->builtBezier && !_imp->ui->builtBezier->isCurveFinished() ) {
+            pushUndoCommand( new OpenCloseUndoCommand(_imp->ui, _imp->ui->builtBezier) );
 
-            _imp->rotoData->builtBezier.reset();
-            _imp->rotoData->selectedCps.clear();
-            onToolActionTriggered(_imp->selectAllAction);
-            _imp->context->evaluateChange();
+            _imp->ui->builtBezier.reset();
+            _imp->ui->selectedCps.clear();
+            _imp->ui->onToolChangedInternal(_imp->ui->selectAllAction.lock());
+            getNode()->getRotoContext()->evaluateChange();
             didSomething = true;
         }
-    } else if ( isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectAll, modifiers, key) ) {
-        _imp->iSelectingwithCtrlA = true;
-        ///if no bezier are selected, select all beziers
-        if ( _imp->rotoData->selectedItems.empty() ) {
-            std::list<boost::shared_ptr<RotoDrawableItem> > bez = _imp->context->getCurvesByRenderOrder();
-            for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = bez.begin(); it != bez.end(); ++it) {
-                _imp->context->select(*it, RotoItem::eSelectionReasonOverlayInteract);
-                _imp->rotoData->selectedItems.push_back(*it);
-            }
-        } else {
-            ///select all the control points of all selected beziers
-            _imp->rotoData->selectedCps.clear();
-            for (SelectedItems::iterator it = _imp->rotoData->selectedItems.begin(); it != _imp->rotoData->selectedItems.end(); ++it) {
-                Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
-                if (!isBezier) {
-                    continue;
-                }
-                const std::list<boost::shared_ptr<BezierCP> > & cps = isBezier->getControlPoints();
-                const std::list<boost::shared_ptr<BezierCP> > & fps = isBezier->getFeatherPoints();
-                assert( cps.size() == fps.size() );
-
-                std::list<boost::shared_ptr<BezierCP> >::const_iterator cpIT = cps.begin();
-                for (std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIT = fps.begin(); fpIT != fps.end(); ++fpIT, ++cpIT) {
-                    _imp->rotoData->selectedCps.push_back( std::make_pair(*cpIT, *fpIT) );
-                }
-            }
-            _imp->computeSelectedCpsBBOX();
-        }
-        didSomething = true;
-    } else if ( (_imp->state != eEventStateBuildingStroke) && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, modifiers, key) ) {
-        _imp->selectTool->handleSelection();
-        didSomething = true;
-    } else if ( (_imp->state != eEventStateBuildingStroke) && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, modifiers, key) ) {
-        if (_imp->bezierEditionTool) {
-            _imp->bezierEditionTool->handleSelection();
-            didSomething = true;
-        }
-    } else if ( (_imp->state != eEventStateBuildingStroke) && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, modifiers, key) ) {
-        if (_imp->pointsEditionTool) {
-            _imp->pointsEditionTool->handleSelection();
-            didSomething = true;
-        }
-    } else if ( (_imp->state != eEventStateBuildingStroke) && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, modifiers, key) ) {
-        if (_imp->paintBrushTool) {
-            _imp->paintBrushTool->handleSelection();
-            didSomething = true;
-        }
-    } else if ( (_imp->state != eEventStateBuildingStroke) && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, modifiers, key) ) {
-        if (_imp->cloneBrushTool) {
-            _imp->cloneBrushTool->handleSelection();
-            didSomething = true;
-        }
-    } else if ( (_imp->state != eEventStateBuildingStroke) && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, modifiers, key) ) {
-        if (_imp->effectBrushTool) {
-            _imp->effectBrushTool->handleSelection();
-            didSomething = true;
-        }
-    } else if ( (_imp->state != eEventStateBuildingStroke) && isKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, modifiers, key) ) {
-        if (_imp->mergeBrushTool) {
-            _imp->mergeBrushTool->handleSelection();
-            didSomething = true;
-        }
-    }*/
-
+    }
     return didSomething;
 } //onOverlayKeyDown
 
