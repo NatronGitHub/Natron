@@ -2702,7 +2702,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
                                                   /*fullScaleWithDownscaleInputs=*/ false) );
 
     {
-        QMutexLocker k(&_imp->cacheAccessMutex);
+        QReadLocker k(&_imp->cacheAccessMutex);
         node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
 
@@ -2785,7 +2785,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
        the trimap and notification system here in the rotocontext, which would be to much just for this small object, rather we just lock
        it once, which is fine.
      */
-    QMutexLocker k(&_imp->cacheAccessMutex);
+    QWriteLocker k(&_imp->cacheAccessMutex);
     AppManager::getImageFromCacheOrCreate(*key, params, &image);
     if (!image) {
         std::stringstream ss;
