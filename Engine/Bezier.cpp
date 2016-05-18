@@ -1058,9 +1058,9 @@ Bezier::addControlPointAfterIndex(int index,
         if ( !_imp->hasKeyframeAtTime(useGuiCurve, currentTime) && getContext()->isAutoKeyingEnabled() ) {
             l.unlock();
             setKeyframe(currentTime);
+            l.relock();
         }
         if (!useGuiCurve) {
-            QMutexLocker k(&itemMutex);
             copyInternalPointsToGuiPoints();
         }
     }

@@ -71,10 +71,6 @@
 #include "Gui/ZoomContext.h"
 #include "Gui/TabWidget.h"
 
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
-
 #define NATRON_DOPESHEET_MIN_RANGE_FIT 10
 
 NATRON_NAMESPACE_ENTER;

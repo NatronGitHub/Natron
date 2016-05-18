@@ -399,6 +399,8 @@ public:
     const std::list<NodePtr>& getNodesBeingCreated() const;
     virtual bool isDraftRenderEnabled() const { return false; }
 
+    virtual void setDraftRenderEnabled(bool /*b*/) {}
+
     virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
                                    const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
                                    bool /*isPainting*/) {}

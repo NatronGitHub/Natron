@@ -760,16 +760,29 @@ RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
 
     boost::shared_ptr<KnobGroup> curGroup = selectedToolRole.lock();
     boost::shared_ptr<KnobButton> curTool = selectedToolAction.lock();
-    if (curGroup) {
+    if (curGroup && curGroup != parentGroup) {
         curGroup->setValue(false);
     }
-    if (curTool) {
+
+    // If we changed group, just keep this action on
+    if (curTool && curGroup == parentGroup) {
         curTool->setValue(false);
     }
     selectedToolAction = tool;
     selectedToolRole = parentGroup;
-    parentGroup->setValue(true);
-    tool->setValue(true);
+    if (parentGroup != curGroup) {
+        if (parentGroup->getValue() != true) {
+            parentGroup->setValue(true);
+        } else {
+            onRoleChangedInternal(parentGroup);
+        }
+    }
+    if (tool->getValue() != true) {
+        tool->setValue(true);
+    } else {
+        // We must notify of the change
+        onToolChangedInternal(tool);
+    }
 }
 
 

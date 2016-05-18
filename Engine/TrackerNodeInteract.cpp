@@ -1361,11 +1361,13 @@ TrackerNodeInteract::onTrackingStarted(int step)
         _imp->trackBwButton->setChecked(true);
         _imp->trackBwButton->setDown(true);
     }
+#endif
 }
 
 void
 TrackerNodeInteract::onTrackingEnded()
 {
+#if 0
     _imp->trackBwButton->setChecked(false);
     _imp->trackFwButton->setChecked(false);
     _imp->trackBwButton->setDown(false);

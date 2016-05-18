@@ -42,10 +42,6 @@
 #include "Gui/GuiFwd.h"
 
 
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
-
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
 
 NATRON_NAMESPACE_ENTER;

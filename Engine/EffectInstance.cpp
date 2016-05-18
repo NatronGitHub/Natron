@@ -3221,9 +3221,8 @@ EffectInstance::onOverlayFocusGained_public(double time,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusGained(time, actualScale, view);
-        if (!ret) {
-            ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
-        }
+        ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
+
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3254,9 +3253,8 @@ EffectInstance::onOverlayFocusLost_public(double time,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusLost(time, actualScale, view);
-        if (!ret) {
-            ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
-        }
+        ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
+
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();

@@ -52,7 +52,7 @@ If compiling on Mac OS X 10.6 with Xcode 4, you should also revert to the defaul
 
 And finally install the required packages:
 
-	sudo port install qt4-mac boost cairo expat glfw-devel
+	sudo port install qt4-mac boost cairo expat
 	sudo port install py27-pyside py27-sphinx
 	sudo ln -s python2.7-config /opt/local/bin/python2-config
 

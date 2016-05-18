@@ -469,6 +469,7 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobDouble> effectStrength = AppManager::createKnob<KnobDouble>(this, tr(kRotoUIParamEffectLabel));
     effectStrength->setName(kRotoUIParamEffect);
+    effectStrength->setInViewerContextLabel(tr(kRotoUIParamEffectLabel));
     effectStrength->setHintToolTip(tr(kRotoUIParamEffectHint));
     effectStrength->setEvaluateOnChange(false);
     effectStrength->setSecretByDefault(true);
@@ -535,6 +536,7 @@ RotoPaint::initializeKnobs()
     resetCloneOffset->setInViewerContextCanHaveShortcut(true);
     resetCloneOffset->setInViewerContextNewLineActivated(true);
     generalPage->addKnob(resetCloneOffset);
+    addOverlaySlaveParam(resetCloneOffset);
     _imp->ui->resetCloneOffsetButton = resetCloneOffset;
 
 
@@ -930,6 +932,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionRemoveItems);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->removeItemsMenuAction = action;
@@ -939,6 +942,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionCuspItems);
         action->setEvaluateOnChange(false);
         action->setSecretByDefault(true);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->cuspItemMenuAction = action;
@@ -948,6 +952,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionSmoothItems);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->smoothItemMenuAction = action;
@@ -957,6 +962,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionRemoveItemsFeather);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->removeItemFeatherMenuAction = action;
@@ -975,6 +981,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionUnlinkItemsFromTrack);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->unlinkPointMenuAction = action;
@@ -984,6 +991,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionNudgeBottom);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->nudgeBottomMenuAction = action;
@@ -993,6 +1001,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionNudgeLeft);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->nudgeLeftMenuAction = action;
@@ -1002,6 +1011,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionNudgeTop);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->nudgeTopMenuAction = action;
@@ -1011,6 +1021,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionNudgeRight);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->nudgeRightMenuAction = action;
@@ -1020,6 +1031,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionSelectAll);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         generalPage->addKnob(action);
         _imp->ui->selectAllMenuAction = action;
     }
@@ -1028,6 +1040,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionOpenClose);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->openCloseMenuAction = action;
@@ -1037,6 +1050,7 @@ RotoPaint::initializeKnobs()
         action->setName(kRotoUIParamRightClickMenuActionLockShapes);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
+        action->setInViewerContextCanHaveShortcut(true);
         addOverlaySlaveParam(action);
         generalPage->addKnob(action);
         _imp->ui->lockShapeMenuAction = action;
@@ -1171,6 +1185,7 @@ RotoPaint::knobChanged(KnobI* k,
         _imp->ui->onBreakMultiStrokeTriggered();
     } else if (k == _imp->ui->resetCloneOffsetButton.lock().get()) {
         _imp->ui->onBreakMultiStrokeTriggered();
+        _imp->ui->cloneOffset.first = _imp->ui->cloneOffset.second = 0;
     } else if (k == _imp->ui->addKeyframeButton.lock().get()) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
             Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
@@ -2533,6 +2548,8 @@ RotoPaint::onOverlayPenDown(double time, const RenderScale & renderScale, ViewId
         case eRotoToolSmear:
         case eRotoToolDodge:
         case eRotoToolBurn: {
+
+
             if ( ( ( _imp->ui->selectedTool == eRotoToolClone) || ( _imp->ui->selectedTool == eRotoToolReveal) ) && _imp->ui->ctrlDown &&
                 !_imp->ui->shiftDown && !_imp->ui->altDown) {
                 _imp->ui->state = eEventStateDraggingCloneOffset;
@@ -2930,6 +2947,12 @@ RotoPaint::onOverlayPenMotion(double time, const RenderScale & /*renderScale*/, 
         }
         case eEventStateBuildingStroke: {
             if (_imp->ui->strokeBeingPaint) {
+
+                // disable draft during painting
+                if (getApp()->isDraftRenderEnabled()) {
+                    getApp()->setDraftRenderEnabled(false);
+                }
+
                 RotoPoint p(pos.x(), pos.y(), pressure, timestamp);
                 if ( _imp->ui->strokeBeingPaint->appendPoint(false, p) ) {
                     _imp->ui->lastMousePos = pos;
@@ -3181,11 +3204,17 @@ RotoPaint::onOverlayKeyUp(double /*time*/, const RenderScale & /*renderScale*/, 
     bool didSomething = false;
 
     if (key == Key_Shift_L || key == Key_Shift_R) {
-        --_imp->ui->shiftDown;
+        if (_imp->ui->shiftDown) {
+            --_imp->ui->shiftDown;
+        }
     } else if (key == Key_Control_L || key == Key_Control_R) {
-        --_imp->ui->ctrlDown;
+        if (_imp->ui->ctrlDown) {
+            --_imp->ui->ctrlDown;
+        }
     } else if (key == Key_Alt_L || key == Key_Alt_R) {
-        --_imp->ui->altDown;
+        if (_imp->ui->altDown) {
+            --_imp->ui->altDown;
+        }
     }
 
 

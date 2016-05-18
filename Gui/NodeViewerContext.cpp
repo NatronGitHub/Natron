@@ -189,23 +189,27 @@ NodeViewerContext::createGui()
             for (std::size_t i = 0; i < pageChildren.size(); ++i) {
                 KnobGroup* isGroup = dynamic_cast<KnobGroup*>(pageChildren[i].get());
                 if (isGroup) {
+
+                    QObject::connect(isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)));
                     std::vector<KnobPtr> toolButtonChildren = isGroup->getChildren();
 
                     ViewerToolButton* createdToolButton = 0;
+                    QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
                         KnobButton* isButton = dynamic_cast<KnobButton*>(toolButtonChildren[j].get());
                         if (isButton) {
+                            QObject::connect(isButton->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolActionValueChanged(ViewSpec,int,int)));
                             const std::string& roleShortcutID = isGroup->getName();
                             QAction* act = _imp->addToolBarTool(isButton->getName(), isGroup->getName(), roleShortcutID, isButton->getLabel(), isButton->getHintToolTip(), isButton->getIconLabel(), &createdToolButton);
                             if (act && createdToolButton && isButton->getValue()) {
                                 createdToolButton->setDefaultAction(act);
-
-                                _imp->currentTool = QString::fromUtf8(isButton->getName().c_str());
+                                currentActionForGroup = QString::fromUtf8(isButton->getName().c_str());
                             }
 
                         }
                     }
                     if (isGroup->getValue()) {
+                        _imp->currentTool = currentActionForGroup;
                         _imp->currentRole = QString::fromUtf8(isGroup->getName().c_str());
                         if (createdToolButton) {
                             createdToolButton->setDown(true);
@@ -676,13 +680,15 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action, bool no
                 }
 
 
-                if (oldIsButton->getValue() != false) {
-                    oldIsButton->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
-                } else {
-                    // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                // Only change the value of the button if we are in the same group
+                if (oldIsGroup == newIsGroup) {
+                    if (oldIsButton->getValue() != false) {
+                        oldIsButton->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                    } else {
+                        // We must issue at least a knobChanged call
+                        effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                    }
                 }
-
                 if (newIsButton->getValue() != true) {
                     newIsButton->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
                 } else {
@@ -700,7 +706,7 @@ void
 NodeViewerContext::updateSelectionFromViewerSelectionRectangle(bool onRelease)
 {
     NodeGuiPtr n = _imp->getNode();
-    if (n) {
+    if (!n) {
         return;
     }
     NodePtr node = n->getNode();
@@ -716,7 +722,7 @@ void
 NodeViewerContext::onViewerSelectionCleared()
 {
     NodeGuiPtr n = _imp->getNode();
-    if (n) {
+    if (!n) {
         return;
     }
     NodePtr node = n->getNode();
