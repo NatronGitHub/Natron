@@ -552,6 +552,9 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         knob->setIconLabel(iconFilePath);
     }
 
+    bool isMarkdown = descriptor.getProperties().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
+    knob->setHintIsMarkdown(isMarkdown);
+
     knob->setIsMetadataSlave( isClipPreferencesSlaveParam(paramName) );
     knob->setIsPersistant(persistant);
     knob->setAnimationEnabled( descriptor.getCanAnimate() );

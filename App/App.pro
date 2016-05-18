@@ -79,7 +79,7 @@ win32-g++ {
 #Gcc is very picky here, if we include these libraries before the includes commands above, it will yield tons of unresolved externals
 	LIBS += -lmpr
 	#MingW needs to link against fontconfig explicitly since in Msys2 Qt does not link against fontconfig
-	LIBS +=  -lglu32 -lopengl32 -lfontconfig
+        LIBS +=  -lopengl32 -lfontconfig
 }
 
 SOURCES += \

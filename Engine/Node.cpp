@@ -3958,6 +3958,7 @@ Node::makeHTMLDocumentation(bool genHTML) const
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
     QStringList pluginGroup;
+    bool pluginDescriptionMarkdown = false;
 
     {
         QMutexLocker k(&_imp->pluginPythonModuleMutex);
@@ -3967,6 +3968,7 @@ Node::makeHTMLDocumentation(bool genHTML) const
         pluginDescription = _imp->pyPlugDesc.empty() ? QString::fromUtf8( _imp->effect->getPluginDescription().c_str() ) : QString::fromUtf8( _imp->pyPlugDesc.c_str() );
         pluginIcon = _imp->plugin->getIconFilePath();
         pluginGroup = _imp->plugin->getGrouping();
+        pluginDescriptionMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
     }
 
     if (genHTML) {
@@ -4008,9 +4010,12 @@ Node::makeHTMLDocumentation(bool genHTML) const
     }
 
     if (genHTML) {
-        //ts << markdown.convert2html(pluginDescription);
-        pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
-        ts << "<p>" << pluginDescription << "</p>";
+        if (pluginDescriptionMarkdown) {
+            ts << markdown.convert2html(pluginDescription);
+        } else {
+            pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+            ts << "<p>" << pluginDescription << "</p>";
+        }
     }
     else {
         ts << pluginDescription;
@@ -4130,9 +4135,12 @@ Node::makeHTMLDocumentation(bool genHTML) const
             } else {
                 ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
             }
-            //ts << "<td class=\"knobsTableValue\">" << markdown.convert2html(knobHint) << "</td>";
-            knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
-            ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
+            if ( (*it)->isHintInMarkdown() ) {
+                ts << "<td class=\"knobsTableValue\">" << markdown.convert2html(knobHint) << "</td>";
+            } else {
+                knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+                ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
+            }
             ts << "</tr>";
         }
         else {

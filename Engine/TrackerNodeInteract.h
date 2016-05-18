@@ -275,6 +275,15 @@ public:
     boost::weak_ptr<KnobButton> resetOffsetButton;
     boost::weak_ptr<KnobButton> resetTrackButton;
     boost::weak_ptr<KnobButton> showCorrelationButton;
+
+    // Track range dialog
+    boost::weak_ptr<KnobGroup> trackRangeDialogGroup;
+    boost::weak_ptr<KnobInt> trackRangeDialogFirstFrame;
+    boost::weak_ptr<KnobInt> trackRangeDialogLastFrame;
+    boost::weak_ptr<KnobInt> trackRangeDialogStep;
+    boost::weak_ptr<KnobBool> trackRangeDialogOkButton;
+    boost::weak_ptr<KnobBool> trackRangeDialogCancelButton;
+
     bool clickToAddTrackEnabled;
     QPointF lastMousePos;
     QRectF selectionRectangle;
@@ -306,7 +315,8 @@ public:
     TrackerNodeInteract(TrackerNodePrivate* p);
 
     ~TrackerNodeInteract();
-    
+
+    boost::shared_ptr<TrackerContext> getContext() const;
 
     void onAddTrackClicked(bool clicked);
 
@@ -333,10 +343,6 @@ public:
     void onClearBwAnimationClicked();
     
     void onClearFwAnimationClicked();
-
-    void onCreateKeyOnMoveButtonClicked(bool clicked);
-
-    void onShowCorrelationButtonClicked(bool clicked);
 
     void onCenterViewerButtonClicked(bool clicked);
 
@@ -378,7 +384,7 @@ public:
     bool isInsideSelectedMarkerTextureResizeAnchor(const QPointF& pos) const;
 
     ///Returns the keyframe time if the mouse is inside a keyframe texture
-    int isInsideKeyFrameTexture(double currentTime, const QPointF& pos, const QPointF& viewportPos) const;
+    int isInsideKeyFrameTexture(double currentTime, const QPointF& pos, const QPointF& viewportPos, const std::pair<double, double>& pixelScale) const;
 
     static Point toMagWindowPoint(const Point& ptnPoint,
                                   const RectD& canonicalSearchWindow,
@@ -417,6 +423,7 @@ public:
                                      const Point& l1,
                                      const Point& l2,
                                      Point* inter);
+
 
 
 public Q_SLOTS:

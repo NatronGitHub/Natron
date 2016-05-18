@@ -252,7 +252,7 @@ win32-g++ {
     CONFIG += link_pkgconfig
 
     # Natron requires a link to opengl32.dll for offscreen rendering
-    LIBS += -lopengl32 -lGLU
+    LIBS += -lopengl32
 
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
@@ -276,7 +276,7 @@ unix {
 
      # GLFW will require a link to X11 on linux and OpenGL framework on OS X
      linux-* {
-          LIBS += -lGL -lX11 -lGLU
+          LIBS += -lGL -lX11
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
          cairo {
              PKGCONFIG += pixman-1 freetype2 fontconfig
