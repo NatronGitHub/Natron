@@ -548,7 +548,12 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
-    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
+    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
+        update();
+    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
+        update();
+    }
+    else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->viewerChannels->setCurrentIndex_no_emit(1);
@@ -766,10 +771,6 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
-    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
-        update();
-    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
-        update();
     } else if (key == Qt::Key_Escape) {
         _imp->viewer->s_selectionCleared();
         update();

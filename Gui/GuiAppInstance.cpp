@@ -1106,6 +1106,14 @@ GuiAppInstance::isDraftRenderEnabled() const
 }
 
 void
+GuiAppInstance::setDraftRenderEnabled(bool b)
+{
+    if (_imp->_gui) {
+        _imp->_gui->setDraftRenderEnabled(b);
+    }
+}
+
+void
 GuiAppInstance::setUserIsPainting(const NodePtr& rotopaintNode,
                                   const boost::shared_ptr<RotoStrokeItem>& stroke,
                                   bool isPainting)

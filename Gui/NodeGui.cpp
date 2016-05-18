@@ -3804,11 +3804,7 @@ NodeGui::onRightClickMenuKnobPopulated()
         return;
     }
 
-    KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>(sender());
-    if (!handler) {
-        return;
-    }
-    KnobPtr rightClickKnob = handler->getKnob();
+    KnobPtr rightClickKnob = node->getKnobByName(kNatronOfxParamRightClickMenu);
     if (!rightClickKnob) {
         return;
     }
