@@ -2047,6 +2047,7 @@ ViewerGL::penMotionInternal(int x,
                             double timestamp,
                             QInputEvent* e)
 {
+    Q_UNUSED(e);
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
