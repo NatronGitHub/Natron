@@ -766,6 +766,8 @@ RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
     if (curTool) {
         curTool->setValue(false);
     }
+    selectedToolAction = tool;
+    selectedToolRole = parentGroup;
     parentGroup->setValue(true);
     tool->setValue(true);
 }
