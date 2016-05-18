@@ -31,6 +31,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
 

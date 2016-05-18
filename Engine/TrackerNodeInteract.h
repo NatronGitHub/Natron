@@ -28,7 +28,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include <QFutureWatcher>
-#include <QPointF>
+#include <QtCore/QPointF>
+#include <QtCore/QRectF>
 
 #include "Engine/EngineFwd.h"
 #include "Engine/KnobTypes.h"

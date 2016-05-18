@@ -25,10 +25,13 @@
 
 #include "RotoPaintInteract.h"
 
+#include <QtCore/QLineF>
+
 #include "Global/GLIncludes.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/MergingEnum.h"
+#include "Engine/Node.h"
 #include "Engine/RotoPoint.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoStrokeItem.h"

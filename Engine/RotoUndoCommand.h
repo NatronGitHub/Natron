@@ -30,6 +30,7 @@
 #include <list>
 #include <map>
 
+#include <QtCore/QCoreApplication>
 
 #include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"

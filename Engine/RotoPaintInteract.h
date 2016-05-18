@@ -26,7 +26,8 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
-#include <QPointF>
+#include <QtCore/QPointF>
+#include <QtCore/QRectF>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>

@@ -46,6 +46,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"
+#include "Gui/GuiApplicationManager.h" // isKeybind
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGui.h"
 #include "Gui/QtEnumConvert.h"
