@@ -2748,7 +2748,9 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
             for (std::list<Point> ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 points.push_back( std::make_pair(*it, 1.) );
             }
-            strokes.push_back(points);
+            if (!points.empty()) {
+                strokes.push_back(points);
+            }
         }
     }
 

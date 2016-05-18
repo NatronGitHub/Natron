@@ -1,5 +1,9 @@
+#include "Global/Macros.h"
+
+GCC_DIAG_OFF(unused-parameter)
+
 #ifdef DEBUG
-#include "Global/gladDeb/src/glad.c"
+#include "gladDeb/src/glad.c"
 #else
-#include "Global/gladRel/src/glad.c"
+#include "gladRel/src/glad.c"
 #endif

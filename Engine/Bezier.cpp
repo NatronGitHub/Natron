@@ -1060,6 +1060,7 @@ Bezier::addControlPointAfterIndex(int index,
             setKeyframe(currentTime);
         }
         if (!useGuiCurve) {
+            QMutexLocker k(&itemMutex);
             copyInternalPointsToGuiPoints();
         }
     }
