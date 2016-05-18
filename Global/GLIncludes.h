@@ -19,7 +19,7 @@
 #ifndef NATRON_GLOBAL_GLINCLUDES_H
 #define NATRON_GLOBAL_GLINCLUDES_H
 
-#include "Global/glad_include.h"
+#include "glad_include.h"
 
 /* this is where we can safely include GLU */
 #  if defined(__APPLE__) && defined(__MACH__)
