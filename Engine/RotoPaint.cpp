@@ -586,7 +586,6 @@ RotoPaint::initializeKnobs()
     boost::shared_ptr<KnobGroup> selectionToolButton = AppManager::createKnob<KnobGroup>(this, tr(kRotoUIParamSelectionToolButtonLabel));
     selectionToolButton->setName(kRotoUIParamSelectionToolButton);
     selectionToolButton->setAsToolButton(true);
-    selectionToolButton->setDefaultValue(true);
     selectionToolButton->setEvaluateOnChange(false);
     selectionToolButton->setSecretByDefault(true);
     selectionToolButton->setInViewerContextCanHaveShortcut(true);
@@ -1054,7 +1053,7 @@ RotoPaint::initializeKnobs()
     }
     _imp->ui->setCurrentTool(defaultAction);
     _imp->ui->onRoleChangedInternal(defaultRole);
-    _imp->ui->setCurrentTool(defaultAction);
+    _imp->ui->onToolChangedInternal(defaultAction);
 }
 
 void
@@ -1117,9 +1116,10 @@ RotoPaint::onKnobsLoaded()
                 for (std::vector<KnobPtr>::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
                     boost::shared_ptr<KnobButton> isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
                     if (isButton && isButton->getValue()) {
+
                         _imp->ui->setCurrentTool(isButton);
                         _imp->ui->onRoleChangedInternal(isChildGroup);
-                        _imp->ui->setCurrentTool(isButton);
+                        _imp->ui->onToolChangedInternal(isButton);
                         break;
                     }
                 }
@@ -2953,6 +2953,8 @@ RotoPaint::onOverlayPenMotion(double time, const RenderScale & /*renderScale*/, 
                 size = sizeSb->getValue();
             }
             size += ( (dx + dy) / 2. );
+            const double scale = 0.01;  // i.e. round to nearest one-hundreth
+            size = std::floor(size / scale + 0.5) * scale;
             if (sizeSb) {
                 sizeSb->setValue( std::max(1., size) );
             }
@@ -2973,6 +2975,8 @@ RotoPaint::onOverlayPenMotion(double time, const RenderScale & /*renderScale*/, 
             } else {
                 newOpa = newOpa < 0 ? .0 : 0.05;
             }
+            const double scale = 0.01;  // i.e. round to nearest one-hundreth
+            newOpa = std::floor(newOpa / scale + 0.5) * scale;
             if (opaSb) {
                 opaSb->setValue(newOpa);
             }
