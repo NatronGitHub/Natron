@@ -27,6 +27,7 @@
 
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
+#include "Engine/Node.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TrackMarker.h"
