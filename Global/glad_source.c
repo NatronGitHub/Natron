@@ -1,5 +1,5 @@
 #ifdef DEBUG
-#include "Global/glad_debug/src/glad.c"
+#include "Global/gladDeb/src/glad.c"
 #else
-#include "Global/glad_release/src/glad.c"
+#include "Global/gladRel/src/glad.c"
 #endif
