@@ -88,6 +88,7 @@ public:
         return true;
     }
 
+    void onToolButtonShortcutPressed(const QString& roleID);
 
 Q_SIGNALS:
 
