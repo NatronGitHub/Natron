@@ -255,7 +255,7 @@ DocumentationManager::handler(QHttpRequest *req,
         if ( staticFile.open(QIODevice::ReadOnly) ) {
             if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
                 QString input = QString::fromUtf8( staticFile.readAll() );
-                body = input.toUtf8();
+                body = parser(input, docDir).toUtf8();
             } else {
                 body = staticFile.readAll();
             }
@@ -309,7 +309,13 @@ DocumentationManager::parser(QString html,
     QFile indexFile( path + QString::fromUtf8("/index.html") );
     QString menuHTML;
 
-    menuHTML.append( QString::fromUtf8("<body>\n") );
+    // fix sphinx compat
+    if (plainBody) {
+        menuHTML.append( QString::fromUtf8("<body>\n") );
+    }
+    else {
+        menuHTML.append( QString::fromUtf8("<body role=\"document\">\n") );
+    }
     menuHTML.append( QString::fromUtf8("<div id=\"header\">\n<a href=\"/\"><div id=\"logo\"></div></a>\n") );
     menuHTML.append( QString::fromUtf8("<div id=\"search\">\n<form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form>\n</div>\n") );
     menuHTML.append( QString::fromUtf8("<div id=\"mainMenu\">\n<ul>\n") );
