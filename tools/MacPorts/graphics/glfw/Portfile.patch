@@ -1,5 +1,5 @@
---- Portfile.orig	2016-05-18 09:09:27.000000000 +0200
-+++ Portfile	2016-05-18 09:12:02.000000000 +0200
+--- Portfile.orig	2016-05-18 09:13:04.000000000 +0200
++++ Portfile	2016-05-18 09:17:14.000000000 +0200
 @@ -19,7 +19,7 @@
      # release
  
@@ -55,7 +55,7 @@
 +    configure.args-append -DGLFW_USE_RETINA=off
 +}
 +
-+variant natron conflicts noretina requires nochdir nomenubar {Natron version} {}
++variant natron conflicts noretina requires nochdir nomenubar description {Natron version} {}
 +
  platform darwin {
      pre-fetch {

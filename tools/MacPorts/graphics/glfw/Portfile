@@ -101,7 +101,7 @@ variant noretina description {disable retina} {
     configure.args-append -DGLFW_USE_RETINA=off
 }
 
-variant natron conflicts noretina requires nochdir nomenubar {Natron version} {}
+variant natron conflicts noretina requires nochdir nomenubar description {Natron version} {}
 
 platform darwin {
     pre-fetch {
