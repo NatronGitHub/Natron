@@ -2605,14 +2605,14 @@ Settings::makeHTMLDocumentation(bool genHTML) const
     if (genHTML) {
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n";
         ts << "<html>\n<head>\n";
-        ts << "<title>Natron Preferences</title>\n";
+        ts << "<title>" << tr("Natron Preferences") << "</title>\n";
         ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />\n<script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n<script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n";
         ts << "</head>\n<body>\n";
-        ts << "<div class=\"related\">\n<h3>Navigation</h3>\n<ul>\n";
-        ts << "<li><a href=\"/index.html\">Natron 2.0 documentation</a> &raquo;</li>\n";
+        ts << "<div class=\"related\">\n<h3>" << tr("Navigation") << "</h3>\n<ul>\n";
+        ts << "<li><a href=\"/index.html\">" << tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) << "</a> &raquo;</li>\n";
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
-        ts << "<div class=\"section\">\n<h1>Preferences</h1>\n";
+        ts << "<div class=\"section\">\n<h1>" << tr("Preferences") << "</h1>\n";
     }
 
     const KnobsVec& knobs = getKnobs_mt_safe();
@@ -2644,8 +2644,9 @@ Settings::makeHTMLDocumentation(bool genHTML) const
                 if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
                     if (genHTML) {
                         ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
-                        Markdown markdown;
-                        ts << markdown.convert2html(knobHint);
+                        //Markdown markdown;
+                        //ts << markdown.convert2html(knobHint);
+                        ts << "<p>" << knobHint << "</p>\n";
                     }
                     else {
                         ts << "**" << knobLabel << "**\n\n";

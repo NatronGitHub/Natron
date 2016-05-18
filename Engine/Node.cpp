@@ -3972,7 +3972,7 @@ Node::makeHTMLDocumentation(bool genHTML) const
     if (genHTML) {
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         ts << "<html><head>";
-        ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>"; /// version string will be replaced in parser
+        ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>";
         ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
         ts << "</head><body>";
         ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
@@ -4080,7 +4080,7 @@ Node::makeHTMLDocumentation(bool genHTML) const
                     } else if (isDbl) {
                         valueStr = QString::number( isDbl->getDefaultValue(i) );
                     } else if (isBool) {
-                        valueStr = isBool->getDefaultValue(i) ? QString::fromUtf8("On") : QString::fromUtf8("Off");
+                        valueStr = isBool->getDefaultValue(i) ? tr("On") : tr("Off");
                     } else if (isString) {
                         valueStr = QString::fromUtf8( isString->getDefaultValue(i).c_str() );
                     }
@@ -4102,7 +4102,7 @@ Node::makeHTMLDocumentation(bool genHTML) const
                 }
             }
             if ( defValuesStr.isEmpty() ) {
-                defValuesStr = QString::fromUtf8("N/A");
+                defValuesStr = tr("N/A");
             }
         }
 
