@@ -34,6 +34,7 @@
 
 #ifdef DEBUG
 #include <iostream>
+#include <sstream>
 
 
 // put a breakpoint in glError to halt the debugger on opengl errors
