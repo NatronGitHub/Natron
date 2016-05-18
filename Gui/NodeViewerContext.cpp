@@ -124,6 +124,9 @@ public:
                 it->second->setIsSelected(true);
             } else {
                 it->second->setIsSelected(false);
+                if (it->second->isDown()) {
+                    it->second->setDown(false);
+                }
             }
         }
     }
@@ -186,20 +189,27 @@ NodeViewerContext::createGui()
                 KnobGroup* isGroup = dynamic_cast<KnobGroup*>(pageChildren[i].get());
                 if (isGroup) {
                     std::vector<KnobPtr> toolButtonChildren = isGroup->getChildren();
+
+                    ViewerToolButton* createdToolButton = 0;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
                         KnobButton* isButton = dynamic_cast<KnobButton*>(toolButtonChildren[j].get());
                         if (isButton) {
                             const std::string& roleShortcutID = isGroup->getName();
-                            ViewerToolButton* createdToolButton = 0;
                             QAction* act = _imp->addToolBarTool(isButton->getName(), isGroup->getName(), roleShortcutID, isButton->getLabel(), isButton->getHintToolTip(), isButton->getIconLabel(), &createdToolButton);
                             if (act && createdToolButton && isButton->getValue()) {
                                 createdToolButton->setDefaultAction(act);
+
                                 _imp->currentTool = QString::fromUtf8(isButton->getName().c_str());
                             }
+
                         }
                     }
                     if (isGroup->getValue()) {
                         _imp->currentRole = QString::fromUtf8(isGroup->getName().c_str());
+                        if (createdToolButton) {
+                            createdToolButton->setDown(true);
+                            createdToolButton->setIsSelected(true);
+                        }
                     }
                 }
             }
@@ -280,7 +290,8 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
         KnobClickableLabel* label = 0;
         std::string inViewerLabel = (*it)->getInViewerContextLabel();
         if (!inViewerLabel.empty()) {
-            label = new KnobClickableLabel(QString::fromUtf8(inViewerLabel.c_str()), ret, mainContainer);
+            label = new KnobClickableLabel(QString::fromUtf8(inViewerLabel.c_str()) + QLatin1String(":"), ret, mainContainer);
+            QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
         }
         ret->createGUI(lastRowContainer, 0, label, 0 /*warningIndicator*/, lastRowLayout, makeNewLine, knobsOnSameLine);
 
@@ -446,6 +457,16 @@ NodeViewerContext::getKnobGui(const KnobPtr& knob) const
 }
 
 void
+NodeViewerContext::onToolButtonShortcutPressed(const QString& roleID)
+{
+    std::map<QString, ViewerToolButton*>::iterator found = _imp->toolButtons.find(roleID);
+    if (found == _imp->toolButtons.end()) {
+        return;
+    }
+    found->second->handleSelection();
+}
+
+void
 NodeViewerContext::onToolActionTriggered()
 {
     QAction* act = qobject_cast<QAction*>( sender() );
@@ -591,13 +612,13 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action, bool no
         return;
     }
 
-    std::map<QString, ViewerToolButton*>::iterator foundOldTool = toolButtons.find(newRoleID);
-    assert( foundOldTool != toolButtons.end() );
-    if ( foundOldTool == toolButtons.end() ) {
+    std::map<QString, ViewerToolButton*>::iterator foundNextTool = toolButtons.find(newRoleID);
+    assert( foundNextTool != toolButtons.end() );
+    if ( foundNextTool == toolButtons.end() ) {
         return;
     }
 
-    ViewerToolButton* newToolButton = foundOldTool->second;
+    ViewerToolButton* newToolButton = foundNextTool->second;
     assert(newToolButton);
     toggleToolsSelection(newToolButton);
     newToolButton->setDown(true);
@@ -638,12 +659,35 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action, bool no
             assert(newIsGroup);
             if (oldIsButton && newIsButton && oldIsGroup && newIsGroup) {
 
-                oldIsGroup->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
-                newIsGroup->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                EffectInstPtr effect = n->getNode()->getEffectInstance();
+                if (oldIsGroup->getValue() != false) {
+                    oldIsGroup->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                } else {
+                    // We must issue at least a knobChanged call
+                    effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                }
+
+                if (newIsGroup->getValue() != true) {
+                    newIsGroup->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                } else {
+                    // We must issue at least a knobChanged call
+                    effect->onKnobValueChanged_public(newIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                }
 
 
-                oldIsButton->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
-                newIsButton->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                if (oldIsButton->getValue() != false) {
+                    oldIsButton->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                } else {
+                    // We must issue at least a knobChanged call
+                    effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                }
+
+                if (newIsButton->getValue() != true) {
+                    newIsButton->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                } else {
+                    // We must issue at least a knobChanged call
+                    effect->onKnobValueChanged_public(newIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                }
             }
         }
 

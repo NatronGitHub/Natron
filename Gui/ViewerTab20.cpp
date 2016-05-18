@@ -41,6 +41,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -652,6 +653,59 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 } // ViewerTab::notifyOverlaysPenUp
 
 bool
+ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, const Qt::KeyboardModifiers& mods)
+{
+    // Intercept plug-in defined shortcuts
+    NodeViewerContextPtr context;
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
+        NodeGuiPtr n = it->currentNode.lock();
+        if (!n) {
+            continue;
+        }
+        if (n->getNode() == node) {
+            context = it->currentContext;
+            break;
+        }
+
+    }
+
+    // This is not an active node on the viewer ui, don't trigger any shortcuts
+    if (!context) {
+        return false;
+    }
+
+    EffectInstPtr effect = node->getEffectInstance();
+    assert(effect);
+    const KnobsVec& knobs = effect->getKnobs();
+    std::string pluginShortcutGroup;
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ((*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret()) {
+            if (pluginShortcutGroup.empty()) {
+                pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
+            }
+            if (isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey)) {
+
+                // This only works for groups and buttons, as defined in the spec
+                KnobButton* isButton = dynamic_cast<KnobButton*>(it->get());
+                KnobGroup* isGrp = dynamic_cast<KnobGroup*>(it->get());
+                if (isButton) {
+                    if (isButton->getIsCheckable()) {
+                        isButton->setValue(!isButton->getValue());
+                    } else {
+                        isButton->trigger();
+                    }
+                } else if (isGrp) {
+                    // This can only be a toolbutton, notify the NodeViewerContext
+                    context->onToolButtonShortcutPressed(QString::fromUtf8(isGrp->getName().c_str()));
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool
 ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
                                           Key k,
@@ -685,28 +739,11 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
-        // Intercept plug-in defined shortcuts
-        const KnobsVec& knobs = effect->getKnobs();
-        std::string pluginShortcutGroup;
-        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            if ((*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret()) {
-                if (pluginShortcutGroup.empty()) {
-                    pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
-                }
-                if (isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey)) {
+        bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
-                    // This only works for booleans, as defined in the spec
-                    Knob<bool>* isBoolean = dynamic_cast<Knob<bool>*>(it->get());
-                    if (isBoolean) {
-                        isBoolean->onValueChanged(<#const bool &v#>, <#Natron::ViewSpec view#>, <#int dimension#>, <#Natron::ValueChangedReasonEnum reason#>, <#Natron::KeyFrame *newKey#>)
-                        effect->onKnobValueChanged_public(it->get(), eValueChangedReasonUserEdited, time, ViewSpec(0), true);
-                    }
-                    return true;
-                }
-            }
+        if (!didSmthing) {
+            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
         }
-
-        bool didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -893,23 +930,11 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
+        bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
-        // Intercept plug-in defined shortcuts
-        const KnobsVec& knobs = effect->getKnobs();
-        std::string pluginShortcutGroup;
-        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            if ((*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret()) {
-                if (pluginShortcutGroup.empty()) {
-                    pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
-                }
-                if (isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey)) {
-                    effect->onKnobValueChanged_public(it->get(), eValueChangedReasonUserEdited, time, ViewSpec(0), true);
-                    return true;
-                }
-            }
+        if (!didSmthing) {
+            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
         }
-
-        bool didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
