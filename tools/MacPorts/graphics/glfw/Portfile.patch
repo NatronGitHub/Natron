@@ -1,0 +1,62 @@
+--- Portfile.orig	2016-05-18 09:09:27.000000000 +0200
++++ Portfile	2016-05-18 09:12:02.000000000 +0200
+@@ -19,7 +19,7 @@
+     # release
+ 
+     github.setup    glfw glfw 3.1.2
+-    revision        1
++    revision        102
+     # bump the epoch because I moved the version from 20151012 to 3.1.2
+     epoch           1
+     checksums       rmd160 f0a34fda090c5d5e7aef2c916d6160faf777842f \
+@@ -37,10 +37,10 @@
+ 
+     # devel
+ 
+-    github.setup    glfw glfw bc649e1632d1bd9f51cc8b43bd72a8a269b090ee
+-    version         20160505
+-    checksums       rmd160 9fe5cd5876ef91a114c3a00a6f9297745d99cb65 \
+-                    sha256 09edf84d12e788df21e876361f3c3841f6a38be3c36f77d07c0d0c4964bcb085
++    github.setup    glfw glfw 793eef1d0a7e09bab2e9fcb89fd27c904e9bad17
++    version         20160307
++    checksums       rmd160 fce4f3b7125448d00ae74d6ffe94cf13a3d42ee1 \
++                    sha256 99761cadb239d567b39f5d863defb68dffa7ed94a902464c571696547da43990
+ 
+     # patch to fix install directory for cmake files and docs
+ 
+@@ -65,7 +65,10 @@
+ configure.args      -DBUILD_SHARED_LIBS=on \
+                     -DGLFW_BUILD_EXAMPLES=off \
+                     -DGLFW_BUILD_TESTS=off \
+-                    -DGLFW_CMAKE_CONFIG_PATH=share
++                    -DGLFW_CMAKE_CONFIG_PATH=share \
++                    -DGLFW_USE_CHDIR=on \
++                    -DGLFW_USE_MENUBAR=on \
++                    -DGLFW_USE_RETINA=on
+ 
+ # remove top-level library path, such that internal libraries are used
+ # instead of any already-installed ones.
+@@ -83,6 +86,23 @@
+     configure.args-append -DDOXYGEN_EXECUTABLE=
+ }
+ 
++variant nochdir description {disable chdir} {
++    configure.args-delete -DGLFW_USE_CHDIR=on
++    configure.args-append -DGLFW_USE_CHDIR=off
++}
++
++variant nomenubar description {disable menubar} {
++    configure.args-delete -DGLFW_USE_MENUBAR=on
++    configure.args-append -DGLFW_USE_MENUBAR=off
++}
++
++variant noretina description {disable retina} {
++    configure.args-delete -DGLFW_USE_RETINA=on
++    configure.args-append -DGLFW_USE_RETINA=off
++}
++
++variant natron conflicts noretina requires nochdir nomenubar {Natron version} {}
++
+ platform darwin {
+     pre-fetch {
+         if {${os.major} < 10} {
