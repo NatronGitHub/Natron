@@ -470,7 +470,9 @@ namespace NATRON_PYTHON_NAMESPACE { }
 /* WARN_UNUSED_RETURN */
 
 #if COMPILER(GCC)
+
 #define WARN_UNUSED_RETURN __attribute__ ( (warn_unused_result) )
+#ifdef __cplusplus
 // a very simple template function to actually ignore the return value of functions define with WARN_UNUSED_RETURN
 template<typename T>
 inline T
@@ -478,17 +480,21 @@ ignore_result( T x __attribute__( (unused) ) )
 {
     return x;
 }
+#endif
 
-#else
+#else // !GCC
+
 #define WARN_UNUSED_RETURN
+#ifdef __cplusplus
 template<typename T>
 inline T
 ignore_result(T x)
 {
     return x;
 }
-
 #endif
+
+#endif // !GCC
 
 /* OVERRIDE and FINAL */
 
