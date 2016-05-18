@@ -21,6 +21,7 @@ Natron binaries include components from the following libraries:
 * libmv (BSD) https://developer.blender.org/project/profile/59/
 * openMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
+* hoedown (BSD) https://github.com/hoedown/hoedown
 
 # Additional dependencies
 
@@ -71,7 +72,7 @@ Natron binaries include components from the following libraries:
 * Little CMS (MIT) http://www.littlecms.com/
 * librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg
 * libzip (BSD) http://www.nih.at/libzip/
-* Cairo (MPL 1.1) http://cairographics.org/
+* Cairo (LGPL 2.1) http://cairographics.org/
 * librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr
 * libxml (MIT) http://www.xmlsoft.org/

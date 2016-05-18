@@ -1,0 +1,31 @@
+\\[
+1*2*3 multi-line math
+\\]
+
+\\( 1*2*3 inline-math \\)
+
+$$ 1*2*3 math with dollar $$
+
+$$ 1*2*3 \$ \\ \text{dollar with escapes} $$
+
+\\( \\ \text{backslash with escapes} \$ 1*2*3 \\)
+
+\( not *really* math \)
+
+\$$ also *not* math \$$
+
+this $$*should* be$$ math
+
+this$$ *should* also be$$ math
+
+and $$this *should* $$too
+
+Something \\{ like *math* but \\} is not
+
+Also \\\(like *math* but \\\) is not
+
+\\\\( should be *math* as well \\\\)
+
+This is \\( math, and the \\\( inner one \\\) should be \\) preserved
+
+$$ did you <em> know </em> this is math? $$

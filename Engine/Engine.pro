@@ -58,6 +58,9 @@ INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 INCLUDEPATH += $$PWD/../google-breakpad/src
 
+# hoedown
+INCLUDEPATH += $$PWD/../libs/hoedown/src
+
 #To overcome wrongly generated #include <...> by shiboken
 INCLUDEPATH += $$PWD
 INCLUDEPATH += $$PWD/NatronEngine
@@ -179,6 +182,7 @@ SOURCES += \
     Transform.cpp \
     ViewerInstance.cpp \
     WriteNode.cpp \
+    Markdown.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
@@ -388,6 +392,7 @@ HEADERS += \
     ViewerInstancePrivate.h \
     ViewIdx.h \
     WriteNode.h \
+    Markdown.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
     ../Global/glad_include.h \

@@ -59,6 +59,7 @@
         <file alias="LICENSE-qhttpserver.txt">../tools/license/components/LICENSE-qhttpserver.txt</file>
         <file alias="LICENSE-webp.txt">../tools/license/components/LICENSE-webp.txt</file>
         <file alias="LICENSE-zlib.txt">../tools/license/components/LICENSE-zlib.txt</file>
+        <file alias="LICENSE-hoedown.txt">../tools/license/components/LICENSE-hoedown.txt</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>
         <file>Resources/Fonts/DroidSans.ttf</file>
         <file>Resources/Images/GroupingIcons/Set1/color_grouping_1.png</file>
