@@ -346,10 +346,10 @@ DocumentationManager::parser(QString html,
 
     // fix sphinx compat
     if (plainBody) {
-        menuHTML.append( QString::fromUtf8("<body>\n") );
+        result.replace(QString::fromUtf8("<body>"), menuHTML);
     }
     else {
-        menuHTML.append( QString::fromUtf8("<body role=\"document\">") );
+        result.replace(QString::fromUtf8("<body role=\"document\">"), menuHTML);
     }
 
     // replace "NATRON_DOCUMENTATION" with current version
