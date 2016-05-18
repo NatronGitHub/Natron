@@ -1524,19 +1524,23 @@ NodeGroup::purgeCaches()
     }
 }
 
-void
+bool
 NodeGroup::knobChanged(KnobI* k,
                        ValueChangedReasonEnum /*reason*/,
                        ViewSpec /*view*/,
                        double /*time*/,
                        bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == _imp->exportAsTemplate.get() ) {
         boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
         }
+    } else {
+        ret = false;
     }
+    return ret;
 }
 
 void

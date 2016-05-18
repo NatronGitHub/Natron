@@ -110,7 +110,7 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& serialization) OVERRIDE FINAL;
-    virtual void knobChanged(KnobI* k,
+    virtual bool knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,

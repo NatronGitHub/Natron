@@ -689,17 +689,22 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, co
                 // This only works for groups and buttons, as defined in the spec
                 KnobButton* isButton = dynamic_cast<KnobButton*>(it->get());
                 KnobGroup* isGrp = dynamic_cast<KnobGroup*>(it->get());
+
+                bool ret = false;
+
                 if (isButton) {
                     if (isButton->getIsCheckable()) {
                         isButton->setValue(!isButton->getValue());
+                        ret = true;
                     } else {
-                        isButton->trigger();
+                        ret = isButton->trigger();
                     }
                 } else if (isGrp) {
                     // This can only be a toolbutton, notify the NodeViewerContext
                     context->onToolButtonShortcutPressed(QString::fromUtf8(isGrp->getName().c_str()));
+                    ret = true;
                 }
-                return true;
+                return ret;
             }
         }
     }

@@ -1646,7 +1646,7 @@ KnobHelper::isListenersNotificationBlocked() const
     return _imp->listenersNotificationBlocked > 0;
 }
 
-void
+bool
 KnobHelper::evaluateValueChangeInternal(int dimension,
                                         double time,
                                         ViewSpec view,
@@ -1665,12 +1665,13 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
     /// the application responsiveness
     onInternalValueChanged(dimension, time, view);
 
+    bool ret = false;
     if ( ( (originalReason != eValueChangedReasonTimeChanged) || evaluateValueChangeOnTimeChange() ) && _imp->holder ) {
         _imp->holder->beginChanges();
         KnobPtr thisShared = shared_from_this();
         assert(thisShared);
         _imp->holder->appendValueChange(thisShared, dimension, refreshWidget, time, view, originalReason, reason);
-        _imp->holder->endChanges();
+        ret |= _imp->holder->endChanges();
     }
 
 
@@ -1684,15 +1685,16 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         }
         checkAnimationLevel(view, dimension);
     }
+    return ret;
 }
 
-void
+bool
 KnobHelper::evaluateValueChange(int dimension,
                                 double time,
                                 ViewSpec view,
                                 ValueChangedReasonEnum reason)
 {
-    evaluateValueChangeInternal(dimension, time, view, reason, reason);
+    return evaluateValueChangeInternal(dimension, time, view, reason, reason);
 }
 
 void
@@ -5195,7 +5197,7 @@ KnobHolder::onDoEndChangesOnMainThreadTriggered()
     endChanges();
 }
 
-void
+bool
 KnobHolder::endChanges(bool discardRendering)
 {
     bool isMT = QThread::currentThread() == qApp->thread();
@@ -5203,7 +5205,7 @@ KnobHolder::endChanges(bool discardRendering)
     if ( !isMT && !canHandleEvaluateOnChangeInOtherThread() ) {
         Q_EMIT doEndChangesOnMainThread();
 
-        return;
+        return true;
     }
 
 
@@ -5266,12 +5268,13 @@ KnobHolder::endChanges(bool discardRendering)
     bool guiFrozen = firstKnobChanged ? getApp() && firstKnobChanged->getKnobGuiPointer() && firstKnobChanged->getKnobGuiPointer()->isGuiFrozenForPlayback() : false;
 
     // Call instanceChanged on each knob
+    bool ret = false;
     for (KnobChanges::iterator it = knobChanged.begin(); it != knobChanged.end(); ++it) {
         if (it->knob && !it->valueChangeBlocked && !isLoadingProject) {
             if ( !it->originatedFromMainThread && !canHandleEvaluateOnChangeInOtherThread() ) {
                 Q_EMIT doValueChangeOnMainThread(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             } else {
-                onKnobValueChanged_public(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
+                ret |= onKnobValueChanged_public(it->knob.get(), it->originalReason, it->time, it->view, it->originatedFromMainThread);
             }
         }
 
@@ -5330,6 +5333,7 @@ KnobHolder::endChanges(bool discardRendering)
             evaluate(hasHadSignificantChange, mustRefreshMetadatas);
         }
     }
+    return ret;
 } // KnobHolder::endChanges
 
 void
@@ -5684,7 +5688,7 @@ KnobHolder::endKnobsValuesChanged_public(ValueChangedReasonEnum reason)
     endKnobsValuesChanged(reason);
 }
 
-void
+bool
 KnobHolder::onKnobValueChanged_public(KnobI* k,
                                       ValueChangedReasonEnum reason,
                                       double time,
@@ -5694,10 +5698,10 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
     if (!_imp->knobsInitialized) {
-        return;
+        return false;
     }
     RECURSIVE_ACTION();
-    onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
+    return onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
 }
 
 void

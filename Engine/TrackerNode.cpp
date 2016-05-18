@@ -340,7 +340,7 @@ TrackerNode::initializeKnobs()
     
 }
 
-void
+bool
 TrackerNode::knobChanged(KnobI* k,
                          ValueChangedReasonEnum reason,
                          ViewSpec view,
@@ -350,9 +350,11 @@ TrackerNode::knobChanged(KnobI* k,
     boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
 
     if (!ctx) {
-        return;
+        return false;
     }
-    ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
+    bool ret = false;
+    ret |= ctx->knobChanged(k, reason, view, time, originatedFromMainThread);
+    return ret;
 }
 
 void

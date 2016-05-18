@@ -861,7 +861,7 @@ public:
 
     void onInputChanged(int inputNb);
 
-    void onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
+    bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 
     bool isNodeDisabled() const;
 

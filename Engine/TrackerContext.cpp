@@ -910,13 +910,14 @@ TrackerContext::onKnobsLoaded()
     _imp->refreshVisibilityFromTransformType();
 }
 
-void
+bool
 TrackerContext::knobChanged(KnobI* k,
                             ValueChangedReasonEnum /*reason*/,
                             ViewSpec /*view*/,
                             double /*time*/,
                             bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == _imp->exportButton.lock().get() ) {
         exportTrackDataFromExportOptions();
     } else if ( k == _imp->setCurrentFrameButton.lock().get() ) {
@@ -949,6 +950,10 @@ TrackerContext::knobChanged(KnobI* k,
         _imp->refreshVisibilityFromTransformType();
     }
 #endif
+    else {
+        ret = false;
+    }
+    return ret;
 }
 
 void

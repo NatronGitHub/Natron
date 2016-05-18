@@ -436,7 +436,9 @@ public:
         return _renderButton;
     }
 
-    void trigger();
+    // Trigger the knobChanged handler for this knob
+    // Returns true if the knobChanged handler was caught and an action was done
+    bool trigger();
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

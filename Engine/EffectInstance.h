@@ -659,7 +659,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual bool onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -1411,12 +1411,13 @@ public:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void knobChanged(KnobI* /*k*/,
+    virtual bool knobChanged(KnobI* /*k*/,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/)
     {
+        return false;
     }
 
     virtual StatusEnum beginSequenceRender(double /*first*/,
@@ -1467,7 +1468,7 @@ public:
     bool setCurrentCursor(const QString& customCursorFilePath);
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual void onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,

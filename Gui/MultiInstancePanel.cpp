@@ -1666,19 +1666,21 @@ MultiInstancePanel::onButtonTriggered(KnobButton* button)
     }
 }
 
-void
+bool
 MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        ValueChangedReasonEnum reason,
                                        double time,
                                        ViewSpec view,
                                        bool /*originatedFromMainThread*/)
 {
+    bool ret = false;
     if ( !k->isDeclaredByPlugin() ) {
         if (k->getName() == kDisableNodeKnobName) {
             KnobBool* boolKnob = dynamic_cast<KnobBool*>(k);
             assert(boolKnob);
             if (boolKnob) {
                 _imp->mainInstance.lock()->onDisabledKnobToggled( boolKnob->getValue(0, view) );
+                ret = true;
             }
         }
     } else {
@@ -1686,6 +1688,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             KnobButton* isButton = dynamic_cast<KnobButton*>(k);
             if ( isButton && (reason == eValueChangedReasonUserEdited) ) {
                 onButtonTriggered(isButton);
+                ret = true;
             } else {
                 ///for all selected instances update the same knob because it might not be slaved (see
                 ///onSelectionChanged for an explanation why)
@@ -1708,11 +1711,13 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                         }
 
                         sameKnob->getHolder()->onKnobValueChanged_public(sameKnob.get(), eValueChangedReasonPluginEdited, time, view, true);
+                        ret = true;
                     }
                 }
             }
         }
     }
+    return ret;
 }
 
 namespace  {

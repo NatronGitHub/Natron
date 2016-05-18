@@ -1651,7 +1651,7 @@ boost::shared_ptr<Bezier> RotoPaintInteract::getBezierBeingBuild() const
 
 
 
-void
+bool
 RotoPaintInteract::smoothSelectedCurve()
 {
     std::pair<double, double> pixelScale;
@@ -1687,10 +1687,12 @@ RotoPaintInteract::smoothSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new SmoothCuspUndoCommand(shared_from_this(), datas, time, false, pixelScale) );
+        return true;
     }
+    return false;
 }
 
-void
+bool
 RotoPaintInteract::cuspSelectedCurve()
 {
     std::pair<double, double> pixelScale;
@@ -1725,10 +1727,12 @@ RotoPaintInteract::cuspSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new SmoothCuspUndoCommand(shared_from_this(), datas, time, true, pixelScale) );
+        return true;
     }
+    return false;
 }
 
-void
+bool
 RotoPaintInteract::removeFeatherForSelectedCurve()
 {
     std::list<RemoveFeatherUndoCommand::RemoveFeatherData> datas;
@@ -1753,22 +1757,27 @@ RotoPaintInteract::removeFeatherForSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new RemoveFeatherUndoCommand(shared_from_this(), datas) );
+        return true;
     }
+    return false;
 }
 
-void
+bool
 RotoPaintInteract::lockSelectedCurves()
 {
     ///Make a copy because setLocked will change the selection internally and invalidate the iterator
     SelectedItems selection = selectedItems;
-
+    if (selection.empty()) {
+        return false;
+    }
     for (SelectedItems::const_iterator it = selection.begin(); it != selection.end(); ++it) {
         (*it)->setLocked(true, false, RotoItem::eSelectionReasonOverlayInteract);
     }
     clearSelection();
+    return true;
 }
 
-void
+bool
 RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                       int y)
 {
@@ -1784,7 +1793,8 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                 const std::list< boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
 
                 std::list< boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=fps.end(); ++it) {
+                assert(fps.empty() || fps.size() == cps.size());
+                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=cps.end(); ++it) {
 
                     points.push_back(std::make_pair(*it, *fpIt));
                     if (!fps.empty()) {
@@ -1805,7 +1815,9 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                                               (double)y * pixelScale.second, time) );
         computeSelectedCpsBBOX();
         p->publicInterface->getNode()->getRotoContext()->evaluateChange();
+        return true;
     }
+    return false;
 }
 
 

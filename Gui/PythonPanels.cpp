@@ -87,7 +87,7 @@ DialogParamHolder::setParamChangedCallback(const QString& callback)
     _imp->paramChangedCB = callback.toStdString();
 }
 
-void
+bool
 DialogParamHolder::onKnobValueChanged(KnobI* k,
                                       ValueChangedReasonEnum reason,
                                       double /*time*/,
@@ -111,13 +111,13 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
             getApp()->appendToScriptEditor( std::string("Failed to run onParamChanged callback: ")
                                             + e.what() );
 
-            return;
+            return false;
         }
 
         if ( !error.empty() ) {
             getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + error);
 
-            return;
+            return false;
         }
 
         std::string signatureError;
@@ -126,13 +126,13 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         if (args.size() != 3) {
             getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
 
-            return;
+            return false;
         }
 
         if ( ( (args[0] != "paramName") || (args[1] != "app") || (args[2] != "userEdited") ) ) {
             getApp()->appendToScriptEditor("Failed to run onParamChanged callback: " + signatureError);
 
-            return;
+            return false;
         }
 
 
@@ -154,7 +154,9 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         } else if ( !output.empty() ) {
             getApp()->appendToScriptEditor(output);
         }
+        return true;
     }
+    return false;
 } // DialogParamHolder::onKnobValueChanged
 
 struct PyModalDialogPrivate

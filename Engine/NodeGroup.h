@@ -389,7 +389,7 @@ Q_SIGNALS:
 private:
 
     virtual void initializeKnobs() OVERRIDE;
-    virtual void knobChanged(KnobI * k, ValueChangedReasonEnum reason,
+    virtual bool knobChanged(KnobI * k, ValueChangedReasonEnum reason,
                              ViewSpec /*view*/,
                              double /*time*/,
                              bool /*originatedFromMainThread*/) OVERRIDE;

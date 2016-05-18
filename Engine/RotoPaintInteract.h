@@ -748,10 +748,10 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
 
     boost::shared_ptr<Bezier> getBezierBeingBuild() const;
 
-    void smoothSelectedCurve();
-    void cuspSelectedCurve();
-    void removeFeatherForSelectedCurve();
-    void lockSelectedCurves();
+    bool smoothSelectedCurve();
+    bool cuspSelectedCurve();
+    bool removeFeatherForSelectedCurve();
+    bool lockSelectedCurves();
 
 
 
@@ -759,7 +759,7 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
      *@brief Moves of the given pixel the selected control points.
      * This takes into account the zoom factor.
      **/
-    void moveSelectedCpsWithKeyArrows(int x, int y);
+    bool moveSelectedCpsWithKeyArrows(int x, int y);
 
 
     void evaluate(bool redraw);

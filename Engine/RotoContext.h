@@ -397,7 +397,7 @@ public:
 
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
 
-    void knobChanged(KnobI* k,
+    bool knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
                      double time,

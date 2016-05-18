@@ -1492,13 +1492,14 @@ RotoContext::resetCloneTransform()
     resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder);
 }
 
-void
+bool
 RotoContext::knobChanged(KnobI* k,
                          ValueChangedReasonEnum /*reason*/,
                          ViewSpec /*view*/,
                          double /*time*/,
                          bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == _imp->resetCenterKnob.lock().get() ) {
         resetTransformCenter();
     } else if ( k == _imp->resetCloneCenterKnob.lock().get() ) {
@@ -1523,6 +1524,10 @@ RotoContext::knobChanged(KnobI* k,
         _imp->globalCustomOffsetKnob.lock()->setSecret(isPerShapeMB);
     }
 #endif
+    else {
+        ret = false;
+    }
+    return ret;
 }
 
 boost::shared_ptr<RotoItem>

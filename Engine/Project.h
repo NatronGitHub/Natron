@@ -388,7 +388,7 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual void onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,

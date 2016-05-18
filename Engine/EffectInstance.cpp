@@ -4014,13 +4014,14 @@ EffectInstance::isMaskEnabled(int inputNb) const
     return getNode()->isMaskEnabled(inputNb);
 }
 
-void
+bool
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
                                    ViewSpec /*view*/,
                                    bool /*originatedFromMainThread*/)
 {
+    return false;
 }
 
 bool
@@ -4161,7 +4162,7 @@ EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
     return false;
 }
 
-void
+bool
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           ValueChangedReasonEnum reason,
                                           double time,
@@ -4173,12 +4174,14 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
     if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && node->isNodeDisabled() ) {
-        return;
+        return false;
     }
 
     if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
         node->onFileNameParameterChanged(k);
     }
+
+    bool ret = false;
 
     // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
     const ViewIdx viewIdx( ( view.isAll() || view.isCurrent() ) ? 0 : view );
@@ -4218,7 +4221,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 #ifdef QT_CUSTOM_THREADPOOL
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode());
 #endif
-            knobChanged(k, reason, view, time, originatedFromMainThread);
+            ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
         }
     }
 
@@ -4236,11 +4239,11 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         }
     }
 
-    node->onEffectKnobValueChanged(k, reason);
+    ret |= node->onEffectKnobValueChanged(k, reason);
 
     //Don't call the python callback if the reason is time changed
     if (reason == eValueChangedReasonTimeChanged) {
-        return;
+        return false;
     }
 
     ///If there's a knobChanged Python callback, run it
@@ -4260,6 +4263,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     ///pointers for the render thread. This is helpful for analysis effects which call getImage() on the main-thread
     ///and whose render() function is never called.
     _imp->clearInputImagePointers();
+    return ret;
 } // onKnobValueChanged_public
 
 void
