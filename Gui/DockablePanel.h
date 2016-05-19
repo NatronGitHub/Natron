@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/DockablePanelI.h"
+#include "Engine/Markdown.h"
 
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"

@@ -842,27 +842,48 @@ DockablePanel::helpString() const
     //Base help
     QString tt;
 
-    if ( Qt::mightBeRichText(_imp->_helpToolTip) ) {
+    bool isMarkdown = false;
+
+    EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
+    if (iseffect) {
+        isMarkdown = iseffect->isPluginDescriptionInMarkdown();
+    }
+
+    if ( Qt::mightBeRichText(_imp->_helpToolTip) || isMarkdown ) {
         tt = _imp->_helpToolTip;
     } else {
         tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
     }
-    EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
 
     if (iseffect) {
         //Prepend the plugin ID
         if ( !_imp->_pluginID.isEmpty() ) {
             QString pluginLabelVersioned(_imp->_pluginID);
             QString toAppend = QString::fromUtf8(" version %1.%2").arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
+            if (isMarkdown) {
+                toAppend.append( QString::fromUtf8("\n=========\n\n") );
+            }
             pluginLabelVersioned.append(toAppend);
 
             if ( !pluginLabelVersioned.isEmpty() ) {
-                QString toPrepend = QString::fromUtf8("<p><b>");
-                toPrepend.append(pluginLabelVersioned);
-                toPrepend.append( QString::fromUtf8("</b></p>") );
-                tt.prepend(toPrepend);
+                if (isMarkdown) {
+                    tt.prepend(pluginLabelVersioned);
+                } else {
+                    QString toPrepend = QString::fromUtf8("<p><b>");
+                    toPrepend.append(pluginLabelVersioned);
+                    toPrepend.append( QString::fromUtf8("</b></p>") );
+                    tt.prepend(toPrepend);
+                }
             }
         }
+    }
+
+    if (isMarkdown) {
+        Markdown markdown;
+        tt = markdown.convert2html(tt);
+        // Shrink H1/H2 (Can't do it in qt stylesheet)
+        tt.replace( QString::fromUtf8("<h1>"), QString::fromUtf8("<h1 style=\"font-size:large;\">") );
+        tt.replace( QString::fromUtf8("<h2>"), QString::fromUtf8("<h2 style=\"font-size:large;\">") );
     }
 
     return tt;
