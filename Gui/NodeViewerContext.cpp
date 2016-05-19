@@ -710,7 +710,7 @@ NodeViewerContext::updateSelectionFromViewerSelectionRectangle(bool onRelease)
         return;
     }
     NodePtr node = n->getNode();
-    if (!node) {
+    if (!node || !node->isActivated()) {
         return;
     }
     RectD rect;
@@ -726,7 +726,7 @@ NodeViewerContext::onViewerSelectionCleared()
         return;
     }
     NodePtr node = n->getNode();
-    if (!node) {
+    if (!node || !node->isActivated()) {
         return;
     }
     node->getEffectInstance()->onInteractViewportSelectionCleared();

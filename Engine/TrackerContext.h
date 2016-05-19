@@ -346,6 +346,11 @@ public Q_SLOTS:
 
     void onMarkerEnabledChanged(int reason);
 
+    void onSchedulerTrackingStarted(int frameStep);
+    void onSchedulerTrackingFinished();
+
+    void onSchedulerTrackingProgress(double progress);
+
 Q_SIGNALS:
 
     void keyframeSetOnTrack(TrackMarkerPtr marker, int);
@@ -416,7 +421,7 @@ public:
         Q_EMIT trackingStarted(step);
     }
 
-    void emit_trackingFinished()
+    void emit_trackingFinished( )
     {
         Q_EMIT trackingFinished();
     }
@@ -432,6 +437,7 @@ Q_SIGNALS:
 
     void trackingFinished();
 
+    void trackingProgress(double progress);
 
     void renderCurrentFrameForViewer(ViewerInstance* viewer);
 };

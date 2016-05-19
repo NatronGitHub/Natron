@@ -39,6 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextBlockFormat>
 #include <QTextCursor>
 #include <QGridLayout>
+#include <QCursor>
 #include <QtCore/QFile>
 #include <QDialogButtonBox>
 #include <QApplication>
@@ -3812,7 +3813,8 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui, const KnobGroup* group)
     setWindowTitle(QString::fromUtf8(group->getLabel().c_str()));
     std::vector<KnobPtr> children = group->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, false);
+        KnobPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
+        duplicate->setAddNewLine(children[i]->isNewLineActivated());
     }
 
     refreshUserParamsGUI();
@@ -3823,6 +3825,7 @@ NodeGui::showGroupKnobAsDialog(const KnobGroup* group)
 {
     assert(group);
     GroupKnobDialog dialog(getDagGui()->getGui(), group);
+    dialog.move(QCursor::pos());
     dialog.exec();
 }
 

@@ -202,7 +202,18 @@ KnobGui::createGUI(QWidget* fieldContainer,
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
         //layout->addStretch();
-        int spacing = _imp->container->getItemsSpacingOnSameLine();
+        int spacing;
+        bool isViewerParam = _imp->container->isInViewerUIKnob();
+        if (isViewerParam) {
+            spacing = _imp->container->getItemsSpacingOnSameLine();
+        } else {
+            spacing = knob->getSpacingBetweenitems();
+            // Default sapcing is 0 on knobs, but use the default for the widget container so the UI doesn't appear cluttered
+            // The minimum allowed spacing should be 1px
+            if (spacing == 0) {
+                spacing = _imp->container->getItemsSpacingOnSameLine();;
+            }
+        }
         if (spacing > 0) {
             layout->addSpacing( TO_DPIX(spacing) );
         }

@@ -467,6 +467,26 @@ ViewerGL::paintGL()
                 break;
             }
             } // switch
+
+            for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+                const TextureRect &r = _imp->partialUpdateTextures[i].texture->getTextureRect();
+                RectI texRect(r.x1, r.y1, r.x2, r.y2);
+                const double par = r.par;
+                RectD canonicalTexRect;
+                texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
+                glBegin(GL_POLYGON);
+                glTexCoord2d(0, 0); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
+                glTexCoord2d(0, 1); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
+                glTexCoord2d(1, 1); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
+                glTexCoord2d(1, 0); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
+                glEnd();
+                glBindTexture(GL_TEXTURE_2D, 0);
+
+                glCheckError();
+            }
         } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
         ///Unbind render textures for overlays
@@ -3173,7 +3193,7 @@ bool
 ViewerGL::renderText(double x, double y, const std::string &string, double r, double g, double b)
 {
     QColor c;
-    c.fromRgbF(r, g, b);
+    c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
     renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
     return true;
 }

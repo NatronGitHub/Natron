@@ -829,6 +829,7 @@ public:
      * @brief GUI-related
      **/
     virtual void setSpacingBetweenItems(int spacing) = 0;
+    virtual int getSpacingBetweenitems() const = 0;
 
     /**
      * @brief Set the label of the knob on the viewer
@@ -1449,6 +1450,7 @@ public:
     virtual bool isNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSeparatorActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
+    virtual int getSpacingBetweenitems() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInViewerContextLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextLabel(const QString& label) OVERRIDE FINAL;
     virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;

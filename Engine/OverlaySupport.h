@@ -139,6 +139,12 @@ public:
      * @brief May be implemented to draw text using the widget's current font
      **/
     virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) {
+        Q_UNUSED(x);
+        Q_UNUSED(y);
+        Q_UNUSED(string);
+        Q_UNUSED(r);
+        Q_UNUSED(g);
+        Q_UNUSED(b);
         return false;
     }
 

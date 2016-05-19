@@ -1380,6 +1380,30 @@ TrackerContext::onOverlayFocusLostInternalNodes(double time,
     return false;
 }
 
+
+void
+TrackerContext::onSchedulerTrackingStarted(int frameStep)
+{
+    getNode()->getApp()->progressStart(getNode(), tr("Tracking...").toStdString(), "");
+    Q_EMIT trackingStarted(frameStep);
+}
+
+
+void
+TrackerContext::onSchedulerTrackingFinished()
+{
+    getNode()->getApp()->progressEnd(getNode());
+    Q_EMIT trackingFinished();
+}
+
+void
+TrackerContext::onSchedulerTrackingProgress(double progress)
+{
+    if (!getNode()->getApp()->progressUpdate(getNode(), progress)) {
+        _imp->scheduler.abortTracking();
+    }
+}
+
 //////////////////////// TrackScheduler
 
 struct TrackArgsPrivate
@@ -1731,7 +1755,6 @@ public:
         , _doPartialUpdates(doPartialUpdates)
     {
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressStart(_effect->getNode(), tr("Tracking...").toStdString(), "");
             _base->emit_trackingStarted(step);
         }
 
@@ -1746,7 +1769,6 @@ public:
             _v->setDoingPartialUpdates(false);
         }
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressEnd( _effect->getNode() );
             _base->emit_trackingFinished();
         }
     }
@@ -1806,17 +1828,17 @@ TrackScheduler::run()
         int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
         bool reportProgress = numTracks > 1 || framesCount > 1;
         EffectInstPtr effect = _imp->getNode()->getEffectInstance();
+        bool allTrackFailed = false;
+        bool aborted = false;
         {
             ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
             IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, frameStep, reportProgress, viewer, doPartialUpdates);
-
-
+     
             if ( (frameStep == 0) || ( (frameStep > 0) && (start >= end) ) || ( (frameStep < 0) && (start <= end) ) ) {
                 // Invalid range
                 cur = end;
             }
 
-            bool allTrackFailed = false;
 
             while (cur != end) {
                 ///Launch parallel thread for each track using the global thread pool
@@ -1874,10 +1896,7 @@ TrackScheduler::run()
 
                 if (reportProgress && effect) {
                     ///Notify we progressed of 1 frame
-                    if ( !effect->getApp()->progressUpdate(effect->getNode(), progress) ) {
-                        QMutexLocker k(&_imp->abortRequestedMutex);
-                        ++_imp->abortRequested;
-                    }
+                    Q_EMIT trackingProgress(progress);
                 }
 
                 ///Check for abortion
@@ -1885,6 +1904,7 @@ TrackScheduler::run()
                     QMutexLocker k(&_imp->abortRequestedMutex);
                     if (_imp->abortRequested > 0) {
                         _imp->abortRequested = 0;
+                        aborted = true;
                         _imp->abortRequestedCond.wakeAll();
                         break;
                     }

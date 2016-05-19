@@ -1729,6 +1729,11 @@ KnobHelper::setSpacingBetweenItems(int spacing)
     _imp->itemSpacing = spacing;
 }
 
+int
+KnobHelper::getSpacingBetweenitems() const
+{
+    return _imp->itemSpacing;
+}
 
 std::string
 KnobHelper::getInViewerContextLabel() const
@@ -4303,14 +4308,13 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         } else {
             group->insertKnob(indexInParent, output);
         }
-    } else {
-        assert(destPage);
+    } else if (destPage) {
         if (indexInParent == -1) {
             destPage->addKnob(output);
         } else {
             destPage->insertKnob(indexInParent, output);
         }
-    }
+    } 
     if (isUserKnob && otherIsEffect) {
         otherIsEffect->getNode()->declarePythonFields();
     }

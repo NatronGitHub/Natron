@@ -694,7 +694,7 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, co
 
                 if (isButton) {
                     if (isButton->getIsCheckable()) {
-                        isButton->setValue(!isButton->getValue());
+                        isButton->onValueChanged(!isButton->getValue(), ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
                         ret = true;
                     } else {
                         ret = isButton->trigger();

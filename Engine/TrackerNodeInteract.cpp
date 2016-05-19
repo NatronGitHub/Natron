@@ -99,7 +99,6 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 , isTracking(false)
 {
     selectedMarkerScale.x = selectedMarkerScale.y = 1.;
-    
 }
 
 
@@ -119,7 +118,12 @@ TrackerNodeInteract::getContext() const
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
-    trackRangeDialogGroup.lock()->setValue(true);
+    boost::shared_ptr<KnobGroup> k = trackRangeDialogGroup.lock();
+    if (k->getValue()) {
+        k->setValue(false);
+    } else {
+        k->setValue(true);
+    }
 }
 
 void
@@ -253,7 +257,7 @@ TrackerNodeInteract::onTrackFwClicked()
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
-        ctx->trackSelectedMarkers( startFrame, first + 1, true,  overlay );
+        ctx->trackSelectedMarkers( startFrame, last + 1, true,  overlay );
     }
 
 }
@@ -643,7 +647,9 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     assert(overlay);
 
     double overlayColor[3];
-    _p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]);
+    if (!_p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2])) {
+        overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
+    }
 
     boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
     boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
@@ -858,7 +864,9 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 
 
     double overlayColor[3];
-    _p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]);
+    if (!_p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2])) {
+        overlayColor[0] = overlayColor[1] = overlayColor[2] = 0.8;
+    }
 
     const TextureRect& texRect = selectedMarkerTexture->getTextureRect();
     RectD texCoords;
@@ -1423,7 +1431,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x, int y)
 
         }
         refreshSelectedMarkerTexture();
-
+        return true;
     }
 
     return false;

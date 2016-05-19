@@ -34,6 +34,9 @@
 #include "Engine/TrackerUndoCommand.h"
 #include "Engine/ViewerInstance.h"
 
+
+#define NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING 10
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -93,6 +96,7 @@ TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, Key_Z));
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamTrackPrevious, kTrackerUIParamTrackPreviousLabel, Key_X));
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamTrackNext, kTrackerUIParamTrackNextLabel, Key_C));
+    shortcuts->push_back(PluginActionShortcut(kTrackerUIParamStopTracking, kTrackerUIParamStopTrackingLabel, Key_Escape));
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamTrackFW, kTrackerUIParamTrackFWLabel, Key_V));
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamTrackRange, kTrackerUIParamTrackRangeLabel));
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamTrackAllKeyframes, kTrackerUIParamTrackAllKeyframesLabel, Key_V, eKeyboardModifierControl));
@@ -108,6 +112,12 @@ TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamRemovePatternKeyFrame, kTrackerUIParamRemovePatternKeyFrameLabel));
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamResetOffset, kTrackerUIParamResetOffsetLabel));
     shortcuts->push_back(PluginActionShortcut(kTrackerUIParamResetTrack, kTrackerUIParamResetTrackLabel));
+    shortcuts->push_back(PluginActionShortcut(kTrackerUIParamRightClickMenuActionSelectAllTracks, kTrackerUIParamRightClickMenuActionSelectAllTracksLabel, Key_A, eKeyboardModifierControl));
+    shortcuts->push_back(PluginActionShortcut(kTrackerUIParamRightClickMenuActionRemoveTracks, kTrackerUIParamRightClickMenuActionRemoveTracksLabel, Key_BackSpace));
+    shortcuts->push_back(PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeBottom, kTrackerUIParamRightClickMenuActionNudgeBottomLabel, Key_Down));
+    shortcuts->push_back(PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeTop, kTrackerUIParamRightClickMenuActionNudgeTopLabel, Key_Up));
+    shortcuts->push_back(PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeRight, kTrackerUIParamRightClickMenuActionNudgeRightLabel, Key_Right));
+    shortcuts->push_back(PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeLeft, kTrackerUIParamRightClickMenuActionNudgeLeftLabel, Key_Left));
     
     // Right click menu
 }
@@ -162,7 +172,6 @@ TrackerNode::initializeKnobs()
     stopTracking->setHintToolTip(tr(kTrackerUIParamStopTrackingHint));
     stopTracking->setEvaluateOnChange(false);
     stopTracking->setSecretByDefault(true);
-    stopTracking->setInViewerContextSecret(true);
     stopTracking->setInViewerContextCanHaveShortcut(true);
     stopTracking->setIconLabel(NATRON_IMAGES_PATH "pauseDisabled.png");
     trackingPage->addKnob(stopTracking);
@@ -260,8 +269,8 @@ TrackerNode::initializeKnobs()
     updateViewer->setDefaultValue(true);
     updateViewer->setSecretByDefault(true);
     updateViewer->setInViewerContextCanHaveShortcut(true);
-    updateViewer->setIconLabel(NATRON_IMAGES_PATH "updateViewerEnabled.png", true);
-    updateViewer->setIconLabel(NATRON_IMAGES_PATH "updateViewerDisabled.png", false);
+    updateViewer->setIconLabel(NATRON_IMAGES_PATH "refreshActive.png", true);
+    updateViewer->setIconLabel(NATRON_IMAGES_PATH "refresh.png", false);
     trackingPage->addKnob(updateViewer);
     _imp->ui->updateViewerButton = updateViewer;
 
@@ -349,35 +358,55 @@ TrackerNode::initializeKnobs()
 
 
     addKnobToViewerUI(addMarker);
-    addMarker->setInViewerContextItemSpacing(5);
+    addMarker->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(trackBw);
+    trackBw->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(trackPrev);
+    trackPrev->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(trackNext);
+    trackNext->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(trackFw);
-    trackFw->setInViewerContextItemSpacing(5);
+    trackFw->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(trackRange);
-    trackRange->setInViewerContextItemSpacing(5);
+    trackRange->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(trackAllKeys);
+    trackAllKeys->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(trackCurKey);
-    trackCurKey->setInViewerContextItemSpacing(5);
+    trackCurKey->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(clearAllAnimation);
+    clearAllAnimation->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(clearBackwardAnim);
+    clearBackwardAnim->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(clearForwardAnim);
-    clearForwardAnim->setInViewerContextItemSpacing(5);
+    clearForwardAnim->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(updateViewer);
+    updateViewer->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(centerViewer);
-    centerViewer->setInViewerContextItemSpacing(5);
+    centerViewer->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(createKeyOnMove);
     addKnobToViewerUI(showError);
-    showError->setInViewerContextItemSpacing(5);
+    showError->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(addKeyframe);
+    addKeyframe->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(removeKeyframe);
-    removeKeyframe->setInViewerContextItemSpacing(5);
+    removeKeyframe->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(resetOffset);
+    resetOffset->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(resetTrack);
 
-    QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
 
+    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+
+    context->setUpdateViewer(updateViewer->getValue());
+    context->setCenterOnTrack(centerViewer->getValue());
+
+    QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
+    QObject::connect( context.get(), SIGNAL(selectionChanged(int)), _imp->ui.get(), SLOT(onContextSelectionChanged(int)) );
+    QObject::connect( context.get(), SIGNAL(keyframeSetOnTrack(TrackMarkerPtr,int)), _imp->ui.get(), SLOT(onKeyframeSetOnTrack(TrackMarkerPtr,int)) );
+    QObject::connect( context.get(), SIGNAL(keyframeRemovedOnTrack(TrackMarkerPtr,int)), _imp->ui.get(), SLOT(onKeyframeRemovedOnTrack(TrackMarkerPtr,int)) );
+    QObject::connect( context.get(), SIGNAL(allKeyframesRemovedOnTrack(TrackMarkerPtr)), _imp->ui.get(), SLOT(onAllKeyframesRemovedOnTrack(TrackMarkerPtr)) );
+    QObject::connect( context.get(), SIGNAL(trackingFinished()), _imp->ui.get(), SLOT(onTrackingEnded()) );
+    QObject::connect( context.get(), SIGNAL(trackingStarted(int)), _imp->ui.get(), SLOT(onTrackingStarted(int)) );
 
     // Right click menu
     boost::shared_ptr<KnobChoice> rightClickMenu = AppManager::createKnob<KnobChoice>(this, std::string(kTrackerUIParamRightClickMenu));
@@ -453,6 +482,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialog->setSecretByDefault(true);
     trackRangeDialog->setEvaluateOnChange(false);
     trackRangeDialog->setIsPersistant(false);
+    trackRangeDialog->setAsDialog(true);
     trackingPage->addKnob(trackRangeDialog);
     _imp->ui->trackRangeDialogGroup = trackRangeDialog;
 
@@ -461,9 +491,8 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFirstFrame->setHintToolTip(tr(kTrackerUIParamTrackRangeDialogFirstFrameHint));
     trackRangeDialogFirstFrame->setSecretByDefault(true);
     trackRangeDialogFirstFrame->setEvaluateOnChange(false);
-    trackRangeDialogFirstFrame->setAddNewLine(false);
     trackRangeDialogFirstFrame->setAnimationEnabled(false);
-    trackingPage->addKnob(trackRangeDialogFirstFrame);
+    trackRangeDialog->addKnob(trackRangeDialogFirstFrame);
     _imp->ui->trackRangeDialogFirstFrame = trackRangeDialogFirstFrame;
 
     boost::shared_ptr<KnobInt> trackRangeDialogLastFrame = AppManager::createKnob<KnobInt>(this, tr(kTrackerUIParamTrackRangeDialogLastFrameLabel));
@@ -472,7 +501,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogLastFrame->setSecretByDefault(true);
     trackRangeDialogLastFrame->setEvaluateOnChange(false);
     trackRangeDialogLastFrame->setAnimationEnabled(false);
-    trackingPage->addKnob(trackRangeDialogLastFrame);
+    trackRangeDialog->addKnob(trackRangeDialogLastFrame);
     _imp->ui->trackRangeDialogLastFrame = trackRangeDialogLastFrame;
 
     boost::shared_ptr<KnobInt> trackRangeDialogFrameStep = AppManager::createKnob<KnobInt>(this, tr(kTrackerUIParamTrackRangeDialogStepLabel));
@@ -481,7 +510,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFrameStep->setSecretByDefault(true);
     trackRangeDialogFrameStep->setEvaluateOnChange(false);
     trackRangeDialogFrameStep->setAnimationEnabled(false);
-    trackingPage->addKnob(trackRangeDialogFrameStep);
+    trackRangeDialog->addKnob(trackRangeDialogFrameStep);
     _imp->ui->trackRangeDialogStep = trackRangeDialogFrameStep;
 
     boost::shared_ptr<KnobButton> trackRangeDialogOkButton = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackRangeDialogOkButtonLabel));
@@ -490,7 +519,8 @@ TrackerNode::initializeKnobs()
     trackRangeDialogOkButton->setSecretByDefault(true);
     trackRangeDialogOkButton->setAddNewLine(false);
     trackRangeDialogOkButton->setEvaluateOnChange(false);
-    trackingPage->addKnob(trackRangeDialogOkButton);
+    trackRangeDialogOkButton->setSpacingBetweenItems(3);
+    trackRangeDialog->addKnob(trackRangeDialogOkButton);
     _imp->ui->trackRangeDialogOkButton = trackRangeDialogOkButton;
 
     boost::shared_ptr<KnobButton> trackRangeDialogCancelButton = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel));
@@ -498,7 +528,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogCancelButton->setHintToolTip(tr(kTrackerUIParamTrackRangeDialogCancelButtonHint));
     trackRangeDialogCancelButton->setSecretByDefault(true);
     trackRangeDialogCancelButton->setEvaluateOnChange(false);
-    trackingPage->addKnob(trackRangeDialogCancelButton);
+    trackRangeDialog->addKnob(trackRangeDialogCancelButton);
     _imp->ui->trackRangeDialogCancelButton = trackRangeDialogCancelButton;
 
 
@@ -552,53 +582,55 @@ TrackerNode::knobChanged(KnobI* k,
         if ( !markers.empty() ) {
             pushUndoCommand( new RemoveTracksCommand( markers, context ) );
         }
-    } else if (k == _imp->ui->nudgeTracksOnTopMenuAction.lock().get()) {
+    } else if (k == _imp->ui->nudgeTracksOnTopMenuAction.lock().get() && reason == eValueChangedReasonUserEdited) {
         if (!_imp->ui->nudgeSelectedTracks(0,1)) {
             return false;
         }
-    } else if (k == _imp->ui->nudgeTracksOnRightMenuAction.lock().get()) {
+    } else if (k == _imp->ui->nudgeTracksOnRightMenuAction.lock().get() && reason == eValueChangedReasonUserEdited) {
         if (!_imp->ui->nudgeSelectedTracks(1,0)) {
             return false;
         }
-    } else if (k == _imp->ui->nudgeTracksOnLeftMenuAction.lock().get()) {
+    } else if (k == _imp->ui->nudgeTracksOnLeftMenuAction.lock().get() && reason == eValueChangedReasonUserEdited) {
         if (!_imp->ui->nudgeSelectedTracks(-1,0)) {
             return false;
         }
-    } else if (k == _imp->ui->nudgeTracksOnBottomMenuAction.lock().get()) {
+    } else if (k == _imp->ui->nudgeTracksOnBottomMenuAction.lock().get() && reason == eValueChangedReasonUserEdited) {
         if (!_imp->ui->nudgeSelectedTracks(0,-1)) {
             return false;
         }
-    } else if (k == _imp->ui->trackBwButton.lock().get()) {
+    } else if (k == _imp->ui->stopTrackingButton.lock().get() && reason == eValueChangedReasonUserEdited) {
+        _imp->ui->onStopButtonClicked();
+    } else if (k == _imp->ui->trackBwButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onTrackBwClicked();
-    } else if (k == _imp->ui->trackPrevButton.lock().get()) {
+    } else if (k == _imp->ui->trackPrevButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onTrackPrevClicked();
-    } else if (k == _imp->ui->trackFwButton.lock().get()) {
+    } else if (k == _imp->ui->trackFwButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onTrackFwClicked();
-    } else if (k == _imp->ui->trackNextButton.lock().get()) {
+    } else if (k == _imp->ui->trackNextButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onTrackNextClicked();
-    } else if (k == _imp->ui->trackRangeButton.lock().get()) {
+    } else if (k == _imp->ui->trackRangeButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onTrackRangeClicked();
-    } else if (k == _imp->ui->trackAllKeyframesButton.lock().get()) {
+    } else if (k == _imp->ui->trackAllKeyframesButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onTrackAllKeyframesClicked();
-    } else if (k == _imp->ui->trackCurrentKeyframeButton.lock().get()) {
+    } else if (k == _imp->ui->trackCurrentKeyframeButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onTrackCurrentKeyframeClicked();
-    } else if (k == _imp->ui->clearAllAnimationButton.lock().get()) {
+    } else if (k == _imp->ui->clearAllAnimationButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onClearAllAnimationClicked();
-    } else if (k == _imp->ui->clearBwAnimationButton.lock().get()) {
+    } else if (k == _imp->ui->clearBwAnimationButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onClearBwAnimationClicked();
-    } else if (k == _imp->ui->clearFwAnimationButton.lock().get()) {
+    } else if (k == _imp->ui->clearFwAnimationButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onClearFwAnimationClicked();
-    } else if (k == _imp->ui->updateViewerButton.lock().get()) {
+    } else if (k == _imp->ui->updateViewerButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onUpdateViewerClicked(_imp->ui->updateViewerButton.lock()->getValue());
-    } else if (k == _imp->ui->centerViewerButton.lock().get()) {
+    } else if (k == _imp->ui->centerViewerButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onCenterViewerButtonClicked(_imp->ui->centerViewerButton.lock()->getValue());
-    } else if (k == _imp->ui->setKeyFrameButton.lock().get()) {
+    } else if (k == _imp->ui->setKeyFrameButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onSetKeyframeButtonClicked();
-    } else if (k == _imp->ui->removeKeyFrameButton.lock().get()) {
+    } else if (k == _imp->ui->removeKeyFrameButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onRemoveKeyframeButtonClicked();
-    } else if (k == _imp->ui->resetOffsetButton.lock().get()) {
+    } else if (k == _imp->ui->resetOffsetButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onResetOffsetButtonClicked();
-    } else if (k == _imp->ui->resetTrackButton.lock().get()) {
+    } else if (k == _imp->ui->resetTrackButton.lock().get() && reason == eValueChangedReasonUserEdited) {
         _imp->ui->onResetTrackButtonClicked();
     } else {
         ret = false;
@@ -627,7 +659,6 @@ void
 TrackerNode::onInputChanged(int inputNb)
 {
     boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
-
     ctx->inputChanged(inputNb);
 
     _imp->ui->refreshSelectedMarkerTexture();
@@ -635,7 +666,7 @@ TrackerNode::onInputChanged(int inputNb)
 
 
 void
-TrackerNode::drawOverlay(double time, const RenderScale & renderScale, ViewIdx view)
+TrackerNode::drawOverlay(double time, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     double pixelScaleX, pixelScaleY;
     OverlaySupport* overlay = getCurrentViewportForOverlays();
@@ -1064,7 +1095,7 @@ TrackerNode::drawOverlay(double time, const RenderScale & renderScale, ViewIdx v
         if (_imp->ui->showMarkerTexture) {
             _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset,  selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
-        context->drawInternalNodesOverlay( time, renderScale, view, overlay);
+       // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
 
 
         if (_imp->ui->clickToAddTrackEnabled) {
@@ -1112,7 +1143,7 @@ TrackerNode::drawOverlay(double time, const RenderScale & renderScale, ViewIdx v
 } // drawOverlay
 
 bool
-TrackerNode::onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen)
+TrackerNode::onOverlayPenDown(double time, const RenderScale & /*renderScale*/, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double /*pressure*/, double /*timestamp*/, PenType /*pen*/)
 {
     std::pair<double, double> pixelScale;
     OverlaySupport* overlay = getCurrentViewportForOverlays();
@@ -1121,9 +1152,9 @@ TrackerNode::onOverlayPenDown(double time, const RenderScale & renderScale, View
     bool didSomething = false;
 
     boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
-    if ( context->onOverlayPenDownInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, overlay ) ) {
+    /*if ( context->onOverlayPenDownInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, overlay ) ) {
         return true;
-    }
+    }*/
 
 
 
@@ -1349,8 +1380,8 @@ TrackerNode::onOverlayPenDown(double time, const RenderScale & renderScale, View
 } // penDown
 
 bool
-TrackerNode::onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
-                              const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp)
+TrackerNode::onOverlayPenMotion(double time, const RenderScale & /*renderScale*/, ViewIdx view,
+                              const QPointF & viewportPos, const QPointF & pos, double /*pressure*/, double /*timestamp*/)
 {
     std::pair<double, double> pixelScale;
     OverlaySupport* overlay = getCurrentViewportForOverlays();
@@ -1359,10 +1390,6 @@ TrackerNode::onOverlayPenMotion(double time, const RenderScale & renderScale, Vi
     bool didSomething = false;
 
     boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
-    if ( context->onOverlayPenMotionInternalNodes( time, renderScale, view, viewportPos, pos, pressure,  timestamp, overlay)) {
-        return true;
-    }
-
 
     Point delta;
     delta.x = pos.x() - _imp->ui->lastMousePos.x();
@@ -2018,29 +2045,26 @@ TrackerNode::onOverlayPenDoubleClicked(double /*time*/,
 }
 
 bool
-TrackerNode::onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp)
+TrackerNode::onOverlayPenUp(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, const QPointF & /*viewportPos*/, const QPointF & /*pos*/, double /*pressure*/, double /*timestamp*/)
 {
     bool didSomething = false;
 
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
-    assert(overlay);
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
-
-    if ( context->onOverlayPenUpInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, overlay ) ) {
-        return true;
-    }
-
     TrackerMouseStateEnum state = _imp->ui->eventState;
-    _imp->ui->eventState = eMouseStateIdle;
-    _imp->ui->interactMarker.reset();
-    (void)state;
+    if (state != eMouseStateIdle) {
+        _imp->ui->eventState = eMouseStateIdle;
+        didSomething = true;
+    }
+    if (_imp->ui->interactMarker) {
+        _imp->ui->interactMarker.reset();
+        didSomething = true;
+    }
 
     return didSomething;
 
 } // penUp
 
 bool
-TrackerNode::onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers)
+TrackerNode::onOverlayKeyDown(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key key, KeyboardModifiers /*modifiers*/)
 {
     bool didSomething = false;
 
@@ -2065,48 +2089,13 @@ TrackerNode::onOverlayKeyDown(double time, const RenderScale & renderScale, View
         didSomething = true;
     }
 
-    if (!didSomething) {
-        OverlaySupport* overlay = getCurrentViewportForOverlays();
-        assert(overlay);
-        boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
 
-        if ( context->onOverlayKeyDownInternalNodes( time, renderScale, view, key, modifiers,  overlay ) ) {
-            return true;
-        }
-
-    }
-    /*} else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, modifiers, key) ) {
-        onTrackBwClicked();
-        didSomething = true;
-    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, modifiers, key) ) {
-        onTrackPrevClicked();
-        didSomething = true;
-    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingNext, modifiers, key) ) {
-        onTrackNextClicked();
-        didSomething = true;
-    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, modifiers, key) ) {
-        onTrackFwClicked();
-        didSomething = true;
-    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, modifiers, key) ) {
-        onStopButtonClicked();
-        didSomething = true;
-    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingRange, modifiers, key) ) {
-        onTrackRangeClicked();
-        didSomething = true;
-    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingAllKeyframes, modifiers, key) ) {
-        onTrackAllKeyframesClicked();
-        didSomething = true;
-    } else if ( isKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingCurrentKeyframes, modifiers, key) ) {
-        onTrackCurrentKeyframeClicked();
-        didSomething = true;
-    }
-*/
     
     return didSomething;
 } // keydown
 
 bool
-TrackerNode::onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers)
+TrackerNode::onOverlayKeyUp(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key key, KeyboardModifiers /*modifiers*/)
 {
     bool didSomething = false;
 
@@ -2141,59 +2130,32 @@ TrackerNode::onOverlayKeyUp(double time, const RenderScale & renderScale, ViewId
     }
 
 
-    if (!didSomething) {
-        OverlaySupport* overlay = getCurrentViewportForOverlays();
-        assert(overlay);
-        boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
-
-        if ( context->onOverlayKeyUpInternalNodes( time, renderScale, view, key, modifiers,  overlay ) ) {
-            return true;
-        }
-    }
 
     return didSomething;
 } // KeyUp
 
 bool
-TrackerNode::onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers)
+TrackerNode::onOverlayKeyRepeat(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers/* modifiers*/)
 {
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
-    assert(overlay);
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
 
-    if ( context->onOverlayKeyRepeatInternalNodes( time, renderScale, view, key, modifiers,  overlay ) ) {
-        return true;
-    }
     return false;
 } // keyrepeat
 
 bool
-TrackerNode::onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view)
+TrackerNode::onOverlayFocusGained(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx/* view*/)
 {
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
-    assert(overlay);
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
 
-    if ( context->onOverlayFocusGainedInternalNodes( time, renderScale, view, overlay) ) {
-        return true;
-    }
     return false;
 } // gainFocus
 
 bool
-TrackerNode::onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view)
+TrackerNode::onOverlayFocusLost(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     _imp->ui->altDown = 0;
     _imp->ui->controlDown = 0;
     _imp->ui->shiftDown = 0;
 
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
-    assert(overlay);
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
 
-    if ( context->onOverlayFocusLostInternalNodes( time, renderScale, view, overlay) ) {
-        return true;
-    }
     return true;
 
 } // loseFocus
