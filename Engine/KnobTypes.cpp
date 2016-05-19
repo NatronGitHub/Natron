@@ -1089,7 +1089,11 @@ KnobChoice::getHintToolTipFull() const
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
                 std::string help = boost::trim_copy(_mergedEntriesHelp[i]);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
-                ss << entry;
+                if ( isHintInMarkdown() ) {
+                    ss << "* **" << entry << "**";
+                } else {
+                    ss << entry;
+                }
                 ss << ": ";
                 ss << help;
                 if (i < _mergedEntriesHelp.size() - 1) {
