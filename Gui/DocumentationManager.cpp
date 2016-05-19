@@ -79,6 +79,14 @@ DocumentationManager::handler(QHttpRequest *req,
     qDebug() << "www client requested" << page;
 #endif
 
+    // override static docs
+    if (page.contains( QString::fromUtf8("/plugins/") )) {
+        page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
+    }
+    if (page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") )) {
+        page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("_group"), QString::fromUtf8("_group.html?id=") );
+    }
+
     // get options
     QStringList options;
     if ( page.contains( QString::fromUtf8("?") ) ) {
