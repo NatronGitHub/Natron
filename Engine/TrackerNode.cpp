@@ -2071,19 +2071,19 @@ TrackerNode::onOverlayKeyDown(double /*time*/, const RenderScale & /*renderScale
 
 
     bool isCtrl = false;
-    bool isShift = false;
+    bool isAlt = false;
     if (key == Key_Shift_L || key == Key_Shift_R) {
         ++_imp->ui->shiftDown;
-        isShift = true;
     } else if (key == Key_Control_L || key == Key_Control_R) {
         ++_imp->ui->controlDown;
         isCtrl = true;
     } else if (key == Key_Alt_L || key == Key_Alt_R) {
         ++_imp->ui->altDown;
+        isAlt = true;
     }
 
 
-    if ( _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isShift) ) {
+    if ( _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
         _imp->ui->clickToAddTrackEnabled = true;
         _imp->ui->addTrackButton.lock()->setValue(true);
         didSomething = true;
@@ -2100,13 +2100,12 @@ TrackerNode::onOverlayKeyUp(double /*time*/, const RenderScale & /*renderScale*/
     bool didSomething = false;
 
 
-    bool isShift = false;
+    bool isAlt = false;
     bool isControl = false;
     if (key == Key_Shift_L || key == Key_Shift_R) {
         if (_imp->ui->shiftDown) {
             --_imp->ui->shiftDown;
         }
-        isShift = true;
         if (_imp->ui->eventState == eMouseStateScalingSelectedMarker) {
             _imp->ui->eventState = eMouseStateIdle;
             didSomething = true;
@@ -2120,10 +2119,11 @@ TrackerNode::onOverlayKeyUp(double /*time*/, const RenderScale & /*renderScale*/
         if (_imp->ui->altDown) {
             --_imp->ui->altDown;
         }
+        isAlt = true;
     }
 
 
-    if ( _imp->ui->clickToAddTrackEnabled && (isControl || isShift) ) {
+    if ( _imp->ui->clickToAddTrackEnabled && (isControl || isAlt) ) {
         _imp->ui->clickToAddTrackEnabled = false;
         _imp->ui->addTrackButton.lock()->setValue(false);
         didSomething = true;
