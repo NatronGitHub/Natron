@@ -1297,9 +1297,9 @@ RotoPaint::knobChanged(KnobI* k,
 }
 
 void
-RotoPaint::refreshExtraStateAfterTimeChanged(double time)
+RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback, double time)
 {
-    EffectInstance::refreshExtraStateAfterTimeChanged(time);
+    EffectInstance::refreshExtraStateAfterTimeChanged(isPlayback, time);
     if ( (_imp->ui->selectedTool == eRotoToolBlur) ||
         ( _imp->ui->selectedTool == eRotoToolBurn) ||
         ( _imp->ui->selectedTool == eRotoToolDodge) ||

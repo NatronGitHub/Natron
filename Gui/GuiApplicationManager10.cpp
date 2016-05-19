@@ -896,17 +896,6 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, kShortcutDescActionPlayerPlaybackIn, Qt::AltModifier, Qt::Key_I);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, kShortcutDescActionPlayerPlaybackOut, Qt::AltModifier, Qt::Key_O);
 
-    ///Tracking
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, kShortcutDescActionTrackingSelectAll, Qt::ControlModifier, Qt::Key_A);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingDelete, kShortcutDescActionTrackingDelete, Qt::NoModifier, Qt::Key_Backspace);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, kShortcutDescActionTrackingBackward, Qt::NoModifier, Qt::Key_Z);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, kShortcutDescActionTrackingPrevious, Qt::NoModifier, Qt::Key_X);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingNext, kShortcutDescActionTrackingNext, Qt::NoModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, kShortcutDescActionTrackingForward, Qt::NoModifier, Qt::Key_V);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingStop, Qt::NoModifier, Qt::Key_Escape);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingRange, Qt::NoModifier, (Qt::Key)0);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingAllKeyframes, Qt::ControlModifier, Qt::Key_V);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingCurrentKeyframes, Qt::ControlModifier, Qt::Key_C);
 
     ///Nodegraph
 #ifndef NATRON_ENABLE_IO_META_NODES

@@ -27,19 +27,18 @@
 #include "Engine/TrackerContext.h"
 #include "Engine/Node.h"
 #include "Engine/AppInstance.h"
-#include "Gui/TrackerPanel.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
 AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
                                  const boost::shared_ptr<TrackerContext>& context)
-    : QUndoCommand()
+    : UndoCommand()
     , _markers()
     , _context(context)
 {
     _markers.push_back(marker);
-    setText( tr("Add Track(s)") );
+    setText( tr("Add Track(s)").toStdString() );
 }
 
 void
@@ -79,7 +78,7 @@ AddTrackCommand::redo()
 
 RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
                                          const boost::shared_ptr<TrackerContext>& context)
-    : QUndoCommand()
+    : UndoCommand()
     , _markers()
     , _context(context)
 {
@@ -90,7 +89,7 @@ RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &marke
         t.prevTrack = context->getPrevMarker(t.track, false);
         _markers.push_back(t);
     }
-    setText( tr("Remove Track(s)") );
+    setText( tr("Remove Track(s)").toStdString() );
 }
 
 void

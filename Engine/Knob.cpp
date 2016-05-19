@@ -3193,6 +3193,50 @@ KnobHelper::getBackgroundColour(double &r,
     }
 }
 
+int
+KnobHelper::getWidgetFontHeight() const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        return hasGui->getWidgetFontHeight();
+    }
+    return 0;
+}
+
+int
+KnobHelper::getStringWidthForCurrentFont(const std::string& string) const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        return hasGui->getStringWidthForCurrentFont(string);
+    }
+    return 0;
+}
+
+void
+KnobHelper::toWidgetCoordinates(double *x, double *y) const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        hasGui->toWidgetCoordinates(x, y);
+    }
+}
+
+
+void
+KnobHelper::toCanonicalCoordinates(double *x, double *y) const
+{
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        hasGui->toCanonicalCoordinates(x, y);
+    }
+}
+
+
 RectD
 KnobHelper::getViewportRect() const
 {
@@ -4106,7 +4150,7 @@ KnobHelper::setHasModifications(int dimension,
 }
 
 KnobPtr
-KnobHelper::createDuplicateOnNode(EffectInstance* effect,
+KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
                                   const boost::shared_ptr<KnobPage>& page,
                                   const boost::shared_ptr<KnobGroup>& group,
                                   int indexInParent,
@@ -4123,11 +4167,8 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
     }
 
     KnobHolder* holder = getHolder();
+    EffectInstance* otherIsEffect = dynamic_cast<EffectInstance*>(otherHolder);
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
-    assert(isEffect);
-    if (!isEffect) {
-        return KnobPtr();
-    }
 
     KnobBool* isBool = dynamic_cast<KnobBool*>(this);
     KnobInt* isInt = dynamic_cast<KnobInt*>(this);
@@ -4149,15 +4190,17 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
     if (page) {
         destPage = page;
     } else {
-        destPage = effect->getOrCreateUserPageKnob();
+        if (otherIsEffect) {
+            destPage = otherIsEffect->getOrCreateUserPageKnob();
+        }
     }
 
     KnobPtr output;
     if (isBool) {
-        boost::shared_ptr<KnobBool> newKnob = effect->createBoolKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobBool> newKnob = otherHolder->createBoolKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isInt) {
-        boost::shared_ptr<KnobInt> newKnob = effect->createIntKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        boost::shared_ptr<KnobInt> newKnob = otherHolder->createIntKnob(newScriptName, newLabel, getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums( isInt->getMinimums(), isInt->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isInt->getDisplayMinimums(), isInt->getDisplayMaximums() );
         if ( isInt->isSliderDisabled() ) {
@@ -4165,7 +4208,7 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         }
         output = newKnob;
     } else if (isDbl) {
-        boost::shared_ptr<KnobDouble> newKnob = effect->createDoubleKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        boost::shared_ptr<KnobDouble> newKnob = otherHolder->createDoubleKnob(newScriptName, newLabel, getDimension(), isUserKnob);
         newKnob->setSpatial( isDbl->getIsSpatial() );
         if ( isDbl->isRectangle() ) {
             newKnob->setAsRectangle();
@@ -4180,18 +4223,18 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         newKnob->setDisplayMinimumsAndMaximums( isDbl->getDisplayMinimums(), isDbl->getDisplayMaximums() );
         output = newKnob;
     } else if (isChoice) {
-        boost::shared_ptr<KnobChoice> newKnob = effect->createChoiceKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobChoice> newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (!makeAlias) {
             newKnob->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getEntriesHelp_mt_safe() );
         }
         output = newKnob;
     } else if (isColor) {
-        boost::shared_ptr<KnobColor> newKnob = effect->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);
+        boost::shared_ptr<KnobColor> newKnob = otherHolder->createColorKnob(newScriptName, newLabel, getDimension(), isUserKnob);
         newKnob->setMinimumsAndMaximums( isColor->getMinimums(), isColor->getMaximums() );
         newKnob->setDisplayMinimumsAndMaximums( isColor->getDisplayMinimums(), isColor->getDisplayMaximums() );
         output = newKnob;
     } else if (isString) {
-        boost::shared_ptr<KnobString> newKnob = effect->createStringKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobString> newKnob = otherHolder->createStringKnob(newScriptName, newLabel, isUserKnob);
         if ( isString->isLabel() ) {
             newKnob->setAsLabel();
         }
@@ -4206,37 +4249,37 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         }
         output = newKnob;
     } else if (isFile) {
-        boost::shared_ptr<KnobFile> newKnob = effect->createFileKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobFile> newKnob = otherHolder->createFileKnob(newScriptName, newLabel, isUserKnob);
         if ( isFile->isInputImageFile() ) {
             newKnob->setAsInputImage();
         }
         output = newKnob;
     } else if (isOutputFile) {
-        boost::shared_ptr<KnobOutputFile> newKnob = effect->createOuptutFileKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobOutputFile> newKnob = otherHolder->createOuptutFileKnob(newScriptName, newLabel, isUserKnob);
         if ( isOutputFile->isOutputImageFile() ) {
             newKnob->setAsOutputImageFile();
         }
         output = newKnob;
     } else if (isPath) {
-        boost::shared_ptr<KnobPath> newKnob = effect->createPathKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobPath> newKnob = otherHolder->createPathKnob(newScriptName, newLabel, isUserKnob);
         if ( isPath->isMultiPath() ) {
             newKnob->setMultiPath(true);
         }
         output = newKnob;
     } else if (isGrp) {
-        boost::shared_ptr<KnobGroup> newKnob = effect->createGroupKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobGroup> newKnob = otherHolder->createGroupKnob(newScriptName, newLabel, isUserKnob);
         if ( isGrp->isTab() ) {
             newKnob->setAsTab();
         }
         output = newKnob;
     } else if (isPage) {
-        boost::shared_ptr<KnobPage> newKnob = effect->createPageKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobPage> newKnob = otherHolder->createPageKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isBtn) {
-        boost::shared_ptr<KnobButton> newKnob = effect->createButtonKnob(newScriptName, newLabel, isUserKnob);
+        boost::shared_ptr<KnobButton> newKnob = otherHolder->createButtonKnob(newScriptName, newLabel, isUserKnob);
         output = newKnob;
     } else if (isParametric) {
-        boost::shared_ptr<KnobParametric> newKnob = effect->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
+        boost::shared_ptr<KnobParametric> newKnob = otherHolder->createParametricKnob(newScriptName, newLabel, isParametric->getDimension(), isUserKnob);
         output = newKnob;
     }
     if (!output) {
@@ -4268,10 +4311,10 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
             destPage->insertKnob(indexInParent, output);
         }
     }
-    if (isUserKnob) {
-        effect->getNode()->declarePythonFields();
+    if (isUserKnob && otherIsEffect) {
+        otherIsEffect->getNode()->declarePythonFields();
     }
-    if (!makeAlias) {
+    if (!makeAlias && otherIsEffect && isEffect) {
         boost::shared_ptr<NodeCollection> collec;
         collec = isEffect->getNode()->getGroup();
 
@@ -4280,7 +4323,7 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         if (isCollecGroup) {
             ss << "thisGroup." << newScriptName;
         } else {
-            ss << "app." << effect->getNode()->getFullyQualifiedName() << "." << newScriptName;
+            ss << "app." << otherIsEffect->getNode()->getFullyQualifiedName() << "." << newScriptName;
         }
         if (output->getDimension() > 1) {
             ss << ".get()[dimension]";
@@ -4300,7 +4343,7 @@ KnobHelper::createDuplicateOnNode(EffectInstance* effect,
         setKnobAsAliasOfThis(output, true);
     }
     if (refreshParams) {
-        effect->recreateUserKnobs(true);
+        otherHolder->recreateUserKnobs(true);
     }
 
     return output;
@@ -5535,7 +5578,7 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback,
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
         _imp->knobs[i]->onTimeChanged(isPlayback, time);
     }
-    refreshExtraStateAfterTimeChanged(time);
+    refreshExtraStateAfterTimeChanged(isPlayback, time);
 }
 
 void

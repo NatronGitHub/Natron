@@ -28,6 +28,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <QFutureWatcher>
+#include <QtConcurrentRun>
 #include <QtCore/QPointF>
 #include <QtCore/QRectF>
 
@@ -35,6 +36,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/RectI.h"
 #include "Engine/Texture.h"
+#include "Engine/TrackerUndoCommand.h"
 
 
 #define POINT_SIZE 5
@@ -67,6 +69,10 @@
 #define kTrackerUIParamTrackPrevious "trackPrevious"
 #define kTrackerUIParamTrackPreviousLabel "Track Previous"
 #define kTrackerUIParamTrackPreviousHint "Track selected tracks on the previous frame"
+
+#define kTrackerUIParamStopTracking "stopTracking"
+#define kTrackerUIParamStopTrackingLabel "Stop Tracking"
+#define kTrackerUIParamStopTrackingHint "Stop any ongoing tracking operation"
 
 #define kTrackerUIParamTrackFW "trackFW"
 #define kTrackerUIParamTrackFWLabel "Track Forward"
@@ -132,6 +138,51 @@
 #define kTrackerUIParamResetTrack "resetTrack"
 #define kTrackerUIParamResetTrackLabel "Reset Track"
 #define kTrackerUIParamResetTrackHint "Reset pattern, search window and track animation for the selected tracks"
+
+// Right click menu
+#define kTrackerUIParamRightClickMenu kNatronOfxParamRightClickMenu
+
+#define kTrackerUIParamRightClickMenuActionSelectAllTracks "selectAllMenuAction"
+#define kTrackerUIParamRightClickMenuActionSelectAllTracksLabel "Select All"
+
+#define kTrackerUIParamRightClickMenuActionRemoveTracks "removeTracks"
+#define kTrackerUIParamRightClickMenuActionRemoveTracksLabel "Remove Track(s)"
+
+#define kTrackerUIParamRightClickMenuActionNudgeLeft "nudgeLeftAction"
+#define kTrackerUIParamRightClickMenuActionNudgeLeftLabel "Nudge Left"
+
+#define kTrackerUIParamRightClickMenuActionNudgeRight "nudgeRightAction"
+#define kTrackerUIParamRightClickMenuActionNudgeRightLabel "Nudge Right"
+
+#define kTrackerUIParamRightClickMenuActionNudgeBottom "nudgeBottomAction"
+#define kTrackerUIParamRightClickMenuActionNudgeBottomLabel "Nudge Bottom"
+
+#define kTrackerUIParamRightClickMenuActionNudgeTop "nudgeTopAction"
+#define kTrackerUIParamRightClickMenuActionNudgeTopLabel "Nudge Top"
+
+// Track range dialog
+#define kTrackerUIParamTrackRangeDialog "trackRangeDialog"
+#define kTrackerUIParamTrackRangeDialogLabel "Track Range"
+
+#define kTrackerUIParamTrackRangeDialogFirstFrame "firstFrame"
+#define kTrackerUIParamTrackRangeDialogFirstFrameLabel "First Frame"
+#define kTrackerUIParamTrackRangeDialogFirstFrameHint "The starting frame from which to track"
+
+#define kTrackerUIParamTrackRangeDialogLastFrame "lastFrame"
+#define kTrackerUIParamTrackRangeDialogLastFrameLabel "Last Frame"
+#define kTrackerUIParamTrackRangeDialogLastFrameHint "The last frame to track"
+
+#define kTrackerUIParamTrackRangeDialogStep "frameStep"
+#define kTrackerUIParamTrackRangeDialogStepLabel "Step"
+#define kTrackerUIParamTrackRangeDialogStepHint "The number of frames to increment on the timeline after each successful tracks. If Last Frame is lesser than First Frame, you may specify a negative frame step."
+
+#define kTrackerUIParamTrackRangeDialogOkButton "okButton"
+#define kTrackerUIParamTrackRangeDialogOkButtonLabel "Ok"
+#define kTrackerUIParamTrackRangeDialogOkButtonHint "Start Tracking"
+
+#define kTrackerUIParamTrackRangeDialogCancelButton "cancelButton"
+#define kTrackerUIParamTrackRangeDialogCancelButtonLabel "Cancel"
+#define kTrackerUIParamTrackRangeDialogCancelButtonHint "Close this window and do not start tracking"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -260,6 +311,7 @@ public:
     boost::weak_ptr<KnobButton> trackRangeButton;
     boost::weak_ptr<KnobButton> trackBwButton;
     boost::weak_ptr<KnobButton> trackPrevButton;
+    boost::weak_ptr<KnobButton> stopTrackingButton; //< invisible
     boost::weak_ptr<KnobButton> trackNextButton;
     boost::weak_ptr<KnobButton> trackFwButton;
     boost::weak_ptr<KnobButton> trackAllKeyframesButton;
@@ -276,19 +328,33 @@ public:
     boost::weak_ptr<KnobButton> resetTrackButton;
     boost::weak_ptr<KnobButton> showCorrelationButton;
 
+
+
+
     // Track range dialog
     boost::weak_ptr<KnobGroup> trackRangeDialogGroup;
     boost::weak_ptr<KnobInt> trackRangeDialogFirstFrame;
     boost::weak_ptr<KnobInt> trackRangeDialogLastFrame;
     boost::weak_ptr<KnobInt> trackRangeDialogStep;
-    boost::weak_ptr<KnobBool> trackRangeDialogOkButton;
-    boost::weak_ptr<KnobBool> trackRangeDialogCancelButton;
+    boost::weak_ptr<KnobButton> trackRangeDialogOkButton;
+    boost::weak_ptr<KnobButton> trackRangeDialogCancelButton;
+
+
+    // Right click menu
+    boost::weak_ptr<KnobChoice> rightClickMenuKnob;
+    boost::weak_ptr<KnobButton> selectAllTracksMenuAction;
+    boost::weak_ptr<KnobButton> removeTracksMenuAction;
+    boost::weak_ptr<KnobButton> nudgeTracksOnRightMenuAction;
+    boost::weak_ptr<KnobButton> nudgeTracksOnLeftMenuAction;
+    boost::weak_ptr<KnobButton> nudgeTracksOnTopMenuAction;
+    boost::weak_ptr<KnobButton> nudgeTracksOnBottomMenuAction;
 
     bool clickToAddTrackEnabled;
     QPointF lastMousePos;
     QRectF selectionRectangle;
     int controlDown;
     int shiftDown;
+    int altDown;
     TrackerMouseStateEnum eventState;
     TrackerDrawStateEnum hoverState;
     TrackMarkerPtr interactMarker, hoverMarker;
@@ -309,7 +375,6 @@ public:
     RenderScale selectedMarkerScale;
     boost::weak_ptr<Image> selectedMarkerImg;
     bool isTracking;
-    int lastTrackRangeFirstFrame, lastTrackRangeLastFrame, lastTrackRangeStep;
 
 
     TrackerNodeInteract(TrackerNodePrivate* p);
@@ -354,6 +419,14 @@ public:
 
     void onResetTrackButtonClicked();
 
+
+    /**
+     *@brief Moves of the given pixel the selected tracks.
+     * This takes into account the zoom factor.
+     **/
+    bool nudgeSelectedTracks(int x, int y);
+
+
     void transformPattern(double time, TrackerMouseStateEnum state, const Point& delta);
 
     void refreshSelectedMarkerTexture();
@@ -384,7 +457,7 @@ public:
     bool isInsideSelectedMarkerTextureResizeAnchor(const QPointF& pos) const;
 
     ///Returns the keyframe time if the mouse is inside a keyframe texture
-    int isInsideKeyFrameTexture(double currentTime, const QPointF& pos, const QPointF& viewportPos, const std::pair<double, double>& pixelScale) const;
+    int isInsideKeyFrameTexture(double currentTime, const QPointF& pos, const QPointF& viewportPos) const;
 
     static Point toMagWindowPoint(const Point& ptnPoint,
                                   const RectD& canonicalSearchWindow,
@@ -396,15 +469,13 @@ public:
                                          const QPointF& point,
                                          const QPointF& handleSize);
 
-    static bool isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
-                              const std::pair<double,double>& pixelScale,
+    bool isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
                               double xWidget,
                               double yWidget,
                               double toleranceWidget,
                               double time);
 
-    static bool isNearbyPoint(const QPointF& p,
-                              const std::pair<double,double>& pixelScale,
+    bool isNearbyPoint(const QPointF& p,
                               double xWidget,
                               double yWidget,
                               double toleranceWidget);

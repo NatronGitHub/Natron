@@ -58,6 +58,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/PyNode.h"
+#include "Engine/PyParameter.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/RotoLayer.h"
@@ -90,6 +92,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeGraphTextItem.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/PreviewThread.h"
+#include "Gui/PythonPanels.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/SpinBox.h"
@@ -3786,6 +3789,41 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     isViewer->setCursor(c);
     return true;
 
+}
+
+class GroupKnobDialog : public NATRON_PYTHON_NAMESPACE::PyModalDialog
+{
+
+public:
+
+    
+    GroupKnobDialog(Gui* gui, const KnobGroup* group);
+
+    virtual ~GroupKnobDialog()
+    {
+
+    }
+
+};
+
+GroupKnobDialog::GroupKnobDialog(Gui* gui, const KnobGroup* group)
+: NATRON_PYTHON_NAMESPACE::PyModalDialog(gui, eStandardButtonNoButton)
+{
+    setWindowTitle(QString::fromUtf8(group->getLabel().c_str()));
+    std::vector<KnobPtr> children = group->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        KnobPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, false);
+    }
+
+    refreshUserParamsGUI();
+}
+
+void
+NodeGui::showGroupKnobAsDialog(const KnobGroup* group)
+{
+    assert(group);
+    GroupKnobDialog dialog(getDagGui()->getGui(), group);
+    dialog.exec();
 }
 
 void

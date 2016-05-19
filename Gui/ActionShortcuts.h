@@ -365,36 +365,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionPlayerPlaybackOut "pbOut"
 #define kShortcutDescActionPlayerPlaybackOut "Set Playback Out Point"
 
-///////////TRACKING SHORTCUTS
-#define kShortcutIDActionTrackingSelectAll "selectAll"
-#define kShortcutDescActionTrackingSelectAll "Select All Tracks"
-
-#define kShortcutIDActionTrackingDelete "delete"
-#define kShortcutDescActionTrackingDelete "Remove Tracks"
-
-#define kShortcutIDActionTrackingBackward "backward"
-#define kShortcutDescActionTrackingBackward "Track Backward"
-
-#define kShortcutIDActionTrackingForward "forward"
-#define kShortcutDescActionTrackingForward "Track Forward"
-
-#define kShortcutIDActionTrackingPrevious "prev"
-#define kShortcutDescActionTrackingPrevious "Track to Previous Frame"
-
-#define kShortcutIDActionTrackingNext "next"
-#define kShortcutDescActionTrackingNext "Track to Next Frame"
-
-#define kShortcutIDActionTrackingStop "stop"
-#define kShortcutDescActionTrackingStop "Stop Tracking"
-
-#define kShortcutIDActionTrackingAllKeyframes "allKeys"
-#define kShortcutDescActionTrackingAllKeyframes "Track All Keyframes"
-
-#define kShortcutIDActionTrackingCurrentKeyframes "curKeys"
-#define kShortcutDescActionTrackingCurrentKeyframes "Track Current Keyframe"
-
-#define kShortcutIDActionTrackingRange "trackRange"
-#define kShortcutDescActionTrackingRange "Track range"
 
 ///////////NODEGRAPH SHORTCUTS
 #ifndef NATRON_ENABLE_IO_META_NODES

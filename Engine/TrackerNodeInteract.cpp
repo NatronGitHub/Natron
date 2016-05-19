@@ -33,6 +33,7 @@
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerContext.h"
@@ -79,6 +80,7 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 , selectionRectangle()
 , controlDown(0)
 , shiftDown(0)
+, altDown(0)
 , eventState(eMouseStateIdle)
 , hoverState(eDrawStateInactive)
 , interactMarker()
@@ -95,9 +97,6 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
 , selectedMarkerScale()
 , selectedMarkerImg()
 , isTracking(false)
-, lastTrackRangeFirstFrame(INT_MIN)
-, lastTrackRangeLastFrame(INT_MIN)
-, lastTrackRangeStep(INT_MIN)
 {
     selectedMarkerScale.x = selectedMarkerScale.y = 1.;
     
@@ -120,51 +119,7 @@ TrackerNodeInteract::getContext() const
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
-#if 0
-    SequenceTime timelineFirst, timelineLast;
-
-    _imp->viewer->getTimelineBounds(&timelineFirst, &timelineLast);
-
-    NATRON_PYTHON_NAMESPACE::PyModalDialog dialog( _imp->viewer->getGui() );
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> firstFrame( dialog.createIntParam( QString::fromUtf8("firstFrame"), QString::fromUtf8("First frame") ) );
-    firstFrame->set(_imp->lastTrackRangeFirstFrame != INT_MIN ? _imp->lastTrackRangeFirstFrame : timelineFirst);
-    firstFrame->setAnimationEnabled(false);
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> lastFrame( dialog.createIntParam( QString::fromUtf8("lastFrame"), QString::fromUtf8("Last frame") ) );
-    lastFrame->set(_imp->lastTrackRangeLastFrame != INT_MIN ? _imp->lastTrackRangeLastFrame : timelineLast);
-    lastFrame->setAnimationEnabled(false);
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::IntParam> stepFrame( dialog.createIntParam( QString::fromUtf8("step"), QString::fromUtf8("Step") ) );
-    stepFrame->setAnimationEnabled(false);
-    stepFrame->set(_imp->lastTrackRangeStep != INT_MIN ? _imp->lastTrackRangeStep : 1);
-    dialog.refreshUserParamsGUI();
-    if ( dialog.exec() ) {
-        int first = firstFrame->getValue();
-        int last = lastFrame->getValue();
-        int step = stepFrame->getValue();
-        boost::shared_ptr<TrackerContext> ctx = _imp->panel->getContext();
-        if ( ctx->isCurrentlyTracking() ) {
-            ctx->abortTracking();
-        }
-
-        if (step == 0) {
-            Dialogs::errorDialog( tr("Track Range").toStdString(), tr("The Step cannot be 0").toStdString() );
-
-            return;
-        }
-
-        int startFrame = step > 0 ? first : last;
-        int lastFrame = step > 0 ? last + 1 : first - 1;
-
-        if ( ( (step > 0) && (startFrame >= lastFrame) ) || ( (step < 0) && (startFrame <= lastFrame) ) ) {
-            return;
-        }
-
-        _imp->lastTrackRangeStep = step;
-        _imp->lastTrackRangeFirstFrame = first;
-        _imp->lastTrackRangeLastFrame = last;
-
-        ctx->trackSelectedMarkers( startFrame, lastFrame, step,  _imp->viewer->getInternalNode() );
-    }
-#endif
+    trackRangeDialogGroup.lock()->setValue(true);
 }
 
 void
@@ -458,10 +413,8 @@ TrackerNodeInteract::computeMidPointExtent(const QPointF& prev,
 int
 TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
                                              const QPointF& pos,
-                                             const QPointF& viewportPos,
-                                             const std::pair<double, double>& pixelScale) const
+                                             const QPointF& viewportPos) const
 {
-#if 0
     if (!showMarkerTexture) {
         return INT_MAX;
     }
@@ -484,8 +437,11 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
         return INT_MAX;
     }
 
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+
     //Find out which keyframe it is by counting keyframe portions
-    int xRightMainTexture = viewer->getViewer()->toWidgetCoordinates( QPointF(textureRectCanonical.x2, 0) ).x();
+    int xRightMainTexture = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, 0) ).x();
     const double keyWidthpx = TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX);
     double indexF = (viewportPos.x() - xRightMainTexture) / keyWidthpx;
     int texIndex = (int)std::floor(indexF);
@@ -514,19 +470,19 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
     }
 
     return INT_MAX;
-#endif
 } // isInsideKeyFrameTexture
 
 bool
 TrackerNodeInteract::isNearbySelectedMarkerTextureResizeAnchor(const QPointF& pos) const
 {
-#if 0
     RectD textureRectCanonical;
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    QPointF clickWidget = viewer->getViewer()->toWidgetCoordinates(pos);
-    QPointF btmRightWidget = viewer->getViewer()->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    QPointF clickWidget = overlay->toWidgetCoordinates(pos);
+    QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
     double tolerance = TO_DPIX(POINT_TOLERANCE);
     if ( ( clickWidget.x() >= (btmRightWidget.x() - tolerance) ) && ( clickWidget.x() <= (btmRightWidget.x() + tolerance) ) &&
         ( clickWidget.y() >= (btmRightWidget.y() - tolerance) ) && ( clickWidget.y() <= (btmRightWidget.y() + tolerance) ) ) {
@@ -534,20 +490,20 @@ TrackerNodeInteract::isNearbySelectedMarkerTextureResizeAnchor(const QPointF& po
     }
 
     return false;
-#endif
 }
 
 bool
 TrackerNodeInteract::isInsideSelectedMarkerTextureResizeAnchor(const QPointF& pos) const
 {
-    #if 0
     RectD textureRectCanonical;
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    QPointF clickWidget = viewer->getViewer()->toWidgetCoordinates(pos);
-    QPointF btmRightWidget = viewer->getViewer()->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
-    QPointF topLeftWidget = viewer->getViewer()->toWidgetCoordinates( QPointF(textureRectCanonical.x1, textureRectCanonical.y2) );
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    QPointF clickWidget = overlay->toWidgetCoordinates(pos);
+    QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
+    QPointF topLeftWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x1, textureRectCanonical.y2) );
     RectD rect;
     rect.x1 = topLeftWidget.x();
     rect.y1 = topLeftWidget.y();
@@ -555,7 +511,6 @@ TrackerNodeInteract::isInsideSelectedMarkerTextureResizeAnchor(const QPointF& po
     rect.y2 = btmRightWidget.y();
 
     return rect.contains( clickWidget.x(), clickWidget.y() );
-#endif
 }
 
 void
@@ -564,26 +519,24 @@ TrackerNodeInteract::computeTextureCanonicalRect(const Texture& tex,
                                                int texWidthPx,
                                                RectD* rect) const
 {
-    #if 0
     ///Preserve width
     double par = tex.w() / (double)tex.h();
 
-    rect->x2 = viewer->getViewer()->toZoomCoordinates( QPointF(xOffset + texWidthPx, 0.) ).x();
-    QPointF topLeft = viewer->getViewer()->toZoomCoordinates( QPointF(xOffset, 0.) );
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    rect->x2 = overlay->toCanonicalCoordinates( QPointF(xOffset + texWidthPx, 0.) ).x();
+    QPointF topLeft = overlay->toCanonicalCoordinates( QPointF(xOffset, 0.) );
     rect->x1 = topLeft.x();
     rect->y2 = topLeft.y();
     double height = rect->width() / par;
     rect->y1 = rect->y2 - height;
-#endif
 }
 
 void
 TrackerNodeInteract::computeSelectedMarkerCanonicalRect(RectD* rect) const
 {
-    #if 0
     assert(selectedMarkerTexture);
     computeTextureCanonicalRect(*selectedMarkerTexture, 0, selectedMarkerWidth, rect);
-#endif
 }
 
 Point
@@ -591,7 +544,6 @@ TrackerNodeInteract::toMagWindowPoint(const Point& ptnPoint,
                  const RectD& canonicalSearchWindow,
                  const RectD& textureRectCanonical)
 {
-    #if 0
     Point ret;
     double xCenterPercent = (ptnPoint.x - canonicalSearchWindow.x1) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
     double yCenterPercent = (ptnPoint.y - canonicalSearchWindow.y1) / (canonicalSearchWindow.y2 - canonicalSearchWindow.y1);
@@ -600,7 +552,6 @@ TrackerNodeInteract::toMagWindowPoint(const Point& ptnPoint,
     ret.x = textureRectCanonical.x1 + xCenterPercent * (textureRectCanonical.x2 - textureRectCanonical.x1);
 
     return ret;
-#endif
 }
 
 void
@@ -637,7 +588,6 @@ TrackerNodeInteract::KeyFrameTexIDs
 TrackerNodeInteract::getKeysToRenderForMarker(double currentTime,
                                             const KeyFrameTexIDs& allKeys)
 {
-    #if 0
     KeyFrameTexIDs keysToRender;
     ///Find the first key equivalent to currentTime or after
     KeyFrameTexIDs::const_iterator lower = allKeys.lower_bound(currentTime);
@@ -673,14 +623,12 @@ TrackerNodeInteract::getKeysToRenderForMarker(double currentTime,
     }
 
     return keysToRender;
-#endif
 }
 
 void
 TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>& pixelScale,
                                                int currentTime)
 {
-#if 0
     TrackMarkerPtr marker = selectedMarker.lock();
 
     assert(marker);
@@ -690,6 +638,13 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     if ( !marker->isEnabled(currentTime) ) {
         return;
     }
+
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+
+    double overlayColor[3];
+    _p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]);
+
     boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
     boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
     boost::shared_ptr<KnobDouble> errorKnob = marker->getErrorKnob();
@@ -699,11 +654,9 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     boost::shared_ptr<KnobDouble> ptnBtmLeft = marker->getPatternBtmLeftKnob();
     boost::shared_ptr<KnobDouble> searchWndBtmLeft = marker->getSearchWindowBottomLeftKnob();
     boost::shared_ptr<KnobDouble> searchWndTopRight = marker->getSearchWindowTopRightKnob();
-    const QFont& font = viewer->font();
-    QFontMetrics fm(font);
-    int fontHeight = fm.height();
+    int fontHeight = overlay->getWidgetFontHeight();
     double xOffsetPixels = selectedMarkerWidth;
-    QPointF viewerTopLeftCanonical = viewer->getViewer()->toZoomCoordinates( QPointF(0, 0.) );
+    QPointF viewerTopLeftCanonical = overlay->toCanonicalCoordinates( QPointF(0, 0.) );
 
 
     for (TrackKeysMap::iterator it = trackTextures.begin(); it != trackTextures.end(); ++it) {
@@ -747,8 +700,8 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 double par = texRect.width() / (double)texRect.height();
                 RectD textureRectCanonical;
 
-                textureRectCanonical.x2 = viewer->getViewer()->toZoomCoordinates( QPointF(TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX) + xOffsetPixels, 0.) ).x();
-                textureRectCanonical.x1 = viewer->getViewer()->toZoomCoordinates( QPointF(xOffsetPixels, 0.) ).x();
+                textureRectCanonical.x2 = overlay->toCanonicalCoordinates( QPointF(TO_DPIX(SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX) + xOffsetPixels, 0.) ).x();
+                textureRectCanonical.x1 = overlay->toCanonicalCoordinates( QPointF(xOffsetPixels, 0.) ).x();
                 textureRectCanonical.y2 = viewerTopLeftCanonical.y();
                 double height = textureRectCanonical.width() / par;
                 textureRectCanonical.y1 = textureRectCanonical.y2 - height;
@@ -783,13 +736,13 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
 
                 glBindTexture(GL_TEXTURE_2D, 0);
 
-                QPointF textPos = viewer->getViewer()->toZoomCoordinates( QPointF(xOffsetPixels + 5, fontHeight + 5 ) );
-                viewer->getViewer()->renderText(textPos.x(), textPos.y(), QString::fromUtf8( marker->getLabel().c_str() ), QColor(200, 200, 200), font);
+                QPointF textPos = overlay->toCanonicalCoordinates( QPointF(xOffsetPixels + 5, fontHeight + 5 ) );
+                overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(),overlayColor[0], overlayColor[1], overlayColor[2]);
 
-                QPointF framePos = viewer->getViewer()->toZoomCoordinates( QPointF( xOffsetPixels + 5, viewer->getViewer()->toWidgetCoordinates( QPointF(textureRectCanonical.x1, textureRectCanonical.y1) ).y() ) );
-                QString frameText = _publicInterface->tr("Frame");
+                QPointF framePos = overlay->toCanonicalCoordinates( QPointF( xOffsetPixels + 5, overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x1, textureRectCanonical.y1) ).y() ) );
+                QString frameText = tr("Frame");
                 frameText.append( QString::fromUtf8(" ") + QString::number(it2->first) );
-                viewer->getViewer()->renderText(framePos.x(), framePos.y(), frameText, QColor(200, 200, 200), font);
+                overlay->renderText(framePos.x(), framePos.y(), frameText.toStdString(), overlayColor[0], overlayColor[1], overlayColor[2]);
 
                 //Draw contour
                 glEnable(GL_LINE_SMOOTH);
@@ -874,7 +827,6 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
             break;
         }
     }
-#endif
 } // TrackerNodeInteract::drawSelectedMarkerKeyframes
 
 void
@@ -889,16 +841,24 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
                                              const Point& /*selectedSearchWndBtmLeft*/,
                                              const Point& /*selectedSearchWndTopRight*/)
 {
-#if 0
     TrackMarkerPtr marker = selectedMarker.lock();
 
-    if ( isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled(currentTime) || viewer->getInternalNode()->getRenderEngine()->isDoingSequentialRender() ) {
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    assert(viewer);
+
+    if ( isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled(currentTime) || viewer->getRenderEngine()->isDoingSequentialRender() ) {
         return;
     }
 
     RectD textureRectCanonical;
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
+
+
+    double overlayColor[3];
+    _p->publicInterface->getNode()->getOverlayColor(&overlayColor[0], &overlayColor[1], &overlayColor[2]);
 
     const TextureRect& texRect = selectedMarkerTexture->getTextureRect();
     RectD texCoords;
@@ -981,10 +941,9 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     glEnd();
     glCheckError();
 
-    const QFont& font = viewer->font();
-    QFontMetrics fm(font);
-    QPointF textPos = viewer->getViewer()->toZoomCoordinates( QPointF(5, fm.height() + 5) );
-    viewer->getViewer()->renderText(textPos.x(), textPos.y(), QString::fromUtf8( marker->getLabel().c_str() ), QColor(200, 200, 200), font);
+    int fontHeight = overlay->getWidgetFontHeight();
+    QPointF textPos = overlay->toCanonicalCoordinates( QPointF(5, fontHeight + 5) );
+    overlay->renderText(textPos.x(), textPos.y(), marker->getLabel(), overlayColor[0], overlayColor[1], overlayColor[2]);
 
     //Draw internal marker
 
@@ -1029,41 +988,42 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
 
     ///Now draw keyframes
     drawSelectedMarkerKeyframes(pixelScale, currentTime);
-#endif
 } // TrackerNodeInteract::drawSelectedMarkerTexture
 
 bool
 TrackerNodeInteract::isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
-              const std::pair<double,double>& pixelScale,
               double xWidget,
               double yWidget,
               double toleranceWidget,
               double time)
 {
-#if 0
     QPointF p;
+
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
 
     p.rx() = knob->getValueAtTime(time, 0);
     p.ry() = knob->getValueAtTime(time, 1);
-    p = viewer->toWidgetCoordinates(p);
+    p = overlay->toWidgetCoordinates(p);
     if ( ( p.x() <= (xWidget + toleranceWidget) ) && ( p.x() >= (xWidget - toleranceWidget) ) &&
         ( p.y() <= (yWidget + toleranceWidget) ) && ( p.y() >= (yWidget - toleranceWidget) ) ) {
         return true;
     }
 
     return false;
-#endif
 }
 
 bool
 TrackerNodeInteract::isNearbyPoint(const QPointF& p,
-                                  const std::pair<double,double>& pixelScale,
                                   double xWidget,
                                   double yWidget,
                                   double toleranceWidget)
 {
-#if 0
-    QPointF pw = viewer->toWidgetCoordinates(p);
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+
+
+    QPointF pw = overlay->toWidgetCoordinates(p);
 
     if ( ( pw.x() <= (xWidget + toleranceWidget) ) && ( pw.x() >= (xWidget - toleranceWidget) ) &&
         ( pw.y() <= (yWidget + toleranceWidget) ) && ( pw.y() >= (yWidget - toleranceWidget) ) ) {
@@ -1071,7 +1031,6 @@ TrackerNodeInteract::isNearbyPoint(const QPointF& p,
     }
 
     return false;
-#endif
 }
 
 void
@@ -1098,7 +1057,6 @@ TrackerNodeInteract::findLineIntersection(const Point& p,
 void
 TrackerNodeInteract::refreshSelectedMarkerTexture()
 {
-#if 0
     assert( QThread::currentThread() == qApp->thread() );
     if (isTracking) {
         return;
@@ -1108,7 +1066,7 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
         return;
     }
 
-    int time = panel->getNode()->getNode()->getApp()->getTimeLine()->currentFrame();
+    int time = _p->publicInterface->getCurrentTime();
     RectI roi = marker->getMarkerImageRoI(time);
     if ( roi.isNull() ) {
         return;
@@ -1121,16 +1079,14 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
     selectedMarkerImg.reset();
 
     imageGetterWatcher.reset( new TrackWatcher() );
-    QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), _publicInterface, SLOT(onTrackImageRenderingFinished()) );
+    QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
-#endif
 }
 
 void
 TrackerNodeInteract::makeMarkerKeyTexture(int time,
                                         const TrackMarkerPtr& track)
 {
-#if 0
     assert( QThread::currentThread() == qApp->thread() );
     TrackRequestKey k;
     k.time = time;
@@ -1153,11 +1109,10 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
 
     if ( !k.roi.isNull() ) {
         TrackWatcherPtr watcher( new TrackWatcher() );
-        QObject::connect( watcher.get(), SIGNAL(finished()), _publicInterface, SLOT(onKeyFrameImageRenderingFinished()) );
+        QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onKeyFrameImageRenderingFinished()) );
         trackRequestsMap[k] = watcher;
         watcher->setFuture( QtConcurrent::run(track.get(), &TrackMarker::getMarkerImage, time, k.roi) );
     }
-#endif
 }
 
 
@@ -1285,58 +1240,49 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Ima
 void
 TrackerNodeInteract::onTrackingStarted(int step)
 {
-#if 0
-    _imp->isTracking = true;
+    isTracking = true;
     if (step > 0) {
-        _imp->trackFwButton->setChecked(true);
-        _imp->trackFwButton->setDown(true);
+        trackFwButton.lock()->setValue(true);
     } else {
-        _imp->trackBwButton->setChecked(true);
-        _imp->trackBwButton->setDown(true);
+        trackBwButton.lock()->setValue(true);
     }
-#endif
 }
 
 void
 TrackerNodeInteract::onTrackingEnded()
 {
-#if 0
-    _imp->trackBwButton->setChecked(false);
-    _imp->trackFwButton->setChecked(false);
-    _imp->trackBwButton->setDown(false);
-    _imp->trackFwButton->setDown(false);
-    _imp->isTracking = false;
-    _imp->viewer->getViewer()->redraw();
-#endif
+    trackBwButton.lock()->setValue(false);
+    trackFwButton.lock()->setValue(false);
+    isTracking = false;
+    _p->publicInterface->redrawOverlayInteract();
 }
 
 void
 TrackerNodeInteract::onContextSelectionChanged(int reason)
 {
-#if 0
     std::list<TrackMarkerPtr > selection;
 
-    _imp->panel->getContext()->getSelectedMarkers(&selection);
+    getContext()->getSelectedMarkers(&selection);
     if ( selection.empty() || (selection.size() > 1) ) {
-        _imp->showMarkerTexture = false;
+        showMarkerTexture = false;
     } else {
         assert(selection.size() == 1);
 
         const TrackMarkerPtr& selectionFront = selection.front();
-        TrackMarkerPtr oldMarker = _imp->selectedMarker.lock();
+        TrackMarkerPtr oldMarker = selectedMarker.lock();
         if (oldMarker != selectionFront) {
-            _imp->selectedMarker = selectionFront;
-            _imp->refreshSelectedMarkerTexture();
+            selectedMarker = selectionFront;
+            refreshSelectedMarkerTexture();
 
 
             std::set<int> keys;
             selectionFront->getUserKeyframes(&keys);
             for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-                _imp->makeMarkerKeyTexture(*it2, selectionFront);
+                makeMarkerKeyTexture(*it2, selectionFront);
             }
         } else {
             if (selectionFront) {
-                _imp->showMarkerTexture = true;
+                showMarkerTexture = true;
             }
         }
     }
@@ -1344,40 +1290,43 @@ TrackerNodeInteract::onContextSelectionChanged(int reason)
         return;
     }
 
-    _imp->viewer->getViewer()->redraw();
-#endif
+    _p->publicInterface->redrawOverlayInteract();
 }
 
 
 void
 TrackerNodeInteract::onTrackImageRenderingFinished()
 {
-#if 0
     assert( QThread::currentThread() == qApp->thread() );
     QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> >*>( sender() );
     assert(future);
     std::pair<boost::shared_ptr<Image>, RectI> ret = future->result();
 
-
-    _imp->viewer->getViewer()->makeOpenGLcontextCurrent();
-    _imp->showMarkerTexture = true;
-    if (!_imp->selectedMarkerTexture) {
-        _imp->selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
+    assert(isOpenGLViewer);
+    if (!isOpenGLViewer) {
+        return;
     }
-    _imp->selectedMarkerTextureTime = (int)ret.first->getTime();
-    _imp->selectedMarkerTextureRoI = ret.second;
 
-    _imp->convertImageTosRGBOpenGLTexture(ret.first, _imp->selectedMarkerTexture, ret.second);
+    isOpenGLViewer->makeOpenGLcontextCurrent();
 
+    showMarkerTexture = true;
+    if (!selectedMarkerTexture) {
+        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+    }
+    selectedMarkerTextureTime = (int)ret.first->getTime();
+    selectedMarkerTextureRoI = ret.second;
 
-    _imp->viewer->getViewer()->redraw();
-#endif
+    convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, ret.second);
+
+    _p->publicInterface->redrawOverlayInteract();
 }
 
 void
 TrackerNodeInteract::onKeyFrameImageRenderingFinished()
 {
-#if 0
     assert( QThread::currentThread() == qApp->thread() );
     TrackWatcher* future = dynamic_cast<TrackWatcher*>( sender() );
     assert(future);
@@ -1386,47 +1335,99 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
         return;
     }
 
-    _imp->viewer->getViewer()->makeOpenGLcontextCurrent();
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
+    assert(isOpenGLViewer);
+    if (!isOpenGLViewer) {
+        return;
+    }
 
-    for (TrackKeyframeRequests::iterator it = _imp->trackRequestsMap.begin(); it != _imp->trackRequestsMap.end(); ++it) {
+    isOpenGLViewer->makeOpenGLcontextCurrent();
+
+    for (TrackKeyframeRequests::iterator it = trackRequestsMap.begin(); it != trackRequestsMap.end(); ++it) {
         if (it->second.get() == future) {
             TrackMarkerPtr track = it->first.track.lock();
             if (!track) {
                 return;
             }
-            TrackerGuiPrivate::KeyFrameTexIDs& keyTextures = _imp->trackTextures[track];
+            TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
             GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
             keyTextures[it->first.time] = tex;
-            _imp->convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
+            convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
 
-            _imp->trackRequestsMap.erase(it);
+            trackRequestsMap.erase(it);
 
-            _imp->viewer->getViewer()->redraw();
+            _p->publicInterface->redrawOverlayInteract();
             
             return;
         }
     }
     assert(false);
-#endif
 }
 
 void
 TrackerNodeInteract::rebuildMarkerTextures()
 {
-#if 0
     ///Refreh textures for all markers
     std::list<TrackMarkerPtr > markers;
 
-    _imp->panel->getContext()->getSelectedMarkers(&markers);
+    getContext()->getSelectedMarkers(&markers);
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         std::set<int> keys;
         (*it)->getUserKeyframes(&keys);
         for (std::set<int>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-            _imp->makeMarkerKeyTexture(*it2, *it);
+            makeMarkerKeyTexture(*it2, *it);
         }
     }
     onContextSelectionChanged(TrackerContext::eTrackSelectionInternal);
-#endif
+}
+
+/**
+ *@brief Moves of the given pixel the selected tracks.
+ * This takes into account the zoom factor.
+ **/
+bool
+TrackerNodeInteract::nudgeSelectedTracks(int x, int y)
+{
+    std::list< TrackMarkerPtr > markers;
+    getContext()->getSelectedMarkers(&markers);
+
+    if (!markers.empty()) {
+        std::pair<double, double> pixelScale;
+        _p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+        double time = _p->publicInterface->getCurrentTime();
+
+        bool createkey = createKeyOnMoveButton.lock()->getValue();
+        for (std::list< TrackMarkerPtr >::iterator it = markers.begin(); it!=markers.end(); ++it) {
+
+            boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
+            boost::shared_ptr<KnobDouble> patternCorners[4];
+            patternCorners[0] = (*it)->getPatternBtmLeftKnob();
+            patternCorners[1] = (*it)->getPatternTopLeftKnob();
+            patternCorners[2] = (*it)->getPatternTopRightKnob();
+            patternCorners[3] = (*it)->getPatternBtmRightKnob();
+
+            centerKnob->setValuesAtTime(time, centerKnob->getValueAtTime(time, 0) + x,
+                                        centerKnob->getValueAtTime(time, 1) + y,
+                                        ViewSpec::all(),
+                                        eValueChangedReasonPluginEdited);
+            for (int i = 0; i < 4; ++i) {
+                for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
+                    patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), ViewSpec::all(), d);
+                }
+            }
+            if (createkey) {
+                (*it)->setUserKeyframe(time);
+            }
+
+        }
+        refreshSelectedMarkerTexture();
+
+    }
+
+    return false;
+
 }
 
 void
@@ -1434,10 +1435,9 @@ TrackerNodeInteract::transformPattern(double time,
                                     TrackerMouseStateEnum state,
                                     const Point& delta)
 {
-#if 0
     boost::shared_ptr<KnobDouble> searchWndTopRight, searchWndBtmLeft;
     boost::shared_ptr<KnobDouble> patternCorners[4];
-    boost::shared_ptr<TrackerContext> context = panel->getContext();
+    boost::shared_ptr<TrackerContext> context = getContext();
     boost::shared_ptr<KnobDouble> centerKnob = interactMarker->getCenterKnob();
     boost::shared_ptr<KnobDouble> offsetKnob = interactMarker->getOffsetKnob();
     bool transformPatternCorners = state != eMouseStateDraggingOuterBtmLeft &&
@@ -1681,10 +1681,9 @@ TrackerNodeInteract::transformPattern(double time,
 
     refreshSelectedMarkerTexture();
 
-    if ( createKeyOnMoveButton->isChecked() ) {
+    if ( createKeyOnMoveButton.lock()->getValue() ) {
         interactMarker->setUserKeyframe(time);
     }
-#endif
 } // TrackerNodeInteract::transformPattern
 
 
@@ -1696,17 +1695,14 @@ void
 TrackerNodeInteract::onKeyframeSetOnTrack(const TrackMarkerPtr& marker,
                                  int key)
 {
-#if 0
-    _imp->makeMarkerKeyTexture(key, marker);
-#endif
+    makeMarkerKeyTexture(key, marker);
 }
 
 void
 TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
                                      int key)
 {
-#if 0
-    for (TrackerGuiPrivate::TrackKeysMap::iterator it = _imp->trackTextures.begin(); it != _imp->trackTextures.end(); ++it) {
+    for (TrackerNodeInteract::TrackKeysMap::iterator it = trackTextures.begin(); it != trackTextures.end(); ++it) {
         if (it->first.lock() == marker) {
             std::map<int, boost::shared_ptr<Texture> >::iterator found = it->second.find(key);
             if ( found != it->second.end() ) {
@@ -1715,22 +1711,19 @@ TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
             break;
         }
     }
-    _imp->viewer->getViewer()->redraw();
-#endif
+    _p->publicInterface->redrawOverlayInteract();
 }
 
 void
 TrackerNodeInteract::onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker)
 {
-#if 0
-    for (TrackerGuiPrivate::TrackKeysMap::iterator it = _imp->trackTextures.begin(); it != _imp->trackTextures.end(); ++it) {
+    for (TrackerNodeInteract::TrackKeysMap::iterator it = trackTextures.begin(); it != trackTextures.end(); ++it) {
         if (it->first.lock() == marker) {
             it->second.clear();
             break;
         }
     }
-    _imp->viewer->getViewer()->redraw();
-#endif
+    _p->publicInterface->redrawOverlayInteract();
 }
 
 NATRON_NAMESPACE_EXIT;

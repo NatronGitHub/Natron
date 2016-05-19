@@ -191,7 +191,7 @@ private:
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual void refreshExtraStateAfterTimeChanged(double time)  OVERRIDE FINAL;
+    virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
 
     boost::scoped_ptr<RotoPaintPrivate> _imp;
 };

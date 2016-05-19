@@ -178,6 +178,7 @@ SOURCES += \
     TrackMarker.cpp \
     TrackerNode.cpp \
     TrackerNodeInteract.cpp \
+    TrackerUndoCommand.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
@@ -379,6 +380,7 @@ HEADERS += \
     TrackerFrameAccessor.h \
     TrackerNode.h \
     TrackerNodeInteract.h \
+    TrackerUndoCommand.h \
     TrackMarker.h \
     TrackerSerialization.h \
     TLSHolder.h \

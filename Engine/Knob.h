@@ -1055,6 +1055,25 @@ public:
     virtual void saveOpenGLContext() OVERRIDE = 0;
     virtual void restoreOpenGLContext() OVERRIDE = 0;
 
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE = 0;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
 
     /**
      * @brief If this is an openfx param, this is the pointer to the handle.
@@ -1141,7 +1160,7 @@ public:
      **/
     bool slaveTo(int dimension, const KnobPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
-    virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
+    virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                           const boost::shared_ptr<KnobPage>& page,
                                           const boost::shared_ptr<KnobGroup>& group,
                                           int indexInParent,
@@ -1153,7 +1172,7 @@ public:
                                           bool isUserKnob) = 0;
 
     /**
-     * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
+     * @brief If a knob was created using createDuplicateOnHolder(effect,true), this function will return true
      **/
     virtual KnobPtr getAliasMaster() const = 0;
     virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) = 0;
@@ -1488,6 +1507,11 @@ public:
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1500,7 +1524,7 @@ public:
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void checkAnimationLevel(ViewSpec view, int dimension) OVERRIDE FINAL;
-    virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
+    virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                           const boost::shared_ptr<KnobPage>& page,
                                           const boost::shared_ptr<KnobGroup>& group,
                                           int indexInParent,
@@ -2293,7 +2317,7 @@ public:
 
 protected:
 
-    virtual void refreshExtraStateAfterTimeChanged(double /*time*/) {}
+    virtual void refreshExtraStateAfterTimeChanged(bool /*isPlayback*/, double /*time*/) {}
 
 public:
 

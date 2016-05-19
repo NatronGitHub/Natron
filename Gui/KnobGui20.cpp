@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 
 #include "Gui/KnobGuiPrivate.h"
+#include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
 
@@ -523,6 +524,48 @@ KnobGui::getBackgroundColour(double &r,
     if (_imp->customInteract) {
         _imp->customInteract->getBackgroundColour(r, g, b);
     }
+}
+
+void
+KnobGui::toWidgetCoordinates(double *x, double *y) const
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->toWidgetCoordinates(x,y);
+    }
+}
+
+
+void
+KnobGui::toCanonicalCoordinates(double *x, double *y) const
+{
+    if (_imp->customInteract) {
+        _imp->customInteract->toCanonicalCoordinates(x, y);
+    }
+}
+
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+KnobGui::getWidgetFontHeight() const
+{
+    if (_imp->customInteract) {
+        return _imp->customInteract->getWidgetFontHeight();
+    }
+    return getGui()->fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+KnobGui::getStringWidthForCurrentFont(const std::string& string) const
+{
+    if (_imp->customInteract) {
+        return _imp->customInteract->getStringWidthForCurrentFont(string);
+    }
+    return getGui()->fontMetrics().width(QString::fromUtf8(string.c_str()));
 }
 
 void

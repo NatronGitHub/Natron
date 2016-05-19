@@ -53,19 +53,22 @@ struct DialogParamHolderPrivate
     std::string uniqueID;
     QMutex paramChangedCBMutex;
     std::string paramChangedCB;
+    UserParamHolder* widget;
 
-    DialogParamHolderPrivate(const QString& uniqueID)
+    DialogParamHolderPrivate(UserParamHolder* widget, const QString& uniqueID)
         : uniqueID( uniqueID.toStdString() )
         , paramChangedCBMutex()
         , paramChangedCB()
+        , widget(widget)
     {
     }
 };
 
 DialogParamHolder::DialogParamHolder(const QString& uniqueID,
-                                     AppInstance* app)
+                                     AppInstance* app,
+                                     UserParamHolder* widget)
     : NamedKnobHolder(app)
-    , _imp( new DialogParamHolderPrivate(uniqueID) )
+    , _imp( new DialogParamHolderPrivate(widget,uniqueID) )
 {
 }
 
@@ -90,9 +93,9 @@ DialogParamHolder::setParamChangedCallback(const QString& callback)
 bool
 DialogParamHolder::onKnobValueChanged(KnobI* k,
                                       ValueChangedReasonEnum reason,
-                                      double /*time*/,
-                                      ViewSpec /*view*/,
-                                      bool /*originatedFromMainThread*/)
+                                      double time,
+                                      ViewSpec view,
+                                      bool originatedFromMainThread)
 {
     std::string callback;
     {
@@ -156,6 +159,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         }
         return true;
     }
+    _imp->widget->onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
     return false;
 } // DialogParamHolder::onKnobValueChanged
 
@@ -181,12 +185,12 @@ struct PyModalDialogPrivate
     }
 };
 
-PyModalDialog::PyModalDialog(Gui* gui)
+PyModalDialog::PyModalDialog(Gui* gui, StandardButtons defaultButtons)
     : QDialog(gui)
     , UserParamHolder()
     , _imp( new PyModalDialogPrivate(gui) )
 {
-    _imp->holder = new DialogParamHolder( QString(), gui->getApp() );
+    _imp->holder = new DialogParamHolder( QString(), gui->getApp(), this );
     setHolder(_imp->holder);
     _imp->holder->initializeKnobsPublic();
     _imp->mainLayout = new QVBoxLayout(this);
@@ -213,15 +217,84 @@ PyModalDialog::PyModalDialog(Gui* gui)
 
     _imp->mainLayout->addWidget(_imp->centerContainer);
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
-    _imp->buttons->setFocusPolicy(Qt::TabFocus);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
-    _imp->mainLayout->addWidget(_imp->buttons);
+    if ((defaultButtons & eStandardButtonNoButton) == 0) {
+
+
+
+        QDialogButtonBox::StandardButtons qbuttons;
+        if (defaultButtons & eStandardButtonOk) {
+            qbuttons |= QDialogButtonBox::Ok;
+        }
+        if (defaultButtons & eStandardButtonSave) {
+            qbuttons |= QDialogButtonBox::Save;
+        }
+        if (defaultButtons & eStandardButtonSaveAll) {
+            qbuttons |= QDialogButtonBox::SaveAll;
+        }
+        if (defaultButtons & eStandardButtonOpen) {
+            qbuttons |= QDialogButtonBox::Open;
+        }
+        if (defaultButtons & eStandardButtonYes) {
+            qbuttons |= QDialogButtonBox::Yes;
+        }
+        if (defaultButtons & eStandardButtonYesToAll) {
+            qbuttons |= QDialogButtonBox::YesToAll;
+        }
+        if (defaultButtons & eStandardButtonNo) {
+            qbuttons |= QDialogButtonBox::No;
+        }
+        if (defaultButtons & eStandardButtonNoToAll) {
+            qbuttons |= QDialogButtonBox::NoToAll;
+        }
+        if (defaultButtons & eStandardButtonAbort) {
+            qbuttons |= QDialogButtonBox::Abort;
+        }
+        if (defaultButtons & eStandardButtonRetry) {
+            qbuttons |= QDialogButtonBox::Retry;
+        }
+        if (defaultButtons & eStandardButtonIgnore) {
+            qbuttons |= QDialogButtonBox::Ignore;
+        }
+        if (defaultButtons & eStandardButtonClose) {
+            qbuttons |= QDialogButtonBox::Close;
+        }
+        if (defaultButtons & eStandardButtonCancel) {
+            qbuttons |= QDialogButtonBox::Cancel;
+        }
+        if (defaultButtons & eStandardButtonDiscard) {
+            qbuttons |= QDialogButtonBox::Discard;
+        }
+        if (defaultButtons & eStandardButtonHelp) {
+            qbuttons |= QDialogButtonBox::Help;
+        }
+        if (defaultButtons & eStandardButtonApply) {
+            qbuttons |= QDialogButtonBox::Apply;
+        }
+        if (defaultButtons & eStandardButtonReset) {
+            qbuttons |= QDialogButtonBox::Reset;
+        }
+        if (defaultButtons & eStandardButtonRestoreDefaults) {
+            qbuttons |= QDialogButtonBox::RestoreDefaults;
+        }
+
+
+        _imp->buttons = new QDialogButtonBox(qbuttons, Qt::Horizontal, this);
+        _imp->buttons->setFocusPolicy(Qt::TabFocus);
+        QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+        QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+        _imp->mainLayout->addWidget(_imp->buttons);
+    }
+
 }
 
 PyModalDialog::~PyModalDialog()
 {
+}
+
+DialogParamHolder*
+PyModalDialog::getKnobsHolder() const
+{
+    return _imp->holder;
 }
 
 void
@@ -309,7 +382,7 @@ PyPanel::PyPanel(const QString& scriptName,
 
 
     if (useUserParameters) {
-        _imp->holder = new DialogParamHolder( QString::fromUtf8( name.c_str() ), getGui()->getApp() );
+        _imp->holder = new DialogParamHolder( QString::fromUtf8( name.c_str() ), getGui()->getApp(), this );
         setHolder(_imp->holder);
         _imp->holder->initializeKnobsPublic();
         _imp->mainLayout = new QVBoxLayout(this);

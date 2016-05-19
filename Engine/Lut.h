@@ -43,6 +43,8 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+#define NATRON_COLOR_HUE_CIRCLE 1. // if hue should be between 0 and 1
+//#define NATRON_COLOR_HUE_CIRCLE 360. // if hue should be in degrees
 
 NATRON_NAMESPACE_ENTER;
 namespace Color {
@@ -488,13 +490,12 @@ to_func_srgb(float v)
     }
 }
 
-/// convert RGB to HSV
-/// In Nuke's viewer, sRGB values are used (apply to_func_srgb to linear
-/// RGB values before calling this fuunction)
+
 // r,g,b values are from 0 to 1
-/// h = [0,360], s = [0,1], v = [0,1]
-///		if s == 0, then h = -1 (undefined)
+// h = [0,NATRON_COLOR_HUE_CIRCLE], s = [0,1], v = [0,1]
+//		if s == 0, then h = 0 (undefined)
 void rgb_to_hsv( float r, float g, float b, float *h, float *s, float *v );
+void hsv_to_rgb(float h, float s, float v, float *r, float *g, float *b);
 
 /// numvals should be 256 for byte, 65536 for 16-bits, etc.
 

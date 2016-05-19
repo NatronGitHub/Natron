@@ -161,6 +161,11 @@ public:
      **/
     virtual void setCurrentCursor(CursorEnum defaultCursor) = 0;
     virtual bool setCurrentCursor(const QString& customCursorFilePath) = 0;
+
+    /**
+     * @brief Make up a dialog with the content of the group
+     **/
+    virtual void showGroupKnobAsDialog(const KnobGroup* group) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

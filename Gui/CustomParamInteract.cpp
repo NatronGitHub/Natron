@@ -189,6 +189,21 @@ CustomParamInteract::getBackgroundColour(double &r,
 }
 
 void
+CustomParamInteract::toWidgetCoordinates(double *x, double *y) const
+{
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+}
+
+
+void
+CustomParamInteract::toCanonicalCoordinates(double *x, double *y) const
+{
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+}
+
+void
 CustomParamInteract::saveOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -228,6 +243,26 @@ CustomParamInteract::restoreOpenGLContext()
     glPopClientAttrib();
     glPopAttrib();
 }
+
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+CustomParamInteract::getWidgetFontHeight() const
+{
+    return fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+CustomParamInteract::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
 
 RectD
 CustomParamInteract::getViewportRect() const

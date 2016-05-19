@@ -194,12 +194,12 @@ public:
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
      **/
-    virtual void saveOpenGLContext() = 0;
+    virtual void saveOpenGLContext() OVERRIDE = 0;
 
     /**
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
-    virtual void restoreOpenGLContext() = 0;
+    virtual void restoreOpenGLContext() OVERRIDE = 0;
 
     /**
      * @brief Clears pointers to images that may be left
@@ -210,6 +210,26 @@ public:
      *@brief To be called if redraw needs to  be called now without waiting the end of the event loop
      **/
     virtual void redrawNow() = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE = 0;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
 
 };
 

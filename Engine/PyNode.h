@@ -198,6 +198,20 @@ public:
      * This may be expensive so try to minimize the number of calls to this function.
      **/
     void refreshUserParamsGUI();
+
+    virtual bool onKnobValueChanged(KnobI* k,
+                                    ValueChangedReasonEnum reason,
+                                    double time,
+                                    ViewSpec view,
+                                    bool originatedFromMainThread)
+    {
+        Q_UNUSED(k);
+        Q_UNUSED(reason);
+        Q_UNUSED(time);
+        Q_UNUSED(view);
+        Q_UNUSED(originatedFromMainThread);
+
+    }
 };
 
 class Effect

@@ -26,25 +26,17 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
 #include <list>
 
-#include <QtCore/QCoreApplication>
-#include <QUndoCommand>
+#include "Engine/EngineFwd.h"
+#include "Engine/UndoCommand.h"
 
-#include "Global/Macros.h"
-#include "Gui/GuiFwd.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
 class AddTrackCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(AddTrackCommand)
 
@@ -65,7 +57,7 @@ private:
 
 
 class RemoveTracksCommand
-    : public QUndoCommand
+    : public UndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(RemoveTracksCommand)
 

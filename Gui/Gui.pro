@@ -207,7 +207,6 @@ SOURCES += \
     ToolButton.cpp \
     TimeLineGui.cpp \
     TrackerPanel.cpp \
-    TrackerUndoCommand.cpp \
     Utils.cpp \
     VerticalColorBar.cpp \
     ViewerGL.cpp \
@@ -352,7 +351,6 @@ HEADERS += \
     TimeLineGui.h \
     ToolButton.h \
     TrackerPanel.h \
-    TrackerUndoCommand.h \
     Utils.h \
     VerticalColorBar.h \
     ViewerGL.h \
