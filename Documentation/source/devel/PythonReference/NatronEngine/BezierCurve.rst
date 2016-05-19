@@ -31,7 +31,6 @@ Functions
 *    def :meth:`getOpacity<NatronEngine.BezierCurve.getOpacity>` (time)
 *    def :meth:`getOpacityParam<NatronEngine.BezierCurve.getOpacityParam>` ()
 *    def :meth:`getOverlayColor<NatronEngine.BezierCurve.getOverlayColor>` ()
-*    def :meth:`getPointMasterTrack<NatronEngine.BezierCurve.getPointMasterTrack>` (index)
 *    def :meth:`isCurveFinished<NatronEngine.BezierCurve.isCurveFinished>` ()
 *    def :meth:`moveFeatherByIndex<NatronEngine.BezierCurve.moveFeatherByIndex>` (index, time, dx, dy)
 *    def :meth:`moveLeftBezierPoint<NatronEngine.BezierCurve.moveLeftBezierPoint>` (index, time, dx, dy)
@@ -48,7 +47,6 @@ Functions
 *    def :meth:`setOpacity<NatronEngine.BezierCurve.setOpacity>` (opacity, time)
 *    def :meth:`setOverlayColor<NatronEngine.BezierCurve.setOverlayColor>` (r, g, b)
 *    def :meth:`setPointAtIndex<NatronEngine.BezierCurve.setPointAtIndex>` (index, time, x, y, lx, ly, rx, ry)
-*    def :meth:`slavePointToTrack<NatronEngine.BezierCurve.slavePointToTrack>` (index, trackTime, trackCenter)
 
 
 .. _bezier.details:
@@ -276,19 +274,6 @@ Returns the overlay color of this shape as a [R,G,B,A] tuple. Alpha will always 
 
 
 
-.. method:: NatronEngine.BezierCurve.getPointMasterTrack(index)
-
-
-    :param index: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`DoubleParam<NatronEngine.DoubleParam>`
-
-
-
-Returns the :doc:`Param` of the center of the track controlling the control point at 
-the given *index*.
-
-
-
 .. method:: NatronEngine.BezierCurve.isCurveFinished()
 
 
@@ -489,19 +474,4 @@ Set the point at the given *index* at  the position (x,y) with the left bezier p
 at (lx,ly) and right bezier point at (rx,ry).
 
 The *time* parameter is given so that if auto-keying is enabled a new keyframe will be set.
-
-.. method:: NatronEngine.BezierCurve.slavePointToTrack(index, trackTime, trackCenter)
-
-
-    :param index: :class:`int<PySide.QtCore.int>`
-    :param trackTime: :class:`int<PySide.QtCore.int>`
-    :param trackCenter: :class:`Double2DParam<NatronEngine.Double2DParam>`
-
-Slave the control point at the given *index* to the *trackCenter* :doc:`parameter<Double2DParam>`.
-The *trackCenter* must be a 2-dimensional double parameter and must be the parameter called *center* of a track.
-
-Once slaved the control point will move as a relative offset from the track. The offset
-is initially 0 at the given *trackTime*.
-
-
 

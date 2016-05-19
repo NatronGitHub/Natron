@@ -165,7 +165,7 @@ public:
     /**
      * @brief Make up a dialog with the content of the group
      **/
-    virtual void showGroupKnobAsDialog(const KnobGroup* group) = 0;
+    virtual void showGroupKnobAsDialog(KnobGroup* group) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

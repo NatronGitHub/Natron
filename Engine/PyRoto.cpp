@@ -288,67 +288,6 @@ BezierCurve::setFeatherPointAtIndex(int index,
     _bezier->setPointAtIndex(true, index, time, x, y, lx, ly, rx, ry);
 }
 
-void
-BezierCurve::slavePointToTrack(int index,
-                               double trackTime,
-                               DoubleParam* trackCenter)
-{
-    if (!trackCenter) {
-        return;
-    }
-    KnobPtr internalKnob = trackCenter->getInternalKnob();
-    if (!internalKnob) {
-        return;
-    }
-
-    boost::shared_ptr<KnobDouble> isDouble = boost::dynamic_pointer_cast<KnobDouble>(internalKnob);
-    if (!isDouble) {
-        return;
-    }
-
-    EffectInstance* parent = dynamic_cast<EffectInstance*>( isDouble->getHolder() );
-    if (!parent) {
-        return;
-    }
-    if ( !parent->getNode()->isPointTrackerNode() ) {
-        return;
-    }
-
-    if ( (isDouble->getName() != "center") || (isDouble->getDimension() != 2) ) {
-        return;
-    }
-
-    boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
-    if (!cp) {
-        return;
-    }
-
-    cp->slaveTo(trackTime, isDouble);
-
-    boost::shared_ptr<BezierCP> fp = _bezier->getFeatherPointAtIndex(index);
-    if (!fp) {
-        return;
-    }
-
-    fp->slaveTo(trackTime, isDouble);
-}
-
-DoubleParam*
-BezierCurve::getPointMasterTrack(int index) const
-{
-    boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
-
-    if (!cp) {
-        return 0;
-    }
-
-    boost::shared_ptr<KnobDouble>  knob = cp->isSlaved();
-    if (!knob) {
-        return 0;
-    }
-
-    return new DoubleParam(knob);
-}
 
 int
 BezierCurve::getNumControlPoints() const

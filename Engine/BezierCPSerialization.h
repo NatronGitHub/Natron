@@ -47,7 +47,8 @@ GCC_DIAG_ON(unused-parameter)
 
 #define BEZIER_CP_INTRODUCES_OFFSET 2
 #define BEZIER_CP_FIX_BUG_CURVE_POINTER 3
-#define BEZIER_CP_VERSION BEZIER_CP_FIX_BUG_CURVE_POINTER
+#define BEZIER_CP_REMOVE_OFFSET 4
+#define BEZIER_CP_VERSION BEZIER_CP_REMOVE_OFFSET
 
 NATRON_NAMESPACE_ENTER;
 
@@ -77,10 +78,7 @@ BezierCP::save(Archive & ar,
     ar & ::boost::serialization::make_nvp("Right_X_animation", *_imp->curveRightBezierX);
     ar & ::boost::serialization::make_nvp("Right_Y", _imp->rightY);
     ar & ::boost::serialization::make_nvp("Right_Y_animation", *_imp->curveRightBezierY);
-    if (version >= BEZIER_CP_INTRODUCES_OFFSET) {
-        QWriteLocker l(&_imp->masterMutex);
-        ar & ::boost::serialization::make_nvp("OffsetTime", _imp->offsetTime);
-    }
+
 }
 
 template<class Archive>
@@ -146,9 +144,9 @@ BezierCP::load(Archive & ar,
         _imp->curveRightBezierX->clone(*rightCurveX);
         _imp->curveRightBezierY->clone(*rightCurveY);
     }
-    if (version >= BEZIER_CP_INTRODUCES_OFFSET) {
-        QWriteLocker l(&_imp->masterMutex);
-        ar & ::boost::serialization::make_nvp("OffsetTime", _imp->offsetTime);
+    if (version >= BEZIER_CP_INTRODUCES_OFFSET && version < BEZIER_CP_REMOVE_OFFSET) {
+        int offsetTime;
+        ar & ::boost::serialization::make_nvp("OffsetTime", offsetTime);
     }
 } // BezierCP::load
 

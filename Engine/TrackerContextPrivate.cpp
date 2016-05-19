@@ -1098,11 +1098,15 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         // Set a keyframe on the marker to initialize its position
         (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
 
-        t->natronMarker->setUserKeyframe(start);
-
-        PreviouslyTrackedFrameSet previousFramesOrdered;
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
+
+        if (userKeys.empty()) {
+            // Set a user keyframe on tracking start if the marker does not have any user keys
+            t->natronMarker->setUserKeyframe(start);
+        }
+
+        PreviouslyTrackedFrameSet previousFramesOrdered;
 
         // Make sure to create a marker at the start time
         userKeys.insert(start);

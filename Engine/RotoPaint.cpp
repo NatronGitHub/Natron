@@ -968,25 +968,6 @@ RotoPaint::initializeKnobs()
         _imp->ui->removeItemFeatherMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionLinkItemsToTrackLabel));
-        action->setName(kRotoUIParamRightClickMenuActionLinkItemsToTrack);
-        action->setSecretByDefault(true);
-        action->setEvaluateOnChange(false);
-        addOverlaySlaveParam(action);
-        generalPage->addKnob(action);
-        _imp->ui->linkPointMenuAction = action;
-    }
-    {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionUnlinkItemsFromTrackLabel));
-        action->setName(kRotoUIParamRightClickMenuActionUnlinkItemsFromTrack);
-        action->setSecretByDefault(true);
-        action->setEvaluateOnChange(false);
-        action->setInViewerContextCanHaveShortcut(true);
-        addOverlaySlaveParam(action);
-        generalPage->addKnob(action);
-        _imp->ui->unlinkPointMenuAction = action;
-    }
-    {
         boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>(this, tr(kRotoUIParamRightClickMenuActionNudgeBottomLabel));
         action->setName(kRotoUIParamRightClickMenuActionNudgeBottom);
         action->setSecretByDefault(true);
@@ -1226,10 +1207,6 @@ RotoPaint::knobChanged(KnobI* k,
         if (!_imp->ui->removeFeatherForSelectedCurve()) {
             return false;
         }
-    } else if (k == _imp->ui->linkPointMenuAction.lock().get()) {
-
-    } else if (k == _imp->ui->unlinkPointMenuAction.lock().get()) {
-
     } else if (k == _imp->ui->nudgeLeftMenuAction.lock().get()) {
         if (!_imp->ui->moveSelectedCpsWithKeyArrows(-1, 0)) {
             return false;

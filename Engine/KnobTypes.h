@@ -309,31 +309,6 @@ public:
      **/
     double normalize(int dimension, double time, double value) const;
 
-    void addSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
-    {
-        _slavedTracks.push_back(cp);
-    }
-
-    void removeSlavedTrack(const boost::shared_ptr<BezierCP> & cp);
-
-    const std::list< boost::shared_ptr<BezierCP> > & getSlavedTracks()
-    {
-        return _slavedTracks;
-    }
-
-    struct SerializedTrack
-    {
-        std::string rotoNodeName;
-        std::string bezierName;
-        int cpIndex;
-        bool isFeather;
-        int offsetTime;
-    };
-
-    void serializeTracks(std::list<SerializedTrack>* tracks);
-
-    void restoreTracks(const std::list <SerializedTrack> & tracks, const NodesList & activeNodes);
-
     void setHasHostOverlayHandle(bool handle);
 
     bool getHasHostOverlayHandle() const;
@@ -352,10 +327,6 @@ public:
         return _isRectangle;
     }
 
-public Q_SLOTS:
-
-    void onNodeDeactivated();
-    void onNodeActivated();
 
 Q_SIGNALS:
 
@@ -378,7 +349,6 @@ private:
     std::vector<double>  _increments;
     std::vector<int> _decimals;
     bool _disableSlider;
-    std::list< boost::shared_ptr<BezierCP> > _slavedTracks;
 
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.

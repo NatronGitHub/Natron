@@ -481,6 +481,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialog->setName(kTrackerUIParamTrackRangeDialog);
     trackRangeDialog->setSecretByDefault(true);
     trackRangeDialog->setEvaluateOnChange(false);
+    trackRangeDialog->setDefaultValue(false);
     trackRangeDialog->setIsPersistant(false);
     trackRangeDialog->setAsDialog(true);
     trackingPage->addKnob(trackRangeDialog);
@@ -492,6 +493,8 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFirstFrame->setSecretByDefault(true);
     trackRangeDialogFirstFrame->setEvaluateOnChange(false);
     trackRangeDialogFirstFrame->setAnimationEnabled(false);
+    trackRangeDialogFirstFrame->setIsPersistant(false);
+    trackRangeDialogFirstFrame->setDefaultValue(INT_MIN);
     trackRangeDialog->addKnob(trackRangeDialogFirstFrame);
     _imp->ui->trackRangeDialogFirstFrame = trackRangeDialogFirstFrame;
 
@@ -501,6 +504,8 @@ TrackerNode::initializeKnobs()
     trackRangeDialogLastFrame->setSecretByDefault(true);
     trackRangeDialogLastFrame->setEvaluateOnChange(false);
     trackRangeDialogLastFrame->setAnimationEnabled(false);
+    trackRangeDialogLastFrame->setIsPersistant(false);
+    trackRangeDialogLastFrame->setDefaultValue(INT_MIN);
     trackRangeDialog->addKnob(trackRangeDialogLastFrame);
     _imp->ui->trackRangeDialogLastFrame = trackRangeDialogLastFrame;
 
@@ -510,6 +515,8 @@ TrackerNode::initializeKnobs()
     trackRangeDialogFrameStep->setSecretByDefault(true);
     trackRangeDialogFrameStep->setEvaluateOnChange(false);
     trackRangeDialogFrameStep->setAnimationEnabled(false);
+    trackRangeDialogFrameStep->setIsPersistant(false);
+    trackRangeDialogFrameStep->setDefaultValue(INT_MIN);
     trackRangeDialog->addKnob(trackRangeDialogFrameStep);
     _imp->ui->trackRangeDialogStep = trackRangeDialogFrameStep;
 
@@ -520,6 +527,7 @@ TrackerNode::initializeKnobs()
     trackRangeDialogOkButton->setAddNewLine(false);
     trackRangeDialogOkButton->setEvaluateOnChange(false);
     trackRangeDialogOkButton->setSpacingBetweenItems(3);
+    trackRangeDialogOkButton->setIsPersistant(false);
     trackRangeDialog->addKnob(trackRangeDialogOkButton);
     _imp->ui->trackRangeDialogOkButton = trackRangeDialogOkButton;
 
@@ -530,9 +538,6 @@ TrackerNode::initializeKnobs()
     trackRangeDialogCancelButton->setEvaluateOnChange(false);
     trackRangeDialog->addKnob(trackRangeDialogCancelButton);
     _imp->ui->trackRangeDialogCancelButton = trackRangeDialogCancelButton;
-
-
-
 
 }
 
@@ -572,7 +577,9 @@ TrackerNode::knobChanged(KnobI* k,
 
         OverlaySupport* overlay = getCurrentViewportForOverlays();
         ctx->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
-
+        _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
+    } else if (k == _imp->ui->trackRangeDialogCancelButton.lock().get()) {
+        _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if (k == _imp->ui->selectAllTracksMenuAction.lock().get()) {
         getNode()->getTrackerContext()->selectAll(TrackerContext::eTrackSelectionInternal);
     } else if (k == _imp->ui->removeTracksMenuAction.lock().get()) {

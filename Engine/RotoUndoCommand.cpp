@@ -807,9 +807,9 @@ getDeltaForPoint(const BezierCP& p,
     Transform::Point3D ltan, rtan, pos;
 
     ltan.z = rtan.z = pos.z = 1;
-    *isOnKeyframe = p.getLeftBezierPointAtTime(true, time, ViewIdx(0), &ltan.x, &ltan.y, true);
-    p.getRightBezierPointAtTime(true, time, ViewIdx(0), &rtan.x, &rtan.y, true);
-    p.getPositionAtTime(true, time, ViewIdx(0), &pos.x, &pos.y, true);
+    *isOnKeyframe = p.getLeftBezierPointAtTime(true, time, ViewIdx(0), &ltan.x, &ltan.y);
+    p.getRightBezierPointAtTime(true, time, ViewIdx(0), &rtan.x, &rtan.y);
+    p.getPositionAtTime(true, time, ViewIdx(0), &pos.x, &pos.y);
 
     pos = Transform::matApply(transform, pos);
     ltan = Transform::matApply(transform, ltan);
@@ -1815,124 +1815,5 @@ MakeRectangleUndoCommand::mergeWith(const UndoCommandPtr &other)
     return true;
 }
 
-
-LinkToTrackUndoCommand::LinkToTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                                               const SelectedCpList & points,
-                                               const boost::shared_ptr<KnobDouble> & track)
-    : UndoCommand()
-    , _roto(roto)
-    , _points(points)
-    , _track(track)
-{
-    setText( tr("Link to track").toStdString() );
-
-}
-
-LinkToTrackUndoCommand::~LinkToTrackUndoCommand()
-{
-}
-
-void
-LinkToTrackUndoCommand::undo()
-{
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
-    if (!roto) {
-        return;
-    }
-    for (SelectedCpList::iterator it = _points.begin(); it != _points.end(); ++it) {
-        it->first->unslave();
-        _track->removeSlavedTrack(it->first);
-        if ( it->second->isSlaved() ) {
-            it->second->unslave();
-            _track->removeSlavedTrack(it->second);
-        }
-    }
-    roto->evaluate(true);
-
-}
-
-void
-LinkToTrackUndoCommand::redo()
-{
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
-    if (!roto) {
-        return;
-    }
-    SequenceTime time = roto->getContext()->getTimelineCurrentTime();
-
-    //bool featherLinkEnabled = _roto->getContext()->isFeatherLinkEnabled();
-
-    for (SelectedCpList::iterator it = _points.begin(); it != _points.end(); ++it) {
-        it->first->slaveTo(time, _track);
-        _track->addSlavedTrack(it->first);
-
-        //  if (featherLinkEnabled) {
-        it->second->slaveTo(time, _track);
-        _track->addSlavedTrack(it->second);
-        // }
-    }
-    roto->evaluate(true);
-
-}
-
-UnLinkFromTrackUndoCommand::UnLinkFromTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                                                       const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points)
-    : UndoCommand()
-    , _roto(roto)
-    , _points()
-{
-    for (SelectedCpList::const_iterator it = points.begin(); it != points.end(); ++it) {
-        PointToUnlink p;
-        p.cp = !it->first->isFeatherPoint() ? it->first : it->second;
-        p.fp = !it->first->isFeatherPoint() ? it->second : it->first;
-        p.track = p.cp->isSlaved();
-        _points.push_back(p);
-    }
-    setText( tr("Unlink from track").toStdString() );
-}
-
-UnLinkFromTrackUndoCommand::~UnLinkFromTrackUndoCommand()
-{
-}
-
-void
-UnLinkFromTrackUndoCommand::undo()
-{
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
-    if (!roto) {
-        return;
-    }
-    SequenceTime time = roto->getContext()->getTimelineCurrentTime();
-    bool featherLinkEnabled = roto->getContext()->isFeatherLinkEnabled();
-
-    for (std::list<PointToUnlink>::iterator it = _points.begin(); it != _points.end(); ++it) {
-        it->cp->slaveTo(time, it->track);
-        it->track->addSlavedTrack(it->cp);
-
-        if (featherLinkEnabled) {
-            it->fp->slaveTo(time, it->track);
-            it->track->addSlavedTrack(it->fp);
-        }
-    }
-    roto->evaluate(true);
-}
-
-void
-UnLinkFromTrackUndoCommand::redo()
-{
-    boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
-    if (!roto) {
-        return;
-    }
-    for (std::list<PointToUnlink>::iterator it = _points.begin(); it != _points.end(); ++it) {
-        it->cp->unslave();
-        it->track->removeSlavedTrack(it->cp);
-        if ( it->fp->isSlaved() ) {
-            it->fp->unslave();
-            it->track->removeSlavedTrack(it->fp);
-        }
-    }
-    roto->evaluate(true);
-}
 
 NATRON_NAMESPACE_EXIT;

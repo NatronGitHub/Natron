@@ -883,7 +883,7 @@ RotoPaintInteract::handleControlPointSelection(const std::pair<boost::shared_ptr
 
 
 void
-RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& cp)
+RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& /*cp*/)
 {
 
     boost::shared_ptr<KnobChoice> menu = rightClickMenuKnob.lock();
@@ -896,13 +896,6 @@ RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& cp
     choices.push_back(smoothItemMenuAction.lock()->getName());
     choices.push_back(cuspItemMenuAction.lock()->getName());
     choices.push_back(removeItemFeatherMenuAction.lock()->getName());
-
-    boost::shared_ptr<KnobDouble> isSlaved = cp->isSlaved();
-    if (!isSlaved) {
-        choices.push_back(linkPointMenuAction.lock()->getName());
-    } else {
-        choices.push_back(unlinkPointMenuAction.lock()->getName());
-    }
     choices.push_back(nudgeLeftMenuAction.lock()->getName());
     choices.push_back(nudgeBottomMenuAction.lock()->getName());
     choices.push_back(nudgeRightMenuAction.lock()->getName());

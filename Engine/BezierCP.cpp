@@ -69,10 +69,9 @@ BezierCP::~BezierCP()
 bool
 BezierCP::getPositionAtTime(bool useGuiCurves,
                             double time,
-                            ViewIdx view,
+                            ViewIdx /*view*/,
                             double* x,
-                            double* y,
-                            bool skipMasterOrRelative) const
+                            double* y) const
 {
     bool ret = false;
     KeyFrame k;
@@ -99,24 +98,6 @@ BezierCP::getPositionAtTime(bool useGuiCurves,
         }
 
         ret = false;
-    }
-
-    if (!skipMasterOrRelative) {
-        SequenceTime offsetTime;
-        KnobDouble* masterTrack;
-        {
-            QReadLocker l(&_imp->masterMutex);
-            offsetTime = _imp->offsetTime;
-            masterTrack = _imp->masterTrack ? _imp->masterTrack.get() : NULL;
-        }
-        if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime( time, 0, ViewIdx(view) );
-            double masterY = masterTrack->getValueAtTime( time, 1, ViewIdx(view) );
-            double masterOffsetTimeX = masterTrack->getValueAtTime( offsetTime, 0, ViewIdx(view) );
-            double masterOffsetTimeY = masterTrack->getValueAtTime( offsetTime, 1, ViewIdx(view) );
-            *x += (masterX - masterOffsetTimeX);
-            *y += (masterY - masterOffsetTimeY);
-        }
     }
 
     return ret;
@@ -194,10 +175,9 @@ BezierCP::setRightBezierStaticPosition(bool useGuiCurves,
 bool
 BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
                                    double time,
-                                   ViewIdx view,
+                                   ViewIdx /*view*/,
                                    double* x,
-                                   double* y,
-                                   bool skipMasterOrRelative) const
+                                   double* y) const
 {
     KeyFrame k;
     bool ret = false;
@@ -231,23 +211,6 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
         ret = false;
     }
 
-    if (!skipMasterOrRelative) {
-        KnobDouble* masterTrack;
-        SequenceTime offsetTime;
-        {
-            QReadLocker l(&_imp->masterMutex);
-            masterTrack = _imp->masterTrack ? _imp->masterTrack.get() : NULL;
-            offsetTime = _imp->offsetTime;
-        }
-        if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime( time, 0, ViewIdx(view) );
-            double masterY = masterTrack->getValueAtTime( time, 1, ViewIdx(view) );
-            double masterOffsetTimeX = masterTrack->getValueAtTime( offsetTime, 0, ViewIdx(view) );
-            double masterOffsetTimeY = masterTrack->getValueAtTime( offsetTime, 1, ViewIdx(view) );
-            *x += (masterX - masterOffsetTimeX);
-            *y += (masterY - masterOffsetTimeY);
-        }
-    }
 
     return ret;
 } // BezierCP::getLeftBezierPointAtTime
@@ -255,10 +218,9 @@ BezierCP::getLeftBezierPointAtTime(bool useGuiCurves,
 bool
 BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
                                     double time,
-                                    ViewIdx view,
+                                    ViewIdx /*view*/,
                                     double *x,
-                                    double *y,
-                                    bool skipMasterOrRelative) const
+                                    double *y) const
 {
     KeyFrame k;
     bool ret = false;
@@ -292,24 +254,6 @@ BezierCP::getRightBezierPointAtTime(bool useGuiCurves,
         ret =  false;
     }
 
-
-    if (!skipMasterOrRelative) {
-        KnobDouble* masterTrack;
-        SequenceTime offsetTime;
-        {
-            QReadLocker l(&_imp->masterMutex);
-            masterTrack = _imp->masterTrack ? _imp->masterTrack.get() : NULL;
-            offsetTime = _imp->offsetTime;
-        }
-        if (masterTrack) {
-            double masterX = masterTrack->getValueAtTime( time, 0, ViewIdx(view) );
-            double masterY = masterTrack->getValueAtTime( time, 1, ViewIdx(view) );
-            double masterOffsetTimeX = masterTrack->getValueAtTime( offsetTime, 0, ViewIdx(view) );
-            double masterOffsetTimeY = masterTrack->getValueAtTime( offsetTime, 1, ViewIdx(view) );
-            *x += (masterX - masterOffsetTimeX);
-            *y += (masterY - masterOffsetTimeY);
-        }
-    }
 
     return ret;
 } // BezierCP::getRightBezierPointAtTime
@@ -765,18 +709,11 @@ BezierCP::cuspPoint(bool useGuiCurves,
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    {
-        ///update the offset time
-        QWriteLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            _imp->offsetTime = time;
-        }
-    }
 
     double x, y, leftX, leftY, rightX, rightY;
-    getPositionAtTime(useGuiCurves, time, view, &x, &y, true);
-    getLeftBezierPointAtTime(useGuiCurves, time, view, &leftX, &leftY, true);
-    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &rightX, &rightY, true);
+    getPositionAtTime(useGuiCurves, time, view, &x, &y);
+    getLeftBezierPointAtTime(useGuiCurves, time, view, &leftX, &leftY);
+    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &rightX, &rightY);
     double newLeftX = leftX, newLeftY = leftY, newRightX = rightX, newRightY = rightY;
     cuspTangent(x, y, &newLeftX, &newLeftY, pixelScale);
     cuspTangent(x, y, &newRightX, &newRightY, pixelScale);
@@ -813,23 +750,17 @@ BezierCP::smoothPoint(bool useGuiCurves,
 {
     ///only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    {
-        ///update the offset time
-        QWriteLocker l(&_imp->masterMutex);
-        if (_imp->masterTrack) {
-            _imp->offsetTime = time;
-        }
-    }
+
     Transform::Matrix3x3 transform;
     getBezier()->getTransformAtTime(time, &transform);
 
     Transform::Point3D pos, left, right;
     pos.z = left.z = right.z = 1.;
 
-    getPositionAtTime(useGuiCurves, time, view, &pos.x, &pos.y, true);
+    getPositionAtTime(useGuiCurves, time, view, &pos.x, &pos.y);
 
-    getLeftBezierPointAtTime(useGuiCurves, time, view, &left.x, &left.y, true);
-    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &right.x, &right.y, true);
+    getLeftBezierPointAtTime(useGuiCurves, time, view, &left.x, &left.y);
+    bool isOnKeyframe = getRightBezierPointAtTime(useGuiCurves, time, view, &right.x, &right.y);
 
     pos = Transform::matApply(transform, pos);
     left = Transform::matApply(transform, left);
@@ -932,11 +863,6 @@ BezierCP::clone(const BezierCP & other)
         _imp->guiRightY = other._imp->rightY;
     }
 
-    {
-        QWriteLocker l(&_imp->masterMutex);
-        _imp->masterTrack = other._imp->masterTrack;
-        _imp->offsetTime = other._imp->offsetTime;
-    }
 }
 
 bool
@@ -947,28 +873,20 @@ BezierCP::equalsAtTime(bool useGuiCurves,
 {
     double x, y, leftX, leftY, rightX, rightY;
 
-    getPositionAtTime(useGuiCurves, time, view, &x, &y, true);
-    getLeftBezierPointAtTime(useGuiCurves, time, view, &leftX, &leftY, true);
-    getRightBezierPointAtTime(useGuiCurves, time, view, &rightX, &rightY, true);
+    getPositionAtTime(useGuiCurves, time, view, &x, &y);
+    getLeftBezierPointAtTime(useGuiCurves, time, view, &leftX, &leftY);
+    getRightBezierPointAtTime(useGuiCurves, time, view, &rightX, &rightY);
 
     double ox, oy, oLeftX, oLeftY, oRightX, oRightY;
-    other.getPositionAtTime(useGuiCurves, time, view, &ox, &oy, true);
-    other.getLeftBezierPointAtTime(useGuiCurves, time, view, &oLeftX, &oLeftY, true);
-    other.getRightBezierPointAtTime(useGuiCurves, time, view, &oRightX, &oRightY, true);
+    other.getPositionAtTime(useGuiCurves, time, view, &ox, &oy);
+    other.getLeftBezierPointAtTime(useGuiCurves, time, view, &oLeftX, &oLeftY);
+    other.getRightBezierPointAtTime(useGuiCurves, time, view, &oRightX, &oRightY);
 
     if ( (x == ox) && (y == oy) && (leftX == oLeftX) && (leftY == oLeftY) && (rightX == oRightX) && (rightY == oRightY) ) {
         return true;
     }
 
     return false;
-}
-
-SequenceTime
-BezierCP::getOffsetTime() const
-{
-    QReadLocker l(&_imp->masterMutex);
-
-    return _imp->offsetTime;
 }
 
 void
@@ -1013,33 +931,6 @@ BezierCP::cloneGuiCurvesToInternalCurves()
     _imp->rightY = _imp->guiRightY;
 }
 
-void
-BezierCP::slaveTo(SequenceTime offsetTime,
-                  const boost::shared_ptr<KnobDouble> & track)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(!_imp->masterTrack);
-    QWriteLocker l(&_imp->masterMutex);
-    _imp->masterTrack = track;
-    _imp->offsetTime = offsetTime;
-}
-
-void
-BezierCP::unslave()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    assert(_imp->masterTrack);
-    QWriteLocker l(&_imp->masterMutex);
-    _imp->masterTrack.reset();
-}
-
-boost::shared_ptr<KnobDouble>
-BezierCP::isSlaved() const
-{
-    QReadLocker l(&_imp->masterMutex);
-
-    return _imp->masterTrack;
-}
 
 NATRON_NAMESPACE_EXIT;
 

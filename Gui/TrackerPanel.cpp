@@ -1828,7 +1828,9 @@ TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,
         if (isCheckbox) {
             isCheckbox->setChecked( marker->isEnabled( marker->getCurrentTime() ) );
             isCheckbox->setAnimation( (int)marker->getEnabledNessAnimationLevel() );
-            getNode()->getNode()->getApp()->redrawAllViewers();
+            if (reason != eValueChangedReasonTimeChanged) {
+                getNode()->getNode()->getApp()->redrawAllViewers();
+            }
             break;
         }
     }

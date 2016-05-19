@@ -118,6 +118,25 @@ TrackerNodeInteract::getContext() const
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
+    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    assert(overlay);
+    ViewerInstance* viewer = overlay->getInternalViewerNode();
+    assert(viewer);
+    int viewerFirst,viewerLast;
+    viewer->getUiContext()->getViewerFrameRange(&viewerFirst, &viewerLast);
+
+    int first = trackRangeDialogFirstFrame.lock()->getValue();
+    int last = trackRangeDialogLastFrame.lock()->getValue();
+    int step = trackRangeDialogStep.lock()->getValue();
+    if (first == INT_MIN) {
+        trackRangeDialogFirstFrame.lock()->setValue(viewerFirst);
+    }
+    if (last == INT_MIN) {
+        trackRangeDialogLastFrame.lock()->setValue(viewerLast);
+    }
+    if (step == INT_MIN) {
+        trackRangeDialogStep.lock()->setValue(1);
+    }
     boost::shared_ptr<KnobGroup> k = trackRangeDialogGroup.lock();
     if (k->getValue()) {
         k->setValue(false);
@@ -205,7 +224,7 @@ TrackerNodeInteract::onTrackBwClicked()
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
-        ctx->trackSelectedMarkers( startFrame, first - 1, false,  overlay );
+        ctx->trackSelectedMarkers( startFrame, first - 1, -1,  overlay );
     }
 
 }
@@ -219,7 +238,7 @@ TrackerNodeInteract::onTrackPrevClicked()
     assert(viewer);
     int startFrame = viewer->getTimeline()->currentFrame();
     boost::shared_ptr<TrackerContext> ctx = getContext();
-    ctx->trackSelectedMarkers( startFrame, startFrame - 2, false, overlay );
+    ctx->trackSelectedMarkers( startFrame, startFrame - 2, -1, overlay );
 }
 
 void

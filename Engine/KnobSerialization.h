@@ -65,7 +65,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES 9
 #define KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX 10
 #define KNOB_SERIALIZATION_INTRODUCES_ALIAS 11
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_INTRODUCES_ALIAS
+#define KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS 12
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -410,7 +411,6 @@ class KnobSerialization
     bool _masterIsAlias;
     std::vector<std::pair<std::string, bool> > _expressions; //< used when deserializing, we can't restore it before all knobs have been restored.
     std::list< Curve > parametricCurves;
-    std::list<KnobDouble::SerializedTrack> slavedTracks; //< same as for master, can't be used right away when deserializing
     mutable TypeExtraData* _extraData;
     bool _isUserKnob;
     std::string _label;
@@ -453,20 +453,7 @@ class KnobSerialization
             std::map<int, std::string> extraDatas;
             isString->getAnimation().save(&extraDatas);
             ar & ::boost::serialization::make_nvp("StringsAnimation", extraDatas);
-        } else if ( isDouble && (isDouble->getName() == "center") && (isDouble->getDimension() == 2) ) {
-            std::list<KnobDouble::SerializedTrack> tracks;
-            isDouble->serializeTracks(&tracks);
-            int count = (int)tracks.size();
-            ar & ::boost::serialization::make_nvp("SlavePtsNo", count);
-            for (std::list<KnobDouble::SerializedTrack>::iterator it = tracks.begin(); it != tracks.end(); ++it) {
-                ar & ::boost::serialization::make_nvp("SlavePtNodeName", it->rotoNodeName);
-                ar & ::boost::serialization::make_nvp("SlavePtBezier", it->bezierName);
-                ar & ::boost::serialization::make_nvp("SlavePtIndex", it->cpIndex);
-                ar & ::boost::serialization::make_nvp("SlavePtIsFeather", it->isFeather);
-                ar & ::boost::serialization::make_nvp("OffsetTime", it->offsetTime);
-            }
         }
-
         ChoiceExtraData* cdata = dynamic_cast<ChoiceExtraData*>(_extraData);
         if (cdata) {
             ar & ::boost::serialization::make_nvp("ChoiceLabel", cdata->_choiceString);
@@ -590,23 +577,22 @@ class KnobSerialization
                 isStringAnimated->loadAnimation(extraDatas);
             }
         }
-        if ( (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS) &&
+        if ( (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS && version < KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS) &&
              isDouble && ( isDouble->getName() == "center") && ( isDouble->getDimension() == 2) ) {
             int count;
             ar & ::boost::serialization::make_nvp("SlavePtsNo", count);
             for (int i = 0; i < count; ++i) {
-                KnobDouble::SerializedTrack t;
-                ar & ::boost::serialization::make_nvp("SlavePtNodeName", t.rotoNodeName);
-                if (version >= KNOB_SERIALIZATION_NODE_SCRIPT_NAME) {
-                    t.rotoNodeName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(t.rotoNodeName);
-                }
-                ar & ::boost::serialization::make_nvp("SlavePtBezier", t.bezierName);
-                ar & ::boost::serialization::make_nvp("SlavePtIndex", t.cpIndex);
-                ar & ::boost::serialization::make_nvp("SlavePtIsFeather", t.isFeather);
+                std::string rotoNodeName,bezierName;
+                int cpIndex;
+                bool isFeather;
+                int offsetTime;
+                ar & ::boost::serialization::make_nvp("SlavePtNodeName", rotoNodeName);
+                ar & ::boost::serialization::make_nvp("SlavePtBezier", bezierName);
+                ar & ::boost::serialization::make_nvp("SlavePtIndex", cpIndex);
+                ar & ::boost::serialization::make_nvp("SlavePtIsFeather", isFeather);
                 if (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS_OFFSET) {
-                    ar & ::boost::serialization::make_nvp("OffsetTime", t.offsetTime);
+                    ar & ::boost::serialization::make_nvp("OffsetTime", offsetTime);
                 }
-                slavedTracks.push_back(t);
             }
         }
 
@@ -868,7 +854,6 @@ public:
 
     static KnobPtr createKnob(const std::string & typeName, int dimension);
 
-    void restoreTracks(const KnobPtr & knob, const NodesList & allNodes);
 
     const TypeExtraData* getExtraData() const { return _extraData; }
 
