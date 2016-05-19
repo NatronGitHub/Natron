@@ -496,9 +496,16 @@ KnobGui::toolTip() const
 {
     KnobPtr knob = getKnob();
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-    QString tt = getScriptNameHtml();
-    QString realTt;
     bool isMarkdown = knob.get()->isHintInMarkdown();
+    QString tt;
+    QString realTt;
+
+    if (isMarkdown) {
+        tt = QString::fromUtf8( knob.get()->getName().c_str() );
+        tt.append( QString::fromUtf8("\n==========\n\n") );
+    } else {
+        tt = getScriptNameHtml();
+    }
 
     if (!isChoice) {
         realTt.append( QString::fromUtf8( knob->getHintToolTip().c_str() ) );
