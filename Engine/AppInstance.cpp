@@ -1355,11 +1355,13 @@ AppInstance::exportDocs(const QString path)
                             if ( !mdDir.exists() ) {
                                 mdDir.mkdir(path);
                             }
-                            QFile mdFile( path + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
+                            QFile mdFile( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".md") );
                             if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
                                 QTextStream out(&mdFile);
                                 out << md;
                                 mdFile.close();
+                            } else {
+                                std::cout << "ERROR: failed to write to file " << mdFile.fileName().toStdString() << std::endl;
                             }
                         }
                     }
@@ -1389,7 +1391,7 @@ AppInstance::exportDocs(const QString path)
                 QStringList currPlugin = plugins.at(y);
                 if (currPlugin.size() == 3) {
                     if ( categories.at(i) == currPlugin.at(0) ) {
-                        plugMD.append(QString::fromUtf8("    ")+currPlugin.at(1)+QString::fromUtf8(".rst\n"));
+                        plugMD.append(QString::fromUtf8("    plugins/")+currPlugin.at(1)+QString::fromUtf8(".rst\n"));
                     }
                 }
             }
