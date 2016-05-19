@@ -2614,6 +2614,9 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n<h1>" << tr("Preferences") << "</h1>\n";
     }
+    else {
+        ts << tr("Preferences") << "\n==========\n\n";
+    }
 
     const KnobsVec& knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -2631,14 +2634,15 @@ Settings::makeHTMLDocumentation(bool genHTML) const
                     ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
                 }
                 else {
-                    ts << knobLabel << "\n==========\n\n";
+                    ts << knobLabel << "\n----------\n\n";
                 }
             } else if (isSep) {
                 if (genHTML) {
                     ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
                 }
                 else {
-                    ts << knobLabel << "\n----------\n\n";
+                    //ts << knobLabel << "\n----------\n\n";
+                    ts << "**" << knobLabel << "**\n\n";
                 }
             } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
                 if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
