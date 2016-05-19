@@ -1833,7 +1833,7 @@ AddKnobDialog::onOkClicked()
         }
 
         try {
-            _imp->knob = _imp->isKnobAlias->createDuplicateOnNode(effect,
+            _imp->knob = _imp->isKnobAlias->createDuplicateOnHolder(effect,
                                                                   page,
                                                                   shrdGrp,
                                                                   oldIndexInParent,

@@ -3169,6 +3169,15 @@ ViewerGL::populateMenu()
     _imp->menu->addAction(displayOverlaysAction);
 } // ViewerGL::populateMenu
 
+bool
+ViewerGL::renderText(double x, double y, const std::string &string, double r, double g, double b)
+{
+    QColor c;
+    c.fromRgbF(r, g, b);
+    renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
+    return true;
+}
+
 void
 ViewerGL::renderText(double x,
                      double y,
@@ -3535,6 +3544,25 @@ ViewerGL::getBackgroundColour(double &r,
     g = _imp->clearColor.greenF();
     b = _imp->clearColor.blueF();
 }
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+ViewerGL::getWidgetFontHeight() const
+{
+    return fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
 
 void
 ViewerGL::makeOpenGLcontextCurrent()

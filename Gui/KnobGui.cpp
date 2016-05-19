@@ -244,6 +244,8 @@ KnobGui::createGUI(QWidget* fieldContainer,
     }
 }
 
+
+
 void
 KnobGui::updateGuiInternal(int dimension)
 {
@@ -778,7 +780,7 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
     std::string newKnobName = nodeScriptName +  knob->getName();
     KnobPtr ret;
     try {
-        ret = knob->createDuplicateOnNode(effect,
+        ret = knob->createDuplicateOnHolder(effect,
                                           page,
                                           group,
                                           indexInParent,

@@ -8161,6 +8161,17 @@ Node::onEffectKnobValueChanged(KnobI* what,
     }
 
     if (!ret) {
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>(what);
+        if (isGroup && isGroup->getIsDialog()) {
+            boost::shared_ptr<NodeGuiI> gui = getNodeGui();
+            if (gui) {
+                gui->showGroupKnobAsDialog(isGroup);
+                ret = true;
+            }
+        }
+    }
+
+    if (!ret) {
         for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
             if (it->second.layer.lock().get() == what) {
                 _imp->onLayerChanged(it->first, it->second);

@@ -43,6 +43,7 @@
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackMarker.h"
+#include "Engine/TrackerUndoCommand.h"
 
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -56,7 +57,6 @@
 #include "Gui/TableModelView.h"
 #include "Gui/Utils.h"
 #include "Gui/NodeGui.h"
-#include "Gui/TrackerUndoCommand.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/SpinBox.h"
@@ -933,7 +933,7 @@ TrackerPanel::onRemoveButtonClicked()
 
     getContext()->getSelectedMarkers(&markers);
     if ( !markers.empty() ) {
-        pushUndoCommand( new RemoveTracksCommand( markers, getContext() ) );
+        getNode()->getNode()->getEffectInstance()->pushUndoCommand( new RemoveTracksCommand( markers, getContext() ) );
     }
 }
 
@@ -973,7 +973,7 @@ TrackerPanel::makeTrackInternal()
     assert(context);
     TrackMarkerPtr ret = context->createMarker();
     assert(ret);
-    pushUndoCommand( new AddTrackCommand(ret, context) );
+    getNode()->getNode()->getEffectInstance()->pushUndoCommand( new AddTrackCommand(ret, context) );
 
     return ret;
 }

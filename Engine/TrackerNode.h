@@ -164,7 +164,7 @@ private:
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
 
-    virtual void refreshExtraStateAfterTimeChanged(double time)  OVERRIDE FINAL;
+    virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
 
 private:
 

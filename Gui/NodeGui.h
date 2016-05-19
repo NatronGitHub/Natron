@@ -403,6 +403,8 @@ public:
 
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
 
+    virtual void showGroupKnobAsDialog(const KnobGroup* group) OVERRIDE FINAL;
+
 protected:
 
     virtual int getBaseDepth() const { return 20; }

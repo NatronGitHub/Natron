@@ -64,7 +64,7 @@ createDuplicateKnob( const std::string& knobName,
         return boost::shared_ptr<KNOBTYPE>();
     }
     assert(internalNodeKnob);
-    KnobPtr duplicateKnob = internalNodeKnob->createDuplicateOnNode(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    KnobPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
 
     if (otherNode) {
         KnobPtr otherNodeKnob = otherNode->getKnobByName(knobName);

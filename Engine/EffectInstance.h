@@ -1767,7 +1767,7 @@ public:
 
 protected:
 
-    virtual void refreshExtraStateAfterTimeChanged(double time)  OVERRIDE;
+    virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE;
 
     /**
      * @brief Must be implemented to initialize any knob using the

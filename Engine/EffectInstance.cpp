@@ -5230,9 +5230,9 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 } //refreshMetaDataProxy
 
 void
-EffectInstance::refreshExtraStateAfterTimeChanged(double time)
+EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback, double time)
 {
-    KnobHolder::refreshExtraStateAfterTimeChanged(time);
+    KnobHolder::refreshExtraStateAfterTimeChanged(isPlayback, time);
 
     getNode()->refreshIdentityState();
 }

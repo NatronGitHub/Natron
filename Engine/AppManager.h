@@ -52,6 +52,10 @@ CLANG_DIAG_ON(deprecated)
 #define appPTR AppManager::instance()
 
 
+#define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
+#define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
+#define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
+
 NATRON_NAMESPACE_ENTER;
 
 enum AppInstanceStatusEnum
@@ -436,6 +440,38 @@ public:
     virtual QString getAppFont() const { return QString(); }
 
     virtual int getAppFontSize() const { return 11; }
+
+    virtual void setCurrentLogicalDPI(double /*dpiX*/, double /*dpiY*/) {}
+
+    virtual double getLogicalDPIXRATIO() const
+    {
+        return 72;
+    }
+
+    virtual double getLogicalDPIYRATIO() const
+    {
+        return 72;
+    }
+
+    template <typename T>
+    void adjustSizeToDPI(T &x,
+                         T &y) const
+    {
+        x *= getLogicalDPIXRATIO();
+        y *= getLogicalDPIYRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIX(T x) const
+    {
+        return x * getLogicalDPIXRATIO();
+    }
+
+    template <typename T>
+    T adjustSizeToDPIY(T y) const
+    {
+        return y * getLogicalDPIYRATIO();
+    }
 
     void setProjectCreatedDuringRC2Or3(bool b);
 

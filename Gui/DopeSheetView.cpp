@@ -374,6 +374,47 @@ DopeSheetViewPrivate::getKeyFrameBoundingRectZoomCoords(double keyframeTimeZoomC
     return ret;
 }
 
+/**
+ * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+ **/
+void
+DopeSheetView::toWidgetCoordinates(double *x, double *y) const
+{
+    QPointF p = _imp->zoomContext.toWidgetCoordinates(*x, *y);
+    *x = p.x();
+    *y = p.y();
+}
+
+/**
+ * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+ **/
+void
+DopeSheetView::toCanonicalCoordinates(double *x, double *y) const
+{
+    QPointF p = _imp->zoomContext.toZoomCoordinates(*x, *y);
+    *x = p.x();
+    *y = p.y();
+}
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+DopeSheetView::getWidgetFontHeight() const
+{
+    return fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+DopeSheetView::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
+
 /*
    QRectF and Qt coordinate system has its y axis top-down, whereas in Natron
    the coordinate system is bottom-up. When using QRectF, top-left is in fact (0,0)

@@ -45,6 +45,8 @@
  */
 
 
+
+
 NATRON_NAMESPACE_ENTER;
 
 namespace Color {
@@ -1475,48 +1477,105 @@ LutManager::AlexaV3LogCLut()
 }
 
 // r,g,b values are from 0 to 1
-// h = [0,360], s = [0,1], v = [0,1]
+// h = [0,OFXS_HUE_CIRCLE], s = [0,1], v = [0,1]
 //		if s == 0, then h = 0 (undefined)
 void
 rgb_to_hsv( float r,
-            float g,
-            float b,
-            float *h,
-            float *s,
-            float *v )
+               float g,
+               float b,
+               float *h,
+               float *s,
+               float *v )
 {
-    float min, max, delta;
+    float min = std::min(std::min(r, g), b);
+    float max = std::max(std::max(r, g), b);
 
-    min = std::min(std::min(r, g), b);
-    max = std::max(std::max(r, g), b);
-    *v = max;                       // v
+    *v = max;                               // v
 
-    delta = max - min;
+    float delta = max - min;
 
     if (max != 0.) {
-        *s = delta / max;               // s
+        *s = delta / max;                       // s
     } else {
         // r = g = b = 0		// s = 0, v is undefined
-        *s = 0.;
-        *h = 0.;
+        *s = 0.f;
+        *h = 0.f;
 
         return;
     }
 
     if (delta == 0.) {
-        *h = 0.;         // gray
+        *h = 0.f;                 // gray
     } else if (r == max) {
-        *h = (g - b) / delta;               // between yellow & magenta
+        *h = (g - b) / delta;                       // between yellow & magenta
     } else if (g == max) {
-        *h = 2 + (b - r) / delta;           // between cyan & yellow
+        *h = 2 + (b - r) / delta;                   // between cyan & yellow
     } else {
-        *h = 4 + (r - g) / delta;           // between magenta & cyan
+        *h = 4 + (r - g) / delta;                   // between magenta & cyan
     }
-    *h *= 60;                       // degrees
+    *h *= NATRON_COLOR_HUE_CIRCLE / 6.;
     if (*h < 0) {
-        *h += 360;
+        *h += NATRON_COLOR_HUE_CIRCLE;
     }
 }
+
+void
+hsv_to_rgb(float h,
+               float s,
+               float v,
+               float *r,
+               float *g,
+               float *b)
+{
+    if (s == 0) {
+        // achromatic (grey)
+        *r = *g = *b = v;
+
+        return;
+    }
+
+    h *= 6. / NATRON_COLOR_HUE_CIRCLE;            // sector 0 to 5
+    int i = std::floor(h);
+    float f = h - i;          // factorial part of h
+    i = (i >= 0) ? (i % 6) : (i % 6) + 6; // take h modulo 360
+    float p = v * ( 1 - s );
+    float q = v * ( 1 - s * f );
+    float t = v * ( 1 - s * ( 1 - f ) );
+
+    switch (i) {
+        case 0:
+            *r = v;
+            *g = t;
+            *b = p;
+            break;
+        case 1:
+            *r = q;
+            *g = v;
+            *b = p;
+            break;
+        case 2:
+            *r = p;
+            *g = v;
+            *b = t;
+            break;
+        case 3:
+            *r = p;
+            *g = q;
+            *b = v;
+            break;
+        case 4:
+            *r = t;
+            *g = p;
+            *b = v;
+            break;
+        default:                // case 5:
+            *r = v;
+            *g = p;
+            *b = q;
+            break;
+    }
+} // hsv_to_rgb
+
 }     // namespace Color {
 NATRON_NAMESPACE_EXIT;
 

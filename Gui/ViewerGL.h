@@ -286,6 +286,9 @@ public:
 
 public:
 
+    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) OVERRIDE FINAL;
+
+
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
 
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
@@ -331,6 +334,39 @@ public:
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void getTextureColorAt(int x, int y, double* r, double *g, double *b, double *a) OVERRIDE FINAL;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL
+    {
+        QPointF p = toWidgetCoordinates(QPointF(*x,*y));
+        *x = p.x();
+        *y = p.y();
+    }
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL
+    {
+        QPointF p = toZoomCoordinates(QPointF(*x,*y));
+        *x = p.x();
+        *y = p.y();
+    }
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
+
     ViewerInstance* getInternalNode() const;
     ViewerTab* getViewerTab() const;
 

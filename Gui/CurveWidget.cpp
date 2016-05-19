@@ -1410,6 +1410,48 @@ CurveWidget::toWidgetCoordinates(double x,
     return _imp->zoomCtx.toWidgetCoordinates(x, y);
 }
 
+/**
+ * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+ **/
+void
+CurveWidget::toWidgetCoordinates(double *x, double *y) const
+{
+    QPointF p = _imp->zoomCtx.toWidgetCoordinates(*x, *y);
+    *x = p.x();
+    *y = p.y();
+}
+
+/**
+ * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+ **/
+void
+CurveWidget::toCanonicalCoordinates(double *x, double *y) const
+{
+    QPointF p = _imp->zoomCtx.toZoomCoordinates(*x, *y);
+    *x = p.x();
+    *y = p.y();
+}
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+CurveWidget::getWidgetFontHeight() const
+{
+    return fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
+
+
 QSize
 CurveWidget::sizeHint() const
 {
