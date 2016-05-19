@@ -31,6 +31,7 @@
 
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
+#include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackerNode.h"
