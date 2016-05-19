@@ -224,16 +224,6 @@ KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
     }
 }
 
-void
-KnobSerialization::restoreTracks(const KnobPtr & knob,
-                                 const NodesList & allNodes)
-{
-    KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
-
-    if ( isDouble && (isDouble->getName() == "center") && (isDouble->getDimension() == 2) ) {
-        isDouble->restoreTracks(slavedTracks, allNodes);
-    }
-}
 
 void
 KnobSerialization::restoreExpressions(const KnobPtr & knob,

@@ -626,54 +626,6 @@ static PyObject* Sbk_BezierCurveFunc_getOverlayColor(PyObject* self)
     return pyResult;
 }
 
-static PyObject* Sbk_BezierCurveFunc_getPointMasterTrack(PyObject* self, PyObject* pyArg)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp;
-    SBK_UNUSED(pythonToCpp)
-
-    // Overloaded function decisor
-    // 0: getPointMasterTrack(int)const
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getPointMasterTrack(int)const
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_getPointMasterTrack_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
-
-        if (!PyErr_Occurred()) {
-            // getPointMasterTrack(int)const
-            DoubleParam * cppResult = const_cast<const ::BezierCurve*>(cppSelf)->getPointMasterTrack(cppArg0);
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], cppResult);
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-
-    Sbk_BezierCurveFunc_getPointMasterTrack_TypeError:
-        const char* overloads[] = {"int", 0};
-        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.BezierCurve.getPointMasterTrack", overloads);
-        return 0;
-}
-
 static PyObject* Sbk_BezierCurveFunc_isCurveFinished(PyObject* self)
 {
     ::BezierCurve* cppSelf = 0;
@@ -1555,66 +1507,6 @@ static PyObject* Sbk_BezierCurveFunc_setPointAtIndex(PyObject* self, PyObject* a
         return 0;
 }
 
-static PyObject* Sbk_BezierCurveFunc_slavePointToTrack(PyObject* self, PyObject* args)
-{
-    ::BezierCurve* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::BezierCurve*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX], (SbkObject*)self));
-    int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
-    SBK_UNUSED(pythonToCpp)
-    int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
-
-    // invalid argument lengths
-
-
-    if (!PyArg_UnpackTuple(args, "slavePointToTrack", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
-        return 0;
-
-
-    // Overloaded function decisor
-    // 0: slavePointToTrack(int,double,DoubleParam*)
-    if (numArgs == 3
-        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<double>(), (pyArgs[1])))
-        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_DOUBLEPARAM_IDX], (pyArgs[2])))) {
-        overloadId = 0; // slavePointToTrack(int,double,DoubleParam*)
-    }
-
-    // Function signature not found.
-    if (overloadId == -1) goto Sbk_BezierCurveFunc_slavePointToTrack_TypeError;
-
-    // Call function/method
-    {
-        int cppArg0;
-        pythonToCpp[0](pyArgs[0], &cppArg0);
-        double cppArg1;
-        pythonToCpp[1](pyArgs[1], &cppArg1);
-        if (!Shiboken::Object::isValid(pyArgs[2]))
-            return 0;
-        ::DoubleParam* cppArg2;
-        pythonToCpp[2](pyArgs[2], &cppArg2);
-
-        if (!PyErr_Occurred()) {
-            // slavePointToTrack(int,double,DoubleParam*)
-            cppSelf->slavePointToTrack(cppArg0, cppArg1, cppArg2);
-        }
-    }
-
-    if (PyErr_Occurred()) {
-        return 0;
-    }
-    Py_RETURN_NONE;
-
-    Sbk_BezierCurveFunc_slavePointToTrack_TypeError:
-        const char* overloads[] = {"int, float, NatronEngine.DoubleParam", 0};
-        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.BezierCurve.slavePointToTrack", overloads);
-        return 0;
-}
-
 static PyMethodDef Sbk_BezierCurve_methods[] = {
     {"addControlPoint", (PyCFunction)Sbk_BezierCurveFunc_addControlPoint, METH_VARARGS},
     {"addControlPointOnSegment", (PyCFunction)Sbk_BezierCurveFunc_addControlPointOnSegment, METH_VARARGS},
@@ -1632,7 +1524,6 @@ static PyMethodDef Sbk_BezierCurve_methods[] = {
     {"getOpacity", (PyCFunction)Sbk_BezierCurveFunc_getOpacity, METH_O},
     {"getOpacityParam", (PyCFunction)Sbk_BezierCurveFunc_getOpacityParam, METH_NOARGS},
     {"getOverlayColor", (PyCFunction)Sbk_BezierCurveFunc_getOverlayColor, METH_NOARGS},
-    {"getPointMasterTrack", (PyCFunction)Sbk_BezierCurveFunc_getPointMasterTrack, METH_O},
     {"isCurveFinished", (PyCFunction)Sbk_BezierCurveFunc_isCurveFinished, METH_NOARGS},
     {"moveFeatherByIndex", (PyCFunction)Sbk_BezierCurveFunc_moveFeatherByIndex, METH_VARARGS},
     {"moveLeftBezierPoint", (PyCFunction)Sbk_BezierCurveFunc_moveLeftBezierPoint, METH_VARARGS},
@@ -1649,7 +1540,6 @@ static PyMethodDef Sbk_BezierCurve_methods[] = {
     {"setOpacity", (PyCFunction)Sbk_BezierCurveFunc_setOpacity, METH_VARARGS},
     {"setOverlayColor", (PyCFunction)Sbk_BezierCurveFunc_setOverlayColor, METH_VARARGS},
     {"setPointAtIndex", (PyCFunction)Sbk_BezierCurveFunc_setPointAtIndex, METH_VARARGS},
-    {"slavePointToTrack", (PyCFunction)Sbk_BezierCurveFunc_slavePointToTrack, METH_VARARGS},
 
     {0} // Sentinel
 };

@@ -1132,11 +1132,6 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getPointMasterTrack(int)const">
-            <modify-argument index="return">
-                <define-ownership class="target" owner="target"/>
-            </modify-argument>
-        </modify-function>
     </object-type>
     <object-type name="Track">
         <modify-function signature="getParam(QString)const">

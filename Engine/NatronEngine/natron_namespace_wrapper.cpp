@@ -1423,6 +1423,39 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_CENTER_VIEWER_ON_TRACK", (long) NATRON_NAMESPACE::NATRON_PIXMAP_CENTER_VIEWER_ON_TRACK))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_BACKWARD_ON", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_BACKWARD_ON))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_BACKWARD_OFF", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_BACKWARD_OFF))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_FORWARD_ON", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_FORWARD_ON))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_FORWARD_OFF", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_FORWARD_OFF))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_PREVIOUS", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_PREVIOUS))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_NEXT", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_NEXT))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_RANGE", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_RANGE))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_ALL_KEYS", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_ALL_KEYS))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_TRACK_CURRENT_KEY", (long) NATRON_NAMESPACE::NATRON_PIXMAP_TRACK_CURRENT_KEY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_NEXT_USER_KEY", (long) NATRON_NAMESPACE::NATRON_PIXMAP_NEXT_USER_KEY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_PREV_USER_KEY", (long) NATRON_NAMESPACE::NATRON_PIXMAP_PREV_USER_KEY))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "NATRON_PIXMAP_ENTER_GROUP", (long) NATRON_NAMESPACE::NATRON_PIXMAP_ENTER_GROUP))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_PIXMAPENUM_IDX],

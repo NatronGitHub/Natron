@@ -167,10 +167,6 @@ public:
 
     void setFeatherPointAtIndex(int index, double time, double x, double y, double lx, double ly, double rx, double ry);
 
-    void slavePointToTrack(int index, double trackTime, DoubleParam* trackCenter);
-
-    DoubleParam* getPointMasterTrack(int index) const;
-
     int getNumControlPoints() const;
 
     void setActivated(double time, bool activated);

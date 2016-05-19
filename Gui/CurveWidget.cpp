@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/PyParameter.h" // IntParam
 #include "Engine/Project.h"
+#include "Engine/Image.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
@@ -552,6 +553,15 @@ CurveWidget::paintGL()
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
     glCheckError();
 } // CurveWidget::paintGL
+
+bool
+CurveWidget::renderText(double x, double y, const std::string &string, double r, double g, double b)
+{
+    QColor c;
+    c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+    renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
+    return true;
+}
 
 void
 CurveWidget::renderText(double x,

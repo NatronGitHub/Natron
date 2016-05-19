@@ -2334,23 +2334,6 @@ exportRotoLayer(int indentLevel,
                     exportBezierPointAtTime(indentLevel, *it2, false, time, idx, ts);
                     exportBezierPointAtTime(indentLevel, *fpIt, true, time, idx, ts);
                 }
-                boost::shared_ptr<KnobDouble> track = (*it2)->isSlaved();
-                if (track) {
-                    EffectInstance* effect = dynamic_cast<EffectInstance*>( track->getHolder() );
-                    assert(effect);
-                    if (!effect) {
-                        throw std::logic_error("exportRotoLayer");
-                    }
-                    assert( effect->getNode() && effect->getNode()->isPointTrackerNode() );
-                    std::string trackerName = effect->getNode()->getScriptName_mt_safe();
-                    int trackTime = (*it2)->getOffsetTime();
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("tracker = group.getNode(\"") + QString::fromUtf8( trackerName.c_str() ) + QString::fromUtf8("\")") );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("center = tracker.getParam(\"") + QString::fromUtf8( track->getName().c_str() ) + QString::fromUtf8("\")") );
-                    WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.slavePointToTrack(") + NUM_INT(idx) + QString::fromUtf8(", ") +
-                                                             NUM_TIME(trackTime) + QString::fromUtf8(",center)") );
-                    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del center");
-                    WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del tracker");
-                }
             }
             if ( isBezier->isCurveFinished() ) {
                 WRITE_INDENT(indentLevel); WRITE_STRING("bezier.setCurveFinished(True)");

@@ -186,11 +186,6 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamRightClickMenuActionRemoveItemsFeather "removeItemsFeatherAction"
 #define kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel "Remove Selected item(s) Feather"
 
-#define kRotoUIParamRightClickMenuActionLinkItemsToTrack "linkItemsAction"
-#define kRotoUIParamRightClickMenuActionLinkItemsToTrackLabel "Link To Track..."
-
-#define kRotoUIParamRightClickMenuActionUnlinkItemsFromTrack "unlinkItemsAction"
-#define kRotoUIParamRightClickMenuActionUnlinkItemsFromTrackLabel "Unlink From Track..."
 
 #define kRotoUIParamRightClickMenuActionNudgeLeft "nudgeLeftAction"
 #define kRotoUIParamRightClickMenuActionNudgeLeftLabel "Nudge Left"
@@ -386,12 +381,6 @@ NATRON_NAMESPACE_ENTER;
 
 #define kShortcutIDActionRotoRemoveFeather "rmvFeather"
 #define kShortcutDescActionRotoRemoveFeather "Remove Feather"
-
-#define kShortcutIDActionRotoLinkToTrack "linkToTrack"
-#define kShortcutDescActionRotoLinkToTrack "Link to Track"
-
-#define kShortcutIDActionRotoUnlinkToTrack "unlinkFromTrack"
-#define kShortcutDescActionRotoUnlinkToTrack "Unlink from Track"
 
 #define kShortcutIDActionRotoLockCurve "lock"
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
@@ -595,8 +584,6 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
     boost::weak_ptr<KnobButton> cuspItemMenuAction;
     boost::weak_ptr<KnobButton> smoothItemMenuAction;
     boost::weak_ptr<KnobButton> removeItemFeatherMenuAction;
-    boost::weak_ptr<KnobButton> linkPointMenuAction;
-    boost::weak_ptr<KnobButton> unlinkPointMenuAction;
     boost::weak_ptr<KnobButton> nudgeLeftMenuAction, nudgeRightMenuAction, nudgeBottomMenuAction, nudgeTopMenuAction;
 
     // Right click on curve

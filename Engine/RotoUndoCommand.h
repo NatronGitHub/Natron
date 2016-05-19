@@ -547,61 +547,6 @@ private:
 };
 
 
-
-
-class LinkToTrackUndoCommand
-    : public UndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(LinkToTrackUndoCommand)
-
-public:
-
-    LinkToTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                           const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points,
-                           const boost::shared_ptr<KnobDouble> & track);
-
-    virtual ~LinkToTrackUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    boost::weak_ptr<RotoPaintInteract> _roto;
-    std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > _points;
-    boost::shared_ptr<KnobDouble> _track;
-};
-
-class UnLinkFromTrackUndoCommand
-    : public UndoCommand
-{
-    Q_DECLARE_TR_FUNCTIONS(UnLinkFromTrackUndoCommand)
-
-private:
-    struct PointToUnlink
-    {
-        boost::shared_ptr<BezierCP> cp;
-        boost::shared_ptr<BezierCP> fp;
-        boost::shared_ptr<KnobDouble> track;
-    };
-
-public:
-
-
-    UnLinkFromTrackUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                               const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points);
-
-    virtual ~UnLinkFromTrackUndoCommand();
-
-    virtual void undo() OVERRIDE FINAL;
-    virtual void redo() OVERRIDE FINAL;
-
-private:
-
-    boost::weak_ptr<RotoPaintInteract> _roto;
-    std::list<PointToUnlink> _points;
-};
-
 NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOUNDOCOMMAND_H

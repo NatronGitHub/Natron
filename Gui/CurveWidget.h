@@ -229,6 +229,7 @@ private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
 
+    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) OVERRIDE FINAL;
 
     void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;
 

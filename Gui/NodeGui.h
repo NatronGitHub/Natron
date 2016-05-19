@@ -403,7 +403,7 @@ public:
 
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
 
-    virtual void showGroupKnobAsDialog(const KnobGroup* group) OVERRIDE FINAL;
+    virtual void showGroupKnobAsDialog(KnobGroup* group) OVERRIDE FINAL;
 
 protected:
 
@@ -674,6 +674,7 @@ private:
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
+    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
 };
 
 NATRON_NAMESPACE_EXIT;

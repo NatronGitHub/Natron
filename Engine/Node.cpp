@@ -1798,7 +1798,6 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
             }
             isRegular->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
             isRegular->restoreExpressions(knob, oldNewScriptNamesMapping);
-            isRegular->restoreTracks(knob, allNodes);
         }
     }
 }
@@ -1822,7 +1821,6 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         }
         (*it)->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
         (*it)->restoreExpressions(knob, oldNewScriptNamesMapping);
-        (*it)->restoreTracks(knob, allNodes);
     }
 
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();

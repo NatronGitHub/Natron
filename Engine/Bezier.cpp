@@ -787,24 +787,7 @@ Bezier::clone(const RotoItem* other)
 
 Bezier::~Bezier()
 {
-    BezierCPs::iterator itFp = _imp->featherPoints.begin();
-    bool useFeather = !_imp->featherPoints.empty();
 
-    for (BezierCPs::iterator itCp = _imp->points.begin(); itCp != _imp->points.end(); ++itCp) {
-        boost::shared_ptr<KnobDouble> masterCp = (*itCp)->isSlaved();
-
-        if (masterCp) {
-            masterCp->removeSlavedTrack(*itCp);
-        }
-
-        if (useFeather) {
-            boost::shared_ptr<KnobDouble> masterFp = (*itFp)->isSlaved();
-            if (masterFp) {
-                masterFp->removeSlavedTrack(*itFp);
-            }
-            ++itFp;
-        }
-    }
 }
 
 boost::shared_ptr<BezierCP>
@@ -1206,10 +1189,6 @@ Bezier::removeControlPointByIndex(int index)
             return;
         }
 
-        boost::shared_ptr<KnobDouble> isSlaved = (*it)->isSlaved();
-        if (isSlaved) {
-            isSlaved->removeSlavedTrack(*it);
-        }
         _imp->points.erase(it);
 
         if ( useFeatherPoints() ) {
@@ -1259,9 +1238,9 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
             std::advance(it, index);
             assert( it != _imp->points.end() );
             cp = *it;
-            cp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &p.x, &p.y, true);
-            isOnKeyframe |= cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y, true);
-            cp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y, true);
+            cp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &p.x, &p.y);
+            isOnKeyframe |= cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y);
+            cp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y);
 
             p = Transform::matApply(trans, p);
             left = Transform::matApply(trans, left);
@@ -1284,9 +1263,9 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
             std::advance(itF, index);
             assert( itF != _imp->featherPoints.end() );
             fp = *itF;
-            fp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &pF.x, &pF.y, true);
-            isOnKeyframe |= fp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &leftF.x, &leftF.y, true);
-            fp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &rightF.x, &rightF.y, true);
+            fp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &pF.x, &pF.y);
+            isOnKeyframe |= fp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &leftF.x, &leftF.y);
+            fp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &rightF.x, &rightF.y);
 
             pF = Transform::matApply(trans, pF);
             rightF = Transform::matApply(trans, rightF);
@@ -1340,9 +1319,9 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
                 }
                 if (!onlyFeather) {
                     assert(cp);
-                    cp->getPositionAtTime(useGuiCurve, *it2, ViewIdx(0), &p.x, &p.y, true);
-                    cp->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &left.x, &left.y, true);
-                    cp->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &right.x, &right.y, true);
+                    cp->getPositionAtTime(useGuiCurve, *it2, ViewIdx(0), &p.x, &p.y);
+                    cp->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &left.x, &left.y);
+                    cp->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &right.x, &right.y);
 
                     p = Transform::matApply(trans, p);
                     left = Transform::matApply(trans, left);
@@ -1366,9 +1345,9 @@ Bezier::movePointByIndexInternal(bool useGuiCurve,
                 }
                 if (moveFeather && useFeather) {
                     assert(fp);
-                    fp->getPositionAtTime(useGuiCurve, *it2, ViewIdx(0), &pF.x, &pF.y, true);
-                    fp->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &leftF.x, &leftF.y, true);
-                    fp->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &rightF.x, &rightF.y, true);
+                    fp->getPositionAtTime(useGuiCurve, *it2, ViewIdx(0), &pF.x, &pF.y);
+                    fp->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &leftF.x, &leftF.y);
+                    fp->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &rightF.x, &rightF.y);
 
                     pF = Transform::matApply(trans, pF);
                     rightF = Transform::matApply(trans, rightF);
@@ -1435,10 +1414,10 @@ Bezier::setPointByIndexInternal(bool useGuiCurve,
         BezierCPs::const_iterator it = _imp->atIndex(index);
         assert( it != _imp->points.end() );
         cp = *it;
-        cp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &p.x, &p.y, true);
-        isOnKeyframe |= cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y, true);
+        cp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &p.x, &p.y);
+        isOnKeyframe |= cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y);
         Q_UNUSED(isOnKeyframe);
-        cp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y, true);
+        cp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y);
 
         p = Transform::matApply(trans, p);
         left = Transform::matApply(trans, left);
@@ -1557,11 +1536,11 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         Transform::Point3D left, right;
         left.z = right.z = 1;
         if (isLeft || moveBoth) {
-            isOnKeyframe = (cp)->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y, true);
+            isOnKeyframe = (cp)->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y);
             left = Transform::matApply(trans, left);
         }
         if (!isLeft || moveBoth) {
-            isOnKeyframe = (cp)->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y, true);
+            isOnKeyframe = (cp)->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y);
             right = Transform::matApply(trans, right);
         }
 
@@ -1571,7 +1550,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
         leftF.z = rightF.z = 1;
         if (useFeatherPoints() && fp) {
             if (isLeft || moveBoth) {
-                (fp)->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &leftF.x, &leftF.y, true);
+                (fp)->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &leftF.x, &leftF.y);
                 leftF = Transform::matApply(trans, leftF);
 
                 // Move the feather point if it is identical to the control point
@@ -1580,7 +1559,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                 }
             }
             if (!isLeft || moveBoth) {
-                (fp)->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &rightF.x, &rightF.y, true);
+                (fp)->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &rightF.x, &rightF.y);
                 rightF = Transform::matApply(trans, rightF);
 
                 // Move the feather point if it is identical to the control point
@@ -1666,14 +1645,14 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
 
                 if (isLeft || moveBoth) {
                     if (moveControlPoint) {
-                        (cp)->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &left.x, &left.y, true);
+                        (cp)->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &left.x, &left.y);
                         left = Transform::matApply(trans, left);
                         left.x += lx; left.y += ly;
                         left = Transform::matApply(invTrans, left);
                         (cp)->setLeftBezierPointAtTime(useGuiCurve, *it2, left.x, left.y);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
-                        (fp)->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &leftF.x, &leftF.y, true);
+                        (fp)->getLeftBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &leftF.x, &leftF.y);
                         leftF = Transform::matApply(trans, leftF);
                         leftF.x += flx; leftF.y += fly;
                         leftF = Transform::matApply(invTrans, leftF);
@@ -1681,14 +1660,14 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
                     }
                 } else {
                     if (moveControlPoint) {
-                        (cp)->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &right.x, &right.y, true);
+                        (cp)->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &right.x, &right.y);
                         right = Transform::matApply(trans, right);
                         right.x += rx; right.y += ry;
                         right = Transform::matApply(invTrans, right);
                         (cp)->setRightBezierPointAtTime(useGuiCurve, *it2, right.x, right.y);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
-                        (cp)->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &rightF.x, &rightF.y, true);
+                        (cp)->getRightBezierPointAtTime(useGuiCurve, *it2, ViewIdx(0), &rightF.x, &rightF.y);
                         rightF = Transform::matApply(trans, rightF);
                         rightF.x += frx; rightF.y += fry;
                         rightF = Transform::matApply(invTrans, rightF);
@@ -1909,9 +1888,9 @@ Bezier::transformPoint(const boost::shared_ptr<BezierCP> & point,
     {
         QMutexLocker l(&itemMutex);
         Transform::Point3D cp, leftCp, rightCp;
-        point->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &cp.x, &cp.y, true);
-        point->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &leftCp.x, &leftCp.y, true);
-        bool isonKeyframe = point->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &rightCp.x, &rightCp.y, true);
+        point->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &cp.x, &cp.y);
+        point->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &leftCp.x, &leftCp.y);
+        bool isonKeyframe = point->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &rightCp.x, &rightCp.y);
 
 
         cp.z = 1.;
@@ -2068,11 +2047,11 @@ Bezier::setKeyframe(double time)
             double x, y;
             double leftDerivX, rightDerivX, leftDerivY, rightDerivY;
 
-            (*it)->getPositionAtTime(false, time, ViewIdx(0), &x, &y, true);
+            (*it)->getPositionAtTime(false, time, ViewIdx(0), &x, &y);
             (*it)->setPositionAtTime(false, time, x, y);
 
-            (*it)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &leftDerivX, &leftDerivY, true);
-            (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &rightDerivX, &rightDerivY, true);
+            (*it)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &leftDerivX, &leftDerivY);
+            (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &rightDerivX, &rightDerivY);
             (*it)->setLeftBezierPointAtTime(false, time, leftDerivX, leftDerivY);
             (*it)->setRightBezierPointAtTime(false, time, rightDerivX, rightDerivY);
         }
@@ -2082,11 +2061,11 @@ Bezier::setKeyframe(double time)
                 double x, y;
                 double leftDerivX, rightDerivX, leftDerivY, rightDerivY;
 
-                (*it)->getPositionAtTime(false, time, ViewIdx(0), &x, &y, true);
+                (*it)->getPositionAtTime(false, time, ViewIdx(0), &x, &y);
                 (*it)->setPositionAtTime(false, time, x, y);
 
-                (*it)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &leftDerivX, &leftDerivY, true);
-                (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &rightDerivX, &rightDerivY, true);
+                (*it)->getLeftBezierPointAtTime(false, time, ViewIdx(0), &leftDerivX, &leftDerivY);
+                (*it)->getRightBezierPointAtTime(false, time, ViewIdx(0), &rightDerivX, &rightDerivY);
                 (*it)->setLeftBezierPointAtTime(false, time, leftDerivX, leftDerivY);
                 (*it)->setRightBezierPointAtTime(false, time, rightDerivX, rightDerivY);
             }

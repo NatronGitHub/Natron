@@ -3821,12 +3821,24 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui, const KnobGroup* group)
 }
 
 void
-NodeGui::showGroupKnobAsDialog(const KnobGroup* group)
+NodeGui::showGroupKnobAsDialog(KnobGroup* group)
 {
+    assert(QThread::currentThread() == qApp->thread());
     assert(group);
-    GroupKnobDialog dialog(getDagGui()->getGui(), group);
-    dialog.move(QCursor::pos());
-    dialog.exec();
+    bool showDialog = group->getValue();
+    if (showDialog) {
+        assert(!_activeNodeCustomModalDialog);
+        boost::shared_ptr<GroupKnobDialog> dialog(new GroupKnobDialog(getDagGui()->getGui(), group));
+        _activeNodeCustomModalDialog = dialog;
+        dialog->move(QCursor::pos());
+        dialog->exec();
+        // Notify dialog closed
+        group->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+        _activeNodeCustomModalDialog.reset();
+    } else {
+        _activeNodeCustomModalDialog->close();
+        _activeNodeCustomModalDialog.reset();
+    }
 }
 
 void
