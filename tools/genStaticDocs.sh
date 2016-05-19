@@ -52,6 +52,9 @@ else
   fi
 fi
 done
+for x in plugins/*.png; do 
+cp "$TMP_FOLDER"/$x "$DOC_FOLDER/source/plugins/" || exit 1
+done
 
 cd  .. || exit 1
 

@@ -3946,7 +3946,7 @@ Node::refreshPreviewsAfterProjectLoad()
 }
 
 QString
-Node::makeHTMLDocumentation(bool genHTML) const
+Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 {
     QString ret;
     QTextStream ts(&ret);
@@ -3997,6 +3997,10 @@ Node::makeHTMLDocumentation(bool genHTML) const
     }
     else {
         ts << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "\n==========\n\n";
+        if (hasImg) {
+            ts << "![](" << pluginID << ".png)";
+            ts << "\n\n";
+        }
     }
 
     if ( !pluginIcon.isEmpty() ) {
@@ -4005,7 +4009,6 @@ Node::makeHTMLDocumentation(bool genHTML) const
             if (genHTML) {
                 ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
             }
-            /// Should support images in markdown also.....
         }
     }
 

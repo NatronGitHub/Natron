@@ -1350,11 +1350,22 @@ AppInstance::exportDocs(const QString path)
                         qDebug() << pluginID;
                         NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                         if (node) {
-                            QString md = node->makeHTMLDocumentation(false);
                             QDir mdDir(path);
                             if ( !mdDir.exists() ) {
                                 mdDir.mkdir(path);
                             }
+
+                            bool hasImg = false;
+                            QFile imgFile( plugin->getIconFilePath() );
+                            if ( imgFile.exists() ) {
+                                if (!imgFile.copy( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".png") )) {
+                                    std::cout << "ERROR: failed to copy image" << imgFile.fileName().toStdString() << std::endl;
+                                } else {
+                                    hasImg = true;
+                                }
+                            }
+
+                            QString md = node->makeHTMLDocumentation(false, hasImg);
                             QFile mdFile( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".md") );
                             if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
                                 QTextStream out(&mdFile);

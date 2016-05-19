@@ -136,7 +136,7 @@ DocumentationManager::handler(QHttpRequest *req,
                             args.addToProject = false;
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {
-                                QString html = node->makeHTMLDocumentation(true);
+                                QString html = node->makeHTMLDocumentation(true, false);
                                 html.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
                                 html = parser(html, docDir);
                                 body = html.toUtf8();
