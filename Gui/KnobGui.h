@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobGuiI.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/Markdown.h"
 
 #include "Gui/KnobGuiContainerI.h"
 #include "Gui/GuiFwd.h"
