@@ -286,7 +286,6 @@ struct FindNodeDialogPrivate
     }
 };
 
-
 FindNodeDialog::FindNodeDialog(NodeGraph* graph,
                                QWidget* parent)
     : QDialog(parent)
@@ -308,7 +307,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
                                  "[...] Matches any character within the set in square brackets.") );
     QObject::connect( _imp->filter, SIGNAL(editingFinished()), this, SLOT(updateFindResultsWithCurrentFilter()) );
     QObject::connect( _imp->filter, SIGNAL(textEdited(QString)), this, SLOT(updateFindResults(QString)) );
-    
+
     _imp->mainLayout->addWidget(_imp->filter);
 
     _imp->matchWhole = new QCheckBox(tr("Match whole pattern"), this);
@@ -337,11 +336,9 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
     selectNextResult();
 }
 
-
 FindNodeDialog::~FindNodeDialog()
 {
 }
-
 
 void
 FindNodeDialog::updateFindResults(const QString& filter)
@@ -364,9 +361,8 @@ FindNodeDialog::updateFindResults(const QString& filter)
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
-
     QRegExp exp(_imp->matchWhole->isChecked() ? filter :
-                (QChar::fromLatin1('*') + filter + QChar::fromLatin1('*')),
+                ( QChar::fromLatin1('*') + filter + QChar::fromLatin1('*') ),
                 sensitivity,
                 QRegExp::Wildcard);
 
@@ -384,7 +380,6 @@ FindNodeDialog::updateFindResults(const QString& filter)
 
     selectNextResult();
 }
-
 
 void
 FindNodeDialog::selectNextResult()

@@ -525,6 +525,7 @@ UserParamHolder::createIntParam(const QString& name,
                                 const QString& label)
 {
     boost::shared_ptr<KnobInt> knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
+
     if (knob) {
         boost::shared_ptr<KnobPage> userPage = _holder->getOrCreateUserPageKnob();
         if (userPage) {
