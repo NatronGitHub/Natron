@@ -31,6 +31,7 @@
 #include <list>
 #include <string>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMutex>
 

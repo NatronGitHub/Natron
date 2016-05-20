@@ -29,6 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5

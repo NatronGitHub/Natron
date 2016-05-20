@@ -27,9 +27,13 @@
 #include <set>
 #include <sstream>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QWaitCondition>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 
 #include "Engine/AppInstance.h"

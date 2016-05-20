@@ -29,6 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>

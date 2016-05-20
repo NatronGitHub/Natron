@@ -30,7 +30,8 @@
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QDateTime>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDateTime>
 #include <QtCore/QString>
 #include <QFuture>
 #include <QFutureWatcher>

@@ -780,7 +780,6 @@ MoveTangentUndoCommand::~MoveTangentUndoCommand()
 {
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 static void

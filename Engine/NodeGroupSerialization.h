@@ -39,6 +39,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"

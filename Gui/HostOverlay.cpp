@@ -209,7 +209,6 @@ DefaultInteractI::loseFocus(double /*time*/,
     return false;
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 enum PositionInteractState

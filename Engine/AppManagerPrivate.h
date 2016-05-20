@@ -35,6 +35,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
+#include <QtCore/QCoreApplication>
 
 
 #ifdef NATRON_USE_BREAKPAD

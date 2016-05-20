@@ -31,6 +31,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QCoreApplication>
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QVector>
