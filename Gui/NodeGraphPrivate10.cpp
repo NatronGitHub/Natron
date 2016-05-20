@@ -321,7 +321,11 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
     NodesGuiList toProcess;
 
     for (NodesGuiList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
-        if ( (*it)->getNode()->isNodeDisabled() ) {
+        boost::shared_ptr<KnobBool> k = (*it)->getNode()->getDisabledKnob();
+        if (!k) {
+            continue;
+        }
+        if (k->getValue()) {
             toProcess.push_back(*it);
         }
     }
