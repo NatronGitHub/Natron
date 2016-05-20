@@ -1691,11 +1691,19 @@ Node::loadKnob(const KnobPtr & knob,
 
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
+
+
             found = true;
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
             ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
             //if ( knob->getIsPersistant() ) {
             KnobPtr serializedKnob = (*it)->getKnob();
+
+            // A knob might change its type between versions, do not load it
+            if (knob->typeName() != serializedKnob->typeName()) {
+                continue;
+            }
+
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
             if (isChoice) {
                 const TypeExtraData* extraData = (*it)->getExtraData();

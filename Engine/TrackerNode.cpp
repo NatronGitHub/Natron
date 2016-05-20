@@ -125,12 +125,10 @@ TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
 void
 TrackerNode::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> trackingPage;
-    {
-        KnobPtr page = getKnobByName("Tracking");
-        assert(page);
-        trackingPage = boost::dynamic_pointer_cast<KnobPage>(page);
-    }
+
+    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+
+    boost::shared_ptr<KnobPage> trackingPage = context->getTrackingPageKnbo();
 
     boost::shared_ptr<KnobButton> addMarker = AppManager::createKnob<KnobButton>(this, tr(kTrackerUIParamAddTrackLabel));
     addMarker->setName(kTrackerUIParamAddTrack);
@@ -395,7 +393,6 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(resetTrack);
 
 
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
 
     context->setUpdateViewer(updateViewer->getValue());
     context->setCenterOnTrack(centerViewer->getValue());
@@ -695,6 +692,8 @@ TrackerNode::drawOverlay(double time, const RenderScale & /*renderScale*/, ViewI
         context->getSelectedMarkers(&selectedMarkers);
         context->getAllMarkers(&allMarkers);
 
+        bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
+
         bool showErrorColor = _imp->ui->showCorrelationButton.lock()->getValue();
         TrackMarkerPtr selectedMarker = _imp->ui->selectedMarker.lock();
         Point selectedCenter, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedOffset, selectedSearchBtmLeft, selectedSearchTopRight;
@@ -719,7 +718,8 @@ TrackerNode::drawOverlay(double time, const RenderScale & /*renderScale*/, ViewI
             boost::shared_ptr<KnobDouble> searchWndBtmLeft = (*it)->getSearchWindowBottomLeftKnob();
             boost::shared_ptr<KnobDouble> searchWndTopRight = (*it)->getSearchWindowTopRightKnob();
 
-            if (!isSelected) {
+            // When the tracking page is secret, still show markers, but as if deselected
+            if (!isSelected || trackingPageSecret) {
                 ///Draw a custom interact, indicating the track isn't selected
                 glEnable(GL_LINE_SMOOTH);
                 glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
@@ -1167,8 +1167,10 @@ TrackerNode::onOverlayPenDown(double time, const RenderScale & /*renderScale*/, 
 
     std::vector<TrackMarkerPtr > allMarkers;
     context->getAllMarkers(&allMarkers);
+
+    bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
     for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
-        if ( !(*it)->isEnabled(time) ) {
+        if ( !(*it)->isEnabled(time) || trackingPageSecret ) {
             continue;
         }
 
@@ -1334,7 +1336,7 @@ TrackerNode::onOverlayPenDown(double time, const RenderScale & /*renderScale*/, 
         }
     } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-    if (_imp->ui->clickToAddTrackEnabled && !didSomething) {
+    if (_imp->ui->clickToAddTrackEnabled && !didSomething && !trackingPageSecret) {
         TrackMarkerPtr marker = context->createMarker();
         boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
         centerKnob->setValuesAtTime(time, pos.x(), pos.y(), view, eValueChangedReasonNatronInternalEdited);
@@ -1371,7 +1373,7 @@ TrackerNode::onOverlayPenDown(double time, const RenderScale & /*renderScale*/, 
             didSomething = true;
         }
     }
-    if (!didSomething) {
+    if (!didSomething && !trackingPageSecret) {
         std::list<TrackMarkerPtr > selectedMarkers;
         context->getSelectedMarkers(&selectedMarkers);
         if ( !selectedMarkers.empty() ) {
@@ -1411,10 +1413,10 @@ TrackerNode::onOverlayPenMotion(double time, const RenderScale & /*renderScale*/
 
     std::vector<TrackMarkerPtr > allMarkers;
     context->getAllMarkers(&allMarkers);
-
+    bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
     bool hoverProcess = false;
     for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
-        if ( !(*it)->isEnabled(time) ) {
+        if ( !(*it)->isEnabled(time) || trackingPageSecret ) {
             continue;
         }
 
@@ -1609,429 +1611,430 @@ TrackerNode::onOverlayPenMotion(double time, const RenderScale & /*renderScale*/
         searchWndTopRight = _imp->ui->interactMarker->getSearchWindowTopRightKnob();
         searchWndBtmLeft = _imp->ui->interactMarker->getSearchWindowBottomLeftKnob();
     }
+    if (!trackingPageSecret) {
+
+        switch (_imp->ui->eventState) {
+            case eMouseStateDraggingCenter:
+            case eMouseStateDraggingOffset: {
+                assert(_imp->ui->interactMarker);
+                if (_imp->ui->eventState == eMouseStateDraggingOffset) {
+                    offsetKnob->setValues(offsetKnob->getValueAtTime(time, 0) + delta.x,
+                                          offsetKnob->getValueAtTime(time, 1) + delta.y,
+                                          view,
+                                          eValueChangedReasonPluginEdited);
+                } else {
+                    centerKnob->setValuesAtTime(time, centerKnob->getValueAtTime(time, 0) + delta.x,
+                                                centerKnob->getValueAtTime(time, 1) + delta.y,
+                                                view,
+                                                eValueChangedReasonPluginEdited);
+                    for (int i = 0; i < 4; ++i) {
+                        for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
+                            patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
+                        }
+                    }
+                }
+                _imp->ui->refreshSelectedMarkerTexture();
+                if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
+                    _imp->ui->interactMarker->setUserKeyframe(time);
+                }
+                didSomething = true;
+                break;
+            }
+            case eMouseStateDraggingInnerBtmLeft:
+            case eMouseStateDraggingInnerTopRight:
+            case eMouseStateDraggingInnerTopLeft:
+            case eMouseStateDraggingInnerBtmRight: {
+                if (_imp->ui->controlDown == 0) {
+                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                    didSomething = true;
+                    break;
+                }
+
+                int index = 0;
+                if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
+                    index = 1;
+                } else if (_imp->ui->eventState == eMouseStateDraggingInnerBtmRight) {
+                    index = 2;
+                } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopRight) {
+                    index = 3;
+                } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopLeft) {
+                    index = 0;
+                }
+
+                int nextIndex = (index + 1) % 4;
+                int prevIndex = (index + 3) % 4;
+                int diagIndex = (index + 2) % 4;
+                Point center;
+                center.x = centerKnob->getValueAtTime(time, 0);
+                center.y = centerKnob->getValueAtTime(time, 1);
+                Point offset;
+                offset.x = offsetKnob->getValueAtTime(time, 0);
+                offset.y = offsetKnob->getValueAtTime(time, 1);
+
+                Point cur, prev, next, diag;
+                cur.x = patternCorners[index]->getValueAtTime(time, 0) + delta.x  + center.x + offset.x;;
+                cur.y = patternCorners[index]->getValueAtTime(time, 1) + delta.y  + center.y + offset.y;
+
+                prev.x = patternCorners[prevIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
+                prev.y = patternCorners[prevIndex]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                next.x = patternCorners[nextIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
+                next.y = patternCorners[nextIndex]->getValueAtTime(time, 1)  + center.y + offset.y;
+
+                diag.x = patternCorners[diagIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
+                diag.y = patternCorners[diagIndex]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                Point nextVec;
+                nextVec.x = next.x - cur.x;
+                nextVec.y = next.y - cur.y;
+
+                Point prevVec;
+                prevVec.x = cur.x - prev.x;
+                prevVec.y = cur.y - prev.y;
+
+                Point nextDiagVec, prevDiagVec;
+                prevDiagVec.x = diag.x - next.x;
+                prevDiagVec.y = diag.y - next.y;
+
+                nextDiagVec.x = prev.x - diag.x;
+                nextDiagVec.y = prev.y - diag.y;
+
+                //Clamp so the 4 points remaing the same in the homography
+                if (prevVec.x * nextVec.y - prevVec.y * nextVec.x < 0.) {     // cross-product
+                    TrackerNodeInteract::findLineIntersection(cur, prev, next, &cur);
+                }
+                if (nextDiagVec.x * prevVec.y - nextDiagVec.y * prevVec.x < 0.) {     // cross-product
+                    TrackerNodeInteract::findLineIntersection(cur, prev, diag, &cur);
+                }
+                if (nextVec.x * prevDiagVec.y - nextVec.y * prevDiagVec.x < 0.) {     // cross-product
+                    TrackerNodeInteract::findLineIntersection(cur, next, diag, &cur);
+                }
 
 
-    switch (_imp->ui->eventState) {
-        case eMouseStateDraggingCenter:
-        case eMouseStateDraggingOffset: {
-            assert(_imp->ui->interactMarker);
-            if (_imp->ui->eventState == eMouseStateDraggingOffset) {
-                offsetKnob->setValues(offsetKnob->getValueAtTime(time, 0) + delta.x,
-                                      offsetKnob->getValueAtTime(time, 1) + delta.y,
-                                      view,
-                                      eValueChangedReasonPluginEdited);
-            } else {
-                centerKnob->setValuesAtTime(time, centerKnob->getValueAtTime(time, 0) + delta.x,
-                                            centerKnob->getValueAtTime(time, 1) + delta.y,
-                                            view,
-                                            eValueChangedReasonPluginEdited);
+                Point searchWindowCorners[2];
+                searchWindowCorners[0].x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
+                searchWindowCorners[0].y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
+
+                searchWindowCorners[1].x = searchWndTopRight->getValueAtTime(time, 0)  + center.x + offset.x;
+                searchWindowCorners[1].y = searchWndTopRight->getValueAtTime(time, 1)  + center.y + offset.y;
+
+                cur.x = std::max(std::min(cur.x, searchWindowCorners[1].x), searchWindowCorners[0].x);
+                cur.y = std::max(std::min(cur.y, searchWindowCorners[1].y), searchWindowCorners[0].y);
+
+                cur.x -= (center.x + offset.x);
+                cur.y -= (center.y + offset.y);
+
+                patternCorners[index]->setValuesAtTime(time, cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
+
+                if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
+                    _imp->ui->interactMarker->setUserKeyframe(time);
+                }
+                didSomething = true;
+                break;
+            }
+            case eMouseStateDraggingOuterBtmLeft: {
+                if (_imp->ui->controlDown == 0) {
+                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                    didSomething = true;
+                    break;
+                }
+                Point center;
+                center.x = centerKnob->getValueAtTime(time, 0);
+                center.y = centerKnob->getValueAtTime(time, 1);
+                Point offset;
+                offset.x = offsetKnob->getValueAtTime(time, 0);
+                offset.y = offsetKnob->getValueAtTime(time, 1);
+
+                Point p;
+                p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
+                p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                // test every point: even topRight pattern corner may be on the left of topLeft
+                p.x = std::min(p.x, topLeft.x);
+                p.x = std::min(p.x, btmLeft.x);
+                p.x = std::min(p.x, btmRight.x);
+                p.x = std::min(p.x, topRight.x);
+
+                p.y = std::min(p.y, topLeft.y);
+                p.y = std::min(p.y, btmLeft.y);
+                p.y = std::min(p.y, btmRight.y);
+                p.y = std::min(p.y, topRight.y);
+
+                p.x -= (center.x + offset.x);
+                p.y -= (center.y + offset.y);
+                if ( searchWndBtmLeft->hasAnimation() ) {
+                    searchWndBtmLeft->setValuesAtTime(time, p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
+                } else {
+                    searchWndBtmLeft->setValues(p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
+                }
+
+                _imp->ui->refreshSelectedMarkerTexture();
+                didSomething = true;
+                break;
+            }
+            case eMouseStateDraggingOuterBtmRight: {
+                if (_imp->ui->controlDown == 0) {
+                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                    didSomething = true;
+                    break;
+                }
+                Point center;
+                center.x = centerKnob->getValueAtTime(time, 0);
+                center.y = centerKnob->getValueAtTime(time, 1);
+                Point offset;
+                offset.x = offsetKnob->getValueAtTime(time, 0);
+                offset.y = offsetKnob->getValueAtTime(time, 1);
+
+                Point p;
+                p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
+                p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                // test every point: even topRight pattern corner may be on the left of topLeft
+                p.x = std::max(p.x, topLeft.x);
+                p.x = std::max(p.x, btmLeft.x);
+                p.x = std::max(p.x, btmRight.x);
+                p.x = std::max(p.x, topRight.x);
+
+                p.y = std::min(p.y, topLeft.y);
+                p.y = std::min(p.y, btmLeft.y);
+                p.y = std::min(p.y, btmRight.y);
+                p.y = std::min(p.y, topRight.y);
+
+                p.x -= (center.x + offset.x);
+                p.y -= (center.y + offset.y);
+                if ( searchWndBtmLeft->hasAnimation() ) {
+                    searchWndBtmLeft->setValueAtTime(time, p.y, view, 1);
+                } else {
+                    searchWndBtmLeft->setValue(p.y, view, 1);
+                }
+                if ( searchWndTopRight->hasAnimation() ) {
+                    searchWndTopRight->setValueAtTime(time, p.x, view, 0);
+                } else {
+                    searchWndTopRight->setValue(p.x, view, 0);
+                }
+
+                _imp->ui->refreshSelectedMarkerTexture();
+                didSomething = true;
+                break;
+            }
+            case eMouseStateDraggingOuterTopRight: {
+                if (_imp->ui->controlDown == 0) {
+                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                    didSomething = true;
+                    break;
+                }
+                Point center;
+                center.x = centerKnob->getValueAtTime(time, 0);
+                center.y = centerKnob->getValueAtTime(time, 1);
+                Point offset;
+                offset.x = offsetKnob->getValueAtTime(time, 0);
+                offset.y = offsetKnob->getValueAtTime(time, 1);
+
+                Point p;
+                p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
+                p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                // test every point: even topRight pattern corner may be on the left of topLeft
+                p.x = std::max(p.x, topLeft.x);
+                p.x = std::max(p.x, btmLeft.x);
+                p.x = std::max(p.x, btmRight.x);
+                p.x = std::max(p.x, topRight.x);
+
+                p.y = std::max(p.y, topLeft.y);
+                p.y = std::max(p.y, btmLeft.y);
+                p.y = std::max(p.y, btmRight.y);
+                p.y = std::max(p.y, topRight.y);
+
+                p.x -= (center.x + offset.x);
+                p.y -= (center.y + offset.y);
+                if ( searchWndTopRight->hasAnimation() ) {
+                    searchWndTopRight->setValuesAtTime(time, p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
+                } else {
+                    searchWndTopRight->setValues(p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
+                }
+
+                _imp->ui->refreshSelectedMarkerTexture();
+                didSomething = true;
+                break;
+            }
+            case eMouseStateDraggingOuterTopLeft: {
+                if (_imp->ui->controlDown == 0) {
+                    _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                    didSomething = true;
+                    break;
+                }
+                Point center;
+                center.x = centerKnob->getValueAtTime(time, 0);
+                center.y = centerKnob->getValueAtTime(time, 1);
+                Point offset;
+                offset.x = offsetKnob->getValueAtTime(time, 0);
+                offset.y = offsetKnob->getValueAtTime(time, 1);
+
+                Point p;
+                p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
+                p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+
+                Point topLeft;
+                topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
+                topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmLeft;
+                btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point btmRight;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+                btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
+                Point topRight;
+                topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
+
+                // test every point: even topRight pattern corner may be on the left of topLeft
+                p.x = std::min(p.x, topLeft.x);
+                p.x = std::min(p.x, btmLeft.x);
+                p.x = std::min(p.x, btmRight.x);
+                p.x = std::min(p.x, topRight.x);
+
+                p.y = std::max(p.y, topLeft.y);
+                p.y = std::max(p.y, btmLeft.y);
+                p.y = std::max(p.y, btmRight.y);
+                p.y = std::max(p.y, topRight.y);
+
+                p.x -= (center.x + offset.x);
+                p.y -= (center.y + offset.y);
+                if ( searchWndBtmLeft->hasAnimation() ) {
+                    searchWndBtmLeft->setValueAtTime(time, p.x, view, 0);
+                } else {
+                    searchWndBtmLeft->setValue(p.x, view, 0);
+                }
+                if ( searchWndTopRight->hasAnimation() ) {
+                    searchWndTopRight->setValueAtTime(time, p.y, view, 1);
+                } else {
+                    searchWndTopRight->setValue(p.y, view, 1);
+                }
+
+                _imp->ui->refreshSelectedMarkerTexture();
+                didSomething = true;
+                break;
+            }
+            case eMouseStateDraggingInnerBtmMid:
+            case eMouseStateDraggingInnerTopMid:
+            case eMouseStateDraggingInnerMidLeft:
+            case eMouseStateDraggingInnerMidRight:
+            case eMouseStateDraggingOuterBtmMid:
+            case eMouseStateDraggingOuterTopMid:
+            case eMouseStateDraggingOuterMidLeft:
+            case eMouseStateDraggingOuterMidRight: {
+                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
+                didSomething = true;
+                break;
+            }
+            case eMouseStateDraggingSelectedMarkerResizeAnchor: {
+                QPointF lastPosWidget = overlay->toWidgetCoordinates(_imp->ui->lastMousePos);
+                double dx = viewportPos.x() - lastPosWidget.x();
+                _imp->ui->selectedMarkerWidth += dx;
+                _imp->ui->selectedMarkerWidth = std::max(_imp->ui->selectedMarkerWidth, 10);
+                didSomething = true;
+                break;
+            }
+            case eMouseStateScalingSelectedMarker: {
+                TrackMarkerPtr marker = _imp->ui->selectedMarker.lock();
+                assert(marker);
+                RectD markerMagRect;
+                _imp->ui->computeSelectedMarkerCanonicalRect(&markerMagRect);
+                boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
+                boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
+                boost::shared_ptr<KnobDouble> searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
+                boost::shared_ptr<KnobDouble> searchTopRight = marker->getSearchWindowTopRightKnob();
+                Point center, offset, btmLeft, topRight;
+                center.x = centerKnob->getValueAtTime(time, 0);
+                center.y = centerKnob->getValueAtTime(time, 1);
+                offset.x = offsetKnob->getValueAtTime(time, 0);
+                offset.y = offsetKnob->getValueAtTime(time, 1);
+                btmLeft.x = searchBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
+                btmLeft.y = searchBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
+                topRight.x = searchTopRight->getValueAtTime(time, 0) + center.x + offset.x;
+                topRight.y = searchTopRight->getValueAtTime(time, 1) + center.y + offset.y;
+
+                //Remove any offset to the center to see the marker in the magnification window
+                double xCenterPercent = (center.x - btmLeft.x + offset.x) / (topRight.x - btmLeft.x);
+                double yCenterPercent = (center.y - btmLeft.y + offset.y) / (topRight.y - btmLeft.y);
+                Point centerPoint;
+                centerPoint.x = markerMagRect.x1 + xCenterPercent * (markerMagRect.x2 - markerMagRect.x1);
+                centerPoint.y = markerMagRect.y1 + yCenterPercent * (markerMagRect.y2 - markerMagRect.y1);
+                
+                double prevDist = std::sqrt( (_imp->ui->lastMousePos.x() - centerPoint.x ) * ( _imp->ui->lastMousePos.x() - centerPoint.x) + ( _imp->ui->lastMousePos.y() - centerPoint.y) * ( _imp->ui->lastMousePos.y() - centerPoint.y) );
+                if (prevDist != 0) {
+                    double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
+                    double ratio = dist / prevDist;
+                    _imp->ui->selectedMarkerScale.x *= ratio;
+                    _imp->ui->selectedMarkerScale.x = std::max( 0.05, std::min(1., _imp->ui->selectedMarkerScale.x) );
+                    _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
+                    didSomething = true;
+                }
+                break;
+            }
+            case eMouseStateDraggingSelectedMarker: {
+                double x = centerKnob->getValueAtTime(time, 0);
+                double y = centerKnob->getValueAtTime(time, 1);
+                double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
+                double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
+                x -= dx;
+                y -= dy;
+                centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
                 for (int i = 0; i < 4; ++i) {
                     for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
                         patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
                     }
                 }
-            }
-            _imp->ui->refreshSelectedMarkerTexture();
-            if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                _imp->ui->interactMarker->setUserKeyframe(time);
-            }
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingInnerBtmLeft:
-        case eMouseStateDraggingInnerTopRight:
-        case eMouseStateDraggingInnerTopLeft:
-        case eMouseStateDraggingInnerBtmRight: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-
-            int index = 0;
-            if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
-                index = 1;
-            } else if (_imp->ui->eventState == eMouseStateDraggingInnerBtmRight) {
-                index = 2;
-            } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopRight) {
-                index = 3;
-            } else if (_imp->ui->eventState == eMouseStateDraggingInnerTopLeft) {
-                index = 0;
-            }
-
-            int nextIndex = (index + 1) % 4;
-            int prevIndex = (index + 3) % 4;
-            int diagIndex = (index + 2) % 4;
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point cur, prev, next, diag;
-            cur.x = patternCorners[index]->getValueAtTime(time, 0) + delta.x  + center.x + offset.x;;
-            cur.y = patternCorners[index]->getValueAtTime(time, 1) + delta.y  + center.y + offset.y;
-
-            prev.x = patternCorners[prevIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
-            prev.y = patternCorners[prevIndex]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            next.x = patternCorners[nextIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
-            next.y = patternCorners[nextIndex]->getValueAtTime(time, 1)  + center.y + offset.y;
-
-            diag.x = patternCorners[diagIndex]->getValueAtTime(time, 0)  + center.x + offset.x;;
-            diag.y = patternCorners[diagIndex]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            Point nextVec;
-            nextVec.x = next.x - cur.x;
-            nextVec.y = next.y - cur.y;
-
-            Point prevVec;
-            prevVec.x = cur.x - prev.x;
-            prevVec.y = cur.y - prev.y;
-
-            Point nextDiagVec, prevDiagVec;
-            prevDiagVec.x = diag.x - next.x;
-            prevDiagVec.y = diag.y - next.y;
-
-            nextDiagVec.x = prev.x - diag.x;
-            nextDiagVec.y = prev.y - diag.y;
-
-            //Clamp so the 4 points remaing the same in the homography
-            if (prevVec.x * nextVec.y - prevVec.y * nextVec.x < 0.) {     // cross-product
-                TrackerNodeInteract::findLineIntersection(cur, prev, next, &cur);
-            }
-            if (nextDiagVec.x * prevVec.y - nextDiagVec.y * prevVec.x < 0.) {     // cross-product
-                TrackerNodeInteract::findLineIntersection(cur, prev, diag, &cur);
-            }
-            if (nextVec.x * prevDiagVec.y - nextVec.y * prevDiagVec.x < 0.) {     // cross-product
-                TrackerNodeInteract::findLineIntersection(cur, next, diag, &cur);
-            }
-
-
-            Point searchWindowCorners[2];
-            searchWindowCorners[0].x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
-            searchWindowCorners[0].y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
-
-            searchWindowCorners[1].x = searchWndTopRight->getValueAtTime(time, 0)  + center.x + offset.x;
-            searchWindowCorners[1].y = searchWndTopRight->getValueAtTime(time, 1)  + center.y + offset.y;
-
-            cur.x = std::max(std::min(cur.x, searchWindowCorners[1].x), searchWindowCorners[0].x);
-            cur.y = std::max(std::min(cur.y, searchWindowCorners[1].y), searchWindowCorners[0].y);
-
-            cur.x -= (center.x + offset.x);
-            cur.y -= (center.y + offset.y);
-
-            patternCorners[index]->setValuesAtTime(time, cur.x, cur.y, view, eValueChangedReasonNatronInternalEdited);
-
-            if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                _imp->ui->interactMarker->setUserKeyframe(time);
-            }
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterBtmLeft: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p;
-            p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::min(p.x, topLeft.x);
-            p.x = std::min(p.x, btmLeft.x);
-            p.x = std::min(p.x, btmRight.x);
-            p.x = std::min(p.x, topRight.x);
-
-            p.y = std::min(p.y, topLeft.y);
-            p.y = std::min(p.y, btmLeft.y);
-            p.y = std::min(p.y, btmRight.y);
-            p.y = std::min(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndBtmLeft->hasAnimation() ) {
-                searchWndBtmLeft->setValuesAtTime(time, p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            } else {
-                searchWndBtmLeft->setValues(p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterBtmRight: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p;
-            p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::max(p.x, topLeft.x);
-            p.x = std::max(p.x, btmLeft.x);
-            p.x = std::max(p.x, btmRight.x);
-            p.x = std::max(p.x, topRight.x);
-
-            p.y = std::min(p.y, topLeft.y);
-            p.y = std::min(p.y, btmLeft.y);
-            p.y = std::min(p.y, btmRight.y);
-            p.y = std::min(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndBtmLeft->hasAnimation() ) {
-                searchWndBtmLeft->setValueAtTime(time, p.y, view, 1);
-            } else {
-                searchWndBtmLeft->setValue(p.y, view, 1);
-            }
-            if ( searchWndTopRight->hasAnimation() ) {
-                searchWndTopRight->setValueAtTime(time, p.x, view, 0);
-            } else {
-                searchWndTopRight->setValue(p.x, view, 0);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterTopRight: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p;
-            p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::max(p.x, topLeft.x);
-            p.x = std::max(p.x, btmLeft.x);
-            p.x = std::max(p.x, btmRight.x);
-            p.x = std::max(p.x, topRight.x);
-
-            p.y = std::max(p.y, topLeft.y);
-            p.y = std::max(p.y, btmLeft.y);
-            p.y = std::max(p.y, btmRight.y);
-            p.y = std::max(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndTopRight->hasAnimation() ) {
-                searchWndTopRight->setValuesAtTime(time, p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            } else {
-                searchWndTopRight->setValues(p.x, p.y, view, eValueChangedReasonNatronInternalEdited);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingOuterTopLeft: {
-            if (_imp->ui->controlDown == 0) {
-                _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-                didSomething = true;
-                break;
-            }
-            Point center;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            Point offset;
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-
-            Point p;
-            p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
-            Point topLeft;
-            topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
-            topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmLeft;
-            btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
-            Point topRight;
-            topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = patternCorners[3]->getValueAtTime(time, 1) + center.y + offset.y;
-
-            // test every point: even topRight pattern corner may be on the left of topLeft
-            p.x = std::min(p.x, topLeft.x);
-            p.x = std::min(p.x, btmLeft.x);
-            p.x = std::min(p.x, btmRight.x);
-            p.x = std::min(p.x, topRight.x);
-
-            p.y = std::max(p.y, topLeft.y);
-            p.y = std::max(p.y, btmLeft.y);
-            p.y = std::max(p.y, btmRight.y);
-            p.y = std::max(p.y, topRight.y);
-
-            p.x -= (center.x + offset.x);
-            p.y -= (center.y + offset.y);
-            if ( searchWndBtmLeft->hasAnimation() ) {
-                searchWndBtmLeft->setValueAtTime(time, p.x, view, 0);
-            } else {
-                searchWndBtmLeft->setValue(p.x, view, 0);
-            }
-            if ( searchWndTopRight->hasAnimation() ) {
-                searchWndTopRight->setValueAtTime(time, p.y, view, 1);
-            } else {
-                searchWndTopRight->setValue(p.y, view, 1);
-            }
-
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingInnerBtmMid:
-        case eMouseStateDraggingInnerTopMid:
-        case eMouseStateDraggingInnerMidLeft:
-        case eMouseStateDraggingInnerMidRight:
-        case eMouseStateDraggingOuterBtmMid:
-        case eMouseStateDraggingOuterTopMid:
-        case eMouseStateDraggingOuterMidLeft:
-        case eMouseStateDraggingOuterMidRight: {
-            _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
-            didSomething = true;
-            break;
-        }
-        case eMouseStateDraggingSelectedMarkerResizeAnchor: {
-            QPointF lastPosWidget = overlay->toWidgetCoordinates(_imp->ui->lastMousePos);
-            double dx = viewportPos.x() - lastPosWidget.x();
-            _imp->ui->selectedMarkerWidth += dx;
-            _imp->ui->selectedMarkerWidth = std::max(_imp->ui->selectedMarkerWidth, 10);
-            didSomething = true;
-            break;
-        }
-        case eMouseStateScalingSelectedMarker: {
-            TrackMarkerPtr marker = _imp->ui->selectedMarker.lock();
-            assert(marker);
-            RectD markerMagRect;
-            _imp->ui->computeSelectedMarkerCanonicalRect(&markerMagRect);
-            boost::shared_ptr<KnobDouble> centerKnob = marker->getCenterKnob();
-            boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
-            boost::shared_ptr<KnobDouble> searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
-            boost::shared_ptr<KnobDouble> searchTopRight = marker->getSearchWindowTopRightKnob();
-            Point center, offset, btmLeft, topRight;
-            center.x = centerKnob->getValueAtTime(time, 0);
-            center.y = centerKnob->getValueAtTime(time, 1);
-            offset.x = offsetKnob->getValueAtTime(time, 0);
-            offset.y = offsetKnob->getValueAtTime(time, 1);
-            btmLeft.x = searchBtmLeft->getValueAtTime(time, 0) + center.x + offset.x;
-            btmLeft.y = searchBtmLeft->getValueAtTime(time, 1) + center.y + offset.y;
-            topRight.x = searchTopRight->getValueAtTime(time, 0) + center.x + offset.x;
-            topRight.y = searchTopRight->getValueAtTime(time, 1) + center.y + offset.y;
-
-            //Remove any offset to the center to see the marker in the magnification window
-            double xCenterPercent = (center.x - btmLeft.x + offset.x) / (topRight.x - btmLeft.x);
-            double yCenterPercent = (center.y - btmLeft.y + offset.y) / (topRight.y - btmLeft.y);
-            Point centerPoint;
-            centerPoint.x = markerMagRect.x1 + xCenterPercent * (markerMagRect.x2 - markerMagRect.x1);
-            centerPoint.y = markerMagRect.y1 + yCenterPercent * (markerMagRect.y2 - markerMagRect.y1);
-
-            double prevDist = std::sqrt( (_imp->ui->lastMousePos.x() - centerPoint.x ) * ( _imp->ui->lastMousePos.x() - centerPoint.x) + ( _imp->ui->lastMousePos.y() - centerPoint.y) * ( _imp->ui->lastMousePos.y() - centerPoint.y) );
-            if (prevDist != 0) {
-                double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
-                double ratio = dist / prevDist;
-                _imp->ui->selectedMarkerScale.x *= ratio;
-                _imp->ui->selectedMarkerScale.x = std::max( 0.05, std::min(1., _imp->ui->selectedMarkerScale.x) );
-                _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
-                didSomething = true;
-            }
-            break;
-        }
-        case eMouseStateDraggingSelectedMarker: {
-            double x = centerKnob->getValueAtTime(time, 0);
-            double y = centerKnob->getValueAtTime(time, 1);
-            double dx = delta.x *  _imp->ui->selectedMarkerScale.x;
-            double dy = delta.y *  _imp->ui->selectedMarkerScale.y;
-            x -= dx;
-            y -= dy;
-            centerKnob->setValuesAtTime(time, x, y, view, eValueChangedReasonPluginEdited);
-            for (int i = 0; i < 4; ++i) {
-                for (int d = 0; d < patternCorners[i]->getDimension(); ++d) {
-                    patternCorners[i]->setValueAtTime(time, patternCorners[i]->getValueAtTime(time, d), view, d);
+                if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
+                    _imp->ui->interactMarker->setUserKeyframe(time);
                 }
+                _imp->ui->refreshSelectedMarkerTexture();
+                didSomething = true;
+                break;
             }
-            if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
-                _imp->ui->interactMarker->setUserKeyframe(time);
-            }
-            _imp->ui->refreshSelectedMarkerTexture();
-            didSomething = true;
-            break;
-        }
-        default:
-            break;
-    } // switch
+            default:
+                break;
+        } // switch
+    } // !trackingPageSecret
     if (_imp->ui->clickToAddTrackEnabled) {
         ///Refresh the overlay
         didSomething = true;
@@ -2089,8 +2092,9 @@ TrackerNode::onOverlayKeyDown(double /*time*/, const RenderScale & /*renderScale
         isAlt = true;
     }
 
+    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
 
-    if ( _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
+    if ( !trackingPageSecret && !_imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
         _imp->ui->clickToAddTrackEnabled = true;
         _imp->ui->addTrackButton.lock()->setValue(true);
         didSomething = true;
@@ -2170,6 +2174,11 @@ TrackerNode::onOverlayFocusLost(double /*time*/, const RenderScale & /*renderSca
 void
 TrackerNode::onInteractViewportSelectionCleared()
 {
+    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
+    if (trackingPageSecret) {
+        return;
+    }
+
     getNode()->getTrackerContext()->clearSelection(TrackerContext::eTrackSelectionViewer);
 }
 
@@ -2180,6 +2189,11 @@ TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onR
         return;
     }
 
+
+    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
+    if (trackingPageSecret) {
+        return;
+    }
 
     std::vector<TrackMarkerPtr > allMarkers;
     std::list<TrackMarkerPtr > selectedMarkers;

@@ -794,6 +794,11 @@ public:
     virtual std::string getLabel() const = 0;
     virtual void setLabel(const std::string& label) = 0;
 
+    void setLabel(const QString & label)
+    {
+        setLabel( label.toStdString() );
+    }
+
     /**
      * @brief Set an icon instead of the text label for this knob
      * @param modeOff If true, this icon will be used when the parameter is an unchecked state (only relevant for
@@ -1440,6 +1445,7 @@ public:
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     void setLabel(const std::string& label) OVERRIDE FINAL;
+    void setLabel(const QString & label) { setLabel( label.toStdString() ); }
     virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) OVERRIDE FINAL;
     virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;

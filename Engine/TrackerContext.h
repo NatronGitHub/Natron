@@ -133,6 +133,8 @@ public:
     boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
     boost::shared_ptr<KnobBool> getEnabledKnob() const;
 
+    boost::shared_ptr<KnobPage> getTrackingPageKnbo() const;
+
     bool isTrackerPMEnabled() const;
 
     TrackMarkerPtr createMarker();
@@ -396,6 +398,7 @@ Q_SIGNALS:
 
 private:
 
+    void setFromPointsToInputRod();
 
     void endSelection(TrackSelectionReason reason);
 
