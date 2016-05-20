@@ -3431,6 +3431,14 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             }
         }
 
+        if (getNode()->isNodeDisabled()) {
+            NodePtr preferredInput = getNode()->getPreferredInputNode();
+            if (!preferredInput) {
+                return eStatusFailed;
+            }
+            return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(), time, scale, view, rod, isProjectFormat);
+        }
+
         StatusEnum ret;
         RenderScale scaleOne(1.);
         {

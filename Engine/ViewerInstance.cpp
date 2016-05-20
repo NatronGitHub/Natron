@@ -1708,7 +1708,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                         unCachedTiles.push_back(*it);
                     }
                 }
-                it->cachedData->setInternalImage(colorImage);
+                assert(it->cachedData);
+                if (it->cachedData) {
+                    it->cachedData->setInternalImage(colorImage);
+                }
             }
         } // !useTextureCache
 
@@ -2824,7 +2827,9 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         boost::shared_ptr<Texture> texture;
         bool isFirstTile = true;
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = params->tiles.begin(); it != params->tiles.end(); ++it) {
-            assert(it->ramBuffer);
+            if (!it->ramBuffer) {
+                continue;
+            }
             uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, params->roi, it->rect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);
             isFirstTile = false;
         }
