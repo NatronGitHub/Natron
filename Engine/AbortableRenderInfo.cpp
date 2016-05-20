@@ -25,6 +25,8 @@
 #include "AbortableRenderInfo.h"
 
 #include <set>
+#include <sstream>
+#include <string>
 
 #include <QtCore/QMutex>
 #include <QtCore/QAtomicInt>
@@ -33,6 +35,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/Timer.h"
 
