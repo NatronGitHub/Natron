@@ -23,8 +23,9 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QVector>
-#include <QStringList>
+#include <QtCore/QVector>
+#include <QtCore/QStringList>
+#include <QtCore/QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -34,7 +35,6 @@ NATRON_NAMESPACE_ENTER;
 
 class Markdown
 {
-
     Q_DECLARE_TR_FUNCTIONS(Markdown)
 
 public:
