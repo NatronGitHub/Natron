@@ -3970,7 +3970,9 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
     }
 
     QString extraMarkdown;
-    QFile pluginMarkdownFile(pluginIcon.replace( QString::fromUtf8(".png"), QString::fromUtf8(".md") ));
+    QString pluginMD = pluginIcon;
+    pluginMD.replace( QString::fromUtf8(".png"), QString::fromUtf8(".md") );
+    QFile pluginMarkdownFile(pluginMD);
     if ( pluginMarkdownFile.exists() ) {
         if ( pluginMarkdownFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             extraMarkdown = QString::fromUtf8( pluginMarkdownFile.readAll() );
