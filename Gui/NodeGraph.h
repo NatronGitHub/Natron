@@ -315,8 +315,7 @@ public:
 
 public Q_SLOTS:
 
-    void onOkClicked();
-    void onCancelClicked();
+    void onNextClicked();
 
     void updateFindResults(const QString& filter);
 
