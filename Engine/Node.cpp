@@ -4169,7 +4169,6 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
         ts << "</table>";
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
-            /// TODO parse "special" flags
             ts << markdown.convert2html(extraMarkdown);
         }
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
@@ -4182,7 +4181,6 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
             ts << "\n\n";
-            /// TODO parse "special" flags
             ts << extraMarkdown;
         }
     }

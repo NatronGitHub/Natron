@@ -42,6 +42,7 @@ public:
 public Q_SLOTS:
     QString convert2html(QString markdown);
     QString genPluginKnobsTable(QVector<QStringList> items);
+    QString parseCustomLinksForHTML(QString markdown);
 };
 
 NATRON_NAMESPACE_EXIT;
