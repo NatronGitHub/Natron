@@ -805,6 +805,8 @@ typedef boost::shared_ptr<DefaultInteractI> InteractPtr;
 typedef std::list<InteractPtr> InteractList;
 typedef std::list<TransformInteract> TransformInteracts;
 
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 struct HostOverlayPrivate
 {
@@ -831,8 +833,6 @@ struct HostOverlayPrivate
         node.lock()->getNode()->getApp()->queueRedrawForAllViewers();
     }
 };
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
