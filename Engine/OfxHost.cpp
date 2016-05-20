@@ -1029,7 +1029,9 @@ OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
     }
 }
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 ///Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
 ///to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
 ///We think this is because Furnace must keep an internal thread-local state that becomes then dirty
@@ -1124,7 +1126,8 @@ private:
     void *_customArg;
     OfxStatus *_stat;
 };
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 // Function to spawn SMP threads

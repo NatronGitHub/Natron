@@ -96,7 +96,9 @@ using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
 
-namespace { // protect local classes in anonymous namespace
+// protect local classes in anonymous namespace
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 /*The output node was connected from inputNumber to this...*/
 typedef std::map<NodeWPtr, int > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
@@ -186,7 +188,8 @@ struct FormatKnob
     boost::weak_ptr<KnobDouble> par;
     boost::weak_ptr<KnobChoice> formatChoice;
 };
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 struct Node::Implementation
@@ -5806,7 +5809,7 @@ renderPreviewForDepth(const Image & srcImg,
         break;
     }
 }
-}
+} // namespace {
 
 class ComputingPreviewSetter_RAII
 {

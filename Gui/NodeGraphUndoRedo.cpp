@@ -730,7 +730,9 @@ DecloneMultipleNodesCommand::redo()
     setText( tr("Declone node") );
 }
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 typedef std::pair<NodeGuiPtr, QPointF> TreeNode; ///< all points are expressed as being the CENTER of the node!
 
 class Tree
@@ -980,7 +982,10 @@ hasNodeInputsInList(const std::list<NodeGuiPtr >& nodes,
 
     return foundInput;
 }
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+
 RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & nodes,
                                              QUndoCommand *parent)
     : QUndoCommand(parent)

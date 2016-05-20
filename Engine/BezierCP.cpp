@@ -615,7 +615,8 @@ BezierCP::isNearbyTangent(bool useGuiCurves,
 
 #define TANGENTS_CUSP_LIMIT 25
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 static void
 cuspTangent(double x,
@@ -751,7 +752,8 @@ smoothTangent(bool useGuiCurves,
     }
 } // smoothTangent
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 bool
 BezierCP::cuspPoint(bool useGuiCurves,

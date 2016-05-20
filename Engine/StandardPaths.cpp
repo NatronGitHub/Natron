@@ -94,7 +94,9 @@ appendOrganizationAndApp(QString &path)
 
 #endif // QT_VERSION < 0x050000
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 #ifdef __NATRON_OSX__
 CLANG_DIAG_OFF(deprecated)
 
@@ -305,7 +307,9 @@ resolveUserName(uint userId)
 }
 
 #endif // ifdef __NATRON_OSX__
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 QString
 StandardPaths::writableLocation(StandardLocationEnum type)

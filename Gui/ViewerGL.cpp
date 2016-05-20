@@ -1039,7 +1039,9 @@ ViewerGL::drawPickerPixel()
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT);
 }
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 static QStringList
 explode(const QString& str)
 {
@@ -1128,7 +1130,9 @@ wordWrap(const QFontMetrics& fm,
 
     return stringL;
 } // wordWrap
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 void
 ViewerGL::drawPersistentMessage()

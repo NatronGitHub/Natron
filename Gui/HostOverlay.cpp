@@ -64,7 +64,8 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-namespace {
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 enum PositionInteractState
 {
     ePositionInteractStateInactive,
@@ -284,7 +285,9 @@ fround(double val,
 
 typedef std::list<PositionInteract> PositionInteracts;
 typedef std::list<TransformInteract> TransformInteracts;
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 struct HostOverlayPrivate
 {

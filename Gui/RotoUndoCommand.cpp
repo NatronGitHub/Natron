@@ -724,7 +724,9 @@ MoveTangentUndoCommand::~MoveTangentUndoCommand()
 {
 }
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 static void
 getDeltaForPoint(const BezierCP& p,
                  const double time,
@@ -794,7 +796,9 @@ dragTangent(double time,
         }
     }
 }
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 void
 MoveTangentUndoCommand::undo()

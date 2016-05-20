@@ -100,7 +100,9 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-namespace {
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
 typedef std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > SelectedCP;
@@ -151,7 +153,8 @@ enum SelectedCpsTransformModeEnum
     eSelectedCpsTransformModeTranslateAndScale = 0,
     eSelectedCpsTransformModeRotateAndSkew = 1
 };
-}
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 ///A small structure of all the data shared by all the viewers watching the same Roto
