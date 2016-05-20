@@ -354,10 +354,8 @@ KnobDouble::setDecimals(const std::vector<int> &decis)
     }
 }
 
-
 KnobDouble::~KnobDouble()
 {
-  
 }
 
 static void
@@ -494,8 +492,6 @@ KnobButton::trigger()
 {
     return evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
 }
-
-
 
 /******************************KnobChoice**************************************/
 
@@ -993,7 +989,7 @@ KnobChoice::getHintToolTipFull() const
     }
 
     return ss.str();
-}
+} // KnobChoice::getHintToolTipFull
 
 KnobHelper::ValueChangedReturnCodeEnum
 KnobChoice::setValueFromLabel(const std::string & value,
@@ -1435,7 +1431,7 @@ KnobGroup::typeName() const
 void
 KnobGroup::addKnob(const KnobPtr& k)
 {
-    if (!isUserKnob() && k->isUserKnob()) {
+    if ( !isUserKnob() && k->isUserKnob() ) {
         return;
     }
 
@@ -1503,7 +1499,7 @@ void
 KnobGroup::insertKnob(int index,
                       const KnobPtr& k)
 {
-    if (!isUserKnob() && k->isUserKnob()) {
+    if ( !isUserKnob() && k->isUserKnob() ) {
         return;
     }
 
@@ -1598,7 +1594,7 @@ KnobPage::getChildren() const
 void
 KnobPage::addKnob(const KnobPtr &k)
 {
-    if (!isUserKnob() && k->isUserKnob()) {
+    if ( !isUserKnob() && k->isUserKnob() ) {
         return;
     }
     for (std::size_t i = 0; i < _children.size(); ++i) {
@@ -1618,7 +1614,7 @@ void
 KnobPage::insertKnob(int index,
                      const KnobPtr& k)
 {
-    if (!isUserKnob() && k->isUserKnob()) {
+    if ( !isUserKnob() && k->isUserKnob() ) {
         return;
     }
 

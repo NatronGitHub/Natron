@@ -69,7 +69,7 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamSelectPointsToolButtonAction "SelectPointsTool"
 #define kRotoUIParamSelectPointsToolButtonActionLabel "Select Points Tool"
 #define kRotoUIParamSelectPointsToolButtonActionHint "Works only for the points of the inner shape," \
-" feather points will not be taken into account."
+    " feather points will not be taken into account."
 
 #define kRotoUIParamSelectShapesToolButtonAction "SelectShapesTool"
 #define kRotoUIParamSelectShapesToolButtonActionLabel "Select Shapes Tool"
@@ -219,7 +219,7 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamFeatherLinkEnabled "featherLinkEnabledButton"
 #define kRotoUIParamFeatherLinkEnabledLabel "Enable Feather-Link"
 #define kRotoUIParamFeatherLinkEnabledHint "Feather-link: When activated the feather points will follow the same" \
-" movement as their counter-part does"
+    " movement as their counter-part does"
 
 #define kRotoUIParamDisplayFeather "displayFeatherButton"
 #define kRotoUIParamDisplayFeatherLabel "Display Feather"
@@ -228,19 +228,19 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamStickySelectionEnabled "stickySelectionEnabledButton"
 #define kRotoUIParamStickySelectionEnabledLabel "Enable Sticky Selection"
 #define kRotoUIParamStickySelectionEnabledHint "Sticky-selection: When activated, " \
-" clicking outside of any shape will not clear the current selection"
+    " clicking outside of any shape will not clear the current selection"
 
 #define kRotoUIParamStickyBbox "stickyBboxButton"
 #define kRotoUIParamStickyBboxLabel "Enable Sticky Bounding Box"
 #define kRotoUIParamStickyBboxHint "Easy bounding box manipulation: When activated, " \
-" clicking inside of the bounding box of selected points will move the points." \
-"When deactivated, only clicking on the cross will move the points"
+    " clicking inside of the bounding box of selected points will move the points." \
+    "When deactivated, only clicking on the cross will move the points"
 
 #define kRotoUIParamRippleEdit "rippleEditButton"
 #define kRotoUIParamRippleEditLabel "Enable Ripple Edit"
 #define kRotoUIParamRippleEditLabelHint "Ripple-edit: When activated, moving a control point" \
-" will move it by the same amount for all the keyframes " \
-"it has"
+    " will move it by the same amount for all the keyframes " \
+    "it has"
 
 #define kRotoUIParamAddKeyFrame "addKeyframeButton"
 #define kRotoUIParamAddKeyFrameLabel "Add Keyframe"
@@ -263,22 +263,22 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamOpacity "opacitySpinbox"
 #define kRotoUIParamOpacityLabel "Opacity"
 #define kRotoUIParamOpacityHint "The opacity of the next brush stroke to be painted. Use CTRL + SHIFT + drag " \
-"with the mouse to change the opacity."
+    "with the mouse to change the opacity."
 
 #define kRotoUIParamPressureOpacity "pressureOpacityButton"
 #define kRotoUIParamPressureOpacityLabel "Pressure Affects Opacity"
 #define kRotoUIParamPressureOpacityHint "If checked, the pressure of the pen will dynamically alter the opacity of the next " \
-"brush stroke."
+    "brush stroke."
 
 #define kRotoUIParamSize "sizeSpinbox"
 #define kRotoUIParamSizeLabel "Brush Size"
 #define kRotoUIParamSizeHint "The size of the next brush stroke to be painted. Use SHIFT + drag with the mouse " \
-"to change the size."
+    "to change the size."
 
 #define kRotoUIParamPressureSize "pressureSizeButton"
 #define kRotoUIParamPressureSizeLabel "Pressure Affects Size"
 #define kRotoUIParamPressureSizeHint "If checked, the pressure of the pen will dynamically alter the size of the next " \
-"brush stroke."
+    "brush stroke."
 
 #define kRotoUIParamHardness "hardnessSpinbox"
 #define kRotoUIParamHardnessLabel "Brush Hardness"
@@ -287,12 +287,12 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamPressureHardness "pressureHardnessButton"
 #define kRotoUIParamPressureHardnessLabel "Pressure Affects Hardness"
 #define kRotoUIParamPressureHardnessHint "If checked, the pressure of the pen will dynamically alter the hardness of the next " \
-"brush stroke"
+    "brush stroke"
 
 #define kRotoUIParamBuildUp "buildUpButton"
 #define kRotoUIParamBuildUpLabel "Build-Up"
 #define kRotoUIParamBuildUpHint "When build-up is enabled, the next brush stroke will build up " \
-"when painted over itself"
+    "when painted over itself"
 
 #define kRotoUIParamEffect "effectSpinbox"
 #define kRotoUIParamEffectLabel "Effect Strength"
@@ -301,22 +301,22 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamTimeOffset "timeOffsetSpinbox"
 #define kRotoUIParamTimeOffsetLabel "Time Offset"
 #define kRotoUIParamTimeOffsetHint "When the Clone tool is used, this determines depending on the time offset " \
-"mode the source frame to clone. When in absolute mode, this is the frame " \
-"number of the source, when in relative mode, this is an offset relative " \
-"to the current frame"
+    "mode the source frame to clone. When in absolute mode, this is the frame " \
+    "number of the source, when in relative mode, this is an offset relative " \
+    "to the current frame"
 
 #define kRotoUIParamTimeOffsetMode "timeOffsetModeChoice"
 #define kRotoUIParamTimeOffsetModeLabel "Time Offset Mode"
 #define kRotoUIParamTimeOffsetModeHint "When in absolute mode, this is the frame number of the source, " \
-"when in relative mode, this is an offset relative to " \
-"the current frame" \
+    "when in relative mode, this is an offset relative to " \
+    "the current frame" \
 
 #define kRotoUIParamSourceType "sourceTypeChoice"
 #define kRotoUIParamSourceTypeLabel "Source"
 #define kRotoUIParamSourceTypeHint "Source color used for painting the stroke when the Reveal/Clone tools are used:\n" \
-"- foreground: the painted result at this point in the hierarchy,\n" \
-"- background: the original image unpainted connected to bg,\n" \
-"- backgroundN: the original image unpainted connected to bgN"
+    "- foreground: the painted result at this point in the hierarchy,\n" \
+    "- background: the original image unpainted connected to bg,\n" \
+    "- backgroundN: the original image unpainted connected to bgN"
 
 #define kRotoUIParamResetCloneOffset "resetCloneOffsetButton"
 #define kRotoUIParamResetCloneOffsetLabel "Reset Transform"
@@ -325,8 +325,8 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamMultiStrokeEnabled "multiStrokeEnabledButton"
 #define kRotoUIParamMultiStrokeEnabledLabel "Multi-Stroke"
 #define kRotoUIParamMultiStrokeEnabledHint "When checked, strokes will be appended to the same item " \
-"in the hierarchy as long as the same tool is selected.\n" \
-"Select another tool to make a new item."
+    "in the hierarchy as long as the same tool is selected.\n" \
+    "Select another tool to make a new item."
 
 
 // Shortcuts
@@ -386,17 +386,15 @@ NATRON_NAMESPACE_ENTER;
 #define kShortcutDescActionRotoLockCurve "Lock Shape"
 
 struct RotoPaintInteract;
-
 struct RotoPaintPrivate
 {
     RotoPaint* publicInterface;
     bool isPaintByDefault;
     boost::weak_ptr<KnobBool> premultKnob;
     boost::weak_ptr<KnobBool> enabledKnobs[4];
-
     boost::shared_ptr<RotoPaintInteract> ui;
 
-    RotoPaintPrivate(RotoPaint* publicInterface,bool isPaintByDefault);
+    RotoPaintPrivate(RotoPaint* publicInterface, bool isPaintByDefault);
 };
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -495,10 +493,10 @@ enum RotoToolEnum
     eRotoToolBurn
 };
 
-struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintInteract>
+struct RotoPaintInteract
+    : public boost::enable_shared_from_this<RotoPaintInteract>
 {
     RotoPaintPrivate* p;
-
     SelectedItems selectedItems;
     SelectedCPs selectedCps;
     QRectF selectedCpsBbox;
@@ -516,7 +514,6 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
     boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
     std::pair<double, double> cloneOffset;
     QPointF click; // used for drawing ellipses and rectangles, to handle center/constrain. May also be used for the selection bbox.
-
     RotoToolEnum selectedTool;
     RotoRoleEnum selectedRole;
     boost::weak_ptr<KnobButton> lastPaintToolAction;
@@ -536,16 +533,13 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
 
     //////// Toolbar
     boost::weak_ptr<KnobPage> toolbarPage;
-
     boost::weak_ptr<KnobGroup> selectedToolRole;
     boost::weak_ptr<KnobButton> selectedToolAction;
-
     boost::weak_ptr<KnobGroup> selectToolGroup;
     boost::weak_ptr<KnobButton> selectAllAction;
     boost::weak_ptr<KnobButton> selectPointsAction;
     boost::weak_ptr<KnobButton> selectCurvesAction;
     boost::weak_ptr<KnobButton> selectFeatherPointsAction;
-
     boost::weak_ptr<KnobGroup> pointsEditionToolGroup;
     boost::weak_ptr<KnobButton> addPointsAction;
     boost::weak_ptr<KnobButton> removePointsAction;
@@ -553,25 +547,20 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
     boost::weak_ptr<KnobButton> smoothPointsAction;
     boost::weak_ptr<KnobButton> openCloseCurveAction;
     boost::weak_ptr<KnobButton> removeFeatherAction;
-
     boost::weak_ptr<KnobGroup> bezierEditionToolGroup;
     boost::weak_ptr<KnobButton> drawBezierAction;
     boost::weak_ptr<KnobButton> drawEllipseAction;
     boost::weak_ptr<KnobButton> drawRectangleAction;
-
     boost::weak_ptr<KnobGroup> paintBrushToolGroup;
     boost::weak_ptr<KnobButton> brushAction;
     boost::weak_ptr<KnobButton> pencilAction;
     boost::weak_ptr<KnobButton> eraserAction;
-
     boost::weak_ptr<KnobGroup> cloneBrushToolGroup;
     boost::weak_ptr<KnobButton> cloneAction;
     boost::weak_ptr<KnobButton> revealAction;
-
     boost::weak_ptr<KnobGroup> effectBrushToolGroup;
     boost::weak_ptr<KnobButton> blurAction;
     boost::weak_ptr<KnobButton> smearAction;
-
     boost::weak_ptr<KnobGroup> mergeBrushToolGroup;
     boost::weak_ptr<KnobButton> dodgeAction;
     boost::weak_ptr<KnobButton> burnAction;
@@ -660,14 +649,14 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
     void drawSelectedCpsBBOX();
 
     void drawEllipse(double x,
-                double y,
-                double radiusX,
-                double radiusY,
-                int l,
-                double r,
-                double g,
-                double b,
-                double a);
+                     double y,
+                     double radiusX,
+                     double radiusY,
+                     int l,
+                     double r,
+                     double g,
+                     double b,
+                     double a);
 
     ///by default draws a vertical arrow, which can be rotated by rotate amount.
     void drawArrow(double centerX, double centerY, double rotate, bool hovered, const std::pair<double, double> & pixelScale);
@@ -705,9 +694,9 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
     EventStateEnum isMouseInteractingWithCPSBbox(const QPointF& pos, double tolerance, const std::pair<double, double>& pixelScale) const;
 
     bool isBboxClickAnywhereEnabled() const;
-    
+
     void makeStroke(bool prepareForLater, const RotoPoint& p);
-    
+
     void checkViewersAreDirectlyConnected();
 
     void showMenuForControlPoint(const boost::shared_ptr<BezierCP>& cp);
@@ -739,7 +728,6 @@ struct RotoPaintInteract : public boost::enable_shared_from_this<RotoPaintIntera
     bool cuspSelectedCurve();
     bool removeFeatherForSelectedCurve();
     bool lockSelectedCurves();
-
 
 
     /**

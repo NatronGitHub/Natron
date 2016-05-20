@@ -327,7 +327,6 @@ public:
         return _isRectangle;
     }
 
-
 Q_SIGNALS:
 
     void incrementChanged(double incr, int index = 0);
@@ -434,7 +433,6 @@ public:
     {
         return _isToolButtonAction;
     }
-
 
 private:
 
@@ -950,6 +948,7 @@ public:
     {
         _isToolBar = b;
     }
+
     bool getIsToolBar() const
     {
         return _isToolBar;

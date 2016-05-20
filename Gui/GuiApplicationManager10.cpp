@@ -178,7 +178,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector<
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
 
-        registerPlugin(QString() , pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(), "", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
+        registerPlugin(QString(), pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(), "", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
 
 
         std::vector<std::string> extensions = writer->supportedFileFormats();

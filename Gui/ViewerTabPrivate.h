@@ -158,9 +158,10 @@ struct ViewerTabPrivate
     std::map<NodeGuiWPtr, NodeViewerContextPtr> nodesContext;
 
     /*
-     Tells for a given plug-in ID, which nodes is currently activated in the viewer interface
+       Tells for a given plug-in ID, which nodes is currently activated in the viewer interface
      */
-    struct PluginViewerContext {
+    struct PluginViewerContext
+    {
         std::string pluginID;
         NodeGuiWPtr currentNode;
         NodeViewerContextPtr currentContext;
@@ -170,7 +171,6 @@ struct ViewerTabPrivate
     // This is the current active context for each plug-in
     // We don't use a map because we need to retain the insertion order for each plug-in
     std::list<PluginViewerContext> currentNodeContext;
-
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;

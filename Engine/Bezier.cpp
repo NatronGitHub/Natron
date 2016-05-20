@@ -787,7 +787,6 @@ Bezier::clone(const RotoItem* other)
 
 Bezier::~Bezier()
 {
-
 }
 
 boost::shared_ptr<BezierCP>

@@ -46,9 +46,9 @@ public:
     virtual void swapOpenGLBuffers() OVERRIDE = 0;
     virtual void redraw() OVERRIDE = 0;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
-    virtual void getPixelScale(double & xScale, double & yScale) const  OVERRIDE = 0;
+    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE = 0;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
-    virtual void copyAnimationToClipboard(int /* dimension = -1*/) const  {}
+    virtual void copyAnimationToClipboard(int /* dimension = -1*/) const {}
 
     virtual void copyValuesToClipboard(int /*dimension = -1*/) const {}
 
@@ -61,7 +61,6 @@ public:
 
     virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const = 0;
     virtual bool getAllDimensionsVisible() const = 0;
-
     virtual RectD getViewportRect() const OVERRIDE = 0;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;
 

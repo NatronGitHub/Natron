@@ -151,15 +151,14 @@ DefaultInteractI::penDown(double /*time*/,
     return false;
 }
 
-
 bool
 DefaultInteractI::penDoubleClicked(double /*time*/,
-                          const RenderScale& /*renderScale*/,
-                          ViewIdx /*view*/,
-                          const OfxPointD& /*pscale*/,
-                          const QPointF& /*lastPenPos*/,
-                          const QPointF & /*penPos*/,
-                          const QPoint & /*penPosViewport*/)
+                                   const RenderScale& /*renderScale*/,
+                                   ViewIdx /*view*/,
+                                   const OfxPointD& /*pscale*/,
+                                   const QPointF& /*lastPenPos*/,
+                                   const QPointF & /*penPos*/,
+                                   const QPoint & /*penPosViewport*/)
 {
     return false;
 }
@@ -2719,10 +2718,10 @@ HostOverlay::penDown(double time,
 
 bool
 HostOverlay::penDoubleClicked(double time,
-                      const RenderScale& renderScale,
-                      ViewIdx view,
-                      const QPointF &penPos,
-                      const QPoint &penPosViewport)
+                              const RenderScale& renderScale,
+                              ViewIdx view,
+                              const QPointF &penPos,
+                              const QPoint &penPosViewport)
 {
     OfxPointD pscale;
 
@@ -2736,7 +2735,7 @@ HostOverlay::penDoubleClicked(double time,
     }
 
     _imp->lastPenPos = penPos;
-    
+
     return false;
 }
 

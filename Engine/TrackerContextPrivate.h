@@ -194,14 +194,14 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamFittingErrorWarnValue "fittingErrorWarnAbove"
 #define kTrackerParamFittingErrorWarnValueLabel "Warn If Error is Above"
 #define kTrackerParamFittingErrorWarnValueHint "A warning will appear if the model fitting error reaches this value (or higher). The warning indicates that " \
-"the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick " \
-"another model"
+    "the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick " \
+    "another model"
 
 #define kTrackerParamFittingErrorWarning "fittingErrorWarning"
 #define kTrackerParamFittingErrorWarningLabel "Incorrect model"
 #define kTrackerParamFittingErrorWarningHint "This warning indicates that " \
-"the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick " \
-"another model"
+    "the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick " \
+    "another model"
 
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
@@ -239,10 +239,10 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamDisableTransform "disableProcess"
 #define kTrackerParamDisableTransformLabel "Disable Transform"
 #define kTrackerParamDisableTransformHint "When checked, the CornerPin/Transform applied by the parameters is disabled temporarily. This is useful if " \
-"you are using a CornerPin and you need to edit the From or To points. "\
-"For example, in match-move mode to replace a portion of the image by another one. To achieve such effect, you would need to place " \
-"the From points of the CornerPin controls to the desired 4 corners in the image. Similarly, you may want to stabilize the image onto a moving vehicule, in " \
-"which case you would want to set the CornerPin points to enclose the vehicule."
+    "you are using a CornerPin and you need to edit the From or To points. " \
+    "For example, in match-move mode to replace a portion of the image by another one. To achieve such effect, you would need to place " \
+    "the From points of the CornerPin controls to the desired 4 corners in the image. Similarly, you may want to stabilize the image onto a moving vehicule, in " \
+    "which case you would want to set the CornerPin points to enclose the vehicule."
 
 #define kTrackerParamCornerPinFromPointsSetOnce "fromPointsSet"
 

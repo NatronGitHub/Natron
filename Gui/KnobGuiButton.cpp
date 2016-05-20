@@ -102,29 +102,26 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 
 
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
-
-        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
-            QString resourcesPath = QString::fromUtf8(isEffect->getNode()->getPluginResourcesPath().c_str());
-            if (!resourcesPath.endsWith(QLatin1Char('/'))) {
+            QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
+            if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
                 resourcesPath += QLatin1Char('/');
             }
             onIconFilePath.prepend(resourcesPath);
         }
-
     }
     if ( !offIconFilePath.isEmpty() && !QFile::exists(offIconFilePath) ) {
-        EffectInstance* isEffect = dynamic_cast<EffectInstance*>(knob->getHolder());
+        EffectInstance* isEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
-            QString resourcesPath = QString::fromUtf8(isEffect->getNode()->getPluginResourcesPath().c_str());
-            if (!resourcesPath.endsWith(QLatin1Char('/'))) {
+            QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
+            if ( !resourcesPath.endsWith( QLatin1Char('/') ) ) {
                 resourcesPath += QLatin1Char('/');
             }
             offIconFilePath.prepend(resourcesPath);
         }
-
     }
 
     bool checkable = knob->getIsCheckable();

@@ -111,7 +111,6 @@ public:
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-
 private:
 
     virtual void paintGL() OVERRIDE FINAL;

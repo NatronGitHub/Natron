@@ -2229,7 +2229,6 @@ OfxEffectInstance::redrawOverlayInteract()
     Q_UNUSED(st);
 }
 
-
 std::string
 OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)
 {
@@ -2260,7 +2259,6 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                double time,
                                bool /*originatedFromMainThread*/)
 {
-
     if (!_imp->initialized) {
         return false;
     }
@@ -2297,6 +2295,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
         return false;
     }
     Q_UNUSED(stat);
+
     return true;
 } // knobChanged
 

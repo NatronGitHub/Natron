@@ -1532,6 +1532,7 @@ NodeGroup::knobChanged(KnobI* k,
                        bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( k == _imp->exportAsTemplate.get() ) {
         boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
         if (gui_i) {
@@ -1540,6 +1541,7 @@ NodeGroup::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
+
     return ret;
 }
 

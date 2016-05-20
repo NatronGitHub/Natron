@@ -298,8 +298,6 @@ public:
         return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
     }
 
-
-
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
      * short message. Otherwise the longMessage is printed to stdout
@@ -441,7 +439,8 @@ public:
 
     virtual int getAppFontSize() const { return 11; }
 
-    virtual void setCurrentLogicalDPI(double /*dpiX*/, double /*dpiY*/) {}
+    virtual void setCurrentLogicalDPI(double /*dpiX*/,
+                                      double /*dpiY*/) {}
 
     virtual double getLogicalDPIXRATIO() const
     {

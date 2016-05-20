@@ -984,7 +984,6 @@ WriteNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
@@ -1003,7 +1002,6 @@ WriteNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-
     } else if ( k == _imp->readBackKnob.lock().get() ) {
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
@@ -1029,6 +1027,7 @@ WriteNode::knobChanged(KnobI* k,
     if (!ret && writer) {
         ret |= writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
+
     return ret;
 } // WriteNode::knobChanged
 

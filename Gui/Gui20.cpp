@@ -336,7 +336,6 @@ ViewerTab*
 Gui::addNewViewerTab(ViewerInstance* viewer,
                      TabWidget* where)
 {
-
     if (!viewer) {
         return 0;
     }
@@ -349,31 +348,29 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
         if ( !_imp->_viewerTabs.empty() ) {
             ( *_imp->_viewerTabs.begin() )->getNodesViewerInterface(&nodeViewerUi, &activeNodeViewerUi);
         } else {
-            NodeGraph* graph = dynamic_cast<NodeGraph*>(group->getNodeGraph());
+            NodeGraph* graph = dynamic_cast<NodeGraph*>( group->getNodeGraph() );
             if (!graph) {
                 graph = _imp->_nodeGraphArea;
             }
 
             if (graph) {
                 const NodesGuiList & allNodes = graph->getAllActiveNodes();
-
                 std::set<std::string> activeNodesPluginID;
 
                 for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-                        nodeViewerUi.push_back( *it );
-                        std::string pluginID = (*it)->getNode()->getPluginID();
-                        std::set<std::string>::iterator found = activeNodesPluginID.find(pluginID);
-                        if (found == activeNodesPluginID.end()) {
-                            activeNodesPluginID.insert(pluginID);
-                            activeNodeViewerUi.push_back(*it);
-                        }
+                    nodeViewerUi.push_back( *it );
+                    std::string pluginID = (*it)->getNode()->getPluginID();
+                    std::set<std::string>::iterator found = activeNodesPluginID.find(pluginID);
+                    if ( found == activeNodesPluginID.end() ) {
+                        activeNodesPluginID.insert(pluginID);
+                        activeNodeViewerUi.push_back(*it);
                     }
-                
+                }
             }
         }
     }
 
-    ViewerTab* tab = new ViewerTab(nodeViewerUi,activeNodeViewerUi, this, viewer, where);
+    ViewerTab* tab = new ViewerTab(nodeViewerUi, activeNodeViewerUi, this, viewer, where);
     QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);

@@ -189,15 +189,16 @@ CustomParamInteract::getBackgroundColour(double &r,
 }
 
 void
-CustomParamInteract::toWidgetCoordinates(double *x, double *y) const
+CustomParamInteract::toWidgetCoordinates(double *x,
+                                         double *y) const
 {
     Q_UNUSED(x);
     Q_UNUSED(y);
 }
 
-
 void
-CustomParamInteract::toCanonicalCoordinates(double *x, double *y) const
+CustomParamInteract::toCanonicalCoordinates(double *x,
+                                            double *y) const
 {
     Q_UNUSED(x);
     Q_UNUSED(y);
@@ -244,7 +245,6 @@ CustomParamInteract::restoreOpenGLContext()
     glPopAttrib();
 }
 
-
 /**
  * @brief Returns the font height, i.e: the height of the highest letter for this font
  **/
@@ -260,9 +260,8 @@ CustomParamInteract::getWidgetFontHeight() const
 int
 CustomParamInteract::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
-
 
 RectD
 CustomParamInteract::getViewportRect() const
@@ -274,18 +273,20 @@ CustomParamInteract::getViewportRect() const
         bbox.x2 = width() + 0.5;
         bbox.y2 = height() + 0.5;
     }
+
     return bbox;
 }
 
 void
-CustomParamInteract::getCursorPosition(double& x, double& y) const
+CustomParamInteract::getCursorPosition(double& x,
+                                       double& y) const
 {
     QPoint p = QCursor::pos();
+
     p = mapFromGlobal(p);
     x = p.x();
     y = p.y();
 }
-
 
 void
 CustomParamInteract::mousePressEvent(QMouseEvent* e)

@@ -137,6 +137,7 @@ DiskCacheNode::knobChanged(KnobI* k,
                            bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if (_imp->frameRange.lock().get() == k) {
         int idx = _imp->frameRange.lock()->getValue(0);
         switch (idx) {
@@ -165,6 +166,7 @@ DiskCacheNode::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
+
     return false;
 }
 

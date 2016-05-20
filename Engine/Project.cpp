@@ -1402,6 +1402,7 @@ Project::onKnobValueChanged(KnobI* knob,
                             bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( knob == _imp->viewsList.get() ) {
         /**
          * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
@@ -1459,6 +1460,7 @@ Project::onKnobValueChanged(KnobI* knob,
     } else {
         ret = false;
     }
+
     return ret;
 } // Project::onKnobValueChanged
 

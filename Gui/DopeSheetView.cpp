@@ -378,9 +378,11 @@ DopeSheetViewPrivate::getKeyFrameBoundingRectZoomCoords(double keyframeTimeZoomC
  * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
  **/
 void
-DopeSheetView::toWidgetCoordinates(double *x, double *y) const
+DopeSheetView::toWidgetCoordinates(double *x,
+                                   double *y) const
 {
     QPointF p = _imp->zoomContext.toWidgetCoordinates(*x, *y);
+
     *x = p.x();
     *y = p.y();
 }
@@ -389,9 +391,11 @@ DopeSheetView::toWidgetCoordinates(double *x, double *y) const
  * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
  **/
 void
-DopeSheetView::toCanonicalCoordinates(double *x, double *y) const
+DopeSheetView::toCanonicalCoordinates(double *x,
+                                      double *y) const
 {
     QPointF p = _imp->zoomContext.toZoomCoordinates(*x, *y);
+
     *x = p.x();
     *y = p.y();
 }
@@ -411,9 +415,8 @@ DopeSheetView::getWidgetFontHeight() const
 int
 DopeSheetView::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
-
 
 /*
    QRectF and Qt coordinate system has its y axis top-down, whereas in Natron
@@ -2703,15 +2706,18 @@ DopeSheetView::getViewportRect() const
         bbox.x2 = _imp->zoomContext.right();
         bbox.y2 = _imp->zoomContext.top();
     }
+
     return bbox;
 }
 
 void
-DopeSheetView::getCursorPosition(double& x, double& y) const
+DopeSheetView::getCursorPosition(double& x,
+                                 double& y) const
 {
     QPoint p = QCursor::pos();
+
     p = mapFromGlobal(p);
-    QPointF mappedPos = _imp->zoomContext.toZoomCoordinates(p.x(), p.y());
+    QPointF mappedPos = _imp->zoomContext.toZoomCoordinates( p.x(), p.y() );
     x = mappedPos.x();
     y = mappedPos.y();
 }

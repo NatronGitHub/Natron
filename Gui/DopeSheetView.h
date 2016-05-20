@@ -143,7 +143,6 @@ public:
     void saveOpenGLContext() OVERRIDE FINAL;
     void restoreOpenGLContext() OVERRIDE FINAL;
     unsigned int getCurrentRenderScale() const OVERRIDE FINAL;
-
     virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
 
@@ -167,7 +166,7 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
+
     void refreshSelectionBboxAndRedraw();
 
 public Q_SLOTS:

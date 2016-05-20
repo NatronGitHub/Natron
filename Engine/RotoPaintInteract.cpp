@@ -44,48 +44,48 @@
 
 NATRON_NAMESPACE_ENTER;
 
-RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,bool isPaintByDefault)
-: publicInterface(publicInterface)
-, isPaintByDefault(isPaintByDefault)
-, premultKnob()
-, enabledKnobs()
-, ui(new RotoPaintInteract(this))
+RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
+                                   bool isPaintByDefault)
+    : publicInterface(publicInterface)
+    , isPaintByDefault(isPaintByDefault)
+    , premultKnob()
+    , enabledKnobs()
+    , ui( new RotoPaintInteract(this) )
 {
 }
 
 RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
-: p(p)
-, selectedItems()
-, selectedCps()
-, selectedCpsBbox()
-, showCpsBbox(false)
-, transformMode()
-, builtBezier()
-, bezierBeingDragged()
-, cpBeingDragged()
-, tangentBeingDragged()
-, featherBarBeingDragged()
-, featherBarBeingHovered()
-, strokeBeingPaint()
-, cloneOffset()
-, click()
-, selectedTool(eRotoToolSelectAll)
-, selectedRole(eRotoRoleSelection)
-, state(eEventStateNone)
-, hoverState(eHoverStateNothing)
-, lastClickPos()
-, lastMousePos()
-, evaluateOnPenUp(false)
-, evaluateOnKeyUp(false)
-, iSelectingwithCtrlA(false)
-, shiftDown(0)
-, ctrlDown(0)
-, altDown(0)
-, lastTabletDownTriggeredEraser(false)
-, mouseCenterOnSizeChange()
+    : p(p)
+    , selectedItems()
+    , selectedCps()
+    , selectedCpsBbox()
+    , showCpsBbox(false)
+    , transformMode()
+    , builtBezier()
+    , bezierBeingDragged()
+    , cpBeingDragged()
+    , tangentBeingDragged()
+    , featherBarBeingDragged()
+    , featherBarBeingHovered()
+    , strokeBeingPaint()
+    , cloneOffset()
+    , click()
+    , selectedTool(eRotoToolSelectAll)
+    , selectedRole(eRotoRoleSelection)
+    , state(eEventStateNone)
+    , hoverState(eHoverStateNothing)
+    , lastClickPos()
+    , lastMousePos()
+    , evaluateOnPenUp(false)
+    , evaluateOnKeyUp(false)
+    , iSelectingwithCtrlA(false)
+    , shiftDown(0)
+    , ctrlDown(0)
+    , altDown(0)
+    , lastTabletDownTriggeredEraser(false)
+    , mouseCenterOnSizeChange()
 {
     cloneOffset.first = cloneOffset.second = 0.;
-
 }
 
 void
@@ -121,6 +121,7 @@ bool
 RotoPaintInteract::isFeatherVisible() const
 {
     boost::shared_ptr<KnobButton> b =  displayFeatherEnabledButton.lock();
+
     if (b) {
         return b->getValue();
     } else {
@@ -132,6 +133,7 @@ bool
 RotoPaintInteract::isStickySelectionEnabled() const
 {
     boost::shared_ptr<KnobButton> b =  stickySelectionEnabledButton.lock();
+
     if (b) {
         return b->getValue();
     } else {
@@ -143,6 +145,7 @@ bool
 RotoPaintInteract::isMultiStrokeEnabled() const
 {
     boost::shared_ptr<KnobBool> b =  multiStrokeEnabled.lock();
+
     if (b) {
         return b->getValue();
     } else {
@@ -154,23 +157,23 @@ bool
 RotoPaintInteract::isBboxClickAnywhereEnabled() const
 {
     boost::shared_ptr<KnobButton> b = bboxClickAnywhereButton.lock();
+
     return b ? b->getValue() : false;
 }
 
-
 void
 RotoPaintInteract::drawSelectedCp(double time,
-                            const boost::shared_ptr<BezierCP> & cp,
-                            double x,
-                            double y,
-                            const Transform::Matrix3x3& transform)
+                                  const boost::shared_ptr<BezierCP> & cp,
+                                  double x,
+                                  double y,
+                                  const Transform::Matrix3x3& transform)
 {
     ///if the tangent is being dragged, color it
     bool colorLeftTangent = false;
     bool colorRightTangent = false;
 
     if ( (cp == tangentBeingDragged) &&
-        ( ( state == eEventStateDraggingLeftTangent) || ( state == eEventStateDraggingRightTangent) ) ) {
+         ( ( state == eEventStateDraggingLeftTangent) || ( state == eEventStateDraggingRightTangent) ) ) {
         colorLeftTangent = state == eEventStateDraggingLeftTangent ? true : false;
         colorRightTangent = !colorLeftTangent;
     }
@@ -243,16 +246,16 @@ RotoPaintInteract::drawEllipse(double x,
         glVertex2d( radiusX * std::cos(theta), radiusY * std::sin(theta) );
     }
     glEnd();
-    
+
     glPopMatrix();
 }
 
 void
 RotoPaintInteract::drawArrow(double centerX,
-                       double centerY,
-                       double rotate,
-                       bool hovered,
-                       const std::pair<double, double> & pixelScale)
+                             double centerY,
+                             double rotate,
+                             bool hovered,
+                             const std::pair<double, double> & pixelScale)
 {
     GLProtectMatrix p(GL_MODELVIEW);
 
@@ -291,10 +294,10 @@ RotoPaintInteract::drawArrow(double centerX,
 
 void
 RotoPaintInteract::drawBendedArrow(double centerX,
-                             double centerY,
-                             double rotate,
-                             bool hovered,
-                             const std::pair<double, double> & pixelScale)
+                                   double centerY,
+                                   double rotate,
+                                   bool hovered,
+                                   const std::pair<double, double> & pixelScale)
 {
     GLProtectMatrix p(GL_MODELVIEW);
 
@@ -407,8 +410,8 @@ RotoPaintInteract::drawSelectedCpsBBOX()
         ///now draw the handles to indicate the user he/she can transform the selection rectangle
         ///draw it only if it is not dragged
         bool drawHandles = state != eEventStateDraggingBBoxBtmLeft && state != eEventStateDraggingBBoxBtmRight &&
-        state != eEventStateDraggingBBoxTopLeft && state != eEventStateDraggingBBoxTopRight && state != eEventStateDraggingBBoxMidTop
-        && state != eEventStateDraggingBBoxMidRight && state != eEventStateDraggingBBoxMidLeft && state != eEventStateDraggingBBoxMidBtm;
+                           state != eEventStateDraggingBBoxTopLeft && state != eEventStateDraggingBBoxTopRight && state != eEventStateDraggingBBoxMidTop
+                           && state != eEventStateDraggingBBoxMidRight && state != eEventStateDraggingBBoxMidLeft && state != eEventStateDraggingBBoxMidBtm;
 
 
         if (drawHandles) {
@@ -453,8 +456,6 @@ RotoPaintInteract::drawSelectedCpsBBOX()
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 } // drawSelectedCpsBBOX
 
-
-
 void
 RotoPaintInteract::clearSelection()
 {
@@ -482,6 +483,7 @@ void
 RotoPaintInteract::clearBeziersSelection()
 {
     boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+
     assert(ctx);
     ctx->clearSelection(RotoItem::eSelectionReasonOverlayInteract);
     selectedItems.clear();
@@ -491,6 +493,7 @@ bool
 RotoPaintInteract::removeItemFromSelection(const boost::shared_ptr<RotoDrawableItem>& b)
 {
     boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+
     assert(ctx);
     for (SelectedItems::iterator fb = selectedItems.begin(); fb != selectedItems.end(); ++fb) {
         if ( fb->get() == b.get() ) {
@@ -503,7 +506,6 @@ RotoPaintInteract::removeItemFromSelection(const boost::shared_ptr<RotoDrawableI
 
     return false;
 }
-
 
 static void
 handleControlPointMaximum(double time,
@@ -540,98 +542,105 @@ handleControlPointMaximum(double time,
 }
 
 bool
-RotoPaintInteract::getRoleForGroup(const boost::shared_ptr<KnobGroup>& k, RotoRoleEnum* role) const
+RotoPaintInteract::getRoleForGroup(const boost::shared_ptr<KnobGroup>& k,
+                                   RotoRoleEnum* role) const
 {
     bool ret = true;
-    if (k == selectToolGroup.lock()) {
+
+    if ( k == selectToolGroup.lock() ) {
         *role = eRotoRoleSelection;
-    } else if (k == pointsEditionToolGroup.lock()) {
+    } else if ( k == pointsEditionToolGroup.lock() ) {
         *role = eRotoRolePointsEdition;
-    } else if (k == bezierEditionToolGroup.lock()) {
+    } else if ( k == bezierEditionToolGroup.lock() ) {
         *role = eRotoRoleBezierEdition;
-    } else if (k == paintBrushToolGroup.lock()) {
+    } else if ( k == paintBrushToolGroup.lock() ) {
         *role = eRotoRolePaintBrush;
-    } else if (k == cloneBrushToolGroup.lock()) {
+    } else if ( k == cloneBrushToolGroup.lock() ) {
         *role = eRotoRoleCloneBrush;
-    } else if (k == effectBrushToolGroup.lock()) {
+    } else if ( k == effectBrushToolGroup.lock() ) {
         *role = eRotoRoleEffectBrush;
-    } else if (k == mergeBrushToolGroup.lock()) {
+    } else if ( k == mergeBrushToolGroup.lock() ) {
         *role = eRotoRoleMergeBrush;
     } else {
         ret = false;
     }
+
     return ret;
 }
 
 bool
-RotoPaintInteract::getToolForAction(const boost::shared_ptr<KnobButton>& k,RotoToolEnum* tool) const
+RotoPaintInteract::getToolForAction(const boost::shared_ptr<KnobButton>& k,
+                                    RotoToolEnum* tool) const
 {
     bool ret = true;
-    if (k == selectAllAction.lock()) {
+
+    if ( k == selectAllAction.lock() ) {
         *tool = eRotoToolSelectAll;
-    } else if (k == selectPointsAction.lock()) {
+    } else if ( k == selectPointsAction.lock() ) {
         *tool = eRotoToolSelectPoints;
-    } else if (k == selectCurvesAction.lock()) {
+    } else if ( k == selectCurvesAction.lock() ) {
         *tool = eRotoToolSelectCurves;
-    } else if (k == selectFeatherPointsAction.lock()) {
+    } else if ( k == selectFeatherPointsAction.lock() ) {
         *tool = eRotoToolSelectFeatherPoints;
-    } else if (k == addPointsAction.lock()) {
+    } else if ( k == addPointsAction.lock() ) {
         *tool = eRotoToolAddPoints;
-    } else if (k == removePointsAction.lock()) {
+    } else if ( k == removePointsAction.lock() ) {
         *tool = eRotoToolRemovePoints;
-    } else if (k == cuspPointsAction.lock()) {
+    } else if ( k == cuspPointsAction.lock() ) {
         *tool = eRotoToolCuspPoints;
-    } else if (k == smoothPointsAction.lock()) {
+    } else if ( k == smoothPointsAction.lock() ) {
         *tool = eRotoToolSmoothPoints;
-    } else if (k == openCloseCurveAction.lock()) {
+    } else if ( k == openCloseCurveAction.lock() ) {
         *tool = eRotoToolOpenCloseCurve;
-    } else if (k == removeFeatherAction.lock()) {
+    } else if ( k == removeFeatherAction.lock() ) {
         *tool = eRotoToolRemoveFeatherPoints;
-    } else if (k == drawBezierAction.lock()) {
+    } else if ( k == drawBezierAction.lock() ) {
         *tool = eRotoToolDrawBezier;
-    } else if (k == drawEllipseAction.lock()) {
+    } else if ( k == drawEllipseAction.lock() ) {
         *tool = eRotoToolDrawEllipse;
-    } else if (k == drawRectangleAction.lock()) {
+    } else if ( k == drawRectangleAction.lock() ) {
         *tool = eRotoToolDrawRectangle;
-    } else if (k == brushAction.lock()) {
+    } else if ( k == brushAction.lock() ) {
         *tool = eRotoToolSolidBrush;
-    } else if (k == pencilAction.lock()) {
+    } else if ( k == pencilAction.lock() ) {
         *tool = eRotoToolOpenBezier;
-    } else if (k == eraserAction.lock()) {
+    } else if ( k == eraserAction.lock() ) {
         *tool = eRotoToolEraserBrush;
-    } else if (k == cloneAction.lock()) {
+    } else if ( k == cloneAction.lock() ) {
         *tool = eRotoToolClone;
-    } else if (k == revealAction.lock()) {
+    } else if ( k == revealAction.lock() ) {
         *tool = eRotoToolReveal;
-    } else if (k == blurAction.lock()) {
+    } else if ( k == blurAction.lock() ) {
         *tool = eRotoToolBlur;
-    } else if (k == smearAction.lock()) {
+    } else if ( k == smearAction.lock() ) {
         *tool = eRotoToolSmear;
-    } else if (k == dodgeAction.lock()) {
+    } else if ( k == dodgeAction.lock() ) {
         *tool = eRotoToolDodge;
-    } else if (k == burnAction.lock()) {
+    } else if ( k == burnAction.lock() ) {
         *tool = eRotoToolBurn;
     } else {
         ret = false;
     }
+
     return ret;
-}
+} // RotoPaintInteract::getToolForAction
 
 bool
 RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& roleGroup)
 {
     RotoRoleEnum role;
-    if (!getRoleForGroup(roleGroup, &role)) {
+
+    if ( !getRoleForGroup(roleGroup, &role) ) {
         return false;
     }
 
     // The gui just deactivated this action
-    if (!roleGroup->getValue()) {
+    if ( !roleGroup->getValue() ) {
         return true;
     }
 
     bool isPaintRole = (role == eRotoRolePaintBrush) || (role == eRotoRoleCloneBrush) || (role == eRotoRoleMergeBrush) ||
-    (role == eRotoRoleEffectBrush);
+                       (role == eRotoRoleEffectBrush);
 
 
     // Reset the selected control points
@@ -672,24 +681,24 @@ RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& rol
     selectedRole = role;
 
     return true;
-}
+} // RotoPaintInteract::onRoleChangedInternal
 
 bool
 RotoPaintInteract::onToolChangedInternal(const boost::shared_ptr<KnobButton>& actionButton)
 {
-
     RotoToolEnum tool;
-    if (!getToolForAction(actionButton, &tool)) {
+
+    if ( !getToolForAction(actionButton, &tool) ) {
         return false;
     }
 
     // The gui just deactivated this action
-    if (!actionButton->getValue()) {
+    if ( !actionButton->getValue() ) {
         return true;
     }
 
     bool isPaintRole = (selectedRole == eRotoRolePaintBrush) || (selectedRole == eRotoRoleCloneBrush) || (selectedRole == eRotoRoleMergeBrush) ||
-    (selectedRole == eRotoRoleEffectBrush);
+                       (selectedRole == eRotoRoleEffectBrush);
     if (isPaintRole) {
         effectSpinBox.lock()->setInViewerContextSecret(tool != eRotoToolBlur);
         timeOffsetModeChoice.lock()->setInViewerContextSecret(selectedRole != eRotoRoleCloneBrush);
@@ -704,9 +713,9 @@ RotoPaintInteract::onToolChangedInternal(const boost::shared_ptr<KnobButton>& ac
 
         if ( (tool == eRotoToolSolidBrush ) || ( tool == eRotoToolOpenBezier ) ) {
             compositingOperatorChoice.lock()->setValue( (int)eMergeOver );
-        } else if ( tool == eRotoToolBurn ) {
+        } else if (tool == eRotoToolBurn) {
             compositingOperatorChoice.lock()->setValue( (int)eMergeColorBurn );
-        } else if ( tool == eRotoToolDodge ) {
+        } else if (tool == eRotoToolDodge) {
             compositingOperatorChoice.lock()->setValue( (int)eMergeColorDodge );
         } else {
             compositingOperatorChoice.lock()->setValue( (int)eMergeCopy );
@@ -715,34 +724,33 @@ RotoPaintInteract::onToolChangedInternal(const boost::shared_ptr<KnobButton>& ac
 
     // Clear all selection if we were building a new bezier
     if ( (selectedRole == eRotoRoleBezierEdition) &&
-        ( ( selectedTool == eRotoToolDrawBezier) || ( selectedTool == eRotoToolOpenBezier) ) &&
-        builtBezier &&
-        ( tool != selectedTool ) ) {
+         ( ( selectedTool == eRotoToolDrawBezier) || ( selectedTool == eRotoToolOpenBezier) ) &&
+         builtBezier &&
+         ( tool != selectedTool ) ) {
         builtBezier->setCurveFinished(true);
         clearSelection();
     }
 
     selectedTool = tool;
-    if ( tool != eRotoToolEraserBrush && isPaintRole) {
+    if ( (tool != eRotoToolEraserBrush) && isPaintRole ) {
         lastPaintToolAction = actionButton;
     }
 
 
     if ( (selectedTool == eRotoToolBlur) ||
-        ( selectedTool == eRotoToolBurn) ||
-        ( selectedTool == eRotoToolDodge) ||
-        ( selectedTool == eRotoToolClone) ||
-        ( selectedTool == eRotoToolEraserBrush) ||
-        ( selectedTool == eRotoToolSolidBrush) ||
-        ( selectedTool == eRotoToolReveal) ||
-        ( selectedTool == eRotoToolSmear) ||
-        ( selectedTool == eRotoToolSharpen) ) {
+         ( selectedTool == eRotoToolBurn) ||
+         ( selectedTool == eRotoToolDodge) ||
+         ( selectedTool == eRotoToolClone) ||
+         ( selectedTool == eRotoToolEraserBrush) ||
+         ( selectedTool == eRotoToolSolidBrush) ||
+         ( selectedTool == eRotoToolReveal) ||
+         ( selectedTool == eRotoToolSmear) ||
+         ( selectedTool == eRotoToolSharpen) ) {
         makeStroke( true, RotoPoint() );
     }
 
     return true;
-}
-
+} // RotoPaintInteract::onToolChangedInternal
 
 void
 RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
@@ -760,12 +768,12 @@ RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
 
     boost::shared_ptr<KnobGroup> curGroup = selectedToolRole.lock();
     boost::shared_ptr<KnobButton> curTool = selectedToolAction.lock();
-    if (curGroup && curGroup != parentGroup) {
+    if ( curGroup && (curGroup != parentGroup) ) {
         curGroup->setValue(false);
     }
 
     // If we changed group, just keep this action on
-    if (curTool && curGroup == parentGroup) {
+    if ( curTool && (curGroup == parentGroup) ) {
         curTool->setValue(false);
     }
     selectedToolAction = tool;
@@ -785,13 +793,12 @@ RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
     }
 }
 
-
 void
 RotoPaintInteract::computeSelectedCpsBBOX()
 {
     NodePtr n = p->publicInterface->getNode();
 
-    if (!n || !n->isActivated()) {
+    if ( !n || !n->isActivated() ) {
         return;
     }
 
@@ -837,7 +844,7 @@ RotoPaintInteract::handleBezierSelection(const boost::shared_ptr<Bezier> & curve
 
     if (!found) {
         ///clear previous selection if the SHIFT modifier isn't held
-        if ( !shiftDown ) {
+        if (!shiftDown) {
             clearBeziersSelection();
         }
         selectedItems.push_back(curve);
@@ -850,11 +857,11 @@ RotoPaintInteract::handleBezierSelection(const boost::shared_ptr<Bezier> & curve
 
 void
 RotoPaintInteract::handleControlPointSelection(const std::pair<boost::shared_ptr<BezierCP>,
-                                               boost::shared_ptr<BezierCP> > & p)
+                                                               boost::shared_ptr<BezierCP> > & p)
 {
     ///find out if the cp is already selected.
     SelectedCPs::iterator foundCP = selectedCps.end();
-    
+
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {
         if (p.first == it->first) {
             foundCP = it;
@@ -864,67 +871,66 @@ RotoPaintInteract::handleControlPointSelection(const std::pair<boost::shared_ptr
 
     if ( foundCP == selectedCps.end() ) {
         ///clear previous selection if the SHIFT modifier isn't held
-        if ( !shiftDown ) {
+        if (!shiftDown) {
             selectedCps.clear();
         }
         selectedCps.push_back(p);
         computeSelectedCpsBBOX();
     } else {
         ///Erase the point from the selection to allow the user to toggle the selection
-        if ( shiftDown ) {
+        if (shiftDown) {
             selectedCps.erase(foundCP);
             computeSelectedCpsBBOX();
         }
     }
-    
+
     cpBeingDragged = p;
     state = eEventStateDraggingControlPoint;
 }
 
-
 void
 RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& /*cp*/)
 {
-
     boost::shared_ptr<KnobChoice> menu = rightClickMenuKnob.lock();
+
     if (!menu) {
         return;
     }
     std::vector<std::string> choices;
 
-    choices.push_back(removeItemsMenuAction.lock()->getName());
-    choices.push_back(smoothItemMenuAction.lock()->getName());
-    choices.push_back(cuspItemMenuAction.lock()->getName());
-    choices.push_back(removeItemFeatherMenuAction.lock()->getName());
-    choices.push_back(nudgeLeftMenuAction.lock()->getName());
-    choices.push_back(nudgeBottomMenuAction.lock()->getName());
-    choices.push_back(nudgeRightMenuAction.lock()->getName());
-    choices.push_back(nudgeTopMenuAction.lock()->getName());
+    choices.push_back( removeItemsMenuAction.lock()->getName() );
+    choices.push_back( smoothItemMenuAction.lock()->getName() );
+    choices.push_back( cuspItemMenuAction.lock()->getName() );
+    choices.push_back( removeItemFeatherMenuAction.lock()->getName() );
+    choices.push_back( nudgeLeftMenuAction.lock()->getName() );
+    choices.push_back( nudgeBottomMenuAction.lock()->getName() );
+    choices.push_back( nudgeRightMenuAction.lock()->getName() );
+    choices.push_back( nudgeTopMenuAction.lock()->getName() );
     menu->populateChoices(choices);
-
 } // showMenuForControlPoint
 
 void
 RotoPaintInteract::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 {
     boost::shared_ptr<KnobChoice> menu = rightClickMenuKnob.lock();
+
     if (!menu) {
         return;
     }
     std::vector<std::string> choices;
 
-    choices.push_back(selectAllMenuAction.lock()->getName());
-    choices.push_back(removeItemsMenuAction.lock()->getName());
-    if (!curve->isOpenBezier()) {
-        choices.push_back(openCloseCurveAction.lock()->getName());
+    choices.push_back( selectAllMenuAction.lock()->getName() );
+    choices.push_back( removeItemsMenuAction.lock()->getName() );
+    if ( !curve->isOpenBezier() ) {
+        choices.push_back( openCloseCurveAction.lock()->getName() );
     }
 
-    choices.push_back(smoothItemMenuAction.lock()->getName());
-    choices.push_back(cuspItemMenuAction.lock()->getName());
-    if (!curve->isOpenBezier()) {
-        choices.push_back(removeItemFeatherMenuAction.lock()->getName());
+    choices.push_back( smoothItemMenuAction.lock()->getName() );
+    choices.push_back( cuspItemMenuAction.lock()->getName() );
+    if ( !curve->isOpenBezier() ) {
+        choices.push_back( removeItemFeatherMenuAction.lock()->getName() );
     }
-    choices.push_back(lockShapeMenuAction.lock()->getName());
+    choices.push_back( lockShapeMenuAction.lock()->getName() );
     menu->populateChoices(choices);
 } // showMenuForCurve
 
@@ -933,9 +939,6 @@ RotoPaintInteract::onBreakMultiStrokeTriggered()
 {
     makeStroke( true, RotoPoint() );
 }
-
-
-
 
 static bool
 isBranchConnectedToRotoNodeRecursive(Node* node,
@@ -1005,45 +1008,45 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     std::string itemName;
 
     switch (selectedTool) {
-        case eRotoToolSolidBrush:
-            strokeType = eRotoStrokeTypeSolid;
-            itemName = kRotoPaintBrushBaseName;
-            break;
-        case eRotoToolEraserBrush:
-            strokeType = eRotoStrokeTypeEraser;
-            itemName = kRotoPaintEraserBaseName;
-            break;
-        case eRotoToolClone:
-            strokeType = eRotoStrokeTypeClone;
-            itemName = kRotoPaintCloneBaseName;
-            break;
-        case eRotoToolReveal:
-            strokeType = eRotoStrokeTypeReveal;
-            itemName = kRotoPaintRevealBaseName;
-            break;
-        case eRotoToolBlur:
-            strokeType = eRotoStrokeTypeBlur;
-            itemName = kRotoPaintBlurBaseName;
-            break;
-        case eRotoToolSharpen:
-            strokeType = eRotoStrokeTypeSharpen;
-            itemName = kRotoPaintSharpenBaseName;
-            break;
-        case eRotoToolSmear:
-            strokeType = eRotoStrokeTypeSmear;
-            itemName = kRotoPaintSmearBaseName;
-            break;
-        case eRotoToolDodge:
-            strokeType = eRotoStrokeTypeDodge;
-            itemName = kRotoPaintDodgeBaseName;
-            break;
-        case eRotoToolBurn:
-            strokeType = eRotoStrokeTypeBurn;
-            itemName = kRotoPaintBurnBaseName;
-            break;
-        default:
+    case eRotoToolSolidBrush:
+        strokeType = eRotoStrokeTypeSolid;
+        itemName = kRotoPaintBrushBaseName;
+        break;
+    case eRotoToolEraserBrush:
+        strokeType = eRotoStrokeTypeEraser;
+        itemName = kRotoPaintEraserBaseName;
+        break;
+    case eRotoToolClone:
+        strokeType = eRotoStrokeTypeClone;
+        itemName = kRotoPaintCloneBaseName;
+        break;
+    case eRotoToolReveal:
+        strokeType = eRotoStrokeTypeReveal;
+        itemName = kRotoPaintRevealBaseName;
+        break;
+    case eRotoToolBlur:
+        strokeType = eRotoStrokeTypeBlur;
+        itemName = kRotoPaintBlurBaseName;
+        break;
+    case eRotoToolSharpen:
+        strokeType = eRotoStrokeTypeSharpen;
+        itemName = kRotoPaintSharpenBaseName;
+        break;
+    case eRotoToolSmear:
+        strokeType = eRotoStrokeTypeSmear;
+        itemName = kRotoPaintSmearBaseName;
+        break;
+    case eRotoToolDodge:
+        strokeType = eRotoStrokeTypeDodge;
+        itemName = kRotoPaintDodgeBaseName;
+        break;
+    case eRotoToolBurn:
+        strokeType = eRotoStrokeTypeBurn;
+        itemName = kRotoPaintBurnBaseName;
+        break;
+    default:
 
-            return;
+        return;
     }
 
     boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
@@ -1051,8 +1054,8 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
 
     if (prepareForLater || !strokeBeingPaint) {
         if ( strokeBeingPaint &&
-            ( strokeBeingPaint->getBrushType() == strokeType) &&
-            strokeBeingPaint->isEmpty() ) {
+             ( strokeBeingPaint->getBrushType() == strokeType) &&
+             strokeBeingPaint->isEmpty() ) {
             ///We already have a fresh stroke prepared for that type
             return;
         }
@@ -1077,7 +1080,6 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     boost::shared_ptr<KnobInt> timeOffsetKnob = strokeBeingPaint->getTimeOffsetKnob();
     boost::shared_ptr<KnobDouble> translateKnob = strokeBeingPaint->getBrushCloneTranslateKnob();
     boost::shared_ptr<KnobDouble> effectKnob = strokeBeingPaint->getBrushEffectKnob();
-
     boost::shared_ptr<KnobColor> colorWheel = colorWheelButton.lock();
     double color[4];
     for (int i = 0; i < 3; ++i) {
@@ -1128,10 +1130,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
         context->getNode()->getApp()->setUserIsPainting(context->getNode(), strokeBeingPaint, true);
         strokeBeingPaint->appendPoint(true, point);
     }
-
 } // RotoGui::RotoGuiPrivate::makeStroke
-
-
 
 bool
 RotoPaintInteract::isNearbySelectedCpsCrossHair(const QPointF & pos) const
@@ -1156,9 +1155,9 @@ RotoPaintInteract::isNearbySelectedCpsCrossHair(const QPointF & pos) const
     double tCross = midY + xHairMidSizeY;
 
     if ( ( pos.x() >= (lCross - toleranceX) ) &&
-        ( pos.x() <= (rCross + toleranceX) ) &&
-        ( pos.y() <= (tCross + toleranceY) ) &&
-        ( pos.y() >= (bCross - toleranceY) ) ) {
+         ( pos.x() <= (rCross + toleranceX) ) &&
+         ( pos.y() <= (tCross + toleranceY) ) &&
+         ( pos.y() >= (bCross - toleranceY) ) ) {
         return true;
     } else {
         return false;
@@ -1179,18 +1178,18 @@ RotoPaintInteract::isWithinSelectedCpsBBox(const QPointF& pos) const
     double toleranceY = 0;//kXHairSelectedCpsTolerance * pixelScale.second;
 
     return pos.x() > (l - toleranceX) && pos.x() < (r + toleranceX) &&
-    pos.y() > (b - toleranceY) && pos.y() < (t + toleranceY);
+           pos.y() > (b - toleranceY) && pos.y() < (t + toleranceY);
 }
 
 bool
 RotoPaintInteract::isNearbyBBoxTopLeft(const QPointF & p,
-                                             double tolerance,
-                                             const std::pair<double, double> & pixelScale) const
+                                       double tolerance,
+                                       const std::pair<double, double> & pixelScale) const
 {
     QPointF corner = selectedCpsBbox.topLeft();
 
     if ( ( p.x() >= (corner.x() - tolerance) ) && ( p.x() <= (corner.x() + tolerance) ) &&
-        ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
+         ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
         return true;
     } else {
         double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
@@ -1206,15 +1205,15 @@ RotoPaintInteract::isNearbyBBoxTopLeft(const QPointF & p,
 
 bool
 RotoPaintInteract::isNearbyBBoxTopRight(const QPointF & p,
-                                              double tolerance,
-                                              const std::pair<double, double> & pixelScale) const
+                                        double tolerance,
+                                        const std::pair<double, double> & pixelScale) const
 {
     QPointF topLeft = selectedCpsBbox.topLeft();
     QPointF btmRight = selectedCpsBbox.bottomRight();
     QPointF corner( btmRight.x(), topLeft.y() );
 
     if ( ( p.x() >= (corner.x() - tolerance) ) && ( p.x() <= (corner.x() + tolerance) ) &&
-        ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
+         ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
         return true;
     } else {
         double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
@@ -1230,15 +1229,15 @@ RotoPaintInteract::isNearbyBBoxTopRight(const QPointF & p,
 
 bool
 RotoPaintInteract::isNearbyBBoxBtmLeft(const QPointF & p,
-                                             double tolerance,
-                                             const std::pair<double, double> & pixelScale) const
+                                       double tolerance,
+                                       const std::pair<double, double> & pixelScale) const
 {
     QPointF topLeft = selectedCpsBbox.topLeft();
     QPointF btmRight = selectedCpsBbox.bottomRight();
     QPointF corner( topLeft.x(), btmRight.y() );
 
     if ( ( p.x() >= (corner.x() - tolerance) ) && ( p.x() <= (corner.x() + tolerance) ) &&
-        ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
+         ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
         return true;
     } else {
         double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
@@ -1254,13 +1253,13 @@ RotoPaintInteract::isNearbyBBoxBtmLeft(const QPointF & p,
 
 bool
 RotoPaintInteract::isNearbyBBoxBtmRight(const QPointF & p,
-                                              double tolerance,
-                                              const std::pair<double, double> & pixelScale) const
+                                        double tolerance,
+                                        const std::pair<double, double> & pixelScale) const
 {
     QPointF corner = selectedCpsBbox.bottomRight();
 
     if ( ( p.x() >= (corner.x() - tolerance) ) && ( p.x() <= (corner.x() + tolerance) ) &&
-        ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
+         ( p.y() >= (corner.y() - tolerance) ) && ( p.y() <= (corner.y() + tolerance) ) ) {
         return true;
     } else {
         double halfOffset = kTransformArrowOffsetFromPoint * pixelScale.first / 2.;
@@ -1276,8 +1275,8 @@ RotoPaintInteract::isNearbyBBoxBtmRight(const QPointF & p,
 
 bool
 RotoPaintInteract::isNearbyBBoxMidTop(const QPointF & p,
-                                            double tolerance,
-                                            const std::pair<double, double> & pixelScale) const
+                                      double tolerance,
+                                      const std::pair<double, double> & pixelScale) const
 {
     QPointF topLeft = selectedCpsBbox.topLeft();
     QPointF btmRight = selectedCpsBbox.bottomRight();
@@ -1285,7 +1284,7 @@ RotoPaintInteract::isNearbyBBoxMidTop(const QPointF & p,
     QPointF mid = (topLeft + topRight) / 2.;
 
     if ( ( p.x() >= (mid.x() - tolerance) ) && ( p.x() <= (mid.x() + tolerance) ) &&
-        ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
+         ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
         return true;
     } else {
         double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
@@ -1301,8 +1300,8 @@ RotoPaintInteract::isNearbyBBoxMidTop(const QPointF & p,
 
 bool
 RotoPaintInteract::isNearbyBBoxMidRight(const QPointF & p,
-                                              double tolerance,
-                                              const std::pair<double, double> & pixelScale) const
+                                        double tolerance,
+                                        const std::pair<double, double> & pixelScale) const
 {
     QPointF topLeft = selectedCpsBbox.topLeft();
     QPointF btmRight = selectedCpsBbox.bottomRight();
@@ -1310,7 +1309,7 @@ RotoPaintInteract::isNearbyBBoxMidRight(const QPointF & p,
     QPointF mid = (btmRight + topRight) / 2.;
 
     if ( ( p.x() >= (mid.x() - tolerance) ) && ( p.x() <= (mid.x() + tolerance) ) &&
-        ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
+         ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
         return true;
     } else {
         double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
@@ -1326,8 +1325,8 @@ RotoPaintInteract::isNearbyBBoxMidRight(const QPointF & p,
 
 bool
 RotoPaintInteract::isNearbyBBoxMidBtm(const QPointF & p,
-                                            double tolerance,
-                                            const std::pair<double, double> & pixelScale) const
+                                      double tolerance,
+                                      const std::pair<double, double> & pixelScale) const
 {
     QPointF topLeft = selectedCpsBbox.topLeft();
     QPointF btmRight = selectedCpsBbox.bottomRight();
@@ -1335,7 +1334,7 @@ RotoPaintInteract::isNearbyBBoxMidBtm(const QPointF & p,
     QPointF mid = (btmRight + btmLeft) / 2.;
 
     if ( ( p.x() >= (mid.x() - tolerance) ) && ( p.x() <= (mid.x() + tolerance) ) &&
-        ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
+         ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
         return true;
     } else {
         double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
@@ -1351,8 +1350,8 @@ RotoPaintInteract::isNearbyBBoxMidBtm(const QPointF & p,
 
 EventStateEnum
 RotoPaintInteract::isMouseInteractingWithCPSBbox(const QPointF& pos,
-                                                       double cpSelectionTolerance,
-                                                       const std::pair<double, double>& pixelScale) const
+                                                 double cpSelectionTolerance,
+                                                 const std::pair<double, double>& pixelScale) const
 {
     bool clickAnywhere = isBboxClickAnywhereEnabled();
     EventStateEnum state = eEventStateNone;
@@ -1384,8 +1383,8 @@ RotoPaintInteract::isMouseInteractingWithCPSBbox(const QPointF& pos,
 
 bool
 RotoPaintInteract::isNearbyBBoxMidLeft(const QPointF & p,
-                                             double tolerance,
-                                             const std::pair<double, double> & pixelScale) const
+                                       double tolerance,
+                                       const std::pair<double, double> & pixelScale) const
 {
     QPointF topLeft = selectedCpsBbox.topLeft();
     QPointF btmRight = selectedCpsBbox.bottomRight();
@@ -1393,7 +1392,7 @@ RotoPaintInteract::isNearbyBBoxMidLeft(const QPointF & p,
     QPointF mid = (topLeft + btmLeft) / 2.;
 
     if ( ( p.x() >= (mid.x() - tolerance) ) && ( p.x() <= (mid.x() + tolerance) ) &&
-        ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
+         ( p.y() >= (mid.y() - tolerance) ) && ( p.y() <= (mid.y() + tolerance) ) ) {
         return true;
     } else {
         double offset = kTransformArrowOffsetFromPoint * pixelScale.first;
@@ -1409,7 +1408,7 @@ RotoPaintInteract::isNearbyBBoxMidLeft(const QPointF & p,
 
 bool
 RotoPaintInteract::isNearbySelectedCpsBoundingBox(const QPointF & pos,
-                                                        double tolerance) const
+                                                  double tolerance) const
 {
     QPointF topLeft = selectedCpsBbox.topLeft();
     QPointF btmRight = selectedCpsBbox.bottomRight();
@@ -1418,25 +1417,25 @@ RotoPaintInteract::isNearbySelectedCpsBoundingBox(const QPointF & pos,
 
     ///check if it is nearby top edge
     if ( ( pos.x() >= (topLeft.x() - tolerance) ) && ( pos.x() <= (topRight.x() + tolerance) ) &&
-        ( pos.y() >= (topLeft.y() - tolerance) ) && ( pos.y() <= (topLeft.y() + tolerance) ) ) {
+         ( pos.y() >= (topLeft.y() - tolerance) ) && ( pos.y() <= (topLeft.y() + tolerance) ) ) {
         return true;
     }
 
     ///right edge
     if ( ( pos.x() >= (topRight.x() - tolerance) ) && ( pos.x() <= (topRight.x() + tolerance) ) &&
-        ( pos.y() >= (btmRight.y() - tolerance) ) && ( pos.y() <= (topRight.y() + tolerance) ) ) {
+         ( pos.y() >= (btmRight.y() - tolerance) ) && ( pos.y() <= (topRight.y() + tolerance) ) ) {
         return true;
     }
 
     ///btm edge
     if ( ( pos.x() >= (btmLeft.x() - tolerance) ) && ( pos.x() <= (btmRight.x() + tolerance) ) &&
-        ( pos.y() >= (btmLeft.y() - tolerance) ) && ( pos.y() <= (btmLeft.y() + tolerance) ) ) {
+         ( pos.y() >= (btmLeft.y() - tolerance) ) && ( pos.y() <= (btmLeft.y() + tolerance) ) ) {
         return true;
     }
 
     ///left edge
     if ( ( pos.x() >= (btmLeft.x() - tolerance) ) && ( pos.x() <= (btmLeft.x() + tolerance) ) &&
-        ( pos.y() >= (btmLeft.y() - tolerance) ) && ( pos.y() <= (topLeft.y() + tolerance) ) ) {
+         ( pos.y() >= (btmLeft.y() - tolerance) ) && ( pos.y() <= (topLeft.y() + tolerance) ) ) {
         return true;
     }
 
@@ -1445,8 +1444,8 @@ RotoPaintInteract::isNearbySelectedCpsBoundingBox(const QPointF & pos,
 
 std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> >
 RotoPaintInteract::isNearbyFeatherBar(double time,
-                                            const std::pair<double, double> & pixelScale,
-                                            const QPointF & pos) const
+                                      const std::pair<double, double> & pixelScale,
+                                      const QPointF & pos) const
 {
     double distFeatherX = 20. * pixelScale.first;
     double acceptance = 10 * pixelScale.second;
@@ -1460,12 +1459,12 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
         }
 
         /*
-         For each selected bezier, we compute the extent of the feather bars and check if the mouse would be nearby one of these bars.
-         The feather bar of a control point is only displayed is the feather point is equal to the bezier control point.
-         In order to give it the  correc direction we use the derivative of the bezier curve at the control point and then use
-         the pointInPolygon function to make sure the feather bar is always oriented on the outter part of the polygon.
-         The pointInPolygon function needs the polygon of the bezier to test whether the point is inside or outside the polygon
-         hence in this loop we compute the polygon for each bezier.
+           For each selected bezier, we compute the extent of the feather bars and check if the mouse would be nearby one of these bars.
+           The feather bar of a control point is only displayed is the feather point is equal to the bezier control point.
+           In order to give it the  correc direction we use the derivative of the bezier curve at the control point and then use
+           the pointInPolygon function to make sure the feather bar is always oriented on the outter part of the polygon.
+           The pointInPolygon function needs the polygon of the bezier to test whether the point is inside or outside the polygon
+           hence in this loop we compute the polygon for each bezier.
          */
 
         Transform::Matrix3x3 transform;
@@ -1532,37 +1531,37 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
 
             ///Now test if the user mouse click is on the line using bounding box and cross product.
             if ( ( ( ( pos.y() >= (controlPoint.y - acceptance) ) && ( pos.y() <= (featherPoint.y + acceptance) ) ) ||
-                  ( ( pos.y() >= (featherPoint.y - acceptance) ) && ( pos.y() <= (controlPoint.y + acceptance) ) ) ) &&
-                ( ( ( pos.x() >= (controlPoint.x - acceptance) ) && ( pos.x() <= (featherPoint.x + acceptance) ) ) ||
-                 ( ( pos.x() >= (featherPoint.x - acceptance) ) && ( pos.x() <= (controlPoint.x + acceptance) ) ) ) ) {
-                    Point a;
-                    a.x = (featherPoint.x - controlPoint.x);
-                    a.y = (featherPoint.y - controlPoint.y);
-                    double norm = sqrt(a.x * a.x + a.y * a.y);
+                   ( ( pos.y() >= (featherPoint.y - acceptance) ) && ( pos.y() <= (controlPoint.y + acceptance) ) ) ) &&
+                 ( ( ( pos.x() >= (controlPoint.x - acceptance) ) && ( pos.x() <= (featherPoint.x + acceptance) ) ) ||
+                   ( ( pos.x() >= (featherPoint.x - acceptance) ) && ( pos.x() <= (controlPoint.x + acceptance) ) ) ) ) {
+                Point a;
+                a.x = (featherPoint.x - controlPoint.x);
+                a.y = (featherPoint.y - controlPoint.y);
+                double norm = sqrt(a.x * a.x + a.y * a.y);
 
-                    ///The point is in the bounding box of the segment, if it is vertical it must be on the segment anyway
-                    if (norm == 0) {
+                ///The point is in the bounding box of the segment, if it is vertical it must be on the segment anyway
+                if (norm == 0) {
+                    return std::make_pair(*itCp, *itF);
+                }
+
+                a.x /= norm;
+                a.y /= norm;
+                Point b;
+                b.x = (pos.x() - controlPoint.x);
+                b.y = (pos.y() - controlPoint.y);
+                norm = sqrt(b.x * b.x + b.y * b.y);
+
+                ///This vector is not vertical
+                if (norm != 0) {
+                    b.x /= norm;
+                    b.y /= norm;
+
+                    double crossProduct = b.y * a.x - b.x * a.y;
+                    if (std::abs(crossProduct) <  0.3) {
                         return std::make_pair(*itCp, *itF);
                     }
-
-                    a.x /= norm;
-                    a.y /= norm;
-                    Point b;
-                    b.x = (pos.x() - controlPoint.x);
-                    b.y = (pos.y() - controlPoint.y);
-                    norm = sqrt(b.x * b.x + b.y * b.y);
-
-                    ///This vector is not vertical
-                    if (norm != 0) {
-                        b.x /= norm;
-                        b.y /= norm;
-
-                        double crossProduct = b.y * a.x - b.x * a.y;
-                        if (std::abs(crossProduct) <  0.3) {
-                            return std::make_pair(*itCp, *itF);
-                        }
-                    }
                 }
+            }
 
             // increment for next iteration
             // ++itF, ++nextF, ++prevF
@@ -1577,15 +1576,13 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
             }
         } // for(itCp)
     }
-    
+
     return std::make_pair( boost::shared_ptr<BezierCP>(), boost::shared_ptr<BezierCP>() );
 } // isNearbyFeatherBar
 
-
-
 void
 RotoPaintInteract::setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & drawables,
-                      const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points)
+                                const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & points)
 {
     selectedItems.clear();
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
@@ -1605,7 +1602,7 @@ RotoPaintInteract::setSelection(const std::list<boost::shared_ptr<RotoDrawableIt
 
 void
 RotoPaintInteract::setSelection(const boost::shared_ptr<Bezier> & curve,
-                      const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point)
+                                const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point)
 {
     selectedItems.clear();
     if (curve) {
@@ -1623,7 +1620,7 @@ RotoPaintInteract::setSelection(const boost::shared_ptr<Bezier> & curve,
 
 void
 RotoPaintInteract::getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* beziers,
-                      std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >* points)
+                                std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >* points)
 {
     *beziers = selectedItems;
     *points = selectedCps;
@@ -1641,9 +1638,6 @@ boost::shared_ptr<Bezier> RotoPaintInteract::getBezierBeingBuild() const
     return builtBezier;
 }
 
-
-
-
 bool
 RotoPaintInteract::smoothSelectedCurve()
 {
@@ -1651,7 +1645,6 @@ RotoPaintInteract::smoothSelectedCurve()
 
     p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
     boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
-
     double time = context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -1680,8 +1673,10 @@ RotoPaintInteract::smoothSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new SmoothCuspUndoCommand(shared_from_this(), datas, time, false, pixelScale) );
+
         return true;
     }
+
     return false;
 }
 
@@ -1720,8 +1715,10 @@ RotoPaintInteract::cuspSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new SmoothCuspUndoCommand(shared_from_this(), datas, time, true, pixelScale) );
+
         return true;
     }
+
     return false;
 }
 
@@ -1750,8 +1747,10 @@ RotoPaintInteract::removeFeatherForSelectedCurve()
     }
     if ( !datas.empty() ) {
         p->publicInterface->pushUndoCommand( new RemoveFeatherUndoCommand(shared_from_this(), datas) );
+
         return true;
     }
+
     return false;
 }
 
@@ -1760,22 +1759,24 @@ RotoPaintInteract::lockSelectedCurves()
 {
     ///Make a copy because setLocked will change the selection internally and invalidate the iterator
     SelectedItems selection = selectedItems;
-    if (selection.empty()) {
+
+    if ( selection.empty() ) {
         return false;
     }
     for (SelectedItems::const_iterator it = selection.begin(); it != selection.end(); ++it) {
         (*it)->setLocked(true, false, RotoItem::eSelectionReasonOverlayInteract);
     }
     clearSelection();
+
     return true;
 }
 
 bool
 RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
-                                      int y)
+                                                int y)
 {
-
     std::list< std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > points;
+
     if ( !selectedCps.empty() ) {
         points = selectedCps;
     } else {
@@ -1784,22 +1785,19 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
             if (bezier) {
                 const std::list< boost::shared_ptr<BezierCP> > & cps = bezier->getControlPoints();
                 const std::list< boost::shared_ptr<BezierCP> > & fps = bezier->getFeatherPoints();
-
                 std::list< boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-                assert(fps.empty() || fps.size() == cps.size());
-                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it!=cps.end(); ++it) {
-
-                    points.push_back(std::make_pair(*it, *fpIt));
-                    if (!fps.empty()) {
+                assert( fps.empty() || fps.size() == cps.size() );
+                for (std::list< boost::shared_ptr<BezierCP> >::const_iterator it = cps.begin(); it != cps.end(); ++it) {
+                    points.push_back( std::make_pair(*it, *fpIt) );
+                    if ( !fps.empty() ) {
                         ++fpIt;
                     }
                 }
-
             }
         }
     }
 
-    if (!points.empty()) {
+    if ( !points.empty() ) {
         std::pair<double, double> pixelScale;
         p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
         double time = p->publicInterface->getCurrentTime();
@@ -1808,15 +1806,16 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                                               (double)y * pixelScale.second, time) );
         computeSelectedCpsBBOX();
         p->publicInterface->getNode()->getRotoContext()->evaluateChange();
+
         return true;
     }
+
     return false;
 }
 
-
 void
 RotoPaintInteract::onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem> & item,
-                                         bool* ret)
+                                                 bool* ret)
 {
     boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(item);
     boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
@@ -1850,7 +1849,6 @@ RotoPaintInteract::onCurveLockedChangedRecursive(const boost::shared_ptr<RotoIte
     }
 }
 
-
 void
 RotoPaintInteract::removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve)
 {
@@ -1861,6 +1859,5 @@ RotoPaintInteract::removeCurve(const boost::shared_ptr<RotoDrawableItem>& curve)
     }
     getContext()->removeItem(curve);
 }
-
 
 NATRON_NAMESPACE_EXIT;

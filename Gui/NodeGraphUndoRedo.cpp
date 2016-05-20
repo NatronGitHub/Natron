@@ -1145,7 +1145,6 @@ LoadNodePresetsCommand::getListAsShared(const std::list< NodeWPtr >& original,
 
 LoadNodePresetsCommand::~LoadNodePresetsCommand()
 {
-
 }
 
 void

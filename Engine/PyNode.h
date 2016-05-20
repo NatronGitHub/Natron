@@ -210,6 +210,7 @@ public:
         Q_UNUSED(time);
         Q_UNUSED(view);
         Q_UNUSED(originatedFromMainThread);
+
         return false;
     }
 };

@@ -32,13 +32,14 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class UndoCommand {
-
+class UndoCommand
+{
     std::string _text;
+
 public:
 
-    UndoCommand(const std::string& text = std::string())
-    : _text(text)
+    UndoCommand( const std::string& text = std::string() )
+        : _text(text)
     {}
 
     virtual ~UndoCommand() {}

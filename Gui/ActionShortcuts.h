@@ -676,7 +676,6 @@ public:
     }
 
     virtual ~ActionWithShortcut();
-
     virtual void setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut);
 };
 

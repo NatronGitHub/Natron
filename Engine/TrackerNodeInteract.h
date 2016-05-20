@@ -58,9 +58,9 @@
 #define kTrackerUIParamAddTrack "addTrack"
 #define kTrackerUIParamAddTrackLabel "Add Track"
 #define kTrackerUIParamAddTrackHint "When enabled you can add new tracks " \
-"by clicking on the Viewer. " \
-"Holding the Control + Alt keys is the " \
-"same as pressing this button."
+    "by clicking on the Viewer. " \
+    "Holding the Control + Alt keys is the " \
+    "same as pressing this button."
 
 #define kTrackerUIParamTrackBW "trackBW"
 #define kTrackerUIParamTrackBWLabel "Track Backward"
@@ -121,7 +121,7 @@
 #define kTrackerUIParamShowError "showError"
 #define kTrackerUIParamShowErrorLabel "Show Error"
 #define kTrackerUIParamShowErrorHint "When enabled, the error of the track for each frame will be displayed on " \
-"the viewer, with good tracks close to green and bad tracks close to red"
+    "the viewer, with good tracks close to green and bad tracks close to red"
 
 #define kTrackerUIParamSetPatternKeyFrame "setPatternKey"
 #define kTrackerUIParamSetPatternKeyFrameLabel "Set Keyframe On Pattern"
@@ -185,7 +185,6 @@
 #define kTrackerUIParamTrackRangeDialogCancelButtonHint "Close this window and do not start tracking"
 
 NATRON_NAMESPACE_ENTER;
-
 
 
 enum TrackerMouseStateEnum
@@ -298,11 +297,12 @@ struct TrackerNodePrivate
     ~TrackerNodePrivate();
 };
 
-class TrackerNodeInteract : public QObject
+class TrackerNodeInteract
+    : public QObject
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -329,8 +329,6 @@ public:
     boost::weak_ptr<KnobButton> showCorrelationButton;
 
 
-
-
     // Track range dialog
     boost::weak_ptr<KnobGroup> trackRangeDialogGroup;
     boost::weak_ptr<KnobInt> trackRangeDialogFirstFrame;
@@ -348,7 +346,6 @@ public:
     boost::weak_ptr<KnobButton> nudgeTracksOnLeftMenuAction;
     boost::weak_ptr<KnobButton> nudgeTracksOnTopMenuAction;
     boost::weak_ptr<KnobButton> nudgeTracksOnBottomMenuAction;
-
     bool clickToAddTrackEnabled;
     QPointF lastMousePos;
     QRectF selectionRectangle;
@@ -406,7 +403,7 @@ public:
     void onClearAllAnimationClicked();
 
     void onClearBwAnimationClicked();
-    
+
     void onClearFwAnimationClicked();
 
     void onCenterViewerButtonClicked(bool clicked);
@@ -462,23 +459,21 @@ public:
     static Point toMagWindowPoint(const Point& ptnPoint,
                                   const RectD& canonicalSearchWindow,
                                   const RectD& textureRectCanonical);
-
-
     static QPointF computeMidPointExtent(const QPointF& prev,
                                          const QPointF& next,
                                          const QPointF& point,
                                          const QPointF& handleSize);
 
     bool isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
-                              double xWidget,
-                              double yWidget,
-                              double toleranceWidget,
-                              double time);
+                       double xWidget,
+                       double yWidget,
+                       double toleranceWidget,
+                       double time);
 
     bool isNearbyPoint(const QPointF& p,
-                              double xWidget,
-                              double yWidget,
-                              double toleranceWidget);
+                       double xWidget,
+                       double yWidget,
+                       double toleranceWidget);
 
     static void drawEllipse(double x,
                             double y,
@@ -489,13 +484,10 @@ public:
                             double g,
                             double b,
                             double a);
-
     static void findLineIntersection(const Point& p,
                                      const Point& l1,
                                      const Point& l2,
                                      Point* inter);
-
-
 
 public Q_SLOTS:
 
@@ -512,8 +504,6 @@ public Q_SLOTS:
     void rebuildMarkerTextures();
     void onTrackImageRenderingFinished();
     void onKeyFrameImageRenderingFinished();
-
-
 };
 
 NATRON_NAMESPACE_EXIT;

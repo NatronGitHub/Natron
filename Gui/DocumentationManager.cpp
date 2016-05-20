@@ -80,10 +80,10 @@ DocumentationManager::handler(QHttpRequest *req,
 #endif
 
     // override static docs
-    if (page.contains( QString::fromUtf8("/plugins/") )) {
+    if ( page.contains( QString::fromUtf8("/plugins/") ) ) {
         page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
     }
-    if (page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") )) {
+    if ( page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") ) ) {
         page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("_group"), QString::fromUtf8("_group.html?id=") );
     }
 
@@ -306,10 +306,10 @@ DocumentationManager::parser(QString html,
 
     // sphinx compat
     bool plainBody = false;
-    if (result.contains(QString::fromUtf8("<body>"))) { // 1.3 and lower
+
+    if ( result.contains( QString::fromUtf8("<body>") ) ) { // 1.3 and lower
         plainBody = true;
-    }
-    else if (result.contains(QString::fromUtf8("<body role=\"document\">"))) { // 1.4+
+    } else if ( result.contains( QString::fromUtf8("<body role=\"document\">") ) )   { // 1.4+
         plainBody = false;
     }
 
@@ -320,8 +320,7 @@ DocumentationManager::parser(QString html,
     // fix sphinx compat
     if (plainBody) {
         menuHTML.append( QString::fromUtf8("<body>\n") );
-    }
-    else {
+    } else   {
         menuHTML.append( QString::fromUtf8("<body role=\"document\">\n") );
     }
     menuHTML.append( QString::fromUtf8("<div id=\"header\">\n<a href=\"/\"><div id=\"logo\"></div></a>\n") );
@@ -361,8 +360,7 @@ DocumentationManager::parser(QString html,
     // fix sphinx compat
     if (plainBody) {
         result.replace(QString::fromUtf8("<body>"), menuHTML);
-    }
-    else {
+    } else   {
         result.replace(QString::fromUtf8("<body role=\"document\">"), menuHTML);
     }
 

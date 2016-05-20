@@ -2901,7 +2901,7 @@ ViewerInstance::onGammaChanged(double value)
     }
     assert(_imp->uiContext);
     if (changed) {
-        if (_imp->uiContext->getBitDepth() == eImageBitDepthByte
+        if ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte)
              && !getApp()->getProject()->isLoadingProject() ) {
             renderCurrentFrame(true);
         } else {
@@ -3105,8 +3105,6 @@ ViewerInstance::disconnectTexture(int index)
         Q_EMIT disconnectTextureRequest(index);
     }
 }
-
-
 
 void
 ViewerInstance::redrawViewer()

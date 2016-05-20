@@ -480,7 +480,6 @@ private:
     boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<KnobChoice> _autoProxyLevel;
     boost::shared_ptr<KnobInt> _maximumNodeViewerUIOpened;
-
     boost::shared_ptr<KnobPage> _nodegraphTab;
     boost::shared_ptr<KnobBool> _autoTurbo;
     boost::shared_ptr<KnobBool> _useNodeGraphHints;

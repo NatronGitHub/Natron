@@ -172,6 +172,7 @@ QtWriter::knobChanged(KnobI* k,
                       bool /* originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( k == _frameRangeChoosal.get() ) {
         int index = _frameRangeChoosal->getValue();
         if (index != 2) {
@@ -193,6 +194,7 @@ QtWriter::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
+
     return ret;
 }
 

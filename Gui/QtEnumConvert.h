@@ -58,7 +58,6 @@ public:
     static StandardButtonEnum fromQtStandardButton(QMessageBox::StandardButton b);
     static QMessageBox::StandardButton toQtStandardButton(StandardButtonEnum b);
     static QMessageBox::StandardButtons toQtStandarButtons(StandardButtons buttons);
-
     static bool toQtCursor(CursorEnum c, Qt::CursorShape* ret);
 };
 

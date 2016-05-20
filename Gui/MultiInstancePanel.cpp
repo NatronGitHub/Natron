@@ -1674,6 +1674,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        bool /*originatedFromMainThread*/)
 {
     bool ret = false;
+
     if ( !k->isDeclaredByPlugin() ) {
         if (k->getName() == kDisableNodeKnobName) {
             KnobBool* boolKnob = dynamic_cast<KnobBool*>(k);
@@ -1717,8 +1718,9 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             }
         }
     }
+
     return ret;
-}
+} // MultiInstancePanel::onKnobValueChanged
 
 namespace  {
 enum ExportTransformTypeEnum

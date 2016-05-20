@@ -112,9 +112,8 @@ public:
                                          const RenderScale& renderScale,
                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     virtual bool onOverlayPenDoubleClickedDefault(double time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  = 0;
-
+                                                  const RenderScale& renderScale,
+                                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  = 0;
     virtual bool onOverlayPenMotionDefault(double time,
                                            const RenderScale& renderScale,
                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;

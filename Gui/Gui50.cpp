@@ -123,7 +123,6 @@ Gui::showErrorLog()
     ignore_result( lw.exec() );
 }
 
-
 void
 Gui::createNodeViewerInterface(const NodeGuiPtr& n)
 {
@@ -136,7 +135,7 @@ Gui::createNodeViewerInterface(const NodeGuiPtr& n)
 
 void
 Gui::removeNodeViewerInterface(const NodeGuiPtr& n,
-                         bool permanently)
+                               bool permanently)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 

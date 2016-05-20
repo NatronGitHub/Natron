@@ -1255,11 +1255,12 @@ OfxImageEffectInstance::paramChangedByPlugin(OFX::Host::Param::Instance */*param
      */
 }
 
-
 bool
-OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor, CursorEnum* cursor)
+OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor,
+                                                CursorEnum* cursor)
 {
     bool ret = true;
+
     if (ofxCursor == kNatronOfxDefaultCursor) {
         *cursor = eCursorDefault;
     } else if (ofxCursor == kNatronOfxBlankCursor) {
@@ -1303,7 +1304,8 @@ OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor, Cu
     } else {
         ret = false;
     }
+
     return ret;
-}
+} // OfxImageEffectInstance::ofxCursorToNatronCursor
 
 NATRON_NAMESPACE_EXIT;

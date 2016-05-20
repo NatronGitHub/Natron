@@ -133,8 +133,6 @@ public:
 
     virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-
-
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
 
@@ -228,7 +226,6 @@ private:
     virtual void wheelEvent(QWheelEvent* e) OVERRIDE FINAL;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
-
     virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) OVERRIDE FINAL;
 
     void renderText(double x, double y, const QString & text, const QColor & color, const QFont & font) const;

@@ -733,7 +733,6 @@ Gui::ensureProgressPanelVisible()
     }
 }
 
-
 void
 Gui::onNodeNameChanged(const QString & /*name*/)
 {

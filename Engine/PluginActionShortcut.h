@@ -34,24 +34,25 @@ struct PluginActionShortcut
 {
     std::string actionID;
     std::string actionLabel;
-
     KeyboardModifiers modifiers;
     Key key;
 
     PluginActionShortcut()
-    : actionID()
-    , actionLabel()
-    , modifiers(eKeyboardModifierNone)
-    , key(Key_Unknown)
+        : actionID()
+        , actionLabel()
+        , modifiers(eKeyboardModifierNone)
+        , key(Key_Unknown)
     {
-
     }
 
-    PluginActionShortcut(const std::string& id, const std::string& label, Key symbol = Key_Unknown, const KeyboardModifiers& mods = KeyboardModifiers(eKeyboardModifierNone))
-    : actionID(id)
-    , actionLabel(label)
-    , modifiers(mods)
-    , key(symbol)
+    PluginActionShortcut( const std::string& id,
+                          const std::string& label,
+                          Key symbol = Key_Unknown,
+                          const KeyboardModifiers& mods = KeyboardModifiers(eKeyboardModifierNone) )
+        : actionID(id)
+        , actionLabel(label)
+        , modifiers(mods)
+        , key(symbol)
     {}
 };
 

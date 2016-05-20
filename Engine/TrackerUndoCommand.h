@@ -32,7 +32,6 @@
 #include "Engine/UndoCommand.h"
 
 
-
 NATRON_NAMESPACE_ENTER;
 
 class AddTrackCommand

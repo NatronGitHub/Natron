@@ -78,7 +78,6 @@ BezierCP::save(Archive & ar,
     ar & ::boost::serialization::make_nvp("Right_X_animation", *_imp->curveRightBezierX);
     ar & ::boost::serialization::make_nvp("Right_Y", _imp->rightY);
     ar & ::boost::serialization::make_nvp("Right_Y_animation", *_imp->curveRightBezierY);
-
 }
 
 template<class Archive>
@@ -144,7 +143,7 @@ BezierCP::load(Archive & ar,
         _imp->curveRightBezierX->clone(*rightCurveX);
         _imp->curveRightBezierY->clone(*rightCurveY);
     }
-    if (version >= BEZIER_CP_INTRODUCES_OFFSET && version < BEZIER_CP_REMOVE_OFFSET) {
+    if ( (version >= BEZIER_CP_INTRODUCES_OFFSET) && (version < BEZIER_CP_REMOVE_OFFSET) ) {
         int offsetTime;
         ar & ::boost::serialization::make_nvp("OffsetTime", offsetTime);
     }

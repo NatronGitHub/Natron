@@ -28,15 +28,12 @@
 #include "Engine/NodeGroup.h"
 
 
-
-
 NATRON_NAMESPACE_ENTER;
 
 struct TrackerNodePrivate;
 class TrackerNode
     : public NodeGroup
 {
-
 public:
 
     static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)
@@ -130,11 +127,9 @@ public:
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
-
 private:
 
     virtual void getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts) OVERRIDE FINAL;
-
     virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
@@ -145,25 +140,18 @@ private:
                                            ViewIdx view,
                                            const QPointF & viewportPos,
                                            const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
     virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
     virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
     virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
     virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
-
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
-
-
     virtual bool knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,
                              bool originatedFromMainThread) OVERRIDE FINAL;
-
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
 
 private:

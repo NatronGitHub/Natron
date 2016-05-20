@@ -566,7 +566,7 @@ KnobGui::toolTip() const
     }
 
     return tt;
-}
+} // KnobGui::toolTip
 
 bool
 KnobGui::hasToolTip() const

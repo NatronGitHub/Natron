@@ -1057,7 +1057,6 @@ public:
 
     virtual RectD getViewportRect() const OVERRIDE = 0;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;
-
     virtual void saveOpenGLContext() OVERRIDE = 0;
     virtual void restoreOpenGLContext() OVERRIDE = 0;
 
@@ -1167,15 +1166,15 @@ public:
     bool slaveTo(int dimension, const KnobPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
     virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
-                                          const boost::shared_ptr<KnobPage>& page,
-                                          const boost::shared_ptr<KnobGroup>& group,
-                                          int indexInParent,
-                                          bool makeAlias,
-                                          const std::string& newScriptName,
-                                          const std::string& newLabel,
-                                          const std::string& newToolTip,
-                                          bool refreshParams,
-                                          bool isUserKnob) = 0;
+                                            const boost::shared_ptr<KnobPage>& page,
+                                            const boost::shared_ptr<KnobGroup>& group,
+                                            int indexInParent,
+                                            bool makeAlias,
+                                            const std::string& newScriptName,
+                                            const std::string& newLabel,
+                                            const std::string& newToolTip,
+                                            bool refreshParams,
+                                            bool isUserKnob) = 0;
 
     /**
      * @brief If a knob was created using createDuplicateOnHolder(effect,true), this function will return true
@@ -1446,6 +1445,7 @@ public:
     virtual std::string  getLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     void setLabel(const std::string& label) OVERRIDE FINAL;
     void setLabel(const QString & label) { setLabel( label.toStdString() ); }
+
     virtual void setIconLabel(const std::string& iconFilePath, bool checked = false) OVERRIDE FINAL;
     virtual const std::string& getIconLabel(bool checked = false) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobHolder* getHolder() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1519,7 +1519,6 @@ public:
     virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
     virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1533,15 +1532,15 @@ public:
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void checkAnimationLevel(ViewSpec view, int dimension) OVERRIDE FINAL;
     virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
-                                          const boost::shared_ptr<KnobPage>& page,
-                                          const boost::shared_ptr<KnobGroup>& group,
-                                          int indexInParent,
-                                          bool makeAlias,
-                                          const std::string& newScriptName,
-                                          const std::string& newLabel,
-                                          const std::string& newToolTip,
-                                          bool refreshParams,
-                                          bool isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                            const boost::shared_ptr<KnobPage>& page,
+                                            const boost::shared_ptr<KnobGroup>& group,
+                                            int indexInParent,
+                                            bool makeAlias,
+                                            const std::string& newScriptName,
+                                            const std::string& newLabel,
+                                            const std::string& newToolTip,
+                                            bool refreshParams,
+                                            bool isUserKnob) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KnobPtr getAliasMaster() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) OVERRIDE FINAL;
 
@@ -2322,10 +2321,10 @@ public:
     void addKnobToViewerUI(const KnobPtr& knob);
     KnobsVec getViewerUIKnobs() const;
 
-
 protected:
 
-    virtual void refreshExtraStateAfterTimeChanged(bool /*isPlayback*/, double /*time*/) {}
+    virtual void refreshExtraStateAfterTimeChanged(bool /*isPlayback*/,
+                                                   double /*time*/) {}
 
 public:
 

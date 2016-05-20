@@ -472,7 +472,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     fittingErrorWarningKnob->setName(kTrackerParamFittingErrorWarning);
     fittingErrorWarningKnob->setHintToolTip( tr(kTrackerParamFittingErrorWarningHint) );
     fittingErrorWarningKnob->setAnimationEnabled(false);
-    fittingErrorWarningKnob->setDefaultValue(tr(kTrackerParamFittingErrorWarningLabel).toStdString());
+    fittingErrorWarningKnob->setDefaultValue( tr(kTrackerParamFittingErrorWarningLabel).toStdString() );
     fittingErrorWarningKnob->setIconLabel("dialog-warning");
     fittingErrorWarningKnob->setEvaluateOnChange(false);
     fittingErrorWarningKnob->setSecretByDefault(true);
@@ -527,7 +527,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
     NodePtr tNode = transformNode.lock();
     if (tNode) {
-
         KnobPtr disabledKnob = tNode->getKnobByName(kDisableNodeKnobName);
         assert(disabledKnob);
         disabledKnob->slaveTo(0, disableTransformKnob, 0);
@@ -560,7 +559,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     } // tNode
     NodePtr cNode = cornerPinNode.lock();
     if (cNode) {
-
         KnobPtr disabledKnob = cNode->getKnobByName(kDisableNodeKnobName);
         assert(disabledKnob);
         disabledKnob->slaveTo(0, disableTransformKnob, 0);
@@ -593,11 +591,11 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         }
         boost::shared_ptr<KnobButton> setToInputRod = AppManager::createKnob<KnobButton>(effect.get(), tr(kCornerPinParamSetToInputRoDLabel), 1);
         setToInputRod->setName(kCornerPinParamSetToInputRoD);
-        setToInputRod->setHintToolTip(tr(kCornerPinParamSetToInputRoDHint));
+        setToInputRod->setHintToolTip( tr(kCornerPinParamSetToInputRoDHint) );
         fromGroupKnob->addKnob(setToInputRod);
         setFromPointsToInputRod = setToInputRod;
 
-        boost::shared_ptr<KnobBool> cornerPinSet = AppManager::createKnob<KnobBool>(effect.get(), std::string(kTrackerParamCornerPinFromPointsSetOnce));
+        boost::shared_ptr<KnobBool> cornerPinSet = AppManager::createKnob<KnobBool>( effect.get(), std::string(kTrackerParamCornerPinFromPointsSetOnce) );
         cornerPinSet->setSecretByDefault(true);
         fromGroupKnob->addKnob(cornerPinSet);
         cornerPinFromPointsSetOnceAutomatically = cornerPinSet;
@@ -1112,7 +1110,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     if (overlayInteract) {
         viewer = overlayInteract->getInternalViewerNode();
     }
-    
+
 
     /// The channels we are going to use for tracking
     bool enabledChannels[3];
@@ -1153,7 +1151,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
 
-        if (userKeys.empty()) {
+        if ( userKeys.empty() ) {
             // Set a user keyframe on tracking start if the marker does not have any user keys
             t->natronMarker->setUserKeyframe(start);
         }
@@ -1357,13 +1355,13 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     transformControlsSeparator.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     disableTransformKnob->setSecret(motionType == eTrackerMotionTypeNone);
     if (transformType == eTrackerTransformNodeTransform) {
-        transformControlsSeparator.lock()->setLabel(tr("Transform Controls"));
-        disableTransformKnob->setLabel(tr("Disable Transform"));
+        transformControlsSeparator.lock()->setLabel( tr("Transform Controls") );
+        disableTransformKnob->setLabel( tr("Disable Transform") );
     } else if (transformType == eTrackerTransformNodeCornerPin) {
-        transformControlsSeparator.lock()->setLabel(tr("CornerPin Controls"));
-        disableTransformKnob->setLabel(tr("Disable CornerPin"));
+        transformControlsSeparator.lock()->setLabel( tr("CornerPin Controls") );
+        disableTransformKnob->setLabel( tr("Disable CornerPin") );
     }
-    
+
 
     smoothTransform.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
     smoothCornerPin.lock()->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
@@ -1375,8 +1373,6 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     if (matrix) {
         matrix->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
     }
-
-
 
 
     translate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
@@ -1965,7 +1961,6 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     // signals to create keyframes in keyframeSet
     Curve tmpToPointsCurveX[4], tmpToPointsCurveY[4];
     Curve tmpFittingErrorCurve;
-
     bool mustShowFittingWarn = false;
     for (QList<CornerPinData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const CornerPinData& dataAtTime = *itResults;
@@ -2192,7 +2187,6 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
 
 
     Curve tmpTXCurve, tmpTYCurve, tmpRotateCurve, tmpScaleCurve, tmpFittingErrorCurve;
-
     bool mustShowFittingWarn = false;
     for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const TransformData& dataAtTime = *itResults;

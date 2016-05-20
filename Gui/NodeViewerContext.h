@@ -41,9 +41,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct NodeViewerContextPrivate;
 class NodeViewerContext
-: public QObject
-, public KnobGuiContainerI
-, public boost::enable_shared_from_this<NodeViewerContext>
+    : public QObject
+      , public KnobGuiContainerI
+      , public boost::enable_shared_from_this<NodeViewerContext>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -56,7 +56,7 @@ public:
     void createGui();
 
     virtual ~NodeViewerContext();
-    
+
     /**
      * @brief If this node's viewer context has a toolbar, this will return it
      **/
@@ -75,8 +75,6 @@ public:
     virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setCurrentTool(const QString& toolID, bool notifyNode);
@@ -96,7 +94,7 @@ Q_SIGNALS:
      * @brief Emitted when the selected role changes
      **/
     void roleChanged(int previousRole, int newRole);
-    
+
 public Q_SLOTS:
 
     /**

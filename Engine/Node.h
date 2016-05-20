@@ -1113,8 +1113,8 @@ public:
                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
     bool onOverlayPenDoubleClickedDefault(double time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+                                          const RenderScale& renderScale,
+                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
 
     bool onOverlayPenMotionDefault(double time,

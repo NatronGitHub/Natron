@@ -333,6 +333,7 @@ PrecompNode::knobChanged(KnobI* k,
                          bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( (reason != eValueChangedReasonTimeChanged) && ( k == _imp->projectFileNameKnob.lock().get() ) ) {
         _imp->reloadProject(true);
     } else if ( k == _imp->editProjectKnob.lock().get() ) {
@@ -354,6 +355,7 @@ PrecompNode::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
+
     return ret;
 }
 

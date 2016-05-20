@@ -1080,12 +1080,12 @@ Settings::initializeKnobsViewers()
     _viewersTab->addKnob(_autoProxyLevel);
 
 
-    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>(this, tr("Max. opened node viewer interface"));
+    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( this, tr("Max. opened node viewer interface") );
     _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
     _maximumNodeViewerUIOpened->setMinimum(1);
     _maximumNodeViewerUIOpened->setAnimationEnabled(false);
     _maximumNodeViewerUIOpened->disableSlider();
-    _maximumNodeViewerUIOpened->setHintToolTip(tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer"));
+    _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
 } // Settings::initializeKnobsViewers
 
@@ -2044,8 +2044,8 @@ Settings::onKnobValueChanged(KnobI* k,
                              bool /*originatedFromMainThread*/)
 {
     Q_EMIT settingChanged(k);
-
     bool ret = true;
+
     if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
@@ -2177,6 +2177,7 @@ Settings::onKnobValueChanged(KnobI* k,
             Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
     }
+
     return ret;
 } // onKnobValueChanged
 
@@ -2613,8 +2614,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n<h1>" << tr("Preferences") << "</h1>\n";
-    }
-    else {
+    } else   {
         ts << tr("Preferences") << "\n==========\n\n";
     }
 
@@ -2629,35 +2629,32 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
 
-            if (isPage) {
+        if (isPage) {
+            if (genHTML) {
+                ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
+            } else   {
+                ts << knobLabel << "\n----------\n\n";
+            }
+        } else if (isSep) {
+            if (genHTML) {
+                ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
+            } else   {
+                //ts << knobLabel << "\n----------\n\n";
+                ts << "**" << knobLabel << "**\n\n";
+            }
+        } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
+            if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
                 if (genHTML) {
-                    ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
-                }
-                else {
-                    ts << knobLabel << "\n----------\n\n";
-                }
-            } else if (isSep) {
-                if (genHTML) {
-                    ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
-                }
-                else {
-                    //ts << knobLabel << "\n----------\n\n";
+                    ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
+                    //Markdown markdown;
+                    //ts << markdown.convert2html(knobHint);
+                    ts << "<p>" << knobHint << "</p>\n";
+                } else   {
                     ts << "**" << knobLabel << "**\n\n";
-                }
-            } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
-                if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
-                    if (genHTML) {
-                        ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
-                        //Markdown markdown;
-                        //ts << markdown.convert2html(knobHint);
-                        ts << "<p>" << knobHint << "</p>\n";
-                    }
-                    else {
-                        ts << "**" << knobLabel << "**\n\n";
-                        ts << knobHint << "\n\n";
-                    }
+                    ts << knobHint << "\n\n";
                 }
             }
+        }
     }
 
     if (genHTML) {

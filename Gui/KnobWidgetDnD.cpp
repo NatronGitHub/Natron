@@ -121,7 +121,7 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
     }
 
     dragDim = dragDim == -1 ? 0 : dragDim;
-    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && (internalKnob->isEnabled(dragDim) || internalKnob->isSlave(dragDim)) ) {
+    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(dragDim) || internalKnob->isSlave(dragDim) ) ) {
         _imp->dragPos = e->pos();
         _imp->dragging = true;
 

@@ -181,9 +181,8 @@ AbortableRenderInfo::onAbortTimerTimeout()
         NodePtr node;
         (*it)->getCurrentActionInfos(&actionName, &node);
         if (node) {
-
             // Don't show a dialog on timeout for writers since reading/writing from/to a file may be long and most libraries don't provide write callbacks anyway
-            if (node->getEffectInstance()->isReader() || node->getEffectInstance()->isWriter()) {
+            if ( node->getEffectInstance()->isReader() || node->getEffectInstance()->isWriter() ) {
                 return;
             }
             std::string nodeName, pluginId;
@@ -205,7 +204,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
         }
     }
     ss << std::endl;
-    
+
     if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();
     } else {
@@ -221,7 +220,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
             }
         }
     }
-#endif
+#endif // ifdef QT_CUSTOM_THREADPOOL
 } // AbortableRenderInfo::onAbortTimerTimeout
 
 NATRON_NAMESPACE_EXIT;

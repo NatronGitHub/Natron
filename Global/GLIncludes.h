@@ -45,10 +45,13 @@ glError() {}
 inline const char*
 glErrorString(GLenum errorCode)
 {
-    static const struct {
+    static const struct
+    {
         GLenum code;
         const char *string;
-    } errors[]=
+    }
+
+    errors[] =
     {
         /* GL */
         {GL_NO_ERROR, "no error"},
@@ -80,17 +83,16 @@ glErrorString(GLenum errorCode)
 
         {0, NULL }
     };
-
     int i;
 
-    for (i=0; errors[i].string; i++) {
+    for (i = 0; errors[i].string; i++) {
         if (errors[i].code == errorCode) {
             return errors[i].string;
         }
     }
 
     return NULL;
-}
+} // glErrorString
 
 #define glCheckError()                                                  \
     {                                                                   \
@@ -100,7 +102,8 @@ glErrorString(GLenum errorCode)
             const char* _glerror_s_ = glErrorString(_glerror_);         \
             if (_glerror_s_) {                                          \
                 std::cout << _glerror_s_ << std::endl;   \
-            } else {                                                    \
+            } \
+            else {                                                    \
                 std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
             }                                                           \
             glError();                                                  \
@@ -115,7 +118,8 @@ glErrorString(GLenum errorCode)
             const char* _glerror_s_ = glErrorString(_glerror_);         \
             if (_glerror_s_) {                                          \
                 std::cout << _glerror_s_ << std::endl;   \
-            } else {                                                    \
+            } \
+            else {                                                    \
                 std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
             }                                                           \
             glError();                                                  \
@@ -132,7 +136,8 @@ glErrorString(GLenum errorCode)
             const char* _glerror_s_ = glErrorString(_glerror_);         \
             if (_glerror_s_) {                                          \
                 std::cout << _glerror_s_ << std::endl;   \
-            } else {                                                    \
+            } \
+            else {                                                    \
                 std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
             }                                                           \
             glError();                                                  \

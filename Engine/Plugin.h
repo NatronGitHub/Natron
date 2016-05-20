@@ -153,7 +153,6 @@ public:
 };
 
 
-
 class Plugin
 {
     LibraryBinary* _binary;
@@ -189,8 +188,6 @@ class Plugin
        These are shortcuts that the plug-in registered
      */
     std::list<PluginActionShortcut> _shortcuts;
-
-
 
 public:
 
@@ -258,7 +255,7 @@ public:
         , _activatedSet(false)
         , _activated(true)
     {
-        if (_resourcesPath.isEmpty()) {
+        if ( _resourcesPath.isEmpty() ) {
             _resourcesPath = QLatin1String(":/Resources/");
         }
     }

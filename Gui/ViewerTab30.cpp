@@ -339,6 +339,7 @@ ViewerTab::setInfoBarResolution(const Format & f)
     _imp->infoWidget[0]->setResolution(f);
     _imp->infoWidget[1]->setResolution(f);
 }
+
 #if 0
 void
 ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
@@ -397,7 +398,7 @@ ViewerTab::setTrackerInterface(const NodeGuiPtr& n)
         }
 
         ///remove any existing tracker gui
-        if (_imp->currentTracker.first.lock()) {
+        if ( _imp->currentTracker.first.lock() ) {
             removeTrackerInterface(_imp->currentTracker.first.lock(), false, true);
         }
 
@@ -447,7 +448,7 @@ ViewerTab::removeTrackerInterface(const NodeGuiPtr& n,
             return;
         }
 
-        if (_imp->currentTracker.first .lock()== n) {
+        if (_imp->currentTracker.first.lock() == n) {
             ///Remove the widgets of the current tracker node
 
             int buttonsBarIndex = _imp->mainLayout->indexOf( _imp->currentTracker.second->getButtonsBar() );
@@ -474,7 +475,7 @@ ViewerTab::removeTrackerInterface(const NodeGuiPtr& n,
                 _imp->currentTracker.second = 0;
 
                 if ( newTracker != _imp->trackerNodes.end() ) {
-                    setTrackerInterface(newTracker->first.lock());
+                    setTrackerInterface( newTracker->first.lock() );
                 }
             }
         }
@@ -486,8 +487,7 @@ ViewerTab::removeTrackerInterface(const NodeGuiPtr& n,
     }
 } // ViewerTab::removeTrackerInterface
 
-
-#endif
+#endif // if 0
 
 /**
  * @brief Creates a new viewer interface context for this node. This is not shared among viewers.
@@ -499,14 +499,14 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
         return;
     }
     std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
-    if (found != _imp->nodesContext.end()) {
+    if ( found != _imp->nodesContext.end() ) {
         // Already exists
         return;
     }
 
-    boost::shared_ptr<NodeViewerContext> nodeContext(new NodeViewerContext(n, this));
+    boost::shared_ptr<NodeViewerContext> nodeContext( new NodeViewerContext(n, this) );
     nodeContext->createGui();
-    _imp->nodesContext.insert(std::make_pair(n, nodeContext));
+    _imp->nodesContext.insert( std::make_pair(n, nodeContext) );
 
     if ( n->isSettingsPanelVisible() ) {
         setPluginViewerInterface(n);
@@ -520,7 +520,6 @@ ViewerTab::createNodeViewerInterface(const NodeGuiPtr& n)
             w->hide();
         }
     }
-
 }
 
 /**
@@ -540,7 +539,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     std::string pluginID = n->getNode()->getPluginID();
     std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
     NodeGuiPtr activeNodeForPlugin;
-    if (foundActive != _imp->currentNodeContext.end()) {
+    if ( foundActive != _imp->currentNodeContext.end() ) {
         activeNodeForPlugin = foundActive->currentNode.lock();
     }
 
@@ -574,16 +573,16 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
             }
         }
     }
-    
+
     // If there are other interface active, add it after them
     int index;
-    if (_imp->currentNodeContext.empty()) {
+    if ( _imp->currentNodeContext.empty() ) {
         // insert before the viewer
         index = _imp->mainLayout->indexOf(_imp->viewerContainer);
     } else {
         // Remove the oldest opened interface if we reached the maximum
         int maxNodeContextOpened = appPTR->getCurrentSettings()->getMaxOpenedNodesViewerContext();
-        if ((int)_imp->currentNodeContext.size() == maxNodeContextOpened) {
+        if ( (int)_imp->currentNodeContext.size() == maxNodeContextOpened ) {
             const ViewerTabPrivate::PluginViewerContext& oldestNodeViewerInterface = _imp->currentNodeContext.front();
             removeNodeViewerInterface(oldestNodeViewerInterface.currentNode.lock(), false /*permanantly*/, false /*setAnother*/);
         }
@@ -615,8 +614,7 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
     _imp->currentNodeContext.push_back(p);
 
     _imp->viewer->redraw();
-
-}
+} // ViewerTab::setPluginViewerInterface
 
 /**
  * @brief Removes the interface associated to the given node.
@@ -625,9 +623,12 @@ ViewerTab::setPluginViewerInterface(const NodeGuiPtr& n)
  * viewer interface for this plug-in
  **/
 void
-ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently, bool setAnotherFromSamePlugin)
+ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n,
+                                     bool permanently,
+                                     bool setAnotherFromSamePlugin)
 {
     std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(n);
+
     if ( found == _imp->nodesContext.end() ) {
         return;
     }
@@ -640,7 +641,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently, bool
     {
         // Keep the iterator under this scope since we erase it
         std::list<ViewerTabPrivate::PluginViewerContext>::iterator foundActive = _imp->findActiveNodeContextForPlugin(pluginID);
-        if (foundActive != _imp->currentNodeContext.end()) {
+        if ( foundActive != _imp->currentNodeContext.end() ) {
             activeNodeForPlugin = foundActive->currentNode.lock();
             activeItemToolBar = foundActive->currentContext->getToolBar();
             activeItemContainer = foundActive->currentContext->getContainerWidget();
@@ -690,7 +691,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently, bool
         }
 
         if ( newInterface != _imp->nodesContext.end() ) {
-            setPluginViewerInterface(newInterface->first.lock());
+            setPluginViewerInterface( newInterface->first.lock() );
         }
     }
 
@@ -699,8 +700,7 @@ ViewerTab::removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently, bool
         found->second.reset();
         _imp->nodesContext.erase(found);
     }
-
-}
+} // ViewerTab::removeNodeViewerInterface
 
 /**
  * @brief Get the list of all nodes that have a user interface created on this viewer (but not necessarily displayed)
@@ -716,7 +716,7 @@ ViewerTab::getNodesViewerInterface(std::list<NodeGuiPtr>* nodesWithUI,
             nodesWithUI->push_back(n);
         }
     }
-    for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin() ; it != _imp->currentNodeContext.end(); ++it) {
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
         NodeGuiPtr n = it->currentNode.lock();
         if (n) {
             perPluginActiveUI->push_back(n);
@@ -724,18 +724,18 @@ ViewerTab::getNodesViewerInterface(std::list<NodeGuiPtr>* nodesWithUI,
     }
 }
 
-
 void
-ViewerTab::updateSelectedToolForNode(const QString& toolID, const NodeGuiPtr& node)
+ViewerTab::updateSelectedToolForNode(const QString& toolID,
+                                     const NodeGuiPtr& node)
 {
     std::map<NodeGuiWPtr, NodeViewerContextPtr>::iterator found = _imp->nodesContext.find(node);
-    if (found == _imp->nodesContext.end()) {
+
+    if ( found == _imp->nodesContext.end() ) {
         // Already exists
         return;
     }
     found->second->setCurrentTool(toolID, false /*notifyNode*/);
 }
-
 
 void
 ViewerTab::notifyGuiClosing()

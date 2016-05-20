@@ -841,15 +841,14 @@ DockablePanel::helpString() const
 {
     //Base help
     QString tt;
-
     bool isMarkdown = false;
-
     EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
+
     if (iseffect) {
         isMarkdown = iseffect->isPluginDescriptionInMarkdown();
     }
 
-    if ( Qt::mightBeRichText(_imp->_helpToolTip) || isMarkdown ) {
+    if (Qt::mightBeRichText(_imp->_helpToolTip) || isMarkdown) {
         tt = _imp->_helpToolTip;
     } else {
         tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);

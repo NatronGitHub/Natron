@@ -251,7 +251,7 @@ GuiAppInstance::load(const CLArgs& cl,
     try {
         declareCurrentAppVariable_Python();
     } catch (const std::exception& e) {
-        throw std::runtime_error(e.what());
+        throw std::runtime_error( e.what() );
     }
 
     _imp->_gui = new Gui(this);
@@ -306,10 +306,9 @@ GuiAppInstance::load(const CLArgs& cl,
 
 
     if (getAppID() == 0) {
-
         QString missingOpenGLError;
-        if (!appPTR->hasPlatformNecessaryOpenGLRequirements(&missingOpenGLError)) {
-            throw std::runtime_error(missingOpenGLError.toStdString());
+        if ( !appPTR->hasPlatformNecessaryOpenGLRequirements(&missingOpenGLError) ) {
+            throw std::runtime_error( missingOpenGLError.toStdString() );
         }
 
         appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();

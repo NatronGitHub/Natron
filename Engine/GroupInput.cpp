@@ -72,6 +72,7 @@ GroupInput::knobChanged(KnobI* k,
                         bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( k == optional.lock().get() ) {
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged( getNode() );
@@ -87,6 +88,7 @@ GroupInput::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
+
     return ret;
 }
 

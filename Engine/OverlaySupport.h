@@ -100,6 +100,7 @@ public:
     bool isVisibleInViewport(const RectD& rect) const
     {
         RectD visiblePortion = getViewportRect();
+
         return visiblePortion.intersects(rect);
     }
 
@@ -116,7 +117,8 @@ public:
     /**
      * @brief Returns for a viewer the internal viewer node
      **/
-    virtual ViewerInstance* getInternalViewerNode() const {
+    virtual ViewerInstance* getInternalViewerNode() const
+    {
         return 0;
     }
 
@@ -127,7 +129,9 @@ public:
     QPointF toWidgetCoordinates(const QPointF& canonicalCoords) const
     {
         QPointF ret = canonicalCoords;
-        toWidgetCoordinates(&ret.rx(), &ret.ry());
+
+        toWidgetCoordinates( &ret.rx(), &ret.ry() );
+
         return ret;
     }
 
@@ -138,20 +142,29 @@ public:
     QPointF toCanonicalCoordinates(const QPointF& widgetCoords) const
     {
         QPointF ret = widgetCoords;
-        toCanonicalCoordinates(&ret.rx(), &ret.ry());
+
+        toCanonicalCoordinates( &ret.rx(), &ret.ry() );
+
         return ret;
     }
 
     /**
      * @brief May be implemented to draw text using the widget's current font
      **/
-    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) {
+    virtual bool renderText(double x,
+                            double y,
+                            const std::string &string,
+                            double r,
+                            double g,
+                            double b)
+    {
         Q_UNUSED(x);
         Q_UNUSED(y);
         Q_UNUSED(string);
         Q_UNUSED(r);
         Q_UNUSED(g);
         Q_UNUSED(b);
+
         return false;
     }
 

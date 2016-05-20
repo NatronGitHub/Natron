@@ -521,16 +521,26 @@ AppManagerPrivate::setMaxCacheFiles()
     maxCacheFiles = hardMax * 0.9;
 }
 
-
 #ifdef DEBUG
 // logs every gl call to the console
-static void pre_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args*/, ...) {
+static void
+pre_gl_call(const char */*name*/,
+            void */*funcptr*/,
+            int /*len_args*/,
+            ...)
+{
 #ifdef GL_TRACE_CALLS
     printf("Calling: %s (%d arguments)\n", name, len_args);
 #endif
 }
+
 // logs every gl call to the console
-static void post_gl_call(const char */*name*/, void */*funcptr*/, int /*len_args*/, ...) {
+static void
+post_gl_call(const char */*name*/,
+             void */*funcptr*/,
+             int /*len_args*/,
+             ...)
+{
 #ifdef GL_TRACE_CALLS
     GLenum _glerror_ = glGetError();
     if (_glerror_ != GL_NO_ERROR) {
@@ -546,9 +556,9 @@ void
 AppManagerPrivate::initGl()
 {
     // Private should not lock
-    assert(!openGLFunctionsMutex.tryLock());
+    assert( !openGLFunctionsMutex.tryLock() );
 
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
 
     hasInitializedOpenGLFunctions = true;
     hasRequiredOpenGLVersionAndExtensions = true;
@@ -560,19 +570,18 @@ AppManagerPrivate::initGl()
 #endif
 
 
-    if (!gladLoadGL()) {
+    if ( !gladLoadGL() ) {
         missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
         missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object,GL_ARB_framebuffer_object,GL_ARB_texture_float");
         missingOpenglError += QLatin1String("\n");
         missingOpenglError += tr("Your OpenGL version ");
         missingOpenglError += appPTR->getOpenGLVersion();
         hasRequiredOpenGLVersionAndExtensions = false;
+
         return;
     }
 
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }
-
-
 
 NATRON_NAMESPACE_EXIT;

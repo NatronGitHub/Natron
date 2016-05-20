@@ -490,7 +490,6 @@ to_func_srgb(float v)
     }
 }
 
-
 // r,g,b values are from 0 to 1
 // h = [0,NATRON_COLOR_HUE_CIRCLE], s = [0,1], v = [0,1]
 //		if s == 0, then h = 0 (undefined)

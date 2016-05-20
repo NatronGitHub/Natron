@@ -426,7 +426,6 @@ ViewerTab::setLeftToolbarVisible(bool visible)
             bar->setVisible(_imp->leftToolbarVisible);
         }
     }
-
 }
 
 void

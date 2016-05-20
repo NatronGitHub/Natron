@@ -175,8 +175,9 @@ TrackerContext::getMarkerByName(const std::string & name) const
 void
 TrackerContext::setFromPointsToInputRod()
 {
-    RectD inputRod = _imp->getInputRoDAtTime(getNode()->getApp()->getTimeLine()->currentFrame());
+    RectD inputRod = _imp->getInputRoDAtTime( getNode()->getApp()->getTimeLine()->currentFrame() );
     boost::shared_ptr<KnobDouble> fromPointsKnob[4];
+
     for (int i = 0; i < 4; ++i) {
         fromPointsKnob[i] = _imp->fromPoints[i].lock();
     }
@@ -184,16 +185,15 @@ TrackerContext::setFromPointsToInputRod()
     fromPointsKnob[1]->setValues(inputRod.x2, inputRod.y1, ViewSpec::all(), eValueChangedReasonPluginEdited, 0);
     fromPointsKnob[2]->setValues(inputRod.x2, inputRod.y2, ViewSpec::all(), eValueChangedReasonPluginEdited, 0);
     fromPointsKnob[3]->setValues(inputRod.x1, inputRod.y2, ViewSpec::all(), eValueChangedReasonPluginEdited, 0);
-
 }
 
 void
 TrackerContext::inputChanged(int inputNb)
 {
-
     // If the cornerPin from points have never been computed, set them
     boost::shared_ptr<KnobBool> fromPointsSetOnceKnob = _imp->cornerPinFromPointsSetOnceAutomatically.lock();
-    if (!fromPointsSetOnceKnob->getValue()) {
+
+    if ( !fromPointsSetOnceKnob->getValue() ) {
         setFromPointsToInputRod();
         fromPointsSetOnceKnob->setValue(true);
     }
@@ -946,6 +946,7 @@ TrackerContext::knobChanged(KnobI* k,
                             bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( k == _imp->exportButton.lock().get() ) {
         exportTrackDataFromExportOptions();
     } else if ( k == _imp->setCurrentFrameButton.lock().get() ) {
@@ -983,6 +984,7 @@ TrackerContext::knobChanged(KnobI* k,
     else {
         ret = false;
     }
+
     return ret;
 }
 
@@ -1235,7 +1237,8 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
                                               const QPointF & viewportPos,
                                               const QPointF & pos,
                                               double pressure,
-                                              double timestamp, PenType pen,
+                                              double timestamp,
+                                              PenType pen,
                                               OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1414,7 +1417,6 @@ TrackerContext::onOverlayFocusLostInternalNodes(double time,
     return false;
 }
 
-
 void
 TrackerContext::onSchedulerTrackingStarted(int frameStep)
 {
@@ -1422,18 +1424,17 @@ TrackerContext::onSchedulerTrackingStarted(int frameStep)
     Q_EMIT trackingStarted(frameStep);
 }
 
-
 void
 TrackerContext::onSchedulerTrackingFinished()
 {
-    getNode()->getApp()->progressEnd(getNode());
+    getNode()->getApp()->progressEnd( getNode() );
     Q_EMIT trackingFinished();
 }
 
 void
 TrackerContext::onSchedulerTrackingProgress(double progress)
 {
-    if (!getNode()->getApp()->progressUpdate(getNode(), progress)) {
+    if ( !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
         _imp->scheduler.abortTracking();
     }
 }
@@ -1867,7 +1868,7 @@ TrackScheduler::run()
         {
             ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
             IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, frameStep, reportProgress, viewer, doPartialUpdates);
-     
+
             if ( (frameStep == 0) || ( (frameStep > 0) && (start >= end) ) || ( (frameStep < 0) && (start <= end) ) ) {
                 // Invalid range
                 cur = end;

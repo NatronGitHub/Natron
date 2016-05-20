@@ -183,7 +183,6 @@ void
 ViewerGL::resizeGL(int w,
                    int h)
 {
-
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( (h == 0) || (w == 0) ) { // prevent division by 0
@@ -263,7 +262,6 @@ public:
 void
 ViewerGL::paintGL()
 {
-
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
@@ -1683,7 +1681,6 @@ ViewerGL::setLut(int lut)
     _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
 
-
 #if QT_VERSION < 0x050000
 #define QMouseEventLocalPos(e) ( e->posF() )
 #else
@@ -1703,11 +1700,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     _imp->hasMovedSincePress = false;
     _imp->pressureOnRelease = 1.;
-    if (buttonDownIsLeft(e)) {
+    if ( buttonDownIsLeft(e) ) {
         _imp->pointerTypeOnPress = ePenTypeLMB;
-    } else if (buttonDownIsRight(e)) {
+    } else if ( buttonDownIsRight(e) ) {
         _imp->pointerTypeOnPress = ePenTypeRMB;
-    } else if (buttonDownIsMiddle(e)) {
+    } else if ( buttonDownIsMiddle(e) ) {
         _imp->pointerTypeOnPress = ePenTypeMMB;
     }
 
@@ -1824,7 +1821,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->overlay) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e));
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e) );
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -3190,11 +3187,18 @@ ViewerGL::populateMenu()
 } // ViewerGL::populateMenu
 
 bool
-ViewerGL::renderText(double x, double y, const std::string &string, double r, double g, double b)
+ViewerGL::renderText(double x,
+                     double y,
+                     const std::string &string,
+                     double r,
+                     double g,
+                     double b)
 {
     QColor c;
-    c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
-    renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
+
+    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
+    renderText( x, y, QString::fromUtf8( string.c_str() ), c, font() );
+
     return true;
 }
 
@@ -3341,13 +3345,16 @@ ViewerGL::getViewportRect() const
         bbox.x2 = _imp->zoomCtx.right();
         bbox.y2 = _imp->zoomCtx.top();
     }
+
     return bbox;
 }
 
 void
-ViewerGL::getCursorPosition(double &x, double &y) const
+ViewerGL::getCursorPosition(double &x,
+                            double &y) const
 {
     QPoint p = QCursor::pos();
+
     p = mapFromGlobal(p);
     QPointF mappedPos = toZoomCoordinates(p);
     x = mappedPos.x();
@@ -3580,9 +3587,8 @@ ViewerGL::getWidgetFontHeight() const
 int
 ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
-
 
 void
 ViewerGL::makeOpenGLcontextCurrent()
