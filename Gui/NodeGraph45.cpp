@@ -291,7 +291,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
     : QDialog(parent)
     , _imp( new FindNodeDialogPrivate(graph) )
 {
-    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    setWindowFlags(Qt::Popup);
 
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -485,7 +485,7 @@ EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
     mainLayout->setContentsMargins(0, 0, 0, 0);
-    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    setWindowFlags(Qt::Popup);
     _imp->field = new LineEdit(this);
     _imp->field->setText( QString::fromUtf8( node->getNode()->getLabel().c_str() ) );
     mainLayout->addWidget(_imp->field);

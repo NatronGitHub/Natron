@@ -371,7 +371,7 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
     : QDialog(parent)
     , _imp( new EditKeyFrameDialogPrivate(mode, curveWidget, key) )
 {
-    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    setWindowFlags(Qt::Popup);
 
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
