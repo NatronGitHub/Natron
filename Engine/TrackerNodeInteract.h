@@ -32,6 +32,8 @@
 #include <QtCore/QPointF>
 #include <QtCore/QRectF>
 
+#include <ofxNatron.h>
+
 #include "Engine/EngineFwd.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RectI.h"
