@@ -446,6 +446,8 @@ public:
     boost::weak_ptr<KnobString> nodeLabelKnob;
     boost::weak_ptr<KnobBool> previewEnabledKnob;
     boost::weak_ptr<KnobBool> disableNodeKnob;
+    boost::weak_ptr<KnobInt> lifeTimeKnob;
+    boost::weak_ptr<KnobBool> enableLifeTimeKnob;
     boost::weak_ptr<KnobString> knobChangedCallback;
     boost::weak_ptr<KnobString> inputChangedCallback;
     boost::weak_ptr<KnobString> nodeCreatedCallback;
@@ -3192,6 +3194,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
 
+
     boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
@@ -3208,6 +3211,31 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
+
+
+
+    boost::shared_ptr<KnobInt> lifeTimeKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr("Lifetime Range"), 2, false);
+    assert(lifeTimeKnob);
+    lifeTimeKnob->setAnimationEnabled(false);
+    lifeTimeKnob->setIsMetadataSlave(true);
+    lifeTimeKnob->setName(kLifeTimeNodeKnobName);
+    lifeTimeKnob->setAddNewLine(false);
+    lifeTimeKnob->setHintToolTip( tr("This is the frame range during which the node will be active if Enable Lifetime is checked") );
+    settingsPage->addKnob(lifeTimeKnob);
+    _imp->lifeTimeKnob = lifeTimeKnob;
+
+
+
+    boost::shared_ptr<KnobBool> enableLifetimeNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Enable Lifetime"), 1, false);
+    assert(enableLifetimeNodeKnob);
+    enableLifetimeNodeKnob->setAnimationEnabled(false);
+    enableLifetimeNodeKnob->setDefaultValue(false);
+    enableLifetimeNodeKnob->setIsMetadataSlave(true);
+    enableLifetimeNodeKnob->setName(kEnableLifeTimeNodeKnobName);
+    enableLifetimeNodeKnob->setHintToolTip( tr("When checked, the node is only active during the specified frame range by the Lifetime Range parameter. "
+                                               "Outside of this frame range, it behaves as if the Disable parameter is checked") );
+    settingsPage->addKnob(enableLifetimeNodeKnob);
+    _imp->enableLifeTimeKnob = enableLifetimeNodeKnob;
 
     boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
     knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
@@ -8572,6 +8600,22 @@ Node::getDisabledKnob() const
 }
 
 bool
+Node::isLifetimeActivated(int *firstFrame, int *lastFrame) const
+{
+    boost::shared_ptr<KnobBool> enableLifetimeKnob = _imp->enableLifeTimeKnob.lock();
+    if (!enableLifetimeKnob) {
+        return false;
+    }
+    if (!enableLifetimeKnob->getValue()) {
+        return false;
+    }
+    boost::shared_ptr<KnobInt> lifetimeKnob = _imp->lifeTimeKnob.lock();
+    *firstFrame = lifetimeKnob->getValue(0);
+    *lastFrame = lifetimeKnob->getValue(1);
+    return true;
+}
+
+bool
 Node::isNodeDisabled() const
 {
     boost::shared_ptr<KnobBool> b = _imp->disableNodeKnob.lock();
@@ -8588,7 +8632,11 @@ Node::isNodeDisabled() const
     }
 #endif
 
-    return thisDisabled;
+    int lifeTimeFirst,lifeTimeEnd;
+    bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
+    double curFrame = _imp->effect->getCurrentTime();
+    bool enabled = (!lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd)) && !thisDisabled;
+    return !enabled;
 }
 
 void

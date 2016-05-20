@@ -2635,8 +2635,14 @@ NodeGui::onDisabledKnobToggled(bool disabled)
         return;
     }
 
-    _disabledTopLeftBtmRight->setVisible(disabled);
-    _disabledBtmLeftTopRight->setVisible(disabled);
+    int firstFrame,lastFrame;
+    bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
+
+    int curFrame = node->getApp()->getTimeLine()->currentFrame();
+    bool enabled = (!lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame)) && !disabled;
+
+    _disabledTopLeftBtmRight->setVisible(!enabled);
+    _disabledBtmLeftTopRight->setVisible(!enabled);
     update();
 }
 
@@ -3628,6 +3634,28 @@ NodeGui::onIdentityStateChanged(int inputNb)
     NodePtr ptInput;
     NodePtr node = getNode();
 
+
+    bool disabled = node->isNodeDisabled();
+    int firstFrame,lastFrame;
+    bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
+    int curFrame = node->getApp()->getTimeLine()->currentFrame();
+    bool enabled = (!lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame)) && !disabled;
+    if (enabled) {
+        if (_disabledBtmLeftTopRight->isVisible()) {
+            _disabledBtmLeftTopRight->setVisible(false);
+        }
+        if (_disabledTopLeftBtmRight->isVisible()) {
+            _disabledTopLeftBtmRight->setVisible(false);
+        }
+    } else {
+        if (!_disabledBtmLeftTopRight->isVisible()) {
+            _disabledBtmLeftTopRight->setVisible(true);
+        }
+        if (!_disabledTopLeftBtmRight->isVisible()) {
+            _disabledTopLeftBtmRight->setVisible(true);
+        }
+
+    }
 
     if (inputNb >= 0) {
         ptInput = node->getInput(inputNb);
