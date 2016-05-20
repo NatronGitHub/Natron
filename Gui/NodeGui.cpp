@@ -2635,11 +2635,10 @@ NodeGui::onDisabledKnobToggled(bool disabled)
         return;
     }
 
-    int firstFrame,lastFrame;
+    int firstFrame, lastFrame;
     bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
-
     int curFrame = node->getApp()->getTimeLine()->currentFrame();
-    bool enabled = (!lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame)) && !disabled;
+    bool enabled = ( !lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame) ) && !disabled;
 
     _disabledTopLeftBtmRight->setVisible(!enabled);
     _disabledBtmLeftTopRight->setVisible(!enabled);
@@ -3633,28 +3632,25 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     NodePtr ptInput;
     NodePtr node = getNode();
-
-
     bool disabled = node->isNodeDisabled();
-    int firstFrame,lastFrame;
+    int firstFrame, lastFrame;
     bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
     int curFrame = node->getApp()->getTimeLine()->currentFrame();
-    bool enabled = (!lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame)) && !disabled;
+    bool enabled = ( !lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame) ) && !disabled;
     if (enabled) {
-        if (_disabledBtmLeftTopRight->isVisible()) {
+        if ( _disabledBtmLeftTopRight->isVisible() ) {
             _disabledBtmLeftTopRight->setVisible(false);
         }
-        if (_disabledTopLeftBtmRight->isVisible()) {
+        if ( _disabledTopLeftBtmRight->isVisible() ) {
             _disabledTopLeftBtmRight->setVisible(false);
         }
     } else {
-        if (!_disabledBtmLeftTopRight->isVisible()) {
+        if ( !_disabledBtmLeftTopRight->isVisible() ) {
             _disabledBtmLeftTopRight->setVisible(true);
         }
-        if (!_disabledTopLeftBtmRight->isVisible()) {
+        if ( !_disabledTopLeftBtmRight->isVisible() ) {
             _disabledTopLeftBtmRight->setVisible(true);
         }
-
     }
 
     if (inputNb >= 0) {
@@ -3687,7 +3683,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
         }
     }
     getDagGui()->update();
-}
+} // NodeGui::onIdentityStateChanged
 
 void
 NodeGui::onHideInputsKnobValueChanged(bool /*hidden*/)

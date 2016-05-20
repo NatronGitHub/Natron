@@ -3213,7 +3213,6 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
 
 
-
     boost::shared_ptr<KnobInt> lifeTimeKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr("Lifetime Range"), 2, false);
     assert(lifeTimeKnob);
     lifeTimeKnob->setAnimationEnabled(false);
@@ -3223,7 +3222,6 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     lifeTimeKnob->setHintToolTip( tr("This is the frame range during which the node will be active if Enable Lifetime is checked") );
     settingsPage->addKnob(lifeTimeKnob);
     _imp->lifeTimeKnob = lifeTimeKnob;
-
 
 
     boost::shared_ptr<KnobBool> enableLifetimeNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Enable Lifetime"), 1, false);
@@ -8600,18 +8598,21 @@ Node::getDisabledKnob() const
 }
 
 bool
-Node::isLifetimeActivated(int *firstFrame, int *lastFrame) const
+Node::isLifetimeActivated(int *firstFrame,
+                          int *lastFrame) const
 {
     boost::shared_ptr<KnobBool> enableLifetimeKnob = _imp->enableLifeTimeKnob.lock();
+
     if (!enableLifetimeKnob) {
         return false;
     }
-    if (!enableLifetimeKnob->getValue()) {
+    if ( !enableLifetimeKnob->getValue() ) {
         return false;
     }
     boost::shared_ptr<KnobInt> lifetimeKnob = _imp->lifeTimeKnob.lock();
     *firstFrame = lifetimeKnob->getValue(0);
     *lastFrame = lifetimeKnob->getValue(1);
+
     return true;
 }
 
@@ -8632,10 +8633,11 @@ Node::isNodeDisabled() const
     }
 #endif
 
-    int lifeTimeFirst,lifeTimeEnd;
+    int lifeTimeFirst, lifeTimeEnd;
     bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
     double curFrame = _imp->effect->getCurrentTime();
-    bool enabled = (!lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd)) && !thisDisabled;
+    bool enabled = ( !lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd) ) && !thisDisabled;
+
     return !enabled;
 }
 

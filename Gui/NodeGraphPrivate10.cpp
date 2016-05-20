@@ -325,7 +325,7 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
         if (!k) {
             continue;
         }
-        if (k->getValue()) {
+        if ( k->getValue() ) {
             toProcess.push_back(*it);
         }
     }
