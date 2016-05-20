@@ -304,6 +304,7 @@ DocumentationManager::parser(QString html,
 {
     QString result = html;
 
+
     // sphinx compat
     bool plainBody = false;
     if (result.contains(QString::fromUtf8("<body>"))) { // 1.3 and lower
@@ -322,6 +323,7 @@ DocumentationManager::parser(QString html,
         menuHTML.append( QString::fromUtf8("<body>\n") );
     }
     else {
+
         menuHTML.append( QString::fromUtf8("<body role=\"document\">\n") );
     }
     menuHTML.append( QString::fromUtf8("<div id=\"header\">\n<a href=\"/\"><div id=\"logo\"></div></a>\n") );
@@ -357,6 +359,7 @@ DocumentationManager::parser(QString html,
     } else {
         menuHTML.append( QString::fromUtf8("</ul></div></div>") );
     }
+
 
     // fix sphinx compat
     if (plainBody) {
