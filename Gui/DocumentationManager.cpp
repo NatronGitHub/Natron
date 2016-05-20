@@ -457,13 +457,13 @@ DocumentationManager::parser(QString html,
             bool getMenu = false;
             while ( !indexFile.atEnd() ) {
                 QString line = QString::fromUtf8( indexFile.readLine() );
-                if ( line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">") ) {
+                if ( line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">\n") ) {
                     getMenu = true;
                 }
                 if (getMenu) {
                     menuResult << line;
                 }
-                if ( line == QString::fromUtf8("</div>") ) {
+                if ( line == QString::fromUtf8("</div>\n") ) {
                     getMenu = false;
                 }
             }
