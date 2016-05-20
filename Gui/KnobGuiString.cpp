@@ -353,6 +353,7 @@ KnobGuiString::KnobGuiString(KnobPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _lineEdit(0)
+    , _label(0)
     , _container(0)
     , _mainLayout(0)
     , _textEdit(0)
@@ -468,13 +469,15 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
         layout->addWidget(_container);
     } else if ( knob->isLabel() ) {
-        /*_label = new Label( layout->parentWidget() );
+        const std::string& iconFilePath = knob->getIconLabel();
+        if (!iconFilePath.empty()) {
+            _label = new Label( layout->parentWidget() );
 
-           if ( hasToolTip() ) {
-            _label->setToolTip( toolTip() );
-           }
-           //_label->setFont(QFont(appFont,appFontSize));
-           layout->addWidget(_label);*/
+            if ( hasToolTip() ) {
+                _label->setToolTip( toolTip() );
+            }
+            layout->addWidget(_label);
+        }
     } else {
         _lineEdit = new KnobLineEdit( shared_from_this(), 0, layout->parentWidget() );
 
@@ -1141,10 +1144,15 @@ KnobGuiString::updateGUI(int /*dimension*/)
         _textEdit->blockSignals(false);
     } else if ( knob->isLabel() ) {
         onLabelChanged();
-        /*assert(_label);
-           QString txt = value.c_str();
-           txt.replace("\n", "<br>");
-           _label->setText(txt);*/
+
+        // If the knob has a label as an icon, set the content of the knob into a label
+        const std::string& iconFilePath = knob->getIconLabel();
+        if (_label && !iconFilePath.empty()) {
+            QString txt = QString::fromUtf8(knob->getValue().c_str());
+            txt.replace(QLatin1String("\n"), QLatin1String("<br>"));
+            _label->setText(txt);
+        }
+
     } else {
         assert(_lineEdit);
         _lineEdit->setText( QString::fromUtf8( value.c_str() ) );
@@ -1160,8 +1168,9 @@ KnobGuiString::_hide()
         assert(_textEdit);
         _textEdit->hide();
     } else if ( knob->isLabel() ) {
-        /*assert(_label);
-           _label->hide();*/
+        if (_label) {
+            _label->hide();
+        }
     } else {
         assert(_lineEdit);
         _lineEdit->hide();
@@ -1177,8 +1186,9 @@ KnobGuiString::_show()
         assert(_textEdit);
         _textEdit->show();
     } else if ( knob->isLabel() ) {
-        /* assert(_label);
-           _label->show();*/
+        if (_label) {
+            _label->show();
+        }
     } else {
         assert(_lineEdit);
         _lineEdit->show();
@@ -1199,8 +1209,9 @@ KnobGuiString::setEnabled()
             _textEdit->setReadOnlyNatron(!b);
         }
     } else if ( knob->isLabel() ) {
-        /* assert(_label);
-           _label->setEnabled(b);*/
+        if (_label) {
+            _label->setEnabled(b);
+        }
     } else {
         assert(_lineEdit);
         //_lineEdit->setEnabled(b);
@@ -1308,10 +1319,9 @@ KnobGuiString::updateToolTip()
             _textEdit->setToolTip(tt);
         } else if (_lineEdit) {
             _lineEdit->setToolTip(tt);
+        } else if (_label) {
+            _label->setToolTip(tt);
         }
-        //else if (_label) {
-        // _label->setToolTip(tt);
-        //}
     }
 }
 
