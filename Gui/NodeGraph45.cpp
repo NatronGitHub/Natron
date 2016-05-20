@@ -263,7 +263,7 @@ struct FindNodeDialogPrivate
     int currentFindIndex;
     QVBoxLayout* mainLayout;
     Label* label;
-    QCheckBox* unixWildcards;
+    QCheckBox* matchWhole;
     QCheckBox* caseSensitivity;
     Label* resultLabel;
     LineEdit* filter;
@@ -277,7 +277,7 @@ struct FindNodeDialogPrivate
         , currentFindIndex(-1)
         , mainLayout(0)
         , label(0)
-        , unixWildcards(0)
+        , matchWhole(0)
         , caseSensitivity(0)
         , resultLabel(0)
         , filter(0)
@@ -285,6 +285,7 @@ struct FindNodeDialogPrivate
     {
     }
 };
+
 
 FindNodeDialog::FindNodeDialog(NodeGraph* graph,
                                QWidget* parent)
@@ -296,21 +297,25 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    _imp->label = new Label(tr("Select all nodes containing this text:"), this);
+    _imp->label = new Label(tr("Select all nodes matching:"), this);
     //_imp->label->setFont(QFont(appFont,appFontSize));
     _imp->mainLayout->addWidget(_imp->label);
 
     _imp->filter = new LineEdit(this);
+    _imp->filter->setToolTip( tr("Search pattern. May contain wildcards:\n"
+                                 "? Matches any single character.\n"
+                                 "* Matches zero or more of any characters.\n"
+                                 "[...] Matches any character within the set in square brackets.") );
     QObject::connect( _imp->filter, SIGNAL(editingFinished()), this, SLOT(updateFindResultsWithCurrentFilter()) );
     QObject::connect( _imp->filter, SIGNAL(textEdited(QString)), this, SLOT(updateFindResults(QString)) );
-
+    
     _imp->mainLayout->addWidget(_imp->filter);
 
-
-    _imp->unixWildcards = new QCheckBox(tr("Use Unix wildcards (*, ?, etc..)"), this);
-    _imp->unixWildcards->setChecked(false);
-    QObject::connect( _imp->unixWildcards, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()) );
-    _imp->mainLayout->addWidget(_imp->unixWildcards);
+    _imp->matchWhole = new QCheckBox(tr("Match whole pattern"), this);
+    _imp->filter->setToolTip( tr("When checked, the given pattern must match the whole node name.") );
+    _imp->matchWhole->setChecked(false);
+    QObject::connect( _imp->matchWhole, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()) );
+    _imp->mainLayout->addWidget(_imp->matchWhole);
 
     _imp->caseSensitivity = new QCheckBox(tr("Case sensitive"), this);
     _imp->caseSensitivity->setChecked(false);
@@ -322,17 +327,21 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
     _imp->mainLayout->addWidget(_imp->resultLabel);
     //_imp->resultLabel->setFont(QFont(appFont,appFontSize));
 
-    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(onCancelClicked()) );
+    _imp->buttons = new QDialogButtonBox(QDialogButtonBox::NoButton, Qt::Horizontal, this);
+    _imp->buttons->addButton(tr("&Next"), QDialogButtonBox::ActionRole);
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onNextClicked()) );
 
     _imp->mainLayout->addWidget(_imp->buttons);
     _imp->filter->setFocus();
+
+    selectNextResult();
 }
+
 
 FindNodeDialog::~FindNodeDialog()
 {
 }
+
 
 void
 FindNodeDialog::updateFindResults(const QString& filter)
@@ -349,39 +358,33 @@ FindNodeDialog::updateFindResults(const QString& filter)
 
     if ( _imp->currentFilter.isEmpty() ) {
         _imp->resultLabel->setText( QString() );
+        selectNextResult();
 
         return;
     }
     Qt::CaseSensitivity sensitivity = _imp->caseSensitivity->isChecked() ? Qt::CaseSensitive : Qt::CaseInsensitive;
     const NodesGuiList& activeNodes = _imp->graph->getAllActiveNodes();
 
-    if ( _imp->unixWildcards->isChecked() ) {
-        QRegExp exp(filter, sensitivity, QRegExp::Wildcard);
-        if ( !exp.isValid() ) {
-            return;
-        }
+    QRegExp exp(_imp->matchWhole->isChecked() ? filter :
+                (QChar::fromLatin1('*') + filter + QChar::fromLatin1('*')),
+                sensitivity,
+                QRegExp::Wildcard);
 
-
+    if ( exp.isValid() ) {
         for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             if ( (*it)->isVisible() && exp.exactMatch( QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ) ) ) {
                 _imp->nodeResults.push_back(*it);
             }
         }
-    } else {
-        for (NodesGuiList::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            if ( (*it)->isVisible() && QString::fromUtf8( (*it)->getNode()->getLabel().c_str() ).contains(filter, sensitivity) ) {
-                _imp->nodeResults.push_back(*it);
-            }
+
+        if ( ( _imp->nodeResults.size() ) == 0 ) {
+            _imp->resultLabel->setText( QString() );
         }
     }
 
-    if ( ( _imp->nodeResults.size() ) == 0 ) {
-        _imp->resultLabel->setText( QString() );
-    }
-
-
     selectNextResult();
 }
+
 
 void
 FindNodeDialog::selectNextResult()
@@ -389,6 +392,8 @@ FindNodeDialog::selectNextResult()
     if ( _imp->currentFindIndex >= (int)( _imp->nodeResults.size() ) ) {
         _imp->currentFindIndex = 0;
     }
+
+    _imp->buttons->setEnabled(_imp->nodeResults.size() > 1);
 
     if ( _imp->nodeResults.empty() ) {
         return;
@@ -422,7 +427,7 @@ FindNodeDialog::forceUpdateFindResults()
 }
 
 void
-FindNodeDialog::onOkClicked()
+FindNodeDialog::onNextClicked()
 {
     QString filterText = _imp->filter->text();
 
@@ -431,12 +436,6 @@ FindNodeDialog::onOkClicked()
     } else {
         selectNextResult();
     }
-}
-
-void
-FindNodeDialog::onCancelClicked()
-{
-    reject();
 }
 
 void
