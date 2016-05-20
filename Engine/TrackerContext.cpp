@@ -173,8 +173,30 @@ TrackerContext::getMarkerByName(const std::string & name) const
 }
 
 void
+TrackerContext::setFromPointsToInputRod()
+{
+    RectD inputRod = _imp->getInputRoDAtTime(getNode()->getApp()->getTimeLine()->currentFrame());
+    boost::shared_ptr<KnobDouble> fromPointsKnob[4];
+    for (int i = 0; i < 4; ++i) {
+        fromPointsKnob[i] = _imp->fromPoints[i].lock();
+    }
+    fromPointsKnob[0]->setValues(inputRod.x1, inputRod.y1, ViewSpec::all(), eValueChangedReasonPluginEdited, 0);
+    fromPointsKnob[1]->setValues(inputRod.x2, inputRod.y1, ViewSpec::all(), eValueChangedReasonPluginEdited, 0);
+    fromPointsKnob[2]->setValues(inputRod.x2, inputRod.y2, ViewSpec::all(), eValueChangedReasonPluginEdited, 0);
+    fromPointsKnob[3]->setValues(inputRod.x1, inputRod.y2, ViewSpec::all(), eValueChangedReasonPluginEdited, 0);
+
+}
+
+void
 TrackerContext::inputChanged(int inputNb)
 {
+
+    // If the cornerPin from points have never been computed, set them
+    boost::shared_ptr<KnobBool> fromPointsSetOnceKnob = _imp->cornerPinFromPointsSetOnceAutomatically.lock();
+    if (!fromPointsSetOnceKnob->getValue()) {
+        setFromPointsToInputRod();
+        fromPointsSetOnceKnob->setValue(true);
+    }
     s_onNodeInputChanged(inputNb);
 }
 
@@ -360,6 +382,12 @@ boost::shared_ptr<KnobBool>
 TrackerContext::getEnabledKnob() const
 {
     return _imp->activateTrack.lock();
+}
+
+boost::shared_ptr<KnobPage>
+TrackerContext::getTrackingPageKnbo() const
+{
+    return _imp->trackingPageKnob.lock();
 }
 
 bool
@@ -941,6 +969,8 @@ TrackerContext::knobChanged(KnobI* k,
         solveTransformParamsIfAutomatic();
     } else if ( k == _imp->generateTransformButton.lock().get() ) {
         solveTransformParams();
+    } else if ( k == _imp->setFromPointsToInputRod.lock().get() ) {
+        setFromPointsToInputRod();
     } else if ( k == _imp->autoGenerateTransform.lock().get() ) {
         solveTransformParams();
         _imp->refreshVisibilityFromTransformType();
@@ -1137,6 +1167,9 @@ TrackerContext::solveTransformParams()
     bool robustModel;
     robustModel = _imp->robustModel.lock()->getValue();
 
+    boost::shared_ptr<KnobDouble> maxFittingErrorKnob = _imp->fittingErrorWarnIfAbove.lock();
+    const double maxFittingError = maxFittingErrorKnob->getValue();
+
     node->getApp()->progressStart( node, tr("Solving for transform parameters...").toStdString(), std::string() );
 
     _imp->lastSolveRequest.refTime = refTime;
@@ -1145,6 +1178,7 @@ TrackerContext::solveTransformParams()
     _imp->lastSolveRequest.allMarkers = markers;
     _imp->lastSolveRequest.keyframes = keyframes;
     _imp->lastSolveRequest.robustModel = robustModel;
+    _imp->lastSolveRequest.maxFittingError = maxFittingError;
 
     switch (transformType) {
     case eTrackerTransformNodeTransform:

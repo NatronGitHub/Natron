@@ -30,13 +30,12 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTextStream>
 #include <QRegExp>
-#include <QStringList>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-Markdown::Markdown(QObject *parent) : QObject(parent)
+Markdown::Markdown()
 {
 }
 
@@ -224,7 +223,6 @@ QString Markdown::genPluginKnobsTable(QVector<QStringList> items)
     return ret;
 }
 
-// [linux](|html::/guide/linux.html#linux||rst::linux<Linux>|) => [linux](/guide/linux.html#linux)
 QString Markdown::parseCustomLinksForHTML(QString markdown)
 {
     QString result;
@@ -245,5 +243,3 @@ QString Markdown::parseCustomLinksForHTML(QString markdown)
 
 NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
-#include "moc_Markdown.cpp"

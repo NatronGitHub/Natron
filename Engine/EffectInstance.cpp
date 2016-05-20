@@ -4548,7 +4548,6 @@ EffectInstance::abortAnyEvaluation()
             assert(context);
             if (context) {
                 NodePtr rotonode = context->getNode();
-                assert(rotonode);
                 if (rotonode) {
                     rotonode->hasOutputNodesConnected(&outputNodes);
                 }

@@ -1273,6 +1273,9 @@ Node::getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const
 void
 Node::declareRotoPythonField()
 {
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     assert(_imp->rotoContext);
     std::string appID = getApp()->getAppIDString();
     std::string nodeName = getFullyQualifiedName();
@@ -1293,6 +1296,10 @@ Node::declareRotoPythonField()
 void
 Node::declareTrackerPythonField()
 {
+    if (!_imp->isPartOfProject) {
+        return;
+    }
+
     assert(_imp->trackContext);
     std::string appID = getApp()->getAppIDString();
     std::string nodeName = getFullyQualifiedName();
@@ -1691,11 +1698,19 @@ Node::loadKnob(const KnobPtr & knob,
 
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
+
+
             found = true;
             // don't load the value if the Knob is not persistant! (it is just the default value in this case)
             ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
             //if ( knob->getIsPersistant() ) {
             KnobPtr serializedKnob = (*it)->getKnob();
+
+            // A knob might change its type between versions, do not load it
+            if (knob->typeName() != serializedKnob->typeName()) {
+                continue;
+            }
+
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
             if (isChoice) {
                 const TypeExtraData* extraData = (*it)->getExtraData();
@@ -3948,7 +3963,6 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 {
     QString ret;
     QTextStream ts(&ret);
-    Markdown markdown;
     QVector<QStringList> items;
 
     //bool isPyPlug;
@@ -4023,7 +4037,7 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 
     if (genHTML) {
         if (pluginDescriptionMarkdown) {
-            ts << markdown.convert2html(pluginDescription);
+            ts << Markdown::convert2html(pluginDescription);
         } else {
             pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
             ts << "<p>" << pluginDescription << "</p>";
@@ -4148,7 +4162,7 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
                 ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
             }
             if ( (*it)->isHintInMarkdown() ) {
-                ts << "<td class=\"knobsTableValue\">" << markdown.convert2html(knobHint) << "</td>";
+                ts << "<td class=\"knobsTableValue\">" << Markdown::convert2html(knobHint) << "</td>";
             } else {
                 knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
                 ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
@@ -4169,14 +4183,14 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
         ts << "</table>";
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
-            ts << markdown.convert2html(extraMarkdown);
+            ts << Markdown::convert2html(extraMarkdown);
         }
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     }
     else {
         // create markdown table
         if (items.size()>0) {
-            ts << markdown.genPluginKnobsTable(items);
+            ts << Markdown::genPluginKnobsTable(items);
         }
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
