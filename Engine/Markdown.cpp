@@ -29,6 +29,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QTextStream>
+#include <QRegExp>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -44,6 +45,8 @@ QString Markdown::convert2html(QString markdown)
     QString html;
 
     if (!markdown.isEmpty()) {
+        markdown = parseCustomLinksForHTML(markdown);
+
         hoedown_html_flags flags = HOEDOWN_HTML_SKIP_HTML;
         hoedown_extensions extensions = HOEDOWN_EXT_AUTOLINK;
         size_t max_nesting = 16;
@@ -218,6 +221,24 @@ QString Markdown::genPluginKnobsTable(QVector<QStringList> items)
     }
 
     return ret;
+}
+
+QString Markdown::parseCustomLinksForHTML(QString markdown)
+{
+    QString result;
+
+    if ( !markdown.isEmpty() ) {
+        QStringList split = markdown.split( QString::fromUtf8("\n") );
+        for (int i; i < split.size(); i++) {
+            QString line = split.at(i);
+            if ( line.contains( QString::fromUtf8("|html::") ) && line.contains( QString::fromUtf8("|rst::") )) {
+                line.replace( QString::fromUtf8("|html::"), QString::fromUtf8("") ).replace( QRegExp( QString::fromUtf8("\\|\\|rst::.*\\|") ), QString::fromUtf8("") );
+            }
+            result.append( line + QString::fromUtf8("\n") );
+        }
+    }
+
+    return result;
 }
 
 NATRON_NAMESPACE_EXIT;
