@@ -813,8 +813,9 @@ Settings::initializeKnobsAppearance()
     std::vector<std::string> configs;
     int defaultIndex = 0;
     QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
-    for (int i = 0; i < defaultOcioConfigsPaths.size(); ++i) {
-        QDir ocioConfigsDir(defaultOcioConfigsPaths[i]);
+    Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
+        QDir ocioConfigsDir(defaultOcioConfigsDir);
+
         if ( ocioConfigsDir.exists() ) {
             QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
             for (int j = 0; j < entries.size(); ++j) {
@@ -1975,17 +1976,18 @@ Settings::tryLoadOpenColorIOConfig()
             QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
-            for (int i = 0; i < defaultConfigsPaths.size(); ++i) {
-                QDir defaultConfigsDir(defaultConfigsPaths[i]);
+            Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
+                QDir defaultConfigsDir(defaultConfigsDirStr);
+
                 if ( !defaultConfigsDir.exists() ) {
                     qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory"
-                             << defaultConfigsPaths[i] << "does not exist.";
+                             << defaultConfigsDirStr << "does not exist.";
                     continue;
                 }
                 ///try to open the .ocio config file first in the defaultConfigsDir
                 ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
                 if ( !defaultConfigsDir.exists(configFileName) ) {
-                    QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
+                    QDir subDir(defaultConfigsDirStr + QDir::separator() + activeEntryText);
                     if ( !subDir.exists() ) {
                         Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file or directory.").arg( subDir.absoluteFilePath( QString::fromUtf8("config.ocio") ) ).toStdString() );
 
@@ -3245,7 +3247,7 @@ Settings::doOCIOStartupCheckIfNeeded()
 
         if (reply == eStandardButtonYes) {
             int defaultIndex = -1;
-            for (int i = 0; i < (int)entries.size(); ++i) {
+            for (unsigned i = 0; i < entries.size(); ++i) {
                 if (entries[i].find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
                     defaultIndex = i;
                     break;

@@ -470,7 +470,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         layout->addWidget(_container);
     } else if ( knob->isLabel() ) {
         const std::string& iconFilePath = knob->getIconLabel();
-        if (!iconFilePath.empty()) {
+        if ( !iconFilePath.empty() ) {
             _label = new Label( layout->parentWidget() );
 
             if ( hasToolTip() ) {
@@ -1147,17 +1147,16 @@ KnobGuiString::updateGUI(int /*dimension*/)
 
         // If the knob has a label as an icon, set the content of the knob into a label
         const std::string& iconFilePath = knob->getIconLabel();
-        if (_label && !iconFilePath.empty()) {
-            QString txt = QString::fromUtf8(knob->getValue().c_str());
-            txt.replace(QLatin1String("\n"), QLatin1String("<br>"));
+        if ( _label && !iconFilePath.empty() ) {
+            QString txt = QString::fromUtf8( knob->getValue().c_str() );
+            txt.replace( QLatin1String("\n"), QLatin1String("<br>") );
             _label->setText(txt);
         }
-
     } else {
         assert(_lineEdit);
         _lineEdit->setText( QString::fromUtf8( value.c_str() ) );
     }
-}
+} // KnobGuiString::updateGUI
 
 void
 KnobGuiString::_hide()

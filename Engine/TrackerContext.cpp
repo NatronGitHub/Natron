@@ -981,7 +981,7 @@ TrackerContext::knobChanged(KnobI* k,
         _imp->refreshVisibilityFromTransformType();
     }
 #endif
-    else if (k == _imp->disableTransform.lock().get()) {
+    else if ( k == _imp->disableTransform.lock().get() ) {
         _imp->refreshVisibilityFromTransformType();
     } else {
         ret = false;

@@ -229,8 +229,9 @@ load(const wchar_t *libraryName,
     fileName.append( QLatin1String(".dll") );
 
     // Start looking in the order specified
-    for (int i = 0; i < searchOrder.count(); ++i) {
-        QString fullPathAttempt = searchOrder.at(i);
+    Q_FOREACH(const QString &path, searchOrder) {
+        QString fullPathAttempt = path;
+
         if ( !fullPathAttempt.endsWith( QLatin1Char('\\') ) ) {
             fullPathAttempt.append( QLatin1Char('\\') );
         }

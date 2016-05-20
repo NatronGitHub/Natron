@@ -259,8 +259,9 @@ AppManager::load(int &argc,
     ///find out the binary path
     char* argv0;
     QString argv0QString = QDir::currentPath();
+
     if (!argv) {
-        argv0 = const_cast<char*>(argv0QString.toStdString().c_str());
+        argv0 = const_cast<char*>( argv0QString.toStdString().c_str() );
         argc = 1;
         argv = &argv0;
     }
@@ -1302,9 +1303,9 @@ AppManager::getAllNonOFXPluginsPaths() const
     templatesSearchPath.push_back(mainPath);
 
     ///look-in the locations indicated by NATRON_PLUGIN_PATH
-    for (int i = 0; i < splitDirs.size(); ++i) {
-        if ( !splitDirs[i].isEmpty() ) {
-            templatesSearchPath.push_back(splitDirs[i]);
+    Q_FOREACH(const QString &splitDir, splitDirs) {
+        if ( !splitDir.isEmpty() ) {
+            templatesSearchPath.push_back(splitDir);
         }
     }
 
@@ -1335,8 +1336,9 @@ operateOnPathRecursive(NatronPathFunctor functor,
     functor(directory);
 
     QStringList subDirs = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-    for (int i = 0; i < subDirs.size(); ++i) {
-        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDirs[i]);
+    Q_FOREACH(const QString &subDir, subDirs) {
+        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDir);
+
         operateOnPathRecursive(functor, d);
     }
 }
@@ -1392,8 +1394,9 @@ findAllScriptsRecursive(const QDir& directory,
     }
 
     QStringList subDirs = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-    for (int i = 0; i < subDirs.size(); ++i) {
-        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDirs[i]);
+    Q_FOREACH(const QString &subDir, subDirs) {
+        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDir);
+
         findAllScriptsRecursive(d, allPlugins, foundInit, foundInitGui);
     }
 }
@@ -1411,12 +1414,12 @@ AppManager::loadPythonGroups()
     QStringList allPlugins;
 
     ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
-    for (int i = 0; i < templatesSearchPath.size(); ++i) {
+    Q_FOREACH(const QString &templatesSearchDir, templatesSearchPath) {
         //Adding Qt resources to Python path is useless as Python does not know how to use it
-        if ( templatesSearchPath[i].startsWith( QString::fromUtf8(":/Resources") ) ) {
+        if ( templatesSearchDir.startsWith( QString::fromUtf8(":/Resources") ) ) {
             continue;
         }
-        QDir d(templatesSearchPath[i]);
+        QDir d(templatesSearchDir);
         operateOnPathRecursive(&addToPythonPathFunctor, d);
     }
 
@@ -1457,8 +1460,9 @@ AppManager::loadPythonGroups()
 
     QStringList foundInit;
     QStringList foundInitGui;
-    for (int i = 0; i < templatesSearchPath.size(); ++i) {
-        QDir d(templatesSearchPath[i]);
+    Q_FOREACH(const QString &templatesSearchDir, templatesSearchPath) {
+        QDir d(templatesSearchDir);
+
         findAllScriptsRecursive(d, allPlugins, &foundInit, &foundInitGui);
     }
     if ( foundInit.isEmpty() ) {
@@ -1468,8 +1472,9 @@ AppManager::loadPythonGroups()
             std::cout << message.toStdString() << std::endl;
         }
     } else {
-        for (int i = 0; i < foundInit.size(); ++i) {
-            QString message = tr("init.py script found and loaded at %1").arg(foundInit[i]);
+        Q_FOREACH(const QString &found, foundInit) {
+            QString message = tr("init.py script found and loaded at %1").arg(found);
+
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;
@@ -1485,8 +1490,9 @@ AppManager::loadPythonGroups()
                 std::cout << message.toStdString() << std::endl;
             }
         } else {
-            for (int i = 0; i < foundInitGui.size(); ++i) {
-                QString message = tr("initGui.py script found and loaded at %1").arg(foundInitGui[i]);
+            Q_FOREACH(const QString &found, foundInitGui) {
+                QString message = tr("initGui.py script found and loaded at %1").arg(found);
+
                 appPTR->setLoadingStatus(message);
                 if ( !appPTR->isBackground() ) {
                     std::cout << message.toStdString() << std::endl;
@@ -1501,25 +1507,27 @@ AppManager::loadPythonGroups()
     QStringList newTemplatesSearchPath = getAllNonOFXPluginsPaths();
     {
         QStringList diffSearch;
-        for (int i = 0; i < newTemplatesSearchPath.size(); ++i) {
-            if ( !templatesSearchPath.contains(newTemplatesSearchPath[i]) ) {
-                diffSearch.push_back(newTemplatesSearchPath[i]);
+        Q_FOREACH(const QString &newTemplatesSearchDir, newTemplatesSearchPath) {
+            if ( !templatesSearchPath.contains(newTemplatesSearchDir) ) {
+                diffSearch.push_back(newTemplatesSearchDir);
             }
         }
 
         //Add only paths that did not exist so far
-        for (int i = 0; i < diffSearch.size(); ++i) {
-            QDir d(diffSearch[i]);
+        Q_FOREACH(const QString &diffDir, diffSearch) {
+            QDir d(diffDir);
+
             operateOnPathRecursive(&addToPythonPathFunctor, d);
         }
     }
 
     appPTR->setLoadingStatus( tr("Loading PyPlugs...") );
 
-    for (int i = 0; i < allPlugins.size(); ++i) {
-        QString moduleName = allPlugins[i];
+    Q_FOREACH(const QString &plugin, allPlugins) {
+        QString moduleName = plugin;
         QString modulePath;
         int lastDot = moduleName.lastIndexOf( QChar::fromLatin1('.') );
+
         if (lastDot != -1) {
             moduleName = moduleName.left(lastDot);
         }

@@ -527,8 +527,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
     NodePtr tNode = transformNode.lock();
     if (tNode) {
-
-
         boost::shared_ptr<KnobDouble> tKnob = createDuplicateKnob<KnobDouble>(kTransformParamTranslate, tNode, effect, transformPage);
         tKnob->setSecret(true);
         translate = tKnob;
@@ -557,7 +555,6 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     } // tNode
     NodePtr cNode = cornerPinNode.lock();
     if (cNode) {
-        
         boost::shared_ptr<KnobGroup>  toGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), tr(kCornerPinParamTo), 1);
         toGroupKnob->setName(kCornerPinParamTo);
         toGroupKnob->setAsTab();
@@ -1341,7 +1338,6 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     }
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum motionType = (TrackerMotionTypeEnum)motionType_i;
-
     boost::shared_ptr<KnobBool> disableTransformKnob = disableTransform.lock();
     bool disableNodes = disableTransformKnob->getValue();
 

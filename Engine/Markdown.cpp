@@ -94,29 +94,30 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
         QString header4Text = tr("Function");
 
         // get sizes
-        for (int i = 0; i < items.size(); ++i) {
-            int header1Count = items.at(i).at(0).count() + headerPadding + header1Text.count();
+        Q_FOREACH(const QStringList &item, items) {
+            int header1Count = item.at(0).count() + headerPadding + header1Text.count();
+
             if (header1Count > headerCap) {
                 header1Count = headerCap;
             }
             if (header1Count > header1Length) {
                 header1Length = header1Count;
             }
-            int header2Count = items.at(i).at(1).count() + headerPadding + header2Text.count();
+            int header2Count = item.at(1).count() + headerPadding + header2Text.count();
             if (header2Count > headerCap) {
                 header2Count = headerCap;
             }
             if (header2Count > header2Length) {
                 header2Length = header2Count;
             }
-            int header3Count = items.at(i).at(2).count() + headerPadding + header3Text.count();
+            int header3Count = item.at(2).count() + headerPadding + header3Text.count();
             if (header3Count > headerCap) {
                 header3Count = headerCap;
             }
             if (header3Count > header3Length) {
                 header3Length = header3Count;
             }
-            int header4Count = items.at(i).at(3).count() + headerPadding + header4Text.count();
+            int header4Count = item.at(3).count() + headerPadding + header4Text.count();
             if (header4Count > headerCap) {
                 header4Count = headerCap;
             }
@@ -167,29 +168,30 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
         ts << "+\n";
 
         // table rows
-        for (int i = 0; i < items.size(); ++i) {
-            QString col1 = items.at(i).at(0);
+        Q_FOREACH(const QStringList &item, items) {
+            QString col1 = item.at(0);
+
             if (col1.count() < header1Length) {
                 for (int i = col1.count(); i < header1Length - 1; ++i) {
                     col1.append( QString::fromUtf8(" ") );
                 }
                 col1.append( QString::fromUtf8("|") );
             }
-            QString col2 = items.at(i).at(1);
+            QString col2 = item.at(1);
             if (col2.count() < header2Length) {
                 for (int i = col2.count(); i < header2Length - 1; ++i) {
                     col2.append( QString::fromUtf8(" ") );
                 }
                 col2.append( QString::fromUtf8("|") );
             }
-            QString col3 = items.at(i).at(2);
+            QString col3 = item.at(2);
             if (col3.count() < header3Length) {
                 for (int i = col3.count(); i < header3Length - 1; ++i) {
                     col3.append( QString::fromUtf8(" ") );
                 }
                 col3.append( QString::fromUtf8("|") );
             }
-            QString col4 = items.at(i).at(3);
+            QString col4 = item.at(3);
             if (col4.count() < header4Length) {
                 for (int i = col4.count(); i < header4Length - 1; ++i) {
                     col4.append( QString::fromUtf8(" ") );
@@ -225,12 +227,12 @@ Markdown::parseCustomLinksForHTML(QString markdown)
 
     if ( !markdown.isEmpty() ) {
         QStringList split = markdown.split( QString::fromUtf8("\n") );
-        for (int i; i < split.size(); i++) {
-            QString line = split.at(i);
+        Q_FOREACH(const QString &line_const, split) {
+            QString line( line_const + QChar::fromAscii('\n') );
+
             if ( line.contains( QString::fromUtf8("|html::") ) && line.contains( QString::fromUtf8("|rst::") ) ) {
                 line.replace( QString::fromUtf8("|html::"), QString::fromUtf8("") ).replace( QRegExp( QString::fromUtf8("\\|\\|rst::.*\\|") ), QString::fromUtf8("") );
             }
-            result.append( line + QString::fromUtf8("\n") );
         }
     }
 

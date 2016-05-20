@@ -95,8 +95,8 @@ Variant::save(Archive & ar,
         ar & ::boost::serialization::make_nvp("Type", typeStr);
         std::list<std::string> list;
         QStringList strList = toStringList();
-        for (int i = 0; i < strList.size(); ++i) {
-            list.push_back( strList.at(i).toStdString() );
+        Q_FOREACH(const QString &str, strList) {
+            list.push_back( str.toStdString() );
         }
         ar & ::boost::serialization::make_nvp("Value", list);
         break;

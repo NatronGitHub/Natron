@@ -494,8 +494,8 @@ Project::saveProjectInternal(const QString & path,
             if (appendTimeHash) {
                 Hash64 timeHash;
 
-                for (int i = 0; i < timeStr.size(); ++i) {
-                    timeHash.append<unsigned short>( timeStr.at(i).unicode() );
+                Q_FOREACH(QChar ch, timeStr) {
+                    timeHash.append<unsigned short>( ch.unicode() );
                 }
                 timeHash.computeHash();
                 QString timeHashStr = QString::number( timeHash.value() );
@@ -686,9 +686,9 @@ Project::findAutoSaveForProject(const QString& projectPath,
     QDir savesDir(projectPath);
     QStringList entries = savesDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
 
-    for (int i = 0; i < entries.size(); ++i) {
-        const QString & entry = entries.at(i);
+    Q_FOREACH(const QString &entry, entries) {
         QString ntpExt( QLatin1Char('.') );
+
         ntpExt.append( QString::fromUtf8(NATRON_PROJECT_FILE_EXT) );
         QString searchStr(ntpExt);
         QString autosaveSuffix( QString::fromUtf8(".autosave") );
@@ -1622,9 +1622,7 @@ Project::clearAutoSavesDir()
     QDir savesDir( autoSavesDir() );
     QStringList entries = savesDir.entryList();
 
-    for (int i = 0; i < entries.size(); ++i) {
-        const QString & entry = entries.at(i);
-
+    Q_FOREACH(const QString &entry, entries) {
         ///Do not remove the RENDER_SAVE used by the background processes to render because otherwise they may fail to start rendering.
         /// @see AppInstance::startWritersRendering
         if ( entry.contains( QString::fromUtf8("RENDER_SAVE") ) ) {

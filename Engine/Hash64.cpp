@@ -61,8 +61,8 @@ void
 Hash64_appendQString(Hash64* hash,
                      const QString & str)
 {
-    for (int i = 0; i < str.size(); ++i) {
-        hash->append<unsigned short>( str.at(i).unicode() );
+    Q_FOREACH (QChar ch, str) {
+        hash->append<unsigned short>( ch.unicode() );
     }
 }
 
