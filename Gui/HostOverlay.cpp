@@ -209,6 +209,9 @@ DefaultInteractI::loseFocus(double /*time*/,
     return false;
 }
 
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
 enum PositionInteractState
 {
     ePositionInteractStateInactive,
@@ -829,6 +832,9 @@ struct HostOverlayPrivate
         node.lock()->getNode()->getApp()->queueRedrawForAllViewers();
     }
 };
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
 
 void
 HostOverlay::renderText(float x,

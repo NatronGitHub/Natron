@@ -1284,7 +1284,7 @@ to_float_packed(float* to,
         }
     }
 } // to_float_packed
-}
+} // namespace Linear
 
 const Lut*
 LutManager::sRGBLut()

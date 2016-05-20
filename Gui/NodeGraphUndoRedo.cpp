@@ -730,6 +730,7 @@ DecloneMultipleNodesCommand::redo()
     setText( tr("Declone node") );
 }
 
+
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 typedef std::pair<NodeGuiPtr, QPointF> TreeNode; ///< all points are expressed as being the CENTER of the node!
