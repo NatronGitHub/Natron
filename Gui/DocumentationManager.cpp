@@ -304,12 +304,13 @@ DocumentationManager::parser(QString html,
 {
     QString result = html;
 
+
     // sphinx compat
     bool plainBody = false;
 
     if ( result.contains( QString::fromUtf8("<body>") ) ) { // 1.3 and lower
         plainBody = true;
-    } else if ( result.contains( QString::fromUtf8("<body role=\"document\">") ) )   { // 1.4+
+    } else if ( result.contains( QString::fromUtf8("<body role=\"document\">") ) ) {   // 1.4+
         plainBody = false;
     }
 
@@ -320,7 +321,7 @@ DocumentationManager::parser(QString html,
     // fix sphinx compat
     if (plainBody) {
         menuHTML.append( QString::fromUtf8("<body>\n") );
-    } else   {
+    } else {
         menuHTML.append( QString::fromUtf8("<body role=\"document\">\n") );
     }
     menuHTML.append( QString::fromUtf8("<div id=\"header\">\n<a href=\"/\"><div id=\"logo\"></div></a>\n") );
@@ -357,10 +358,11 @@ DocumentationManager::parser(QString html,
         menuHTML.append( QString::fromUtf8("</ul></div></div>") );
     }
 
+
     // fix sphinx compat
     if (plainBody) {
         result.replace(QString::fromUtf8("<body>"), menuHTML);
-    } else   {
+    } else {
         result.replace(QString::fromUtf8("<body role=\"document\">"), menuHTML);
     }
 

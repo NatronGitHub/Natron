@@ -134,7 +134,7 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
         for (int i = 0; i < headerTotal; ++i) {
             if ( (i == header1Split) || (i == header2Split) || (i == header3Split) ) {
                 ts << "+";
-            } else   {
+            } else {
                 ts << "-";
             }
         }
@@ -145,11 +145,11 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
         for (int i = 0; i < headerTotal; ++i) {
             if (i == ( header1Split - header1Text.count() ) - 1) {
                 ts << "| " << header2Text;
-            } else if (i == ( header2Split - header1Text.count() - header2Text.count() ) - 2)         {
+            } else if (i == ( header2Split - header1Text.count() - header2Text.count() ) - 2) {
                 ts << "| " << header3Text;
-            } else if (i == ( header3Split - header1Text.count() - header2Text.count() - header3Text.count() ) - 3)           {
+            } else if (i == ( header3Split - header1Text.count() - header2Text.count() - header3Text.count() ) - 3) {
                 ts << "| " << header4Text;
-            } else   {
+            } else {
                 ts << " ";
             }
         }
@@ -160,7 +160,7 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
         for (int i = 0; i < headerTotal; ++i) {
             if ( (i == header1Split) || (i == header2Split) || (i == header3Split) ) {
                 ts << "+";
-            } else   {
+            } else {
                 ts << "=";
             }
         }
@@ -195,7 +195,7 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
                     col4.append( QString::fromUtf8(" ") );
                 }
                 col4.append( QString::fromUtf8("|\n") );
-            } else   {
+            } else {
                 col4.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
                 col4.append( QString::fromUtf8("|\n") );
             }
@@ -207,7 +207,7 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
             for (int i = 0; i < headerTotal; ++i) {
                 if ( (i == header1Split) || (i == header2Split) || (i == header3Split) ) {
                     ts << "+";
-                } else   {
+                } else {
                     ts << "-";
                 }
             }

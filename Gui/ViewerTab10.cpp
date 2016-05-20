@@ -551,7 +551,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         update();
     } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
         update();
-    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) )   {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->viewerChannels->setCurrentIndex_no_emit(1);

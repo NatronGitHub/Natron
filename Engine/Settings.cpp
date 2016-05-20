@@ -2614,7 +2614,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n<h1>" << tr("Preferences") << "</h1>\n";
-    } else   {
+    } else {
         ts << tr("Preferences") << "\n==========\n\n";
     }
 
@@ -2632,13 +2632,13 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         if (isPage) {
             if (genHTML) {
                 ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
-            } else   {
+            } else {
                 ts << knobLabel << "\n----------\n\n";
             }
         } else if (isSep) {
             if (genHTML) {
                 ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
-            } else   {
+            } else {
                 //ts << knobLabel << "\n----------\n\n";
                 ts << "**" << knobLabel << "**\n\n";
             }
@@ -2649,7 +2649,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
                     //Markdown markdown;
                     //ts << markdown.convert2html(knobHint);
                     ts << "<p>" << knobHint << "</p>\n";
-                } else   {
+                } else {
                     ts << "**" << knobLabel << "**\n\n";
                     ts << knobHint << "\n\n";
                 }

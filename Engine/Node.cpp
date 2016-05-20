@@ -4015,7 +4015,7 @@ Node::makeHTMLDocumentation(bool genHTML,
         ts << "</ul></div>";
         ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
         ts << "<h1>" << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "</h1>";
-    } else   {
+    } else {
         ts << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "\n==========\n\n";
         if (hasImg) {
             ts << "![](" << pluginID << ".png)";
@@ -4039,7 +4039,7 @@ Node::makeHTMLDocumentation(bool genHTML,
             pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
             ts << "<p>" << pluginDescription << "</p>";
         }
-    } else   {
+    } else {
         ts << pluginDescription;
     }
 
@@ -4047,7 +4047,7 @@ Node::makeHTMLDocumentation(bool genHTML,
     QString inputControlHeader = tr("Inputs & Controls");
     if (genHTML) {
         ts << "<h3>" << inputControlHeader << "</h3>";
-    } else   {
+    } else {
         ts << "\n\n" << inputControlHeader << "\n----------\n\n";
     }
 
@@ -4163,7 +4163,7 @@ Node::makeHTMLDocumentation(bool genHTML,
                 ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
             }
             ts << "</tr>";
-        } else   {
+        } else {
             QStringList row;
             row.append(knobLabel);
             row.append(knobScriptName);
@@ -4180,7 +4180,7 @@ Node::makeHTMLDocumentation(bool genHTML,
             ts << Markdown::convert2html(extraMarkdown);
         }
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
-    } else   {
+    } else {
         // create markdown table
         if (items.size() > 0) {
             ts << Markdown::genPluginKnobsTable(items);
