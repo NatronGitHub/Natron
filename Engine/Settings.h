@@ -373,6 +373,8 @@ public:
 
     QString makeHTMLDocumentation(bool genHTML) const;
 
+    bool isAutoScrollEnabled() const;
+
 Q_SIGNALS:
 
     void settingChanged(KnobI* knob);
@@ -571,6 +573,7 @@ private:
     boost::shared_ptr<KnobInt> _scriptEditorFontSize;
     boost::shared_ptr<KnobInt> _wwwServerPort;
     boost::shared_ptr<KnobChoice> _documentationSource;
+    boost::shared_ptr<KnobBool> _autoScroll;
     struct PerPluginKnobs
     {
         boost::shared_ptr<KnobBool> enabled;

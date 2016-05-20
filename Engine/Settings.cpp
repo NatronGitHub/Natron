@@ -1096,6 +1096,12 @@ Settings::initializeKnobsNodeGraph()
     /////////// Nodegraph tab
     _nodegraphTab = AppManager::createKnob<KnobPage>( this, tr("Nodegraph") );
 
+    _autoScroll = AppManager::createKnob<KnobBool>( this, tr("Auto Scroll") );
+    _autoScroll->setName("autoScroll");
+    _autoScroll->setHintToolTip( tr("When checked the node graph will auto scroll if you move a node outside the current graph view.") );
+    _autoScroll->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_autoScroll);
+
     _autoTurbo = AppManager::createKnob<KnobBool>( this, tr("Auto-turbo") );
     _autoTurbo->setName("autoTurbo");
     _autoTurbo->setHintToolTip( tr("When checked the Turbo-mode will be enabled automatically when playback is started and disabled "
@@ -1504,6 +1510,7 @@ Settings::setDefaultValues()
     _maxViewerDiskCacheGB->setDefaultValue(5, 0);
     _maxDiskCacheNodeGB->setDefaultValue(10, 0);
     setCachingLabels();
+    _autoScroll->setDefaultValue(false);
     _autoTurbo->setDefaultValue(false);
     _usePluginIconsInNodeGraph->setDefaultValue(true);
     _useAntiAliasing->setDefaultValue(true);
@@ -2597,6 +2604,12 @@ void
 Settings::setServerPort(int port) const
 {
     _wwwServerPort->setValue(port);
+}
+
+bool
+Settings::isAutoScrollEnabled() const
+{
+    return _autoScroll->getValue();
 }
 
 QString

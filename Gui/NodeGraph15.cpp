@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/AppInstance.h" // CreateNodeArgs
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/Settings.h"
 
 #include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
@@ -371,9 +372,12 @@ NodeGraph::checkAndStartAutoScrollTimer(const QPointF& scenePos)
 void
 NodeGraph::onAutoScrollTimerTriggered()
 {
-    QPointF cursorPos = mapToScene( mapFromGlobal( QCursor::pos() ) );
+    bool isAutoScrollEnabled = appPTR->getCurrentSettings()->isAutoScrollEnabled();
 
-    scrollViewIfNeeded(cursorPos);
+    if (isAutoScrollEnabled) {
+        QPointF cursorPos = mapToScene( mapFromGlobal( QCursor::pos() ) );
+        scrollViewIfNeeded(cursorPos);
+    }
 }
 
 NATRON_NAMESPACE_EXIT;
