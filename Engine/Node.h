@@ -57,6 +57,8 @@ CLANG_DIAG_ON(deprecated)
 
 
 #define kDisableNodeKnobName "disableNode"
+#define kLifeTimeNodeKnobName "nodeLifeTime"
+#define kEnableLifeTimeNodeKnobName "enableNodeLifeTime"
 #define kUserLabelKnobName "userTextArea"
 #define kEnableMaskKnobName "enableMask"
 #define kEnableInputKnobName "enableInput"
@@ -868,6 +870,9 @@ public:
     void setNodeDisabled(bool disabled);
 
     boost::shared_ptr<KnobBool> getDisabledKnob() const;
+
+    bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
+
     std::string getNodeExtraLabel() const;
 
     /**
