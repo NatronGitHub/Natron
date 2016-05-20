@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <map>
 #include <vector>
@@ -33,13 +35,11 @@
 
 #include "Global/GlobalDefines.h"
 
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
-
 
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QThread>

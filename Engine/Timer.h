@@ -25,13 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 //----------------------------------------------------------------------------
 //
 //	Timing control
 //
 //----------------------------------------------------------------------------
-
-#include "Global/Macros.h"
 
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 #include <windows.h>

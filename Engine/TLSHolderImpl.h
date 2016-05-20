@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "TLSHolder.h"
 
 #include "Engine/AppManager.h"

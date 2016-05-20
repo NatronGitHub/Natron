@@ -29,7 +29,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
-#include <QStringList>
+#include <QtCore/QStringList>
 #include <QKeyEvent>
 #include <QAbstractItemView>
 #include <QtCore/QTimer>

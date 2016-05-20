@@ -25,12 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <set>
 #include <map>
 #include <list>
 #include <QtCore/QString>
-#include <QStringList>
+#include <QtCore/QStringList>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>

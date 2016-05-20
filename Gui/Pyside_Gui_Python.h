@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 //Defined to avoid including some headers when running shiboken which may crash shiboken (particularily boost headers)
 #define SBK_RUN
 

@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef PLUGINACTIONSHORTCUT_H
 #define PLUGINACTIONSHORTCUT_H
 
@@ -26,8 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
+
 NATRON_NAMESPACE_ENTER;
 
 struct PluginActionShortcut

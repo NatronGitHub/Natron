@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QtCore/QString>
-
 #include "Global/Macros.h"
+
+#include <QtCore/QString>
 
 #include "Engine/EngineFwd.h"
 

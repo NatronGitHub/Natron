@@ -32,6 +32,7 @@
 #include <windows.h>
 #endif
 
+#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

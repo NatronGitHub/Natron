@@ -19,21 +19,21 @@
 #ifndef ACTIONSHORTCUTS_H
 #define ACTIONSHORTCUTS_H
 
-/**
- * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
- **/
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+/**
+ * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
+ **/
 
 #include <map>
 #include <list>
 #include <vector>
+
+#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

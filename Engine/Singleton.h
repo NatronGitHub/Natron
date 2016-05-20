@@ -25,11 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <cstdlib> // for std::atexit()
 
 #include <QtCore/QMutexLocker>
-
-#include "Global/Macros.h"
 
 #include "Engine/EngineFwd.h"
 

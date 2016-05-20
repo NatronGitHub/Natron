@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <cmath>
-
 #include "Global/Macros.h"
+
+#include <cmath>
 
 #include "Engine/EngineFwd.h"
 

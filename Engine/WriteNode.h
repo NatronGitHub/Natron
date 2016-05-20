@@ -26,12 +26,13 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
-#include "Engine/NodeGroup.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
+
+#include "Engine/NodeGroup.h"
 
 
 #define kNatronWriteNodeParamEncodingPluginChoice "encodingPluginChoice"

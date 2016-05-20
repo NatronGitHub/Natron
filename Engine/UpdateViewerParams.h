@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <boost/shared_ptr.hpp>
 
 #include <string>
@@ -32,6 +34,7 @@
 #include <cstddef>
 
 #include "Global/Enums.h"
+
 #include "Engine/BufferableObject.h"
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"

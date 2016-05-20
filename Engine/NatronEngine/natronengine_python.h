@@ -34,7 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <signalmanager.h>
 #include <typeresolver.h>
 #include <QtConcurrentFilter>
-#include <QStringList>
+#include <QtCore/QStringList>
 #include <qabstractitemmodel.h>
 
 // Conversion Includes - Container Types

@@ -24,6 +24,8 @@
 
 #include "OfxHost.h"
 
+#include "Global/Macros.h"
+
 #include <cassert>
 #include <cstdarg>
 #include <memory>

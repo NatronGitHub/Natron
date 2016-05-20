@@ -23,8 +23,10 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Markdown.h"
+
 #include <sstream>
-#include "html.h" //hoedown
+
+#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -32,6 +34,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QRegExp>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
+
+#include "html.h" //hoedown
 
 NATRON_NAMESPACE_ENTER;
 

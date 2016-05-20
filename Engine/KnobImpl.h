@@ -25,12 +25,16 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Knob.h"
 
 #include <cfloat>
 #include <stdexcept>
 #include <string>
 #include <algorithm> // min, max
+
+#include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

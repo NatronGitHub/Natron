@@ -804,6 +804,7 @@ typedef std::list<InteractPtr> InteractList;
 typedef std::list<TransformInteract> TransformInteracts;
 
 
+
 struct HostOverlayPrivate
 {
     HostOverlay* _publicInterface;
