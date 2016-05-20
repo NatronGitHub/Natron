@@ -104,7 +104,7 @@ using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
 
-
+// protect local classes in anonymous namespace
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 /*The output node was connected from inputNumber to this...*/

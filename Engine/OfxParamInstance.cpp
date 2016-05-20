@@ -286,7 +286,7 @@ copyFrom(const KnobPtr & from,
 
     return kOfxStatOK;
 }
-}
+} // namespace OfxKeyFrame
 
 PropertyModified_RAII::PropertyModified_RAII(OfxParamToKnob* h)
     : _h(h)

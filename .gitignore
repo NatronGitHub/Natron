@@ -28,7 +28,15 @@ NatronRenderer-bin.xcodeproj/
 NatronRenderer.xcodeproj/
 NatronCrashReporter.xcodeproj/
 BreakpadClient.xcodeproj/
-CrashReporter/NatronCrashReporter
+CrashReporter/*
+CrashReporterCLI/*
+BreakpadClient/*
+tools/normalize/normalize
+Natron.xcodeproj
+Natron-bin.xcodeproj
+NatronRenderer-bin.xcodeproj
+NatronRenderer.xcodeproj
+NatronCrashReporter.xcodeproj
 NatronRendererCrashReporter.xcodeproj/
 Tests.xcodeproj/
 HostSupport.xcodeproj/

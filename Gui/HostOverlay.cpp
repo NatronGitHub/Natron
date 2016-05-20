@@ -64,7 +64,6 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-
 DefaultInteractI::DefaultInteractI(HostOverlay* overlay)
     : _overlay(overlay)
 {

@@ -24,7 +24,6 @@
 
 #include "ExistenceCheckThread.h"
 
-#ifdef NATRON_USE_BREAKPAD
 
 #include <cassert>
 #include <stdexcept>
@@ -169,4 +168,3 @@ NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING;
 #include "moc_ExistenceCheckThread.cpp"
 
-#endif // NATRON_USE_BREAKPAD
