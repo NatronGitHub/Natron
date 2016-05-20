@@ -64,9 +64,6 @@
  **/
 #define getKeybind(group, action) ( appPTR->getKeySequenceForAction(group, action) )
 
-#define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
-#define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
-#define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
 
 NATRON_NAMESPACE_ENTER;
 
@@ -193,29 +190,13 @@ public:
     void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
 
 
-    void setCurrentLogicalDPI(double dpiX, double dpiY);
-    double getLogicalDPIXRATIO() const;
-    double getLogicalDPIYRATIO() const;
+    virtual void setCurrentLogicalDPI(double dpiX, double dpiY) OVERRIDE FINAL;
+    virtual double getLogicalDPIXRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getLogicalDPIYRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    template <typename T>
-    void adjustSizeToDPI(T &x,
-                         T &y) const
-    {
-        x *= getLogicalDPIXRATIO();
-        y *= getLogicalDPIYRATIO();
-    }
+   
 
-    template <typename T>
-    T adjustSizeToDPIX(T x) const
-    {
-        return x * getLogicalDPIXRATIO();
-    }
-
-    template <typename T>
-    T adjustSizeToDPIY(T y) const
-    {
-        return y * getLogicalDPIYRATIO();
-    }
+    virtual void updateAboutWindowLibrariesVersion() OVERRIDE FINAL;
 
 public Q_SLOTS:
 

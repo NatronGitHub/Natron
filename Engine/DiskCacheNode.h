@@ -42,9 +42,7 @@ struct DiskCacheNodePrivate;
 class DiskCacheNode
     : public OutputEffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 
 public:
 
@@ -144,7 +142,7 @@ public:
 
 private:
 
-    virtual void knobChanged(KnobI* k,
+    virtual bool knobChanged(KnobI* k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,

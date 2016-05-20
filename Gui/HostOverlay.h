@@ -90,6 +90,13 @@ public:
                          const QPointF &penPos,
                          const QPoint &penPosViewport,
                          double pressure);
+    virtual bool penDoubleClicked(double time,
+                         const RenderScale& renderScale,
+                         ViewIdx view,
+                         const OfxPointD& pscale,
+                         const QPointF& lastPenPos,
+                         const QPointF &penPos,
+                         const QPoint &penPosViewport);
     virtual bool keyDown(double time,
                          const RenderScale& renderScale,
                          ViewIdx view,
@@ -163,6 +170,12 @@ public:
                  const QPointF &penPos,
                  const QPoint &penPosViewport,
                  double pressure);
+
+    bool penDoubleClicked(double time,
+                 const RenderScale& renderScale,
+                 ViewIdx view,
+                 const QPointF &penPos,
+                 const QPoint &penPosViewport);
 
 
     bool keyDown(double time,

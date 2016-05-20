@@ -195,8 +195,7 @@ public:
 
     int getAppID() const;
 
-    void exportHTMLDocs(const QString path);
-    QString parseHTMLDoc(const QString html, const QString path, bool replaceNewline) const;
+    void exportDocs(const QString path);
 
     /** @brief Create a new node  in the node graph.
     **/
@@ -399,6 +398,8 @@ public:
     std::string getAppIDString() const;
     const std::list<NodePtr>& getNodesBeingCreated() const;
     virtual bool isDraftRenderEnabled() const { return false; }
+
+    virtual void setDraftRenderEnabled(bool /*b*/) {}
 
     virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
                                    const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,

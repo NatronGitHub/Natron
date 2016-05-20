@@ -26,7 +26,7 @@ win32 {
 	CONFIG += app
 }
 CONFIG += moc
-CONFIG += boost glew opengl qt cairo python shiboken pyside
+CONFIG += boost opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres static-qhttpserver
 
 QT += gui core opengl network
@@ -79,7 +79,7 @@ win32-g++ {
 #Gcc is very picky here, if we include these libraries before the includes commands above, it will yield tons of unresolved externals
 	LIBS += -lmpr
 	#MingW needs to link against fontconfig explicitly since in Msys2 Qt does not link against fontconfig
-	LIBS +=  -lglu32 -lopengl32 -lfontconfig
+        LIBS +=  -lopengl32 -lfontconfig
 }
 
 SOURCES += \

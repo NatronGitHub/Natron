@@ -319,25 +319,25 @@ QToolButton:focus {
     border: 1px solid %1;
 }
 
-RotoToolButton[isSelected="true"]
+ViewerToolButton[isSelected="true"]
 {
     border: 1px solid %1;
 }
 
-RotoToolButton
+ViewerToolButton
 {
     border: 0px ;
 }
 
-RotoToolButton[isSelected="false"]:pressed {
+ViewerToolButton[isSelected="false"]:pressed {
     border: 0px;
 }
-RotoToolButton[isSelected="true"]:pressed {
+ViewerToolButton[isSelected="true"]:pressed {
     border: 1px solid %1;
 }
 
 
-RotoToolButton:focus {
+ViewerToolButton:focus {
     border: 0px;
 }
 

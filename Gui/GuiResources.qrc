@@ -12,7 +12,7 @@
         <file alias="LICENSE-Field3D.txt">../tools/license/components/LICENSE-Field3D.txt</file>
         <file alias="LICENSE-FreeType.txt">../tools/license/components/LICENSE-FreeType.txt</file>
         <file alias="LICENSE-GIFLIB.txt">../tools/license/components/LICENSE-GIFLIB.txt</file>
-        <file alias="LICENSE-GLEW.txt">../tools/license/components/LICENSE-GLEW.txt</file>
+        <file alias="LICENSE-GLAD.txt">../tools/license/components/LICENSE-GLAD.txt</file>
         <file alias="LICENSE-GPL-2.0.txt">../tools/license/components/LICENSE-GPL-2.0.txt</file>
         <file alias="LICENSE-HDF5.txt">../tools/license/components/LICENSE-HDF5.txt</file>
         <file alias="LICENSE-HarfBuzz.txt">../tools/license/components/LICENSE-HarfBuzz.txt</file>
@@ -59,6 +59,7 @@
         <file alias="LICENSE-qhttpserver.txt">../tools/license/components/LICENSE-qhttpserver.txt</file>
         <file alias="LICENSE-webp.txt">../tools/license/components/LICENSE-webp.txt</file>
         <file alias="LICENSE-zlib.txt">../tools/license/components/LICENSE-zlib.txt</file>
+        <file alias="LICENSE-hoedown.txt">../tools/license/components/LICENSE-hoedown.txt</file>
         <file>Resources/Fonts/DroidSans-Bold.ttf</file>
         <file>Resources/Fonts/DroidSans.ttf</file>
         <file>Resources/Images/GroupingIcons/Set1/color_grouping_1.png</file>
@@ -332,7 +333,7 @@
         <file>Resources/Images/merge_hypot.png</file>
         <file>Resources/Images/merge_in.png</file>
         <file>Resources/Images/merge_luminosity.png</file>
-        <file>Resources/Images/merge_mask.png</file>
+        <file>Resources/Images/merge_mask.png</file> 
         <file>Resources/Images/merge_matte.png</file>
         <file>Resources/Images/merge_max.png</file>
         <file>Resources/Images/merge_min.png</file>

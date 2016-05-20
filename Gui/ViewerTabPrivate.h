@@ -43,6 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/ComboBox.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/NodeViewerContext.h"
 
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -152,10 +153,24 @@ struct ViewerTabPrivate
 
     /*frame seeker*/
     TimeLineGui* timeLineGui;
-    std::map<NodeGui*, RotoGui*> rotoNodes;
-    std::pair<NodeGui*, RotoGui*> currentRoto;
-    std::map<NodeGui*, TrackerGui*> trackerNodes;
-    std::pair<NodeGui*, TrackerGui*> currentTracker;
+
+    // This is all nodes that have a viewer context
+    std::map<NodeGuiWPtr, NodeViewerContextPtr> nodesContext;
+
+    /*
+     Tells for a given plug-in ID, which nodes is currently activated in the viewer interface
+     */
+    struct PluginViewerContext {
+        std::string pluginID;
+        NodeGuiWPtr currentNode;
+        NodeViewerContextPtr currentContext;
+    };
+
+
+    // This is the current active context for each plug-in
+    // We don't use a map because we need to retain the insertion order for each plug-in
+    std::list<PluginViewerContext> currentNodeContext;
+
     InputNamesMap inputNamesMap;
     mutable QMutex compOperatorMutex;
     ViewerCompositingOperatorEnum compOperator;
@@ -198,6 +213,11 @@ struct ViewerTabPrivate
 #endif
 
     void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
+
+    std::list<PluginViewerContext>::iterator findActiveNodeContextForPlugin(const std::string& pluginID);
+
+    // Returns true if this node has a viewer context but it is not active
+    bool hasInactiveNodeViewerContext(const NodePtr& node);
 };
 
 NATRON_NAMESPACE_EXIT;

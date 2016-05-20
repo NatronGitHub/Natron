@@ -25,7 +25,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QPointF>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include "Engine/EngineFwd.h"
+#include "Engine/RectD.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -85,6 +93,77 @@ public:
      * @brief Get the current mipmapLevel applied by the viewer
      **/
     virtual unsigned int getCurrentRenderScale() const = 0;
+
+    /**
+     * @brief Returns whether the given rectangle in canonical coords is visible in the viewport
+     **/
+    bool isVisibleInViewport(const RectD& rect) const
+    {
+        RectD visiblePortion = getViewportRect();
+        return visiblePortion.intersects(rect);
+    }
+
+    /**
+     * @brief Returns the viewport visible portion in canonical coordinates
+     **/
+    virtual RectD getViewportRect() const = 0;
+
+    /**
+     * @brief Returns the cursor position in canonical coordinates
+     **/
+    virtual void getCursorPosition(double& x, double& y) const = 0;
+
+    /**
+     * @brief Returns for a viewer the internal viewer node
+     **/
+    virtual ViewerInstance* getInternalViewerNode() const {
+        return 0;
+    }
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const = 0;
+    QPointF toWidgetCoordinates(const QPointF& canonicalCoords) const
+    {
+        QPointF ret = canonicalCoords;
+        toWidgetCoordinates(&ret.rx(), &ret.ry());
+        return ret;
+    }
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const = 0;
+    QPointF toCanonicalCoordinates(const QPointF& widgetCoords) const
+    {
+        QPointF ret = widgetCoords;
+        toCanonicalCoordinates(&ret.rx(), &ret.ry());
+        return ret;
+    }
+
+    /**
+     * @brief May be implemented to draw text using the widget's current font
+     **/
+    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) {
+        Q_UNUSED(x);
+        Q_UNUSED(y);
+        Q_UNUSED(string);
+        Q_UNUSED(r);
+        Q_UNUSED(g);
+        Q_UNUSED(b);
+        return false;
+    }
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const = 0;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

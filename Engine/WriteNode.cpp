@@ -956,13 +956,14 @@ WriteNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& se
     _imp->createWriteNode(false, filename, serialization);
 }
 
-void
+bool
 WriteNode::knobChanged(KnobI* k,
                        ValueChangedReasonEnum reason,
                        ViewSpec view,
                        double time,
                        bool originatedFromMainThread)
 {
+    bool ret = true;
     NodePtr writer = _imp->embeddedPlugin.lock();
 
     if ( ( k == _imp->outputFileKnob.lock().get() ) && (reason != eValueChangedReasonTimeChanged) ) {
@@ -971,7 +972,7 @@ WriteNode::knobChanged(KnobI* k,
                 writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
             }
 
-            return;
+            return false;
         }
         _imp->refreshPluginSelectorKnob();
         boost::shared_ptr<KnobOutputFile> fileKnob = _imp->outputFileKnob.lock();
@@ -984,12 +985,11 @@ WriteNode::knobChanged(KnobI* k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
 
-        return;
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
         if ( entry == pluginIDKnob->getValue() ) {
-            return;
+            return false;
         }
 
         pluginIDKnob->setValue(entry);
@@ -1004,7 +1004,6 @@ WriteNode::knobChanged(KnobI* k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
 
-        return;
     } else if ( k == _imp->readBackKnob.lock().get() ) {
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
@@ -1024,10 +1023,13 @@ WriteNode::knobChanged(KnobI* k,
                 ( k->getName() == kParamLastFrame) ||
                 ( k->getName() == kParamFrameRange) ) {
         _imp->setReadNodeOriginalFrameRange();
+    } else {
+        ret = false;
     }
-    if (writer) {
-        writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
+    if (!ret && writer) {
+        ret |= writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
+    return ret;
 } // WriteNode::knobChanged
 
 void

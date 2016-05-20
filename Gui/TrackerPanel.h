@@ -59,7 +59,7 @@ class TrackerPanel
 public:
 
     TrackerPanel(const NodeGuiPtr& n,
-                 QWidget* parent);
+                 NodeSettingsPanel* parent);
 
     virtual ~TrackerPanel();
 

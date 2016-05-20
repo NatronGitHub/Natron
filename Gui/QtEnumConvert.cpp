@@ -37,6 +37,9 @@ QtEnumConvert::fromQtKey(Qt::Key k)
     case Qt::Key_Escape:
 
         return Key_Escape;
+    case Qt::Key_Backspace:
+
+        return Key_BackSpace;
     case Qt::Key_Tab:
 
         return Key_Tab;
@@ -710,6 +713,9 @@ QtEnumConvert::toQtKey(Key k)
     case Key_Escape:
 
         return Qt::Key_Escape;
+    case Key_BackSpace:
+
+        return Qt::Key_Backspace;
     case Key_Tab:
 
         return Qt::Key_Tab;
@@ -1376,7 +1382,7 @@ QtEnumConvert::toQtKey(Key k)
         return Qt::Key_ydiaeresis;
     default:
 
-        return Qt::Key_unknown;
+        return (Qt::Key)0;
     } // switch
 } // toQtKey
 
@@ -1826,6 +1832,58 @@ QtEnumConvert::toQtStandarButtons(StandardButtons buttons)
 
     return ret;
 } // toQtStandarButtons
+
+
+bool
+QtEnumConvert::toQtCursor(CursorEnum c, Qt::CursorShape* ret)
+{
+    bool b = true;
+    switch (c) {
+        case eCursorArrow:
+            *ret = Qt::ArrowCursor;
+        case eCursorBDiag:
+            *ret = Qt::SizeBDiagCursor;
+        case eCursorFDiag:
+            *ret = Qt::SizeFDiagCursor;
+        case eCursorBlank:
+            *ret = Qt::BlankCursor;
+        case eCursorBusy:
+            *ret = Qt::BusyCursor;
+        case eCursorClosedHand:
+            *ret = Qt::ClosedHandCursor;
+        case eCursorCross:
+            *ret = Qt::CrossCursor;
+        case eCursorForbidden:
+            *ret = Qt::ForbiddenCursor;
+        case eCursorIBeam:
+            *ret = Qt::IBeamCursor;
+        case eCursorOpenHand:
+            *ret = Qt::OpenHandCursor;
+        case eCursorPointingHand:
+            *ret = Qt::PointingHandCursor;
+        case eCursorSizeAll:
+            *ret = Qt::SizeAllCursor;
+        case eCursorSizeHor:
+            *ret = Qt::SizeHorCursor;
+        case eCursorSizeVer:
+            *ret = Qt::SizeVerCursor;
+        case eCursorSplitH:
+            *ret = Qt::SplitHCursor;
+        case eCursorSplitV:
+            *ret = Qt::SplitVCursor;
+        case eCursorUpArrow:
+            *ret = Qt::UpArrowCursor;
+        case eCursorWait:
+            *ret = Qt::WaitCursor;
+        case eCursorWhatsThis:
+            *ret = Qt::WhatsThisCursor;
+        case eCursorDefault:
+        default:
+            b = false;
+            break;
+    }
+    return b;
+} // toQtCursor
 
 NATRON_NAMESPACE_EXIT;
 

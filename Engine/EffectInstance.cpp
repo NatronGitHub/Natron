@@ -76,6 +76,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -2904,8 +2905,17 @@ EffectInstance::onKnobSlaved(const KnobPtr& slave,
 void
 EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 {
+    assert(QThread::currentThread() == qApp->thread());
     getNode()->setCurrentViewportForHostOverlays(viewport);
+    _imp->overlaysViewport = viewport;
     setCurrentViewportForOverlays(viewport);
+}
+
+OverlaySupport*
+EffectInstance::getCurrentViewportForOverlays() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->overlaysViewport;
 }
 
 void
@@ -2946,7 +2956,9 @@ EffectInstance::onOverlayPenDown_public(double time,
                                         ViewIdx view,
                                         const QPointF & viewportPos,
                                         const QPointF & pos,
-                                        double pressure)
+                                        double pressure,
+                                        double timestamp,
+                                        PenType pen)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2965,9 +2977,40 @@ EffectInstance::onOverlayPenDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure);
+        ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
         if (!ret) {
             ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
+        }
+        _imp->setDuringInteractAction(false);
+    }
+    checkIfRenderNeeded();
+
+    return ret;
+}
+
+bool
+EffectInstance::onOverlayPenDoubleClicked_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos)
+{
+    ///cannot be run in another thread
+    assert( QThread::currentThread() == qApp->thread() );
+    if ( !hasOverlay()  && !getNode()->hasHostOverlay() ) {
+        return false;
+    }
+
+    RenderScale actualScale;
+    if ( !canHandleRenderScaleForOverlays() ) {
+        actualScale.x = actualScale.y = 1.;
+    } else {
+        actualScale = renderScale;
+    }
+
+    bool ret;
+    {
+        NON_RECURSIVE_ACTION();
+        _imp->setDuringInteractAction(true);
+        ret = onOverlayPenDoubleClicked(time, actualScale, view, viewportPos, pos);
+        if (!ret) {
+            ret |= getNode()->onOverlayPenDoubleClickedDefault(time, actualScale, view, viewportPos, pos);
         }
         _imp->setDuringInteractAction(false);
     }
@@ -2982,7 +3025,8 @@ EffectInstance::onOverlayPenMotion_public(double time,
                                           ViewIdx view,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
-                                          double pressure)
+                                          double pressure,
+                                          double timestamp)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3000,7 +3044,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure);
+    bool ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
     if (!ret) {
         ret |= getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure);
     }
@@ -3017,7 +3061,8 @@ EffectInstance::onOverlayPenUp_public(double time,
                                       ViewIdx view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
-                                      double pressure)
+                                      double pressure,
+                                      double timestamp)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3036,7 +3081,7 @@ EffectInstance::onOverlayPenUp_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure);
+        ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
         if (!ret) {
             ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
         }
@@ -3176,9 +3221,8 @@ EffectInstance::onOverlayFocusGained_public(double time,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusGained(time, actualScale, view);
-        if (!ret) {
-            ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
-        }
+        ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
+
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3209,9 +3253,8 @@ EffectInstance::onOverlayFocusLost_public(double time,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusLost(time, actualScale, view);
-        if (!ret) {
-            ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
-        }
+        ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
+
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3232,7 +3275,7 @@ EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode() );
 #endif
 
     return render(args);
@@ -3511,7 +3554,7 @@ EffectInstance::beginSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -3534,7 +3577,7 @@ EffectInstance::endSequenceRender_public(double first,
 {
     NON_RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
 #endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -3971,13 +4014,14 @@ EffectInstance::isMaskEnabled(int inputNb) const
     return getNode()->isMaskEnabled(inputNb);
 }
 
-void
+bool
 EffectInstance::onKnobValueChanged(KnobI* /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
                                    ViewSpec /*view*/,
                                    bool /*originatedFromMainThread*/)
 {
+    return false;
 }
 
 bool
@@ -4050,9 +4094,50 @@ EffectInstance::redrawOverlayInteract()
 RenderScale
 EffectInstance::getOverlayInteractRenderScale() const
 {
+    RenderScale renderScale(1.);
+
+    if (isDoingInteractAction() && _imp->overlaysViewport) {
+        unsigned int mmLevel = _imp->overlaysViewport->getCurrentRenderScale();
+        renderScale.x = renderScale.y = 1 << mmLevel;
+    }
+
+    return renderScale;
+
     RenderScale r(1.);
 
     return r;
+}
+
+void
+EffectInstance::pushUndoCommand(UndoCommand* command)
+{
+    UndoCommandPtr ptr(command);
+    getNode()->pushUndoCommand(ptr);
+}
+
+void
+EffectInstance::pushUndoCommand(const UndoCommandPtr& command)
+{
+    getNode()->pushUndoCommand(command);
+}
+
+bool
+EffectInstance::setCurrentCursor(CursorEnum defaultCursor)
+{
+    if (!isDoingInteractAction()) {
+        return  false;
+    }
+    getNode()->setCurrentCursor(defaultCursor);
+    return true;
+}
+
+bool
+EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
+{
+    if (!isDoingInteractAction()) {
+        return  false;
+    }
+    return getNode()->setCurrentCursor(customCursorFilePath);
 }
 
 void
@@ -4077,7 +4162,7 @@ EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
     return false;
 }
 
-void
+bool
 EffectInstance::onKnobValueChanged_public(KnobI* k,
                                           ValueChangedReasonEnum reason,
                                           double time,
@@ -4089,12 +4174,14 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
     if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && node->isNodeDisabled() ) {
-        return;
+        return false;
     }
 
     if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
         node->onFileNameParameterChanged(k);
     }
+
+    bool ret = false;
 
     // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
     const ViewIdx viewIdx( ( view.isAll() || view.isCurrent() ) ? 0 : view );
@@ -4132,9 +4219,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         {
             RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode());
 #endif
-            knobChanged(k, reason, view, time, originatedFromMainThread);
+            ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
         }
     }
 
@@ -4152,11 +4239,11 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         }
     }
 
-    node->onEffectKnobValueChanged(k, reason);
+    ret |= node->onEffectKnobValueChanged(k, reason);
 
     //Don't call the python callback if the reason is time changed
     if (reason == eValueChangedReasonTimeChanged) {
-        return;
+        return false;
     }
 
     ///If there's a knobChanged Python callback, run it
@@ -4176,6 +4263,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     ///pointers for the render thread. This is helpful for analysis effects which call getImage() on the main-thread
     ///and whose render() function is never called.
     _imp->clearInputImagePointers();
+    return ret;
 } // onKnobValueChanged_public
 
 void
@@ -5142,9 +5230,9 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 } //refreshMetaDataProxy
 
 void
-EffectInstance::refreshExtraStateAfterTimeChanged(double time)
+EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback, double time)
 {
-    KnobHolder::refreshExtraStateAfterTimeChanged(time);
+    KnobHolder::refreshExtraStateAfterTimeChanged(isPlayback, time);
 
     getNode()->refreshIdentityState();
 }

@@ -1,0 +1,11 @@
+This is an ![image](/url).
+
+This is a tricky !![image](/url).
+
+This is another tricky case: \![not image](/url).
+
+This is a reference ![image][ref].
+
+[ref]: /url2
+
+Terminating !

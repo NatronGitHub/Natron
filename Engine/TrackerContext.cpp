@@ -406,7 +406,7 @@ void
 TrackerContext::trackSelectedMarkers(int start,
                                      int end,
                                      int frameStep,
-                                     ViewerInstance* viewer)
+                                     OverlaySupport* viewer)
 {
     std::list<TrackMarkerPtr > markers;
     {
@@ -910,13 +910,14 @@ TrackerContext::onKnobsLoaded()
     _imp->refreshVisibilityFromTransformType();
 }
 
-void
+bool
 TrackerContext::knobChanged(KnobI* k,
                             ValueChangedReasonEnum /*reason*/,
                             ViewSpec /*view*/,
                             double /*time*/,
                             bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == _imp->exportButton.lock().get() ) {
         exportTrackDataFromExportOptions();
     } else if ( k == _imp->setCurrentFrameButton.lock().get() ) {
@@ -949,6 +950,10 @@ TrackerContext::knobChanged(KnobI* k,
         _imp->refreshVisibilityFromTransformType();
     }
 #endif
+    else {
+        ret = false;
+    }
+    return ret;
 }
 
 void
@@ -1196,6 +1201,7 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
                                               const QPointF & viewportPos,
                                               const QPointF & pos,
                                               double pressure,
+                                              double timestamp, PenType pen,
                                               OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1205,7 +1211,7 @@ TrackerContext::onOverlayPenDownInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenDown_public(time, renderScale, view, viewportPos, pos, pressure, timestamp, pen) ) {
             return true;
         }
     }
@@ -1220,6 +1226,7 @@ TrackerContext::onOverlayPenMotionInternalNodes(double time,
                                                 const QPointF & viewportPos,
                                                 const QPointF & pos,
                                                 double pressure,
+                                                double timestamp,
                                                 OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1229,7 +1236,7 @@ TrackerContext::onOverlayPenMotionInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenMotion_public(time, renderScale, view, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
     }
@@ -1244,6 +1251,7 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
+                                            double timestamp,
                                             OverlaySupport* viewer)
 {
     if ( _imp->transformPageKnob.lock()->getIsSecret() ) {
@@ -1253,7 +1261,7 @@ TrackerContext::onOverlayPenUpInternalNodes(double time,
     if (node) {
         NodePtr thisNode = getNode();
         thisNode->getEffectInstance()->setCurrentViewportForOverlays_public(viewer);
-        if ( thisNode->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure) ) {
+        if ( thisNode->getEffectInstance()->onOverlayPenUp_public(time, renderScale, view, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
     }
@@ -1370,6 +1378,30 @@ TrackerContext::onOverlayFocusLostInternalNodes(double time,
     }
 
     return false;
+}
+
+
+void
+TrackerContext::onSchedulerTrackingStarted(int frameStep)
+{
+    getNode()->getApp()->progressStart(getNode(), tr("Tracking...").toStdString(), "");
+    Q_EMIT trackingStarted(frameStep);
+}
+
+
+void
+TrackerContext::onSchedulerTrackingFinished()
+{
+    getNode()->getApp()->progressEnd(getNode());
+    Q_EMIT trackingFinished();
+}
+
+void
+TrackerContext::onSchedulerTrackingProgress(double progress)
+{
+    if (!getNode()->getApp()->progressUpdate(getNode(), progress)) {
+        _imp->scheduler.abortTracking();
+    }
 }
 
 //////////////////////// TrackScheduler
@@ -1723,7 +1755,6 @@ public:
         , _doPartialUpdates(doPartialUpdates)
     {
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressStart(_effect->getNode(), tr("Tracking...").toStdString(), "");
             _base->emit_trackingStarted(step);
         }
 
@@ -1738,7 +1769,6 @@ public:
             _v->setDoingPartialUpdates(false);
         }
         if (_effect && _reportProgress) {
-            _effect->getApp()->progressEnd( _effect->getNode() );
             _base->emit_trackingFinished();
         }
     }
@@ -1798,17 +1828,17 @@ TrackScheduler::run()
         int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
         bool reportProgress = numTracks > 1 || framesCount > 1;
         EffectInstPtr effect = _imp->getNode()->getEffectInstance();
+        bool allTrackFailed = false;
+        bool aborted = false;
         {
             ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
             IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, frameStep, reportProgress, viewer, doPartialUpdates);
-
-
+     
             if ( (frameStep == 0) || ( (frameStep > 0) && (start >= end) ) || ( (frameStep < 0) && (start <= end) ) ) {
                 // Invalid range
                 cur = end;
             }
 
-            bool allTrackFailed = false;
 
             while (cur != end) {
                 ///Launch parallel thread for each track using the global thread pool
@@ -1866,10 +1896,7 @@ TrackScheduler::run()
 
                 if (reportProgress && effect) {
                     ///Notify we progressed of 1 frame
-                    if ( !effect->getApp()->progressUpdate(effect->getNode(), progress) ) {
-                        QMutexLocker k(&_imp->abortRequestedMutex);
-                        ++_imp->abortRequested;
-                    }
+                    Q_EMIT trackingProgress(progress);
                 }
 
                 ///Check for abortion
@@ -1877,6 +1904,7 @@ TrackScheduler::run()
                     QMutexLocker k(&_imp->abortRequestedMutex);
                     if (_imp->abortRequested > 0) {
                         _imp->abortRequested = 0;
+                        aborted = true;
                         _imp->abortRequestedCond.wakeAll();
                         break;
                     }

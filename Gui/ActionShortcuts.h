@@ -44,6 +44,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/PluginActionShortcut.h"
 #include "Gui/GuiFwd.h"
 
 #define kShortcutGroupGlobal "Global"
@@ -364,97 +365,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionPlayerPlaybackOut "pbOut"
 #define kShortcutDescActionPlayerPlaybackOut "Set Playback Out Point"
 
-///////////ROTO SHORTCUTS
-#define kShortcutIDActionRotoDelete "delete"
-#define kShortcutDescActionRotoDelete "Delete Element"
-
-#define kShortcutIDActionRotoCloseBezier "closeBezier"
-#define kShortcutDescActionRotoCloseBezier "Close Bezier"
-
-#define kShortcutIDActionRotoSelectAll "selectAll"
-#define kShortcutDescActionRotoSelectAll "Select All"
-
-#define kShortcutIDActionRotoSelectionTool "selectionTool"
-#define kShortcutDescActionRotoSelectionTool "Switch to Selection Mode"
-
-#define kShortcutIDActionRotoAddTool "addTool"
-#define kShortcutDescActionRotoAddTool "Switch to Add Mode"
-
-#define kShortcutIDActionRotoEditTool "editTool"
-#define kShortcutDescActionRotoEditTool "Switch to Edition Mode"
-
-#define kShortcutIDActionRotoBrushTool "brushTool"
-#define kShortcutDescActionRotoBrushTool "Switch to Brush Mode"
-
-#define kShortcutIDActionRotoCloneTool "cloneTool"
-#define kShortcutDescActionRotoCloneTool "Switch to Clone Mode"
-
-#define kShortcutIDActionRotoEffectTool "EffectTool"
-#define kShortcutDescActionRotoEffectTool "Switch to Effect Mode"
-
-#define kShortcutIDActionRotoColorTool "colorTool"
-#define kShortcutDescActionRotoColorTool "Switch to Color Mode"
-
-#define kShortcutIDActionRotoNudgeLeft "nudgeLeft"
-#define kShortcutDescActionRotoNudgeLeft "Move Bezier to the Left"
-
-#define kShortcutIDActionRotoNudgeRight "nudgeRight"
-#define kShortcutDescActionRotoNudgeRight "Move Bezier to the Right"
-
-#define kShortcutIDActionRotoNudgeBottom "nudgeBottom"
-#define kShortcutDescActionRotoNudgeBottom "Move Bezier to the Bottom"
-
-#define kShortcutIDActionRotoNudgeTop "nudgeTop"
-#define kShortcutDescActionRotoNudgeTop "Move Bezier to the Top"
-
-#define kShortcutIDActionRotoSmooth "smooth"
-#define kShortcutDescActionRotoSmooth "Smooth Bezier"
-
-#define kShortcutIDActionRotoCuspBezier "cusp"
-#define kShortcutDescActionRotoCuspBezier "Cusp Bezier"
-
-#define kShortcutIDActionRotoRemoveFeather "rmvFeather"
-#define kShortcutDescActionRotoRemoveFeather "Remove Feather"
-
-#define kShortcutIDActionRotoLinkToTrack "linkToTrack"
-#define kShortcutDescActionRotoLinkToTrack "Link to Track"
-
-#define kShortcutIDActionRotoUnlinkToTrack "unlinkFromTrack"
-#define kShortcutDescActionRotoUnlinkToTrack "Unlink from Track"
-
-#define kShortcutIDActionRotoLockCurve "lock"
-#define kShortcutDescActionRotoLockCurve "Lock Shape"
-
-///////////TRACKING SHORTCUTS
-#define kShortcutIDActionTrackingSelectAll "selectAll"
-#define kShortcutDescActionTrackingSelectAll "Select All Tracks"
-
-#define kShortcutIDActionTrackingDelete "delete"
-#define kShortcutDescActionTrackingDelete "Remove Tracks"
-
-#define kShortcutIDActionTrackingBackward "backward"
-#define kShortcutDescActionTrackingBackward "Track Backward"
-
-#define kShortcutIDActionTrackingForward "forward"
-#define kShortcutDescActionTrackingForward "Track Forward"
-
-#define kShortcutIDActionTrackingPrevious "prev"
-#define kShortcutDescActionTrackingPrevious "Track to Previous Frame"
-
-#define kShortcutIDActionTrackingNext "next"
-#define kShortcutDescActionTrackingNext "Track to Next Frame"
-
-#define kShortcutIDActionTrackingStop "stop"
-#define kShortcutDescActionTrackingStop "Stop Tracking"
-
-#define kShortcutIDActionTrackingAllKeyframes "allKeys"
-#define kShortcutDescActionTrackingAllKeyframes "Track All Keyframes"
-
-#define kShortcutIDActionTrackingCurrentKeyframes "curKeys"
-#define kShortcutDescActionTrackingCurrentKeyframes "Track Current Keyframe"
-
-#define kShortcutIDActionTrackingRange "trackRange"
-#define kShortcutDescActionTrackingRange "Track range"
 
 ///////////NODEGRAPH SHORTCUTS
 #ifndef NATRON_ENABLE_IO_META_NODES
@@ -759,6 +669,11 @@ public:
                        QObject* parent,
                        bool setShortcutOnAction = true);
 
+
+    const std::vector<std::pair<QString, QKeySequence> >& getShortcuts() const
+    {
+        return _shortcuts;
+    }
 
     virtual ~ActionWithShortcut();
 

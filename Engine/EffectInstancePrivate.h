@@ -198,7 +198,9 @@ public:
     NodeMetadata metadatas;
     bool runningClipPreferences; //only used on main thread
 
-public:
+    // set during interact actions on main-thread
+    OverlaySupport* overlaysViewport;
+
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
 
     void setDuringInteractAction(bool b);

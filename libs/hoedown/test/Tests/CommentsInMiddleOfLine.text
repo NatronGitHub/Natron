@@ -1,0 +1,8 @@
+It would be super-keen to be able to use [MOE](https://github.com/google/moe)
+directives in Markdown.
+
+<!-- HTML comments work at the start of a block -->
+
+But I'd <!-- MOE:begin_strip -->really, really <!-- MOE:end_strip -->
+like to be able to use them in the middle of a line.
+

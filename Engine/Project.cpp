@@ -1394,13 +1394,14 @@ Project::endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/)
 }
 
 ///this function is only called on the main thread
-void
+bool
 Project::onKnobValueChanged(KnobI* knob,
                             ValueChangedReasonEnum reason,
                             double /*time*/,
                             ViewSpec /*view*/,
                             bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( knob == _imp->viewsList.get() ) {
         /**
          * All cache entries are linked to a view index which may no longer be correct since the user changed the project settings.
@@ -1455,7 +1456,10 @@ Project::onKnobValueChanged(KnobI* knob,
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
+    } else {
+        ret = false;
     }
+    return ret;
 } // Project::onKnobValueChanged
 
 bool

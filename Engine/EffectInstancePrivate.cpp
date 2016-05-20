@@ -340,6 +340,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , metadatasMutex()
     , metadatas()
     , runningClipPreferences(false)
+    , overlaysViewport(0)
 {
 }
 

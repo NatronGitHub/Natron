@@ -527,6 +527,17 @@ OfxEffectInstance::isEffectCreated() const
     return _imp->created;
 }
 
+bool
+OfxEffectInstance::isPluginDescriptionInMarkdown() const
+{
+    assert(_imp->context != eContextNone);
+    if ( effectInstance() ) {
+        return effectInstance()->getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
+    } else {
+        return false;
+    }
+}
+
 std::string
 OfxEffectInstance::getPluginDescription() const
 {
@@ -1015,7 +1026,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
     {
         RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-        REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode()->getFullyQualifiedName(), getNode()->getPluginID() );
+        REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
 #endif
         SET_CAN_SET_VALUE(true);
         ClipsThreadStorageSetter clipSetter(effectInstance(),
@@ -1966,7 +1977,9 @@ OfxEffectInstance::onOverlayPenDown(double time,
                                     ViewIdx view,
                                     const QPointF & viewportPos,
                                     const QPointF & pos,
-                                    double pressure)
+                                    double pressure,
+                                    double /*timestamp*/,
+                                    PenType /*pen*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2006,7 +2019,8 @@ OfxEffectInstance::onOverlayPenMotion(double time,
                                       ViewIdx view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
-                                      double pressure)
+                                      double pressure,
+                                      double /*timestamp*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2042,7 +2056,8 @@ OfxEffectInstance::onOverlayPenUp(double time,
                                   ViewIdx view,
                                   const QPointF & viewportPos,
                                   const QPointF & pos,
-                                  double pressure)
+                                  double pressure,
+                                  double /*timestamp*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -2214,20 +2229,6 @@ OfxEffectInstance::redrawOverlayInteract()
     Q_UNUSED(st);
 }
 
-RenderScale
-OfxEffectInstance::getOverlayInteractRenderScale() const
-{
-    RenderScale renderScale(1.);
-
-    if (isDoingInteractAction() && _imp->overlayInteract) {
-        OverlaySupport* lastInteract = _imp->overlayInteract->getLastCallingViewport();
-        assert(lastInteract);
-        unsigned int mmLevel = lastInteract->getCurrentRenderScale();
-        renderScale.x = renderScale.y = 1 << mmLevel;
-    }
-
-    return renderScale;
-}
 
 std::string
 OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)
@@ -2252,15 +2253,16 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
     }
 }
 
-void
+bool
 OfxEffectInstance::knobChanged(KnobI* k,
                                ValueChangedReasonEnum reason,
                                ViewSpec view,
                                double time,
                                bool /*originatedFromMainThread*/)
 {
+
     if (!_imp->initialized) {
-        return;
+        return false;
     }
 
 
@@ -2291,10 +2293,11 @@ OfxEffectInstance::knobChanged(KnobI* k,
         stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
     }
 
-    /*if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        return;
-       }*/
+    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        return false;
+    }
     Q_UNUSED(stat);
+    return true;
 } // knobChanged
 
 void

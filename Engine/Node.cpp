@@ -89,6 +89,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/WriteNode.h"
@@ -1797,7 +1798,6 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
             }
             isRegular->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
             isRegular->restoreExpressions(knob, oldNewScriptNamesMapping);
-            isRegular->restoreTracks(knob, allNodes);
         }
     }
 }
@@ -1821,7 +1821,6 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
         }
         (*it)->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
         (*it)->restoreExpressions(knob, oldNewScriptNamesMapping);
-        (*it)->restoreTracks(knob, allNodes);
     }
 
     const std::list<boost::shared_ptr<GroupKnobSerialization> >& userKnobs = serialization.getUserPages();
@@ -3066,6 +3065,22 @@ Node::findPluginFormatKnobs()
 }
 
 void
+Node::findRightClickMenuKnob(const KnobsVec& knobs)
+{
+
+    for (std::size_t i = 0; i < knobs.size(); ++i) {
+        if (knobs[i]->getName() == kNatronOfxParamRightClickMenu) {
+            KnobPtr rightClickKnob = knobs[i];
+            KnobChoice* isChoice = dynamic_cast<KnobChoice*>(rightClickKnob.get());
+            if (isChoice) {
+                QObject::connect(isChoice, SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()));
+            }
+            break;
+        }
+    }
+}
+
+void
 Node::findPluginFormatKnobs(const KnobsVec & knobs,
                             bool loadingSerialization)
 {
@@ -3621,7 +3636,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
     const KnobsVec & knobs = _imp->effect->getKnobs();
 
     findPluginFormatKnobs(knobs, loadingSerialization);
-
+    findRightClickMenuKnob(knobs);
 
     // Scan all inputs to find masks and get inputs labels
     //Pair hasMaskChannelSelector, isMask
@@ -3929,16 +3944,19 @@ Node::refreshPreviewsAfterProjectLoad()
 }
 
 QString
-Node::makeHTMLDocumentation(bool offline) const
+Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 {
     QString ret;
     QTextStream ts(&ret);
+    Markdown markdown;
+    QVector<QStringList> items;
 
     //bool isPyPlug;
     QString pluginID, pluginLabel, pluginDescription, pluginIcon;
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
     QStringList pluginGroup;
+    bool pluginDescriptionMarkdown = false;
 
     {
         QMutexLocker k(&_imp->pluginPythonModuleMutex);
@@ -3948,64 +3966,84 @@ Node::makeHTMLDocumentation(bool offline) const
         pluginDescription = _imp->pyPlugDesc.empty() ? QString::fromUtf8( _imp->effect->getPluginDescription().c_str() ) : QString::fromUtf8( _imp->pyPlugDesc.c_str() );
         pluginIcon = _imp->plugin->getIconFilePath();
         pluginGroup = _imp->plugin->getGrouping();
+        pluginDescriptionMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
     }
 
-    ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
-    ts << "<html><head>";
-    ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>"; /// version string will be replaced in parser
-    ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
-    ts << "</head><body>";
-
-    ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
-
-    if (offline) {
-        ts << "<li><a href=\"index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
-    } else {
+    if (genHTML) {
+        ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
+        ts << "<html><head>";
+        ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>";
+        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
+        ts << "</head><body>";
+        ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
         ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
-    }
-    if (offline) {
-        ts << "<li><a href=\"_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
-    } else {
         ts << "<li><a href=\"/_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
     }
 
     if ( !pluginGroup.isEmpty() ) {
         QString group = pluginGroup.at(0);
-        if ( !group.isEmpty() ) {
-            if (offline) {
-                ts << "<li><a href=\"group" << group << ".html\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
-            } else {
-                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << tr( group.toStdString().c_str() ) << "</a> &raquo;</li>";
-            }
+        if ( !group.isEmpty() && genHTML ) {
+            ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
         }
     }
-    ts << "</ul></div>";
 
+    QString versionString = tr("version");
+    if (genHTML) {
+        ts << "</ul></div>";
+        ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
+        ts << "<h1>" << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "</h1>";
+    }
+    else {
+        ts << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "\n==========\n\n";
+        if (hasImg) {
+            ts << "![](" << pluginID << ".png)";
+            ts << "\n\n";
+        }
+    }
 
-    ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
-    ts << "<h1>" << pluginLabel << " version " << majorVersion << "." << minorVersion << "</h1>";
     if ( !pluginIcon.isEmpty() ) {
         QFile iconFile(pluginIcon);
         if ( iconFile.exists() ) {
-            ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+            if (genHTML) {
+                ts << "<p><img class=\"screenshot\" src=\"/LOCAL_FILE/" << pluginIcon << "\"></p>";
+            }
         }
     }
 
-    // replace urls with a href's
-    pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+    if (genHTML) {
+        if (pluginDescriptionMarkdown) {
+            ts << markdown.convert2html(pluginDescription);
+        } else {
+            pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+            ts << "<p>" << pluginDescription << "</p>";
+        }
+    }
+    else {
+        ts << pluginDescription;
+    }
 
-    ts << "<p>" << pluginDescription << "</p>";
-    ts << "<h3>" << tr("Inputs & Controls") << "</h3>";
+    // Plugin knobs
+    QString inputControlHeader = tr("Inputs & Controls");
+    if (genHTML) {
+        ts << "<h3>" << inputControlHeader << "</h3>";
+    }
+    else {
+        ts << "\n\n" << inputControlHeader << "\n----------\n\n";
+    }
 
-    ts << "<table class=\"knobsTable\">";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Label (UI Name)") << "</td>";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Script-Name") << "</td>";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Default-Value") << "</td>";
-    ts << "<td class=\"knobsTableHeader\">" << tr("Function") << "</td>";
+    if (genHTML) {
+        ts << "<table class=\"knobsTable\">";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Label (UI Name)") << "</td>";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Script-Name") << "</td>";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Default-Value") << "</td>";
+        ts << "<td class=\"knobsTableHeader\">" << tr("Function") << "</td>";
+    }
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ts << "<tr>";
+        if (genHTML) {
+            ts << "<tr>";
+        }
 
         if ( (*it)->getDefaultIsSecret() ) {
             continue;
@@ -4014,8 +4052,10 @@ Node::makeHTMLDocumentation(bool offline) const
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
 
-        ts << "<td class=\"knobsTableValueLabel\">" << knobLabel << "</td>";
-        ts << "<td class=\"knobsTableValueScript\">" << knobScriptName << "</td>";
+        if (genHTML) {
+            ts << "<td class=\"knobsTableValueLabel\">" << knobLabel << "</td>";
+            ts << "<td class=\"knobsTableValueScript\">" << knobScriptName << "</td>";
+        }
 
         QString defValuesStr;
         std::vector<std::pair<QString, QString> > dimsDefaultValueStr;
@@ -4046,7 +4086,7 @@ Node::makeHTMLDocumentation(bool offline) const
                     } else if (isDbl) {
                         valueStr = QString::number( isDbl->getDefaultValue(i) );
                     } else if (isBool) {
-                        valueStr = isBool->getDefaultValue(i) ? QString::fromUtf8("On") : QString::fromUtf8("Off");
+                        valueStr = isBool->getDefaultValue(i) ? tr("On") : tr("Off");
                     } else if (isString) {
                         valueStr = QString::fromUtf8( isString->getDefaultValue(i).c_str() );
                     }
@@ -4068,29 +4108,62 @@ Node::makeHTMLDocumentation(bool offline) const
                 }
             }
             if ( defValuesStr.isEmpty() ) {
-                defValuesStr = QString::fromUtf8("N/A");
+                defValuesStr = tr("N/A");
             }
         }
 
-        ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
-
-        // replace urls with a href's
-        knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
-
-        ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
-        ts << "</tr>";
+        if (genHTML) {
+            if (isChoice) {
+                ts << "<td class=\"knobsTableValue\">";
+                std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+                if (entries.size() > 1) {
+                    ts << "<select name=\"entries\">";
+                    for (size_t i = 0; i < entries.size(); ++i) {
+                        QString choiceValue = QString::fromUtf8( entries[i].c_str() );
+                        QString optionTag;
+                        if (choiceValue != defValuesStr) {
+                            optionTag = QString::fromUtf8("<option>");
+                        } else {
+                            optionTag = QString::fromUtf8("<option selected>");
+                        }
+                        ts << optionTag << choiceValue << "</option>";
+                    }
+                    ts << "</select>";
+                } else {
+                    ts << defValuesStr;
+                }
+                ts << "</td>";
+            } else {
+                ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
+            }
+            if ( (*it)->isHintInMarkdown() ) {
+                ts << "<td class=\"knobsTableValue\">" << markdown.convert2html(knobHint) << "</td>";
+            } else {
+                knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
+                ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
+            }
+            ts << "</tr>";
+        }
+        else {
+            QStringList row;
+            row.append(knobLabel);
+            row.append(knobScriptName);
+            row.append(defValuesStr);
+            row.append(knobHint);
+            items.append(row);
+        }
     } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
 
-    ts << "</table>";
-    //ts << "<!--ADD_MORE_HERE-->";
-    //ts << "</div></div></div>";
-
-    if ( !pluginIcon.isEmpty() ) {
-        QString tmp = pluginIcon;
-        tmp.replace( pluginID + QString::fromUtf8(".png"), pluginID + QString::fromUtf8(".html") );
+    if (genHTML) {
+        ts << "</table>";
+        ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     }
-
-    ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
+    else {
+        // create markdown table
+        if (items.size()>0) {
+            ts << markdown.genPluginKnobsTable(items);
+        }
+    }
 
     return ret;
 } // Node::makeHTMLDocumentation
@@ -6233,6 +6306,21 @@ Node::getPluginLabel() const
 }
 
 std::string
+Node::getPluginResourcesPath() const
+{
+    {
+        QMutexLocker k(&_imp->pluginPythonModuleMutex);
+        if ( !_imp->pluginPythonModule.empty() ) {
+            std::size_t foundSlash = _imp->pluginPythonModule.find_last_of("/");
+            if (foundSlash != std::string::npos) {
+                return _imp->pluginPythonModule.substr(0, foundSlash);
+            }
+        }
+    }
+    return _imp->plugin->getResourcesPath().toStdString();
+}
+
+std::string
 Node::getPluginDescription() const
 {
     {
@@ -6335,6 +6423,16 @@ Node::message(MessageTypeEnum type,
     ///If the node was aborted, don't transmit any message because we could cause a deadlock
     if ( _imp->effect->aborted() ) {
         return false;
+    }
+
+    // See https://github.com/MrKepzie/Natron/issues/1313
+    // Messages posted from a separate thread should be logged and not show a pop-up
+    if (QThread::currentThread() != qApp->thread()) {
+        QString message = QString::fromUtf8(getLabel_mt_safe().c_str());
+        message += QString::fromUtf8(": ");
+        message += QString::fromUtf8(content.c_str());
+        appPTR->writeToErrorLog_mt_safe(message);
+        return true;
     }
 
     switch (type) {
@@ -7397,6 +7495,21 @@ Node::onOverlayPenDownDefault(double time,
 }
 
 bool
+Node::onOverlayPenDoubleClickedDefault(double time,
+                                      const RenderScale& renderScale,
+                                      ViewIdx view, const QPointF & viewportPos, const QPointF & pos)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        return nodeGui->onOverlayPenDoubleClickedDefault(time, renderScale, view, viewportPos, pos);
+    }
+
+    return false;
+}
+
+
+bool
 Node::onOverlayPenMotionDefault(double time,
                                 const RenderScale& renderScale,
                                 ViewIdx view,
@@ -7751,6 +7864,41 @@ Node::hasHostOverlay() const
 }
 
 void
+Node::pushUndoCommand(const UndoCommandPtr& command)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        nodeGui->pushUndoCommand(command);
+    } else {
+        command->redo();
+    }
+}
+
+
+void
+Node::setCurrentCursor(CursorEnum defaultCursor)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        nodeGui->setCurrentCursor(defaultCursor);
+    }
+}
+
+bool
+Node::setCurrentCursor(const QString& customCursorFilePath)
+{
+    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    if (nodeGui) {
+        return nodeGui->setCurrentCursor(customCursorFilePath);
+    }
+    return false;
+}
+
+
+void
 Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
@@ -7929,12 +8077,12 @@ Node::refreshIdentityState()
 /*
    This is called AFTER the instanceChanged action has been called on the plug-in
  */
-void
+bool
 Node::onEffectKnobValueChanged(KnobI* what,
                                ValueChangedReasonEnum reason)
 {
     if (!what) {
-        return;
+        return false;
     }
     for (std::map<int, MaskSelector >::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
         if (it->second.channel.lock().get() == what) {
@@ -7943,6 +8091,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         }
     }
 
+    bool ret = true;
     if ( what == _imp->previewEnabledKnob.lock().get() ) {
         if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
             Q_EMIT previewKnobToggled();
@@ -8008,38 +8157,63 @@ Node::onEffectKnobValueChanged(KnobI* what,
         std::string cacheInfo = makeCacheInfo();
         ssinfo << cacheInfo;
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
+    } else {
+        ret = false;
     }
 
-    for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
-        if (it->second.layer.lock().get() == what) {
-            _imp->onLayerChanged(it->first, it->second);
-        }
-    }
-
-    for (int i = 0; i < 4; ++i) {
-        boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
-        if (!enabled) {
-            break;
-        }
-        if (enabled.get() == what) {
-            checkForPremultWarningAndCheckboxes();
-        }
-    }
-
-    GroupInput* isInput = dynamic_cast<GroupInput*>( _imp->effect.get() );
-    if (isInput) {
-        if ( (what->getName() == kNatronGroupInputIsOptionalParamName)
-             || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
-            boost::shared_ptr<NodeCollection> col = isInput->getNode()->getGroup();
-            assert(col);
-            NodeGroup* isGrp = dynamic_cast<NodeGroup*>( col.get() );
-            assert(isGrp);
-            if (isGrp) {
-                ///Refresh input arrows of the node to reflect the state
-                isGrp->getNode()->initializeInputs();
+    if (!ret) {
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>(what);
+        if (isGroup && isGroup->getIsDialog()) {
+            boost::shared_ptr<NodeGuiI> gui = getNodeGui();
+            if (gui) {
+                gui->showGroupKnobAsDialog(isGroup);
+                ret = true;
             }
         }
     }
+
+    if (!ret) {
+        for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
+            if (it->second.layer.lock().get() == what) {
+                _imp->onLayerChanged(it->first, it->second);
+                ret = true;
+                break;
+            }
+        }
+    }
+
+    if (!ret) {
+        for (int i = 0; i < 4; ++i) {
+            boost::shared_ptr<KnobBool> enabled = _imp->enabledChan[i].lock();
+            if (!enabled) {
+                break;
+            }
+            if (enabled.get() == what) {
+                checkForPremultWarningAndCheckboxes();
+                ret = true;
+                break;
+            }
+        }
+    }
+
+    if (!ret) {
+        GroupInput* isInput = dynamic_cast<GroupInput*>( _imp->effect.get() );
+        if (isInput) {
+            if ( (what->getName() == kNatronGroupInputIsOptionalParamName)
+                || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
+                boost::shared_ptr<NodeCollection> col = isInput->getNode()->getGroup();
+                assert(col);
+                NodeGroup* isGrp = dynamic_cast<NodeGroup*>( col.get() );
+                assert(isGrp);
+                if (isGrp) {
+                    ///Refresh input arrows of the node to reflect the state
+                    isGrp->getNode()->initializeInputs();
+                    ret = true;
+                }
+            }
+        }
+    }
+    return ret;
 } // Node::onEffectKnobValueChanged
 
 bool

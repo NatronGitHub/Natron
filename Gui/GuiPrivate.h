@@ -231,8 +231,6 @@ public:
     ///list of the currently opened property panels
     mutable QMutex openedPanelsMutex;
     std::list<DockablePanel*> openedPanels;
-    QString _openGLVersion;
-    QString _glewVersion;
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;

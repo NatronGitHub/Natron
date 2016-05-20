@@ -176,9 +176,9 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
-                                            boost::shared_ptr<OpenGLTextureI>* texture) OVERRIDE FINAL;
+                                            boost::shared_ptr<Texture>* texture) OVERRIDE FINAL;
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<OpenGLTextureI>& texture,
+                                               const boost::shared_ptr<Texture>& texture,
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
@@ -196,10 +196,7 @@ public:
                                                bool isPartialRect) OVERRIDE FINAL;
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
     virtual void disconnectInputTexture(int textureIndex) OVERRIDE FINAL;
-    /**
-     *@returns Returns true if the graphic card supports GLSL.
-     **/
-    virtual bool supportsGLSL() const OVERRIDE FINAL;
+
 
     /**
      *@brief Disconnects the viewer.
@@ -289,16 +286,14 @@ public:
 
 public:
 
+    virtual bool renderText(double x, double y, const std::string &string, double r, double g, double b) OVERRIDE FINAL;
+
+
     void renderText(double x, double y, const QString &string, const QColor & color, const QFont & font);
 
     void getProjection(double *zoomLeft, double *zoomBottom, double *zoomFactor, double *zoomAspectRatio) const;
 
     void setProjection(double zoomLeft, double zoomBottom, double zoomFactor, double zoomAspectRatio);
-
-    /**
-     * @brief Returns whether the given rectangle is visible in the viewport, in zoom (OpenGL) coordinates.
-     **/
-    bool isVisibleInViewport(const RectD& rectangle) const;
 
     void setUserRoIEnabled(bool b);
 
@@ -339,8 +334,53 @@ public:
      **/
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void getTextureColorAt(int x, int y, double* r, double *g, double *b, double *a) OVERRIDE FINAL;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL
+    {
+        QPointF p = toWidgetCoordinates(QPointF(*x,*y));
+        *x = p.x();
+        *y = p.y();
+    }
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL
+    {
+        QPointF p = toZoomCoordinates(QPointF(*x,*y));
+        *x = p.x();
+        *y = p.y();
+    }
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
+
     ViewerInstance* getInternalNode() const;
     ViewerTab* getViewerTab() const;
+
+    /**
+     * @brief Returns the viewport visible portion in canonical coordinates
+     **/
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns the cursor position in canonical coordinates
+     **/
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+
+    virtual ViewerInstance* getInternalViewerNode() const OVERRIDE FINAL;
 
     /**
      * @brief can only be called on the main-thread
@@ -412,6 +452,10 @@ public:
 
     void checkIfViewPortRoIValidOrRender();
 
+    void s_selectionCleared()
+    {
+        Q_EMIT selectionCleared();
+    }
 
 Q_SIGNALS:
 

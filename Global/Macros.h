@@ -37,6 +37,7 @@
 #endif
 
 #ifdef SBK_RUN
+
 // run shiboken without the Natron namespace, and add NATRON_NAMESPACE_USING to each cpp afterwards
 #define NATRON_NAMESPACE
 #define NATRON_NAMESPACE_ENTER
@@ -44,20 +45,26 @@
 #define NATRON_PYTHON_NAMESPACE
 #define NATRON_PYTHON_NAMESPACE_ENTER
 #define NATRON_PYTHON_NAMESPACE_EXIT
-#else
+
+#else // !SBK_RUN
+
 #define NATRON_NAMESPACE Natron
 // Macros to use in each file to enter and exit the right name spaces.
 #define NATRON_NAMESPACE_ENTER namespace NATRON_NAMESPACE {
 #define NATRON_NAMESPACE_EXIT }
 #define NATRON_NAMESPACE_USING using namespace NATRON_NAMESPACE;
-// Establish the name space.
-namespace NATRON_NAMESPACE { }
 
 #define NATRON_PYTHON_NAMESPACE Python
 #define NATRON_PYTHON_NAMESPACE_ENTER namespace NATRON_PYTHON_NAMESPACE {
 #define NATRON_PYTHON_NAMESPACE_EXIT }
 #define NATRON_PYTHON_NAMESPACE_USING using namespace NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE;
+
+#ifdef __cplusplus
+// Establish the name space.
+namespace NATRON_NAMESPACE { }
 namespace NATRON_PYTHON_NAMESPACE { }
+#endif
+
 #endif
 
 #define NATRON_NAMESPACE_ANONYMOUS_ENTER namespace {
@@ -73,7 +80,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
 #define NATRON_FORUM_URL "https://forum.natron.fr"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
-#define NATRON_DOCUMENTATION_ONLINE "http://help.natron.fr"
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
 // *.nps: application/vnd.natron.nodepresets
@@ -463,7 +470,9 @@ namespace NATRON_PYTHON_NAMESPACE { }
 /* WARN_UNUSED_RETURN */
 
 #if COMPILER(GCC)
+
 #define WARN_UNUSED_RETURN __attribute__ ( (warn_unused_result) )
+#ifdef __cplusplus
 // a very simple template function to actually ignore the return value of functions define with WARN_UNUSED_RETURN
 template<typename T>
 inline T
@@ -471,17 +480,21 @@ ignore_result( T x __attribute__( (unused) ) )
 {
     return x;
 }
+#endif
 
-#else
+#else // !GCC
+
 #define WARN_UNUSED_RETURN
+#ifdef __cplusplus
 template<typename T>
 inline T
 ignore_result(T x)
 {
     return x;
 }
-
 #endif
+
+#endif // !GCC
 
 /* OVERRIDE and FINAL */
 

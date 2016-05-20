@@ -49,11 +49,6 @@
 #include "Gui/Menu.h"
 #include "Gui/ticks.h"
 
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
-
-
 #define CLICK_DISTANCE_FROM_CURVE_ACCEPTANCE 5 //maximum distance from a curve that accepts a mouse click
 // (in widget pixels)
 #define CURSOR_WIDTH 15
@@ -82,7 +77,6 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
     , _font( new QFont(appFont, appFontSize) )
     , _curves()
     , _selectedKeyFrames()
-    , _hasOpenGLVAOSupport(true)
     , _mustSetDragOrientation(false)
     , _mouseDragOrientation()
     , _keyFramesClipBoard()

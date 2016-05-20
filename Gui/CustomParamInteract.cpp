@@ -33,6 +33,7 @@
 
 #include "Gui/KnobGui.h"
 #include "Gui/QtEnumConvert.h"
+#include "Gui/GuiApplicationManager.h"
 
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/Knob.h"
@@ -126,6 +127,7 @@ CustomParamInteract::initializeGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    appPTR->initializeOpenGLFunctionsOnce();
 }
 
 void
@@ -187,6 +189,21 @@ CustomParamInteract::getBackgroundColour(double &r,
 }
 
 void
+CustomParamInteract::toWidgetCoordinates(double *x, double *y) const
+{
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+}
+
+
+void
+CustomParamInteract::toCanonicalCoordinates(double *x, double *y) const
+{
+    Q_UNUSED(x);
+    Q_UNUSED(y);
+}
+
+void
 CustomParamInteract::saveOpenGLContext()
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -226,6 +243,49 @@ CustomParamInteract::restoreOpenGLContext()
     glPopClientAttrib();
     glPopAttrib();
 }
+
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+CustomParamInteract::getWidgetFontHeight() const
+{
+    return fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+CustomParamInteract::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
+
+RectD
+CustomParamInteract::getViewportRect() const
+{
+    RectD bbox;
+    {
+        bbox.x1 = -0.5;
+        bbox.y1 = -0.5;
+        bbox.x2 = width() + 0.5;
+        bbox.y2 = height() + 0.5;
+    }
+    return bbox;
+}
+
+void
+CustomParamInteract::getCursorPosition(double& x, double& y) const
+{
+    QPoint p = QCursor::pos();
+    p = mapFromGlobal(p);
+    x = p.x();
+    y = p.y();
+}
+
 
 void
 CustomParamInteract::mousePressEvent(QMouseEvent* e)

@@ -19,23 +19,90 @@
 #ifndef NATRON_GLOBAL_GLINCLUDES_H
 #define NATRON_GLOBAL_GLINCLUDES_H
 
-#include <GL/glew.h>
+#include "glad_include.h"
+
+/* this is where we can safely include GLU */
+#  if defined(__APPLE__) && defined(__MACH__)
+//#    include <OpenGL/glu.h>
+#  else
+//#    include <GL/glu.h>
+#  endif
+
 #define QT_NO_OPENGL_ES_2
 
 #include "Global/Macros.h"
 
 #ifdef DEBUG
+#ifdef __cplusplus
 #include <iostream>
+#include <sstream>
+#endif
 
-// put a breakpoint in glError to halt the debugger
+// put a breakpoint in glError to halt the debugger on opengl errors
 inline void
 glError() {}
+
+inline const char*
+glErrorString(GLenum errorCode)
+{
+    static const struct {
+        GLenum code;
+        const char *string;
+    } errors[]=
+    {
+        /* GL */
+        {GL_NO_ERROR, "no error"},
+        {GL_INVALID_ENUM, "invalid enumerant"},
+        {GL_INVALID_VALUE, "invalid value"},
+        {GL_INVALID_OPERATION, "invalid operation"},
+#ifndef GL_ES_VERSION_2_0
+        {GL_STACK_OVERFLOW, "stack overflow"},
+        {GL_STACK_UNDERFLOW, "stack underflow"},
+#endif
+        {GL_OUT_OF_MEMORY, "out of memory"},
+#ifdef GL_ARB_imaging
+        {GL_TABLE_TOO_LARGE, "table too large"},
+#else
+#ifdef GL_EXT_histogram
+        {GL_TABLE_TOO_LARGE_EXT, "table too large"},
+#endif
+#endif
+#ifdef GL_ARB_framebuffer_object
+        {GL_INVALID_FRAMEBUFFER_OPERATION, "invalid framebuffer operation"},
+#else
+#ifdef GL_EXT_framebuffer_object
+        {GL_INVALID_FRAMEBUFFER_OPERATION_EXT, "invalid framebuffer operation"},
+#endif
+#endif
+#ifdef GL_EXT_texture
+        {GL_TEXTURE_TOO_LARGE_EXT, "texture too large"},
+#endif
+
+        {0, NULL }
+    };
+
+    int i;
+
+    for (i=0; errors[i].string; i++) {
+        if (errors[i].code == errorCode) {
+            return errors[i].string;
+        }
+    }
+
+    return NULL;
+}
 
 #define glCheckError()                                                  \
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            const char* _glerror_s_ = glErrorString(_glerror_);         \
+            if (_glerror_s_) {                                          \
+                std::cout << _glerror_s_ << std::endl;   \
+            } else {                                                    \
+                std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
+            }                                                           \
             glError();                                                  \
         }                                                               \
     }
@@ -44,7 +111,13 @@ glError() {}
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR && _glerror_ != GL_INVALID_FRAMEBUFFER_OPERATION) { \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            const char* _glerror_s_ = glErrorString(_glerror_);         \
+            if (_glerror_s_) {                                          \
+                std::cout << _glerror_s_ << std::endl;   \
+            } else {                                                    \
+                std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
+            }                                                           \
             glError();                                                  \
         }                                                               \
     }
@@ -55,8 +128,15 @@ glError() {}
     {                                                                   \
         GLenum _glerror_ = glGetError();                                \
         if (_glerror_ != GL_NO_ERROR) {                                 \
-            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " " << gluErrorString(_glerror_) << std::endl; abort(); \
+            std::cout << "GL_ERROR:" << __FILE__ << " " << __LINE__ << " "; \
+            const char* _glerror_s_ = glErrorString(_glerror_);         \
+            if (_glerror_s_) {                                          \
+                std::cout << _glerror_s_ << std::endl;   \
+            } else {                                                    \
+                std::cout << std::hex << (unsigned)_glerror_ << std::endl; \
+            }                                                           \
             glError();                                                  \
+            abort();                                                    \
         }                                                               \
     }
 #define glCheckFramebufferError()                                       \
@@ -96,16 +176,12 @@ glError() {}
                 std::cout << "Framebuffer incomplete multisample" << std::endl; \
                 glError();                                              \
             } \
-            else if (error == GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS_EXT) { \
-                std::cout << "Framebuffer incomplete layer targets" << std::endl; \
-                glError();                                              \
-            } \
             else if (error == 0) {                                    \
                 std::cout << "an error occured determining the status of the framebuffer" <<  std::endl; \
                 glError();                                              \
             } \
             else {                                                    \
-                std::cout << "undefined framebuffer status (" << error << ")" << std::endl; \
+                std::cout << "undefined framebuffer status (" << std::hex << (unsigned)error << ")" << std::endl; \
                 glError();                                              \
             }                                                           \
             glCheckError();                                             \
@@ -158,7 +234,9 @@ glError() {}
 #define glCheckModelviewStack() ( (void)0 )
 #endif // ifdef DEBUG
 
-CLANG_DIAG_OFF(deprecated)
+
+#ifdef __cplusplus
+
 
 // an RAII helper class to push/pop attribs
 class GLProtectAttrib
@@ -249,6 +327,7 @@ private:
 #endif
 };
 
-CLANG_DIAG_ON(deprecated)
+
+#endif // __cplusplus
 
 #endif // ifndef NATRON_GLOBAL_GLINCLUDES_H

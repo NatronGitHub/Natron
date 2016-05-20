@@ -55,12 +55,10 @@
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/RenderStatsDialog.h"
-#include "Gui/RotoGui.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TabWidget.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/TrackerGui.h"
 #include "Gui/ViewerGL.h"
 
 
@@ -422,9 +420,13 @@ ViewerTab::setLeftToolbarVisible(bool visible)
     QMutexLocker l(&_imp->visibleToolbarsMutex);
 
     _imp->leftToolbarVisible = visible;
-    if (_imp->currentRoto.second) {
-        _imp->currentRoto.second->getToolBar()->setVisible(_imp->leftToolbarVisible);
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
+        QToolBar* bar = it->currentContext->getToolBar();
+        if (bar) {
+            bar->setVisible(_imp->leftToolbarVisible);
+        }
     }
+
 }
 
 void
@@ -443,15 +445,8 @@ ViewerTab::setTopToolbarVisible(bool visible)
     _imp->topToolbarVisible = visible;
     _imp->firstSettingsRow->setVisible(_imp->topToolbarVisible);
     _imp->secondSettingsRow->setVisible(_imp->topToolbarVisible);
-    if (_imp->currentRoto.second) {
-        _imp->currentRoto.second->getCurrentButtonsBar()->setVisible(_imp->topToolbarVisible);
-    }
-    if (_imp->currentTracker.second) {
-        QWidget* buttonsBar = _imp->currentTracker.second->getButtonsBar();
-        assert(buttonsBar);
-        if (buttonsBar) {
-            buttonsBar->setVisible(_imp->topToolbarVisible);
-        }
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
+        it->currentContext->getContainerWidget()->setVisible(_imp->topToolbarVisible);
     }
 }
 

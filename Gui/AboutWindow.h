@@ -54,14 +54,12 @@ class AboutWindow
     QWidget* _buttonContainer;
     QHBoxLayout* _buttonLayout;
     Button* _closeButton;
-    Gui* _gui;
     TableModel* _model;
     TableView* _view;
 
 public:
 
-    AboutWindow(Gui* gui,
-                QWidget* parent = 0);
+    AboutWindow(QWidget* parent = 0);
 
     void updateLibrariesVersions();
 

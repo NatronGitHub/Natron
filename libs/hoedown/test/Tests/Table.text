@@ -1,0 +1,21 @@
+# Standard table
+
+|headline1|headline2|
+|---------|---------|
+|123      |         |
+
+
+# Cell alignment
+
+|headline1|headline2|headline3|
+|:-------|:------:|------:|
+|123|||
+
+
+# Malformed table: missing cell at row in body
+
+|headline1|headline2|headline3|
+|-------|-------|-------|
+|12
+|34||
+|56|

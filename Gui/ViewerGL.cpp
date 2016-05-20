@@ -58,6 +58,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
+#include "Engine/Texture.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -76,13 +77,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Shaders.h"
 #include "Gui/TabWidget.h"
-#include "Gui/Texture.h"
 #include "Gui/ViewerTab.h"
 
-
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
 
 #define USER_ROI_BORDER_TICK_SIZE 15.f
 #define USER_ROI_CROSS_RADIUS 15.f
@@ -187,9 +183,7 @@ void
 ViewerGL::resizeGL(int w,
                    int h)
 {
-    if (!_imp->supportsOpenGL) {
-        return;
-    }
+
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( (h == 0) || (w == 0) ) { // prevent division by 0
@@ -269,9 +263,7 @@ public:
 void
 ViewerGL::paintGL()
 {
-    if (!_imp->supportsOpenGL) {
-        return;
-    }
+
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
@@ -475,6 +467,26 @@ ViewerGL::paintGL()
                 break;
             }
             } // switch
+
+            for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+                const TextureRect &r = _imp->partialUpdateTextures[i].texture->getTextureRect();
+                RectI texRect(r.x1, r.y1, r.x2, r.y2);
+                const double par = r.par;
+                RectD canonicalTexRect;
+                texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
+                glBegin(GL_POLYGON);
+                glTexCoord2d(0, 0); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
+                glTexCoord2d(0, 1); glVertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
+                glTexCoord2d(1, 1); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
+                glTexCoord2d(1, 0); glVertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
+                glEnd();
+                glBindTexture(GL_TEXTURE_2D, 0);
+
+                glCheckError();
+            }
         } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
         ///Unbind render textures for overlays
@@ -1188,6 +1200,7 @@ ViewerGL::initializeGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    appPTR->initializeOpenGLFunctionsOnce();
     makeCurrent();
     _imp->initializeGL();
 }
@@ -1208,6 +1221,12 @@ ViewerGL::getPboID(int index)
     } else {
         return _imp->pboIds[index];
     }
+}
+
+ViewerInstance*
+ViewerGL::getInternalViewerNode() const
+{
+    return getInternalNode();
 }
 
 /**
@@ -1391,7 +1410,7 @@ ViewerGL::initShaderGLSL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    if (!_imp->shaderLoaded && _imp->supportsGLSL) {
+    if (!_imp->shaderLoaded) {
         _imp->shaderBlack.reset( new QGLShaderProgram( context() ) );
         if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
             qDebug() << qPrintable( _imp->shaderBlack->log() );
@@ -1444,7 +1463,7 @@ ViewerGL::isViewerUIVisible() const
 
 void
 ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
-                                        const boost::shared_ptr<OpenGLTextureI>& texture,
+                                        const boost::shared_ptr<Texture>& texture,
                                         const ImagePtr& image,
                                         int time,
                                         const RectD& rod,
@@ -1540,7 +1559,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                      int textureIndex,
                                      bool isPartialRect,
                                      bool isFirstTile,
-                                     boost::shared_ptr<OpenGLTextureI>* texture)
+                                     boost::shared_ptr<Texture>* texture)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1549,7 +1568,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     Q_UNUSED(e);
 
     GLint currentBoundPBO = 0;
-    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &currentBoundPBO);
+    glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
     GLenum err = glGetError();
     if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
         qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed.";
@@ -1664,14 +1683,6 @@ ViewerGL::setLut(int lut)
     _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
 
-/**
- *@returns Returns true if the graphic card supports GLSL.
- **/
-bool
-ViewerGL::supportsGLSL() const
-{
-    return _imp->supportsGLSL;
-}
 
 #if QT_VERSION < 0x050000
 #define QMouseEventLocalPos(e) ( e->posF() )
@@ -1692,6 +1703,14 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     _imp->hasMovedSincePress = false;
     _imp->pressureOnRelease = 1.;
+    if (buttonDownIsLeft(e)) {
+        _imp->pointerTypeOnPress = ePenTypeLMB;
+    } else if (buttonDownIsRight(e)) {
+        _imp->pointerTypeOnPress = ePenTypeRMB;
+    } else if (buttonDownIsMiddle(e)) {
+        _imp->pointerTypeOnPress = ePenTypeMMB;
+    }
+
 
     ///Set focus on user click
     setFocus();
@@ -1805,7 +1824,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->overlay) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale(scale), _imp->pointerTypeOnPress, _imp->subsequentMousePressIsTablet, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e), e);
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e));
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -1957,7 +1976,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     }
 
     _imp->pressureOnPress = 1;
-    _imp->subsequentMousePressIsTablet = false;
+    _imp->pointerTypeOnPress = ePenTypeLMB;
 
     bool mustRedraw = false;
     if (_imp->ms == eMouseStateBuildingPickerRectangle) {
@@ -1987,7 +2006,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     }
     unsigned int mipMapLevel = getCurrentRenderScale();
     double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale(scale), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease, e) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale(scale), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -2026,7 +2045,6 @@ ViewerGL::tabletEvent(QTabletEvent* e)
             break;
         }
         _imp->pressureOnPress = e->pressure();
-        _imp->subsequentMousePressIsTablet = true;
         QGLWidget::tabletEvent(e);
         break;
     }
@@ -2055,6 +2073,7 @@ ViewerGL::penMotionInternal(int x,
                             double timestamp,
                             QInputEvent* e)
 {
+    Q_UNUSED(e);
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
@@ -2409,7 +2428,7 @@ ViewerGL::penMotionInternal(int x,
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
         if ( _imp->overlay &&
-             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale(scale), localPos, zoomPos, pressure, timestamp, e) ) {
+             _imp->viewerTab->notifyOverlaysPenMotion(RenderScale(scale), localPos, zoomPos, pressure, timestamp) ) {
             mustRedraw = true;
             overlaysCaughtByPlugin = true;
         }
@@ -2443,7 +2462,7 @@ ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
     }
     double scale = 1. / (1 << mipMapLevel);
 
-    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale(scale), QMouseEventLocalPos(e), pos_opengl, e) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenDoubleClick(RenderScale(scale), QMouseEventLocalPos(e), pos_opengl) ) {
         update();
     }
     QGLWidget::mouseDoubleClickEvent(e);
@@ -3084,13 +3103,7 @@ ViewerGL::resizeEvent(QResizeEvent* e)
 ImageBitDepthEnum
 ViewerGL::getBitDepth() const
 {
-    // MT-SAFE
-    ///supportsGLSL is set on the main thread only once on startup, it doesn't need to be protected.
-    if (!_imp->supportsGLSL) {
-        return eImageBitDepthByte;
-    } else {
-        return appPTR->getCurrentSettings()->getViewersBitDepth();
-    }
+    return appPTR->getCurrentSettings()->getViewersBitDepth();
 }
 
 void
@@ -3175,6 +3188,15 @@ ViewerGL::populateMenu()
 
     _imp->menu->addAction(displayOverlaysAction);
 } // ViewerGL::populateMenu
+
+bool
+ViewerGL::renderText(double x, double y, const std::string &string, double r, double g, double b)
+{
+    QColor c;
+    c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+    renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
+    return true;
+}
 
 void
 ViewerGL::renderText(double x,
@@ -3308,8 +3330,8 @@ ViewerGL::setProjection(double zoomLeft,
     Q_EMIT zoomChanged(100 * zoomFactor);
 }
 
-bool
-ViewerGL::isVisibleInViewport(const RectD& rectangle) const
+RectD
+ViewerGL::getViewportRect() const
 {
     RectD bbox;
     {
@@ -3319,8 +3341,17 @@ ViewerGL::isVisibleInViewport(const RectD& rectangle) const
         bbox.x2 = _imp->zoomCtx.right();
         bbox.y2 = _imp->zoomCtx.top();
     }
+    return bbox;
+}
 
-    return bbox.intersects(rectangle);
+void
+ViewerGL::getCursorPosition(double &x, double &y) const
+{
+    QPoint p = QCursor::pos();
+    p = mapFromGlobal(p);
+    QPointF mappedPos = toZoomCoordinates(p);
+    x = mappedPos.x();
+    y = mappedPos.y();
 }
 
 void
@@ -3533,6 +3564,25 @@ ViewerGL::getBackgroundColour(double &r,
     g = _imp->clearColor.greenF();
     b = _imp->clearColor.blueF();
 }
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+ViewerGL::getWidgetFontHeight() const
+{
+    return fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
 
 void
 ViewerGL::makeOpenGLcontextCurrent()
@@ -3854,7 +3904,7 @@ ViewerGL::getTextureColorAt(int x,
         pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
     }
 
-    if ( (type == Texture::eDataTypeByte) || !_imp->supportsGLSL ) {
+    if (type == Texture::eDataTypeByte) {
         U32 pixel;
         glReadBuffer(GL_FRONT);
         glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
@@ -3868,7 +3918,7 @@ ViewerGL::getTextureColorAt(int x,
         *b = (double)blue / 255.;
         *a = (double)alpha / 255.;
         glCheckError();
-    } else if ( (type == Texture::eDataTypeFloat) && _imp->supportsGLSL ) {
+    } else if (type == Texture::eDataTypeFloat) {
         GLfloat pixel[4];
         glReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_RGBA, GL_FLOAT, pixel);
         *r = (double)pixel[0];
@@ -4269,7 +4319,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
             return false;
            }
 
-           if ( (type == Texture::eDataTypeByte) || !_imp->supportsGLSL ) {
+           if ( (type == Texture::eDataTypeByte) ) {
             std::vector<U32> pixels(rectPixel.width() * rectPixel.height());
             glReadBuffer(GL_FRONT);
             glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
@@ -4302,7 +4352,7 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
             }
 
             glCheckError();
-           } else if ( (type == Texture::eDataTypeFloat) && _imp->supportsGLSL ) {
+           } else if ( (type == Texture::eDataTypeFloat)) {
             std::vector<float> pixels(rectPixel.width() * rectPixel.height() * 4);
             glReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
                          GL_RGBA, GL_FLOAT, &pixels.front());

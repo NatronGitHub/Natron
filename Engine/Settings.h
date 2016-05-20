@@ -87,7 +87,7 @@ public:
     {
     }
 
-    virtual void onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
@@ -353,6 +353,8 @@ public:
     bool isAutoProxyEnabled() const;
     unsigned int getAutoProxyMipMapLevel() const;
 
+    int getMaxOpenedNodesViewerContext() const;
+
     bool isNaNHandlingEnabled() const;
 
     bool isCopyInputImageForPluginRenderEnabled() const;
@@ -368,7 +370,7 @@ public:
     int getServerPort() const;
     void setServerPort(int port) const;
 
-    QString makeHTMLDocumentation(bool menu, bool staticPages) const;
+    QString makeHTMLDocumentation(bool genHTML) const;
 
 Q_SIGNALS:
 
@@ -477,6 +479,8 @@ private:
     boost::shared_ptr<KnobBool> _autoWipe;
     boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<KnobChoice> _autoProxyLevel;
+    boost::shared_ptr<KnobInt> _maximumNodeViewerUIOpened;
+
     boost::shared_ptr<KnobPage> _nodegraphTab;
     boost::shared_ptr<KnobBool> _autoTurbo;
     boost::shared_ptr<KnobBool> _useNodeGraphHints;

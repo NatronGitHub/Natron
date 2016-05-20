@@ -1492,13 +1492,14 @@ RotoContext::resetCloneTransform()
     resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder);
 }
 
-void
+bool
 RotoContext::knobChanged(KnobI* k,
                          ValueChangedReasonEnum /*reason*/,
                          ViewSpec /*view*/,
                          double /*time*/,
                          bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == _imp->resetCenterKnob.lock().get() ) {
         resetTransformCenter();
     } else if ( k == _imp->resetCloneCenterKnob.lock().get() ) {
@@ -1523,6 +1524,10 @@ RotoContext::knobChanged(KnobI* k,
         _imp->globalCustomOffsetKnob.lock()->setSecret(isPerShapeMB);
     }
 #endif
+    else {
+        ret = false;
+    }
+    return ret;
 }
 
 boost::shared_ptr<RotoItem>
@@ -2697,7 +2702,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
                                                   /*fullScaleWithDownscaleInputs=*/ false) );
 
     {
-        QMutexLocker k(&_imp->cacheAccessMutex);
+        QReadLocker k(&_imp->cacheAccessMutex);
         node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
 
@@ -2748,7 +2753,9 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
             for (std::list<Point> ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 points.push_back( std::make_pair(*it, 1.) );
             }
-            strokes.push_back(points);
+            if (!points.empty()) {
+                strokes.push_back(points);
+            }
         }
     }
 
@@ -2778,7 +2785,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
        the trimap and notification system here in the rotocontext, which would be to much just for this small object, rather we just lock
        it once, which is fine.
      */
-    QMutexLocker k(&_imp->cacheAccessMutex);
+    QWriteLocker k(&_imp->cacheAccessMutex);
     AppManager::getImageFromCacheOrCreate(*key, params, &image);
     if (!image) {
         std::stringstream ss;

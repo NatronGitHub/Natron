@@ -64,13 +64,14 @@ GroupInput::initializeKnobs()
     mask = maskKnob;
 }
 
-void
+bool
 GroupInput::knobChanged(KnobI* k,
                         ValueChangedReasonEnum /*reason*/,
                         ViewSpec /*view*/,
                         double /*time*/,
                         bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == optional.lock().get() ) {
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged( getNode() );
@@ -83,7 +84,10 @@ GroupInput::knobChanged(KnobI* k,
         }
         boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
         group->notifyInputMaskStateChanged( getNode() );
+    } else {
+        ret = false;
     }
+    return ret;
 }
 
 NATRON_NAMESPACE_EXIT;

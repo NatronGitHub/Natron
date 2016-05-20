@@ -129,13 +129,14 @@ DiskCacheNode::initializeKnobs()
     _imp->preRender = preRender;
 }
 
-void
+bool
 DiskCacheNode::knobChanged(KnobI* k,
                            ValueChangedReasonEnum /*reason*/,
                            ViewSpec /*view*/,
                            double /*time*/,
                            bool /*originatedFromMainThread*/)
 {
+    bool ret = true;
     if (_imp->frameRange.lock().get() == k) {
         int idx = _imp->frameRange.lock()->getValue(0);
         switch (idx) {
@@ -161,7 +162,10 @@ DiskCacheNode::knobChanged(KnobI* k,
         std::list<AppInstance::RenderWork> works;
         works.push_back(w);
         getApp()->startWritersRendering(false, works);
+    } else {
+        ret = false;
     }
+    return false;
 }
 
 void
@@ -235,5 +239,3 @@ DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 
 NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
-#include "moc_DiskCacheNode.cpp"

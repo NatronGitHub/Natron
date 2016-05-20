@@ -32,7 +32,7 @@
 #include <QtCore/QThread>
 
 #include "Engine/AbortableRenderInfo.h"
-
+#include "Engine/Node.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -51,8 +51,7 @@ struct AbortableThreadPrivate
     QThread* thread;
     std::string threadName;
     std::string currentActionName;
-    std::string currentActionNodeName;
-    std::string currentActionPluginID;
+    NodeWPtr currentActionNode;
 
     AbortableThreadPrivate(QThread* thread)
         : abortInfoMutex()
@@ -63,8 +62,7 @@ struct AbortableThreadPrivate
         , thread(thread)
         , threadName()
         , currentActionName()
-        , currentActionNodeName()
-        , currentActionPluginID()
+        , currentActionNode()
     {
     }
 };
@@ -95,28 +93,23 @@ AbortableThread::getThreadName() const
 }
 
 void
-AbortableThread::setCurrentActionInfos(const std::string& actionName,
-                                       const std::string& nodeName,
-                                       const std::string& pluginID)
+AbortableThread::setCurrentActionInfos(const std::string& actionName,const NodePtr& node)
 {
     assert(QThread::currentThread() == _imp->thread);
 
     QMutexLocker k(&_imp->abortInfoMutex);
     _imp->currentActionName = actionName;
-    _imp->currentActionNodeName = nodeName;
-    _imp->currentActionPluginID = pluginID;
+    _imp->currentActionNode = node;
 }
 
 void
 AbortableThread::getCurrentActionInfos(std::string* actionName,
-                                       std::string* nodeName,
-                                       std::string* pluginID) const
+                                       NodePtr* node) const
 {
     QMutexLocker k(&_imp->abortInfoMutex);
 
     *actionName = _imp->currentActionName;
-    *nodeName = _imp->currentActionNodeName;
-    *pluginID = _imp->currentActionPluginID;
+    *node = _imp->currentActionNode.lock();
 }
 
 void

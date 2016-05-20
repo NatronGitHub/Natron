@@ -20,12 +20,12 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG += moc rcc
-CONFIG += boost glew opengl qt cairo python shiboken pyside
+CONFIG += boost opengl qt cairo python shiboken pyside 
 CONFIG += static-gui static-engine static-host-support static-breakpadclient static-libmv static-openmvg static-ceres
 QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets concurrent
 
-CONFIG += openmvg-flags
+CONFIG += openmvg-flags glad-flags
 
 !noexpat: CONFIG += expat
 

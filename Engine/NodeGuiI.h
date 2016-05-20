@@ -30,6 +30,7 @@
 #include "Global/Enums.h"
 #include "Engine/HostOverlaySupport.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/UndoCommand.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -110,6 +111,10 @@ public:
     virtual bool onOverlayPenDownDefault(double time,
                                          const RenderScale& renderScale,
                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
+    virtual bool onOverlayPenDoubleClickedDefault(double time,
+                                         const RenderScale& renderScale,
+                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  = 0;
+
     virtual bool onOverlayPenMotionDefault(double time,
                                            const RenderScale& renderScale,
                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
@@ -141,6 +146,26 @@ public:
     virtual bool isUserSelected() const = 0;
     virtual void restoreStateAfterCreation() = 0;
     virtual void onIdentityStateChanged(int inputNb) = 0;
+
+    /**
+     * @brief Push a new undo command to the undo/redo stack associated to this node.
+     * The stack takes ownership of the shared pointer, so you should not hold a strong reference to the passed pointer.
+     * If no undo/redo stack is present, the command will just be redone once then destroyed.
+     **/
+    virtual void pushUndoCommand(const UndoCommandPtr& command) = 0;
+
+    /**
+     * @brief Set the cursor to be one of the default cursor.
+     * @returns True if it successfully set the cursor, false otherwise.
+     * Note: this can only be called during an overlay interact action.
+     **/
+    virtual void setCurrentCursor(CursorEnum defaultCursor) = 0;
+    virtual bool setCurrentCursor(const QString& customCursorFilePath) = 0;
+
+    /**
+     * @brief Make up a dialog with the content of the group
+     **/
+    virtual void showGroupKnobAsDialog(KnobGroup* group) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

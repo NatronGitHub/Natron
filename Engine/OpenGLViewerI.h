@@ -33,35 +33,11 @@
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/TextureRect.h"
+#include "Engine/Texture.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
-class OpenGLTextureI
-{
-public:
-
-
-    OpenGLTextureI()
-        : _texID(0)
-    {
-    }
-
-    U32 getTexID() const
-    {
-        return _texID;
-    }
-
-    virtual ~OpenGLTextureI()
-    {
-    }
-
-protected:
-
-
-    U32 _texID;
-};
 
 class OpenGLViewerI
     : public OverlaySupport
@@ -137,9 +113,9 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
-                                            boost::shared_ptr<OpenGLTextureI>* texture) = 0;
+                                            boost::shared_ptr<Texture>* texture) = 0;
     virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<OpenGLTextureI>& texture,
+                                               const boost::shared_ptr<Texture>& texture,
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
@@ -177,11 +153,6 @@ public:
      * @brief Make the OpenGL context current to the thread.
      **/
     virtual void makeOpenGLcontextCurrent()  = 0;
-
-    /**
-     * @brief Must return true if the current platform supports GLSL.
-     **/
-    virtual bool supportsGLSL() const = 0;
 
 
     /**
@@ -223,12 +194,12 @@ public:
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.
      **/
-    virtual void saveOpenGLContext() = 0;
+    virtual void saveOpenGLContext() OVERRIDE = 0;
 
     /**
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
-    virtual void restoreOpenGLContext() = 0;
+    virtual void restoreOpenGLContext() OVERRIDE = 0;
 
     /**
      * @brief Clears pointers to images that may be left
@@ -239,6 +210,27 @@ public:
      *@brief To be called if redraw needs to  be called now without waiting the end of the event loop
      **/
     virtual void redrawNow() = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE = 0;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
+
 };
 
 NATRON_NAMESPACE_EXIT;

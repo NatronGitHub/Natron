@@ -1011,7 +1011,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                          inputToRenderName,
                          outArgs->params->layer,
                          outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
-                         outArgs->params->depth == eImageBitDepthFloat && supportsGLSL(),
+                         outArgs->params->depth == eImageBitDepthFloat,
                          isDraftMode);
             std::list<FrameEntryPtr> entries;
             bool hasTextureCached = AppManager::getTextureFromCache(key, &entries);
@@ -1678,7 +1678,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                      inputToRenderName,
                                      inArgs.params->layer,
                                      inArgs.params->alphaLayer.getLayerName() + inArgs.params->alphaChannelName,
-                                     inArgs.params->depth == eImageBitDepthFloat && supportsGLSL(),
+                                     inArgs.params->depth == eImageBitDepthFloat,
                                      inArgs.draftModeEnabled);
                         boost::shared_ptr<FrameParams> cachedFrameParams = FrameEntry::makeParams( bounds, key.getBitDepth(), it->rect.width(), it->rect.height(), ImagePtr() );
                         bool cached = AppManager::getTextureFromCacheOrCreate(key, cachedFrameParams, &it->cachedData);
@@ -2821,7 +2821,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
 
         assert( (params->isPartialRect && params->tiles.size() == 1) || !params->isPartialRect );
 
-        boost::shared_ptr<OpenGLTextureI> texture;
+        boost::shared_ptr<Texture> texture;
         bool isFirstTile = true;
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = params->tiles.begin(); it != params->tiles.end(); ++it) {
             assert(it->ramBuffer);
@@ -2901,7 +2901,7 @@ ViewerInstance::onGammaChanged(double value)
     }
     assert(_imp->uiContext);
     if (changed) {
-        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+        if (_imp->uiContext->getBitDepth() == eImageBitDepthByte
              && !getApp()->getProject()->isLoadingProject() ) {
             renderCurrentFrame(true);
         } else {
@@ -2934,7 +2934,7 @@ ViewerInstance::onGainChanged(double exp)
     }
     if (changed) {
         assert(_imp->uiContext);
-        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+        if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
              && !getApp()->getProject()->isLoadingProject() ) {
             renderCurrentFrame(true);
         } else {
@@ -3007,7 +3007,7 @@ ViewerInstance::onColorSpaceChanged(ViewerColorSpaceEnum colorspace)
         _imp->viewerParamsLut = colorspace;
     }
     assert(_imp->uiContext);
-    if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) || !_imp->uiContext->supportsGLSL() )
+    if ( ( (_imp->uiContext->getBitDepth() == eImageBitDepthByte) )
          && !getApp()->getProject()->isLoadingProject() ) {
         renderCurrentFrame(true);
     } else {
@@ -3106,16 +3106,7 @@ ViewerInstance::disconnectTexture(int index)
     }
 }
 
-bool
-ViewerInstance::supportsGLSL() const
-{
-    ///This is a short-cut, this is primarily used when the user switch the
-    /// texture mode in the preferences menu. If the hardware doesn't support GLSL
-    /// it returns false, true otherwise. @see Settings::onKnobValueChanged
-    assert(_imp->uiContext);
 
-    return _imp->uiContext->supportsGLSL();
-}
 
 void
 ViewerInstance::redrawViewer()

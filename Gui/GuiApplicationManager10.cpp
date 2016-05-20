@@ -151,7 +151,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector<
         LibraryBinary *readerPlugin = new LibraryBinary(readerFunctions);
         assert(readerPlugin);
 
-        registerPlugin(pgrp, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", QStringList(), false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion(), false);
+        registerPlugin(QString(), pgrp, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", QStringList(), false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion(), false);
 
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
@@ -178,7 +178,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector<
         LibraryBinary *writerPlugin = new LibraryBinary(writerFunctions);
         assert(writerPlugin);
 
-        registerPlugin(pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(), "", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
+        registerPlugin(QString() , pgrp, writer->getPluginID().c_str(), writer->getPluginLabel().c_str(), "", QStringList(), false, false, writerPlugin, false, writer->getMajorVersion(), writer->getMinorVersion(), false);
 
 
         std::vector<std::string> extensions = writer->supportedFileFormats();
@@ -896,42 +896,6 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, kShortcutDescActionPlayerPlaybackIn, Qt::AltModifier, Qt::Key_I);
     registerKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, kShortcutDescActionPlayerPlaybackOut, Qt::AltModifier, Qt::Key_O);
 
-    ///Roto
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoDelete, kShortcutDescActionRotoDelete, Qt::NoModifier, Qt::Key_Backspace);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloseBezier, kShortcutDescActionRotoCloseBezier, Qt::NoModifier, Qt::Key_Enter);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectAll, kShortcutDescActionRotoSelectAll, Qt::ControlModifier, Qt::Key_A);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSelectionTool, kShortcutDescActionRotoSelectionTool, Qt::NoModifier, Qt::Key_Q);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoAddTool, kShortcutDescActionRotoAddTool, Qt::NoModifier, Qt::Key_D);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEditTool, kShortcutDescActionRotoEditTool, Qt::NoModifier, Qt::Key_V);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoBrushTool, kShortcutDescActionRotoBrushTool, Qt::NoModifier, Qt::Key_N);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCloneTool, kShortcutDescActionRotoCloneTool, Qt::NoModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoEffectTool, kShortcutDescActionRotoEffectTool, Qt::NoModifier, Qt::Key_X);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoColorTool, kShortcutDescActionRotoColorTool, Qt::NoModifier, Qt::Key_E);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeLeft, kShortcutDescActionRotoNudgeLeft, Qt::AltModifier, Qt::Key_Left);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeBottom, kShortcutDescActionRotoNudgeBottom, Qt::AltModifier, Qt::Key_Down);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeRight, kShortcutDescActionRotoNudgeRight, Qt::AltModifier, Qt::Key_Right);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoNudgeTop, kShortcutDescActionRotoNudgeTop, Qt::AltModifier, Qt::Key_Up);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoSmooth, kShortcutDescActionRotoSmooth, Qt::NoModifier, Qt::Key_Z);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoCuspBezier, kShortcutDescActionRotoCuspBezier, Qt::ShiftModifier, Qt::Key_Z);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoRemoveFeather, kShortcutDescActionRotoRemoveFeather, Qt::ShiftModifier, Qt::Key_E);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLinkToTrack, kShortcutDescActionRotoLinkToTrack, Qt::NoModifier, (Qt::Key)0);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoUnlinkToTrack, kShortcutDescActionRotoUnlinkToTrack,
-                    Qt::NoModifier, (Qt::Key)0);
-    registerKeybind(kShortcutGroupRoto, kShortcutIDActionRotoLockCurve, kShortcutDescActionRotoLockCurve,
-                    Qt::ShiftModifier, Qt::Key_L);
-
-
-    ///Tracking
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingSelectAll, kShortcutDescActionTrackingSelectAll, Qt::ControlModifier, Qt::Key_A);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingDelete, kShortcutDescActionTrackingDelete, Qt::NoModifier, Qt::Key_Backspace);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingBackward, kShortcutDescActionTrackingBackward, Qt::NoModifier, Qt::Key_Z);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingPrevious, kShortcutDescActionTrackingPrevious, Qt::NoModifier, Qt::Key_X);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingNext, kShortcutDescActionTrackingNext, Qt::NoModifier, Qt::Key_C);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingForward, kShortcutDescActionTrackingForward, Qt::NoModifier, Qt::Key_V);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingStop, Qt::NoModifier, Qt::Key_Escape);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingRange, Qt::NoModifier, (Qt::Key)0);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingAllKeyframes, Qt::ControlModifier, Qt::Key_V);
-    registerKeybind(kShortcutGroupTracking, kShortcutIDActionTrackingStop, kShortcutDescActionTrackingCurrentKeyframes, Qt::ControlModifier, Qt::Key_C);
 
     ///Nodegraph
 #ifndef NATRON_ENABLE_IO_META_NODES

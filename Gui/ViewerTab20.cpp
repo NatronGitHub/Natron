@@ -41,18 +41,18 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
 #include "Gui/Gui.h"
+#include "Gui/GuiApplicationManager.h" // isKeybind
 #include "Gui/GuiAppInstance.h"
 #include "Gui/NodeGui.h"
 #include "Gui/QtEnumConvert.h"
-#include "Gui/RotoGui.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/TrackerGui.h"
 #include "Gui/ViewerGL.h"
 
 
@@ -107,10 +107,10 @@ ViewerTab::drawOverlays(double time,
 
     ///Draw overlays in reverse order of appearance so that the first (top) panel is drawn on top of everything else
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
+        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         double transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
-        NodeGuiPtr nodeUi = boost::dynamic_pointer_cast<NodeGui>( (*it)->getNodeGui() );
         if (!nodeUi) {
             continue;
         }
@@ -139,21 +139,14 @@ ViewerTab::drawOverlays(double time,
         }
 
 #endif
-
-        if ( _imp->currentRoto.first && ( (*it) == _imp->currentRoto.first->getNode() ) ) {
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                _imp->currentRoto.second->drawOverlays(time, renderScale, view);
-            }
-        } else if ( _imp->currentTracker.first && ( (*it) == _imp->currentTracker.first->getNode() ) ) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                _imp->currentTracker.second->drawOverlays(time, renderScale, view);
-            }
-        } else {
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
             EffectInstPtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             effect->drawOverlay_public(time, renderScale, view);
         }
+
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (ok) {
             glMatrixMode(GL_MODELVIEW);
@@ -167,12 +160,10 @@ bool
 ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
                                           PenType pen,
-                                          bool isTabletEvent,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp,
-                                          QMouseEvent* e)
+                                          double timestamp)
 {
     QPointF transformViewportPos;
     QPointF transformPos;
@@ -230,27 +221,12 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     transformPos = pos;
 #endif
 
-    if ( _imp->currentRoto.first && ( node == _imp->currentRoto.first->getNode() ) ) {
-        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDown(time, renderScale, view, pen, isTabletEvent, transformViewportPos, transformPos, pressure, timestamp, e) ) {
-                _imp->lastOverlayNode = node;
-
-                return true;
-            }
-        }
-    } else if ( _imp->currentTracker.first && ( node == _imp->currentTracker.first->getNode() ) ) {
-        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penDown(time, renderScale, view, transformViewportPos, transformPos, pressure, e) ) {
-                _imp->lastOverlayNode = node;
-
-                return true;
-            }
-        }
-    } else {
+    bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
+    if (!isInActiveViewerUI) {
         EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
+        bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, pen);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -262,18 +238,17 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
         }
     }
 
+
     return false;
 } // ViewerTab::notifyOverlaysPenDown_internal
 
 bool
 ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  PenType pen,
-                                 bool isTabletEvent,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
                                  double pressure,
-                                 double timestamp,
-                                 QMouseEvent* e)
+                                 double timestamp)
 {
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -301,7 +276,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     if (lastOverlay) {
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e) ) {
+                if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, timestamp) ) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -312,7 +287,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     }
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, isTabletEvent, viewportPos, pos, pressure, timestamp, e) ) {
+        if ( notifyOverlaysPenDown_internal(*it, renderScale, pen, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
     }
@@ -328,8 +303,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
 bool
 ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
                                         const QPointF & viewportPos,
-                                        const QPointF & pos,
-                                        QMouseEvent* e)
+                                        const QPointF & pos)
 {
     if ( !getGui()->getApp() || getGui()->getApp()->isClosing() ) {
         return false;
@@ -384,18 +358,20 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         transformPos = pos;
 #endif
 
-        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penDoubleClicked(time, renderScale, view, transformViewportPos, transformPos, e) ) {
-                _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
+            EffectInstPtr effect = (*it)->getEffectInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
-                return true;
-            }
-        }
+            bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, transformViewportPos, transformPos);
+            if (didSmthing) {
+                //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
+                // if the instance returns kOfxStatOK, the host should not pass the pen motion
 
-        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penDoubleClicked(time, renderScale, view, transformViewportPos, transformPos, e) ) {
-                _imp->lastOverlayNode = _imp->currentRoto.first->getNode();
-
+                // to any other interactive object it may own that shares the same view.
+                _imp->lastOverlayNode = *it;
+                
                 return true;
             }
         }
@@ -410,8 +386,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
-                                            double timestamp,
-                                            QInputEvent* e)
+                                            double timestamp)
 {
     QPointF transformViewportPos;
     QPointF transformPos;
@@ -467,23 +442,8 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
     transformPos = pos;
 #endif
 
-    if ( _imp->currentRoto.first && ( node == _imp->currentRoto.first->getNode() ) ) {
-        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->penMotion(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, e) ) {
-                _imp->lastOverlayNode = node;
-
-                return true;
-            }
-        }
-    } else if ( _imp->currentTracker.first && ( node == _imp->currentTracker.first->getNode() ) ) {
-        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->penMotion(time, renderScale, view, transformViewportPos, transformPos, pressure, e) ) {
-                _imp->lastOverlayNode = node;
-
-                return true;
-            }
-        }
-    } else {
+    bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
+    if (!isInActiveViewerUI) {
         ///If we are dragging with mouse, set draft mode (not for roto though)
         if ( _imp->hasPenDown && !getGui()->isDraftRenderEnabled() ) {
             getGui()->setDraftRenderEnabled(true);
@@ -492,7 +452,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
         EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
+        bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
         if (didSmthing) {
             if (_imp->hasPenDown) {
                 _imp->hasCaughtPenMotionWhileDragging = true;
@@ -508,6 +468,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
         }
     }
 
+
     return false;
 } // ViewerTab::notifyOverlaysPenMotion_internal
 
@@ -516,8 +477,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
                                    double pressure,
-                                   double timestamp,
-                                   QInputEvent* e)
+                                   double timestamp)
 {
     bool didSomething = false;
 
@@ -544,7 +504,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     if (lastOverlay) {
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, e) ) {
+                if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -556,7 +516,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
 
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp, e) ) {
+        if ( notifyOverlaysPenMotion_internal(*it, renderScale, viewportPos, pos, pressure, timestamp) ) {
             return true;
         }
     }
@@ -576,8 +536,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                const QPointF & viewportPos,
                                const QPointF & pos,
                                double pressure,
-                               double timestamp,
-                               QMouseEvent* e)
+                               double timestamp)
 {
     bool didSomething = false;
 
@@ -668,22 +627,15 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         transformPos = pos;
 #endif
 
-
-        if ( _imp->currentRoto.first && ( (*it) == _imp->currentRoto.first->getNode() ) ) {
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentRoto.second->penUp(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, e);
-            }
-        }
-        if ( _imp->currentTracker.first && ( (*it) == _imp->currentTracker.first->getNode() ) ) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                didSomething |=  _imp->currentTracker.second->penUp(time, renderScale, view, transformViewportPos, transformPos, pressure, e);
-            }
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
+            EffectInstPtr effect = (*it)->getEffectInstance();
+            assert(effect);
+            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
         }
 
-        EffectInstPtr effect = (*it)->getEffectInstance();
-        assert(effect);
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure);
+
     }
 
 
@@ -702,11 +654,70 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 } // ViewerTab::notifyOverlaysPenUp
 
 bool
+ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, const Qt::KeyboardModifiers& mods)
+{
+    // Intercept plug-in defined shortcuts
+    NodeViewerContextPtr context;
+    for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
+        NodeGuiPtr n = it->currentNode.lock();
+        if (!n) {
+            continue;
+        }
+        if (n->getNode() == node) {
+            context = it->currentContext;
+            break;
+        }
+
+    }
+
+    // This is not an active node on the viewer ui, don't trigger any shortcuts
+    if (!context) {
+        return false;
+    }
+
+    EffectInstPtr effect = node->getEffectInstance();
+    assert(effect);
+    const KnobsVec& knobs = effect->getKnobs();
+    std::string pluginShortcutGroup;
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ((*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret()) {
+            if (pluginShortcutGroup.empty()) {
+                pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
+            }
+            if (isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey)) {
+
+                // This only works for groups and buttons, as defined in the spec
+                KnobButton* isButton = dynamic_cast<KnobButton*>(it->get());
+                KnobGroup* isGrp = dynamic_cast<KnobGroup*>(it->get());
+
+                bool ret = false;
+
+                if (isButton) {
+                    if (isButton->getIsCheckable()) {
+                        isButton->onValueChanged(!isButton->getValue(), ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                        ret = true;
+                    } else {
+                        ret = isButton->trigger();
+                    }
+                } else if (isGrp) {
+                    // This can only be a toolbutton, notify the NodeViewerContext
+                    context->onToolButtonShortcutPressed(QString::fromUtf8(isGrp->getName().c_str()));
+                    ret = true;
+                }
+                return ret;
+            }
+        }
+    }
+    return false;
+}
+
+bool
 ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
                                           const RenderScale & renderScale,
-                                          QKeyEvent* e,
                                           Key k,
-                                          KeyboardModifiers km)
+                                          KeyboardModifiers km,
+                                          Qt::Key qKey,
+                                          const Qt::KeyboardModifiers& mods)
 {
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
     ViewIdx view = getCurrentView();
@@ -728,27 +739,17 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
 #endif
 
 
-    if ( _imp->currentRoto.first && ( node == _imp->currentRoto.first->getNode() ) ) {
-        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->keyDown(time, renderScale, view, e) ) {
-                _imp->lastOverlayNode = node;
-
-                return true;
-            }
-        }
-    } else if ( _imp->currentTracker.first && ( node == _imp->currentTracker.first->getNode() ) ) {
-        if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentTracker.second->keyDown(time, renderScale, view, e) ) {
-                _imp->lastOverlayNode = node;
-
-                return true;
-            }
-        }
-    } else {
+    bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
+    if (!isInActiveViewerUI) {
         EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
+
+        bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
+
+        if (!didSmthing) {
+            didSmthing = effect->onOverlayKeyDown_public(time, renderScale, view, k, km);
+        }
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -759,6 +760,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
             return true;
         }
     }
+
 
     return false;
 } // ViewerTab::notifyOverlaysKeyDown_internal
@@ -781,8 +783,10 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
      */
     bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
                       e->key() == Qt::Key_Meta;
-    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Qt::Key qKey = (Qt::Key)e->key();
+    Qt::KeyboardModifiers qMods = e->modifiers();
+    Key natronKey = QtEnumConvert::fromQtKey(qKey );
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
 
@@ -790,7 +794,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     if (lastOverlay) {
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if ( notifyOverlaysKeyDown_internal(*it, renderScale, e, natronKey, natronMod) ) {
+                if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
                     if (isModifier) {
                         nodes.erase(it);
                         break;
@@ -809,7 +813,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     for (NodesList::reverse_iterator it = nodes.rbegin();
          it != nodes.rend();
          ++it) {
-        if ( notifyOverlaysKeyDown_internal(*it, renderScale, e, natronKey, natronMod) ) {
+        if ( notifyOverlaysKeyDown_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
             if (isModifier) {
                 continue;
             }
@@ -868,20 +872,15 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         }
 #endif
 
-        if ( _imp->currentRoto.first && ( (*it) == _imp->currentRoto.first->getNode() ) ) {
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentRoto.second->keyUp(time, renderScale, view, e);
-            }
-        }
-        if ( _imp->currentTracker.first && ( (*it) == _imp->currentTracker.first->getNode() ) ) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                didSomething |= _imp->currentTracker.second->keyUp(time, renderScale, view, e);
-            }
+
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
+            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            didSomething |= effect->onOverlayKeyUp_public( time, renderScale, view,
+                                                          QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         }
 
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        didSomething |= effect->onOverlayKeyUp_public( time, renderScale, view,
-                                                       QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+
     }
 
     /*
@@ -908,9 +907,9 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 bool
 ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             const RenderScale & renderScale,
-                                            QKeyEvent* e,
                                             Key k,
-                                            KeyboardModifiers km)
+                                            KeyboardModifiers km,
+                                            Qt::Key qKey, const Qt::KeyboardModifiers& mods)
 {
     ViewIdx view = getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -931,24 +930,17 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
     }
 #endif
 
-    if ( _imp->currentRoto.first && ( node == _imp->currentRoto.first->getNode() ) ) {
-        if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-            if ( _imp->currentRoto.second->keyRepeat(time, renderScale, view, e) ) {
-                _imp->lastOverlayNode = node;
-
-                return true;
-            }
-        }
-    } else {
-        //if (_imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible()) {
-        //    if (_imp->currentTracker.second->loseFocus(scaleX, scaleY,e)) {
-        //        return true;
-        //    }
-        //}
+    bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
+    if (!isInActiveViewerUI) {
         EffectInstPtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
+
+        bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
+
+        if (!didSmthing) {
+            didSmthing = effect->onOverlayKeyRepeat_public(time, renderScale, view, k, km);
+        }
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
             // if the instance returns kOfxStatOK, the host should not pass the pen motion
@@ -958,7 +950,9 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
 
             return true;
         }
+
     }
+
 
     return false;
 }
@@ -971,16 +965,18 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
         return false;
     }
 
-    Key natronKey = QtEnumConvert::fromQtKey( (Qt::Key)e->key() );
-    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( e->modifiers() );
+    Qt::Key qKey = (Qt::Key)e->key();
+    Qt::KeyboardModifiers qMods = e->modifiers();
+    Key natronKey = QtEnumConvert::fromQtKey( qKey);
+    KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( qMods );
     NodesList nodes;
-    getGui()->getNodesEntitledForOverlays(nodes);
+
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if (*it == lastOverlay) {
-                if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, e, natronKey, natronMod) ) {
+                if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
                     return true;
                 } else {
                     nodes.erase(it);
@@ -992,7 +988,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
 
 
     for (NodesList::reverse_iterator it = nodes.rbegin(); it != nodes.rend(); ++it) {
-        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, e, natronKey, natronMod) ) {
+        if ( notifyOverlaysKeyRepeat_internal(*it, renderScale, natronKey, natronMod, qKey, qMods) ) {
             return true;
         }
     }
@@ -1041,18 +1037,13 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         }
 #endif
 
-        if ( _imp->currentTracker.first && ( (*it) == _imp->currentTracker.first->getNode() ) ) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentTracker.second->gainFocus(time, renderScale, view) ) {
-                    ret = true;
-                }
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
+            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            bool didSmthing = effect->onOverlayFocusGained_public(time, renderScale, view);
+            if (didSmthing) {
+                ret = true;
             }
-        }
-
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusGained_public(time, renderScale, view);
-        if (didSmthing) {
-            ret = true;
         }
     }
 
@@ -1095,27 +1086,18 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
             time = transformedTime;
         }
 #endif
+        bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
+        if (!isInActiveViewerUI) {
+            EffectInstPtr effect = (*it)->getEffectInstance();
+            assert(effect);
 
-        if ( _imp->currentRoto.first && ( (*it) == _imp->currentRoto.first->getNode() ) ) {
-            if ( _imp->currentRoto.second && _imp->currentRoto.first->isSettingsPanelVisible() ) {
-                _imp->currentRoto.second->focusOut(time, view);
-            }
-        } else if ( _imp->currentTracker.first && ( (*it) == _imp->currentTracker.first->getNode() ) ) {
-            if ( _imp->currentTracker.second && _imp->currentTracker.first->isSettingsPanelVisible() ) {
-                if ( _imp->currentTracker.second->loseFocus(time, renderScale, view) ) {
-                    ret = true;
-                }
+            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            bool didSmthing = effect->onOverlayFocusLost_public(time, renderScale, view);
+            if (didSmthing) {
+                ret = true;
             }
         }
 
-        EffectInstPtr effect = (*it)->getEffectInstance();
-        assert(effect);
-
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
-        bool didSmthing = effect->onOverlayFocusLost_public(time, renderScale, view);
-        if (didSmthing) {
-            ret = true;
-        }
     }
 
 

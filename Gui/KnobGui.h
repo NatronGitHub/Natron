@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobGuiI.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/Markdown.h"
 
 #include "Gui/KnobGuiContainerI.h"
 #include "Gui/GuiFwd.h"
@@ -243,6 +244,29 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;
@@ -311,6 +335,8 @@ public Q_SLOTS:
     void onKeyFrameMoved(ViewSpec view, int dimension, double oldTime, double newTime);
 
     void setSecret();
+
+    void onViewerContextSecretChanged();
 
     void onRightClickClicked(const QPoint & pos);
 

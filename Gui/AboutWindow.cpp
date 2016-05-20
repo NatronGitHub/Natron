@@ -40,6 +40,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QDir>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/AppManager.h"
+
 #include "Global/GlobalDefines.h"
 #include "Global/GitVersion.h"
 #include "Gui/Button.h"
@@ -52,10 +54,8 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-AboutWindow::AboutWindow(Gui* gui,
-                         QWidget* parent)
+AboutWindow::AboutWindow(QWidget* parent)
     : QDialog(parent)
-    , _gui(gui)
 {
     setWindowTitle( tr("About %1").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _mainLayout = new QVBoxLayout(this);
@@ -342,15 +342,13 @@ AboutWindow::updateLibrariesVersions()
     QString libsText = QString::fromUtf8("<p> Python %1 </p>"
                                          "<p> Qt %2 </p>"
                                          "<p> Boost %3 </p>"
-                                         "<p> Glew %4 </p>"
                                          "<p> OpenGL %5 </p>"
                                          "<p> Cairo %6 </p>")
                        .arg( QString::fromUtf8(PY_VERSION) )
-                       .arg( _gui->getQtVersion() )
-                       .arg( _gui->getBoostVersion() )
-                       .arg( _gui->getGlewVersion() )
-                       .arg( _gui->getOpenGLVersion() )
-                       .arg( _gui->getCairoVersion() );
+                       .arg( appPTR->getQtVersion() )
+                       .arg( appPTR->getBoostVersion() )
+                       .arg( appPTR->getOpenGLVersion() )
+                       .arg( appPTR->getCairoVersion() );
 
     _libsText->setText(libsText);
 }

@@ -6,9 +6,10 @@ Natron binaries include components from the following libraries:
 * PySide (LGPL 2.1) https://wiki.qt.io/About_PySide
 * libshiboken (LGPL 2.1) https://github.com/qtproject/pyside-shiboken
 * Qt (LGPL 2.1 with Qt LGPL Exception) http://doc.qt.io/qt-4.8/lgpl.html
-* GLEW (Modified BSD) http://glew.sourceforge.net/credits.html
 * Boost (Boost Software License) http://www.boost.org/users/license.html
 * Cairo (LGPL 2.1) http://cairographics.org/
+* GLAD (MIT) https://github.com/Dav1dde/glad
+* GLFW (zlib/libpng license (BSD-like)) http://www.glfw.org
 * openfx (Modified BSD) https://github.com/ofxa/openfx
 * openfx-io (GPLv2) https://github.com/MrKepzie/openfx-io
 * openfx-misc (GPLv2) https://github.com/devernay/openfx-misc
@@ -20,6 +21,7 @@ Natron binaries include components from the following libraries:
 * libmv (BSD) https://developer.blender.org/project/profile/59/
 * openMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
+* hoedown (BSD) https://github.com/hoedown/hoedown
 
 # Additional dependencies
 
@@ -70,7 +72,7 @@ Natron binaries include components from the following libraries:
 * Little CMS (MIT) http://www.littlecms.com/
 * librsvg (LGPL 2.1) http://live.gnome.org/LibRsvg
 * libzip (BSD) http://www.nih.at/libzip/
-* Cairo (MPL 1.1) http://cairographics.org/
+* Cairo (LGPL 2.1) http://cairographics.org/
 * librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr
 * libxml (MIT) http://www.xmlsoft.org/

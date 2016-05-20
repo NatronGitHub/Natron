@@ -22,7 +22,7 @@ Using `pacman`, the MSYS2 package manager, install the following
 packages:
 
 toolchain yasm gsm gdbm db python2 boost libjpeg-turbo libpng
-libtiff giflib lcms2 openjpeg LibRaw glew pixman cairo
+libtiff giflib lcms2 openjpeg LibRaw pixman cairo
 openssl freetype fontconfig eigen3 pango librsvg libzip cmake
 
 wget tar diffutils file gawk gettext grep make patch patchutils
@@ -172,13 +172,6 @@ boost. You'll need to build a shared | multi-threaded version of the librairies.
 Pre-compiled binaries for boost are available here:
 http://boost.teeks99.com/
 
-### *glew*
-On windows,OpenGL API is not up to date to the features we need.
-You'll need to download glew, that provides a recent version of the OpenGL API:
-
-(Glew download)[http://glew.sourceforge.net/]
-
-
 ### *OpenFX*
 
 At the source tree's root, type the following command in the command prompt:
@@ -236,11 +229,6 @@ boost {
 		CONFIG(debug, debug|release):  LIBS += -L$$quote(C:\\boost\\x64) -lboost_serialization-vc100-mt-gd-1_57
 }
 
-glew{
-    INCLUDEPATH +=  $$quote(C:\\glew\\include)
-    LIBS += -L$$quote(C:\\glew\\lib\\Release\\x64) -lglew32
-}
-
 expat{
     INCLUDEPATH += $$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\lib)
     LIBS += -L$$quote(C:\\Users\\lex\\Documents\\GitHub\\Natron\\libs\\OpenFX\\HostSupport\\expat-2.0.1\\x64\\bin\\Release) -llibexpatMT
@@ -279,11 +267,6 @@ boost {
         INCLUDEPATH +=  $$quote(C:\\boost)
         CONFIG(release, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-1_57
 		CONFIG(debug, debug|release): LIBS += -L$$quote(C:\\boost\\win32) -lboost_serialization-vc100-mt-gd-1_57
-}
-
-glew{
-    INCLUDEPATH +=  $$quote(C:\\glew\\include)
-    LIBS += -L$$quote(C:\\glew\\lib\\Release\\win32) -lglew32
 }
 
 expat{

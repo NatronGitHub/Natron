@@ -42,10 +42,6 @@
 #include "Gui/GuiFwd.h"
 
 
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
-
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
 
 NATRON_NAMESPACE_ENTER;
@@ -164,7 +160,6 @@ public:
     QFont* _font;
     Curves _curves;
     SelectedKeys _selectedKeyFrames;
-    bool _hasOpenGLVAOSupport;
     bool _mustSetDragOrientation;
     QPoint _mouseDragOrientation; ///used to drag a key frame in only 1 direction (horizontal or vertical)
     ///the value is either (1,0) or (0,1)

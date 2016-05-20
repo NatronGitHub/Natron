@@ -241,6 +241,8 @@ public:
 
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
 
+    static bool ofxCursorToNatronCursor(const std::string& ofxCursor, CursorEnum* cursor);
+
 private:
     boost::weak_ptr<OfxEffectInstance> _ofxEffectInstance; /* FIXME: OfxImageEffectInstance should be able to work without the node_ //
                                                               Not easy since every Knob need a valid pointer to a node when

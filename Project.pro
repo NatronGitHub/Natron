@@ -33,6 +33,7 @@ SUBDIRS += \
     libs/libmv \
     libs/openMVG \
     libs/qhttpserver \
+    libs/hoedown \
     Engine \
     Renderer \
     Gui \

@@ -100,7 +100,9 @@ void
 ViewerToolButton::handleSelection()
 {
     QAction* curAction = defaultAction();
-
+    if (!curAction) {
+        return;
+    }
     if ( !isDown() ) {
         setDown(true);
         Q_EMIT triggered(curAction);

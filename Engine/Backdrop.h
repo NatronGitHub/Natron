@@ -83,7 +83,7 @@ Q_SIGNALS:
 
 private:
 
-    virtual void knobChanged(KnobI * k,
+    virtual bool knobChanged(KnobI * k,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,

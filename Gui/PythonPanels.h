@@ -58,7 +58,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    DialogParamHolder(const QString& uniqueID, AppInstance* app);
+    DialogParamHolder(const QString& uniqueID, AppInstance* app, UserParamHolder* widget);
 
     virtual ~DialogParamHolder();
 
@@ -70,7 +70,7 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL {}
 
-    virtual void onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
@@ -87,7 +87,7 @@ class PyModalDialog
 
 public:
 
-    PyModalDialog(Gui* gui);
+    PyModalDialog(Gui* gui, StandardButtons defaultButtons = StandardButtons(eStandardButtonOk | eStandardButtonCancel));
 
     virtual ~PyModalDialog();
 
@@ -98,6 +98,8 @@ public:
     void insertWidget(int index, QWidget* widget);
 
     void addWidget(QWidget* widget);
+
+    DialogParamHolder* getKnobsHolder() const;
 
 private:
 

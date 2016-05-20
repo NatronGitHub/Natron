@@ -159,12 +159,12 @@ public:
      * @brief Tracks the selected markers over the range defined by [start,end[ (end pointing to the frame
      * after the last one, a la STL).
      **/
-    void trackSelectedMarkers(int start, int end, int frameStep, ViewerInstance* viewer);
+    void trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer);
     void trackMarkers(const std::list<TrackMarkerPtr >& marks,
                       int start,
                       int end,
                       int frameStep,
-                      ViewerInstance* viewer);
+                      OverlaySupport* viewer);
 
 
     void abortTracking();
@@ -213,15 +213,15 @@ public:
 
     bool onOverlayPenDownInternalNodes(double time,
                                        const RenderScale & renderScale,
-                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                       ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayPenMotionInternalNodes(double time,
                                          const RenderScale & renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayPenUpInternalNodes(double time,
                                      const RenderScale & renderScale,
-                                     ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, OverlaySupport* viewer) WARN_UNUSED_RETURN;
+                                     ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, OverlaySupport* viewer) WARN_UNUSED_RETURN;
 
     bool onOverlayKeyDownInternalNodes(double time,
                                        const RenderScale & renderScale,
@@ -256,7 +256,7 @@ public:
 
     void inputChanged(int inputNb);
 
-    void knobChanged(KnobI* k,
+    bool knobChanged(KnobI* k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
                      double time,
@@ -346,6 +346,11 @@ public Q_SLOTS:
 
     void onMarkerEnabledChanged(int reason);
 
+    void onSchedulerTrackingStarted(int frameStep);
+    void onSchedulerTrackingFinished();
+
+    void onSchedulerTrackingProgress(double progress);
+
 Q_SIGNALS:
 
     void keyframeSetOnTrack(TrackMarkerPtr marker, int);
@@ -416,7 +421,7 @@ public:
         Q_EMIT trackingStarted(step);
     }
 
-    void emit_trackingFinished()
+    void emit_trackingFinished( )
     {
         Q_EMIT trackingFinished();
     }
@@ -432,6 +437,7 @@ Q_SIGNALS:
 
     void trackingFinished();
 
+    void trackingProgress(double progress);
 
     void renderCurrentFrameForViewer(ViewerInstance* viewer);
 };

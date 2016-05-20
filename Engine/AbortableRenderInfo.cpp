@@ -32,6 +32,7 @@
 #include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/Timer.h"
 
@@ -176,22 +177,35 @@ AbortableRenderInfo::onAbortTimerTimeout()
     ss << tr("This is likely due to a render taking too long in a plug-in.").toStdString() << std::endl << std::endl;
     ss << tr("List of stalled renders:").toStdString() << std::endl << std::endl;
     for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
-        ss << " - " << (*it)->getThreadName()  << tr(" stalled in:").toStdString() << std::endl << std::endl;
-        std::string actionName, nodeName, pluginId;
-        (*it)->getCurrentActionInfos(&actionName, &nodeName, &pluginId);
-        if ( !nodeName.empty() ) {
-            ss << "    Node: " << nodeName << std::endl;
+        std::string actionName;
+        NodePtr node;
+        (*it)->getCurrentActionInfos(&actionName, &node);
+        if (node) {
+
+            // Don't show a dialog on timeout for writers since reading/writing from/to a file may be long and most libraries don't provide write callbacks anyway
+            if (node->getEffectInstance()->isReader() || node->getEffectInstance()->isWriter()) {
+                return;
+            }
+            std::string nodeName, pluginId;
+            nodeName = node->getFullyQualifiedName();
+            pluginId = node->getPluginID();
+
+            ss << " - " << (*it)->getThreadName()  << tr(" stalled in:").toStdString() << std::endl << std::endl;
+
+            if ( !nodeName.empty() ) {
+                ss << "    Node: " << nodeName << std::endl;
+            }
+            if ( !pluginId.empty() ) {
+                ss << "    Plugin: " << pluginId << std::endl;
+            }
+            if ( !actionName.empty() ) {
+                ss << "    Action: " << actionName << std::endl;
+            }
+            ss << std::endl;
         }
-        if ( !pluginId.empty() ) {
-            ss << "    Plugin: " << pluginId << std::endl;
-        }
-        if ( !actionName.empty() ) {
-            ss << "    Action: " << actionName << std::endl;
-        }
-        ss << std::endl;
     }
     ss << std::endl;
-
+    
     if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();
     } else {

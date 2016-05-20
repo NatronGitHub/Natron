@@ -309,31 +309,6 @@ public:
      **/
     double normalize(int dimension, double time, double value) const;
 
-    void addSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
-    {
-        _slavedTracks.push_back(cp);
-    }
-
-    void removeSlavedTrack(const boost::shared_ptr<BezierCP> & cp);
-
-    const std::list< boost::shared_ptr<BezierCP> > & getSlavedTracks()
-    {
-        return _slavedTracks;
-    }
-
-    struct SerializedTrack
-    {
-        std::string rotoNodeName;
-        std::string bezierName;
-        int cpIndex;
-        bool isFeather;
-        int offsetTime;
-    };
-
-    void serializeTracks(std::list<SerializedTrack>* tracks);
-
-    void restoreTracks(const std::list <SerializedTrack> & tracks, const NodesList & activeNodes);
-
     void setHasHostOverlayHandle(bool handle);
 
     bool getHasHostOverlayHandle() const;
@@ -352,10 +327,6 @@ public:
         return _isRectangle;
     }
 
-public Q_SLOTS:
-
-    void onNodeDeactivated();
-    void onNodeActivated();
 
 Q_SIGNALS:
 
@@ -378,7 +349,6 @@ private:
     std::vector<double>  _increments;
     std::vector<int> _decimals;
     bool _disableSlider;
-    std::list< boost::shared_ptr<BezierCP> > _slavedTracks;
 
     /// to support ofx deprecated normalizd params:
     /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
@@ -436,7 +406,9 @@ public:
         return _renderButton;
     }
 
-    void trigger();
+    // Trigger the knobChanged handler for this knob
+    // Returns true if the knobChanged handler was caught and an action was done
+    bool trigger();
 
     virtual bool supportsInViewerContext() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -453,6 +425,17 @@ public:
         return _checkable;
     }
 
+    void setAsToolButtonAction(bool b)
+    {
+        _isToolButtonAction = b;
+    }
+
+    bool getIsToolButtonAction() const
+    {
+        return _isToolButtonAction;
+    }
+
+
 private:
 
 
@@ -463,6 +446,7 @@ private:
     static const std::string _typeNameStr;
     bool _renderButton;
     bool _checkable;
+    bool _isToolButtonAction;
 };
 
 /******************************KnobChoice**************************************/
@@ -875,6 +859,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     std::vector< boost::weak_ptr<KnobI> > _children;
     bool _isTab;
+    bool _isToolButton;
+    bool _isDialog;
 
 public:
 
@@ -910,6 +896,12 @@ public:
 
     bool isTab() const;
 
+    void setAsToolButton(bool b);
+    bool getIsToolButton() const;
+
+    void setAsDialog(bool b);
+    bool getIsDialog() const;
+
     static const std::string & typeNameStatic();
 
 private:
@@ -918,6 +910,7 @@ private:
     virtual const std::string & typeName() const OVERRIDE FINAL;
 
 private:
+
     static const std::string _typeNameStr;
 };
 
@@ -953,6 +946,14 @@ public:
 
     void addKnob(const KnobPtr& k);
 
+    void setAsToolBar(bool b)
+    {
+        _isToolBar = b;
+    }
+    bool getIsToolBar() const
+    {
+        return _isToolBar;
+    }
 
     bool moveOneStepUp(KnobI* k);
     bool moveOneStepDown(KnobI* k);
@@ -970,6 +971,7 @@ private:
 
 private:
 
+    bool _isToolBar;
     std::vector< boost::weak_ptr<KnobI> > _children;
     static const std::string _typeNameStr;
 };

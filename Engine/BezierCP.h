@@ -119,11 +119,11 @@ public:
 
     bool equalsAtTime(bool useGuiCurves, double time, ViewIdx view, const BezierCP & other) const;
 
-    bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y, bool skipMasterOrRelative = false) const;
+    bool getPositionAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
 
-    bool getLeftBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y, bool skipMasterOrRelative = false) const;
+    bool getLeftBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double* x, double* y) const;
 
-    bool getRightBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double *x, double *y, bool skipMasterOrRelative = false) const;
+    bool getRightBezierPointAtTime(bool useGuiCurves, double time, ViewIdx view, double *x, double *y) const;
 
     bool hasKeyFrameAtTime(bool useGuiCurves, double time) const;
 
@@ -156,13 +156,6 @@ public:
      * isFeatherPoint() on the returned control point.
      **/
     int isNearbyTangent(bool useGuiCurves, double time, ViewIdx view, double x, double y, double acceptance) const;
-
-    /**
-     * The functions below are to slave/unslave a control point to a track
-     **/
-    void slaveTo(SequenceTime offsetTime, const boost::shared_ptr<KnobDouble> & track);
-    boost::shared_ptr<KnobDouble> isSlaved() const;
-    void unslave();
 
     SequenceTime getOffsetTime() const;
 

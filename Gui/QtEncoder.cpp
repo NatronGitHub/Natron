@@ -164,13 +164,14 @@ QtWriter::initializeKnobs()
     _renderKnob->setAsRenderButton();
 }
 
-void
+bool
 QtWriter::knobChanged(KnobI* k,
                       ValueChangedReasonEnum /*reason*/,
                       ViewSpec /*view*/,
                       double /*time*/,
                       bool /* originatedFromMainThread*/)
 {
+    bool ret = true;
     if ( k == _frameRangeChoosal.get() ) {
         int index = _frameRangeChoosal->getValue();
         if (index != 2) {
@@ -189,7 +190,10 @@ QtWriter::knobChanged(KnobI* k,
             _lastFrameKnob->setDisplayMaximum(last);
             _lastFrameKnob->setSecret(false);
         }
+    } else {
+        ret = false;
     }
+    return ret;
 }
 
 static std::string

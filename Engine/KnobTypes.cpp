@@ -354,121 +354,10 @@ KnobDouble::setDecimals(const std::vector<int> &decis)
     }
 }
 
-void
-KnobDouble::onNodeDeactivated()
-{
-    ///unslave all roto control points that would be slaved
-    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it != _slavedTracks.end(); ++it) {
-        (*it)->unslave();
-    }
-}
-
-void
-KnobDouble::onNodeActivated()
-{
-    ///get a shared_ptr to this
-    assert( getHolder() );
-    boost::shared_ptr<KnobDouble> thisShared;
-    const KnobsVec & knobs = getHolder()->getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        if (knobs[i].get() == this) {
-            thisShared = boost::dynamic_pointer_cast<KnobDouble>(knobs[i]);
-            break;
-        }
-    }
-    assert(thisShared);
-    SequenceTime time = getHolder()->getApp()->getTimeLine()->currentFrame();
-    ///reslave all tracks that where slaved
-    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it != _slavedTracks.end(); ++it) {
-        (*it)->slaveTo(time, thisShared);
-    }
-}
-
-void
-KnobDouble::removeSlavedTrack(const boost::shared_ptr<BezierCP> & cp)
-{
-    std::list< boost::shared_ptr<BezierCP> >::iterator found = std::find(_slavedTracks.begin(), _slavedTracks.end(), cp);
-
-    if ( found != _slavedTracks.end() ) {
-        _slavedTracks.erase(found);
-    }
-}
-
-void
-KnobDouble::serializeTracks(std::list<SerializedTrack>* tracks)
-{
-    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it != _slavedTracks.end(); ++it) {
-        SerializedTrack s;
-        s.bezierName = (*it)->getBezier()->getScriptName();
-        s.isFeather = (*it)->isFeatherPoint();
-        s.cpIndex = !s.isFeather ? (*it)->getBezier()->getControlPointIndex(*it) : (*it)->getBezier()->getFeatherPointIndex(*it);
-        s.rotoNodeName = (*it)->getBezier()->getRotoNodeName();
-        s.offsetTime = (*it)->getOffsetTime();
-        tracks->push_back(s);
-    }
-}
-
-void
-KnobDouble::restoreTracks(const std::list <SerializedTrack> & tracks,
-                          const NodesList & activeNodes)
-{
-    ///get a shared_ptr to this
-    assert( getHolder() );
-    boost::shared_ptr<KnobDouble> thisShared = boost::dynamic_pointer_cast<KnobDouble>( shared_from_this() );
-    assert(thisShared);
-
-    std::string lastNodeName;
-    RotoContext* lastRoto = 0;
-    for (std::list< SerializedTrack >::const_iterator it = tracks.begin(); it != tracks.end(); ++it) {
-        RotoContext* roto = 0;
-        ///speed-up by remembering the last one
-        std::string scriptFriendlyRoto = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(it->rotoNodeName);
-        if ( (it->rotoNodeName == lastNodeName) || (scriptFriendlyRoto == lastNodeName) ) {
-            roto = lastRoto;
-        } else {
-            for (NodesList::const_iterator it2 = activeNodes.begin(); it2 != activeNodes.end(); ++it2) {
-                if ( ( (*it2)->getScriptName() == it->rotoNodeName ) || ( (*it2)->getScriptName() == scriptFriendlyRoto ) ) {
-                    lastNodeName = (*it2)->getScriptName();
-                    boost::shared_ptr<RotoContext> rotoCtx = (*it2)->getRotoContext();
-                    assert(rotoCtx);
-                    lastRoto = rotoCtx.get();
-                    roto = rotoCtx.get();
-                    break;
-                }
-            }
-        }
-        if (roto) {
-            boost::shared_ptr<RotoItem> item = roto->getItemByName(it->bezierName);
-            if (!item) {
-                std::string scriptFriendlyBezier = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(it->bezierName);
-                item = roto->getItemByName(scriptFriendlyBezier);
-                if (!item) {
-                    qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
-                    break;
-                }
-            }
-            boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-            assert(isBezier);
-
-            boost::shared_ptr<BezierCP> point = ( it->isFeather ?
-                                                  isBezier->getFeatherPointAtIndex(it->cpIndex)
-                                                  : isBezier->getControlPointAtIndex(it->cpIndex) );
-
-            if (!point) {
-                qDebug() << "Failed to restore slaved track " << it->bezierName.c_str();
-                break;
-            }
-            point->slaveTo(it->offsetTime, thisShared);
-            _slavedTracks.push_back(point);
-        }
-    }
-} // restoreTracks
 
 KnobDouble::~KnobDouble()
 {
-    for (std::list< boost::shared_ptr<BezierCP> >::iterator it = _slavedTracks.begin(); it != _slavedTracks.end(); ++it) {
-        (*it)->unslave();
-    }
+  
 }
 
 static void
@@ -566,6 +455,7 @@ KnobButton::KnobButton(KnobHolder*  holder,
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _renderButton(false)
     , _checkable(false)
+    , _isToolButtonAction(false)
 {
     //setIsPersistant(false);
 }
@@ -599,11 +489,13 @@ KnobButton::typeName() const
     return typeNameStatic();
 }
 
-void
+bool
 KnobButton::trigger()
 {
-    evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
+    return evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
 }
+
+
 
 /******************************KnobChoice**************************************/
 
@@ -1086,7 +978,11 @@ KnobChoice::getHintToolTipFull() const
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
                 std::string help = boost::trim_copy(_mergedEntriesHelp[i]);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
-                ss << entry;
+                if ( isHintInMarkdown() ) {
+                    ss << "* **" << entry << "**";
+                } else {
+                    ss << entry;
+                }
                 ss << ": ";
                 ss << help;
                 if (i < _mergedEntriesHelp.size() - 1) {
@@ -1465,6 +1361,8 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
     , _isTab(false)
+    , _isToolButton(false)
+    , _isDialog(false)
 {
 }
 
@@ -1474,6 +1372,8 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _isTab(false)
+    , _isToolButton(false)
+    , _isDialog(false)
 {
 }
 
@@ -1487,6 +1387,30 @@ bool
 KnobGroup::isTab() const
 {
     return _isTab;
+}
+
+void
+KnobGroup::setAsToolButton(bool b)
+{
+    _isToolButton = b;
+}
+
+bool
+KnobGroup::getIsToolButton() const
+{
+    return _isToolButton;
+}
+
+void
+KnobGroup::setAsDialog(bool b)
+{
+    _isDialog = b;
+}
+
+bool
+KnobGroup::getIsDialog() const
+{
+    return _isDialog;
 }
 
 bool
@@ -1615,6 +1539,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
+    , _isToolBar(false)
 {
     setIsPersistant(false);
 }

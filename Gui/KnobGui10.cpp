@@ -184,6 +184,12 @@ KnobGui::setSecret()
     }
 }
 
+void
+KnobGui::onViewerContextSecretChanged()
+{
+    setSecret();
+}
+
 bool
 KnobGui::isSecretRecursive() const
 {
@@ -193,14 +199,16 @@ KnobGui::isSecretRecursive() const
     //  VISIBILITY is different from SECRETNESS. The code considers that both things are equivalent, which is wrong.
     // Of course, this check has to be *recursive* (in case the group is within a folded group)
     KnobPtr knob = getKnob();
-    bool showit = !knob->getIsSecret();
+    bool isViewerKnob = _imp->container->isInViewerUIKnob();
+    bool showit = isViewerKnob ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
     KnobPtr parentKnob = knob->getParentKnob();
     KnobGroup* parentIsGroup = dynamic_cast<KnobGroup*>( parentKnob.get() );
 
     while (showit && parentKnob && parentIsGroup) {
         KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob).get() );
         // check for secretness and visibility of the group
-        if ( parentKnob->getIsSecret() || ( parentGui && !parentGui->isChecked() ) ) {
+        bool parentSecret = isViewerKnob ? parentKnob->getInViewerContextSecret() : parentKnob->getIsSecret();
+        if ( parentSecret || ( parentGui && !parentGui->isChecked() ) ) {
             showit = false; // one of the including groups is folder, so this item is hidden
         }
         // prepare for next loop iteration
@@ -488,8 +496,16 @@ KnobGui::toolTip() const
 {
     KnobPtr knob = getKnob();
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-    QString tt = getScriptNameHtml();
+    bool isMarkdown = knob.get()->isHintInMarkdown();
+    QString tt;
     QString realTt;
+
+    if (isMarkdown) {
+        tt = QString::fromUtf8( knob.get()->getName().c_str() );
+        tt.append( QString::fromUtf8("\n==========\n\n") );
+    } else {
+        tt = getScriptNameHtml();
+    }
 
     if (!isChoice) {
         realTt.append( QString::fromUtf8( knob->getHintToolTip().c_str() ) );
@@ -509,25 +525,45 @@ KnobGui::toolTip() const
     QString exprTt;
     if (exprAllSame) {
         if ( !expressions[0].empty() ) {
-            exprTt = QString::fromUtf8("ret = <b>%1</b><br />").arg( QString::fromUtf8( expressions[0].c_str() ) );
+            if (isMarkdown) {
+                exprTt = QString::fromUtf8("ret = **%1**\n\n").arg( QString::fromUtf8( expressions[0].c_str() ) );
+            } else {
+                exprTt = QString::fromUtf8("ret = <b>%1</b><br />").arg( QString::fromUtf8( expressions[0].c_str() ) );
+            }
         }
     } else {
         for (int i = 0; i < knob->getDimension(); ++i) {
             std::string dimName = knob->getDimensionName(i);
-            QString toAppend = QString::fromUtf8("%1 = <b>%2</b><br />").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+            QString toAppend;
+            if (isMarkdown) {
+                toAppend = QString::fromUtf8("%1 = **%2**\n\n").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+            } else {
+                toAppend = QString::fromUtf8("%1 = <b>%2</b><br />").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+            }
             exprTt.append(toAppend);
         }
     }
 
     if ( !exprTt.isEmpty() ) {
-        tt += QLatin1String("<br>");
         tt.append(exprTt);
-        tt += QLatin1String("</br>");
+        if (!isMarkdown) {
+            tt += QLatin1String("<br/>");
+        }
     }
 
     if ( !realTt.isEmpty() ) {
-        realTt = GuiUtils::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
+        if (!isMarkdown) {
+            realTt = GuiUtils::convertFromPlainText(realTt.trimmed(), Qt::WhiteSpaceNormal);
+        }
         tt.append(realTt);
+    }
+
+    if (isMarkdown) {
+        Markdown markdown;
+        tt = markdown.convert2html(tt);
+        // Shrink H1/H2 (Can't do it in qt stylesheet)
+        tt.replace( QString::fromUtf8("<h1>"), QString::fromUtf8("<h1 style=\"font-size:large;\">") );
+        tt.replace( QString::fromUtf8("<h2>"), QString::fromUtf8("<h2 style=\"font-size:large;\">") );
     }
 
     return tt;

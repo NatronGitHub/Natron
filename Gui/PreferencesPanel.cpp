@@ -124,7 +124,7 @@ PreferencesPanel::openHelp()
         QDesktopServices::openUrl( QUrl(remoteUrl) );
         break;
     case 2:
-        Dialogs::informationDialog(tr("Missing documentation").toStdString(), QObject::tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
+        Dialogs::informationDialog(tr("Missing documentation").toStdString(), tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
         break;
     }
 }

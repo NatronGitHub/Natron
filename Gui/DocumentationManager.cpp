@@ -79,6 +79,14 @@ DocumentationManager::handler(QHttpRequest *req,
     qDebug() << "www client requested" << page;
 #endif
 
+    // override static docs
+    if (page.contains( QString::fromUtf8("/plugins/") )) {
+        page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
+    }
+    if (page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") )) {
+        page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("_group"), QString::fromUtf8("_group.html?id=") );
+    }
+
     // get options
     QStringList options;
     if ( page.contains( QString::fromUtf8("?") ) ) {
@@ -114,7 +122,7 @@ DocumentationManager::handler(QHttpRequest *req,
                         Plugin* plugin = 0;
                         try {
                             plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                        }catch (const std::exception& e) {
+                        } catch (const std::exception& e) {
                             std::cerr << e.what() << std::endl;
                         }
 
@@ -128,7 +136,7 @@ DocumentationManager::handler(QHttpRequest *req,
                             args.addToProject = false;
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {
-                                QString html = node->makeHTMLDocumentation(false);
+                                QString html = node->makeHTMLDocumentation(true, false);
                                 html.replace( QString::fromUtf8("\n"), QString::fromUtf8("</p><p>") );
                                 html = parser(html, docDir);
                                 body = html.toUtf8();
@@ -144,7 +152,7 @@ DocumentationManager::handler(QHttpRequest *req,
         }
     } else if ( page == QString::fromUtf8("_prefs.html") ) {
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-        QString html = settings->makeHTMLDocumentation(false, false);
+        QString html = settings->makeHTMLDocumentation(true);
         html = parser(html, docDir);
         body = html.toUtf8();
     } else if ( page == QString::fromUtf8("_group.html") ) {
@@ -172,7 +180,7 @@ DocumentationManager::handler(QHttpRequest *req,
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 try {
                     plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                }catch (const std::exception& e) {
+                } catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
                 }
 
@@ -296,9 +304,9 @@ DocumentationManager::parser(QString html,
 {
     QString result = html;
 
-    bool plainBody = false;
 
     // sphinx compat
+    bool plainBody = false;
     if (result.contains(QString::fromUtf8("<body>"))) { // 1.3 and lower
         plainBody = true;
     }
@@ -310,13 +318,14 @@ DocumentationManager::parser(QString html,
     QFile indexFile( path + QString::fromUtf8("/index.html") );
     QString menuHTML;
 
+    // fix sphinx compat
     if (plainBody) {
         menuHTML.append( QString::fromUtf8("<body>\n") );
     }
     else {
-        menuHTML.append( QString::fromUtf8("<body role=\"document\">") );
-    }
 
+        menuHTML.append( QString::fromUtf8("<body role=\"document\">\n") );
+    }
     menuHTML.append( QString::fromUtf8("<div id=\"header\">\n<a href=\"/\"><div id=\"logo\"></div></a>\n") );
     menuHTML.append( QString::fromUtf8("<div id=\"search\">\n<form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form>\n</div>\n") );
     menuHTML.append( QString::fromUtf8("<div id=\"mainMenu\">\n<ul>\n") );
@@ -351,6 +360,8 @@ DocumentationManager::parser(QString html,
         menuHTML.append( QString::fromUtf8("</ul></div></div>") );
     }
 
+
+    // fix sphinx compat
     if (plainBody) {
         result.replace(QString::fromUtf8("<body>"), menuHTML);
     }

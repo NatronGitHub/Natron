@@ -36,16 +36,12 @@
 
 #include "Engine/Lut.h" // Color
 #include "Engine/Settings.h"
+#include "Engine/Texture.h"
 
 #include "Gui/Gui.h"
 #include "Gui/GuiApplicationManager.h" // appFont
 #include "Gui/Menu.h"
-#include "Gui/Texture.h"
 #include "Gui/ViewerTab.h"
-
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
 
 #ifndef M_PI
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
@@ -89,8 +85,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , rodOverlayColor(100, 100, 100, 255)
     , textFont( new QFont(appFont, appFontSize) )
     , overlay(true)
-    , supportsOpenGL(true)
-    , supportsGLSL(true)
     , updatingTexture(false)
     , clearColor(0, 0, 0, 255)
     , menu( new Menu(_this) )
@@ -126,8 +120,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , prevBoundTexture(0)
     , lastRenderedImageMutex()
     , sizeH()
-    , pointerTypeOnPress(ePenTypePen)
-    , subsequentMousePressIsTablet(false)
+    , pointerTypeOnPress(ePenTypeLMB)
     , pressureOnPress(1.)
     , pressureOnRelease(1.)
     , wheelDeltaSeekFrame(0)
@@ -248,7 +241,7 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != eImageBitDepthByte && this->supportsGLSL;
+    bool useShader = _this->getBitDepth() != eImageBitDepthByte;
 
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
@@ -440,10 +433,8 @@ ViewerGL::Implementation::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _this->makeCurrent();
-    supportsOpenGL = initAndCheckGlExtensions();
-    if (!supportsOpenGL) {
-        return;
-    }
+    initAndCheckGlExtensions();
+
     displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
     displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
 
@@ -468,41 +459,12 @@ ViewerGL::Implementation::initializeGL()
 
     initializeCheckerboardTexture(true);
 
-    if (this->supportsGLSL) {
-        _this->initShaderGLSL();
-        glCheckError();
-    }
+    _this->initShaderGLSL();
 
     glCheckError();
 }
 
-static
-QString
-getOpenGLVersionString()
-{
-    const char* str = (const char*)glGetString(GL_VERSION);
-    QString ret;
 
-    if (str) {
-        ret.append( QString::fromUtf8(str) );
-    }
-
-    return ret;
-}
-
-static
-QString
-getGlewVersionString()
-{
-    const char* str = reinterpret_cast<const char *>( glewGetString(GLEW_VERSION) );
-    QString ret;
-
-    if (str) {
-        ret.append( QString::fromUtf8(str) );
-    }
-
-    return ret;
-}
 
 bool
 ViewerGL::Implementation::initAndCheckGlExtensions()
@@ -510,45 +472,8 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
-
     const QGLContext* context = _this->context();
-    GLenum err = glewInit();
-    if (GLEW_OK != err) {
-        /* Problem: glewInit failed, something is seriously wrong. */
-        Dialogs::errorDialog( tr("OpenGL/GLEW error").toStdString(),
-                              (const char*)glewGetErrorString(err) );
-
-        return false;
-    }
-    //fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
-
-    // is GL_VERSION_2_0 necessary? note that GL_VERSION_2_0 includes GLSL
-    if ( !glewIsSupported("GL_VERSION_1_5 "
-                          "GL_ARB_texture_non_power_of_two " // or GL_IMG_texture_npot, or GL_OES_texture_npot, core since 2.0
-                          "GL_ARB_shader_objects " // GLSL, Uniform*, core since 2.0
-                          "GL_ARB_vertex_buffer_object " // BindBuffer, MapBuffer, etc.
-                          "GL_ARB_pixel_buffer_object " // BindBuffer(PIXEL_UNPACK_BUFFER,...
-                          //"GL_ARB_vertex_array_object " // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
-                          //"GL_ARB_framebuffer_object " // or GL_EXT_framebuffer_object GenFramebuffers, core since version 3.0
-                          ) ) {
-        Dialogs::errorDialog( tr("Missing OpenGL requirements").toStdString(),
-                              tr("The viewer may not be fully functional. "
-                                 "This software needs at least OpenGL 1.5 with NPOT textures, GLSL, VBO, PBO, vertex arrays. ").toStdString() );
-
-        return false;
-    }
-
-    this->viewerTab->getGui()->setOpenGLVersion( getOpenGLVersionString() );
-    this->viewerTab->getGui()->setGlewVersion( getGlewVersionString() );
-
-    if ( !context || !QGLShaderProgram::hasOpenGLShaderPrograms(context) ) {
-        // no need to pull out a dialog, it was already presented after the GLEW check above
-
-        //Dialogs::errorDialog("Viewer error","The viewer is unabgile to work without a proper version of GLSL.");
-        //cout << "Warning : GLSL not present on this hardware, no material acceleration possible." << endl;
-        this->supportsGLSL = false;
-    }
-
+    assert(QGLShaderProgram::hasOpenGLShaderPrograms(context));
     return true;
 }
 
@@ -944,8 +869,6 @@ ViewerGL::Implementation::activateShaderRGB(int texIndex)
     // we assume that:
     // - 8-bits textures are stored non-linear and must be displayer as is
     // - floating-point textures are linear and must be decompressed according to the given lut
-
-    assert(supportsGLSL);
 
     if ( !shaderRGB->bind() ) {
         qDebug() << "Error when binding shader" << qPrintable( shaderRGB->log() );

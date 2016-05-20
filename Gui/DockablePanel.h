@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/DockablePanelI.h"
+#include "Engine/Markdown.h"
 
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
@@ -147,7 +148,8 @@ public:
     virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
 private:
 
     void recreateKnobs(const QString& curTabName, bool restorePageIndex);

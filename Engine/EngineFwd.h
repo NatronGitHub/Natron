@@ -184,6 +184,7 @@ class RenderStats;
 class RenderingFlagSetter;
 class RequestedFrame;
 class RotoContext;
+class RotoPaint;
 class RotoDrawableItem;
 class RotoItem;
 class RotoItemSerialization;
@@ -193,6 +194,7 @@ class RotoStrokeItem;
 class Settings;
 class StringAnimationManager;
 class TLSHolderBase;
+class Texture;
 class TextureRect;
 class TimeLine;
 class TrackArgs;
@@ -202,6 +204,7 @@ class TrackMarker;
 class TrackerContext;
 class TrackSerialization;
 class TrackerContextSerialization;
+class UndoCommand;
 class ViewerInstance;
 class ViewIdx;
 namespace Color {
@@ -246,6 +249,7 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
 typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
 typedef boost::shared_ptr<TrackMarker> TrackMarkerPtr;
 typedef boost::shared_ptr<Node> NodePtr;
@@ -260,6 +264,7 @@ typedef boost::weak_ptr<EffectInstance> EffectInstWPtr;
 typedef boost::weak_ptr<Image> ImageWPtr;
 typedef boost::shared_ptr<Image> ImagePtr;
 typedef std::list<ImagePtr> ImageList;
+typedef boost::shared_ptr<Texture> GLTexturePtr;
 typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;
 NATRON_NAMESPACE_EXIT;
 

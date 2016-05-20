@@ -43,10 +43,6 @@
 #include "Gui/CurveWidgetPrivate.h"
 #include "Gui/KnobGui.h"
 
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
-
 NATRON_NAMESPACE_ENTER;
 
 CurveGui::CurveGui(CurveWidget *curveWidget,

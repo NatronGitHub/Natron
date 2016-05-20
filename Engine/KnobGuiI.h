@@ -43,24 +43,47 @@ public:
     {
     }
 
-    virtual void swapOpenGLBuffers() = 0;
-    virtual void redraw() = 0;
-    virtual void getViewportSize(double &width, double &height) const = 0;
-    virtual void getPixelScale(double & xScale, double & yScale) const  = 0;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const = 0;
-    virtual void copyAnimationToClipboard(int /* dimension = -1*/) const {}
+    virtual void swapOpenGLBuffers() OVERRIDE = 0;
+    virtual void redraw() OVERRIDE = 0;
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE = 0;
+    virtual void getPixelScale(double & xScale, double & yScale) const  OVERRIDE = 0;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
+    virtual void copyAnimationToClipboard(int /* dimension = -1*/) const  {}
 
     virtual void copyValuesToClipboard(int /*dimension = -1*/) const {}
 
     virtual void copyLinkToClipboard(int /*dimension = -1*/) const {}
 
     virtual bool isGuiFrozenForPlayback() const = 0;
-    virtual void saveOpenGLContext() = 0;
-    virtual void restoreOpenGLContext() = 0;
-    virtual unsigned int getCurrentRenderScale() const { return 0; }
+    virtual void saveOpenGLContext() OVERRIDE = 0;
+    virtual void restoreOpenGLContext() OVERRIDE = 0;
+    virtual unsigned int getCurrentRenderScale() const OVERRIDE { return 0; }
 
     virtual boost::shared_ptr<Curve> getCurve(ViewSpec view, int dimension) const = 0;
     virtual bool getAllDimensionsVisible() const = 0;
+
+    virtual RectD getViewportRect() const OVERRIDE = 0;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE = 0;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
 
 protected:
 

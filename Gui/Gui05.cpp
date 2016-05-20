@@ -132,7 +132,7 @@ Gui::setupUi()
 
     setVisibleProjectSettingsPanel();
 
-    _imp->_aboutWindow = new AboutWindow(this, this);
+    _imp->_aboutWindow = new AboutWindow(this);
     _imp->_aboutWindow->hide();
 
     _imp->shortcutEditor = new ShortCutEditor(this);
@@ -186,6 +186,14 @@ Gui::onPropertiesScrolled()
         }
     }
 #endif
+}
+
+void
+Gui::updateAboutWindowLibrariesVersion()
+{
+    if (_imp->_aboutWindow) {
+        _imp->_aboutWindow->updateLibrariesVersions();
+    }
 }
 
 void

@@ -20,7 +20,7 @@ TARGET = Engine
 TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc
-CONFIG += boost qt cairo python shiboken pyside
+CONFIG += boost qt cairo python shiboken pyside 
 QT += core network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
@@ -29,7 +29,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 # Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
 #QT -= gui
 
-CONFIG += libmv-flags openmvg-flags
+CONFIG += libmv-flags openmvg-flags glad-flags
 
 include(../global.pri)
 
@@ -57,6 +57,9 @@ INCLUDEPATH += $$PWD/../Global
 INCLUDEPATH += $$PWD/../libs/SequenceParsing
 
 INCLUDEPATH += $$PWD/../google-breakpad/src
+
+# hoedown
+INCLUDEPATH += $$PWD/../libs/hoedown/src
 
 #To overcome wrongly generated #include <...> by shiboken
 INCLUDEPATH += $$PWD
@@ -156,12 +159,15 @@ SOURCES += \
     RotoItem.cpp \
     RotoLayer.cpp \
     RotoPaint.cpp \
+    RotoPaintInteract.cpp \
     RotoSmear.cpp \
     RotoStrokeItem.cpp \
+    RotoUndoCommand.cpp \
     ScriptObject.cpp \
     Settings.cpp \
     StandardPaths.cpp \
     StringAnimationManager.cpp \
+    Texture.cpp \
     TextureRect.cpp \
     ThreadPool.cpp \
     TimeLine.cpp \
@@ -171,10 +177,14 @@ SOURCES += \
     TrackerFrameAccessor.cpp \
     TrackMarker.cpp \
     TrackerNode.cpp \
+    TrackerNodeInteract.cpp \
+    TrackerUndoCommand.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     ViewerInstance.cpp \
     WriteNode.cpp \
+    Markdown.cpp \
+    ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
     NatronEngine/natronengine_module_wrapper.cpp \
@@ -315,6 +325,7 @@ HEADERS += \
     OverlaySupport.h \
     ParallelRenderArgs.h \
     Plugin.h \
+    PluginActionShortcut.h \
     PluginMemory.h \
     PrecompNode.h \
     ProcessHandler.h \
@@ -345,15 +356,18 @@ HEADERS += \
     RotoItem.h \
     RotoItemSerialization.h \
     RotoPaint.h \
+    RotoPaintInteract.h \
     RotoPoint.h \
     RotoSmear.h \
     RotoStrokeItem.h \
     RotoStrokeItemSerialization.h \
+    RotoUndoCommand.h \
     ScriptObject.h \
     Settings.h \
     Singleton.h \
     StandardPaths.h \
     StringAnimationManager.h \
+    Texture.h \
     TextureRect.h \
     TextureRectSerialization.h \
     ThreadStorage.h \
@@ -365,20 +379,25 @@ HEADERS += \
     TrackerContextPrivate.h \
     TrackerFrameAccessor.h \
     TrackerNode.h \
+    TrackerNodeInteract.h \
+    TrackerUndoCommand.h \
     TrackMarker.h \
     TrackerSerialization.h \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
     UpdateViewerParams.h \
+    UndoCommand.h \
     Variant.h \
     VariantSerialization.h \
     ViewerInstance.h \
     ViewerInstancePrivate.h \
     ViewIdx.h \
     WriteNode.h \
+    Markdown.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
+    ../Global/glad_include.h \
     ../Global/GLIncludes.h \
     ../Global/GlobalDefines.h \
     ../Global/KeySymbols.h \

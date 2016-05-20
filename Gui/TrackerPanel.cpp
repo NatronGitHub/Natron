@@ -43,6 +43,7 @@
 #include "Engine/Node.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TrackMarker.h"
+#include "Engine/TrackerUndoCommand.h"
 
 #include "Gui/AnimatedCheckBox.h"
 #include "Gui/NodeSettingsPanel.h"
@@ -56,7 +57,6 @@
 #include "Gui/TableModelView.h"
 #include "Gui/Utils.h"
 #include "Gui/NodeGui.h"
-#include "Gui/TrackerUndoCommand.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/SpinBox.h"
@@ -315,10 +315,12 @@ public:
 };
 
 TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
-                           QWidget* parent)
+                           NodeSettingsPanel* parent)
     : QWidget(parent)
     , _imp( new TrackerPanelPrivate(this, n) )
 {
+    QObject::connect( parent, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
+    
     boost::shared_ptr<TrackerContext> context = getContext();
     QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
                       SLOT(onTimeChanged(SequenceTime,int)) );
@@ -933,7 +935,7 @@ TrackerPanel::onRemoveButtonClicked()
 
     getContext()->getSelectedMarkers(&markers);
     if ( !markers.empty() ) {
-        pushUndoCommand( new RemoveTracksCommand( markers, getContext() ) );
+        getNode()->getNode()->getEffectInstance()->pushUndoCommand( new RemoveTracksCommand( markers, getContext() ) );
     }
 }
 
@@ -973,7 +975,7 @@ TrackerPanel::makeTrackInternal()
     assert(context);
     TrackMarkerPtr ret = context->createMarker();
     assert(ret);
-    pushUndoCommand( new AddTrackCommand(ret, context) );
+    getNode()->getNode()->getEffectInstance()->pushUndoCommand( new AddTrackCommand(ret, context) );
 
     return ret;
 }
@@ -1826,7 +1828,9 @@ TrackerPanel::onEnabledChanged(const TrackMarkerPtr& marker,
         if (isCheckbox) {
             isCheckbox->setChecked( marker->isEnabled( marker->getCurrentTime() ) );
             isCheckbox->setAnimation( (int)marker->getEnabledNessAnimationLevel() );
-            getNode()->getNode()->getApp()->redrawAllViewers();
+            if (reason != eValueChangedReasonTimeChanged) {
+                getNode()->getNode()->getApp()->redrawAllViewers();
+            }
             break;
         }
     }

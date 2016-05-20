@@ -96,10 +96,8 @@ addSpacer(QBoxLayout* layout)
     layout->addSpacing(5);
 }
 
-ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
-                     NodeGui* currentRoto,
-                     const std::list<NodeGui*> & existingTrackerNodes,
-                     NodeGui* currentTracker,
+ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
+                     const std::list<NodeGuiPtr>& activePluginsContext,
                      Gui* gui,
                      ViewerInstance* node,
                      QWidget* parent)
@@ -1017,18 +1015,11 @@ ViewerTab::ViewerTab(const std::list<NodeGui*> & existingRotoNodes,
 
     connectToViewerCache();
 
-    for (std::list<NodeGui*>::const_iterator it = existingRotoNodes.begin(); it != existingRotoNodes.end(); ++it) {
-        createRotoInterface(*it);
+    for (std::list<NodeGuiPtr>::const_iterator it = existingNodesContext.begin(); it != existingNodesContext.end(); ++it) {
+        createNodeViewerInterface(*it);
     }
-    if ( currentRoto && currentRoto->isSettingsPanelVisible() ) {
-        setRotoInterface(currentRoto);
-    }
-
-    for (std::list<NodeGui*>::const_iterator it = existingTrackerNodes.begin(); it != existingTrackerNodes.end(); ++it) {
-        createTrackerInterface(*it);
-    }
-    if ( currentTracker && currentTracker->isSettingsPanelVisible() ) {
-        setRotoInterface(currentTracker);
+    for (std::list<NodeGuiPtr>::const_iterator it = activePluginsContext.begin(); it != activePluginsContext.end(); ++it) {
+        setPluginViewerInterface(*it);
     }
 
     setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);

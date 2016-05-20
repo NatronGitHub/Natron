@@ -27,6 +27,12 @@
 
 #include <QObject>
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
+#include "Engine/ViewIdx.h"
+
 #include "Gui/GuiFwd.h"
 #include "Gui/KnobGuiContainerI.h"
 
@@ -35,8 +41,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct NodeViewerContextPrivate;
 class NodeViewerContext
-    : public QObject
-      , public KnobGuiContainerI
+: public QObject
+, public KnobGuiContainerI
+, public boost::enable_shared_from_this<NodeViewerContext>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -46,13 +53,10 @@ public:
 
     NodeViewerContext(const NodeGuiPtr& node, ViewerTab* viewer);
 
+    void createGui();
+
     virtual ~NodeViewerContext();
-
-    /**
-     * @brief Return the container widget for the controls of the node on the viewer
-     **/
-    QWidget* getButtonsContainer() const;
-
+    
     /**
      * @brief If this node's viewer context has a toolbar, this will return it
      **/
@@ -72,7 +76,19 @@ public:
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
     virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+
+    virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     void setCurrentTool(const QString& toolID, bool notifyNode);
+
+    void notifyGuiClosing();
+
+    virtual bool isInViewerUIKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return true;
+    }
+
+    void onToolButtonShortcutPressed(const QString& roleID);
 
 Q_SIGNALS:
 
@@ -80,12 +96,32 @@ Q_SIGNALS:
      * @brief Emitted when the selected role changes
      **/
     void roleChanged(int previousRole, int newRole);
-
+    
 public Q_SLOTS:
+
+    /**
+     * @brief Received when the selection rectangle has changed on the viewer.
+     * @param onRelease When true, this signal is emitted on the mouse release event
+     * which means this is the last selection desired by the user.
+     * Receivers can either update the selection always or just on mouse release.
+     **/
+    void updateSelectionFromViewerSelectionRectangle(bool onRelease);
+
+    void onViewerSelectionCleared();
 
     void onToolActionTriggered();
 
     void onToolActionTriggered(QAction* act);
+
+    void onToolGroupValueChanged(ViewSpec view,
+                                 int dimension,
+                                 int reason);
+
+    void onToolActionValueChanged(ViewSpec view,
+                                  int dimension,
+                                  int reason);
+
+    void onNodeSettingsPanelClosed(bool closed);
 
 private:
 

@@ -88,6 +88,30 @@ public:
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
 
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
 private:
 
     virtual void paintGL() OVERRIDE FINAL;

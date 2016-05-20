@@ -94,7 +94,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ProgressPanel.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/RenderingProgressDialog.h"
-#include "Gui/RotoGui.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/SpinBox.h"
@@ -124,100 +123,35 @@ Gui::showErrorLog()
     ignore_result( lw.exec() );
 }
 
-void
-Gui::createNewTrackerInterface(NodeGui* n)
-{
-    std::list<ViewerTab*> viewers;
-    {
-        QMutexLocker l(&_imp->_viewerTabsMutex);
-        viewers = _imp->_viewerTabs;
-    }
-
-    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->createTrackerInterface(n);
-    }
-}
 
 void
-Gui::setTrackerInterface(NodeGui* n)
+Gui::createNodeViewerInterface(const NodeGuiPtr& n)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->setTrackerInterface(n);
+        (*it)->createNodeViewerInterface(n);
     }
 }
 
 void
-Gui::removeTrackerInterface(NodeGui* n,
-                            bool permanently)
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->removeTrackerInterface(n, permanently, false);
-    }
-}
-
-void
-Gui::onRotoSelectedToolChanged(int tool)
-{
-    RotoGui* roto = qobject_cast<RotoGui*>( sender() );
-
-    if (!roto) {
-        return;
-    }
-
-    std::list<ViewerTab*> viewers;
-    {
-        QMutexLocker l(&_imp->_viewerTabsMutex);
-        viewers = _imp->_viewerTabs;
-    }
-    for (std::list<ViewerTab*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->updateRotoSelectedTool(tool, roto);
-    }
-}
-
-void
-Gui::createNewRotoInterface(NodeGui* n)
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->createRotoInterface(n);
-    }
-}
-
-void
-Gui::removeRotoInterface(NodeGui* n,
+Gui::removeNodeViewerInterface(const NodeGuiPtr& n,
                          bool permanently)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->removeRotoInterface(n, permanently, false);
+        (*it)->removeNodeViewerInterface(n, permanently, false /*setNewInterface*/);
     }
 }
 
 void
-Gui::setRotoInterface(NodeGui* n)
+Gui::setNodeViewerInterface(const NodeGuiPtr& n)
 {
     QMutexLocker l(&_imp->_viewerTabsMutex);
 
     for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->setRotoInterface(n);
-    }
-}
-
-void
-Gui::onViewerRotoEvaluated(ViewerTab* viewer)
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        if (*it != viewer) {
-            (*it)->getViewer()->redraw();
-        }
+        (*it)->setPluginViewerInterface(n);
     }
 }
 

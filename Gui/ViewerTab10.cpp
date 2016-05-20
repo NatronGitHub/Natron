@@ -52,11 +52,10 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeViewerContext.h"
 #include "Gui/RenderStatsDialog.h"
-#include "Gui/RotoGui.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
-#include "Gui/TrackerGui.h"
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
 
@@ -490,12 +489,8 @@ ViewerTab::~ViewerTab()
             graph->setLastSelectedViewer(0);
         }
     }
-    for (std::map<NodeGui*, RotoGui*>::iterator it = _imp->rotoNodes.begin(); it != _imp->rotoNodes.end(); ++it) {
-        delete it->second;
-    }
-    for (std::map<NodeGui*, TrackerGui*>::iterator it = _imp->trackerNodes.begin(); it != _imp->trackerNodes.end(); ++it) {
-        delete it->second;
-    }
+    _imp->nodesContext.clear();
+
 }
 
 void
@@ -553,7 +548,12 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
-    if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
+    if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
+        update();
+    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
+        update();
+    }
+    else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->viewerChannels->setCurrentIndex_no_emit(1);
@@ -771,9 +771,8 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionZoomOut, Qt::NoModifier, key) ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
-    } else if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
-        update();
-    } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
+    } else if (key == Qt::Key_Escape) {
+        _imp->viewer->s_selectionCleared();
         update();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, modifiers, key) ) {
         ///Put it after notifyOverlaysKeyDown() because Roto may intercept Enter

@@ -39,6 +39,7 @@
 #endif
 
 #include <QtCore/QMutex>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 #include <QtCore/QReadWriteLock>
@@ -735,7 +736,7 @@ public:
     std::list<KnobPtr > knobs; //< list for easy access to all knobs
 
     //Used to prevent 2 threads from writing the same image in the rotocontext
-    mutable QMutex cacheAccessMutex;
+    mutable QReadWriteLock cacheAccessMutex;
 
     RotoDrawableItemPrivate(bool isPaintingNode)
         : effectNode()

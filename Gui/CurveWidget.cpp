@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/PyParameter.h" // IntParam
 #include "Engine/Project.h"
+#include "Engine/Image.h"
 #include "Engine/RotoContext.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
@@ -57,10 +58,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/PythonPanels.h" // PyModelDialog
 #include "Gui/TabWidget.h"
 #include "Gui/ViewerGL.h"
-
-// warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
-CLANG_DIAG_OFF(deprecated-declarations)
-GCC_DIAG_OFF(deprecated-declarations)
 
 NATRON_NAMESPACE_ENTER;
 
@@ -153,11 +150,7 @@ CurveWidget::initializeGL()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if ( !glewIsSupported("GL_ARB_vertex_array_object "  // BindVertexArray, DeleteVertexArrays, GenVertexArrays, IsVertexArray (VAO), core since 3.0
-                          ) ) {
-        _imp->_hasOpenGLVAOSupport = false;
-    }
+    appPTR->initializeOpenGLFunctionsOnce();
 }
 
 void
@@ -403,6 +396,29 @@ CurveWidget::getBackgroundColour(double &r,
     appPTR->getCurrentSettings()->getCurveEditorBGColor(&r, &g, &b);
 }
 
+RectD
+CurveWidget::getViewportRect() const
+{
+    RectD bbox;
+    {
+        bbox.x1 = _imp->zoomCtx.left();
+        bbox.y1 = _imp->zoomCtx.bottom();
+        bbox.x2 = _imp->zoomCtx.right();
+        bbox.y2 = _imp->zoomCtx.top();
+    }
+    return bbox;
+}
+
+void
+CurveWidget::getCursorPosition(double& x, double& y) const
+{
+    QPoint p = QCursor::pos();
+    p = mapFromGlobal(p);
+    QPointF mappedPos = toZoomCoordinates(p.x(), p.y());
+    x = mappedPos.x();
+    y = mappedPos.y();
+}
+
 void
 CurveWidget::saveOpenGLContext()
 {
@@ -456,7 +472,11 @@ CurveWidget::resizeGL(int width,
         height = 1;
     }
     glViewport (0, 0, width, height);
-    _imp->zoomCtx.setScreenSize(width, height);
+
+    // Width and height may be 0 when tearing off a viewer tab to another panel
+    if (width > 0 && height > 0) {
+        _imp->zoomCtx.setScreenSize(width, height);
+    }
 
     if (height == 1) {
         //don't do the following when the height of the widget is irrelevant
@@ -533,6 +553,15 @@ CurveWidget::paintGL()
     } // GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
     glCheckError();
 } // CurveWidget::paintGL
+
+bool
+CurveWidget::renderText(double x, double y, const std::string &string, double r, double g, double b)
+{
+    QColor c;
+    c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
+    renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
+    return true;
+}
 
 void
 CurveWidget::renderText(double x,
@@ -1241,6 +1270,10 @@ CurveWidget::refreshSelectedKeysBbox()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    if (_imp->zoomCtx.screenWidth() < 1 || _imp->zoomCtx.screenHeight() < 1) {
+        return;
+    }
+
     RectD keyFramesBbox;
     bool bboxSet = false;
     for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin();
@@ -1386,6 +1419,48 @@ CurveWidget::toWidgetCoordinates(double x,
 
     return _imp->zoomCtx.toWidgetCoordinates(x, y);
 }
+
+/**
+ * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+ **/
+void
+CurveWidget::toWidgetCoordinates(double *x, double *y) const
+{
+    QPointF p = _imp->zoomCtx.toWidgetCoordinates(*x, *y);
+    *x = p.x();
+    *y = p.y();
+}
+
+/**
+ * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+ **/
+void
+CurveWidget::toCanonicalCoordinates(double *x, double *y) const
+{
+    QPointF p = _imp->zoomCtx.toZoomCoordinates(*x, *y);
+    *x = p.x();
+    *y = p.y();
+}
+
+/**
+ * @brief Returns the font height, i.e: the height of the highest letter for this font
+ **/
+int
+CurveWidget::getWidgetFontHeight() const
+{
+    return fontMetrics().height();
+}
+
+/**
+ * @brief Returns for a string the estimated pixel size it would take on the widget
+ **/
+int
+CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
+{
+    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+}
+
+
 
 QSize
 CurveWidget::sizeHint() const
@@ -1874,15 +1949,6 @@ CurveWidget::getSelectedKeyFrames() const
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     return _imp->_selectedKeyFrames;
-}
-
-bool
-CurveWidget::isSupportingOpenGLVAO() const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    return _imp->_hasOpenGLVAOSupport;
 }
 
 const QFont &

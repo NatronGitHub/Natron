@@ -57,9 +57,6 @@ struct BezierCPPrivate
     mutable QMutex staticPositionMutex; //< protects the  leftX,rightX,leftY,rightY
     double leftX, rightX, leftY, rightY; //< used when there is no keyframe
     double guiLeftX, guiRightX, guiLeftY, guiRightY; //< used when there is no keyframe
-    mutable QReadWriteLock masterMutex; //< protects masterTrack & relativePoint
-    boost::shared_ptr<KnobDouble> masterTrack; //< is this point linked to a track ?
-    SequenceTime offsetTime; //< the time at which the offset must be computed
 
     BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
         : holder(curve)
@@ -88,9 +85,6 @@ struct BezierCPPrivate
         , guiRightX(0)
         , guiLeftY(0)
         , guiRightY(0)
-        , masterMutex()
-        , masterTrack()
-        , offsetTime(0)
     {
     }
 };

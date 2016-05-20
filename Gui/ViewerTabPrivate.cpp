@@ -40,6 +40,7 @@
 #include "Gui/ChannelsComboBox.h"
 #include "Gui/ClickableLabel.h"
 #include "Gui/Gui.h"
+#include "Gui/NodeGui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/ViewerTab.h"
 
@@ -128,10 +129,8 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , userFps(24)
     , turboButton(NULL)
     , timeLineGui(NULL)
-    , rotoNodes()
-    , currentRoto()
-    , trackerNodes()
-    , currentTracker()
+    , nodesContext()
+    , currentNodeContext()
     , inputNamesMap()
     , compOperatorMutex()
     , compOperator(eViewerCompositingOperatorNone)
@@ -154,8 +153,6 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , hasCaughtPenMotionWhileDragging(false)
 {
     infoWidget[0] = infoWidget[1] = NULL;
-    currentRoto.first = NULL;
-    currentRoto.second = NULL;
 }
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -356,5 +353,30 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
         }
     }
 }
+
+std::list<ViewerTabPrivate::PluginViewerContext>::iterator
+ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
+{
+    for (std::list<PluginViewerContext>::iterator it = currentNodeContext.begin(); it!=currentNodeContext.end(); ++it) {
+        if (it->pluginID == pluginID) {
+            return it;
+        }
+    }
+    return currentNodeContext.end();
+}
+
+bool
+ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node) {
+    std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForPlugin(node->getPluginID());
+    if (found == currentNodeContext.end()) {
+        return false;
+    }
+    NodeGuiPtr n = found->currentNode.lock();
+    if (!n) {
+        return false;
+    }
+    return n->getNode() != node;
+}
+
 
 NATRON_NAMESPACE_EXIT;

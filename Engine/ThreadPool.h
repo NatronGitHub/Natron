@@ -68,9 +68,9 @@ public:
 
     const std::string& getThreadName() const;
 
-    void setCurrentActionInfos(const std::string& actionName, const std::string& nodeName, const std::string& pluginID);
+    void setCurrentActionInfos(const std::string& actionName, const NodePtr& node);
 
-    void getCurrentActionInfos(std::string* actionName, std::string* nodeName, std::string* pluginID) const;
+    void getCurrentActionInfos(std::string* actionName, NodePtr* node) const;
 
     void killThread();
 
@@ -79,12 +79,12 @@ private:
     boost::scoped_ptr<AbortableThreadPrivate> _imp;
 };
 
-#define REPORT_CURRENT_THREAD_ACTION(actionName, nodeName, pluginID) \
+#define REPORT_CURRENT_THREAD_ACTION(actionName, node) \
     { \
         QThread* thread = QThread::currentThread(); \
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(thread); \
         if (isAbortable) {  \
-            isAbortable->setCurrentActionInfos(actionName, nodeName, pluginID); \
+            isAbortable->setCurrentActionInfos(actionName, node); \
         } \
     } \
 

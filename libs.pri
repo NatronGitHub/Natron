@@ -25,6 +25,11 @@ INCLUDEPATH += $$PWD/libs/libmv/third_party
 INCLUDEPATH += $$PWD/libs/libmv
 }
 
+glad-flags {
+CONFIG(debug, debug|release): INCLUDEPATH += $$PWD/Global/gladDeb/include
+CONFIG(release, debug|release): INCLUDEPATH += $$PWD/Global/gladRel/include
+}
+
 openmvg-flags {
 CONFIG += ceres-flags boost
 # Make openMVG use openmp
@@ -133,7 +138,7 @@ INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 ################
 # Gui
 static-gui {
-CONFIG += static-engine static-qhttpserver
+CONFIG += static-engine static-qhttpserver static-hoedown
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/x64/release/ -lGui
@@ -149,8 +154,8 @@ win32-msvc*{
         else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../Gui/build/Debug/ -lGui
         else:unix {
             LIBS += -L$$OUT_PWD/../Gui/ -lGui
-            # GLU is required by ViewerGL, but some versions of glew don't link it (e.g. Ubuntu 12.04)
-            !macx: LIBS += -lGLU
+            ## GLU is required by ViewerGL, but some versions of glew don't link it (e.g. Ubuntu 12.04)
+            #!macx: LIBS += -lGLU
         }
 }
 INCLUDEPATH += $$PWD/Gui
@@ -180,7 +185,7 @@ win32-msvc*{
 # Engine
 
 static-engine {
-CONFIG += static-libmv static-openmvg
+CONFIG += static-libmv static-openmvg static-hoedown
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -520,3 +525,45 @@ win32-msvc*{
 }
 } # static-qhttpserver
 
+################
+# hoedown
+
+static-hoedown {
+
+INCLUDEPATH += $$PWD/libs/hoedown/src
+DEPENDPATH += $$OUT_PWD/../libs/hoedown
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/x64/release/ -lhoedown
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/x64/debug/ -lhoedown
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/win32/release/ -lhoedown
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/win32/debug/ -lhoedown
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/ -lhoedown
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/ -lhoedown
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/Release/ -lhoedown
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/hoedown/build/Debug/ -lhoedown
+        else:unix: LIBS += -L$$OUT_PWD/../libs/hoedown/build/ -lhoedown
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/x64/release/hoedown.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/x64/debug/hoedown.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/win32/release/hoedown.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/win32/debug/hoedown.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/libhoedown.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/libhoedown.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/release/libhoedown.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/debug/libhowdown.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/Release/libhoedown.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/Debug/libhoedown.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/libhoedown.a
+}
+} # static-hoedown

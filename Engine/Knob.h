@@ -472,8 +472,9 @@ public:
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
+     * @returns true if the knobChanged handler was called once for this knob
      **/
-    virtual void evaluateValueChange(int dimension, double time, ViewSpec view, ValueChangedReasonEnum reason) = 0;
+    virtual bool evaluateValueChange(int dimension, double time, ViewSpec view, ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies all the values, animations and extra data the other knob might have
@@ -828,12 +829,21 @@ public:
      * @brief GUI-related
      **/
     virtual void setSpacingBetweenItems(int spacing) = 0;
+    virtual int getSpacingBetweenitems() const = 0;
 
     /**
-     * @brief Set whether the knob should have a GUI on the viewer, if so set at which index
+     * @brief Set the label of the knob on the viewer
      **/
-    virtual void setInViewerContextIndex(int index) = 0;
-    virtual int  getInViewerContextIndex() const = 0;
+    virtual std::string getInViewerContextLabel() const = 0;
+    virtual void setInViewerContextLabel(const QString& label) = 0;
+
+    /**
+     * @brief Determines whether this knob can be assigned a shortcut or not via the shortcut editor.
+     * If true, Natron will look for a shortcut in the shortcuts database with an ID matching the name of this
+     * parameter. To set default values for shortcuts, implement EffectInstance::getPluginShortcuts(...)
+     **/
+    virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) = 0;
+    virtual bool getInViewerContextHasShortcut() const = 0;
 
     /**
      * @brief Returns whether this type of knob can be instantiated in the viewer UI
@@ -1023,6 +1033,12 @@ public:
     virtual const std::string & getHintToolTip() const = 0;
 
     /**
+     * @brief Returns whether the hint is encoded in markdown or not
+     **/
+    virtual bool isHintInMarkdown() const = 0;
+    virtual void setHintIsMarkdown(bool b) = 0;
+
+    /**
      * @brief Call this to set a custom interact entry point, replacing any existing gui.
      **/
     virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) = 0;
@@ -1034,9 +1050,31 @@ public:
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE = 0;
     virtual unsigned int getCurrentRenderScale() const OVERRIDE FINAL { return 0; }
 
+    virtual RectD getViewportRect() const OVERRIDE = 0;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE = 0;
+
     virtual void saveOpenGLContext() OVERRIDE = 0;
     virtual void restoreOpenGLContext() OVERRIDE = 0;
 
+    /**
+     * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
+     **/
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
+     **/
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE = 0;
+
+    /**
+     * @brief Returns the font height, i.e: the height of the highest letter for this font
+     **/
+    virtual int getWidgetFontHeight() const OVERRIDE = 0;
+
+    /**
+     * @brief Returns for a string the estimated pixel size it would take on the widget
+     **/
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
 
     /**
      * @brief If this is an openfx param, this is the pointer to the handle.
@@ -1123,7 +1161,7 @@ public:
      **/
     bool slaveTo(int dimension, const KnobPtr & other, int otherDimension, bool ignoreMasterPersistence = false);
     virtual bool isMastersPersistenceIgnored() const = 0;
-    virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
+    virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                           const boost::shared_ptr<KnobPage>& page,
                                           const boost::shared_ptr<KnobGroup>& group,
                                           int indexInParent,
@@ -1135,7 +1173,7 @@ public:
                                           bool isUserKnob) = 0;
 
     /**
-     * @brief If a knob was created using createDuplicateOnNode(effect,true), this function will return true
+     * @brief If a knob was created using createDuplicateOnHolder(effect,true), this function will return true
      **/
     virtual KnobPtr getAliasMaster() const = 0;
     virtual bool setKnobAsAliasOfThis(const KnobPtr& master, bool doAlias) = 0;
@@ -1285,11 +1323,11 @@ public:
     virtual void blockListenersNotification() OVERRIDE FINAL;
     virtual void unblockListenersNotification() OVERRIDE FINAL;
     virtual bool isListenersNotificationBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void evaluateValueChange(int dimension, double time, ViewSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual bool evaluateValueChange(int dimension, double time, ViewSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
 protected:
-
-    void evaluateValueChangeInternal(int dimension,
+    // Returns true if the knobChanged handler was called
+    bool evaluateValueChangeInternal(int dimension,
                                      double time,
                                      ViewSpec view,
                                      ValueChangedReasonEnum reason,
@@ -1412,8 +1450,11 @@ public:
     virtual bool isNewLineActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSeparatorActivated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setSpacingBetweenItems(int spacing) OVERRIDE FINAL;
-    virtual void setInViewerContextIndex(int index) OVERRIDE FINAL;
-    virtual int  getInViewerContextIndex() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getSpacingBetweenitems() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getInViewerContextLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setInViewerContextLabel(const QString& label) OVERRIDE FINAL;
+    virtual void setInViewerContextCanHaveShortcut(bool haveShortcut) OVERRIDE FINAL;
+    virtual bool getInViewerContextHasShortcut() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextItemSpacing(int spacing) OVERRIDE FINAL;
     virtual int  getInViewerContextItemSpacing() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setInViewerContextAddSeparator(bool addSeparator) OVERRIDE FINAL;
@@ -1455,6 +1496,8 @@ public:
 
     //void setHintToolTip(const char* hint) { setHintToolTip(std::string(hint)); }
     virtual const std::string & getHintToolTip() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isHintInMarkdown() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setHintIsMarkdown(bool b) OVERRIDE FINAL;
     virtual void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc) OVERRIDE FINAL;
     virtual boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
@@ -1462,8 +1505,15 @@ public:
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
     virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
+    virtual RectD getViewportRect() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
     virtual void saveOpenGLContext() OVERRIDE FINAL;
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
+    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL;
+    virtual int getWidgetFontHeight() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMastersPersistenceIgnored() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1476,7 +1526,7 @@ public:
     virtual bool hasModifications(int dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasModificationsForSerialization() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void checkAnimationLevel(ViewSpec view, int dimension) OVERRIDE FINAL;
-    virtual KnobPtr createDuplicateOnNode(EffectInstance* effect,
+    virtual KnobPtr createDuplicateOnHolder(KnobHolder* otherHolder,
                                           const boost::shared_ptr<KnobPage>& page,
                                           const boost::shared_ptr<KnobGroup>& group,
                                           int indexInParent,
@@ -2263,11 +2313,13 @@ public:
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
 
-    bool hasKnobWithViewerInContextUI() const;
+    void addKnobToViewerUI(const KnobPtr& knob);
+    KnobsVec getViewerUIKnobs() const;
+
 
 protected:
 
-    virtual void refreshExtraStateAfterTimeChanged(double /*time*/) {}
+    virtual void refreshExtraStateAfterTimeChanged(bool /*isPlayback*/, double /*time*/) {}
 
 public:
 
@@ -2421,7 +2473,9 @@ public:
      * if needed when endChanges() is called
      **/
     void beginChanges();
-    void endChanges(bool discardEverything = false);
+
+    // Returns true if at least 1 knob changed handler was called
+    bool endChanges(bool discardEverything = false);
 
 
     /**
@@ -2445,7 +2499,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view,
+    virtual bool onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view,
                                            bool originatedFromMainThread);
 
 
@@ -2542,12 +2596,13 @@ protected:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual void onKnobValueChanged(KnobI* /*k*/,
+    virtual bool onKnobValueChanged(KnobI* /*k*/,
                                     ValueChangedReasonEnum /*reason*/,
                                     double /*time*/,
                                     ViewSpec /*view*/,
                                     bool /*originatedFromMainThread*/)
     {
+        return false;
     }
 
     virtual void onSignificantEvaluateAboutToBeCalled(KnobI* /*knob*/) {}

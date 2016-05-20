@@ -64,7 +64,7 @@ createDuplicateKnob( const std::string& knobName,
         return boost::shared_ptr<KNOBTYPE>();
     }
     assert(internalNodeKnob);
-    KnobPtr duplicateKnob = internalNodeKnob->createDuplicateOnNode(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
+    KnobPtr duplicateKnob = internalNodeKnob->createDuplicateOnHolder(effect.get(), page, group, -1, true, internalNodeKnob->getName(), internalNodeKnob->getLabel(), internalNodeKnob->getHintToolTip(), false, false);
 
     if (otherNode) {
         KnobPtr otherNodeKnob = otherNode->getKnobByName(knobName);
@@ -104,8 +104,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 {
     EffectInstPtr effect = node->getEffectInstance();
     //needs to be blocking, otherwise the progressUpdate() call could be made before startProgress
-    QObject::connect( &scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SIGNAL(trackingStarted(int)), Qt::BlockingQueuedConnection );
-    QObject::connect( &scheduler, SIGNAL(trackingFinished()), _publicInterface, SIGNAL(trackingFinished()) );
+    QObject::connect( &scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SLOT(onSchedulerTrackingStarted(int)) );
+    QObject::connect( &scheduler, SIGNAL(trackingFinished()), _publicInterface, SLOT(onSchedulerTrackingFinished()) );
+    QObject::connect( &scheduler, SIGNAL(trackingProgress(double)), _publicInterface, SLOT(onSchedulerTrackingProgress(double)) );
     boost::shared_ptr<TrackerNode> isTrackerNode = boost::dynamic_pointer_cast<TrackerNode>(effect);
     QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
 
@@ -1049,11 +1050,17 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                              int start,
                              int end,
                              int frameStep,
-                             ViewerInstance* viewer)
+                             OverlaySupport* overlayInteract)
 {
     if ( markers.empty() ) {
         return;
     }
+
+    ViewerInstance* viewer = 0;
+    if (overlayInteract) {
+        viewer = overlayInteract->getInternalViewerNode();
+    }
+    
 
     /// The channels we are going to use for tracking
     bool enabledChannels[3];
@@ -1091,11 +1098,15 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         // Set a keyframe on the marker to initialize its position
         (*it)->setKeyFrameOnCenterAndPatternAtTime(start);
 
-        t->natronMarker->setUserKeyframe(start);
-
-        PreviouslyTrackedFrameSet previousFramesOrdered;
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
+
+        if (userKeys.empty()) {
+            // Set a user keyframe on tracking start if the marker does not have any user keys
+            t->natronMarker->setUserKeyframe(start);
+        }
+
+        PreviouslyTrackedFrameSet previousFramesOrdered;
 
         // Make sure to create a marker at the start time
         userKeys.insert(start);

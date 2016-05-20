@@ -100,6 +100,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(hasModificationsChanged()), this, SLOT(onHasModificationsChanged()) );
         QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
         QObject::connect( handler, SIGNAL(dimensionNameChanged(int)), this, SLOT(onDimensionNameChanged(int)) );
+        QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()));
     }
     if (!_imp->isInViewerUIKnob) {
         _imp->guiCurves.resize( knob->getDimension() );
@@ -201,9 +202,25 @@ KnobGui::createGUI(QWidget* fieldContainer,
     _imp->isOnNewLine = isOnNewLine;
     if (!isOnNewLine) {
         //layout->addStretch();
-        layout->addSpacing( TO_DPIX(15) );
+        int spacing;
+        bool isViewerParam = _imp->container->isInViewerUIKnob();
+        if (isViewerParam) {
+            spacing = _imp->container->getItemsSpacingOnSameLine();
+        } else {
+            spacing = knob->getSpacingBetweenitems();
+            // Default sapcing is 0 on knobs, but use the default for the widget container so the UI doesn't appear cluttered
+            // The minimum allowed spacing should be 1px
+            if (spacing == 0) {
+                spacing = _imp->container->getItemsSpacingOnSameLine();;
+            }
+        }
+        if (spacing > 0) {
+            layout->addSpacing( TO_DPIX(spacing) );
+        }
         if (label) {
-            layout->addWidget(_imp->warningIndicator);
+            if (_imp->warningIndicator) {
+                layout->addWidget(_imp->warningIndicator);
+            }
             layout->addWidget(label);
         }
     }
@@ -237,6 +254,8 @@ KnobGui::createGUI(QWidget* fieldContainer,
            }*/
     }
 }
+
+
 
 void
 KnobGui::updateGuiInternal(int dimension)
@@ -772,7 +791,7 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
     std::string newKnobName = nodeScriptName +  knob->getName();
     KnobPtr ret;
     try {
-        ret = knob->createDuplicateOnNode(effect,
+        ret = knob->createDuplicateOnHolder(effect,
                                           page,
                                           group,
                                           indexInParent,
