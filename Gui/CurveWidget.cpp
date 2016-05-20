@@ -233,7 +233,7 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
     ret.set_left(ret.left() - ret.width() / 10);
     ret.set_right(ret.right() + ret.width() / 10);
     ret.set_top(ret.top() + ret.height() / 10);
-    if (doCenter) {
+    if (doCenter && !ret.isNull()) {
         centerOn( ret.left(), ret.right(), ret.bottom(), ret.top() );
     }
 }

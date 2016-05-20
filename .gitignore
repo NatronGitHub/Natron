@@ -21,6 +21,9 @@ ceres.xcodeproj
 openMVG.xcodeproj
 Natron.xcodeproj
 Natron-bin.xcodeproj
+CrashReporter/*
+CrashReporterCLI/*
+BreakpadClient/*
 NatronRenderer-bin.xcodeproj
 NatronRenderer.xcodeproj
 NatronCrashReporter.xcodeproj
