@@ -25,7 +25,6 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#ifdef NATRON_USE_BREAKPAD
 
 #include "Global/Macros.h"
 
@@ -72,8 +71,6 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
-
-#endif // NATRON_USE_BREAKPAD
 
 
 #endif // Engine_ExistenceCheckThread_h

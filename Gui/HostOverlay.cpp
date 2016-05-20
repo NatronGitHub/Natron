@@ -64,7 +64,6 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-
 DefaultInteractI::DefaultInteractI(HostOverlay* overlay)
     : _overlay(overlay)
 {
@@ -209,7 +208,6 @@ DefaultInteractI::loseFocus(double /*time*/,
     return false;
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 enum PositionInteractState
 {
@@ -831,8 +829,6 @@ struct HostOverlayPrivate
         node.lock()->getNode()->getApp()->queueRedrawForAllViewers();
     }
 };
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 void
