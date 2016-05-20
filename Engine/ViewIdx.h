@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <cassert>
-
 #include "Global/Macros.h"
+
+#include <cassert>
 
 #include "Engine/EngineFwd.h"
 

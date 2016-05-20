@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Curve.h"
-
 #include "Global/Macros.h"
+
+#include "Curve.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

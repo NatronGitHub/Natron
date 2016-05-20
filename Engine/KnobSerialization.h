@@ -25,9 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <map>
 #include <vector>
-#include "Global/Macros.h"
+
 #ifndef Q_MOC_RUN
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(sign-compare)

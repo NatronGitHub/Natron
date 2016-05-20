@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -32,8 +34,6 @@
 #endif
 
 #include <QtCore/QMutex>
-
-#include "Global/Macros.h"
 
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"

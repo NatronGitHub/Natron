@@ -25,10 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <string>
 #include <vector>
 
-#include "Global/Macros.h"
 #include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
 

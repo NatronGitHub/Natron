@@ -16,11 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-/**
- * @brief Simple wrap for the AppInstance class that is the API we want to expose to the Python
- * Engine module.
- **/
-
 #ifndef Engine_AppInstanceWrapper_h
 #define Engine_AppInstanceWrapper_h
 
@@ -31,6 +26,12 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+/**
+ * @brief Simple wrap for the AppInstance class that is the API we want to expose to the Python
+ * Engine module.
+ **/
+
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

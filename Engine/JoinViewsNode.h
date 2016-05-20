@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 #include "Engine/EffectInstance.h"
 
 NATRON_NAMESPACE_ENTER;

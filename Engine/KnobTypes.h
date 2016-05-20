@@ -25,11 +25,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <string>
 #include <map>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QObject>

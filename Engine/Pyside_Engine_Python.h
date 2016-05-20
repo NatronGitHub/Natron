@@ -16,11 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-/**
- * @brief This is the global header used by Shiboken to generate bindings for the Engine library.
- * Do not include it when compiling Natron.
- **/
-
 #ifndef PYSIDE_ENGINE_PYTHON_H
 #define PYSIDE_ENGINE_PYTHON_H
 
@@ -29,6 +24,13 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+/**
+ * @brief This is the global header used by Shiboken to generate bindings for the Engine library.
+ * Do not include it when compiling Natron.
+ **/
 
 //Defined to avoid including some headers when running shiboken which may crash shiboken (particularily boost headers)
 #define SBK_RUN

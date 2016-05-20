@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <string>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -33,7 +35,6 @@
 #include <QtCore/QObject>
 #include <QtCore/QMutex>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/FrameKey.h"
 #include "Engine/FrameParams.h"

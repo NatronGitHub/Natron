@@ -25,10 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <string>
 #include <stdexcept>
 
-#include "Global/Macros.h"
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -43,6 +44,7 @@ GCC_DIAG_ON(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(unused-parameter)
 #endif
+
 #include "Engine/KnobSerialization.h"
 #include "Engine/TrackerSerialization.h"
 #include "Engine/RotoContextSerialization.h"

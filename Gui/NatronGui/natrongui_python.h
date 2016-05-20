@@ -29,7 +29,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <PythonPanels.h>
 #include <PyGlobalGui.h>
 // Conversion Includes - Primitive Types
-#include <QStringList>
+#include <QtCore/QStringList>
 #include <qabstractitemmodel.h>
 #include <QString>
 #include <signalmanager.h>

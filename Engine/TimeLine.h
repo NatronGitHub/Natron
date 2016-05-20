@@ -25,9 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QObject>

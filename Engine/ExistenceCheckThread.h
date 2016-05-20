@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#ifdef NATRON_USE_BREAKPAD
-
 #include "Global/Macros.h"
+
+#ifdef NATRON_USE_BREAKPAD
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>

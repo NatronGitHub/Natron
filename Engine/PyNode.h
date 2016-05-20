@@ -16,11 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-/**
- * @brief Simple wrap for the EffectInstance and Node class that is the API we want to expose to the Python
- * Engine module.
- **/
-
 #ifndef NODEWRAPPER_H
 #define NODEWRAPPER_H
 
@@ -29,6 +24,13 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+/**
+ * @brief Simple wrap for the EffectInstance and Node class that is the API we want to expose to the Python
+ * Engine module.
+ **/
 
 #include <list>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
