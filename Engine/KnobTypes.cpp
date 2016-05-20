@@ -1492,6 +1492,10 @@ KnobGroup::typeName() const
 void
 KnobGroup::addKnob(const KnobPtr& k)
 {
+    if (!isUserKnob() && k->isUserKnob()) {
+        return;
+    }
+
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
             return;
@@ -1556,6 +1560,10 @@ void
 KnobGroup::insertKnob(int index,
                       const KnobPtr& k)
 {
+    if (!isUserKnob() && k->isUserKnob()) {
+        return;
+    }
+
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
             return;
@@ -1646,6 +1654,9 @@ KnobPage::getChildren() const
 void
 KnobPage::addKnob(const KnobPtr &k)
 {
+    if (!isUserKnob() && k->isUserKnob()) {
+        return;
+    }
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
             return;
@@ -1663,6 +1674,10 @@ void
 KnobPage::insertKnob(int index,
                      const KnobPtr& k)
 {
+    if (!isUserKnob() && k->isUserKnob()) {
+        return;
+    }
+
     for (std::size_t i = 0; i < _children.size(); ++i) {
         if (_children[i].lock() == k) {
             return;
