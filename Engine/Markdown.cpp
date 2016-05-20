@@ -34,7 +34,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-Markdown::Markdown(QObject *parent) : QObject(parent)
+Markdown::Markdown()
 {
 }
 
@@ -222,5 +222,3 @@ QString Markdown::genPluginKnobsTable(QVector<QStringList> items)
 
 NATRON_NAMESPACE_EXIT;
 
-NATRON_NAMESPACE_USING;
-#include "moc_Markdown.cpp"

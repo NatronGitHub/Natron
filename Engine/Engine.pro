@@ -116,6 +116,7 @@ SOURCES += \
     LibraryBinary.cpp \
     Log.cpp \
     Lut.cpp \
+    Markdown.cpp \
     MemoryFile.cpp \
     Node.cpp \
     NodeGroup.cpp \
@@ -183,7 +184,6 @@ SOURCES += \
     Transform.cpp \
     ViewerInstance.cpp \
     WriteNode.cpp \
-    Markdown.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
@@ -299,6 +299,7 @@ HEADERS += \
     Log.h \
     LRUHashTable.h \
     Lut.h \
+    Markdown.h \
     MemoryFile.h \
     MergingEnum.h \
     Node.h \
@@ -394,7 +395,6 @@ HEADERS += \
     ViewerInstancePrivate.h \
     ViewIdx.h \
     WriteNode.h \
-    Markdown.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
     ../Global/glad_include.h \

@@ -23,7 +23,6 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QObject>
 #include <QVector>
 #include <QStringList>
 CLANG_DIAG_ON(deprecated)
@@ -33,15 +32,17 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class Markdown : public QObject
+class Markdown
 {
-    Q_OBJECT
-public:
-    explicit Markdown(QObject *parent = 0);
 
-public Q_SLOTS:
-    QString convert2html(QString markdown);
-    QString genPluginKnobsTable(QVector<QStringList> items);
+    Q_DECLARE_TR_FUNCTIONS(Markdown)
+    
+public:
+
+    Markdown();
+
+    static QString convert2html(QString markdown);
+    static QString genPluginKnobsTable(QVector<QStringList> items);
 };
 
 NATRON_NAMESPACE_EXIT;
