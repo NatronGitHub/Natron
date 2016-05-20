@@ -257,18 +257,12 @@ AppManager::load(int &argc,
 {
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
-    bool hadArgs = true;
-
+    char* argv0;
+    QString argv0QString = QDir::currentPath();
     if (!argv) {
-        QString binaryPath = QDir::currentPath();
+        argv0 = const_cast<char*>(argv0QString.toStdString().c_str());
         argc = 1;
-        argv = new char*[1];
-        argv[0] = new char[binaryPath.size() + 1];
-        for (int i = 0; i < binaryPath.size(); ++i) {
-            argv[0][i] = binaryPath.at(i).unicode();
-        }
-        argv[0][binaryPath.size()] = '\0';
-        hadArgs = false;
+        argv = &argv0;
     }
     initializeQApp(argc, argv);
 
@@ -314,10 +308,6 @@ AppManager::load(int &argc,
     assert(qApp);
 
     bool ret = loadInternal(cl);
-    if (!hadArgs) {
-        delete [] argv[0];
-        delete [] argv;
-    }
 
     return ret;
 } // AppManager::load
