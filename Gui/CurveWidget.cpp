@@ -1241,6 +1241,10 @@ CurveWidget::refreshSelectedKeysBbox()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
+    if ( (_imp->zoomCtx.screenWidth() < 1) || (_imp->zoomCtx.screenHeight() < 1) ) {
+        return;
+    }
+
     RectD keyFramesBbox;
     bool bboxSet = false;
     for (SelectedKeys::const_iterator it = _imp->_selectedKeyFrames.begin();
