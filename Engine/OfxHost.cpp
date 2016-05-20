@@ -1029,7 +1029,6 @@ OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
     }
 }
 
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 ///Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
