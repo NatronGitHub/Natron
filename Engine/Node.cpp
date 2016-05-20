@@ -3969,6 +3969,15 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
         pluginDescriptionMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
     }
 
+    QString extraMarkdown;
+    QFile pluginMarkdownFile(pluginIcon.replace( QString::fromUtf8(".png"), QString::fromUtf8(".md") ));
+    if ( pluginMarkdownFile.exists() ) {
+        if ( pluginMarkdownFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
+            extraMarkdown = QString::fromUtf8( pluginMarkdownFile.readAll() );
+            pluginMarkdownFile.close();
+        }
+    }
+
     if (genHTML) {
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         ts << "<html><head>";
@@ -4156,12 +4165,23 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 
     if (genHTML) {
         ts << "</table>";
+        // add extra markdown if available
+        if ( !extraMarkdown.isEmpty() ) {
+            /// TODO parse "special" flags
+            ts << markdown.convert2html(extraMarkdown);
+        }
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     }
     else {
         // create markdown table
         if (items.size()>0) {
             ts << markdown.genPluginKnobsTable(items);
+        }
+        // add extra markdown if available
+        if ( !extraMarkdown.isEmpty() ) {
+            ts << "\n\n";
+            /// TODO parse "special" flags
+            ts << extraMarkdown;
         }
     }
 
