@@ -527,9 +527,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
     NodePtr tNode = transformNode.lock();
     if (tNode) {
-        KnobPtr disabledKnob = tNode->getKnobByName(kDisableNodeKnobName);
-        assert(disabledKnob);
-        disabledKnob->slaveTo(0, disableTransformKnob, 0);
+
 
         boost::shared_ptr<KnobDouble> tKnob = createDuplicateKnob<KnobDouble>(kTransformParamTranslate, tNode, effect, transformPage);
         tKnob->setSecret(true);
@@ -559,11 +557,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     } // tNode
     NodePtr cNode = cornerPinNode.lock();
     if (cNode) {
-        KnobPtr disabledKnob = cNode->getKnobByName(kDisableNodeKnobName);
-        assert(disabledKnob);
-        disabledKnob->slaveTo(0, disableTransformKnob, 0);
-
-
+        
         boost::shared_ptr<KnobGroup>  toGroupKnob = AppManager::createKnob<KnobGroup>(effect.get(), tr(kCornerPinParamTo), 1);
         toGroupKnob->setName(kCornerPinParamTo);
         toGroupKnob->setAsTab();
@@ -1348,10 +1342,12 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum motionType = (TrackerMotionTypeEnum)motionType_i;
 
-    transformNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
-    cornerPinNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
-
     boost::shared_ptr<KnobBool> disableTransformKnob = disableTransform.lock();
+    bool disableNodes = disableTransformKnob->getValue();
+
+    transformNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    cornerPinNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+
     transformControlsSeparator.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     disableTransformKnob->setSecret(motionType == eTrackerMotionTypeNone);
     if (transformType == eTrackerTransformNodeTransform) {
