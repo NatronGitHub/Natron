@@ -893,6 +893,7 @@ void
 KnobGuiColor::showColorDialog()
 {
     QColorDialog dialog( _rBox->parentWidget() );
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     double curR = knob->getValue(0);
 
@@ -907,6 +908,7 @@ KnobGuiColor::showColorDialog()
         _lastColor[2] = curB;
     }
     if (_dimension > 3) {
+        dialog.setOption(QColorDialog::ShowAlphaChannel);
         curA = knob->getValue(3);
         _lastColor[3] = curA;
     }

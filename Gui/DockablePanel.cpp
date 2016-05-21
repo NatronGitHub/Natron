@@ -1256,6 +1256,7 @@ void
 DockablePanel::onColorButtonClicked()
 {
     QColorDialog dialog(this);
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
     QColor oldColor;
     {
         oldColor = getCurrentColor();
@@ -1284,6 +1285,8 @@ DockablePanel::onOverlayButtonClicked()
         return;
     }
     QColorDialog dialog(this);
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
+    dialog.setOption(QColorDialog::ShowAlphaChannel);
     QColor oldColor;
     bool hadOverlayColor;
     {
