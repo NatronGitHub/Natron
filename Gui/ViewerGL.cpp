@@ -355,7 +355,8 @@ ViewerGL::paintGL()
             glColor4d(1., 1., 1., 1.);
             glBlendColor(1, 1, 1, wipeMix);
 
-            if ( _imp->viewerTab->isCheckerboardEnabled() ) {
+            bool checkerboard = _imp->viewerTab->isCheckerboardEnabled();
+            if (checkerboard) {
                 // draw checkerboard texture, but only on the left side if in wipe mode
                 RectD projectFormatCanonical;
                 _imp->getProjectFormatCanonical(projectFormatCanonical);
@@ -384,7 +385,7 @@ ViewerGL::paintGL()
             switch (compOperator) {
             case eViewerCompositingOperatorNone: {
                 if (drawTexture[0]) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWhole, true);
                 }
                 break;
@@ -392,7 +393,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeUnder:
             case eViewerCompositingOperatorStackUnder: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
@@ -411,7 +412,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeOver:
             case eViewerCompositingOperatorStackOver: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[1]) {
@@ -430,7 +431,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeMinus:
             case eViewerCompositingOperatorStackMinus: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
@@ -449,7 +450,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeOnionSkin:
             case eViewerCompositingOperatorStackOnionSkin: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayingImageMipMapLevel[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
