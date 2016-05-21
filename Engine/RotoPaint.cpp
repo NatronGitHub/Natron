@@ -1288,7 +1288,7 @@ StatusEnum
 RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 {
     metadata.setImageComponents( -1, ImageComponents::getRGBAComponents() );
-    boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
+    /*boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
     assert(premultKnob);
     bool premultiply = premultKnob->getValue();
     if (premultiply) {
@@ -1305,7 +1305,8 @@ RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
         } else {
             metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
         }
-    }
+    }*/
+    metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
 
     return eStatusOK;
 }
