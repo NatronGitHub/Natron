@@ -1449,7 +1449,7 @@ ViewerGL::isViewerUIVisible() const
     }
     TabWidget* tabWidget = _imp->viewerTab->getParentPane();
     if (!tabWidget) {
-        return false;
+        return isVisible();
     }
 
     if (tabWidget->currentWidget() != _imp->viewerTab) {
