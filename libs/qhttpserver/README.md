@@ -1,4 +1,4 @@
-**modifed for Natron**
+QHttpServer is NOT actively maintained. [Amir Zamani](https://github.com/azadkuh)'s [qhttp](https://github.com/azadkuh/qhttp) fixes some of the bugs here and is generally a nicer place to start from.
 
 QHttpServer
 ===========
