@@ -945,30 +945,29 @@ KnobGuiColor::showColorDialog()
 
         QColor userColor = dialog.currentColor();
         QColor realColor = userColor;
-        realColor.setGreen( userColor.red() );
-        realColor.setBlue( userColor.red() );
-        realColor.setAlpha(255);
 
         if ( getKnob()->isEnabled(0) ) {
             _rBox->setValue( isSimple ? realColor.redF() : Color::from_func_srgb( realColor.redF() ) );
         }
 
-        if (_dimension >= 3) {
-            realColor.setGreen( userColor.green() );
-            realColor.setBlue( userColor.blue() );
+        if (_dimension == 1) {
+            realColor.setGreen( userColor.red() );
+            realColor.setBlue( userColor.red() );
+            realColor.setAlpha(255);
+        } else if (_dimension >= 3) {
             if ( getKnob()->isEnabled(1) ) {
                 _gBox->setValue( isSimple ? realColor.greenF() : Color::from_func_srgb( userColor.greenF() ) );
             }
             if ( getKnob()->isEnabled(2) ) {
                 _bBox->setValue( isSimple ? realColor.blueF() : Color::from_func_srgb( userColor.blueF() ) );
             }
-        }
-        if (_dimension >= 4) {
-            //            realColor.setAlpha(userColor.alpha());
-            ///Don't set alpha since the color dialog can only handle RGB
-//            if (getKnob()->isEnabled(3)) {
-//                _aBox->setValue(userColor.alphaF()); // no conversion, alpha is linear
-//            }
+            if (_dimension == 3) {
+                realColor.setAlpha(255);
+            } else if (_dimension == 4) {
+                if (getKnob()->isEnabled(3)) {
+                    _aBox->setValue( userColor.alphaF() ); // no conversion, alpha is linear
+                }
+            }
         }
 
         onColorChangedInternal();
@@ -987,7 +986,6 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     if (_dimension == 1) {
         knob->setValue(color.redF(), ViewSpec::all(), 0);
     } else if (_dimension == 3) {
-        ///Don't set alpha since the color dialog can only handle RGB
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb( color.redF() ),
                         isSimple ? color.greenF() : Color::from_func_srgb( color.greenF() ),
                         isSimple ? color.blueF() : Color::from_func_srgb( color.blueF() ),
@@ -997,7 +995,7 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb( color.redF() ),
                         isSimple ? color.greenF() : Color::from_func_srgb( color.greenF() ),
                         isSimple ? color.blueF() : Color::from_func_srgb( color.blueF() ),
-                        1.,
+                        color.alphaF(),
                         ViewSpec::all(),
                         eValueChangedReasonNatronInternalEdited);
     }
