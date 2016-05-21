@@ -1475,7 +1475,7 @@ AddFavoriteDialog::setLabelText(const QString & text)
 void
 AddFavoriteDialog::openDir()
 {
-    QString str = QFileDialog::getExistingDirectory( this, tr("Select a directory"), _fd->currentDirectory().path() );
+    QString str = QFileDialog::getExistingDirectory( this, tr("Select a directory"), _fd->currentDirectory().path(), QFileDialog::ShowDirsOnly | QFileDialog::DontUseNativeDialog );
 
     _pathLineEdit->setText(str);
 }
