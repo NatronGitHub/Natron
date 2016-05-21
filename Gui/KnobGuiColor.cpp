@@ -447,6 +447,7 @@ void
 KnobGuiColor::showColorDialog()
 {
     QColorDialog dialog( _colorLabel->parentWidget() );
+
     dialog.setOption(QColorDialog::DontUseNativeDialog);
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     const int nDims = knob->getDimension();

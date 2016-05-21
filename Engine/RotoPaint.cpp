@@ -1289,11 +1289,11 @@ RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 {
     metadata.setImageComponents( -1, ImageComponents::getRGBAComponents() );
     /*boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
-    assert(premultKnob);
-    bool premultiply = premultKnob->getValue();
-    if (premultiply) {
+       assert(premultKnob);
+       bool premultiply = premultKnob->getValue();
+       if (premultiply) {
         metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
-    } else {
+       } else {
         ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
         EffectInstPtr input = getInput(0);
         if (input) {
@@ -1305,7 +1305,7 @@ RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
         } else {
             metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
         }
-    }*/
+       }*/
     metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
 
     return eStatusOK;
