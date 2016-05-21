@@ -790,6 +790,9 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     if (renderData) {
         for (std::list<OfxImage*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
             ImagePtr internalImage = (*it)->getInternalImage();
+            if (!internalImage) {
+                continue;
+            }
             bool sameComponents = (mapImageToClipPref && (*it)->getComponentsString() == thisClipComponents) ||
                                   (!mapImageToClipPref && (*it)->getComponentsString() == *ofxPlane);
             if ( sameComponents && (internalImage->getMipMapLevel() == mipMapLevel) &&
@@ -850,7 +853,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
        appPTR->debugImage(image.get(), renderWindow, filename);*/
 #endif
 
-    OfxImage* ret = new OfxImage(boost::shared_ptr<OfxClipInstance::RenderActionData>(), image, true, renderWindow, transform, components, nComps);
+    OfxImage* ret = new OfxImage(renderData, image, true, renderWindow, transform, components, nComps);
     if (renderData) {
         renderData->imagesBeingRendered.push_back(ret);
     }
