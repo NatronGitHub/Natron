@@ -425,7 +425,6 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
     if (nDims == 1) {
         knob->setValue(color.redF(), ViewSpec::all(), 0);
     } else if (nDims == 3) {
-        ///Don't set alpha since the color dialog can only handle RGB
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb( color.redF() ),
                         isSimple ? color.greenF() : Color::from_func_srgb( color.greenF() ),
                         isSimple ? color.blueF() : Color::from_func_srgb( color.blueF() ),
@@ -435,7 +434,7 @@ KnobGuiColor::onDialogCurrentColorChanged(const QColor & color)
         knob->setValues(isSimple ? color.redF() : Color::from_func_srgb( color.redF() ),
                         isSimple ? color.greenF() : Color::from_func_srgb( color.greenF() ),
                         isSimple ? color.blueF() : Color::from_func_srgb( color.blueF() ),
-                        1.,
+                        color.alphaF(),
                         ViewSpec::all(),
                         eValueChangedReasonNatronInternalEdited);
     }
@@ -491,7 +490,7 @@ KnobGuiColor::showColorDialog()
         color[0] = isSimple ? userColor.redF() : Color::from_func_srgb( userColor.redF() );
         color[1] = isSimple ? userColor.greenF() : Color::from_func_srgb( userColor.greenF() );
         color[2] = isSimple ? userColor.blueF() : Color::from_func_srgb( userColor.blueF() );
-        color[3] = 1.;
+        color[3] = userColor.alphaF();
 
         for (int i = 0; i < 3; ++i) {
             SpinBox* sb = 0;
