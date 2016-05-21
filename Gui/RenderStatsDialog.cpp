@@ -752,7 +752,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     : QWidget(gui)
     , _imp( new RenderStatsDialogPrivate(gui) )
 {
-    setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::Tool);
     setWindowTitle( tr("Render statistics") );
 
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);

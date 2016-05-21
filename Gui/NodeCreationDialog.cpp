@@ -339,7 +339,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     , _imp( new NodeCreationDialogPrivate() )
 {
     setWindowTitle( tr("Node Creation Tool") );
-    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    setWindowFlags(Qt::Popup);
     setObjectName( QString::fromUtf8("nodeCreationDialog") );
     setAttribute(Qt::WA_DeleteOnClose, false);
     _imp->layout = new QVBoxLayout(this);
