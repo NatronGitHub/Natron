@@ -1012,7 +1012,7 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEngine* engine = viewer->getRenderEngine();
-            if ( engine && engine->hasThreadsWorking() ) {
+            if ( engine) {
                 engine->abortRendering(true, false);
                 engine->renderCurrentFrame(false, true);
             }
@@ -1053,7 +1053,7 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
             RenderEngine* engine = viewer->getRenderEngine();
-            if ( engine && engine->hasThreadsWorking() ) {
+            if ( engine ) {
                 engine->abortRendering(true, false);
                 engine->renderCurrentFrame(false, true);
             }
