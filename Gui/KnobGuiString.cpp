@@ -927,6 +927,7 @@ KnobGuiString::colorFontButtonClicked()
     assert(_textEdit);
     boost::shared_ptr<KnobString> knob = _knob.lock();
     QColorDialog dialog(_textEdit);
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
     QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(updateFontColorIcon(QColor)) );
     dialog.setCurrentColor(_fontColor);
     if ( dialog.exec() ) {

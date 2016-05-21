@@ -1664,6 +1664,8 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             if (drawable) {
                 QColorDialog dialog;
+                dialog.setOption(QColorDialog::DontUseNativeDialog);
+                dialog.setOption(QColorDialog::ShowAlphaChannel);
                 _imp->dialogEdition = eColorDialogEditingOverlayColor;
                 double oc[4];
                 drawable->getOverlayColor(oc);
@@ -1705,6 +1707,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             bool mustEvaluate = false;
             if (drawable) {
                 QColorDialog dialog;
+                dialog.setOption(QColorDialog::DontUseNativeDialog);
                 _imp->dialogEdition = eColorDialogEditingShapeColor;
                 drawable->getColor(time, shapeColor);
                 QColor color;

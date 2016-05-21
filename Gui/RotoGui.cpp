@@ -4882,6 +4882,8 @@ void
 RotoGui::onColorWheelButtonClicked()
 {
     QColorDialog dialog(_imp->viewerTab);
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
+    dialog.setOption(QColorDialog::ShowAlphaChannel);
     QColor previousColor = _imp->colorPickerLabel->getCurrentColor();
 
     dialog.setCurrentColor(previousColor);

@@ -448,6 +448,7 @@ void
 KnobGuiColor::showColorDialog()
 {
     QColorDialog dialog( _colorLabel->parentWidget() );
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     const int nDims = knob->getDimension();
     double curR = knob->getValue(0);
@@ -463,6 +464,7 @@ KnobGuiColor::showColorDialog()
         _lastColor[2] = curB;
     }
     if (nDims > 3) {
+        dialog.setOption(QColorDialog::ShowAlphaChannel);
         curA = knob->getValue(3);
         _lastColor[3] = curA;
     }
