@@ -1256,6 +1256,7 @@ void
 DockablePanel::onColorButtonClicked()
 {
     QColorDialog dialog(this);
+
     dialog.setOption(QColorDialog::DontUseNativeDialog);
     QColor oldColor;
     {

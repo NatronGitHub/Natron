@@ -893,6 +893,7 @@ void
 KnobGuiColor::showColorDialog()
 {
     QColorDialog dialog( _rBox->parentWidget() );
+
     dialog.setOption(QColorDialog::DontUseNativeDialog);
     boost::shared_ptr<KnobColor> knob = _knob.lock();
     double curR = knob->getValue(0);
@@ -964,7 +965,7 @@ KnobGuiColor::showColorDialog()
             if (_dimension == 3) {
                 realColor.setAlpha(255);
             } else if (_dimension == 4) {
-                if (getKnob()->isEnabled(3)) {
+                if ( getKnob()->isEnabled(3) ) {
                     _aBox->setValue( userColor.alphaF() ); // no conversion, alpha is linear
                 }
             }
