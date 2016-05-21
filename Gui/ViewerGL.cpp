@@ -378,10 +378,11 @@ ViewerGL::paintGL()
 
             ///Depending on the premultiplication of the input image we use a different blending func
             ImagePremultiplicationEnum premultA = _imp->displayingImagePremult[0];
-            //if ( !_imp->viewerTab->isCheckerboardEnabled() ) {
-            //    premultA = eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
-            //}
 
+            // Left side of the wipe is displayed as Opaque if there is no checkerboard.
+            // That way, unpremultiplied images can easily be displayed, even if their alpha is zero.
+            // We do not "unpremult" premultiplied RGB for displaying it, because it is the usual way
+            // to visualize masks: areas with alpha=0 appear as black.
             switch (compOperator) {
             case eViewerCompositingOperatorNone: {
                 if (drawTexture[0]) {
