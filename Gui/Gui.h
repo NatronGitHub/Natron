@@ -553,7 +553,7 @@ public:
 
     /// Handle the viewer keys separately: use the nativeVirtualKey so that they work
     /// on any keyboard, including French AZERTY (where numbers are shifted)
-    static int handleNativeKeys(int key, quint32 nativeVirtualKey) WARN_UNUSED_RETURN;
+    static int handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey) WARN_UNUSED_RETURN;
 
     void setApplicationConsoleActionVisible(bool visible);
 

@@ -387,7 +387,7 @@ Gui::setLastKeyUpVisitedClickFocus(bool visited)
 /// Handle the viewer keys separately: use the nativeVirtualKey so that they work
 /// on any keyboard, including French AZERTY (where numbers are shifted)
 int
-Gui::handleNativeKeys(int key, quint32 nativeVirtualKey)
+Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
 {
 #ifdef Q_WS_MAC
     // OS X virtual key codes, from
@@ -402,7 +402,7 @@ Gui::handleNativeKeys(int key, quint32 nativeVirtualKey)
     // kVK_ANSI_7                    = 0x1A,
     // kVK_ANSI_8                    = 0x1C,
     // kVK_ANSI_0                    = 0x1D,
-
+    Q_UNUSED(nativeScanCode);
     switch (nativeVirtualKey) {
         case 0x12:
             return Qt::Key_1;
@@ -428,9 +428,14 @@ Gui::handleNativeKeys(int key, quint32 nativeVirtualKey)
 #endif
 #ifdef Q_WS_WIN
 #pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
+    // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
+    qDebug << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
 #endif
 #ifdef Q_WS_X11
 #pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
+    // probably only possible on Linux
+    // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
+    qDebug << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
 #endif
     return key;
 }
@@ -443,7 +448,7 @@ Gui::keyPressEvent(QKeyEvent* e)
     }
 
     QWidget* w = qApp->widgetAt( QCursor::pos() );
-    Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeVirtualKey() );
+    Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
     Qt::KeyboardModifiers modifiers = e->modifiers();
 
     if (key == Qt::Key_Escape) {
