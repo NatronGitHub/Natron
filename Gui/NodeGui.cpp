@@ -657,6 +657,7 @@ NodeGui::onSettingsPanelColorChanged(const QColor & color)
         _currentColor = color;
     }
     Q_EMIT colorChanged(color);
+
     refreshCurrentBrush();
 }
 

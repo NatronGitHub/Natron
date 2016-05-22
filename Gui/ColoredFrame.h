@@ -25,19 +25,21 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <QFrame>
 #include <QColor>
 
 #include "Gui/GuiFwd.h"
-#include "Global/Macros.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class ColoredFrame : public QFrame
+class ColoredFrame
+    : public QFrame
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -50,9 +52,8 @@ public:
 public Q_SLOTS:
 
     void setFrameColor(const QColor& color);
-    
-private:
 
+private:
 
     QColor _frameColor;
 };

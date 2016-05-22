@@ -27,16 +27,14 @@
 NATRON_NAMESPACE_ENTER;
 
 ColoredFrame::ColoredFrame(QWidget* parent)
-: QFrame(parent)
-, _frameColor(Qt::black)
+    : QFrame(parent)
+    , _frameColor(Qt::black)
 {
 }
 
 ColoredFrame::~ColoredFrame()
 {
-    
 }
-
 
 const QColor&
 ColoredFrame::getFrameColor()
@@ -44,13 +42,12 @@ ColoredFrame::getFrameColor()
     return _frameColor;
 }
 
-
 void
 ColoredFrame::setFrameColor(const QColor& color)
 {
     _frameColor = color;
 
-    setStyleSheet(QString::fromUtf8("ColoredFrame { border:1px solid rgb(%1, %2, %3); border-radius: 2px; }").arg(color.red()).arg(color.green()).arg(color.blue()));
+    setStyleSheet( QString::fromUtf8("ColoredFrame { border:1px solid rgb(%1, %2, %3); border-radius: 2px; }").arg( color.red() ).arg( color.green() ).arg( color.blue() ) );
 }
 
 NATRON_NAMESPACE_EXIT;

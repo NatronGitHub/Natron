@@ -167,8 +167,8 @@ NodeViewerContext::createGui()
         _imp->mainContainerLayout = new QHBoxLayout(_imp->mainContainer);
         _imp->mainContainerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->mainContainerLayout->setSpacing(0);
-        _imp->nodeLabel = new Label(QString::fromUtf8(node->getNode()->getLabel().c_str()), _imp->mainContainer);
-        QObject::connect(node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)));
+        _imp->nodeLabel = new Label(QString::fromUtf8( node->getNode()->getLabel().c_str() ), _imp->mainContainer);
+        QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)) );
         _imp->widgetsContainer = new QWidget(_imp->mainContainer);
         _imp->widgetsContainerLayout = new QVBoxLayout(_imp->widgetsContainer);
         _imp->widgetsContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -176,8 +176,8 @@ NodeViewerContext::createGui()
         _imp->mainContainerLayout->addWidget(_imp->widgetsContainer);
         _imp->mainContainerLayout->addWidget(_imp->nodeLabel);
         _imp->mainContainerLayout->addStretch();
-        onNodeColorChanged(node->getCurrentColor());
-        QObject::connect(node.get(), SIGNAL(colorChanged(QColor)), this, SLOT(onNodeColorChanged(QColor)));
+        onNodeColorChanged( node->getCurrentColor() );
+        QObject::connect( node.get(), SIGNAL(colorChanged(QColor)), this, SLOT(onNodeColorChanged(QColor)) );
         setContainerWidget(_imp->mainContainer);
         _imp->createKnobs(knobsOrdered);
     }
@@ -247,7 +247,8 @@ addSpacer(QBoxLayout* layout)
 void
 NodeViewerContext::onNodeColorChanged(const QColor& color)
 {
-    QString labelStyle = QString::fromUtf8("Label { color: rgb(%1, %2, %3); }").arg(color.red()).arg(color.green()).arg(color.blue());
+    QString labelStyle = QString::fromUtf8("Label { color: rgb(%1, %2, %3); }").arg( color.red() ).arg( color.green() ).arg( color.blue() );
+
     _imp->nodeLabel->setStyleSheet(labelStyle);
     _imp->mainContainer->setFrameColor(color);
 }

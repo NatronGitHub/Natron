@@ -91,7 +91,6 @@ AbortableRenderInfo::AbortableRenderInfo(bool canAbort,
 
 AbortableRenderInfo::~AbortableRenderInfo()
 {
-
 }
 
 U64
