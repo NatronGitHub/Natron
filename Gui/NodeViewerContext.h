@@ -27,8 +27,6 @@
 
 #include "Global/Macros.h"
 
-#include <QObject>
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
 #endif
@@ -99,6 +97,8 @@ Q_SIGNALS:
 
 public Q_SLOTS:
 
+    void onNodeColorChanged(const QColor& color);
+
     /**
      * @brief Received when the selection rectangle has changed on the viewer.
      * @param onRelease When true, this signal is emitted on the mouse release event
@@ -127,6 +127,7 @@ private:
 
     boost::scoped_ptr<NodeViewerContextPrivate> _imp;
 };
+
 
 NATRON_NAMESPACE_EXIT;
 

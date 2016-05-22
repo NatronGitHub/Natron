@@ -80,6 +80,7 @@ SOURCES += \
     Button.cpp \
     ChannelsComboBox.cpp \
     ClickableLabel.cpp \
+    ColoredFrame.cpp \
     ComboBox.cpp \
     CurveEditor.cpp \
     CurveEditorUndoRedo.cpp \
@@ -237,6 +238,7 @@ HEADERS += \
     Button.h \
     ChannelsComboBox.h \
     ClickableLabel.h \
+    ColoredFrame.h \
     ComboBox.h \
     CurveEditor.h \
     CurveEditorUndoRedo.h \

@@ -522,6 +522,8 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
+    void colorChanged(QColor);
+
     void positionChanged(int x, int y);
 
     void settingsPanelClosed(bool b);

@@ -656,6 +656,7 @@ NodeGui::onSettingsPanelColorChanged(const QColor & color)
         QMutexLocker k(&_currentColorMutex);
         _currentColor = color;
     }
+    Q_EMIT colorChanged(color);
     refreshCurrentBrush();
 }
 
