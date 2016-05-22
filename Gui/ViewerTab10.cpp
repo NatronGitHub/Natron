@@ -550,7 +550,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
 
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
-    Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeVirtualKey() );
+    Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeSCanCode(), e->nativeVirtualKey() );
     double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
     if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
