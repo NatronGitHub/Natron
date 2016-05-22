@@ -61,7 +61,7 @@ struct AbortableRenderInfoPrivate
     ThreadSet threadsForThisRender;
 #endif
 
-    boost::shared_ptr<QTimer> abortTimeoutTimer;
+    boost::scoped_ptr<QTimer> abortTimeoutTimer;
 
     AbortableRenderInfoPrivate(bool canAbort,
                                U64 age)
@@ -91,9 +91,7 @@ AbortableRenderInfo::AbortableRenderInfo(bool canAbort,
 
 AbortableRenderInfo::~AbortableRenderInfo()
 {
-    if (_imp->abortTimeoutTimer) {
-        _imp->abortTimeoutTimer->stop();
-    }
+
 }
 
 U64
