@@ -550,7 +550,7 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
 
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
-    Qt::Key key = (Qt::Key)e->key();
+    Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeVirtualKey() );
     double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
     if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
@@ -743,6 +743,26 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
         connectToInput(8);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectToInput(9);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput1, modifiers, key) ) {
+        connectToBInput(0);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput2, modifiers, key) ) {
+        connectToBInput(1);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput3, modifiers, key) ) {
+        connectToBInput(2);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput4, modifiers, key) ) {
+        connectToBInput(3);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput5, modifiers, key) ) {
+        connectToBInput(4);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput6, modifiers, key) ) {
+        connectToBInput(5);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput7, modifiers, key) ) {
+        connectToBInput(6);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput8, modifiers, key) ) {
+        connectToBInput(7);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput9, modifiers, key) ) {
+        connectToBInput(8);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
+        connectToBInput(9);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
         _imp->viewer->toggleOverlays();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key) ) {

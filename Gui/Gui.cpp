@@ -514,7 +514,7 @@ Gui::createMenuActions()
         connect( _imp->actionsOpenRecentFile[c], SIGNAL(triggered()), this, SLOT(openRecentFile()) );
     }
 
-    const char* descs[10] = {
+    const char* descs[NATRON_CONNECT_INPUT_NB] = {
         kShortcutDescActionConnectViewerToInput1,
         kShortcutDescActionConnectViewerToInput2,
         kShortcutDescActionConnectViewerToInput3,
@@ -524,9 +524,19 @@ Gui::createMenuActions()
         kShortcutDescActionConnectViewerToInput7,
         kShortcutDescActionConnectViewerToInput8,
         kShortcutDescActionConnectViewerToInput9,
-        kShortcutDescActionConnectViewerToInput10
+        kShortcutDescActionConnectViewerToInput10,
+        kShortcutDescActionConnectViewerBToInput1,
+        kShortcutDescActionConnectViewerBToInput2,
+        kShortcutDescActionConnectViewerBToInput3,
+        kShortcutDescActionConnectViewerBToInput4,
+        kShortcutDescActionConnectViewerBToInput5,
+        kShortcutDescActionConnectViewerBToInput6,
+        kShortcutDescActionConnectViewerBToInput7,
+        kShortcutDescActionConnectViewerBToInput8,
+        kShortcutDescActionConnectViewerBToInput9,
+        kShortcutDescActionConnectViewerBToInput10
     };
-    const char* ids[10] = {
+    const char* ids[NATRON_CONNECT_INPUT_NB] = {
         kShortcutIDActionConnectViewerToInput1,
         kShortcutIDActionConnectViewerToInput2,
         kShortcutIDActionConnectViewerToInput3,
@@ -536,13 +546,24 @@ Gui::createMenuActions()
         kShortcutIDActionConnectViewerToInput7,
         kShortcutIDActionConnectViewerToInput8,
         kShortcutIDActionConnectViewerToInput9,
-        kShortcutIDActionConnectViewerToInput10
+        kShortcutIDActionConnectViewerToInput10,
+        kShortcutIDActionConnectViewerBToInput1,
+        kShortcutIDActionConnectViewerBToInput2,
+        kShortcutIDActionConnectViewerBToInput3,
+        kShortcutIDActionConnectViewerBToInput4,
+        kShortcutIDActionConnectViewerBToInput5,
+        kShortcutIDActionConnectViewerBToInput6,
+        kShortcutIDActionConnectViewerBToInput7,
+        kShortcutIDActionConnectViewerBToInput8,
+        kShortcutIDActionConnectViewerBToInput9,
+        kShortcutIDActionConnectViewerBToInput10
     };
 
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < NATRON_CONNECT_INPUT_NB; ++i) {
         _imp->actionConnectInput[i] = new ActionWithShortcut(kShortcutGroupGlobal, ids[i], descs[i], this);
-        _imp->actionConnectInput[i]->setData(i);
+#pragma message WARN("TODO: implement connectInput for B side")
+        _imp->actionConnectInput[i]->setData(i%10); // <--  will always connect A !!!!!!!
         _imp->actionConnectInput[i]->setShortcutContext(Qt::WidgetShortcut);
         QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectInput()) );
     }
