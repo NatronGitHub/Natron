@@ -544,7 +544,7 @@ ViewerTab::leaveEvent(QEvent* e)
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
-    qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
+    //qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
     if ( getGui() ) {
         getGui()->setActiveViewer(this);
     }

@@ -389,7 +389,7 @@ Gui::setLastKeyUpVisitedClickFocus(bool visited)
 int
 Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
 {
-    qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
+    //qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
 #ifdef Q_WS_MAC
     // OS X virtual key codes, from
     // MacOSX10.11.sdk/System/Library/Frameworks/Carbon.framework/Frameworks/HIToolbox.framework/Headers/Events.h
@@ -440,6 +440,7 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
     //  55   0x37   (VK_7)              | 7 key
     //  56   0x38   (VK_8)              | 8 key
     //  57   0x39   (VK_9)              | 9 key
+    // Windows seems to always return the same virtual key for digits, whatever the modifi
     Q_UNUSED(nativeScanCode);
     switch (nativeVirtualKey) {
         case 0x30:
@@ -466,7 +467,7 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
 #endif
 #if defined(Q_WS_X11) && defined(Q_OS_LINUX)
 #pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
-    // probably only possible on Linux
+    // probably only possible on Linux, since scancodes are OS-dependent
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
     Q_UNUSED(nativeVirtualKey);
     switch (nativeScanCode) {
@@ -498,7 +499,7 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
 void
 Gui::keyPressEvent(QKeyEvent* e)
 {
-    qDebug() << "Gui::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
+    //qDebug() << "Gui::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
     if (_imp->currentPanelFocusEventRecursion > 0) {
         return;
     }

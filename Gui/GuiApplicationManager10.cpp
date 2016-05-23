@@ -796,8 +796,7 @@ GuiApplicationManager::populateShortcuts()
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionEnableRenderStats, kShortcutDescActionEnableRenderStats, Qt::NoModifier, Qt::Key_F2);
 
-#ifdef Q_WS_MAC
-    // Note: keys 0-1 are handles by Gui::handleNativeKeys(), and should thus work even on international keyboards
+    // Note: keys 0-1 are handled by Gui::handleNativeKeys(), and should thus work even on international keyboards
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::NoModifier, Qt::Key_3);
@@ -818,30 +817,6 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput8, kShortcutDescActionConnectViewerBToInput8, Qt::ShiftModifier, Qt::Key_8);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput9, kShortcutDescActionConnectViewerBToInput9, Qt::ShiftModifier, Qt::Key_9);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, kShortcutDescActionConnectViewerBToInput10, Qt::ShiftModifier, Qt::Key_0);
-#else
-#pragma message WARN("TODO: Gui::handleNativeKeys() on X11/linux and Win")
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::NoModifier, Qt::Key_3,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, Qt::NoModifier, Qt::Key_4,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, Qt::NoModifier, Qt::Key_5,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, Qt::NoModifier, Qt::Key_6,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, Qt::NoModifier, Qt::Key_7,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::NoModifier, Qt::Key_8,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::NoModifier, Qt::Key_9,
-                            Qt::ShiftModifier);
-    registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0,
-                            Qt::ShiftModifier);
-
-#endif
 
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, kShortcutDescActionShowPaneFullScreen, Qt::NoModifier, Qt::Key_Space);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, kShortcutDescActionNextTab, Qt::ControlModifier, Qt::Key_T);
