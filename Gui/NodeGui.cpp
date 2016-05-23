@@ -1957,12 +1957,13 @@ NodeGui::deactivate(bool triggerRender)
 {
     ///first deactivate all child instance if any
     NodePtr node = getNode();
-    bool isMultiInstanceChild = node->getParentMultiInstance().get() != NULL;
+
+    bool isMultiInstanceChild = node ? node->getParentMultiInstance().get() != NULL : false;
 
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
+    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
     if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
     }

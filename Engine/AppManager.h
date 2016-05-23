@@ -616,6 +616,7 @@ public Q_SLOTS:
 
     void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
 
+    void onQuitWatcherFinished(int taskID, const WatcherCallerArgsPtr& args);
 
 Q_SIGNALS:
 

@@ -286,6 +286,12 @@ public:
     void resetProject();
 
 
+    /**
+    * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
+    * This is called only when calling AppManager::abortAnyProcessing()
+    **/
+    void quitAnyProcessingForAllNodes(QObject* receiver, const char* member, const WatcherCallerArgsPtr& args);
+
     struct TreeOutput
     {
         NodePtr node;
@@ -317,6 +323,8 @@ public:
     void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
 
 public Q_SLOTS:
+
+    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
 
     void onAutoSaveTimerTriggered();
 
@@ -363,6 +371,8 @@ private:
      * @brief Resets the project state clearing all nodes and the project name.
      **/
     void reset(bool aboutToQuit);
+
+    void doResetEnd(bool aboutToQuit);
 
     /**
      * @brief Must be implemented to initialize any knob using the

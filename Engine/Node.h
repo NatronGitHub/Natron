@@ -166,16 +166,11 @@ public:
 
     void refreshAcceptedBitDepths();
 
-    /*@brief Quit all processing done by all render instances of this node
-       This is called when the effect is about to be deleted pluginsly
-     */
-    void setMustQuitProcessing(bool mustQuit);
-
     /**
      * @brief Quits any processing on going on this node, this call is non blocking
      **/
     void quitAnyProcessing_non_blocking();
-    void quitAnyProcessing_blocking();
+    void quitAnyProcessing_blocking(bool allowThreadsToRestart);
 
     /* @brief Similar to quitAnyProcessing except that the threads aren't destroyed
      * This is called when a node is deleted by the user
@@ -708,12 +703,6 @@ public:
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
     bool aborted() const;
-
-    /**
-     * @brief Called externally when the rendering is aborted. You should never
-     * call this yourself.
-     **/
-    void notifyRenderBeingAborted();
 
     bool makePreviewByDefault() const;
 

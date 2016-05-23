@@ -318,7 +318,7 @@ GenericSchedulerThread::abortThreadedTask()
     }
 
     ThreadStateEnum state = getThreadState();
-    if (state == eThreadStateAborted || eThreadStateIdle) {
+    if (state == eThreadStateAborted || state == eThreadStateIdle) {
         return false;
     }
 
@@ -486,7 +486,7 @@ GenericSchedulerThread::run()
 
         // Handle abort and termination requests
         // If the thread has not been aborted, put it asleep
-        if (state != eThreadStateActive) {
+        if (state == eThreadStateActive) {
             state = eThreadStateIdle;
         }
 

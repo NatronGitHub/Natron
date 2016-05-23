@@ -249,7 +249,7 @@ NodeRenderWatcher::handleBlockingTask(int taskID)
                 break;
 
             case eBlockingTaskQuitAnyProcessing:
-                node->quitAnyProcessing_blocking();
+                node->quitAnyProcessing_blocking(false);
                 break;
         }
     }

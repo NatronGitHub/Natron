@@ -1205,6 +1205,9 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
     // This is the number of time this thread was woken up by a render thread because a frame was available for processing,
     // but this is not the frame this thread expects to render. If it reaches a certain amount, we detected a stall and abort.
     int nbIterationsWithoutProcessing = 0;
+    
+    startRender();
+    
     for (;;) {
         ///When set to true, we don't sleep in the bufEmptyCondition but in the startCondition instead, indicating
         ///we finished a render
@@ -3056,11 +3059,9 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
         if (working) {
             _imp->scheduler->abortThreadedTask();
         }
-        if ( working || isPlaybackAutoRestartEnabled() ) {
-            boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->scheduler->getCurrentRunArgs();
-            assert(runArgs);
+        boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->scheduler->getCurrentRunArgs();
+        if ((working || isPlaybackAutoRestartEnabled()) && runArgs) {
             _imp->scheduler->renderFromCurrentFrame( enableRenderStats, runArgs->viewsToRender,  runArgs->pushTimelineDirection);
-
             return;
         }
     }
@@ -3629,16 +3630,17 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
                 }
             }
         }
-
-        assert( found != _imp->producedQueue.end() );
-
-        found->request.reset();
-        mtArgs->frames = found->frames;
-        mtArgs->stats = found->stats;
-        _imp->producedQueue.erase(found);
+        
+        if ( found != _imp->producedQueue.end() ) {
+            
+            found->request.reset();
+            mtArgs->frames = found->frames;
+            mtArgs->stats = found->stats;
+            _imp->producedQueue.erase(found);
+        }
     } // QMutexLocker k(&_imp->producedQueueMutex);
-
-
+    
+    
     if (state == eThreadStateActive) {
         state = resolveState();
     }

@@ -290,8 +290,6 @@ public:
         , nodeIsDequeuingCond()
         , nodeIsRendering(0)
         , nodeIsRenderingMutex()
-        , mustQuitProcessing(false)
-        , mustQuitProcessingMutex()
         , persistentMessage()
         , persistentMessageType(0)
         , persistentMessageMutex()
@@ -504,8 +502,6 @@ public:
     ///Counter counting how many parallel renders are active on the node
     int nodeIsRendering;
     mutable QMutex nodeIsRenderingMutex;
-    bool mustQuitProcessing;
-    mutable QMutex mustQuitProcessingMutex;
     QString persistentMessage;
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
@@ -2359,28 +2355,6 @@ Node::Implementation::checkForExitPreview()
     }
 }
 
-
-
-void
-Node::setMustQuitProcessing(bool mustQuit)
-{
-    {
-        QMutexLocker k(&_imp->mustQuitProcessingMutex);
-        _imp->mustQuitProcessing = mustQuit;
-    }
-    if ( getRotoContext() ) {
-        NodesList rotopaintNodes;
-        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
-        for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->setMustQuitProcessing(mustQuit);
-        }
-    }
-    //Attempt to wake-up  sleeping threads of the thread pool
-    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-    _imp->nodeIsDequeuing = false;
-    _imp->nodeIsDequeuingCond.wakeAll();
-}
-
 void
 Node::quitAnyProcessing_non_blocking()
 {
@@ -2405,9 +2379,8 @@ Node::quitAnyProcessing_non_blocking()
 }
 
 void
-Node::quitAnyProcessing_blocking()
+Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 {
-    assert(QThread::currentThread() == qApp->thread());
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         if (_imp->nodeIsDequeuing) {
@@ -2423,7 +2396,10 @@ Node::quitAnyProcessing_blocking()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        isOutput->getRenderEngine()->waitForAbortToComplete_enforce_blocking();
+        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        assert(engine);
+        engine->quitEngine(allowThreadsToRestart);
+        engine->waitForEngineToQuit_enforce_blocking();
     }
 
     //Returns when the preview is done computign
@@ -2433,7 +2409,7 @@ Node::quitAnyProcessing_blocking()
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
         for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing_blocking();
+            (*it)->quitAnyProcessing_blocking(allowThreadsToRestart);
         }
     }
 }
@@ -5777,7 +5753,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         parentCol->notifyNodeDeactivated( shared_from_this() );
     }
 
-    if (hideGui) {
+    if (hideGui && !beingDestroyed) {
         Q_EMIT deactivated(triggerRender);
     }
     {
@@ -6016,7 +5992,9 @@ Node::destroyNodeInternal(bool fromDest,
         NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
         NodesList nodesToWatch;
         nodesToWatch.push_back(shared_from_this());
-        isGrp->getNodes_recursive(nodesToWatch, false);
+        if (isGrp) {
+            isGrp->getNodes_recursive(nodesToWatch, false);
+        }
         _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
         QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
         boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
@@ -6026,7 +6004,7 @@ Node::destroyNodeInternal(bool fromDest,
 
     } else {
         // Well, we are in the destructor, we better have nothing left to render
-        quitAnyProcessing_blocking();
+        quitAnyProcessing_blocking(false);
         doDestroyNodeInternalEnd(true, false);
     }
 
@@ -6564,23 +6542,6 @@ Node::aborted() const
     return _imp->effect->aborted();
 }
 
-void
-Node::notifyRenderBeingAborted()
-{
-#pragma message WARN("this should be removed")
-//
-//    if (QThread::currentThread() == qApp->thread()) {
-    ///The render thread is waiting for the main-thread to dequeue actions
-    ///but the main-thread is waiting for the render thread to abort
-    ///cancel the dequeuing
-    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-
-    if (_imp->nodeIsDequeuing) {
-        _imp->nodeIsDequeuing = false;
-        //Attempt to wake-up  sleeping threads of the thread pool
-        _imp->nodeIsDequeuingCond.wakeAll();
-    }
-}
 
 bool
 Node::message(MessageTypeEnum type,
@@ -9025,18 +8986,9 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
 
     ///Wait for the main-thread to be done dequeuing the connect actions queue
     if ( QThread::currentThread() != qApp->thread() ) {
-        bool mustQuitProcessing;
-        {
-            QMutexLocker k(&_imp->mustQuitProcessingMutex);
-            mustQuitProcessing = _imp->mustQuitProcessing;
-        }
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while (_imp->nodeIsDequeuing && !aborted() && !mustQuitProcessing) {
+        while (_imp->nodeIsDequeuing && !aborted()) {
             _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
-            {
-                QMutexLocker k(&_imp->mustQuitProcessingMutex);
-                mustQuitProcessing = _imp->mustQuitProcessing;
-            }
         }
     }
 
