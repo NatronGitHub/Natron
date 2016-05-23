@@ -470,25 +470,25 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
     Q_UNUSED(nativeVirtualKey);
     switch (nativeScanCode) {
-        case 0x02:
+        case 10:
             return Qt::Key_1;
-        case 0x03:
+        case 11:
             return Qt::Key_2;
-        case 0x04:
+        case 12:
             return Qt::Key_3;
-        case 0x05:
+        case 13:
             return Qt::Key_4;
-        case 0x06:
+        case 14:
             return Qt::Key_5;
-        case 0x07:
+        case 15:
             return Qt::Key_6;
-        case 0x08:
+        case 16:
             return Qt::Key_7;
-        case 0x09:
+        case 17:
             return Qt::Key_8;
-        case 0x0a:
+        case 18:
             return Qt::Key_9;
-        case 0x0b:
+        case 19:
             return Qt::Key_0;
     }
 #endif
