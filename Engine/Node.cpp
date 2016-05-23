@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Format.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
@@ -237,7 +238,7 @@ public:
         , computingPreviewMutex()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
-        , mustQuitPreview(false)
+        , mustQuitPreview(0)
         , mustQuitPreviewMutex()
         , mustQuitPreviewCond()
         , renderInstancesSharedMutex(QMutex::Recursive)
@@ -326,7 +327,9 @@ public:
         gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
     }
 
-    void abortPreview();
+    void abortPreview_non_blocking();
+
+    void abortPreview_blocking();
 
     bool checkForExitPreview();
 
@@ -424,7 +427,7 @@ public:
     mutable QMutex computingPreviewMutex;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
-    bool mustQuitPreview;
+    int mustQuitPreview;
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
@@ -530,7 +533,7 @@ public:
     bool useAlpha0ToConvertFromRGBToRGBA;
     mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
-
+    boost::shared_ptr<NodeRenderWatcher> renderWatcher;
     /*
        Used to block render emitions while modifying nodes links
        MT-safe: only accessed/used on main thread
@@ -2307,7 +2310,22 @@ Node::hasOverlay() const
 }
 
 void
-Node::Implementation::abortPreview()
+Node::Implementation::abortPreview_non_blocking()
+{
+    bool computing;
+    {
+        QMutexLocker locker(&computingPreviewMutex);
+        computing = computingPreview;
+    }
+
+    if (computing) {
+        QMutexLocker l(&mustQuitPreviewMutex);
+        ++mustQuitPreview;
+    }
+}
+
+void
+Node::Implementation::abortPreview_blocking()
 {
     bool computing;
     {
@@ -2318,7 +2336,7 @@ Node::Implementation::abortPreview()
     if (computing) {
         QMutexLocker l(&mustQuitPreviewMutex);
         assert(!mustQuitPreview);
-        mustQuitPreview = true;
+        ++mustQuitPreview;
         while (mustQuitPreview) {
             mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
         }
@@ -2331,7 +2349,7 @@ Node::Implementation::checkForExitPreview()
     {
         QMutexLocker locker(&mustQuitPreviewMutex);
         if (mustQuitPreview) {
-            mustQuitPreview = false;
+            mustQuitPreview = 0;
             mustQuitPreviewCond.wakeOne();
 
             return true;
@@ -2341,16 +2359,7 @@ Node::Implementation::checkForExitPreview()
     }
 }
 
-void
-Node::abortAnyProcessing()
-{
-    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
 
-    if (isOutput) {
-        isOutput->getRenderEngine()->abortRendering(false, true);
-    }
-    _imp->abortPreview();
-}
 
 void
 Node::setMustQuitProcessing(bool mustQuit)
@@ -2373,8 +2382,32 @@ Node::setMustQuitProcessing(bool mustQuit)
 }
 
 void
-Node::quitAnyProcessing()
+Node::quitAnyProcessing_non_blocking()
 {
+
+    //If this effect has a RenderEngine, make sure it is finished
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
+
+    if (isOutput) {
+        isOutput->getRenderEngine()->quitEngine(true);
+    }
+
+    //Returns when the preview is done computign
+    _imp->abortPreview_non_blocking();
+
+    if ( isRotoPaintingNode() ) {
+        NodesList rotopaintNodes;
+        getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
+        for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
+            (*it)->quitAnyProcessing_non_blocking();
+        }
+    }
+}
+
+void
+Node::quitAnyProcessing_blocking()
+{
+    assert(QThread::currentThread() == qApp->thread());
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
         if (_imp->nodeIsDequeuing) {
@@ -2390,19 +2423,45 @@ Node::quitAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine();
+        isOutput->getRenderEngine()->waitForAbortToComplete_enforce_blocking();
     }
 
     //Returns when the preview is done computign
-    _imp->abortPreview();
+    _imp->abortPreview_blocking();
 
     if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
         for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing();
+            (*it)->quitAnyProcessing_blocking();
         }
     }
+}
+
+void
+Node::abortAnyProcessing_non_blocking()
+{
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+
+    if (isOutput) {
+        isOutput->getRenderEngine()->abortRendering(false);
+    }
+    _imp->abortPreview_non_blocking();
+}
+
+void
+Node::abortAnyProcessing_blocking()
+{
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+
+    if (isOutput) {
+        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        assert(engine);
+        engine->abortRendering(false);
+        engine->waitForAbortToComplete_enforce_blocking();
+
+    }
+    _imp->abortPreview_blocking();
 }
 
 Node::~Node()
@@ -5705,12 +5764,12 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     //quitAnyProcessing();
     if (!beingDestroyed) {
         _imp->effect->abortAnyEvaluation();
-        _imp->abortPreview();
+        _imp->abortPreview_non_blocking();
     }
 
     ///Free all memory used by the plug-in.
 
-    ///COMMENTED-OUT: Don't do this, the node may still be rendering here.
+    ///COMMENTED-OUT: Don't do this, the node may still be rendering here since the abort call is not blocking.
     ///_imp->effect->clearPluginMemoryChunks();
     clearLastRenderedImage();
 
@@ -5845,23 +5904,35 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     _imp->runOnNodeCreatedCB(true);
 } // activate
 
-void
-Node::destroyNodeInternal(bool fromDest,
-                          bool autoReconnect)
+class NodeDestroyNodeInternalArgs : public GenericWatcherCallerArgs
 {
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if (!_imp->effect) {
-        return;
-    }
+public:
 
-    {
-        QMutexLocker k(&_imp->activatedMutex);
-        _imp->isBeingDestroyed = true;
-    }
+    bool autoReconnect;
 
-    quitAnyProcessing();
+    NodeDestroyNodeInternalArgs()
+    : GenericWatcherCallerArgs()
+    {}
 
+    virtual ~NodeDestroyNodeInternalArgs() {}
+};
+
+void
+Node::onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args)
+{
+    assert(_imp->renderWatcher);
+    assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
+    assert(args);
+    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>(args.get());
+    assert(thisArgs);
+    doDestroyNodeInternalEnd(false, thisArgs->autoReconnect);
+    _imp->renderWatcher.reset();
+}
+
+void
+Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
+{
 
     ///Remove the node from the project
     deactivate(NodesList(),
@@ -5887,7 +5958,7 @@ Node::destroyNodeInternal(bool fromDest,
     ///Quit any rendering
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
     if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine();
+        isOutput->getRenderEngine()->quitEngine(true);
     }
 
     ///Remove all images in the cache associated to this node
@@ -5901,9 +5972,9 @@ Node::destroyNodeInternal(bool fromDest,
 
     ///Disconnect all inputs
     /*int maxInputs = getMaxInputCount();
-       for (int i = 0; i < maxInputs; ++i) {
-       disconnectInput(i);
-       }*/
+     for (int i = 0; i < maxInputs; ++i) {
+     disconnectInput(i);
+     }*/
 
     ///Kill the effect
     _imp->effect->clearPluginMemoryChunks();
@@ -5920,6 +5991,45 @@ Node::destroyNodeInternal(bool fromDest,
             getGroup()->removeNode(thisShared);
         }
     }
+
+}
+
+
+void
+Node::destroyNodeInternal(bool fromDest,
+                          bool autoReconnect)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    if (!_imp->effect) {
+        return;
+    }
+
+    {
+        QMutexLocker k(&_imp->activatedMutex);
+        _imp->isBeingDestroyed = true;
+    }
+
+
+
+    if (!fromDest) {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+        NodesList nodesToWatch;
+        nodesToWatch.push_back(shared_from_this());
+        isGrp->getNodes_recursive(nodesToWatch, false);
+        _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
+        QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
+        boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
+        args->autoReconnect = autoReconnect;
+        _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
+
+
+    } else {
+        // Well, we are in the destructor, we better have nothing left to render
+        quitAnyProcessing_blocking();
+        doDestroyNodeInternalEnd(true, false);
+    }
+
 } // Node::destroyNodeInternal
 
 void
@@ -6457,6 +6567,7 @@ Node::aborted() const
 void
 Node::notifyRenderBeingAborted()
 {
+#pragma message WARN("this should be removed")
 //
 //    if (QThread::currentThread() == qApp->thread()) {
     ///The render thread is waiting for the main-thread to dequeue actions

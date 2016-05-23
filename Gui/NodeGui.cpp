@@ -250,7 +250,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( internalNode->getEffectInstance().get() );
     if (isOutput) {
-        QObject::connect ( isOutput->getRenderEngine(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
+        QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isOutput);

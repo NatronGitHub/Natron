@@ -473,11 +473,11 @@ ProgressPanel::startTask(const NodePtr& node,
         if ( node->getEffectInstance()->isOutput() ) {
             OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
             if (isOutput) {
-                RenderEngine* engine = isOutput->getRenderEngine();
+                boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
                 assert(engine);
-                QObject::connect( engine, SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
-                QObject::connect( engine, SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
-                QObject::connect( task.get(), SIGNAL(taskCanceled()), engine, SLOT(abortRendering_Blocking()) );
+                QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
+                QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
+                QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
             }
         }
     }

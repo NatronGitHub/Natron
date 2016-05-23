@@ -1632,7 +1632,7 @@ AppInstance::startWritersRendering(bool doBlockingRender,
             item.process.reset( new ProcessHandler(savePath, item.work.writer) );
             QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
         } else {
-            QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
+            QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
         }
 
         bool canPause = !item.work.writer->isVideoWriter();

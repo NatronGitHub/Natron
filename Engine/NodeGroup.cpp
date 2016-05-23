@@ -429,9 +429,12 @@ NodeCollection::clearNodes(bool emitSignal)
         nodesToDelete = _imp->nodes;
     }
 
-    ///First quit any processing
+    ///Clear recursively containers inside this group
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->quitAnyProcessing();
+
+        // You should have called quitAnyProcessing before!
+        assert(!(*it)->isNodeRendering());
+        
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             isGrp->clearNodes(emitSignal);

@@ -1673,6 +1673,7 @@ Project::reset(bool aboutToQuit)
         _imp->projectClosing = true;
     }
 
+
     _imp->runOnProjectCloseCallback();
 
     QString lockFilePath = getLockAbsoluteFilePath();
@@ -1690,6 +1691,8 @@ Project::reset(bool aboutToQuit)
             }
         }
     }
+
+
     clearNodes(!aboutToQuit);
 
     if (!aboutToQuit) {

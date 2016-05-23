@@ -85,20 +85,13 @@ OutputEffectInstance::OutputEffectInstance(NodePtr node)
     : EffectInstance(node)
     , _outputEffectDataLock()
     , _renderSequenceRequests()
-    , _engine(0)
-    , _writerCurrentFrame(0)
-    , _writerFirstFrame(0)
-    , _writerLastFrame(0)
+    , _engine()
 {
 }
 
 OutputEffectInstance::~OutputEffectInstance()
 {
-    if (_engine) {
-        ///Thread must have been killed before.
-        assert( !_engine->hasThreadsAlive() );
-    }
-    delete _engine;
+
 }
 
 void
@@ -297,7 +290,7 @@ OutputEffectInstance::launchRenderSequence(const RenderSequenceArgs& args)
                               args.lastFrame,
                               args.frameStep,
                               args.viewsToRender,
-                              OutputSchedulerThread::eRenderDirectionForward);
+                              eRenderDirectionForward);
 }
 
 void
@@ -344,46 +337,6 @@ OutputEffectInstance::notifyRenderFinished()
     launchRenderSequence(newArgs);
 }
 
-int
-OutputEffectInstance::getCurrentFrame() const
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    return _writerCurrentFrame;
-}
-
-void
-OutputEffectInstance::setCurrentFrame(int f)
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    _writerCurrentFrame = f;
-}
-
-void
-OutputEffectInstance::incrementCurrentFrame()
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    ++_writerCurrentFrame;
-}
-
-void
-OutputEffectInstance::decrementCurrentFrame()
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    --_writerCurrentFrame;
-}
-
-int
-OutputEffectInstance::getFirstFrame() const
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    return _writerFirstFrame;
-}
-
 bool
 OutputEffectInstance::isSequentialRenderBeingAborted() const
 {
@@ -397,33 +350,9 @@ OutputEffectInstance::isDoingSequentialRender() const
 }
 
 void
-OutputEffectInstance::setFirstFrame(int f)
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    _writerFirstFrame = f;
-}
-
-int
-OutputEffectInstance::getLastFrame() const
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    return _writerLastFrame;
-}
-
-void
-OutputEffectInstance::setLastFrame(int f)
-{
-    QMutexLocker l(&_outputEffectDataLock);
-
-    _writerLastFrame = f;
-}
-
-void
 OutputEffectInstance::initializeData()
 {
-    _engine = createRenderEngine();
+    _engine.reset(createRenderEngine());
 }
 
 RenderEngine*

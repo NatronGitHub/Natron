@@ -967,6 +967,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp(), SLOT(goToNextKeyframe()) );
     QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp(), SLOT(goToPreviousKeyframe()) );
     NodePtr wrapperNode = _imp->viewerNode->getNode();
+    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
     QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
                       this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputChanged(int)), this, SLOT(onInputChanged(int)) );
@@ -999,8 +1000,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()) );
     QObject::connect( _imp->viewerNode, SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
     QObject::connect( _imp->fpsBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinboxFpsChanged(double)) );
-    QObject::connect( _imp->viewerNode->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
-    QObject::connect( _imp->viewerNode->getRenderEngine(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
+    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
+    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
     manageSlotsForInfoWidget(0, true);
 
     QObject::connect( _imp->clipToProjectFormatButton, SIGNAL(clicked(bool)), this, SLOT(onClipToProjectButtonToggle(bool)) );

@@ -201,7 +201,7 @@ public:
                                      const NodePtr& rotoPaintNode,
                                      bool useTLS,
                                      boost::shared_ptr<ViewerArgs> args[2],
-                                     const boost::shared_ptr<RequestedFrame>& request,
+                                     const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                      const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
 
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
@@ -429,16 +429,12 @@ private:
                                               bool canAbort,
                                               const NodePtr& rotoPaintNode,
                                               bool useTLS,
-                                              const boost::shared_ptr<RequestedFrame>& request,
+                                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                               const boost::shared_ptr<RenderStats>& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
-    void setCurrentlyUpdatingOpenGLViewer(bool updating);
-    bool isCurrentlyUpdatingOpenGLViewer() const;
 
 private:
 

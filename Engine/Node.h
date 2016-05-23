@@ -172,17 +172,16 @@ public:
     void setMustQuitProcessing(bool mustQuit);
 
     /**
-     * @brief Quits any processing on going on this node and waits until done
-     * After this call all threads launched by this node are stopped.
-     * This is called when clearing all nodes of the project (see Project::reset) or when calling
-     * AppManager::abortAnyProcessing()
+     * @brief Quits any processing on going on this node, this call is non blocking
      **/
-    void quitAnyProcessing();
+    void quitAnyProcessing_non_blocking();
+    void quitAnyProcessing_blocking();
 
     /* @brief Similar to quitAnyProcessing except that the threads aren't destroyed
      * This is called when a node is deleted by the user
      */
-    void abortAnyProcessing();
+    void abortAnyProcessing_non_blocking();
+    void abortAnyProcessing_blocking();
 
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
@@ -695,6 +694,8 @@ public:
 private:
 
     void destroyNodeInternal(bool fromDest, bool autoReconnect);
+
+    void doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect);
 
 public:
 
@@ -1315,6 +1316,8 @@ private:
 
 public Q_SLOTS:
 
+
+    void onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args);
 
     void onRefreshIdentityStateRequestReceived();
 

@@ -141,16 +141,16 @@ void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    RenderEngine* engine = _imp->viewerNode->getRenderEngine();
+    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
 
     assert(engine);
     if (connect) {
-        QObject::connect( engine, SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex], SLOT(setFps(double,double)) );
-        QObject::connect( engine, SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
+        QObject::connect( engine.get(), SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex], SLOT(setFps(double,double)) );
+        QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
     } else {
-        QObject::disconnect( engine, SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex],
+        QObject::disconnect( engine.get(), SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex],
                              SLOT(setFps(double,double)) );
-        QObject::disconnect( engine, SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
+        QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
     }
 }
 
@@ -274,9 +274,9 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             ViewerInstance* viewer = (*it)->getInternalNode();
             if (viewer) {
-                RenderEngine* engine = viewer->getRenderEngine();
-                if ( engine && engine->hasThreadsWorking() ) {
-                    engine->abortRendering(true, false);
+                boost::shared_ptr<RenderEngine> engine = viewer->getRenderEngine();
+                if ( engine ) {
+                    engine->abortRendering(true);
                     engine->renderCurrentFrame(false, true);
                 }
             }
