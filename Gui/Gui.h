@@ -615,6 +615,7 @@ public Q_SLOTS:
     void createNewViewer();
 
     void connectInput();
+    void connectBInput();
 
     void connectInput(int inputNb);
     void connectBInput(int inputNb);

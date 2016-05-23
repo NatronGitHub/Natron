@@ -499,14 +499,6 @@ Gui::connectInput(int inputNb)
 }
 
 void
-Gui::connectBInput(int inputNb)
-{
-#pragma message WARN("TODO: Gui::connectBInput()")
-    qDebug() << "Gui::connectBInput" << inputNb;
-    return connectInput(inputNb);
-}
-
-void
 Gui::connectInput()
 {
     QAction* action = qobject_cast<QAction*>( sender() );
@@ -516,6 +508,27 @@ Gui::connectInput()
     }
     int inputNb = action->data().toInt();
     connectInput(inputNb);
+}
+
+void
+Gui::connectBInput(int inputNb)
+{
+#pragma message WARN("TODO: Gui::connectBInput()")
+    qDebug() << "Gui::connectBInput" << inputNb;
+
+    return connectInput(inputNb);
+}
+
+void
+Gui::connectBInput()
+{
+    QAction* action = qobject_cast<QAction*>( sender() );
+
+    if (!action) {
+        return;
+    }
+    int inputNb = action->data().toInt();
+    connectBInput(inputNb);
 }
 
 void

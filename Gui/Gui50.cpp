@@ -387,10 +387,12 @@ Gui::setLastKeyUpVisitedClickFocus(bool visited)
 /// Handle the viewer keys separately: use the nativeVirtualKey so that they work
 /// on any keyboard, including French AZERTY (where numbers are shifted)
 int
-Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
+Gui::handleNativeKeys(int key,
+                      quint32 nativeScanCode,
+                      quint32 nativeVirtualKey)
 {
     //qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
-    if (!appPTR->getCurrentSettings()->isViewerKeysEnabled()) {
+    if ( !appPTR->getCurrentSettings()->isViewerKeysEnabled() ) {
         return key;
     }
 
@@ -409,26 +411,36 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
     // kVK_ANSI_0                    = 0x1D,
     Q_UNUSED(nativeScanCode);
     switch (nativeVirtualKey) {
-        case 0x12:
-            return Qt::Key_1;
-        case 0x13:
-            return Qt::Key_2;
-        case 0x14:
-            return Qt::Key_3;
-        case 0x15:
-            return Qt::Key_4;
-        case 0x16:
-            return Qt::Key_6;
-        case 0x17:
-            return Qt::Key_5;
-        case 0x18:
-            return Qt::Key_9;
-        case 0x1A:
-            return Qt::Key_7;
-        case 0x1C:
-            return Qt::Key_8;
-        case 0x1D:
-            return Qt::Key_0;
+    case 0x12:
+
+        return Qt::Key_1;
+    case 0x13:
+
+        return Qt::Key_2;
+    case 0x14:
+
+        return Qt::Key_3;
+    case 0x15:
+
+        return Qt::Key_4;
+    case 0x16:
+
+        return Qt::Key_6;
+    case 0x17:
+
+        return Qt::Key_5;
+    case 0x18:
+
+        return Qt::Key_9;
+    case 0x1A:
+
+        return Qt::Key_7;
+    case 0x1C:
+
+        return Qt::Key_8;
+    case 0x1D:
+
+        return Qt::Key_0;
     }
 #endif
 #ifdef Q_WS_WIN
@@ -446,26 +458,36 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
     // Windows seems to always return the same virtual key for digits, whatever the modifi
     Q_UNUSED(nativeScanCode);
     switch (nativeVirtualKey) {
-        case 0x30:
-            return Qt::Key_0;
-        case 0x31:
-            return Qt::Key_1;
-        case 0x32:
-            return Qt::Key_2;
-        case 0x33:
-            return Qt::Key_3;
-        case 0x34:
-            return Qt::Key_4;
-        case 0x35:
-            return Qt::Key_5;
-        case 0x36:
-            return Qt::Key_6;
-        case 0x37:
-            return Qt::Key_7;
-        case 0x38:
-            return Qt::Key_8;
-        case 0x39:
-            return Qt::Key_9;
+    case 0x30:
+
+        return Qt::Key_0;
+    case 0x31:
+
+        return Qt::Key_1;
+    case 0x32:
+
+        return Qt::Key_2;
+    case 0x33:
+
+        return Qt::Key_3;
+    case 0x34:
+
+        return Qt::Key_4;
+    case 0x35:
+
+        return Qt::Key_5;
+    case 0x36:
+
+        return Qt::Key_6;
+    case 0x37:
+
+        return Qt::Key_7;
+    case 0x38:
+
+        return Qt::Key_8;
+    case 0x39:
+
+        return Qt::Key_9;
     }
 #endif
 #if defined(Q_WS_X11) && defined(Q_OS_LINUX)
@@ -473,30 +495,41 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
     Q_UNUSED(nativeVirtualKey);
     switch (nativeScanCode) {
-        case 10:
-            return Qt::Key_1;
-        case 11:
-            return Qt::Key_2;
-        case 12:
-            return Qt::Key_3;
-        case 13:
-            return Qt::Key_4;
-        case 14:
-            return Qt::Key_5;
-        case 15:
-            return Qt::Key_6;
-        case 16:
-            return Qt::Key_7;
-        case 17:
-            return Qt::Key_8;
-        case 18:
-            return Qt::Key_9;
-        case 19:
-            return Qt::Key_0;
+    case 10:
+
+        return Qt::Key_1;
+    case 11:
+
+        return Qt::Key_2;
+    case 12:
+
+        return Qt::Key_3;
+    case 13:
+
+        return Qt::Key_4;
+    case 14:
+
+        return Qt::Key_5;
+    case 15:
+
+        return Qt::Key_6;
+    case 16:
+
+        return Qt::Key_7;
+    case 17:
+
+        return Qt::Key_8;
+    case 18:
+
+        return Qt::Key_9;
+    case 19:
+
+        return Qt::Key_0;
     }
 #endif
+
     return key;
-}
+} // Gui::handleNativeKeys
 
 void
 Gui::keyPressEvent(QKeyEvent* e)

@@ -1113,12 +1113,12 @@ ViewerTab::connectToInput(int inputNb)
     }
 }
 
-
 void
 ViewerTab::connectToBInput(int inputNb)
 {
 #pragma message WARN("TODO: ViewerTab::connectToBInput()")
     qDebug() << "ViewerTab::connectToBInput" << inputNb;
+
     return connectToInput(inputNb);
 }
 
