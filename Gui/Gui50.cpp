@@ -430,11 +430,67 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
 #ifdef Q_WS_WIN
 #pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
     // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
+    //  48   0x30   (VK_0)              | 0 key
+    //  49   0x31   (VK_1)              | 1 key
+    //  50   0x32   (VK_2)              | 2 key
+    //  51   0x33   (VK_3)              | 3 key
+    //  52   0x34   (VK_4)              | 4 key
+    //  53   0x35   (VK_5)              | 5 key
+    //  54   0x36   (VK_6)              | 6 key
+    //  55   0x37   (VK_7)              | 7 key
+    //  56   0x38   (VK_8)              | 8 key
+    //  57   0x39   (VK_9)              | 9 key
+    Q_UNUSED(nativeScanCode);
+    switch (nativeVirtualKey) {
+        case 0x30:
+            return Qt::Key_0;
+        case 0x31:
+            return Qt::Key_1;
+        case 0x32:
+            return Qt::Key_2;
+        case 0x33:
+            return Qt::Key_3;
+        case 0x34:
+            return Qt::Key_4;
+        case 0x35:
+            return Qt::Key_5;
+        case 0x36:
+            return Qt::Key_6;
+        case 0x37:
+            return Qt::Key_7;
+        case 0x38:
+            return Qt::Key_8;
+        case 0x39:
+            return Qt::Key_9;
+    }
 #endif
-#ifdef Q_WS_X11
+#if defined(Q_WS_X11) && defined(Q_OS_LINUX)
 #pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
     // probably only possible on Linux
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
+    Q_UNUSED(nativeVirtualKey);
+    switch (nativeScanCode) {
+        case 0x02:
+            return Qt::Key_1;
+        case 0x03:
+            return Qt::Key_2;
+        case 0x04:
+            return Qt::Key_3;
+        case 0x05:
+            return Qt::Key_4;
+        case 0x06:
+            return Qt::Key_5;
+        case 0x07:
+            return Qt::Key_6;
+        case 0x08:
+            return Qt::Key_7;
+        case 0x09:
+            return Qt::Key_8;
+        case 0x0a:
+            return Qt::Key_9;
+        case 0x0b:
+            return Qt::Key_0;
+    }
 #endif
     return key;
 }
