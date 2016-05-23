@@ -1080,7 +1080,6 @@ Settings::initializeKnobsViewers()
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _viewersTab->addKnob(_autoProxyLevel);
 
-
     _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( this, tr("Max. opened node viewer interface") );
     _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
     _maximumNodeViewerUIOpened->setMinimum(1);
@@ -1088,6 +1087,17 @@ Settings::initializeKnobsViewers()
     _maximumNodeViewerUIOpened->disableSlider();
     _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
+
+    _viewerKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
+    _viewerKeys->setName("viewerNumberKeys");
+    _viewerKeys->setAnimationEnabled(false);
+    _viewerKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
+                                    "is used for switching input (<key> connects input to A side, "
+                                    "<shift-key> connects input to B side), even if the corresponding "
+                                    "character in the current keyboard layout is not a number.\n"
+                                    "This may have to be disabled when using a remote display connection "
+                                    "to Linux from a different OS.") );
+    _viewersTab->addKnob(_viewerKeys);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1499,6 +1509,7 @@ Settings::setDefaultValues()
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
     _maximumNodeViewerUIOpened->setDefaultValue(2);
+    _viewerKeys->setDefaultValue(true);
 
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -2190,6 +2201,9 @@ Settings::onKnobValueChanged(KnobI* k,
     return ret;
 } // onKnobValueChanged
 
+////////////////////////////////////////////////////////
+// "Viewers" pane
+
 ImageBitDepthEnum
 Settings::getViewersBitDepth() const
 {
@@ -2208,6 +2222,75 @@ int
 Settings::getViewerTilesPowerOf2() const
 {
     return _powerOf2Tiling->getValue();
+}
+
+int
+Settings::getCheckerboardTileSize() const
+{
+    return _checkerboardTileSize->getValue();
+}
+
+void
+Settings::getCheckerboardColor1(double* r,
+                                double* g,
+                                double* b,
+                                double* a) const
+{
+    *r = _checkerboardColor1->getValue(0);
+    *g = _checkerboardColor1->getValue(1);
+    *b = _checkerboardColor1->getValue(2);
+    *a = _checkerboardColor1->getValue(3);
+}
+
+void
+Settings::getCheckerboardColor2(double* r,
+                                double* g,
+                                double* b,
+                                double* a) const
+{
+    *r = _checkerboardColor2->getValue(0);
+    *g = _checkerboardColor2->getValue(1);
+    *b = _checkerboardColor2->getValue(2);
+    *a = _checkerboardColor2->getValue(3);
+}
+
+bool
+Settings::isAutoWipeEnabled() const
+{
+    return _autoWipe->getValue();
+}
+
+bool
+Settings::isAutoProxyEnabled() const
+{
+    return _autoProxyWhenScrubbingTimeline->getValue();
+}
+
+unsigned int
+Settings::getAutoProxyMipMapLevel() const
+{
+    return (unsigned int)_autoProxyLevel->getValue() + 1;
+}
+
+int
+Settings::getMaxOpenedNodesViewerContext() const
+{
+    return _maximumNodeViewerUIOpened->getValue();
+}
+
+bool
+Settings::isViewerKeysEnabled() const
+{
+    return _viewerKeys->getValue();
+}
+
+///////////////////////////////////////////////////////
+// "Caching" pane
+
+bool
+Settings::isAggressiveCachingEnabled() const
+{
+    return _aggressiveCaching->getValue();
 }
 
 double
@@ -2233,6 +2316,8 @@ Settings::getMaximumDiskCacheNodeSize() const
 {
     return (U64)( _maxDiskCacheNodeGB->getValue() ) * std::pow(1024., 3.);
 }
+
+///////////////////////////////////////////////////
 
 double
 Settings::getUnreachableRamPercent() const
@@ -3145,36 +3230,6 @@ Settings::isAutoFixRelativeFilePathEnabled() const
 }
 
 int
-Settings::getCheckerboardTileSize() const
-{
-    return _checkerboardTileSize->getValue();
-}
-
-void
-Settings::getCheckerboardColor1(double* r,
-                                double* g,
-                                double* b,
-                                double* a) const
-{
-    *r = _checkerboardColor1->getValue(0);
-    *g = _checkerboardColor1->getValue(1);
-    *b = _checkerboardColor1->getValue(2);
-    *a = _checkerboardColor1->getValue(3);
-}
-
-void
-Settings::getCheckerboardColor2(double* r,
-                                double* g,
-                                double* b,
-                                double* a) const
-{
-    *r = _checkerboardColor2->getValue(0);
-    *g = _checkerboardColor2->getValue(1);
-    *b = _checkerboardColor2->getValue(2);
-    *a = _checkerboardColor2->getValue(3);
-}
-
-int
 Settings::getNumberOfParallelRenders() const
 {
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
@@ -3288,12 +3343,6 @@ bool
 Settings::notifyOnFileChange() const
 {
     return _notifyOnFileChange->getValue();
-}
-
-bool
-Settings::isAggressiveCachingEnabled() const
-{
-    return _aggressiveCaching->getValue();
 }
 
 bool
@@ -3753,24 +3802,6 @@ Settings::getDopeSheetEditorNodeSeparationWith() const
     return 4;
 }
 
-int
-Settings::getMaxOpenedNodesViewerContext() const
-{
-    return _maximumNodeViewerUIOpened->getValue();
-}
-
-bool
-Settings::isAutoProxyEnabled() const
-{
-    return _autoProxyWhenScrubbingTimeline->getValue();
-}
-
-unsigned int
-Settings::getAutoProxyMipMapLevel() const
-{
-    return (unsigned int)_autoProxyLevel->getValue() + 1;
-}
-
 bool
 Settings::isNaNHandlingEnabled() const
 {
@@ -3824,12 +3855,6 @@ std::string
 Settings::getUserStyleSheetFilePath() const
 {
     return _qssFile->getValue();
-}
-
-bool
-Settings::isAutoWipeEnabled() const
-{
-    return _autoWipe->getValue();
 }
 
 void

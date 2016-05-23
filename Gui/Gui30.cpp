@@ -528,6 +528,7 @@ Gui::connectBInput(int inputNb)
 {
 #pragma message WARN("TODO: Gui::connectBInput()")
     qDebug() << "Gui::connectBInput" << inputNb;
+
     return connectInput(inputNb);
 }
 

@@ -52,7 +52,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-#define NATRON_CONNECT_INPUT_NB (2*10)
+#define NATRON_CONNECT_INPUT_NB (2 * 10)
 
 struct GuiPrivate
 {
