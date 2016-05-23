@@ -204,6 +204,7 @@ public:
     Menu *menuRender;
     Menu *viewersMenu;
     Menu *viewerInputsMenu;
+    Menu *viewerInputsBMenu;
     Menu *viewersViewMenu;
     Menu *cacheMenu;
     Menu *menuHelp;

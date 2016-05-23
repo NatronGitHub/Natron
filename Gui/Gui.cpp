@@ -406,8 +406,9 @@ Gui::createMenuActions()
     _imp->menuDisplay = new Menu(tr("Display"), _imp->menubar);
     _imp->menuRender = new Menu(tr("Render"), _imp->menubar);
     _imp->viewersMenu = new Menu(tr("Viewer(s)"), _imp->menuDisplay);
-    _imp->viewerInputsMenu = new Menu(tr("Connect Current Viewer"), _imp->viewersMenu);
-    _imp->viewersViewMenu = new Menu(tr("Display View Number"), _imp->viewersMenu);
+    _imp->viewerInputsMenu = new Menu(tr("Connect to A Side"), _imp->viewersMenu);
+    _imp->viewerInputsBMenu = new Menu(tr("Connect to B Side"), _imp->viewersMenu);
+    _imp->viewersViewMenu = new Menu(tr("View"), _imp->viewersMenu);
     _imp->cacheMenu = new Menu(tr("Cache"), _imp->menubar);
     _imp->menuHelp = new Menu(tr("Help"), _imp->menubar);
 
@@ -562,11 +563,13 @@ Gui::createMenuActions()
 
     for (int i = 0; i < NATRON_CONNECT_INPUT_NB; ++i) {
         _imp->actionConnectInput[i] = new ActionWithShortcut(kShortcutGroupGlobal, ids[i], descs[i], this);
-#pragma message WARN("TODO: implement connectInput for B side")
-        _imp->actionConnectInput[i]->setData(i%10); // <--  will always connect A !!!!!!!
+        _imp->actionConnectInput[i]->setData( i % (NATRON_CONNECT_INPUT_NB / 2) );
         _imp->actionConnectInput[i]->setShortcutContext(Qt::WidgetShortcut);
-        QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectInput()) );
-    }
+        if (i < NATRON_CONNECT_INPUT_NB/2) {
+            QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectInput()) );
+        } else {
+            QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectBInput()) );
+        }    }
 
     _imp->actionImportLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, this);
     QObject::connect( _imp->actionImportLayout, SIGNAL(triggered()), this, SLOT(importLayout()) );
@@ -626,9 +629,14 @@ Gui::createMenuActions()
     _imp->menuDisplay->addAction(_imp->actionNewViewer);
     _imp->menuDisplay->addAction( _imp->viewersMenu->menuAction() );
     _imp->viewersMenu->addAction( _imp->viewerInputsMenu->menuAction() );
+    _imp->viewersMenu->addAction( _imp->viewerInputsBMenu->menuAction() );
     _imp->viewersMenu->addAction( _imp->viewersViewMenu->menuAction() );
-    for (int i = 0; i < 10; ++i) {
-        _imp->viewerInputsMenu->addAction(_imp->actionConnectInput[i]);
+    for (int i = 0; i < NATRON_CONNECT_INPUT_NB; ++i) {
+        if ( i < (NATRON_CONNECT_INPUT_NB / 2) ) {
+            _imp->viewerInputsMenu->addAction(_imp->actionConnectInput[i]);
+        } else {
+            _imp->viewerInputsBMenu->addAction(_imp->actionConnectInput[i]);
+        }
     }
 
     _imp->menuDisplay->addAction(_imp->actionProject_settings);

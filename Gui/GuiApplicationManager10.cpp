@@ -808,18 +808,18 @@ GuiApplicationManager::populateShortcuts()
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::NoModifier, Qt::Key_8);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::NoModifier, Qt::Key_9);
     registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::NoModifier, Qt::Key_0);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::ShiftModifier, Qt::Key_1);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::ShiftModifier, Qt::Key_2);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, kShortcutDescActionConnectViewerToInput3, Qt::ShiftModifier, Qt::Key_3);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, kShortcutDescActionConnectViewerToInput4, Qt::ShiftModifier, Qt::Key_4);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, kShortcutDescActionConnectViewerToInput5, Qt::ShiftModifier, Qt::Key_5);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, kShortcutDescActionConnectViewerToInput6, Qt::ShiftModifier, Qt::Key_6);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, kShortcutDescActionConnectViewerToInput7, Qt::ShiftModifier, Qt::Key_7);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, kShortcutDescActionConnectViewerToInput8, Qt::ShiftModifier, Qt::Key_8);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, kShortcutDescActionConnectViewerToInput9, Qt::ShiftModifier, Qt::Key_9);
-    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, kShortcutDescActionConnectViewerToInput10, Qt::ShiftModifier, Qt::Key_0);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput1, kShortcutDescActionConnectViewerBToInput1, Qt::ShiftModifier, Qt::Key_1);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput2, kShortcutDescActionConnectViewerBToInput2, Qt::ShiftModifier, Qt::Key_2);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput3, kShortcutDescActionConnectViewerBToInput3, Qt::ShiftModifier, Qt::Key_3);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput4, kShortcutDescActionConnectViewerBToInput4, Qt::ShiftModifier, Qt::Key_4);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput5, kShortcutDescActionConnectViewerBToInput5, Qt::ShiftModifier, Qt::Key_5);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput6, kShortcutDescActionConnectViewerBToInput6, Qt::ShiftModifier, Qt::Key_6);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput7, kShortcutDescActionConnectViewerBToInput7, Qt::ShiftModifier, Qt::Key_7);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput8, kShortcutDescActionConnectViewerBToInput8, Qt::ShiftModifier, Qt::Key_8);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput9, kShortcutDescActionConnectViewerBToInput9, Qt::ShiftModifier, Qt::Key_9);
+    registerKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, kShortcutDescActionConnectViewerBToInput10, Qt::ShiftModifier, Qt::Key_0);
 #else
-#pragma message WARN("TODO: Gui::handleNativeKeys() on X11 and Win")
+#pragma message WARN("TODO: Gui::handleNativeKeys() on X11/linux and Win")
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, kShortcutDescActionConnectViewerToInput1, Qt::NoModifier, Qt::Key_1,
                             Qt::ShiftModifier);
     registerKeybindWithMask(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, kShortcutDescActionConnectViewerToInput2, Qt::NoModifier, Qt::Key_2,
