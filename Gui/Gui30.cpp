@@ -35,6 +35,7 @@
 #include "Global/Macros.h"
 
 #include <QtCore/QThread>
+#include <QtCore/QDebug>
 
 #include <QAction>
 #include <QApplication> // qApp
@@ -520,6 +521,14 @@ Gui::connectInput(int inputNb)
         graph = _imp->_nodeGraphArea;
     }
     graph->connectCurrentViewerToSelection(inputNb);
+}
+
+void
+Gui::connectBInput(int inputNb)
+{
+#pragma message WARN("TODO: Gui::connectBInput()")
+    qDebug() << "Gui::connectBInput" << inputNb;
+    return connectInput(inputNb);
 }
 
 void
