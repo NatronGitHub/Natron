@@ -186,6 +186,25 @@
 /* Begin PBXFileReference section */
 		1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Natron.xcodeproj; path = App/Natron.xcodeproj; sourceTree = "<group>"; };
 		1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = NatronRenderer.xcodeproj; path = Renderer/NatronRenderer.xcodeproj; sourceTree = "<group>"; };
+		1E70D14F1CF33A0C000D2932 /* BUGS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = BUGS.md; sourceTree = "<group>"; };
+		1E70D1501CF33A0C000D2932 /* CHANGELOG.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
+		1E70D1511CF33A0C000D2932 /* config.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.pri; sourceTree = "<group>"; };
+		1E70D1521CF33A0C000D2932 /* CONTRIBUTING.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
+		1E70D1531CF33A0C000D2932 /* CONTRIBUTORS.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CONTRIBUTORS.txt; sourceTree = "<group>"; };
+		1E70D1541CF33A0C000D2932 /* global.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = global.pri; sourceTree = "<group>"; };
+		1E70D1551CF33A0C000D2932 /* INSTALL_FREEBSD.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_FREEBSD.md; sourceTree = "<group>"; };
+		1E70D1561CF33A0C000D2932 /* INSTALL_LINUX.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_LINUX.md; sourceTree = "<group>"; };
+		1E70D1571CF33A0C000D2932 /* INSTALL_OSX.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_OSX.md; sourceTree = "<group>"; };
+		1E70D1581CF33A0C000D2932 /* INSTALL_WINDOWS.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = INSTALL_WINDOWS.md; sourceTree = "<group>"; };
+		1E70D1591CF33A0C000D2932 /* LATEST_VERSION.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LATEST_VERSION.txt; sourceTree = "<group>"; };
+		1E70D15A1CF33A0C000D2932 /* libs.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = libs.pri; sourceTree = "<group>"; };
+		1E70D15B1CF33A0C000D2932 /* LICENSE_SHORT.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE_SHORT.txt; sourceTree = "<group>"; };
+		1E70D15C1CF33A0C000D2932 /* LICENSE.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		1E70D15D1CF33A0C000D2932 /* Natron.rc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Natron.rc; sourceTree = "<group>"; };
+		1E70D15E1CF33A0C000D2932 /* OpenColorIO-Configs-README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = "OpenColorIO-Configs-README.md"; sourceTree = "<group>"; };
+		1E70D15F1CF33A0C000D2932 /* OpenColorIO-Configs.pri */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "OpenColorIO-Configs.pri"; sourceTree = "<group>"; };
+		1E70D1601CF33A0C000D2932 /* Project.pro */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Project.pro; sourceTree = "<group>"; };
+		1E70D1611CF33A0C000D2932 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
@@ -209,9 +228,44 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		1E70D1621CF33AF3000D2932 /* QMake files */ = {
+			isa = PBXGroup;
+			children = (
+				1E70D1601CF33A0C000D2932 /* Project.pro */,
+				1E70D1541CF33A0C000D2932 /* global.pri */,
+				1E70D1511CF33A0C000D2932 /* config.pri */,
+				1E70D15A1CF33A0C000D2932 /* libs.pri */,
+				1E70D15F1CF33A0C000D2932 /* OpenColorIO-Configs.pri */,
+			);
+			name = "QMake files";
+			sourceTree = "<group>";
+		};
+		1E70D1631CF33B22000D2932 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+				1E70D14F1CF33A0C000D2932 /* BUGS.md */,
+				1E70D1501CF33A0C000D2932 /* CHANGELOG.md */,
+				1E70D1521CF33A0C000D2932 /* CONTRIBUTING.md */,
+				1E70D1531CF33A0C000D2932 /* CONTRIBUTORS.txt */,
+				1E70D1551CF33A0C000D2932 /* INSTALL_FREEBSD.md */,
+				1E70D1561CF33A0C000D2932 /* INSTALL_LINUX.md */,
+				1E70D1571CF33A0C000D2932 /* INSTALL_OSX.md */,
+				1E70D1581CF33A0C000D2932 /* INSTALL_WINDOWS.md */,
+				1E70D1591CF33A0C000D2932 /* LATEST_VERSION.txt */,
+				1E70D15B1CF33A0C000D2932 /* LICENSE_SHORT.txt */,
+				1E70D15C1CF33A0C000D2932 /* LICENSE.txt */,
+				1E70D15D1CF33A0C000D2932 /* Natron.rc */,
+				1E70D15E1CF33A0C000D2932 /* OpenColorIO-Configs-README.md */,
+				1E70D1611CF33A0C000D2932 /* README.md */,
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
 		1EADE5B718AA400B00EF3180 = {
 			isa = PBXGroup;
 			children = (
+				1E70D1631CF33B22000D2932 /* Documentation */,
+				1E70D1621CF33AF3000D2932 /* QMake files */,
 				1E306DED1C49497200BAC6E3 /* NatronRenderer.xcodeproj */,
 				1E189EBF1C49475E00F1FD20 /* Natron.xcodeproj */,
 				D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */,
