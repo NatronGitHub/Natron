@@ -1059,6 +1059,17 @@ Settings::initializeKnobsViewers()
                                               "any graph containing such effect(s) will be slower to render on the viewer than when this option "
                                               "is unchecked.") );
     _viewersTab->addKnob(_enableProgressReport);
+
+    _viewerKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
+    _viewerKeys->setName("viewerNumberKeys");
+    _viewerKeys->setAnimationEnabled(false);
+    _viewerKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
+                                    "is used for switching input (<key> connects input to A side, "
+                                    "<shift-key> connects input to B side), even if the corresponding "
+                                    "character in the current keyboard layout is not a number.\n"
+                                    "This may have to be disabled when using a remote display connection "
+                                    "to Linux from a different OS.") );
+    _viewersTab->addKnob(_viewerKeys);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1462,6 +1473,7 @@ Settings::setDefaultValues()
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
     _enableProgressReport->setDefaultValue(false);
+    _viewerKeys->setDefaultValue(true);
 
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -3640,6 +3652,12 @@ bool
 Settings::isInViewerProgressReportEnabled() const
 {
     return _enableProgressReport->getValue();
+}
+
+bool
+Settings::isViewerKeysEnabled() const
+{
+    return _viewerKeys->getValue();
 }
 
 bool

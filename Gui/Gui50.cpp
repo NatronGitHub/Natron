@@ -390,6 +390,10 @@ int
 Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
 {
     //qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
+    if (!appPTR->getCurrentSettings()->isViewerKeysEnabled()) {
+        return key;
+    }
+
 #ifdef Q_WS_MAC
     // OS X virtual key codes, from
     // MacOSX10.11.sdk/System/Library/Frameworks/Carbon.framework/Frameworks/HIToolbox.framework/Headers/Events.h
@@ -428,7 +432,6 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
     }
 #endif
 #ifdef Q_WS_WIN
-#pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
     // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
     //  48   0x30   (VK_0)              | 0 key
     //  49   0x31   (VK_1)              | 1 key
@@ -466,7 +469,6 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
     }
 #endif
 #if defined(Q_WS_X11) && defined(Q_OS_LINUX)
-#pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
     // probably only possible on Linux, since scancodes are OS-dependent
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
     Q_UNUSED(nativeVirtualKey);

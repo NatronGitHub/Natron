@@ -240,11 +240,16 @@ public:
 
     bool isAutoFixRelativeFilePathEnabled() const;
 
-    bool isAutoWipeEnabled() const;
 
     int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r, double* g, double* b, double* a) const;
     void getCheckerboardColor2(double* r, double* g, double* b, double* a) const;
+    bool isAutoWipeEnabled() const;
+    bool isAutoProxyEnabled() const;
+    unsigned int getAutoProxyMipMapLevel() const;
+    bool isInViewerProgressReportEnabled() const;
+    bool isViewerKeysEnabled() const;
+
 
     bool areRGBPixelComponentsSupported() const;
 
@@ -349,12 +354,7 @@ public:
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
     int getDopeSheetEditorNodeSeparationWith() const;
 
-    bool isAutoProxyEnabled() const;
-    unsigned int getAutoProxyMipMapLevel() const;
-
     bool isNaNHandlingEnabled() const;
-
-    bool isInViewerProgressReportEnabled() const;
 
     bool isDefaultAppearanceOutdated() const;
     void restoreDefaultAppearance();
@@ -470,6 +470,7 @@ private:
     boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<KnobChoice> _autoProxyLevel;
     boost::shared_ptr<KnobBool> _enableProgressReport;
+    boost::shared_ptr<KnobBool> _viewerKeys;
     boost::shared_ptr<KnobPage> _nodegraphTab;
     boost::shared_ptr<KnobBool> _autoTurbo;
     boost::shared_ptr<KnobBool> _useNodeGraphHints;
