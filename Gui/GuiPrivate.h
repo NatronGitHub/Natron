@@ -52,6 +52,8 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+#define NATRON_CONNECT_INPUT_NB (2*10)
+
 struct GuiPrivate
 {
     Q_DECLARE_TR_FUNCTIONS(Gui)
@@ -115,7 +117,7 @@ public:
     ActionWithShortcut *renderAllWriters;
     ActionWithShortcut *renderSelectedNode;
     ActionWithShortcut *enableRenderStats;
-    ActionWithShortcut* actionConnectInput[10];
+    ActionWithShortcut* actionConnectInput[NATRON_CONNECT_INPUT_NB];
     ActionWithShortcut* actionImportLayout;
     ActionWithShortcut* actionExportLayout;
     ActionWithShortcut* actionRestoreDefaultLayout;
@@ -202,6 +204,7 @@ public:
     Menu *menuRender;
     Menu *viewersMenu;
     Menu *viewerInputsMenu;
+    Menu *viewerInputsBMenu;
     Menu *viewersViewMenu;
     Menu *cacheMenu;
     Menu *menuHelp;

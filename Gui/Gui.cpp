@@ -406,8 +406,9 @@ Gui::createMenuActions()
     _imp->menuDisplay = new Menu(tr("Display"), _imp->menubar);
     _imp->menuRender = new Menu(tr("Render"), _imp->menubar);
     _imp->viewersMenu = new Menu(tr("Viewer(s)"), _imp->menuDisplay);
-    _imp->viewerInputsMenu = new Menu(tr("Connect Current Viewer"), _imp->viewersMenu);
-    _imp->viewersViewMenu = new Menu(tr("Display View Number"), _imp->viewersMenu);
+    _imp->viewerInputsMenu = new Menu(tr("Connect to A Side"), _imp->viewersMenu);
+    _imp->viewerInputsBMenu = new Menu(tr("Connect to B Side"), _imp->viewersMenu);
+    _imp->viewersViewMenu = new Menu(tr("View"), _imp->viewersMenu);
     _imp->cacheMenu = new Menu(tr("Cache"), _imp->menubar);
     _imp->menuHelp = new Menu(tr("Help"), _imp->menubar);
 
@@ -514,7 +515,7 @@ Gui::createMenuActions()
         connect( _imp->actionsOpenRecentFile[c], SIGNAL(triggered()), this, SLOT(openRecentFile()) );
     }
 
-    const char* descs[10] = {
+    const char* descs[NATRON_CONNECT_INPUT_NB] = {
         kShortcutDescActionConnectViewerToInput1,
         kShortcutDescActionConnectViewerToInput2,
         kShortcutDescActionConnectViewerToInput3,
@@ -524,9 +525,19 @@ Gui::createMenuActions()
         kShortcutDescActionConnectViewerToInput7,
         kShortcutDescActionConnectViewerToInput8,
         kShortcutDescActionConnectViewerToInput9,
-        kShortcutDescActionConnectViewerToInput10
+        kShortcutDescActionConnectViewerToInput10,
+        kShortcutDescActionConnectViewerBToInput1,
+        kShortcutDescActionConnectViewerBToInput2,
+        kShortcutDescActionConnectViewerBToInput3,
+        kShortcutDescActionConnectViewerBToInput4,
+        kShortcutDescActionConnectViewerBToInput5,
+        kShortcutDescActionConnectViewerBToInput6,
+        kShortcutDescActionConnectViewerBToInput7,
+        kShortcutDescActionConnectViewerBToInput8,
+        kShortcutDescActionConnectViewerBToInput9,
+        kShortcutDescActionConnectViewerBToInput10
     };
-    const char* ids[10] = {
+    const char* ids[NATRON_CONNECT_INPUT_NB] = {
         kShortcutIDActionConnectViewerToInput1,
         kShortcutIDActionConnectViewerToInput2,
         kShortcutIDActionConnectViewerToInput3,
@@ -536,16 +547,29 @@ Gui::createMenuActions()
         kShortcutIDActionConnectViewerToInput7,
         kShortcutIDActionConnectViewerToInput8,
         kShortcutIDActionConnectViewerToInput9,
-        kShortcutIDActionConnectViewerToInput10
+        kShortcutIDActionConnectViewerToInput10,
+        kShortcutIDActionConnectViewerBToInput1,
+        kShortcutIDActionConnectViewerBToInput2,
+        kShortcutIDActionConnectViewerBToInput3,
+        kShortcutIDActionConnectViewerBToInput4,
+        kShortcutIDActionConnectViewerBToInput5,
+        kShortcutIDActionConnectViewerBToInput6,
+        kShortcutIDActionConnectViewerBToInput7,
+        kShortcutIDActionConnectViewerBToInput8,
+        kShortcutIDActionConnectViewerBToInput9,
+        kShortcutIDActionConnectViewerBToInput10
     };
 
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < NATRON_CONNECT_INPUT_NB; ++i) {
         _imp->actionConnectInput[i] = new ActionWithShortcut(kShortcutGroupGlobal, ids[i], descs[i], this);
-        _imp->actionConnectInput[i]->setData(i);
+        _imp->actionConnectInput[i]->setData( i % (NATRON_CONNECT_INPUT_NB / 2) );
         _imp->actionConnectInput[i]->setShortcutContext(Qt::WidgetShortcut);
-        QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectInput()) );
-    }
+        if (i < NATRON_CONNECT_INPUT_NB/2) {
+            QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectInput()) );
+        } else {
+            QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectBInput()) );
+        }    }
 
     _imp->actionImportLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionImportLayout, kShortcutDescActionImportLayout, this);
     QObject::connect( _imp->actionImportLayout, SIGNAL(triggered()), this, SLOT(importLayout()) );
@@ -605,9 +629,14 @@ Gui::createMenuActions()
     _imp->menuDisplay->addAction(_imp->actionNewViewer);
     _imp->menuDisplay->addAction( _imp->viewersMenu->menuAction() );
     _imp->viewersMenu->addAction( _imp->viewerInputsMenu->menuAction() );
+    _imp->viewersMenu->addAction( _imp->viewerInputsBMenu->menuAction() );
     _imp->viewersMenu->addAction( _imp->viewersViewMenu->menuAction() );
-    for (int i = 0; i < 10; ++i) {
-        _imp->viewerInputsMenu->addAction(_imp->actionConnectInput[i]);
+    for (int i = 0; i < NATRON_CONNECT_INPUT_NB; ++i) {
+        if ( i < (NATRON_CONNECT_INPUT_NB / 2) ) {
+            _imp->viewerInputsMenu->addAction(_imp->actionConnectInput[i]);
+        } else {
+            _imp->viewerInputsBMenu->addAction(_imp->actionConnectInput[i]);
+        }
     }
 
     _imp->menuDisplay->addAction(_imp->actionProject_settings);

@@ -551,6 +551,10 @@ public:
     void setLastKeyPressVisitedClickFocus(bool visited);
     void setLastKeyUpVisitedClickFocus(bool visited);
 
+    /// Handle the viewer keys separately: use the nativeVirtualKey so that they work
+    /// on any keyboard, including French AZERTY (where numbers are shifted)
+    static int handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey) WARN_UNUSED_RETURN;
+
     void setApplicationConsoleActionVisible(bool visible);
 
     bool saveProjectAs(const std::string& filename);
@@ -613,6 +617,7 @@ public Q_SLOTS:
     void connectInput();
 
     void connectInput(int inputNb);
+    void connectBInput(int inputNb);
 
 
     void showView0();

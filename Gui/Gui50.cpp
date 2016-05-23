@@ -384,15 +384,128 @@ Gui::setLastKeyUpVisitedClickFocus(bool visited)
     _imp->keyUpEventHasVisitedFocusWidget = visited;
 }
 
+/// Handle the viewer keys separately: use the nativeVirtualKey so that they work
+/// on any keyboard, including French AZERTY (where numbers are shifted)
+int
+Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
+{
+    //qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
+#ifdef Q_WS_MAC
+    // OS X virtual key codes, from
+    // MacOSX10.11.sdk/System/Library/Frameworks/Carbon.framework/Frameworks/HIToolbox.framework/Headers/Events.h
+    // kVK_ANSI_1                    = 0x12,
+    // kVK_ANSI_2                    = 0x13,
+    // kVK_ANSI_3                    = 0x14,
+    // kVK_ANSI_4                    = 0x15,
+    // kVK_ANSI_6                    = 0x16,
+    // kVK_ANSI_5                    = 0x17,
+    // kVK_ANSI_9                    = 0x19,
+    // kVK_ANSI_7                    = 0x1A,
+    // kVK_ANSI_8                    = 0x1C,
+    // kVK_ANSI_0                    = 0x1D,
+    Q_UNUSED(nativeScanCode);
+    switch (nativeVirtualKey) {
+        case 0x12:
+            return Qt::Key_1;
+        case 0x13:
+            return Qt::Key_2;
+        case 0x14:
+            return Qt::Key_3;
+        case 0x15:
+            return Qt::Key_4;
+        case 0x16:
+            return Qt::Key_6;
+        case 0x17:
+            return Qt::Key_5;
+        case 0x18:
+            return Qt::Key_9;
+        case 0x1A:
+            return Qt::Key_7;
+        case 0x1C:
+            return Qt::Key_8;
+        case 0x1D:
+            return Qt::Key_0;
+    }
+#endif
+#ifdef Q_WS_WIN
+#pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
+    // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
+    //  48   0x30   (VK_0)              | 0 key
+    //  49   0x31   (VK_1)              | 1 key
+    //  50   0x32   (VK_2)              | 2 key
+    //  51   0x33   (VK_3)              | 3 key
+    //  52   0x34   (VK_4)              | 4 key
+    //  53   0x35   (VK_5)              | 5 key
+    //  54   0x36   (VK_6)              | 6 key
+    //  55   0x37   (VK_7)              | 7 key
+    //  56   0x38   (VK_8)              | 8 key
+    //  57   0x39   (VK_9)              | 9 key
+    // Windows seems to always return the same virtual key for digits, whatever the modifi
+    Q_UNUSED(nativeScanCode);
+    switch (nativeVirtualKey) {
+        case 0x30:
+            return Qt::Key_0;
+        case 0x31:
+            return Qt::Key_1;
+        case 0x32:
+            return Qt::Key_2;
+        case 0x33:
+            return Qt::Key_3;
+        case 0x34:
+            return Qt::Key_4;
+        case 0x35:
+            return Qt::Key_5;
+        case 0x36:
+            return Qt::Key_6;
+        case 0x37:
+            return Qt::Key_7;
+        case 0x38:
+            return Qt::Key_8;
+        case 0x39:
+            return Qt::Key_9;
+    }
+#endif
+#if defined(Q_WS_X11) && defined(Q_OS_LINUX)
+#pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
+    // probably only possible on Linux, since scancodes are OS-dependent
+    // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
+    Q_UNUSED(nativeVirtualKey);
+    switch (nativeScanCode) {
+        case 10:
+            return Qt::Key_1;
+        case 11:
+            return Qt::Key_2;
+        case 12:
+            return Qt::Key_3;
+        case 13:
+            return Qt::Key_4;
+        case 14:
+            return Qt::Key_5;
+        case 15:
+            return Qt::Key_6;
+        case 16:
+            return Qt::Key_7;
+        case 17:
+            return Qt::Key_8;
+        case 18:
+            return Qt::Key_9;
+        case 19:
+            return Qt::Key_0;
+    }
+#endif
+    return key;
+}
+
 void
 Gui::keyPressEvent(QKeyEvent* e)
 {
+    //qDebug() << "Gui::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
     if (_imp->currentPanelFocusEventRecursion > 0) {
         return;
     }
 
     QWidget* w = qApp->widgetAt( QCursor::pos() );
-    Qt::Key key = (Qt::Key)e->key();
+    Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
     Qt::KeyboardModifiers modifiers = e->modifiers();
 
     if (key == Qt::Key_Escape) {
@@ -489,6 +602,26 @@ Gui::keyPressEvent(QKeyEvent* e)
         connectInput(8);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
         connectInput(9);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput1, modifiers, key) ) {
+        connectBInput(0);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput2, modifiers, key) ) {
+        connectBInput(1);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput3, modifiers, key) ) {
+        connectBInput(2);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput4, modifiers, key) ) {
+        connectBInput(3);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput5, modifiers, key) ) {
+        connectBInput(4);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput6, modifiers, key) ) {
+        connectBInput(5);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput7, modifiers, key) ) {
+        connectBInput(6);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput8, modifiers, key) ) {
+        connectBInput(7);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput9, modifiers, key) ) {
+        connectBInput(8);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
+        connectBInput(9);
     } else {
         /*
          * Modifiers are always uncaught by child implementations so that we can forward them to 1 ViewerTab so that
