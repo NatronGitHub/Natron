@@ -275,6 +275,7 @@ public:
     void refresh(bool enableRenderStats);
 
     void connectToInput(int inputNb);
+    void connectToBInput(int inputNb);
 
     bool isPickerEnabled() const;
     void setPickerEnabled(bool enabled);

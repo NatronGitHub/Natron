@@ -31,6 +31,10 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QObject>
+CLANG_DIAG_ON(deprecated)
+
 #include "Engine/ViewIdx.h"
 
 #include "Gui/GuiFwd.h"
