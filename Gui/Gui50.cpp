@@ -429,13 +429,13 @@ Gui::handleNativeKeys(int key, quint32 nativeScanCode, quint32 nativeVirtualKey)
 #ifdef Q_WS_WIN
 #pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
     // https://msdn.microsoft.com/en-us/library/aa299374%28v=vs.60%29.aspx
-    qDebug << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
+    qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
 #endif
 #ifdef Q_WS_X11
 #pragma message WARN("TODO: handle keys 0-9 on AZERTY keyboards")
     // probably only possible on Linux
     // https://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html
-    qDebug << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
+    qDebug() << "scancode=" << nativeScanCode << "virtualkey=" << nativeVirtualKey;
 #endif
     return key;
 }
