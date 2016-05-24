@@ -2628,7 +2628,7 @@ ViewerGL::checkIfViewPortRoIValidOrRender()
                 ViewerInstance* viewer = getInternalNode();
                 assert(viewer);
                 if (viewer) {
-                    viewer->getRenderEngine()->abortRendering(true);
+                    viewer->getRenderEngine()->abortRenderingAutoRestart();
                     viewer->renderCurrentFrame(true);
                 }
             }

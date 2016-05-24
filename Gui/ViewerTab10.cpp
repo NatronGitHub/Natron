@@ -270,7 +270,7 @@ ViewerTab::abortRendering()
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             ViewerInstance* viewer = (*it)->getInternalNode();
             if (viewer) {
-                viewer->getRenderEngine()->abortRendering(false);
+                viewer->getRenderEngine()->abortRenderingNoRestart();
             }
         }
     }
@@ -330,6 +330,25 @@ ViewerTab::onEngineStopped()
     } else {
         if ( getGui() ) {
             getGui()->refreshAllTimeEvaluationParams();
+        }
+    }
+}
+
+void
+ViewerTab::abortViewersAndRefresh()
+{
+    if (!getGui()) {
+        return;
+    }
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            boost::shared_ptr<RenderEngine> engine = viewer->getRenderEngine();
+            if ( engine && engine->hasThreadsWorking() ) {
+                engine->abortRenderingAutoRestart();
+                engine->renderCurrentFrame(false, true);
+            }
         }
     }
 }

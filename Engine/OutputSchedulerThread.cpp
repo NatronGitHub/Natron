@@ -1080,7 +1080,7 @@ OutputSchedulerThread::startRender()
             l.unlock();
 
 
-            _imp->engine->abortRendering(false);
+            _imp->engine->abortRenderingNoRestart();
 
             return;
         }
@@ -1230,7 +1230,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 
         while (!bufferEmpty) {
 
-            ThreadStateEnum state = resolveState();
+            state = resolveState();
             if (state == eThreadStateAborted || state == eThreadStateStopped) {
                 ///Do not wait in the buf wait condition and go directly into the stopEngine()
                 renderFinished = true;
@@ -1843,7 +1843,7 @@ OutputSchedulerThread::notifyRenderFailure(const std::string& errorMessage)
     ///Handle failure: for viewers we make it black and don't display the error message which is irrelevant
     handleRenderFailure(errorMessage);
 
-    _imp->engine->abortRendering(false);
+    _imp->engine->abortRenderingNoRestart();
 
     if (args->isBlocking) {
         waitForAbortToComplete_enforce_blocking();
@@ -3157,11 +3157,9 @@ RenderEngine::waitForEngineToQuit_enforce_blocking()
 
 }
 
-
 bool
-RenderEngine::abortRendering(bool enableAutoRestartPlayback)
+RenderEngine::abortRenderingInternal()
 {
-    setPlaybackAutoRestartEnabled(enableAutoRestartPlayback);
     bool ret = false;
     if (_imp->currentFrameScheduler) {
         ret |= _imp->currentFrameScheduler->abortThreadedTask();
@@ -3172,6 +3170,20 @@ RenderEngine::abortRendering(bool enableAutoRestartPlayback)
         ret |= _imp->scheduler->abortThreadedTask();
     }
     return ret;
+}
+
+bool
+RenderEngine::abortRenderingNoRestart()
+{
+    setPlaybackAutoRestartEnabled(false);
+    return abortRenderingInternal();
+}
+
+bool
+RenderEngine::abortRenderingAutoRestart()
+{
+    setPlaybackAutoRestartEnabled(isDoingSequentialRender());
+    return abortRenderingInternal();
 }
 
 void

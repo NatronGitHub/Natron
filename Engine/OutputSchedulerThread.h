@@ -730,10 +730,17 @@ public:
 
     /**
      * @brief Aborts all computations. This is not blocking.
-     * @param
      * @returns False if the no thread was currently running, true if the abort request was taken into account.
+     * The AutoRestart version attempts to restart the playback upon a call to renderCurrentFrame
      **/
-    bool abortRendering(bool autoRestart);
+    bool abortRenderingAutoRestart();
+    bool abortRenderingNoRestart();
+
+private:
+
+    bool abortRenderingInternal();
+
+public:
 
     /**
      * @brief Blocks the calling thread until all renders are aborted, do not call from the main-thread!
@@ -775,7 +782,7 @@ public Q_SLOTS:
 
     void abortRendering_non_blocking()
     {
-        abortRendering(false);
+        abortRenderingNoRestart();
     }
 
     /**

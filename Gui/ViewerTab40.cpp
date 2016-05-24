@@ -269,19 +269,7 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
     _imp->playBackOutputSpinbox->setValue(second);
 
 
-    if ( getGui() ) {
-        const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-        for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-            ViewerInstance* viewer = (*it)->getInternalNode();
-            if (viewer) {
-                boost::shared_ptr<RenderEngine> engine = viewer->getRenderEngine();
-                if ( engine ) {
-                    engine->abortRendering(true);
-                    engine->renderCurrentFrame(false, true);
-                }
-            }
-        }
-    }
+    abortViewersAndRefresh();
 }
 
 void

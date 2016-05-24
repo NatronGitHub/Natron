@@ -219,7 +219,7 @@ RenderEngineWatcher::handleBlockingTask(int taskID)
     BlockingTaskEnum task = (BlockingTaskEnum)taskID;
     switch (task) {
         case eBlockingTaskWaitForAbort:
-            _engine->abortRendering(false);
+            _engine->abortRenderingNoRestart();
             _engine->waitForAbortToComplete_not_main_thread();
             break;
 

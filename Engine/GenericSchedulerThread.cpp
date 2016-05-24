@@ -271,15 +271,6 @@ GenericSchedulerThreadPrivate::resolveState()
 {
 
     GenericSchedulerThread::ThreadStateEnum ret = GenericSchedulerThread::eThreadStateActive;
-    {
-        QMutexLocker k(&abortRequestedMutex);
-        if (abortRequested > 0) {
-            abortRequested = 0;
-            ret = GenericSchedulerThread::eThreadStateAborted;
-            abortRequestedCond.wakeAll();
-        }
-    }
-
 
     // flag that we have quit the thread
     {
@@ -293,6 +284,19 @@ GenericSchedulerThreadPrivate::resolveState()
         }
 
     }
+
+    {
+        QMutexLocker k(&abortRequestedMutex);
+        if (abortRequested > 0) {
+            abortRequested = 0;
+            if (ret == GenericSchedulerThread::eThreadStateActive) {
+                ret = GenericSchedulerThread::eThreadStateAborted;
+            }
+            abortRequestedCond.wakeAll();
+        }
+    }
+
+
     return ret;
 }
 
@@ -496,6 +500,14 @@ GenericSchedulerThread::run()
         if (state == eThreadStateStopped) {
             // The thread is now stopped
             return;
+        }
+
+        // Reset the abort requested flag:
+        // If a thread A called abortThreadedTask() multiple times and the scheduler thread B was running in the meantime, it could very well
+        // stop and wait in the startRequestsCond
+        {
+            QMutexLocker k(&_imp->abortRequestedMutex);
+            _imp->abortRequested = 0;
         }
 
         {

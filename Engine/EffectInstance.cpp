@@ -4577,7 +4577,7 @@ EffectInstance::abortAnyEvaluation()
     for (std::list<OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         //Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
         //well not be finished
-        (*it)->getRenderEngine()->abortRendering(true);
+        (*it)->getRenderEngine()->abortRenderingAutoRestart();
     }
 }
 

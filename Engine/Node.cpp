@@ -235,6 +235,7 @@ public:
         , pyPlugGrouping()
         , pyPlugVersion(0)
         , computingPreview(false)
+        , previewThreadQuit(false)
         , computingPreviewMutex()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
@@ -327,7 +328,7 @@ public:
 
     void abortPreview_non_blocking();
 
-    void abortPreview_blocking();
+    void abortPreview_blocking(bool allowPreviewRenders);
 
     bool checkForExitPreview();
 
@@ -422,6 +423,7 @@ public:
     std::list<std::string> pyPlugGrouping;
     int pyPlugVersion;
     bool computingPreview;
+    bool previewThreadQuit;
     mutable QMutex computingPreviewMutex;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
@@ -2321,12 +2323,13 @@ Node::Implementation::abortPreview_non_blocking()
 }
 
 void
-Node::Implementation::abortPreview_blocking()
+Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
 {
     bool computing;
     {
         QMutexLocker locker(&computingPreviewMutex);
         computing = computingPreview;
+        previewThreadQuit = !allowPreviewRenders;
     }
 
     if (computing) {
@@ -2344,7 +2347,7 @@ Node::Implementation::checkForExitPreview()
 {
     {
         QMutexLocker locker(&mustQuitPreviewMutex);
-        if (mustQuitPreview) {
+        if (mustQuitPreview || previewThreadQuit) {
             mustQuitPreview = 0;
             mustQuitPreviewCond.wakeOne();
 
@@ -2403,7 +2406,7 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     }
 
     //Returns when the preview is done computign
-    _imp->abortPreview_blocking();
+    _imp->abortPreview_blocking(allowThreadsToRestart);
 
     if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
@@ -2420,7 +2423,7 @@ Node::abortAnyProcessing_non_blocking()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
 
     if (isOutput) {
-        isOutput->getRenderEngine()->abortRendering(false);
+        isOutput->getRenderEngine()->abortRenderingNoRestart();
     }
     _imp->abortPreview_non_blocking();
 }
@@ -2433,11 +2436,11 @@ Node::abortAnyProcessing_blocking()
     if (isOutput) {
         boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
         assert(engine);
-        engine->abortRendering(false);
+        engine->abortRenderingNoRestart();
         engine->waitForAbortToComplete_enforce_blocking();
 
     }
-    _imp->abortPreview_blocking();
+    _imp->abortPreview_blocking(false);
 }
 
 Node::~Node()

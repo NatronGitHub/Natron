@@ -884,7 +884,7 @@ Gui::onTimelineTimeAboutToChange()
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         boost::shared_ptr<RenderEngine> engine = (*it)->getInternalNode()->getRenderEngine();
-        engine->abortRendering(engine->isDoingSequentialRender());
+        engine->abortRenderingAutoRestart();
     }
 }
 
