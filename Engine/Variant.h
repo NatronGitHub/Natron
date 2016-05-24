@@ -29,12 +29,12 @@
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QVariant>
-CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMetaType>
 #include <QtCore/QDataStream>
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+CLANG_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 

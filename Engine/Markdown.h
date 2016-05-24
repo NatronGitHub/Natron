@@ -19,13 +19,19 @@
 #ifndef MARKDOWN_H
 #define MARKDOWN_H
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QObject>
-#include <QVector>
-#include <QStringList>
+#include <QtCore/QVector>
+#include <QtCore/QStringList>
+#include <QtCore/QCoreApplication>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -33,15 +39,17 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
-class Markdown : public QObject
+class Markdown
 {
-    Q_OBJECT
-public:
-    explicit Markdown(QObject *parent = 0);
+    Q_DECLARE_TR_FUNCTIONS(Markdown)
 
-public Q_SLOTS:
-    QString convert2html(QString markdown);
-    QString genPluginKnobsTable(QVector<QStringList> items);
+public:
+
+    Markdown();
+
+    static QString convert2html(QString markdown);
+    static QString genPluginKnobsTable(QVector<QStringList> items);
+    static QString parseCustomLinksForHTML(QString markdown);
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -1,0 +1,344 @@
+diff -ur qhttpserver/qhttpserver.pro Natron/libs/qhttpserver/qhttpserver.pro
+--- qhttpserver/qhttpserver.pro	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/qhttpserver.pro	2016-05-20 11:55:42.000000000 +0200
+@@ -1,8 +1,3 @@
+ CONFIG += ordered
+-
+ TEMPLATE = subdirs
+-
+-SUBDIRS += src \
+-           examples
+-
+-examples.depends = src
++SUBDIRS += src
+diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpconnection.cpp
+--- qhttpserver/src/qhttpconnection.cpp	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/src/qhttpconnection.cpp	2016-05-20 11:55:42.000000000 +0200
+@@ -61,7 +61,7 @@
+ 
+ QHttpConnection::~QHttpConnection()
+ {
+-    delete m_socket;
++    //delete m_socket;
+     m_socket = 0;
+ 
+     free(m_parser);
+@@ -202,7 +202,7 @@
+ 
+     /** set version **/
+     theConnection->m_request->setVersion(
+-        QString("%1.%2").arg(parser->http_major).arg(parser->http_minor));
++        QString::fromUtf8("%1.%2").arg(parser->http_major).arg(parser->http_minor));
+ 
+     /** get parsed url **/
+     struct http_parser_url urlInfo;
+diff -ur qhttpserver/src/qhttprequest.cpp Natron/libs/qhttpserver/src/qhttprequest.cpp
+--- qhttpserver/src/qhttprequest.cpp	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/src/qhttprequest.cpp	2016-05-20 11:55:42.000000000 +0200
+@@ -25,7 +25,7 @@
+ #include "qhttpconnection.h"
+ 
+ QHttpRequest::QHttpRequest(QHttpConnection *connection, QObject *parent)
+-    : QObject(parent), m_connection(connection), m_url("http://localhost/"), m_success(false)
++    : QObject(parent), m_connection(connection), m_url(QString::fromUtf8("http://localhost/")), m_success(false)
+ {
+ }
+ 
+@@ -35,7 +35,7 @@
+ 
+ QString QHttpRequest::header(const QString &field)
+ {
+-    return m_headers.value(field.toLower(), "");
++    return m_headers.value(field.toLower(), QString());
+ }
+ 
+ const HeaderHash &QHttpRequest::headers() const
+@@ -87,7 +87,7 @@
+ QString QHttpRequest::MethodToString(HttpMethod method)
+ {
+     int index = staticMetaObject.indexOfEnumerator("HttpMethod");
+-    return staticMetaObject.enumerator(index).valueToKey(method);
++    return QString::fromUtf8(staticMetaObject.enumerator(index).valueToKey(method));
+ }
+ 
+ void QHttpRequest::appendBody(const QByteArray &body)
+diff -ur qhttpserver/src/qhttpresponse.cpp Natron/libs/qhttpserver/src/qhttpresponse.cpp
+--- qhttpserver/src/qhttpresponse.cpp	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/src/qhttpresponse.cpp	2016-05-20 11:55:42.000000000 +0200
+@@ -28,6 +28,8 @@
+ #include "qhttpserver.h"
+ #include "qhttpconnection.h"
+ 
++#undef QT_NO_CAST_FROM_ASCII
++
+ QHttpResponse::QHttpResponse(QHttpConnection *connection)
+     // TODO: parent child relation
+     : QObject(0),
+@@ -53,8 +55,11 @@
+ {
+     if (!m_finished)
+         m_headers[field] = value;
+-    else
++    else {
++#ifdef DEBUG
+         qWarning() << "QHttpResponse::setHeader() Cannot set headers after response has finished.";
++#endif
++    }
+ }
+ 
+ void QHttpResponse::writeHeader(const char *field, const QString &value)
+@@ -64,9 +69,11 @@
+         m_connection->write(": ");
+         m_connection->write(value.toUtf8());
+         m_connection->write("\r\n");
+-    } else
+-        qWarning()
+-            << "QHttpResponse::writeHeader() Cannot write headers after response has finished.";
++    } else {
++#ifdef DEBUG
++        qWarning() << "QHttpResponse::writeHeader() Cannot write headers after response has finished.";
++#endif
++    }
+ }
+ 
+ void QHttpResponse::writeHeaders()
+@@ -74,40 +81,40 @@
+     if (m_finished)
+         return;
+ 
+-    foreach(const QString & name, m_headers.keys()) {
++    Q_FOREACH(const QString & name, m_headers.keys()) {
+         QString value = m_headers[name];
+-        if (name.compare("connection", Qt::CaseInsensitive) == 0) {
++        if (name.compare(QString::fromUtf8("connection"), Qt::CaseInsensitive) == 0) {
+             m_sentConnectionHeader = true;
+-            if (value.compare("close", Qt::CaseInsensitive) == 0)
++            if (value.compare(QString::fromUtf8("close"), Qt::CaseInsensitive) == 0)
+                 m_last = true;
+             else
+                 m_keepAlive = true;
+-        } else if (name.compare("transfer-encoding", Qt::CaseInsensitive) == 0) {
++        } else if (name.compare(QString::fromUtf8("transfer-encoding"), Qt::CaseInsensitive) == 0) {
+             m_sentTransferEncodingHeader = true;
+-            if (value.compare("chunked", Qt::CaseInsensitive) == 0)
++            if (value.compare(QString::fromUtf8("chunked"), Qt::CaseInsensitive) == 0)
+                 m_useChunkedEncoding = true;
+-        } else if (name.compare("content-length", Qt::CaseInsensitive) == 0)
++        } else if (name.compare(QString::fromUtf8("content-length"), Qt::CaseInsensitive) == 0)
+             m_sentContentLengthHeader = true;
+-        else if (name.compare("date", Qt::CaseInsensitive) == 0)
++        else if (name.compare(QString::fromUtf8("date"), Qt::CaseInsensitive) == 0)
+             m_sentDate = true;
+ 
+         /// @todo Expect case (??)
+ 
+-        writeHeader(name.toLatin1(), value.toLatin1());
++        writeHeader(name.toLatin1(), value);
+     }
+ 
+     if (!m_sentConnectionHeader) {
+         if (m_keepAlive && (m_sentContentLengthHeader || m_useChunkedEncoding)) {
+-            writeHeader("Connection", "keep-alive");
++            writeHeader("Connection", QString::fromUtf8("keep-alive"));
+         } else {
+             m_last = true;
+-            writeHeader("Connection", "close");
++            writeHeader("Connection", QString::fromUtf8("close"));
+         }
+     }
+ 
+     if (!m_sentContentLengthHeader && !m_sentTransferEncodingHeader) {
+         if (m_useChunkedEncoding)
+-            writeHeader("Transfer-Encoding", "chunked");
++            writeHeader("Transfer-Encoding", QString::fromUtf8("chunked"));
+         else
+             m_last = true;
+     }
+@@ -117,24 +124,27 @@
+     if (!m_sentDate)
+         writeHeader("Date",
+                     QLocale::c().toString(QDateTime::currentDateTimeUtc(),
+-                                          "ddd, dd MMM yyyy hh:mm:ss") + " GMT");
++                                          QString::fromUtf8("ddd, dd MMM yyyy hh:mm:ss")) + QString::fromUtf8(" GMT"));
+ }
+ 
+ void QHttpResponse::writeHead(int status)
+ {
+     if (m_finished) {
+-        qWarning()
+-            << "QHttpResponse::writeHead() Cannot write headers after response has finished.";
++#ifdef DEBUG
++        qWarning() << "QHttpResponse::writeHead() Cannot write headers after response has finished.";
++#endif
+         return;
+     }
+ 
+     if (m_headerWritten) {
++#ifdef DEBUG
+         qWarning() << "QHttpResponse::writeHead() Already called once for this response.";
++#endif
+         return;
+     }
+ 
+     m_connection->write(
+-        QString("HTTP/1.1 %1 %2\r\n").arg(status).arg(STATUS_CODES[status]).toLatin1());
++        QString::fromUtf8("HTTP/1.1 %1 %2\r\n").arg(status).arg(STATUS_CODES[status]).toLatin1());
+     writeHeaders();
+     m_connection->write("\r\n");
+ 
+@@ -149,12 +159,16 @@
+ void QHttpResponse::write(const QByteArray &data)
+ {
+     if (m_finished) {
++#ifdef DEBUG
+         qWarning() << "QHttpResponse::write() Cannot write body after response has finished.";
++#endif
+         return;
+     }
+ 
+     if (!m_headerWritten) {
++#ifdef DEBUG
+         qWarning() << "QHttpResponse::write() You must call writeHead() before writing body data.";
++#endif
+         return;
+     }
+ 
+@@ -174,7 +188,9 @@
+ void QHttpResponse::end(const QByteArray &data)
+ {
+     if (m_finished) {
++#ifdef DEBUG
+         qWarning() << "QHttpResponse::end() Cannot write end after response has finished.";
++#endif
+         return;
+     }
+ 
+diff -ur qhttpserver/src/qhttpserver.cpp Natron/libs/qhttpserver/src/qhttpserver.cpp
+--- qhttpserver/src/qhttpserver.cpp	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/src/qhttpserver.cpp	2016-05-21 11:03:16.000000000 +0200
+@@ -33,7 +33,7 @@
+ 
+ QHttpServer::QHttpServer(QObject *parent) : QObject(parent), m_tcpServer(0)
+ {
+-#define STATUS_CODE(num, reason) STATUS_CODES.insert(num, reason);
++#define STATUS_CODE(num, reason) STATUS_CODES.insert(num, QString::fromUtf8(reason));
+     // {{{
+     STATUS_CODE(100, "Continue")
+     STATUS_CODE(101, "Switching Protocols")
+@@ -114,6 +114,7 @@
+     bool couldBindToPort = m_tcpServer->listen(address, port);
+     if (couldBindToPort) {
+         connect(m_tcpServer, SIGNAL(newConnection()), this, SLOT(newConnection()));
++        Q_EMIT newPort(m_tcpServer->serverPort());
+     } else {
+         delete m_tcpServer;
+         m_tcpServer = NULL;
+diff -ur qhttpserver/src/qhttpserver.h Natron/libs/qhttpserver/src/qhttpserver.h
+--- qhttpserver/src/qhttpserver.h	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/src/qhttpserver.h	2016-05-20 11:55:42.000000000 +0200
+@@ -89,6 +89,9 @@
+         @param response Response object to the request. */
+     void newRequest(QHttpRequest *request, QHttpResponse *response);
+ 
++    /// Emit port used
++    void newPort(int port);
++
+ private Q_SLOTS:
+     void newConnection();
+ 
+diff -ur qhttpserver/src/qhttpserverapi.h Natron/libs/qhttpserver/src/qhttpserverapi.h
+--- qhttpserver/src/qhttpserverapi.h	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/src/qhttpserverapi.h	2016-05-20 11:55:42.000000000 +0200
+@@ -25,32 +25,19 @@
+ 
+ #include <QtGlobal>
+ 
+-#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+-#ifdef Q_OS_WIN
+-// Define to export or import depending if we are building or using the library.
+-// QHTTPSERVER_EXPORT should only be defined when building.
+-#if defined(QHTTPSERVER_EXPORT)
+-#define QHTTPSERVER_API __declspec(dllexport)
+-#else
+-#define QHTTPSERVER_API __declspec(dllimport)
+-#endif
+-#else
+-// Define empty for other platforms
+-#define QHTTPSERVER_API
+-#endif
+-#else
+-#ifdef Q_WS_WIN
+-// Define to export or import depending if we are building or using the library.
+-// QHTTPSERVER_EXPORT should only be defined when building.
+-#if defined(QHTTPSERVER_EXPORT)
+-#define QHTTPSERVER_API __declspec(dllexport)
+-#else
+-#define QHTTPSERVER_API __declspec(dllimport)
+-#endif
+-#else
+-// Define empty for other platforms
+-#define QHTTPSERVER_API
+-#endif
+-#endif
++#if defined(Q_OS_WIN) && !defined(QHTTP_SERVER_STATIC)
++    // Define to export or import depending if we are building or using the library.
++    // QHTTPSERVER_EXPORT should only be defined when building.
++    #if defined(QHTTPSERVER_EXPORT)
++        #define QHTTPSERVER_API __declspec(dllexport)
++    #else
++        #define QHTTPSERVER_API __declspec(dllimport)
++    #endif // QHTTPSERVER_EXPORT
+ 
++#else // !Q_OS_WIN || QHTTP_SERVER_STATIC
++    // Define empty for other platforms or when static
++    #define QHTTPSERVER_API
+ #endif
++
++
++#endif // Q_HTTP_SERVER_API
+diff -ur qhttpserver/src/src.pro Natron/libs/qhttpserver/src/src.pro
+--- qhttpserver/src/src.pro	2016-05-21 11:01:50.000000000 +0200
++++ Natron/libs/qhttpserver/src/src.pro	2016-05-20 11:55:42.000000000 +0200
+@@ -1,7 +1,6 @@
+-include(../qhttpserver.pri)
+-
+ QHTTPSERVER_BASE = ..
+ TEMPLATE = lib
++CONFIG += staticlib
+ 
+ TARGET = qhttpserver
+ 
+@@ -10,18 +9,14 @@
+ QT += network
+ QT -= gui
+ 
+-CONFIG += dll debug_and_release
+-
+-CONFIG(debug, debug|release) {
+-    win32: TARGET = $$join(TARGET,,,d)
+-}
++include(../../../global.pri)
++include(../../../libs.pri)
++include(../../../config.pri)
+ 
++DEFINES += QHTTP_SERVER_STATIC
+ DEFINES += QHTTPSERVER_EXPORT
+-
+ INCLUDEPATH += $$QHTTPSERVER_BASE/http-parser
+-
+ PRIVATE_HEADERS += $$QHTTPSERVER_BASE/http-parser/http_parser.h qhttpconnection.h
+-
+ PUBLIC_HEADERS += qhttpserver.h qhttprequest.h qhttpresponse.h qhttpserverapi.h qhttpserverfwd.h
+ 
+ HEADERS = $$PRIVATE_HEADERS $$PUBLIC_HEADERS
+@@ -29,9 +24,5 @@
+ 
+ OBJECTS_DIR = $$QHTTPSERVER_BASE/build
+ MOC_DIR = $$QHTTPSERVER_BASE/build
+-DESTDIR = $$QHTTPSERVER_BASE/lib
++DESTDIR = $$QHTTPSERVER_BASE/build
+ 
+-target.path = $$LIBDIR
+-headers.path = $$INCLUDEDIR
+-headers.files = $$PUBLIC_HEADERS
+-INSTALLS += target headers

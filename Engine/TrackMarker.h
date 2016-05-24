@@ -24,6 +24,9 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
 #include <set>
 #include <list>
 
@@ -33,6 +36,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
+
 #include "Engine/EngineFwd.h"
 #include "Engine/Knob.h"
 

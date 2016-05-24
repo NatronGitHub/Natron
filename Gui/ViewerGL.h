@@ -338,9 +338,11 @@ public:
     /**
      * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
      **/
-    virtual void toWidgetCoordinates(double *x, double *y) const OVERRIDE FINAL
+    virtual void toWidgetCoordinates(double *x,
+                                     double *y) const OVERRIDE FINAL
     {
-        QPointF p = toWidgetCoordinates(QPointF(*x,*y));
+        QPointF p = toWidgetCoordinates( QPointF(*x, *y) );
+
         *x = p.x();
         *y = p.y();
     }
@@ -348,9 +350,11 @@ public:
     /**
      * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
      **/
-    virtual void toCanonicalCoordinates(double *x, double *y) const OVERRIDE FINAL
+    virtual void toCanonicalCoordinates(double *x,
+                                        double *y) const OVERRIDE FINAL
     {
-        QPointF p = toZoomCoordinates(QPointF(*x,*y));
+        QPointF p = toZoomCoordinates( QPointF(*x, *y) );
+
         *x = p.x();
         *y = p.y();
     }
@@ -364,9 +368,6 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
-
     ViewerInstance* getInternalNode() const;
     ViewerTab* getViewerTab() const;
 
@@ -379,7 +380,6 @@ public:
      * @brief Returns the cursor position in canonical coordinates
      **/
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-
     virtual ViewerInstance* getInternalViewerNode() const OVERRIDE FINAL;
 
     /**

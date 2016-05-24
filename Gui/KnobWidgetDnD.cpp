@@ -110,7 +110,18 @@ bool
 KnobWidgetDnD::mousePress(QMouseEvent* e)
 {
     _imp->userInputSinceFocusIn = true;
-    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && _imp->getKnob()->getKnob()->isEnabled(0) ) {
+    KnobGuiPtr guiKnob = _imp->getKnob();
+    KnobPtr internalKnob = guiKnob->getKnob();
+    if (!internalKnob) {
+        return false;
+    }
+    int dragDim = _imp->dimension;
+    if ( (dragDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
+        dragDim = -1;
+    }
+
+    dragDim = dragDim == -1 ? 0 : dragDim;
+    if ( buttonDownIsLeft(e) && ( modCASIsControl(e) || modCASIsControlShift(e) ) && ( internalKnob->isEnabled(dragDim) || internalKnob->isSlave(dragDim) ) ) {
         _imp->dragPos = e->pos();
         _imp->dragging = true;
 

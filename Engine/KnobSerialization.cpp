@@ -224,7 +224,6 @@ KnobSerialization::restoreKnobLinks(const KnobPtr & knob,
     }
 }
 
-
 void
 KnobSerialization::restoreExpressions(const KnobPtr & knob,
                                       const std::map<std::string, std::string>& oldNewScriptNamesMapping)

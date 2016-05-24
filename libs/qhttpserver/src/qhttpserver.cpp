@@ -25,7 +25,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QVariant>
-#include <QtCore/QDebug>
+#include <QDebug>
 
 #include "qhttpconnection.h"
 

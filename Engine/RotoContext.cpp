@@ -1500,6 +1500,7 @@ RotoContext::knobChanged(KnobI* k,
                          bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( k == _imp->resetCenterKnob.lock().get() ) {
         resetTransformCenter();
     } else if ( k == _imp->resetCloneCenterKnob.lock().get() ) {
@@ -1527,6 +1528,7 @@ RotoContext::knobChanged(KnobI* k,
     else {
         ret = false;
     }
+
     return ret;
 }
 
@@ -2753,7 +2755,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
             for (std::list<Point> ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 points.push_back( std::make_pair(*it, 1.) );
             }
-            if (!points.empty()) {
+            if ( !points.empty() ) {
                 strokes.push_back(points);
             }
         }

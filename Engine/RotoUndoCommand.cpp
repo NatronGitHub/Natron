@@ -50,7 +50,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/ViewIdx.h"
 
 
-
 NATRON_NAMESPACE_ENTER;
 
 typedef boost::shared_ptr<BezierCP> CpPtr;
@@ -76,7 +75,6 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const boost::shared_p
     , _time(time)
     , _pointsToDrag(toDrag)
 {
-
     setText( tr("Move control points").toStdString() );
 
     assert(roto);
@@ -140,10 +138,8 @@ MoveControlPointsUndoCommand::undo()
 
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
     roto->evaluate(true);
-    roto->setCurrentTool(_selectedTool.lock());
+    roto->setCurrentTool( _selectedTool.lock() );
     roto->setSelection(_selectedCurves, _selectedPoints);
-
-
 }
 
 void
@@ -163,15 +159,15 @@ MoveControlPointsUndoCommand::redo()
     try {
         for (std::list<int>::iterator it = _indexesToMove.begin(); it != _indexesToMove.end(); ++it, ++itPoints) {
             if ( itPoints->first->isFeatherPoint() ) {
-                if ( ok && (( selectedTool == eRotoToolSelectFeatherPoints ) ||
-                     ( selectedTool == eRotoToolSelectAll ) ||
-                     ( selectedTool == eRotoToolDrawBezier )) ) {
+                if ( ok && ( ( selectedTool == eRotoToolSelectFeatherPoints ) ||
+                             ( selectedTool == eRotoToolSelectAll ) ||
+                             ( selectedTool == eRotoToolDrawBezier ) ) ) {
                     itPoints->first->getBezier()->moveFeatherByIndex(*it, _time, _dx, _dy);
                 }
             } else {
-                if ( ok && (( selectedTool == eRotoToolSelectPoints ) ||
-                     ( selectedTool == eRotoToolSelectAll ) ||
-                     ( selectedTool == eRotoToolDrawBezier )) ) {
+                if ( ok && ( ( selectedTool == eRotoToolSelectPoints ) ||
+                             ( selectedTool == eRotoToolSelectAll ) ||
+                             ( selectedTool == eRotoToolDrawBezier ) ) ) {
                     itPoints->first->getBezier()->movePointByIndex(*it, _time, _dx, _dy);
                 }
             }
@@ -191,13 +187,13 @@ MoveControlPointsUndoCommand::redo()
 bool
 MoveControlPointsUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const MoveControlPointsUndoCommand* mvCmd = dynamic_cast<const MoveControlPointsUndoCommand*>(other.get());
+    const MoveControlPointsUndoCommand* mvCmd = dynamic_cast<const MoveControlPointsUndoCommand*>( other.get() );
 
     if (!mvCmd) {
         return false;
     }
 
-    if ( ( mvCmd->_pointsToDrag.size() != _pointsToDrag.size() ) || (mvCmd->_time != _time) || (mvCmd->_selectedTool.lock() != _selectedTool.lock())
+    if ( ( mvCmd->_pointsToDrag.size() != _pointsToDrag.size() ) || (mvCmd->_time != _time) || ( mvCmd->_selectedTool.lock() != _selectedTool.lock() )
          || ( mvCmd->_rippleEditEnabled != _rippleEditEnabled) || ( mvCmd->_featherLinkEnabled != _featherLinkEnabled) ) {
         return false;
     }
@@ -258,7 +254,7 @@ TransformUndoCommand::TransformUndoCommand(const boost::shared_ptr<RotoPaintInte
         _originalPoints.push_back( std::make_pair(first, second) );
     }
 
-    setText( tr("Transform control points").toStdString());
+    setText( tr("Transform control points").toStdString() );
 }
 
 TransformUndoCommand::~TransformUndoCommand()
@@ -293,10 +289,8 @@ TransformUndoCommand::undo()
     }
 
     roto->evaluate(true);
-    roto->setCurrentTool(_selectedTool.lock());
+    roto->setCurrentTool( _selectedTool.lock() );
     roto->setSelection(_selectedCurves, _selectedPoints);
-
-
 }
 
 void
@@ -330,17 +324,16 @@ TransformUndoCommand::redo()
     _firstRedoCalled = true;
 }
 
-
 bool
 TransformUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const TransformUndoCommand* cmd = dynamic_cast<const TransformUndoCommand*>(other.get());
+    const TransformUndoCommand* cmd = dynamic_cast<const TransformUndoCommand*>( other.get() );
 
     if (!cmd) {
         return false;
     }
 
-    if ( ( cmd->_selectedPoints.size() != _selectedPoints.size() ) || (cmd->_time != _time) || (cmd->_selectedTool.lock() != _selectedTool.lock())
+    if ( ( cmd->_selectedPoints.size() != _selectedPoints.size() ) || (cmd->_time != _time) || ( cmd->_selectedTool.lock() != _selectedTool.lock() )
          || ( cmd->_rippleEditEnabled != _rippleEditEnabled) ) {
         return false;
     }
@@ -372,7 +365,7 @@ AddPointUndoCommand::AddPointUndoCommand(const boost::shared_ptr<RotoPaintIntera
     , _index(index)
     , _t(t)
 {
-    setText( tr("Add control point").toStdString());
+    setText( tr("Add control point").toStdString() );
 }
 
 AddPointUndoCommand::~AddPointUndoCommand()
@@ -383,14 +376,13 @@ void
 AddPointUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
     _curve->removeControlPointByIndex(_index + 1);
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
     roto->evaluate(true);
-
-
 }
 
 void
@@ -398,8 +390,8 @@ AddPointUndoCommand::redo()
 {
     boost::shared_ptr<BezierCP> cp = _curve->addControlPointAfterIndex(_index, _t);
     boost::shared_ptr<BezierCP> newFp = _curve->getFeatherPointAtIndex(_index + 1);
-
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -409,7 +401,6 @@ AddPointUndoCommand::redo()
     }
 
     _firstRedoCalled = true;
-
 }
 
 ////////////////////////
@@ -491,8 +482,7 @@ RemovePointUndoCommand::RemovePointUndoCommand(const boost::shared_ptr<RotoPaint
         it->points.sort();
     }
 
-    setText( tr("Remove control points").toStdString());
-
+    setText( tr("Remove control points").toStdString() );
 }
 
 RemovePointUndoCommand::~RemovePointUndoCommand()
@@ -503,6 +493,7 @@ void
 RemovePointUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -521,14 +512,13 @@ RemovePointUndoCommand::undo()
 
     roto->setSelection(selection, cpSelection);
     roto->evaluate(true);
-
 }
 
 void
 RemovePointUndoCommand::redo()
 {
-
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -571,7 +561,6 @@ RemovePointUndoCommand::redo()
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     roto->evaluate(_firstRedoCalled);
     _firstRedoCalled = true;
-
 }
 
 //////////////////////////
@@ -592,8 +581,7 @@ RemoveCurveUndoCommand::RemoveCurveUndoCommand(const boost::shared_ptr<RotoPaint
         assert(r.indexInLayer != -1);
         _curves.push_back(r);
     }
-    setText( tr("Remove shape(s)").toStdString());
-
+    setText( tr("Remove shape(s)").toStdString() );
 }
 
 RemoveCurveUndoCommand::~RemoveCurveUndoCommand()
@@ -604,6 +592,7 @@ void
 RemoveCurveUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -622,13 +611,13 @@ RemoveCurveUndoCommand::undo()
         roto->setSelection(selection, cpList);
     }
     roto->evaluate(true);
-
 }
 
 void
 RemoveCurveUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -639,7 +628,6 @@ RemoveCurveUndoCommand::redo()
     roto->evaluate(_firstRedoCalled);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
-
 }
 
 ////////////////////////////////
@@ -656,7 +644,6 @@ AddStrokeUndoCommand::AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInte
 {
     assert(_indexInLayer != -1);
     setText( tr("Paint Stroke").toStdString() );
-
 }
 
 AddStrokeUndoCommand::~AddStrokeUndoCommand()
@@ -667,6 +654,7 @@ void
 AddStrokeUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -679,6 +667,7 @@ void
 AddStrokeUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -704,7 +693,6 @@ AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(const boost::shared_ptr<Rot
 {
     assert(_indexInLayer != -1);
     setText( tr("Paint Stroke").toStdString() );
-
 }
 
 AddMultiStrokeUndoCommand::~AddMultiStrokeUndoCommand()
@@ -715,6 +703,7 @@ void
 AddMultiStrokeUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -731,6 +720,7 @@ void
 AddMultiStrokeUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -783,7 +773,7 @@ MoveTangentUndoCommand::MoveTangentUndoCommand(const boost::shared_ptr<RotoPaint
         }
     }
 
-    setText( tr("Move control point tangent").toStdString());
+    setText( tr("Move control point tangent").toStdString() );
 }
 
 MoveTangentUndoCommand::~MoveTangentUndoCommand()
@@ -869,6 +859,7 @@ void
 MoveTangentUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -894,14 +885,13 @@ MoveTangentUndoCommand::undo()
     }
 
     roto->evaluate(true);
-
 }
 
 void
 MoveTangentUndoCommand::redo()
 {
-
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -942,14 +932,12 @@ MoveTangentUndoCommand::redo()
 
 
     _firstRedoCalled = true;
-
 }
-
 
 bool
 MoveTangentUndoCommand::mergeWith(const UndoCommandPtr &other)
 {
-    const MoveTangentUndoCommand* mvCmd = dynamic_cast<const MoveTangentUndoCommand*>(other.get());
+    const MoveTangentUndoCommand* mvCmd = dynamic_cast<const MoveTangentUndoCommand*>( other.get() );
 
     if (!mvCmd) {
         return false;
@@ -987,8 +975,7 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const boost::shared_ptr<Rot
     assert(_curve);
     _oldPoint.first.reset( new BezierCP(*_newPoint.first) );
     _oldPoint.second.reset( new BezierCP(*_newPoint.second) );
-    setText( tr("Move control point feather bar").toStdString());
-
+    setText( tr("Move control point feather bar").toStdString() );
 }
 
 MoveFeatherBarUndoCommand::~MoveFeatherBarUndoCommand()
@@ -999,6 +986,7 @@ void
 MoveFeatherBarUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -1007,13 +995,13 @@ MoveFeatherBarUndoCommand::undo()
     _newPoint.first->getBezier()->incrementNodesAge();
     roto->evaluate(true);
     roto->setSelection(_curve, _newPoint);
-
 }
 
 void
 MoveFeatherBarUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -1108,11 +1096,10 @@ MoveFeatherBarUndoCommand::redo()
     _firstRedoCalled = true;
 } // redo
 
-
 bool
 MoveFeatherBarUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const MoveFeatherBarUndoCommand* mvCmd = dynamic_cast<const MoveFeatherBarUndoCommand*>(other.get());
+    const MoveFeatherBarUndoCommand* mvCmd = dynamic_cast<const MoveFeatherBarUndoCommand*>( other.get() );
 
     if (!mvCmd) {
         return false;
@@ -1142,7 +1129,7 @@ RemoveFeatherUndoCommand::RemoveFeatherUndoCommand(const boost::shared_ptr<RotoP
             it->oldPoints.push_back( boost::shared_ptr<BezierCP>( new BezierCP(**it2) ) );
         }
     }
-    setText( tr("Remove feather").toStdString());
+    setText( tr("Remove feather").toStdString() );
 }
 
 RemoveFeatherUndoCommand::~RemoveFeatherUndoCommand()
@@ -1165,7 +1152,6 @@ RemoveFeatherUndoCommand::undo()
         return;
     }
     roto->evaluate(true);
-
 }
 
 void
@@ -1193,7 +1179,6 @@ RemoveFeatherUndoCommand::redo()
 
 
     _firstRedocalled = true;
-
 }
 
 ////////////////////////////
@@ -1207,7 +1192,7 @@ OpenCloseUndoCommand::OpenCloseUndoCommand(const boost::shared_ptr<RotoPaintInte
     , _selectedTool(roto->selectedToolAction )
     , _curve(curve)
 {
-    setText( tr("Open/Close bezier").toStdString());
+    setText( tr("Open/Close bezier").toStdString() );
 }
 
 OpenCloseUndoCommand::~OpenCloseUndoCommand()
@@ -1218,6 +1203,7 @@ void
 OpenCloseUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -1230,24 +1216,23 @@ OpenCloseUndoCommand::undo()
     _curve->setCurveFinished( !_curve->isCurveFinished() );
     roto->evaluate(true);
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-
 }
 
 void
 OpenCloseUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
     if (_firstRedoCalled) {
-        roto->setCurrentTool(_selectedTool.lock() );
+        roto->setCurrentTool( _selectedTool.lock() );
     }
     _curve->setCurveFinished( !_curve->isCurveFinished() );
     roto->evaluate(_firstRedoCalled);
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
     _firstRedoCalled = true;
-
 }
 
 ////////////////////////////
@@ -1274,9 +1259,9 @@ SmoothCuspUndoCommand::SmoothCuspUndoCommand(const boost::shared_ptr<RotoPaintIn
         }
     }
     if (_cusp) {
-        setText( tr("Cusp points").toStdString());
+        setText( tr("Cusp points").toStdString() );
     } else {
-        setText( tr("Smooth points").toStdString());
+        setText( tr("Smooth points").toStdString() );
     }
 }
 
@@ -1288,6 +1273,7 @@ void
 SmoothCuspUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -1302,13 +1288,13 @@ SmoothCuspUndoCommand::undo()
     }
 
     roto->evaluate(true);
-
 }
 
 void
 SmoothCuspUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -1335,16 +1321,12 @@ SmoothCuspUndoCommand::redo()
     roto->evaluate(_firstRedoCalled);
 
     _firstRedoCalled = true;
-
-
 }
-
-
 
 bool
 SmoothCuspUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const SmoothCuspUndoCommand* sCmd = dynamic_cast<const SmoothCuspUndoCommand*>(other.get());
+    const SmoothCuspUndoCommand* sCmd = dynamic_cast<const SmoothCuspUndoCommand*>( other.get() );
 
     if (!sCmd) {
         return false;
@@ -1405,8 +1387,7 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(const boost::shared_ptr<RotoPaintIn
         _oldCurve.reset( new Bezier(_newCurve->getContext(), _newCurve->getScriptName(), _newCurve->getParentLayer(), false) );
         _oldCurve->clone( _newCurve.get() );
     }
-    setText( tr("Draw Bezier").toStdString());
-
+    setText( tr("Draw Bezier").toStdString() );
 }
 
 MakeBezierUndoCommand::~MakeBezierUndoCommand()
@@ -1417,12 +1398,13 @@ void
 MakeBezierUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
 
     assert(_createdPoint);
-    roto->setCurrentTool(roto->drawBezierAction.lock());
+    roto->setCurrentTool( roto->drawBezierAction.lock() );
     assert(_lastPointAdded != -1);
     _oldCurve->clone( _newCurve.get() );
     if (_newCurve->getControlPointsCount() == 1) {
@@ -1438,18 +1420,18 @@ MakeBezierUndoCommand::undo()
         roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
     }
     roto->evaluate(true);
-
 }
 
 void
 MakeBezierUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
     if (_firstRedoCalled) {
-        roto->setCurrentTool(roto->drawBezierAction.lock());
+        roto->setCurrentTool( roto->drawBezierAction.lock() );
     }
 
 
@@ -1500,14 +1482,12 @@ MakeBezierUndoCommand::redo()
     roto->setSelection( _newCurve, std::make_pair(cp, fp) );
     roto->autoSaveAndRedraw();
     _firstRedoCalled = true;
-
 } // redo
-
 
 bool
 MakeBezierUndoCommand::mergeWith(const UndoCommandPtr& other)
 {
-    const MakeBezierUndoCommand* sCmd = dynamic_cast<const MakeBezierUndoCommand*>(other.get());
+    const MakeBezierUndoCommand* sCmd = dynamic_cast<const MakeBezierUndoCommand*>( other.get() );
 
     if (!sCmd) {
         return false;
@@ -1554,8 +1534,7 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(const boost::shared_ptr<RotoPaint
     if (!_create) {
         _curve = roto->getBezierBeingBuild();
     }
-    setText( tr("Draw Ellipse").toStdString());
-
+    setText( tr("Draw Ellipse").toStdString() );
 }
 
 MakeEllipseUndoCommand::~MakeEllipseUndoCommand()
@@ -1566,19 +1545,20 @@ void
 MakeEllipseUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
     roto->removeCurve(_curve);
     roto->evaluate(true);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
-
 }
 
 void
 MakeEllipseUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -1654,14 +1634,12 @@ MakeEllipseUndoCommand::redo()
     roto->setBuiltBezier(_curve);
     _firstRedoCalled = true;
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-
 } // redo
-
 
 bool
 MakeEllipseUndoCommand::mergeWith(const UndoCommandPtr &other)
 {
-    const MakeEllipseUndoCommand* sCmd = dynamic_cast<const MakeEllipseUndoCommand*>(other.get());
+    const MakeEllipseUndoCommand* sCmd = dynamic_cast<const MakeEllipseUndoCommand*>( other.get() );
 
     if (!sCmd) {
         return false;
@@ -1712,7 +1690,7 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(const boost::shared_ptr<RotoP
     if (!_create) {
         _curve = roto->getBezierBeingBuild();
     }
-    setText( tr("Draw Rectangle").toStdString());
+    setText( tr("Draw Rectangle").toStdString() );
 }
 
 MakeRectangleUndoCommand::~MakeRectangleUndoCommand()
@@ -1723,19 +1701,20 @@ void
 MakeRectangleUndoCommand::undo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
     roto->removeCurve(_curve);
     roto->evaluate(true);
     roto->setSelection( BezierPtr(), std::make_pair( CpPtr(), CpPtr() ) );
-
 }
 
 void
 MakeRectangleUndoCommand::redo()
 {
     boost::shared_ptr<RotoPaintInteract> roto = _roto.lock();
+
     if (!roto) {
         return;
     }
@@ -1787,14 +1766,12 @@ MakeRectangleUndoCommand::redo()
     roto->setBuiltBezier(_curve);
     _firstRedoCalled = true;
     roto->setSelection( _curve, std::make_pair( CpPtr(), CpPtr() ) );
-
 } // MakeRectangleUndoCommand::redo
-
 
 bool
 MakeRectangleUndoCommand::mergeWith(const UndoCommandPtr &other)
 {
-    const MakeRectangleUndoCommand* sCmd = dynamic_cast<const MakeRectangleUndoCommand*>(other.get());
+    const MakeRectangleUndoCommand* sCmd = dynamic_cast<const MakeRectangleUndoCommand*>( other.get() );
 
     if (!sCmd) {
         return false;
@@ -1814,6 +1791,5 @@ MakeRectangleUndoCommand::mergeWith(const UndoCommandPtr &other)
 
     return true;
 }
-
 
 NATRON_NAMESPACE_EXIT;

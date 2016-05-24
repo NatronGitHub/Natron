@@ -841,15 +841,14 @@ DockablePanel::helpString() const
 {
     //Base help
     QString tt;
-
     bool isMarkdown = false;
-
     EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
+
     if (iseffect) {
         isMarkdown = iseffect->isPluginDescriptionInMarkdown();
     }
 
-    if ( Qt::mightBeRichText(_imp->_helpToolTip) || isMarkdown ) {
+    if (Qt::mightBeRichText(_imp->_helpToolTip) || isMarkdown) {
         tt = _imp->_helpToolTip;
     } else {
         tt = GuiUtils::convertFromPlainText(_imp->_helpToolTip, Qt::WhiteSpaceNormal);
@@ -879,8 +878,7 @@ DockablePanel::helpString() const
     }
 
     if (isMarkdown) {
-        Markdown markdown;
-        tt = markdown.convert2html(tt);
+        tt = Markdown::convert2html(tt);
         // Shrink H1/H2 (Can't do it in qt stylesheet)
         tt.replace( QString::fromUtf8("<h1>"), QString::fromUtf8("<h1 style=\"font-size:large;\">") );
         tt.replace( QString::fromUtf8("<h2>"), QString::fromUtf8("<h2 style=\"font-size:large;\">") );
@@ -1331,6 +1329,8 @@ void
 DockablePanel::onColorButtonClicked()
 {
     QColorDialog dialog(this);
+
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
     QColor oldColor;
     {
         oldColor = getCurrentColor();
@@ -1359,6 +1359,8 @@ DockablePanel::onOverlayButtonClicked()
         return;
     }
     QColorDialog dialog(this);
+    dialog.setOption(QColorDialog::DontUseNativeDialog);
+    dialog.setOption(QColorDialog::ShowAlphaChannel);
     QColor oldColor;
     bool hadOverlayColor;
     {

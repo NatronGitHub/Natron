@@ -354,10 +354,8 @@ KnobDouble::setDecimals(const std::vector<int> &decis)
     }
 }
 
-
 KnobDouble::~KnobDouble()
 {
-  
 }
 
 static void
@@ -494,8 +492,6 @@ KnobButton::trigger()
 {
     return evaluateValueChange(0, getCurrentTime(), ViewIdx(0),  eValueChangedReasonUserEdited);
 }
-
-
 
 /******************************KnobChoice**************************************/
 
@@ -993,7 +989,7 @@ KnobChoice::getHintToolTipFull() const
     }
 
     return ss.str();
-}
+} // KnobChoice::getHintToolTipFull
 
 KnobHelper::ValueChangedReturnCodeEnum
 KnobChoice::setValueFromLabel(const std::string & value,

@@ -29,7 +29,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
-#include <QStringList>
+#include <QtCore/QStringList>
 #include <QKeyEvent>
 #include <QAbstractItemView>
 #include <QtCore/QTimer>
@@ -339,7 +339,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     , _imp( new NodeCreationDialogPrivate() )
 {
     setWindowTitle( tr("Node Creation Tool") );
-    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     setObjectName( QString::fromUtf8("nodeCreationDialog") );
     setAttribute(Qt::WA_DeleteOnClose, false);
     _imp->layout = new QVBoxLayout(this);

@@ -35,6 +35,7 @@
 #include <QtCore/QMutex>
 #include <QtCore/QString>
 #include <QtCore/QAtomicInt>
+#include <QtCore/QCoreApplication>
 
 
 #ifdef NATRON_USE_BREAKPAD
@@ -53,6 +54,7 @@
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+#include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
 
@@ -60,10 +62,10 @@ NATRON_NAMESPACE_ENTER;
 
 struct AppManagerPrivate
 {
-
     Q_DECLARE_TR_FUNCTIONS(AppManagerPrivate)
+
 public:
-    
+
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;
@@ -179,7 +181,6 @@ public:
 #endif
 
     void initGl();
-
 };
 
 NATRON_NAMESPACE_EXIT;

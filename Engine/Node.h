@@ -57,6 +57,8 @@ CLANG_DIAG_ON(deprecated)
 
 
 #define kDisableNodeKnobName "disableNode"
+#define kLifeTimeNodeKnobName "nodeLifeTime"
+#define kEnableLifeTimeNodeKnobName "enableNodeLifeTime"
 #define kUserLabelKnobName "userTextArea"
 #define kEnableMaskKnobName "enableMask"
 #define kEnableInputKnobName "enableInput"
@@ -164,23 +166,22 @@ public:
 
     void refreshAcceptedBitDepths();
 
-    /*@brief Quit all processing done by all render instances of this node
-       This is called when the effect is about to be deleted pluginsly
-     */
-    void setMustQuitProcessing(bool mustQuit);
+    /**
+     * @brief Quits any processing on going on this node, this call is non blocking
+     **/
+    void quitAnyProcessing_non_blocking();
+    void quitAnyProcessing_blocking(bool allowThreadsToRestart);
 
     /**
-     * @brief Quits any processing on going on this node and waits until done
-     * After this call all threads launched by this node are stopped.
-     * This is called when clearing all nodes of the project (see Project::reset) or when calling
-     * AppManager::abortAnyProcessing()
+     * @brief Returns true if all processing threads controlled by this node have quit
      **/
-    void quitAnyProcessing();
+    bool areAllProcessingThreadsQuit() const;
 
     /* @brief Similar to quitAnyProcessing except that the threads aren't destroyed
      * This is called when a node is deleted by the user
      */
-    void abortAnyProcessing();
+    void abortAnyProcessing_non_blocking();
+    void abortAnyProcessing_blocking();
 
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
@@ -694,6 +695,8 @@ private:
 
     void destroyNodeInternal(bool fromDest, bool autoReconnect);
 
+    void doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect);
+
 public:
 
 
@@ -705,12 +708,6 @@ public:
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
     bool aborted() const;
-
-    /**
-     * @brief Called externally when the rendering is aborted. You should never
-     * call this yourself.
-     **/
-    void notifyRenderBeingAborted();
 
     bool makePreviewByDefault() const;
 
@@ -859,7 +856,7 @@ public:
 
     void endInputEdition(bool triggerRender);
 
-    void onInputChanged(int inputNb);
+    void onInputChanged(int inputNb, bool isInputA = true);
 
     bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 
@@ -868,6 +865,9 @@ public:
     void setNodeDisabled(bool disabled);
 
     boost::shared_ptr<KnobBool> getDisabledKnob() const;
+
+    bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
+
     std::string getNodeExtraLabel() const;
 
     /**
@@ -1006,7 +1006,7 @@ public:
     bool hasAnimatedKnob() const;
 
 
-    void setNodeIsRendering();
+    void setNodeIsRendering(std::list<NodeWPtr>& nodes);
     void unsetNodeIsRendering();
 
     /**
@@ -1113,8 +1113,8 @@ public:
                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
     bool onOverlayPenDoubleClickedDefault(double time,
-                                 const RenderScale& renderScale,
-                                 ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+                                          const RenderScale& renderScale,
+                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
 
     bool onOverlayPenMotionDefault(double time,
@@ -1311,6 +1311,8 @@ private:
 public Q_SLOTS:
 
 
+    void onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args);
+
     void onRefreshIdentityStateRequestReceived();
 
     void setKnobsAge(U64 newAge);
@@ -1446,8 +1448,7 @@ private:
     std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
 
-    void setNodeIsRenderingInternal(std::list<Node*>& markedNodes);
-    void setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes);
+    void setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes);
 
 
     /**
@@ -1494,32 +1495,42 @@ public:
     virtual int getPreferredInputForConnection() const OVERRIDE FINAL;
     virtual int getPreferredInput() const OVERRIDE FINAL;
 
+    void refreshActiveInputs(int inputNbChanged, bool isASide);
+
+    void setInputA(int inputNb);
+
+    void setInputB(int inputNb);
+
+    void getActiveInputs(int & a, int &b) const;
+
+    void setActiveInputAndRefresh(int inputNb, bool isASide);
+
+Q_SIGNALS:
+
+    void refreshOptionalState();
+
+    void activeInputsChanged();
+
 private:
 
     int getPreferredInputInternal(bool connected) const;
 
-public:
 
-    void setActiveInputAndRefresh(int inputNb, bool fromViewer);
+    mutable QMutex _activeInputsMutex;
+    int _activeInputs[2]; //< indexes of the inputs used for the wipe
 };
 
 
 class RenderingFlagSetter
 {
-    Node* node;
+    NodeWPtr node;
+    std::list<NodeWPtr> nodes;
 
 public:
 
-    RenderingFlagSetter(Node* n)
-        : node(n)
-    {
-        node->setNodeIsRendering();
-    }
+    RenderingFlagSetter(const NodePtr& n);
 
-    ~RenderingFlagSetter()
-    {
-        node->unsetNodeIsRendering();
-    }
+    ~RenderingFlagSetter();
 };
 
 NATRON_NAMESPACE_EXIT;

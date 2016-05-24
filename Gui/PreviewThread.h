@@ -36,7 +36,7 @@
 #include <boost/weak_ptr.hpp>
 #endif
 
-#include "Engine/ThreadPool.h"
+#include "Engine/GenericSchedulerThread.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -44,10 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct PreviewThreadPrivate;
 class PreviewThread
-    : public QThread
-#ifdef QT_CUSTOM_THREADPOOL
-      , public AbortableThread
-#endif
+    : public GenericSchedulerThread
 {
 public:
     PreviewThread();
@@ -56,13 +53,15 @@ public:
 
     void appendToQueue(const NodeGuiPtr& node, double time);
 
-    void quitThread();
-
-    bool isWorking() const;
-
 private:
 
-    virtual void run() OVERRIDE FINAL;
+    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return eTaskQueueBehaviorProcessInOrder;
+    }
+
+    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
 

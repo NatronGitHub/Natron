@@ -91,6 +91,9 @@ struct ProgressPanelPrivate
     TasksOrdered tasksOrdered;
     ProgressTaskInfoPtr lastTaskAdded;
 
+    // Prevents call to processEvents() recursively on the main-thread
+    int processEventsRecursionCounter;
+
     ProgressPanelPrivate()
         : mainLayout(0)
         , headerContainer(0)
@@ -103,6 +106,7 @@ struct ProgressPanelPrivate
         , tasks()
         , tasksOrdered()
         , lastTaskAdded()
+        , processEventsRecursionCounter(0)
     {
     }
 
@@ -473,11 +477,11 @@ ProgressPanel::startTask(const NodePtr& node,
         if ( node->getEffectInstance()->isOutput() ) {
             OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
             if (isOutput) {
-                RenderEngine* engine = isOutput->getRenderEngine();
+                boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
                 assert(engine);
-                QObject::connect( engine, SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
-                QObject::connect( engine, SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
-                QObject::connect( task.get(), SIGNAL(taskCanceled()), engine, SLOT(abortRendering_Blocking()) );
+                QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
+                QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
+                QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
             }
         }
     }
@@ -544,7 +548,11 @@ ProgressPanel::updateTask(const NodePtr& node,
     }
 
     if (isMainThread) {
-        QCoreApplication::processEvents();
+        if (_imp->processEventsRecursionCounter == 0) {
+            ++_imp->processEventsRecursionCounter;
+            QCoreApplication::processEvents();
+            --_imp->processEventsRecursionCounter;
+        }
     }
 
     return true;

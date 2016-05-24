@@ -862,7 +862,6 @@ BezierCP::clone(const BezierCP & other)
         _imp->guiRightX = other._imp->rightX;
         _imp->guiRightY = other._imp->rightY;
     }
-
 }
 
 bool
@@ -930,7 +929,6 @@ BezierCP::cloneGuiCurvesToInternalCurves()
     _imp->rightX = _imp->guiRightX;
     _imp->rightY = _imp->guiRightY;
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

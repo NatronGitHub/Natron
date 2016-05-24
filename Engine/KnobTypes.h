@@ -25,12 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <vector>
 #include <string>
 #include <map>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QCoreApplication>
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QVector>
@@ -327,7 +329,6 @@ public:
         return _isRectangle;
     }
 
-
 Q_SIGNALS:
 
     void incrementChanged(double incr, int index = 0);
@@ -434,7 +435,6 @@ public:
     {
         return _isToolButtonAction;
     }
-
 
 private:
 
@@ -950,6 +950,7 @@ public:
     {
         _isToolBar = b;
     }
+
     bool getIsToolBar() const
     {
         return _isToolBar;

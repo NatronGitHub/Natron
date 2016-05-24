@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/TrackerContext.h"
 
 #include <list>
@@ -187,9 +189,21 @@ GCC_DIAG_ON(unused-parameter)
     "When unchecked, the solver assumes that all points that are enabled and have a keyframe are valid and fit the model: this may in some situations work better if you are trying to find a model that is just not correct for the given motion of the video."
 
 #define kTrackerParamFittingError "fittingError"
-#define kTrackerParamFittingErrorLabel "Fitting Error"
+#define kTrackerParamFittingErrorLabel "Fitting Error (px)"
 #define kTrackerParamFittingErrorHint "This parameter indicates the error for each frame of the fitting of the model (i.e: Transform / CornerPin) to the tracks data. This value is in pixels and represents the rooted weighted sum of squared errors for each track. The error is " \
     "essentially the difference between the point position computed from the original point onto which is applied the fitted model and the original tracked point. "
+
+#define kTrackerParamFittingErrorWarnValue "fittingErrorWarnAbove"
+#define kTrackerParamFittingErrorWarnValueLabel "Warn If Error is Above"
+#define kTrackerParamFittingErrorWarnValueHint "A warning will appear if the model fitting error reaches this value (or higher). The warning indicates that " \
+    "the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick " \
+    "another model"
+
+#define kTrackerParamFittingErrorWarning "fittingErrorWarning"
+#define kTrackerParamFittingErrorWarningLabel "Incorrect model"
+#define kTrackerParamFittingErrorWarningHint "This warning indicates that " \
+    "the calculated model is probably poorly suited for the stabilization/match-move you want to achieve and you should either refine your tracking data or pick " \
+    "another model"
 
 #define kTrackerParamReferenceFrame "referenceFrame"
 #define kTrackerParamReferenceFrameLabel "Reference frame"
@@ -224,6 +238,15 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamTransformOutOfDate "transformOutOfDate"
 #define kTrackerParamTransformOutOfDateHint "The Transform parameters are out of date because parameters that control their generation have been changed, please click the Compute button to refresh them"
 
+#define kTrackerParamDisableTransform "disableProcess"
+#define kTrackerParamDisableTransformLabel "Disable Transform"
+#define kTrackerParamDisableTransformHint "When checked, the CornerPin/Transform applied by the parameters is disabled temporarily. This is useful if " \
+    "you are using a CornerPin and you need to edit the From or To points. " \
+    "For example, in match-move mode to replace a portion of the image by another one. To achieve such effect, you would need to place " \
+    "the From points of the CornerPin controls to the desired 4 corners in the image. Similarly, you may want to stabilize the image onto a moving vehicule, in " \
+    "which case you would want to set the CornerPin points to enclose the vehicule."
+
+#define kTrackerParamCornerPinFromPointsSetOnce "fromPointsSet"
 
 #define kTransformParamTranslate "translate"
 #define kTransformParamRotate "rotate"
@@ -249,6 +272,10 @@ GCC_DIAG_ON(unused-parameter)
 #define kCornerPinParamFrom2 "from2"
 #define kCornerPinParamFrom3 "from3"
 #define kCornerPinParamFrom4 "from4"
+
+#define kCornerPinParamSetToInputRoD "setToInputRod"
+#define kCornerPinParamSetToInputRoDLabel "Set To Input Rod"
+#define kCornerPinParamSetToInputRoDHint "Set the 4 from points to the image rectangle in input of the tracker node"
 
 #define kCornerPinParamTo1 "to1"
 #define kCornerPinParamTo2 "to2"
@@ -316,6 +343,7 @@ public:
     boost::weak_ptr<KnobChoice> patternMatchingScore;
 #endif
 
+    boost::weak_ptr<KnobPage> trackingPageKnob;
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
@@ -332,7 +360,9 @@ public:
     boost::weak_ptr<KnobSeparator> transformGenerationSeparator;
     boost::weak_ptr<KnobChoice> transformType, motionType;
     boost::weak_ptr<KnobBool> robustModel;
-    boost::weak_ptr<KnobString> fittingError;
+    boost::weak_ptr<KnobDouble> fittingError;
+    boost::weak_ptr<KnobDouble> fittingErrorWarnIfAbove;
+    boost::weak_ptr<KnobString> fittingErrorWarning;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
@@ -342,6 +372,7 @@ public:
     boost::weak_ptr<KnobButton> generateTransformButton;
     boost::weak_ptr<KnobString> transformOutOfDateLabel;
     boost::weak_ptr<KnobSeparator> transformControlsSeparator;
+    boost::weak_ptr<KnobBool> disableTransform;
     boost::weak_ptr<KnobDouble> translate;
     boost::weak_ptr<KnobDouble> rotate;
     boost::weak_ptr<KnobDouble> scale;
@@ -360,7 +391,10 @@ public:
     boost::weak_ptr<KnobDouble> customShutterOffset;
     boost::weak_ptr<KnobGroup> fromGroup, toGroup;
     boost::weak_ptr<KnobDouble> fromPoints[4], toPoints[4];
+    boost::weak_ptr<KnobButton> setFromPointsToInputRod;
+    boost::weak_ptr<KnobBool> cornerPinFromPointsSetOnceAutomatically;
     boost::weak_ptr<KnobBool> enableToPoint[4];
+    boost::weak_ptr<KnobBool> enableTransform;
     boost::weak_ptr<KnobDouble> cornerPinMatrix;
     boost::weak_ptr<KnobChoice> cornerPinOverlayPoints;
     mutable QMutex trackerContextMutex;
@@ -401,6 +435,7 @@ public:
         int jitterPeriod;
         bool jitterAdd;
         bool robustModel;
+        double maxFittingError;
         std::vector<TrackMarkerPtr> allMarkers;
     };
 
@@ -572,11 +607,13 @@ public:
     void computeTransformParamsFromTracks();
 
     void computeTransformParamsFromTracksEnd(double refTime,
+                                             double maxFittingError,
                                              const QList<TransformData>& results);
 
     void computeCornerParamsFromTracks();
 
     void computeCornerParamsFromTracksEnd(double refTime,
+                                          double maxFittingError,
                                           const QList<CornerPinData>& results);
 
     void setSolverParamsEnabled(bool enabled);

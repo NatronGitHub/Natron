@@ -371,7 +371,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 
                 // to any other interactive object it may own that shares the same view.
                 _imp->lastOverlayNode = *it;
-                
+
                 return true;
             }
         }
@@ -634,8 +634,6 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
         }
-
-
     }
 
 
@@ -654,10 +652,13 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 } // ViewerTab::notifyOverlaysPenUp
 
 bool
-ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, const Qt::KeyboardModifiers& mods)
+ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
+                                           Qt::Key qKey,
+                                           const Qt::KeyboardModifiers& mods)
 {
     // Intercept plug-in defined shortcuts
     NodeViewerContextPtr context;
+
     for (std::list<ViewerTabPrivate::PluginViewerContext>::const_iterator it = _imp->currentNodeContext.begin(); it != _imp->currentNodeContext.end(); ++it) {
         NodeGuiPtr n = it->currentNode.lock();
         if (!n) {
@@ -667,7 +668,6 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, co
             context = it->currentContext;
             break;
         }
-
     }
 
     // This is not an active node on the viewer ui, don't trigger any shortcuts
@@ -680,36 +680,39 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node, Qt::Key qKey, co
     const KnobsVec& knobs = effect->getKnobs();
     std::string pluginShortcutGroup;
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ((*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret()) {
-            if (pluginShortcutGroup.empty()) {
+        if ( (*it)->getInViewerContextHasShortcut() && !(*it)->getInViewerContextSecret() ) {
+            if ( pluginShortcutGroup.empty() ) {
                 pluginShortcutGroup = effect->getNode()->getPlugin()->getPluginShortcutGroup().toStdString();
             }
-            if (isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey)) {
-
+            if ( isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey) ) {
                 // This only works for groups and buttons, as defined in the spec
-                KnobButton* isButton = dynamic_cast<KnobButton*>(it->get());
-                KnobGroup* isGrp = dynamic_cast<KnobGroup*>(it->get());
-
+                KnobButton* isButton = dynamic_cast<KnobButton*>( it->get() );
+                KnobGroup* isGrp = dynamic_cast<KnobGroup*>( it->get() );
                 bool ret = false;
 
                 if (isButton) {
-                    if (isButton->getIsCheckable()) {
-                        isButton->onValueChanged(!isButton->getValue(), ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                    if ( isButton->getIsCheckable() ) {
+                        isButton->setValue(!isButton->getValue(), ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+
+                        //Refresh the button state, because the setValue with reason eValueChangedReasonUserEdited will skip refreshing the UI
+                        isButton->getSignalSlotHandler()->s_valueChanged(ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
                         ret = true;
                     } else {
                         ret = isButton->trigger();
                     }
                 } else if (isGrp) {
                     // This can only be a toolbutton, notify the NodeViewerContext
-                    context->onToolButtonShortcutPressed(QString::fromUtf8(isGrp->getName().c_str()));
+                    context->onToolButtonShortcutPressed( QString::fromUtf8( isGrp->getName().c_str() ) );
                     ret = true;
                 }
+
                 return ret;
             }
         }
     }
+
     return false;
-}
+} // ViewerTab::checkNodeViewerContextShortcuts
 
 bool
 ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
@@ -877,10 +880,8 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         if (!isInActiveViewerUI) {
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             didSomething |= effect->onOverlayKeyUp_public( time, renderScale, view,
-                                                          QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
+                                                           QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         }
-
-
     }
 
     /*
@@ -909,7 +910,8 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
                                             const RenderScale & renderScale,
                                             Key k,
                                             KeyboardModifiers km,
-                                            Qt::Key qKey, const Qt::KeyboardModifiers& mods)
+                                            Qt::Key qKey,
+                                            const Qt::KeyboardModifiers& mods)
 {
     ViewIdx view = getCurrentView();
     double time = getGui()->getApp()->getTimeLine()->currentFrame();
@@ -950,7 +952,6 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
 
             return true;
         }
-
     }
 
 
@@ -970,8 +971,6 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey( qKey);
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers( qMods );
     NodesList nodes;
-
-
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1097,7 +1096,6 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
                 ret = true;
             }
         }
-
     }
 
 

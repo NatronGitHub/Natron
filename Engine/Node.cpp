@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Format.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
@@ -76,6 +77,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OpenGLViewerI.h"
 #include "Engine/Plugin.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/Project.h"
@@ -103,6 +105,7 @@ NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
+
 
 // protect local classes in anonymous namespace
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -211,7 +214,6 @@ public:
         , inputsMutex()
         , inputs()
         , guiInputs()
-        , mustCopyGuiInputs(false)
         , effect()
         , inputsComponents()
         , outputComponents()
@@ -233,10 +235,11 @@ public:
         , pyPlugGrouping()
         , pyPlugVersion(0)
         , computingPreview(false)
+        , previewThreadQuit(false)
         , computingPreviewMutex()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
-        , mustQuitPreview(false)
+        , mustQuitPreview(0)
         , mustQuitPreviewMutex()
         , mustQuitPreviewCond()
         , renderInstancesSharedMutex(QMutex::Recursive)
@@ -288,8 +291,6 @@ public:
         , nodeIsDequeuingCond()
         , nodeIsRendering(0)
         , nodeIsRenderingMutex()
-        , mustQuitProcessing(false)
-        , mustQuitProcessingMutex()
         , persistentMessage()
         , persistentMessageType(0)
         , persistentMessageMutex()
@@ -325,7 +326,9 @@ public:
         gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
     }
 
-    void abortPreview();
+    void abortPreview_non_blocking();
+
+    void abortPreview_blocking(bool allowPreviewRenders);
 
     bool checkForExitPreview();
 
@@ -384,9 +387,6 @@ public:
     ///guiInputs
     InputsV inputs, guiInputs;
 
-    ///Set to true when inputs must be refreshed to reflect the value of guiInputs
-    bool mustCopyGuiInputs;
-
     //to the inputs in a thread-safe manner.
     EffectInstPtr effect;  //< the effect hosted by this node
 
@@ -420,10 +420,11 @@ public:
     std::list<std::string> pyPlugGrouping;
     int pyPlugVersion;
     bool computingPreview;
+    bool previewThreadQuit;
     mutable QMutex computingPreviewMutex;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
-    bool mustQuitPreview;
+    int mustQuitPreview;
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
@@ -445,6 +446,8 @@ public:
     boost::weak_ptr<KnobString> nodeLabelKnob;
     boost::weak_ptr<KnobBool> previewEnabledKnob;
     boost::weak_ptr<KnobBool> disableNodeKnob;
+    boost::weak_ptr<KnobInt> lifeTimeKnob;
+    boost::weak_ptr<KnobBool> enableLifeTimeKnob;
     boost::weak_ptr<KnobString> knobChangedCallback;
     boost::weak_ptr<KnobString> inputChangedCallback;
     boost::weak_ptr<KnobString> nodeCreatedCallback;
@@ -498,8 +501,6 @@ public:
     ///Counter counting how many parallel renders are active on the node
     int nodeIsRendering;
     mutable QMutex nodeIsRenderingMutex;
-    bool mustQuitProcessing;
-    mutable QMutex mustQuitProcessingMutex;
     QString persistentMessage;
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
@@ -527,7 +528,7 @@ public:
     bool useAlpha0ToConvertFromRGBToRGBA;
     mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
-
+    boost::shared_ptr<NodeRenderWatcher> renderWatcher;
     /*
        Used to block render emitions while modifying nodes links
        MT-safe: only accessed/used on main thread
@@ -1273,6 +1274,9 @@ Node::getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const
 void
 Node::declareRotoPythonField()
 {
+    if (!_imp->isPartOfProject) {
+        return;
+    }
     assert(_imp->rotoContext);
     std::string appID = getApp()->getAppIDString();
     std::string nodeName = getFullyQualifiedName();
@@ -1293,6 +1297,10 @@ Node::declareRotoPythonField()
 void
 Node::declareTrackerPythonField()
 {
+    if (!_imp->isPartOfProject) {
+        return;
+    }
+
     assert(_imp->trackContext);
     std::string appID = getApp()->getAppIDString();
     std::string nodeName = getFullyQualifiedName();
@@ -1696,6 +1704,12 @@ Node::loadKnob(const KnobPtr & knob,
             ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
             //if ( knob->getIsPersistant() ) {
             KnobPtr serializedKnob = (*it)->getKnob();
+
+            // A knob might change its type between versions, do not load it
+            if ( knob->typeName() != serializedKnob->typeName() ) {
+                continue;
+            }
+
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
             if (isChoice) {
                 const TypeExtraData* extraData = (*it)->getExtraData();
@@ -2291,7 +2305,7 @@ Node::hasOverlay() const
 }
 
 void
-Node::Implementation::abortPreview()
+Node::Implementation::abortPreview_non_blocking()
 {
     bool computing;
     {
@@ -2301,8 +2315,24 @@ Node::Implementation::abortPreview()
 
     if (computing) {
         QMutexLocker l(&mustQuitPreviewMutex);
+        ++mustQuitPreview;
+    }
+}
+
+void
+Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
+{
+    bool computing;
+    {
+        QMutexLocker locker(&computingPreviewMutex);
+        computing = computingPreview;
+        previewThreadQuit = !allowPreviewRenders;
+    }
+
+    if (computing) {
+        QMutexLocker l(&mustQuitPreviewMutex);
         assert(!mustQuitPreview);
-        mustQuitPreview = true;
+        ++mustQuitPreview;
         while (mustQuitPreview) {
             mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
         }
@@ -2314,8 +2344,8 @@ Node::Implementation::checkForExitPreview()
 {
     {
         QMutexLocker locker(&mustQuitPreviewMutex);
-        if (mustQuitPreview) {
-            mustQuitPreview = false;
+        if (mustQuitPreview || previewThreadQuit) {
+            mustQuitPreview = 0;
             mustQuitPreviewCond.wakeOne();
 
             return true;
@@ -2325,39 +2355,64 @@ Node::Implementation::checkForExitPreview()
     }
 }
 
-void
-Node::abortAnyProcessing()
+bool
+Node::areAllProcessingThreadsQuit() const
 {
-    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+    {
+        QMutexLocker locker(&_imp->mustQuitPreviewMutex);
+        if (!_imp->previewThreadQuit) {
+            return false;
+        }
+    }
+
+    //If this effect has a RenderEngine, make sure it is finished
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        isOutput->getRenderEngine()->abortRendering(false, true);
+        if (isOutput->getRenderEngine()->hasThreadsAlive()) {
+            return false;
+        }
     }
-    _imp->abortPreview();
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        if (!trackerContext->hasTrackerThreadQuit()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void
-Node::setMustQuitProcessing(bool mustQuit)
+Node::quitAnyProcessing_non_blocking()
 {
-    {
-        QMutexLocker k(&_imp->mustQuitProcessingMutex);
-        _imp->mustQuitProcessing = mustQuit;
+
+    //If this effect has a RenderEngine, make sure it is finished
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
+
+    if (isOutput) {
+        isOutput->getRenderEngine()->quitEngine(true);
     }
-    if ( getRotoContext() ) {
+
+    //Returns when the preview is done computign
+    _imp->abortPreview_non_blocking();
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->quitTrackerThread_non_blocking();
+    }
+
+    if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
         for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->setMustQuitProcessing(mustQuit);
+            (*it)->quitAnyProcessing_non_blocking();
         }
     }
-    //Attempt to wake-up  sleeping threads of the thread pool
-    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-    _imp->nodeIsDequeuing = false;
-    _imp->nodeIsDequeuingCond.wakeAll();
 }
 
 void
-Node::quitAnyProcessing()
+Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 {
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
@@ -2374,19 +2429,65 @@ Node::quitAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine();
+        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        assert(engine);
+        engine->quitEngine(allowThreadsToRestart);
+        engine->waitForEngineToQuit_enforce_blocking();
     }
 
     //Returns when the preview is done computign
-    _imp->abortPreview();
+    _imp->abortPreview_blocking(allowThreadsToRestart);
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
+    }
 
     if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
         for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing();
+            (*it)->quitAnyProcessing_blocking(allowThreadsToRestart);
         }
     }
+}
+
+void
+Node::abortAnyProcessing_non_blocking()
+{
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+
+    if (isOutput) {
+        isOutput->getRenderEngine()->abortRenderingNoRestart();
+    }
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->abortTracking();
+    }
+
+    _imp->abortPreview_non_blocking();
+}
+
+void
+Node::abortAnyProcessing_blocking()
+{
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+
+    if (isOutput) {
+        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        assert(engine);
+        engine->abortRenderingNoRestart();
+        engine->waitForAbortToComplete_enforce_blocking();
+
+    }
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->abortTracking_blocking();
+    }
+
+    _imp->abortPreview_blocking(false);
 }
 
 Node::~Node()
@@ -3067,13 +3168,12 @@ Node::findPluginFormatKnobs()
 void
 Node::findRightClickMenuKnob(const KnobsVec& knobs)
 {
-
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->getName() == kNatronOfxParamRightClickMenu) {
             KnobPtr rightClickKnob = knobs[i];
-            KnobChoice* isChoice = dynamic_cast<KnobChoice*>(rightClickKnob.get());
+            KnobChoice* isChoice = dynamic_cast<KnobChoice*>( rightClickKnob.get() );
             if (isChoice) {
-                QObject::connect(isChoice, SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()));
+                QObject::connect( isChoice, SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
             }
             break;
         }
@@ -3179,6 +3279,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
 
+
     boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
     useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
     useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
@@ -3195,6 +3296,29 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
     _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
+
+
+    boost::shared_ptr<KnobInt> lifeTimeKnob = AppManager::createKnob<KnobInt>(_imp->effect.get(), tr("Lifetime Range"), 2, false);
+    assert(lifeTimeKnob);
+    lifeTimeKnob->setAnimationEnabled(false);
+    lifeTimeKnob->setIsMetadataSlave(true);
+    lifeTimeKnob->setName(kLifeTimeNodeKnobName);
+    lifeTimeKnob->setAddNewLine(false);
+    lifeTimeKnob->setHintToolTip( tr("This is the frame range during which the node will be active if Enable Lifetime is checked") );
+    settingsPage->addKnob(lifeTimeKnob);
+    _imp->lifeTimeKnob = lifeTimeKnob;
+
+
+    boost::shared_ptr<KnobBool> enableLifetimeNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Enable Lifetime"), 1, false);
+    assert(enableLifetimeNodeKnob);
+    enableLifetimeNodeKnob->setAnimationEnabled(false);
+    enableLifetimeNodeKnob->setDefaultValue(false);
+    enableLifetimeNodeKnob->setIsMetadataSlave(true);
+    enableLifetimeNodeKnob->setName(kEnableLifeTimeNodeKnobName);
+    enableLifetimeNodeKnob->setHintToolTip( tr("When checked, the node is only active during the specified frame range by the Lifetime Range parameter. "
+                                               "Outside of this frame range, it behaves as if the Disable parameter is checked") );
+    settingsPage->addKnob(enableLifetimeNodeKnob);
+    _imp->enableLifeTimeKnob = enableLifetimeNodeKnob;
 
     boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
     knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
@@ -3944,11 +4068,12 @@ Node::refreshPreviewsAfterProjectLoad()
 }
 
 QString
-Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
+Node::makeHTMLDocumentation(bool genHTML,
+                            bool hasImg) const
 {
     QString ret;
     QTextStream ts(&ret);
-    Markdown markdown;
+
     QVector<QStringList> items;
 
     //bool isPyPlug;
@@ -3968,6 +4093,16 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
         pluginGroup = _imp->plugin->getGrouping();
         pluginDescriptionMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
     }
+    QString extraMarkdown;
+    QString pluginMD = pluginIcon;
+    pluginMD.replace( QString::fromUtf8(".png"), QString::fromUtf8(".md") );
+    QFile pluginMarkdownFile(pluginMD);
+    if ( pluginMarkdownFile.exists() ) {
+        if ( pluginMarkdownFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
+            extraMarkdown = QString::fromUtf8( pluginMarkdownFile.readAll() );
+            pluginMarkdownFile.close();
+        }
+    }
 
     if (genHTML) {
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
@@ -3982,7 +4117,7 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 
     if ( !pluginGroup.isEmpty() ) {
         QString group = pluginGroup.at(0);
-        if ( !group.isEmpty() && genHTML ) {
+        if (!group.isEmpty() && genHTML) {
             ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
         }
     }
@@ -3992,8 +4127,7 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
         ts << "</ul></div>";
         ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
         ts << "<h1>" << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "</h1>";
-    }
-    else {
+    } else {
         ts << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "\n==========\n\n";
         if (hasImg) {
             ts << "![](" << pluginID << ".png)";
@@ -4012,13 +4146,12 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 
     if (genHTML) {
         if (pluginDescriptionMarkdown) {
-            ts << markdown.convert2html(pluginDescription);
+            ts << Markdown::convert2html(pluginDescription);
         } else {
             pluginDescription.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
             ts << "<p>" << pluginDescription << "</p>";
         }
-    }
-    else {
+    } else {
         ts << pluginDescription;
     }
 
@@ -4026,8 +4159,7 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
     QString inputControlHeader = tr("Inputs & Controls");
     if (genHTML) {
         ts << "<h3>" << inputControlHeader << "</h3>";
-    }
-    else {
+    } else {
         ts << "\n\n" << inputControlHeader << "\n----------\n\n";
     }
 
@@ -4137,14 +4269,13 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
                 ts << "<td class=\"knobsTableValue\">" << defValuesStr << "</td>";
             }
             if ( (*it)->isHintInMarkdown() ) {
-                ts << "<td class=\"knobsTableValue\">" << markdown.convert2html(knobHint) << "</td>";
+                ts << "<td class=\"knobsTableValue\">" << Markdown::convert2html(knobHint) << "</td>";
             } else {
                 knobHint.replace( QRegExp( QString::fromUtf8("((?:https?|ftp)://\\S+)") ), QString::fromUtf8("<a target=\"_blank\" href=\"\\1\">\\1</a>") );
                 ts << "<td class=\"knobsTableValue\">" << knobHint << "</td>";
             }
             ts << "</tr>";
-        }
-        else {
+        } else {
             QStringList row;
             row.append(knobLabel);
             row.append(knobScriptName);
@@ -4156,12 +4287,20 @@ Node::makeHTMLDocumentation(bool genHTML, bool hasImg) const
 
     if (genHTML) {
         ts << "</table>";
+        // add extra markdown if available
+        if ( !extraMarkdown.isEmpty() ) {
+            ts << Markdown::convert2html(extraMarkdown);
+        }
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
-    }
-    else {
+    } else {
         // create markdown table
-        if (items.size()>0) {
-            ts << markdown.genPluginKnobsTable(items);
+        if (items.size() > 0) {
+            ts << Markdown::genPluginKnobsTable(items);
+        }
+        // add extra markdown if available
+        if ( !extraMarkdown.isEmpty() ) {
+            ts << "\n\n";
+            ts << extraMarkdown;
         }
     }
 
@@ -4952,7 +5091,6 @@ Node::connectInput(const NodePtr & input,
             _imp->guiInputs[inputNumber] = input;
         } else {
             _imp->guiInputs[inputNumber] = input;
-            _imp->mustCopyGuiInputs = true;
         }
         input->connectOutput( useGuiInputs, shared_from_this() );
     }
@@ -5066,7 +5204,6 @@ Node::replaceInput(const NodePtr& input,
                 curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
-            _imp->mustCopyGuiInputs = true;
         }
         input->connectOutput( useGuiInputs, shared_from_this() );
     }
@@ -5167,7 +5304,6 @@ Node::switchInput0And1()
             input0 = _imp->guiInputs[inputAIndex].lock();
             _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
             _imp->guiInputs[inputBIndex] = input0;
-            _imp->mustCopyGuiInputs = true;
         }
     }
     Q_EMIT inputChanged(inputAIndex);
@@ -5285,7 +5421,6 @@ Node::disconnectInput(int inputNumber)
             _imp->guiInputs[inputNumber].reset();
         } else {
             _imp->guiInputs[inputNumber].reset();
-            _imp->mustCopyGuiInputs = true;
         }
     }
 
@@ -5362,7 +5497,6 @@ Node::disconnectInput(Node* input)
                 _imp->guiInputs[found].reset();
             } else {
                 _imp->guiInputs[found].reset();
-                _imp->mustCopyGuiInputs = true;
             }
         }
         input->disconnectOutput(useGuiValues, this);
@@ -5651,12 +5785,12 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     //quitAnyProcessing();
     if (!beingDestroyed) {
         _imp->effect->abortAnyEvaluation();
-        _imp->abortPreview();
+        _imp->abortPreview_non_blocking();
     }
 
     ///Free all memory used by the plug-in.
 
-    ///COMMENTED-OUT: Don't do this, the node may still be rendering here.
+    ///COMMENTED-OUT: Don't do this, the node may still be rendering here since the abort call is not blocking.
     ///_imp->effect->clearPluginMemoryChunks();
     clearLastRenderedImage();
 
@@ -5664,7 +5798,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         parentCol->notifyNodeDeactivated( shared_from_this() );
     }
 
-    if (hideGui) {
+    if (hideGui && !beingDestroyed) {
         Q_EMIT deactivated(triggerRender);
     }
     {
@@ -5791,30 +5925,44 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     _imp->runOnNodeCreatedCB(true);
 } // activate
 
-void
-Node::destroyNodeInternal(bool fromDest,
-                          bool autoReconnect)
+class NodeDestroyNodeInternalArgs : public GenericWatcherCallerArgs
 {
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if (!_imp->effect) {
-        return;
-    }
+public:
 
-    {
-        QMutexLocker k(&_imp->activatedMutex);
-        _imp->isBeingDestroyed = true;
-    }
+    bool autoReconnect;
 
-    quitAnyProcessing();
+    NodeDestroyNodeInternalArgs()
+    : GenericWatcherCallerArgs()
+    {}
 
+    virtual ~NodeDestroyNodeInternalArgs() {}
+};
+
+void
+Node::onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args)
+{
+    assert(_imp->renderWatcher);
+    assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
+    assert(args);
+    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>(args.get());
+    assert(thisArgs);
+    doDestroyNodeInternalEnd(false, thisArgs->autoReconnect);
+    _imp->renderWatcher.reset();
+}
+
+void
+Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
+{
 
     ///Remove the node from the project
-    deactivate(NodesList(),
-               true,
-               autoReconnect,
-               true,
-               false);
+    if (!fromDest) {
+        deactivate(NodesList(),
+                   true,
+                   autoReconnect,
+                   true,
+                   false);
+    }
 
     {
         boost::shared_ptr<NodeGuiI> guiPtr = _imp->guiPointer.lock();
@@ -5833,7 +5981,7 @@ Node::destroyNodeInternal(bool fromDest,
     ///Quit any rendering
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
     if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine();
+        isOutput->getRenderEngine()->quitEngine(true);
     }
 
     ///Remove all images in the cache associated to this node
@@ -5847,9 +5995,9 @@ Node::destroyNodeInternal(bool fromDest,
 
     ///Disconnect all inputs
     /*int maxInputs = getMaxInputCount();
-       for (int i = 0; i < maxInputs; ++i) {
-       disconnectInput(i);
-       }*/
+     for (int i = 0; i < maxInputs; ++i) {
+     disconnectInput(i);
+     }*/
 
     ///Kill the effect
     _imp->effect->clearPluginMemoryChunks();
@@ -5866,6 +6014,49 @@ Node::destroyNodeInternal(bool fromDest,
             getGroup()->removeNode(thisShared);
         }
     }
+
+}
+
+
+void
+Node::destroyNodeInternal(bool fromDest,
+                          bool autoReconnect)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    if (!_imp->effect) {
+        return;
+    }
+
+    {
+        QMutexLocker k(&_imp->activatedMutex);
+        _imp->isBeingDestroyed = true;
+    }
+
+    bool allProcessingQuit = areAllProcessingThreadsQuit();
+    if (allProcessingQuit) {
+        doDestroyNodeInternalEnd(true, false);
+    } else {
+        if (!fromDest) {
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+            NodesList nodesToWatch;
+            nodesToWatch.push_back(shared_from_this());
+            if (isGrp) {
+                isGrp->getNodes_recursive(nodesToWatch, false);
+            }
+            _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
+            QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
+            boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
+            args->autoReconnect = autoReconnect;
+            _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
+
+        } else {
+            // Well, we are in the destructor, we better have nothing left to render
+            quitAnyProcessing_blocking(false);
+            doDestroyNodeInternalEnd(true, false);
+        }
+    } 
+
 } // Node::destroyNodeInternal
 
 void
@@ -6071,7 +6262,7 @@ Node::makePreviewImage(SequenceTime time,
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
 
     NodePtr thisNode = shared_from_this();
-    RenderingFlagSetter flagIsRendering(this);
+    RenderingFlagSetter flagIsRendering(thisNode);
 
 
     {
@@ -6317,6 +6508,7 @@ Node::getPluginResourcesPath() const
             }
         }
     }
+
     return _imp->plugin->getResourcesPath().toStdString();
 }
 
@@ -6399,22 +6591,6 @@ Node::aborted() const
     return _imp->effect->aborted();
 }
 
-void
-Node::notifyRenderBeingAborted()
-{
-//
-//    if (QThread::currentThread() == qApp->thread()) {
-    ///The render thread is waiting for the main-thread to dequeue actions
-    ///but the main-thread is waiting for the render thread to abort
-    ///cancel the dequeuing
-    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-
-    if (_imp->nodeIsDequeuing) {
-        _imp->nodeIsDequeuing = false;
-        //Attempt to wake-up  sleeping threads of the thread pool
-        _imp->nodeIsDequeuingCond.wakeAll();
-    }
-}
 
 bool
 Node::message(MessageTypeEnum type,
@@ -6427,11 +6603,12 @@ Node::message(MessageTypeEnum type,
 
     // See https://github.com/MrKepzie/Natron/issues/1313
     // Messages posted from a separate thread should be logged and not show a pop-up
-    if (QThread::currentThread() != qApp->thread()) {
-        QString message = QString::fromUtf8(getLabel_mt_safe().c_str());
+    if ( QThread::currentThread() != qApp->thread() ) {
+        QString message = QString::fromUtf8( getLabel_mt_safe().c_str() );
         message += QString::fromUtf8(": ");
-        message += QString::fromUtf8(content.c_str());
+        message += QString::fromUtf8( content.c_str() );
         appPTR->writeToErrorLog_mt_safe(message);
+
         return true;
     }
 
@@ -7137,7 +7314,7 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb)
+Node::onInputChanged(int inputNb, bool isInputA)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -7152,9 +7329,9 @@ Node::onInputChanged(int inputNb)
     refreshMaskEnabledNess(inputNb);
     refreshLayersChoiceSecretness(inputNb);
 
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( _imp->effect.get() );
-    if (isViewer) {
-        isViewer->refreshActiveInputs(inputNb);
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
+    if (isInspector) {
+        isInspector->refreshActiveInputs(inputNb, isInputA);
     }
 
     bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() ) ||
@@ -7496,8 +7673,10 @@ Node::onOverlayPenDownDefault(double time,
 
 bool
 Node::onOverlayPenDoubleClickedDefault(double time,
-                                      const RenderScale& renderScale,
-                                      ViewIdx view, const QPointF & viewportPos, const QPointF & pos)
+                                       const RenderScale& renderScale,
+                                       ViewIdx view,
+                                       const QPointF & viewportPos,
+                                       const QPointF & pos)
 {
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
 
@@ -7507,7 +7686,6 @@ Node::onOverlayPenDoubleClickedDefault(double time,
 
     return false;
 }
-
 
 bool
 Node::onOverlayPenMotionDefault(double time,
@@ -7875,7 +8053,6 @@ Node::pushUndoCommand(const UndoCommandPtr& command)
     }
 }
 
-
 void
 Node::setCurrentCursor(CursorEnum defaultCursor)
 {
@@ -7894,9 +8071,9 @@ Node::setCurrentCursor(const QString& customCursorFilePath)
     if (nodeGui) {
         return nodeGui->setCurrentCursor(customCursorFilePath);
     }
+
     return false;
 }
-
 
 void
 Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
@@ -8163,7 +8340,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
 
     if (!ret) {
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>(what);
-        if (isGroup && isGroup->getIsDialog()) {
+        if ( isGroup && isGroup->getIsDialog() ) {
             boost::shared_ptr<NodeGuiI> gui = getNodeGui();
             if (gui) {
                 gui->showGroupKnobAsDialog(isGroup);
@@ -8200,7 +8377,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         GroupInput* isInput = dynamic_cast<GroupInput*>( _imp->effect.get() );
         if (isInput) {
             if ( (what->getName() == kNatronGroupInputIsOptionalParamName)
-                || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
+                 || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
                 boost::shared_ptr<NodeCollection> col = isInput->getNode()->getGroup();
                 assert(col);
                 NodeGroup* isGrp = dynamic_cast<NodeGroup*>( col.get() );
@@ -8213,6 +8390,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
             }
         }
     }
+
     return ret;
 } // Node::onEffectKnobValueChanged
 
@@ -8541,6 +8719,25 @@ Node::getDisabledKnob() const
 }
 
 bool
+Node::isLifetimeActivated(int *firstFrame,
+                          int *lastFrame) const
+{
+    boost::shared_ptr<KnobBool> enableLifetimeKnob = _imp->enableLifeTimeKnob.lock();
+
+    if (!enableLifetimeKnob) {
+        return false;
+    }
+    if ( !enableLifetimeKnob->getValue() ) {
+        return false;
+    }
+    boost::shared_ptr<KnobInt> lifetimeKnob = _imp->lifeTimeKnob.lock();
+    *firstFrame = lifetimeKnob->getValue(0);
+    *lastFrame = lifetimeKnob->getValue(1);
+
+    return true;
+}
+
+bool
 Node::isNodeDisabled() const
 {
     boost::shared_ptr<KnobBool> b = _imp->disableNodeKnob.lock();
@@ -8557,7 +8754,12 @@ Node::isNodeDisabled() const
     }
 #endif
 
-    return thisDisabled;
+    int lifeTimeFirst, lifeTimeEnd;
+    bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
+    double curFrame = _imp->effect->getCurrentTime();
+    bool enabled = ( !lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd) ) && !thisDisabled;
+
+    return !enabled;
 }
 
 void
@@ -8822,29 +9024,20 @@ Node::canOthersConnectToThisNode() const
 }
 
 void
-Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
+Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 {
     ///If marked, we alredy set render args
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-
-    if ( found != markedNodes.end() ) {
-        return;
+    for (std::list<NodeWPtr>::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
+        if (it->lock().get() == this) {
+            return;
+        }
     }
 
     ///Wait for the main-thread to be done dequeuing the connect actions queue
     if ( QThread::currentThread() != qApp->thread() ) {
-        bool mustQuitProcessing;
-        {
-            QMutexLocker k(&_imp->mustQuitProcessingMutex);
-            mustQuitProcessing = _imp->mustQuitProcessing;
-        }
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while (_imp->nodeIsDequeuing && !aborted() && !mustQuitProcessing) {
+        while (_imp->nodeIsDequeuing && !aborted()) {
             _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
-            {
-                QMutexLocker k(&_imp->mustQuitProcessingMutex);
-                mustQuitProcessing = _imp->mustQuitProcessing;
-            }
         }
     }
 
@@ -8856,7 +9049,7 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
 
 
     ///mark this
-    markedNodes.push_back(this);
+    markedNodes.push_back(shared_from_this());
 
     ///Call recursively
 
@@ -8869,15 +9062,34 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
     }
 }
 
-void
-Node::setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes)
+RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
+: node(n)
+, nodes()
 {
-    ///If marked, we alredy set render args
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    n->setNodeIsRendering(nodes);
+}
 
-    if ( found != markedNodes.end() ) {
-        return;
+RenderingFlagSetter::~RenderingFlagSetter()
+{
+    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodePtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        n->unsetNodeIsRendering();
     }
+}
+
+
+void
+Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
+{
+    setNodeIsRenderingInternal(nodes);
+}
+
+void
+Node::unsetNodeIsRendering()
+{
 
     bool mustDequeue;
     {
@@ -8898,36 +9110,6 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes)
     if (mustDequeue) {
         Q_EMIT mustDequeueActions();
     }
-
-
-    ///mark this
-    markedNodes.push_back(this);
-
-    ///Call recursively
-
-    int maxInpu = getMaxInputCount();
-    for (int i = 0; i < maxInpu; ++i) {
-        NodePtr input = getInput(i);
-        if (input) {
-            input->setNodeIsNoLongerRenderingInternal(markedNodes);
-        }
-    }
-}
-
-void
-Node::setNodeIsRendering()
-{
-    std::list<Node*> marked;
-
-    setNodeIsRenderingInternal(marked);
-}
-
-void
-Node::unsetNodeIsRendering()
-{
-    std::list<Node*> marked;
-
-    setNodeIsNoLongerRenderingInternal(marked);
 }
 
 bool
@@ -8981,14 +9163,16 @@ Node::dequeueActions()
         _imp->outputs = _imp->guiOutputs;
     }
 
-    beginInputEdition();
-    hasChanged |= !inputChanges.empty();
-    for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
-        onInputChanged(*it);
+    if (!inputChanges.empty()) {
+        beginInputEdition();
+        hasChanged = true;
+        for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
+            onInputChanged(*it);
+        }
+        endInputEdition(true);
     }
-    endInputEdition(true);
-
     if (hasChanged) {
+        computeHash();
         refreshIdentityState();
     }
 
@@ -10814,6 +10998,10 @@ InspectorNode::InspectorNode(AppInstance* app,
                              Plugin* plugin)
     : Node(app, group, plugin)
 {
+    for (int i = 0; i < 2; ++i) {
+        _activeInputs[i] = -1;
+    }
+
 }
 
 InspectorNode::~InspectorNode()
@@ -10873,13 +11061,12 @@ InspectorNode::connectInput(const NodePtr& input,
 }
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb,
-                                        bool /*fromViewer*/)
+InspectorNode::setActiveInputAndRefresh(int inputNb,bool isASide)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
     int maxInputs = getMaxInputCount();
-    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
+    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || (!getInput(inputNb)) ) {
         return;
     }
 
@@ -10890,7 +11077,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb,
     }
 
     Q_EMIT inputChanged(inputNb);
-    onInputChanged(inputNb);
+    onInputChanged(inputNb, isASide);
 
     runInputChangedCallback(inputNb);
 
@@ -10903,6 +11090,47 @@ InspectorNode::setActiveInputAndRefresh(int inputNb,
         }
     }
 }
+
+void
+InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    NodePtr inputNode = getRealInput(inputNbChanged);
+    {
+        QMutexLocker l(&_activeInputsMutex);
+        if (!inputNode) {
+            ///check if the input was one of the active ones if so set to -1
+            if (_activeInputs[0] == inputNbChanged) {
+                _activeInputs[0] = -1;
+            } else if (_activeInputs[1] == inputNbChanged) {
+                _activeInputs[1] = -1;
+            }
+        } else {
+            if (!isASide && _activeInputs[0] != -1) {
+
+                ViewerInstance* isViewer = isEffectViewer();
+                if (isViewer) {
+                    OpenGLViewerI* viewerUI = isViewer->getUiContext();
+                    if (viewerUI) {
+                        ViewerCompositingOperatorEnum op = viewerUI->getCompositingOperator();
+                        if (op == eViewerCompositingOperatorNone) {
+                            viewerUI->setCompositingOperator(eViewerCompositingOperatorWipeUnder);
+                        }
+                    }
+                }
+                _activeInputs[1] = inputNbChanged;
+            } else {
+                _activeInputs[0] = inputNbChanged;
+                if (_activeInputs[1] == -1) {
+                    _activeInputs[1] = inputNbChanged;
+                }
+            }
+        }
+    }
+    Q_EMIT activeInputsChanged();
+    Q_EMIT refreshOptionalState();
+}
+
 
 int
 InspectorNode::getPreferredInputInternal(bool connected) const
@@ -10961,6 +11189,39 @@ InspectorNode::getPreferredInputForConnection() const
 {
     return getPreferredInputInternal(false);
 }
+
+void
+InspectorNode::getActiveInputs(int & a,
+                               int &b) const
+{
+    QMutexLocker l(&_activeInputsMutex);
+
+    a = _activeInputs[0];
+    b = _activeInputs[1];
+}
+
+void
+InspectorNode::setInputA(int inputNb)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker l(&_activeInputsMutex);
+        _activeInputs[0] = inputNb;
+    }
+    Q_EMIT refreshOptionalState();
+}
+
+void
+InspectorNode::setInputB(int inputNb)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker l(&_activeInputsMutex);
+        _activeInputs[1] = inputNb;
+    }
+    Q_EMIT refreshOptionalState();
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

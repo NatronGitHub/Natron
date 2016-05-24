@@ -183,7 +183,6 @@ void
 ViewerGL::resizeGL(int w,
                    int h)
 {
-
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( (h == 0) || (w == 0) ) { // prevent division by 0
@@ -263,7 +262,6 @@ public:
 void
 ViewerGL::paintGL()
 {
-
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
@@ -356,7 +354,8 @@ ViewerGL::paintGL()
             glColor4d(1., 1., 1., 1.);
             glBlendColor(1, 1, 1, wipeMix);
 
-            if ( _imp->viewerTab->isCheckerboardEnabled() ) {
+            bool checkerboard = _imp->viewerTab->isCheckerboardEnabled();
+            if (checkerboard) {
                 // draw checkerboard texture, but only on the left side if in wipe mode
                 RectD projectFormatCanonical;
                 _imp->getProjectFormatCanonical(projectFormatCanonical);
@@ -378,14 +377,15 @@ ViewerGL::paintGL()
 
             ///Depending on the premultiplication of the input image we use a different blending func
             ImagePremultiplicationEnum premultA = _imp->displayTextures[0].premult;
-            //if ( !_imp->viewerTab->isCheckerboardEnabled() ) {
-            //    premultA = eImagePremultiplicationOpaque; ///When no checkerboard, draw opaque
-            //}
 
+            // Left side of the wipe is displayed as Opaque if there is no checkerboard.
+            // That way, unpremultiplied images can easily be displayed, even if their alpha is zero.
+            // We do not "unpremult" premultiplied RGB for displaying it, because it is the usual way
+            // to visualize masks: areas with alpha=0 appear as black.
             switch (compOperator) {
             case eViewerCompositingOperatorNone: {
                 if (drawTexture[0]) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWhole, true);
                 }
                 break;
@@ -393,7 +393,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeUnder:
             case eViewerCompositingOperatorStackUnder: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
@@ -412,7 +412,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeOver:
             case eViewerCompositingOperatorStackOver: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[1]) {
@@ -431,7 +431,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeMinus:
             case eViewerCompositingOperatorStackMinus: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
@@ -450,7 +450,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorWipeOnionSkin:
             case eViewerCompositingOperatorStackOnionSkin: {
                 if (drawTexture[0] && !stack) {
-                    BlendSetter b(premultA);
+                    BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
                     _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
@@ -1451,7 +1451,7 @@ ViewerGL::isViewerUIVisible() const
     }
     TabWidget* tabWidget = _imp->viewerTab->getParentPane();
     if (!tabWidget) {
-        return false;
+        return isVisible();
     }
 
     if (tabWidget->currentWidget() != _imp->viewerTab) {
@@ -1683,7 +1683,6 @@ ViewerGL::setLut(int lut)
     _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
 }
 
-
 #if QT_VERSION < 0x050000
 #define QMouseEventLocalPos(e) ( e->posF() )
 #else
@@ -1703,11 +1702,11 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
     _imp->hasMovedSincePress = false;
     _imp->pressureOnRelease = 1.;
-    if (buttonDownIsLeft(e)) {
+    if ( buttonDownIsLeft(e) ) {
         _imp->pointerTypeOnPress = ePenTypeLMB;
-    } else if (buttonDownIsRight(e)) {
+    } else if ( buttonDownIsRight(e) ) {
         _imp->pointerTypeOnPress = ePenTypeRMB;
-    } else if (buttonDownIsMiddle(e)) {
+    } else if ( buttonDownIsMiddle(e) ) {
         _imp->pointerTypeOnPress = ePenTypeMMB;
     }
 
@@ -1824,7 +1823,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->overlay) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown(RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e));
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e) );
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -2629,7 +2628,7 @@ ViewerGL::checkIfViewPortRoIValidOrRender()
                 ViewerInstance* viewer = getInternalNode();
                 assert(viewer);
                 if (viewer) {
-                    viewer->getRenderEngine()->abortRendering(true, false);
+                    viewer->getRenderEngine()->abortRenderingAutoRestart();
                     viewer->renderCurrentFrame(true);
                 }
             }
@@ -3190,11 +3189,18 @@ ViewerGL::populateMenu()
 } // ViewerGL::populateMenu
 
 bool
-ViewerGL::renderText(double x, double y, const std::string &string, double r, double g, double b)
+ViewerGL::renderText(double x,
+                     double y,
+                     const std::string &string,
+                     double r,
+                     double g,
+                     double b)
 {
     QColor c;
-    c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
-    renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
+
+    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
+    renderText( x, y, QString::fromUtf8( string.c_str() ), c, font() );
+
     return true;
 }
 
@@ -3341,13 +3347,16 @@ ViewerGL::getViewportRect() const
         bbox.x2 = _imp->zoomCtx.right();
         bbox.y2 = _imp->zoomCtx.top();
     }
+
     return bbox;
 }
 
 void
-ViewerGL::getCursorPosition(double &x, double &y) const
+ViewerGL::getCursorPosition(double &x,
+                            double &y) const
 {
     QPoint p = QCursor::pos();
+
     p = mapFromGlobal(p);
     QPointF mappedPos = toZoomCoordinates(p);
     x = mappedPos.x();
@@ -3580,9 +3589,8 @@ ViewerGL::getWidgetFontHeight() const
 int
 ViewerGL::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
-
 
 void
 ViewerGL::makeOpenGLcontextCurrent()

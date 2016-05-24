@@ -1674,6 +1674,7 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
                                        bool /*originatedFromMainThread*/)
 {
     bool ret = false;
+
     if ( !k->isDeclaredByPlugin() ) {
         if (k->getName() == kDisableNodeKnobName) {
             KnobBool* boolKnob = dynamic_cast<KnobBool*>(k);
@@ -1717,8 +1718,9 @@ MultiInstancePanel::onKnobValueChanged(KnobI* k,
             }
         }
     }
+
     return ret;
-}
+} // MultiInstancePanel::onKnobValueChanged
 
 namespace  {
 enum ExportTransformTypeEnum
@@ -1779,7 +1781,7 @@ TrackerPanelV1::TrackerPanelV1(const boost::shared_ptr<NodeGui> & node)
 
 TrackerPanelV1::~TrackerPanelV1()
 {
-    _imp->scheduler.quitThread();
+    _imp->scheduler.quitThread(false);
 }
 
 void
@@ -2127,7 +2129,7 @@ TrackerPanelV1::trackForward(ViewerInstance* /*viewer*/)
 void
 TrackerPanelV1::stopTracking()
 {
-    _imp->scheduler.abortTracking();
+    _imp->scheduler.abortThreadedTask();
 }
 
 bool

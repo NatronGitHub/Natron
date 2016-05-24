@@ -55,7 +55,8 @@ struct DialogParamHolderPrivate
     std::string paramChangedCB;
     UserParamHolder* widget;
 
-    DialogParamHolderPrivate(UserParamHolder* widget, const QString& uniqueID)
+    DialogParamHolderPrivate(UserParamHolder* widget,
+                             const QString& uniqueID)
         : uniqueID( uniqueID.toStdString() )
         , paramChangedCBMutex()
         , paramChangedCB()
@@ -68,7 +69,7 @@ DialogParamHolder::DialogParamHolder(const QString& uniqueID,
                                      AppInstance* app,
                                      UserParamHolder* widget)
     : NamedKnobHolder(app)
-    , _imp( new DialogParamHolderPrivate(widget,uniqueID) )
+    , _imp( new DialogParamHolderPrivate(widget, uniqueID) )
 {
 }
 
@@ -157,9 +158,11 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
         } else if ( !output.empty() ) {
             getApp()->appendToScriptEditor(output);
         }
+
         return true;
     }
     _imp->widget->onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
+
     return false;
 } // DialogParamHolder::onKnobValueChanged
 
@@ -185,7 +188,8 @@ struct PyModalDialogPrivate
     }
 };
 
-PyModalDialog::PyModalDialog(Gui* gui, StandardButtons defaultButtons)
+PyModalDialog::PyModalDialog(Gui* gui,
+                             StandardButtons defaultButtons)
     : QDialog(gui)
     , UserParamHolder()
     , _imp( new PyModalDialogPrivate(gui) )
@@ -217,10 +221,7 @@ PyModalDialog::PyModalDialog(Gui* gui, StandardButtons defaultButtons)
 
     _imp->mainLayout->addWidget(_imp->centerContainer);
 
-    if ((defaultButtons & eStandardButtonNoButton) == 0) {
-
-
-
+    if ( (defaultButtons & eStandardButtonNoButton) == 0 ) {
         QDialogButtonBox::StandardButtons qbuttons;
         if (defaultButtons & eStandardButtonOk) {
             qbuttons |= QDialogButtonBox::Ok;
@@ -284,7 +285,6 @@ PyModalDialog::PyModalDialog(Gui* gui, StandardButtons defaultButtons)
         QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
         _imp->mainLayout->addWidget(_imp->buttons);
     }
-
 }
 
 PyModalDialog::~PyModalDialog()

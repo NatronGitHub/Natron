@@ -75,7 +75,7 @@ GuiApplicationManager::~GuiApplicationManager()
             delete it2->second;
         }
     }
-    _imp->previewRenderThread.quitThread();
+    _imp->previewRenderThread.quitThread(false);
 }
 
 void
@@ -1030,7 +1030,7 @@ GuiApplicationManager::onPluginLoaded(Plugin* plugin)
     const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
     std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup().toStdString();
     for (std::list<PluginActionShortcut>::const_iterator it = shortcuts.begin(); it != shortcuts.end(); ++it) {
-        _imp->addKeybind(pluginShortcutGroup, it->actionID, it->actionLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->key));
+        _imp->addKeybind( pluginShortcutGroup, it->actionID, it->actionLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->key) );
     }
 } // GuiApplicationManager::onPluginLoaded
 
@@ -1122,7 +1122,8 @@ void
 GuiApplicationManager::updateAboutWindowLibrariesVersion()
 {
     const std::map<int, AppInstanceRef>& instances = getAppInstances();
-    for ( std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+
+    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
         GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
         if (isGuiInstance) {
             Gui* gui = isGuiInstance->getGui();

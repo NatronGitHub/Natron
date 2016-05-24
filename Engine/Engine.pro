@@ -94,6 +94,8 @@ SOURCES += \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
     FStreamsSupport.cpp \
+    GenericSchedulerThread.cpp \
+    GenericSchedulerThreadWatcher.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -116,6 +118,7 @@ SOURCES += \
     LibraryBinary.cpp \
     Log.cpp \
     Lut.cpp \
+    Markdown.cpp \
     MemoryFile.cpp \
     Node.cpp \
     NodeGroup.cpp \
@@ -183,7 +186,6 @@ SOURCES += \
     Transform.cpp \
     ViewerInstance.cpp \
     WriteNode.cpp \
-    Markdown.cpp \
     ../Global/glad_source.c \
     ../Global/ProcInfo.cpp \
     ../libs/SequenceParsing/SequenceParsing.cpp \
@@ -233,6 +235,7 @@ SOURCES += \
 
 HEADERS += \
     AbortableRenderInfo.h \
+    AfterQuitProcessingI.h \
     AppInstance.h \
     AppManager.h \
     AppManagerPrivate.h \
@@ -273,6 +276,8 @@ HEADERS += \
     FrameParamsSerialization.h \
     FStreamsSupport.h \
     fstream_mingw.h \
+    GenericSchedulerThread.h \
+    GenericSchedulerThreadWatcher.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \
@@ -299,6 +304,7 @@ HEADERS += \
     Log.h \
     LRUHashTable.h \
     Lut.h \
+    Markdown.h \
     MemoryFile.h \
     MergingEnum.h \
     Node.h \
@@ -394,7 +400,6 @@ HEADERS += \
     ViewerInstancePrivate.h \
     ViewIdx.h \
     WriteNode.h \
-    Markdown.h \
     ../Global/Enums.h \
     ../Global/GitVersion.h \
     ../Global/glad_include.h \

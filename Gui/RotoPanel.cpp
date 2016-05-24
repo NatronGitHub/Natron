@@ -92,13 +92,11 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 
 
-
 class RemoveItemsUndoCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
-
     Q_DECLARE_TR_FUNCTIONS(RemoveItemsUndoCommand)
-    
+
     struct RemovedItem
     {
         QTreeWidgetItem* treeItem;
@@ -108,11 +106,11 @@ class RemoveItemsUndoCommand
         boost::shared_ptr<RotoItem> item;
 
         RemovedItem()
-        : treeItem(0)
-        , parentTreeItem(0)
-        , parentLayer()
-        , indexInLayer(-1)
-        , item()
+            : treeItem(0)
+            , parentTreeItem(0)
+            , parentLayer()
+            , indexInLayer(-1)
+            , item()
         {
         }
     };
@@ -135,7 +133,7 @@ private:
 };
 
 class AddLayerUndoCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(AddLayerUndoCommand)
 
@@ -162,10 +160,10 @@ private:
 
 
 class DragItemsUndoCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
-
     Q_DECLARE_TR_FUNCTIONS(DragItemsUndoCommand)
+
 public:
 
     struct Item
@@ -203,10 +201,10 @@ private:
  * otherwise you'll create an empty action in the undo/redo stack.
  **/
 class PasteItemUndoCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
-
     Q_DECLARE_TR_FUNCTIONS(PasteItemUndoCommand)
+
 public:
 
     enum PasteModeEnum
@@ -244,9 +242,10 @@ private:
 
 
 class DuplicateItemUndoCommand
-: public QUndoCommand
+    : public QUndoCommand
 {
     Q_DECLARE_TR_FUNCTIONS(DuplicateItemUndoCommand)
+
 public:
 
     struct DuplicatedItem
@@ -263,9 +262,9 @@ public:
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
-    
+
 private:
-    
+
     RotoPanel* _roto;
     DuplicatedItem _item;
 };
@@ -1665,6 +1664,8 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             if (drawable) {
                 QColorDialog dialog;
+                dialog.setOption(QColorDialog::DontUseNativeDialog);
+                dialog.setOption(QColorDialog::ShowAlphaChannel);
                 _imp->dialogEdition = eColorDialogEditingOverlayColor;
                 double oc[4];
                 drawable->getOverlayColor(oc);
@@ -1706,6 +1707,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             bool mustEvaluate = false;
             if (drawable) {
                 QColorDialog dialog;
+                dialog.setOption(QColorDialog::DontUseNativeDialog);
                 _imp->dialogEdition = eColorDialogEditingShapeColor;
                 drawable->getColor(time, shapeColor);
                 QColor color;
@@ -2524,16 +2526,14 @@ RotoPanel::onOperatorColMinimumSizeChanged(const QSize& size)
 #endif
 }
 
-
-
 //////////////////////////////
 
 
 RemoveItemsUndoCommand::RemoveItemsUndoCommand(RotoPanel* roto,
                                                const QList<QTreeWidgetItem*> & items)
-: QUndoCommand()
-, _roto(roto)
-, _items()
+    : QUndoCommand()
+    , _roto(roto)
+    , _items()
 {
     for (QList<QTreeWidgetItem*>::const_iterator it = items.begin(); it != items.end(); ++it) {
         QTreeWidgetItem* parentItem = (*it)->parent();
@@ -2606,14 +2606,14 @@ RemoveItemsUndoCommand::redo()
 
 
 AddLayerUndoCommand::AddLayerUndoCommand(RotoPanel* roto)
-: QUndoCommand()
-, _roto(roto)
-, _firstRedoCalled(false)
-, _parentLayer()
-, _parentTreeItem(0)
-, _treeItem(0)
-, _layer()
-, _indexInParentLayer(-1)
+    : QUndoCommand()
+    , _roto(roto)
+    , _firstRedoCalled(false)
+    , _parentLayer()
+    , _parentTreeItem(0)
+    , _treeItem(0)
+    , _layer()
+    , _indexInParentLayer(-1)
 {
 }
 
@@ -2664,9 +2664,9 @@ AddLayerUndoCommand::redo()
 
 DragItemsUndoCommand::DragItemsUndoCommand(RotoPanel* roto,
                                            const std::list< boost::shared_ptr<DroppedTreeItem> > & items)
-: QUndoCommand()
-, _roto(roto)
-, _items()
+    : QUndoCommand()
+    , _roto(roto)
+    , _items()
 {
     for (std::list< boost::shared_ptr<DroppedTreeItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
         assert( (*it)->newParentLayer && (*it)->newParentItem && (*it)->insertIndex != -1 );
@@ -2793,12 +2793,12 @@ setItemCopyNameRecursive(RotoPanel* panel,
 PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
                                            QTreeWidgetItem* target,
                                            QList<QTreeWidgetItem*> source)
-: QUndoCommand()
-, _roto(roto)
-, _mode()
-, _targetTreeItem(target)
-, _targetItem()
-, _pastedItems()
+    : QUndoCommand()
+    , _roto(roto)
+    , _mode()
+    , _targetTreeItem(target)
+    , _targetItem()
+    , _pastedItems()
 {
     _targetItem = roto->getRotoItemForTreeItem(target);
     assert(_targetItem);
@@ -2836,9 +2836,9 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
             } else if (srcStroke) {
                 std::string name = getItemCopyName(roto, it->rotoItem);
                 boost::shared_ptr<RotoStrokeItem> copy( new RotoStrokeItem( srcStroke->getBrushType(),
-                                                                           srcStroke->getContext(),
-                                                                           name,
-                                                                           boost::shared_ptr<RotoLayer>() ) );
+                                                                            srcStroke->getContext(),
+                                                                            name,
+                                                                            boost::shared_ptr<RotoLayer>() ) );
                 copy->createNodes();
                 if ( srcStroke->getParentLayer() ) {
                     srcStroke->getParentLayer()->insertItem(copy, 0);
@@ -2852,8 +2852,8 @@ PasteItemUndoCommand::PasteItemUndoCommand(RotoPanel* roto,
             } else {
                 assert(srcLayer);
                 boost::shared_ptr<RotoLayer> copy( new RotoLayer( srcLayer->getContext(),
-                                                                 "",
-                                                                 boost::shared_ptr<RotoLayer>() ) );
+                                                                  "",
+                                                                  boost::shared_ptr<RotoLayer>() ) );
                 copy->clone( srcLayer.get() );
                 setItemCopyNameRecursive( roto, copy );
                 it->itemCopy = copy;
@@ -2933,9 +2933,9 @@ PasteItemUndoCommand::redo()
 
 DuplicateItemUndoCommand::DuplicateItemUndoCommand(RotoPanel* roto,
                                                    QTreeWidgetItem* items)
-: QUndoCommand()
-, _roto(roto)
-, _item()
+    : QUndoCommand()
+    , _roto(roto)
+    , _item()
 {
     _item.treeItem = items;
     _item.item = _roto->getRotoItemForTreeItem(_item.treeItem);
@@ -2992,7 +2992,6 @@ DuplicateItemUndoCommand::redo()
     _roto->getContext()->evaluateChange();
     setText( tr("Duplicate item(s) of %2").arg( QString::fromUtf8( _roto->getNodeName().c_str() ) ) );
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

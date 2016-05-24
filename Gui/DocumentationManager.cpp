@@ -44,6 +44,38 @@
 NATRON_NAMESPACE_ENTER;
 DocumentationManager::DocumentationManager(QObject *parent) : QObject(parent)
 {
+    // list of translatable group names
+    (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE_READERS);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE_WRITERS);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/Math");
+    (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/OCIO");
+    (void)QT_TR_NOOP(PLUGIN_GROUP_COLOR "/Transform");
+    (void)QT_TR_NOOP(PLUGIN_GROUP_FILTER);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_FILTER "/Merges");
+    (void)QT_TR_NOOP(PLUGIN_GROUP_TRANSFORM);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_TIME);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_PAINT);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_KEYER);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_CHANNEL);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_MERGE);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_MULTIVIEW);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_MULTIVIEW "/Stereo");
+    (void)QT_TR_NOOP(PLUGIN_GROUP_DEEP);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_TOOLSETS);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_3D);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_OTHER);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_DEFAULT);
+    (void)QT_TR_NOOP(PLUGIN_GROUP_OFX);
+    // openfx-arena
+    (void)QT_TR_NOOP("Extra");
+    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_COLOR);
+    (void)QT_TR_NOOP("Extra/Distort");
+    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_PAINT);
+    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_FILTER);
+    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_DEFAULT);
+    (void)QT_TR_NOOP("Extra/"PLUGIN_GROUP_TRANSFORM);
 }
 
 DocumentationManager::~DocumentationManager()
@@ -80,10 +112,10 @@ DocumentationManager::handler(QHttpRequest *req,
 #endif
 
     // override static docs
-    if (page.contains( QString::fromUtf8("/plugins/") )) {
+    if ( page.contains( QString::fromUtf8("/plugins/") ) ) {
         page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
     }
-    if (page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") )) {
+    if ( page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") ) ) {
         page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("_group"), QString::fromUtf8("_group.html?id=") );
     }
 
@@ -147,7 +179,26 @@ DocumentationManager::handler(QHttpRequest *req,
             }
         }
         if ( body.isEmpty() ) {
-            QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Plugin not found</title><link rel=\"stylesheet\" href=\"/_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"/_static/jquery.js\"></script><script type=\"text/javascript\" src=\"/_static/dropdown.js\"></script></head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>Plugin not found</h1></div></div></div></body></html>");
+            QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
+                                                 "<html>"
+                                                 "<head>"
+                                                 "<title>Plugin not found</title>"
+                                                 "<link rel=\"stylesheet\" href=\"/_static/default.css\" type=\"text/css\" />"
+                                                 "<link rel=\"stylesheet\" href=\"/_static/pygments.css\" type=\"text/css\" />"
+                                                 "<link rel=\"stylesheet\" href=\"/_static/style.css\" type=\"text/css\" />"
+                                                 "<script type=\"text/javascript\" src=\"/_static/jquery.js\"></script>"
+                                                 "<script type=\"text/javascript\" src=\"/_static/dropdown.js\"></script>"
+                                                 "</head>"
+                                                 "<body>"
+                                                 "<div class=\"document\">"
+                                                 "<div class=\"documentwrapper\">"
+                                                 "<div class=\"body\">"
+                                                 "<h1>Plugin not found</h1>"
+                                                 "</div>"
+                                                 "</div>"
+                                                 "</div>"
+                                                 "</body>"
+                                                 "</html>");
             body = parser(notFound, docDir).toUtf8();
         }
     } else if ( page == QString::fromUtf8("_prefs.html") ) {
@@ -158,11 +209,32 @@ DocumentationManager::handler(QHttpRequest *req,
     } else if ( page == QString::fromUtf8("_group.html") ) {
         QString html;
         QString group;
-        QString groupHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n<html>\n<head>\n<title>__REPLACE_TITLE__ - ") + QString::fromUtf8(NATRON_APPLICATION_NAME) + QString::fromUtf8(" ") + QString::fromUtf8(NATRON_VERSION_STRING) + QString::fromUtf8(" documentation") + QString::fromUtf8("</title>\n<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/pygments.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />\n</head>\n<body>\n");
-        QString groupBodyEnd = QString::fromUtf8("</ul>\n</div>\n</div>\n</div>\n</div>\n");
-        QString groupFooter = QString::fromUtf8("</body>\n</html>\n");
-        QString navHeader = QString::fromUtf8("<div class=\"related\">\n<h3>") + tr("Navigation") + QString::fromUtf8("</h3>\n<ul>\n<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>\n");
-        QString navFooter = QString::fromUtf8("</ul>\n</div>\n");
+        QString groupHeader = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
+                                                "<html>"
+                                                "<head>"
+                                                "<title>__REPLACE_TITLE__ - %1</title>"
+                                                "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />"
+                                                "<link rel=\"stylesheet\" href=\"_static/pygments.css\" type=\"text/css\" />"
+                                                "<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />"
+                                                "</head>"
+                                                "<body>")
+                              .arg( tr("%1 %2 documentation")
+                                    .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) )
+                                    .arg( QString::fromUtf8(NATRON_VERSION_STRING) ) );
+        QString groupBodyEnd = QString::fromUtf8("</ul>"
+                                                 "</div>"
+                                                 "</div>"
+                                                 "</div>"
+                                                 "</div>");
+        QString groupFooter = QString::fromUtf8("</body>"
+                                                "</html>");
+        QString navHeader = QString::fromUtf8("<div class=\"related\">"
+                                              "<h3>%1</h3>"
+                                              "<ul>"
+                                              "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>")
+                            .arg( tr("Navigation") );
+        QString navFooter = QString::fromUtf8("</ul>"
+                                              "</div>");
         for (int i = 0; i < options.size(); ++i) {
             if ( options.at(i).contains( QString::fromUtf8("id=") ) ) {
                 QStringList split = options.at(i).split(QString::fromUtf8("="), QString::SkipEmptyParts);
@@ -194,11 +266,22 @@ DocumentationManager::handler(QHttpRequest *req,
                 }
             }
             if ( !plugins.isEmpty() ) {
-                QString groupBodyStart = QString::fromUtf8("<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n<h1>") + group + QString::fromUtf8("</h1>\n<p>") + tr("This manual is intended as a reference for all the parameters within each node in %1.").arg(group) + QString::fromUtf8("</p>\n<div class=\"toctree-wrapper compound\">\n<ul>\n");
+                QString groupBodyStart = QString::fromUtf8("<div class=\"document\">"
+                                                           "<div class=\"documentwrapper\">"
+                                                           "<div class=\"body\">"
+                                                           "<h1>%1</h1>"
+                                                           "<p>%2</p>"
+                                                           "<div class=\"toctree-wrapper compound\">"
+                                                           "<ul>")
+                                         .arg( tr( group.toUtf8().constData() ) )
+                                         .arg( tr("This manual is intended as a reference for all the parameters within each node in %1.")
+                                               .arg( tr( group.toUtf8().constData() ) )
+                                               );
                 html.append(groupHeader);
                 html.replace(QString::fromUtf8("__REPLACE_TITLE__"), group);
                 html.append(navHeader);
-                html.append( QString::fromUtf8("<li><a href=\"/_group.html\">") + tr("Reference Guide") + QString::fromUtf8("</a> &raquo;</li>\n") );
+                html.append( QString::fromUtf8("<li><a href=\"/_group.html\">%1</a> &raquo;</li>")
+                             .arg( tr("Reference Guide") ) );
                 html.append(navFooter);
                 html.append(groupBodyStart);
                 for (int i = 0; i < plugins.size(); ++i) {
@@ -209,14 +292,25 @@ DocumentationManager::handler(QHttpRequest *req,
                         plugName = pluginInfo.at(1);
                     }
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
-                        html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='/_plugin.html?id=") + plugID + QString::fromUtf8("'>") + plugName + QString::fromUtf8("</a></li>\n") );
+                        html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='/_plugin.html?id=%1'>%2</a></li>")
+                                     .arg(plugID)
+                                     .arg(plugName) );
                     }
                 }
                 html.append(groupBodyEnd);
                 html.append(groupFooter);
             }
         } else {
-            QString groupBodyStart = QString::fromUtf8("<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n<h1>") + tr("Reference Guide") + QString::fromUtf8("</h1>\n<p>") + tr("This manual is intended as a reference for all the parameters within each node in %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QString::fromUtf8("</p>\n<div class=\"toctree-wrapper compound\">\n<ul>\n");
+            QString groupBodyStart = QString::fromUtf8("<div class=\"document\">"
+                                                       "<div class=\"documentwrapper\">"
+                                                       "<div class=\"body\">"
+                                                       "<h1>%1</h1>"
+                                                       "<p>%2</p>"
+                                                       "<div class=\"toctree-wrapper compound\">"
+                                                       "<ul>")
+                                     .arg( tr("Reference Guide") )
+                                     .arg ( tr("This manual is intended as a reference for all the parameters within each node in %1.")
+                                            .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
             html.append(groupHeader);
             html.replace( QString::fromUtf8("__REPLACE_TITLE__"), tr("Reference Guide") );
             html.append(navHeader);
@@ -240,7 +334,10 @@ DocumentationManager::handler(QHttpRequest *req,
             }
             groups.removeDuplicates();
             for (int i = 0; i < groups.size(); ++i) {
-                html.append( QString::fromUtf8("<li class='toctree-l1'><a href='/_group.html?id=") + groups.at(i) + QString::fromUtf8("'>") + groups.at(i) + QString::fromUtf8("</a></li>\n") );
+                html.append( QString::fromUtf8("<li class='toctree-l1'><a href='/_group.html?id=%1'>%2</a></li>")
+                             .arg( groups.at(i) )
+                             .arg( tr( groups.at(i).toUtf8().constData() ) )
+                             );
             }
             html.append(groupBodyEnd);
             html.append(groupFooter);
@@ -273,7 +370,25 @@ DocumentationManager::handler(QHttpRequest *req,
 
     // page not found
     if ( body.isEmpty() ) {
-        QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\"><html><head><title>Page not found</title><link rel=\"stylesheet\" href=\"/_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/pygments.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"/_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"/_static/jquery.js\"></script><script type=\"text/javascript\" src=\"/_static/dropdown.js\"></script></head><body><div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><h1>Page not found</h1></div></div></div></body></html>");
+        QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
+                                             "<html>"
+                                             "<head>"
+                                             "<title>%1</title>"
+                                             "<link rel=\"stylesheet\" href=\"/_static/default.css\" type=\"text/css\" />"
+                                             "<link rel=\"stylesheet\" href=\"/_static/pygments.css\" type=\"text/css\" />"
+                                             "<link rel=\"stylesheet\" href=\"/_static/style.css\" type=\"text/css\" />"
+                                             "<script type=\"text/javascript\" src=\"/_static/jquery.js\"></script>"
+                                             "<script type=\"text/javascript\" src=\"/_static/dropdown.js\"></script>"
+                                             "</head><body><div class=\"document\">"
+                                             "<div class=\"documentwrapper\">"
+                                             "<div class=\"body\">"
+                                             "<h1>%1</h1>"
+                                             "</div>"
+                                             "</div>"
+                                             "</div>"
+                                             "</body>"
+                                             "</html>")
+                           .arg( tr("Page not found") );
         body = parser(notFound, docDir).toUtf8();
     }
 
@@ -296,7 +411,7 @@ DocumentationManager::handler(QHttpRequest *req,
     // return result
     resp->writeHead(200);
     resp->end(body);
-} // DocumentationManager::handler
+}                                             // DocumentationManager::handler
 
 QString
 DocumentationManager::parser(QString html,
@@ -307,10 +422,10 @@ DocumentationManager::parser(QString html,
 
     // sphinx compat
     bool plainBody = false;
-    if (result.contains(QString::fromUtf8("<body>"))) { // 1.3 and lower
+
+    if ( result.contains( QString::fromUtf8("<body>") ) ) {             // 1.3 and lower
         plainBody = true;
-    }
-    else if (result.contains(QString::fromUtf8("<body role=\"document\">"))) { // 1.4+
+    } else if ( result.contains( QString::fromUtf8("<body role=\"document\">") ) ) {             // 1.4+
         plainBody = false;
     }
 
@@ -320,15 +435,22 @@ DocumentationManager::parser(QString html,
 
     // fix sphinx compat
     if (plainBody) {
-        menuHTML.append( QString::fromUtf8("<body>\n") );
+        menuHTML.append( QString::fromUtf8("<body>") );
+    } else {
+        menuHTML.append( QString::fromUtf8("<body role=\"document\">") );
     }
-    else {
-
-        menuHTML.append( QString::fromUtf8("<body role=\"document\">\n") );
-    }
-    menuHTML.append( QString::fromUtf8("<div id=\"header\">\n<a href=\"/\"><div id=\"logo\"></div></a>\n") );
-    menuHTML.append( QString::fromUtf8("<div id=\"search\">\n<form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\"><input type=\"text\" name=\"q\" placeholder=\"Search docs\" /><input type=\"hidden\" name=\"check_keywords\" value=\"yes\" /><input type=\"hidden\" name=\"area\" value=\"default\" /></form>\n</div>\n") );
-    menuHTML.append( QString::fromUtf8("<div id=\"mainMenu\">\n<ul>\n") );
+    menuHTML.append( QString::fromUtf8("<div id=\"header\">"
+                                       "<a href=\"/\"><div id=\"logo\"></div></a>") );
+    menuHTML.append( QString::fromUtf8("<div id=\"search\">"
+                                       "<form id=\"rtd-search-form\" class=\"wy-form\" action=\"/search.html\" method=\"get\">"
+                                       "<input type=\"text\" name=\"q\" placeholder=\"%1\" />"
+                                       "<input type=\"hidden\" name=\"check_keywords\" value=\"yes\" />"
+                                       "<input type=\"hidden\" name=\"area\" value=\"default\" />"
+                                       "</form>"
+                                       "</div>")
+                     .arg( tr("Search docs") ) );
+    menuHTML.append( QString::fromUtf8("<div id=\"mainMenu\">"
+                                       "<ul>") );
     if ( indexFile.exists() ) {
         if ( indexFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QStringList menuResult;
@@ -354,18 +476,21 @@ DocumentationManager::parser(QString html,
                 }
             }
             indexFile.close();
-            menuHTML.append( QString::fromUtf8("</div>\n</div>\n</div>\n") );
+            menuHTML.append( QString::fromUtf8("</div>"
+                                               "</div>"
+                                               "</div>") );
         }
     } else {
-        menuHTML.append( QString::fromUtf8("</ul></div></div>") );
+        menuHTML.append( QString::fromUtf8("</ul>"
+                                           "</div>"
+                                           "</div>") );
     }
 
 
     // fix sphinx compat
     if (plainBody) {
         result.replace(QString::fromUtf8("<body>"), menuHTML);
-    }
-    else {
+    } else {
         result.replace(QString::fromUtf8("<body role=\"document\">"), menuHTML);
     }
 
@@ -373,7 +498,7 @@ DocumentationManager::parser(QString html,
     result.replace( QString::fromUtf8("NATRON_DOCUMENTATION"), tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) );
 
     return result;
-} // DocumentationManager::parser
+}             // DocumentationManager::parser
 
 void
 DocumentationManager::setPort(int port)

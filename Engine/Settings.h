@@ -25,11 +25,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <string>
 #include <map>
 #include <vector>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
@@ -92,10 +93,6 @@ public:
                                     double time,
                                     ViewSpec view,
                                     bool originatedFromMainThread) OVERRIDE FINAL;
-
-    ImageBitDepthEnum getViewersBitDepth() const;
-
-    int getViewerTilesPowerOf2() const;
 
     double getRamMaximumPercent() const;
 
@@ -240,11 +237,19 @@ public:
 
     bool isAutoFixRelativeFilePathEnabled() const;
 
-    bool isAutoWipeEnabled() const;
-
+    ///////////////////////////////////////////////////////
+    // "Viewers" pane
+    ImageBitDepthEnum getViewersBitDepth() const;
+    int getViewerTilesPowerOf2() const;
     int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r, double* g, double* b, double* a) const;
     void getCheckerboardColor2(double* r, double* g, double* b, double* a) const;
+    bool isAutoWipeEnabled() const;
+    bool isAutoProxyEnabled() const;
+    unsigned int getAutoProxyMipMapLevel() const;
+    int getMaxOpenedNodesViewerContext() const;
+    bool isViewerKeysEnabled() const;
+    ///////////////////////////////////////////////////////
 
     bool areRGBPixelComponentsSupported() const;
 
@@ -346,14 +351,8 @@ public:
     int getSEFontSize() const;
     std::string getSEFontFamily() const;
 
-
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
     int getDopeSheetEditorNodeSeparationWith() const;
-
-    bool isAutoProxyEnabled() const;
-    unsigned int getAutoProxyMipMapLevel() const;
-
-    int getMaxOpenedNodesViewerContext() const;
 
     bool isNaNHandlingEnabled() const;
 
@@ -371,6 +370,8 @@ public:
     void setServerPort(int port) const;
 
     QString makeHTMLDocumentation(bool genHTML) const;
+
+    bool isAutoScrollEnabled() const;
 
 Q_SIGNALS:
 
@@ -470,6 +471,8 @@ private:
     boost::shared_ptr<KnobInt> _maxDiskCacheNodeGB;
     boost::shared_ptr<KnobPath> _diskCachePath;
     boost::shared_ptr<KnobButton> _wipeDiskCache;
+
+    // "Viewers" pane
     boost::shared_ptr<KnobPage> _viewersTab;
     boost::shared_ptr<KnobChoice> _texturesMode;
     boost::shared_ptr<KnobInt> _powerOf2Tiling;
@@ -480,7 +483,9 @@ private:
     boost::shared_ptr<KnobBool> _autoProxyWhenScrubbingTimeline;
     boost::shared_ptr<KnobChoice> _autoProxyLevel;
     boost::shared_ptr<KnobInt> _maximumNodeViewerUIOpened;
+    boost::shared_ptr<KnobBool> _viewerKeys;
 
+    // "Nodegraph" pane
     boost::shared_ptr<KnobPage> _nodegraphTab;
     boost::shared_ptr<KnobBool> _autoTurbo;
     boost::shared_ptr<KnobBool> _useNodeGraphHints;
@@ -571,6 +576,7 @@ private:
     boost::shared_ptr<KnobInt> _scriptEditorFontSize;
     boost::shared_ptr<KnobInt> _wwwServerPort;
     boost::shared_ptr<KnobChoice> _documentationSource;
+    boost::shared_ptr<KnobBool> _autoScroll;
     struct PerPluginKnobs
     {
         boost::shared_ptr<KnobBool> enabled;

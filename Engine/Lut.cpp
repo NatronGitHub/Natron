@@ -45,8 +45,6 @@
  */
 
 
-
-
 NATRON_NAMESPACE_ENTER;
 
 namespace Color {
@@ -1481,11 +1479,11 @@ LutManager::AlexaV3LogCLut()
 //		if s == 0, then h = 0 (undefined)
 void
 rgb_to_hsv( float r,
-               float g,
-               float b,
-               float *h,
-               float *s,
-               float *v )
+            float g,
+            float b,
+            float *h,
+            float *s,
+            float *v )
 {
     float min = std::min(std::min(r, g), b);
     float max = std::max(std::max(r, g), b);
@@ -1521,11 +1519,11 @@ rgb_to_hsv( float r,
 
 void
 hsv_to_rgb(float h,
-               float s,
-               float v,
-               float *r,
-               float *g,
-               float *b)
+           float s,
+           float v,
+           float *r,
+           float *g,
+           float *b)
 {
     if (s == 0) {
         // achromatic (grey)
@@ -1543,39 +1541,38 @@ hsv_to_rgb(float h,
     float t = v * ( 1 - s * ( 1 - f ) );
 
     switch (i) {
-        case 0:
-            *r = v;
-            *g = t;
-            *b = p;
-            break;
-        case 1:
-            *r = q;
-            *g = v;
-            *b = p;
-            break;
-        case 2:
-            *r = p;
-            *g = v;
-            *b = t;
-            break;
-        case 3:
-            *r = p;
-            *g = q;
-            *b = v;
-            break;
-        case 4:
-            *r = t;
-            *g = p;
-            *b = v;
-            break;
-        default:                // case 5:
-            *r = v;
-            *g = p;
-            *b = q;
-            break;
+    case 0:
+        *r = v;
+        *g = t;
+        *b = p;
+        break;
+    case 1:
+        *r = q;
+        *g = v;
+        *b = p;
+        break;
+    case 2:
+        *r = p;
+        *g = v;
+        *b = t;
+        break;
+    case 3:
+        *r = p;
+        *g = q;
+        *b = v;
+        break;
+    case 4:
+        *r = t;
+        *g = p;
+        *b = v;
+        break;
+    default:                    // case 5:
+        *r = v;
+        *g = p;
+        *b = q;
+        break;
     }
 } // hsv_to_rgb
-
 }     // namespace Color {
 NATRON_NAMESPACE_EXIT;
 

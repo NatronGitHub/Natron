@@ -100,7 +100,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(hasModificationsChanged()), this, SLOT(onHasModificationsChanged()) );
         QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
         QObject::connect( handler, SIGNAL(dimensionNameChanged(int)), this, SLOT(onDimensionNameChanged(int)) );
-        QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()));
+        QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()) );
     }
     if (!_imp->isInViewerUIKnob) {
         _imp->guiCurves.resize( knob->getDimension() );
@@ -253,9 +253,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
             onAnimationLevelChanged(ViewSpec::all(), i);
            }*/
     }
-}
-
-
+} // KnobGui::createGUI
 
 void
 KnobGui::updateGuiInternal(int dimension)
@@ -294,16 +292,7 @@ KnobGui::enableRightClickMenu(QWidget* widget,
 bool
 KnobGui::shouldCreateLabel() const
 {
-#if 0
-    KnobPtr knob = getKnob();
-    KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
-
-    return isStringKnob;
-#else
-#pragma message WARN("KnobGui::shouldCreateLabel() hack")
-
     return true;
-#endif
 }
 
 bool
@@ -792,15 +781,15 @@ KnobGui::createDuplicateOnNode(EffectInstance* effect,
     KnobPtr ret;
     try {
         ret = knob->createDuplicateOnHolder(effect,
-                                          page,
-                                          group,
-                                          indexInParent,
-                                          makeAlias,
-                                          newKnobName,
-                                          knob->getLabel(),
-                                          knob->getHintToolTip(),
-                                          true,
-                                          true);
+                                            page,
+                                            group,
+                                            indexInParent,
+                                            makeAlias,
+                                            newKnobName,
+                                            knob->getLabel(),
+                                            knob->getHintToolTip(),
+                                            true,
+                                            true);
     } catch (const std::exception& e) {
         Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), e.what() );
 

@@ -150,15 +150,14 @@ DefaultInteractI::penDown(double /*time*/,
     return false;
 }
 
-
 bool
 DefaultInteractI::penDoubleClicked(double /*time*/,
-                          const RenderScale& /*renderScale*/,
-                          ViewIdx /*view*/,
-                          const OfxPointD& /*pscale*/,
-                          const QPointF& /*lastPenPos*/,
-                          const QPointF & /*penPos*/,
-                          const QPoint & /*penPosViewport*/)
+                                   const RenderScale& /*renderScale*/,
+                                   ViewIdx /*view*/,
+                                   const OfxPointD& /*pscale*/,
+                                   const QPointF& /*lastPenPos*/,
+                                   const QPointF & /*penPos*/,
+                                   const QPoint & /*penPosViewport*/)
 {
     return false;
 }
@@ -208,6 +207,8 @@ DefaultInteractI::loseFocus(double /*time*/,
 {
     return false;
 }
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 enum PositionInteractState
 {
@@ -802,6 +803,8 @@ fround(double val,
 typedef boost::shared_ptr<DefaultInteractI> InteractPtr;
 typedef std::list<InteractPtr> InteractList;
 typedef std::list<TransformInteract> TransformInteracts;
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 struct HostOverlayPrivate
@@ -2718,10 +2721,10 @@ HostOverlay::penDown(double time,
 
 bool
 HostOverlay::penDoubleClicked(double time,
-                      const RenderScale& renderScale,
-                      ViewIdx view,
-                      const QPointF &penPos,
-                      const QPoint &penPosViewport)
+                              const RenderScale& renderScale,
+                              ViewIdx view,
+                              const QPointF &penPos,
+                              const QPoint &penPosViewport)
 {
     OfxPointD pscale;
 
@@ -2735,7 +2738,7 @@ HostOverlay::penDoubleClicked(double time,
     }
 
     _imp->lastPenPos = penPos;
-    
+
     return false;
 }
 

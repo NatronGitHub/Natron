@@ -322,11 +322,20 @@ double
 OfxImageEffectInstance::getEffectDuration() const
 {
     assert( getOfxEffectInstance() );
-#ifdef DEBUG
-#pragma message WARN("getEffectDuration unimplemented, should we store the previous result to getTimeDomain?")
-#endif
-
-    return 1.0;
+    NodePtr node = getOfxEffectInstance()->getNode();
+    if (!node) {
+        return 0;
+    }
+    int firstFrame,lastFrame;
+    bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
+    if (lifetimeEnabled) {
+        return std::max(double(lastFrame - firstFrame) + 1., 1.);
+    } else {
+        // return the project duration if the effect has no lifetime
+        double projFirstFrame, projLastFrame;
+        node->getApp()->getProject()->getFrameRange(&projFirstFrame, &projLastFrame);
+        return std::max(projLastFrame - projFirstFrame + 1., 1.);
+    }
 }
 
 // For an instance, this is the frame rate of the project the effect is in.
@@ -1255,11 +1264,12 @@ OfxImageEffectInstance::paramChangedByPlugin(OFX::Host::Param::Instance */*param
      */
 }
 
-
 bool
-OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor, CursorEnum* cursor)
+OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor,
+                                                CursorEnum* cursor)
 {
     bool ret = true;
+
     if (ofxCursor == kNatronOfxDefaultCursor) {
         *cursor = eCursorDefault;
     } else if (ofxCursor == kNatronOfxBlankCursor) {
@@ -1303,7 +1313,8 @@ OfxImageEffectInstance::ofxCursorToNatronCursor(const std::string &ofxCursor, Cu
     } else {
         ret = false;
     }
+
     return ret;
-}
+} // OfxImageEffectInstance::ofxCursorToNatronCursor
 
 NATRON_NAMESPACE_EXIT;

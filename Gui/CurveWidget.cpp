@@ -226,7 +226,7 @@ CurveWidget::centerOn(const std::vector<boost::shared_ptr<CurveGui> > & curves)
     ret.set_left(ret.left() - ret.width() / 10);
     ret.set_right(ret.right() + ret.width() / 10);
     ret.set_top(ret.top() + ret.height() / 10);
-    if (doCenter && !ret.isNull()) {
+    if ( doCenter && !ret.isNull() ) {
         centerOn( ret.left(), ret.right(), ret.bottom(), ret.top() );
     }
 }
@@ -406,15 +406,18 @@ CurveWidget::getViewportRect() const
         bbox.x2 = _imp->zoomCtx.right();
         bbox.y2 = _imp->zoomCtx.top();
     }
+
     return bbox;
 }
 
 void
-CurveWidget::getCursorPosition(double& x, double& y) const
+CurveWidget::getCursorPosition(double& x,
+                               double& y) const
 {
     QPoint p = QCursor::pos();
+
     p = mapFromGlobal(p);
-    QPointF mappedPos = toZoomCoordinates(p.x(), p.y());
+    QPointF mappedPos = toZoomCoordinates( p.x(), p.y() );
     x = mappedPos.x();
     y = mappedPos.y();
 }
@@ -474,7 +477,7 @@ CurveWidget::resizeGL(int width,
     glViewport (0, 0, width, height);
 
     // Width and height may be 0 when tearing off a viewer tab to another panel
-    if (width > 0 && height > 0) {
+    if ( (width > 0) && (height > 0) ) {
         _imp->zoomCtx.setScreenSize(width, height);
     }
 
@@ -555,11 +558,18 @@ CurveWidget::paintGL()
 } // CurveWidget::paintGL
 
 bool
-CurveWidget::renderText(double x, double y, const std::string &string, double r, double g, double b)
+CurveWidget::renderText(double x,
+                        double y,
+                        const std::string &string,
+                        double r,
+                        double g,
+                        double b)
 {
     QColor c;
-    c.setRgbF(Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.));
-    renderText(x,y,QString::fromUtf8(string.c_str()), c, font());
+
+    c.setRgbF( Image::clamp(r, 0., 1.), Image::clamp(g, 0., 1.), Image::clamp(b, 0., 1.) );
+    renderText( x, y, QString::fromUtf8( string.c_str() ), c, font() );
+
     return true;
 }
 
@@ -1424,9 +1434,11 @@ CurveWidget::toWidgetCoordinates(double x,
  * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
  **/
 void
-CurveWidget::toWidgetCoordinates(double *x, double *y) const
+CurveWidget::toWidgetCoordinates(double *x,
+                                 double *y) const
 {
     QPointF p = _imp->zoomCtx.toWidgetCoordinates(*x, *y);
+
     *x = p.x();
     *y = p.y();
 }
@@ -1435,9 +1447,11 @@ CurveWidget::toWidgetCoordinates(double *x, double *y) const
  * @brief Converts the given (x,y) coordinates which are in widget coordinates to OpenGL canonical coordinates
  **/
 void
-CurveWidget::toCanonicalCoordinates(double *x, double *y) const
+CurveWidget::toCanonicalCoordinates(double *x,
+                                    double *y) const
 {
     QPointF p = _imp->zoomCtx.toZoomCoordinates(*x, *y);
+
     *x = p.x();
     *y = p.y();
 }
@@ -1457,10 +1471,8 @@ CurveWidget::getWidgetFontHeight() const
 int
 CurveWidget::getStringWidthForCurrentFont(const std::string& string) const
 {
-    return fontMetrics().width(QString::fromUtf8(string.c_str()));
+    return fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
-
-
 
 QSize
 CurveWidget::sizeHint() const
@@ -2141,7 +2153,7 @@ CurveWidget::importCurveFromAscii()
             double xInt = std::floor(x);
             if ( curves[i]->areKeyFramesTimeClampedToIntegers() &&
                  ( ( incrInt != incr) || ( xInt != x) ) ) {
-                Dialogs::warningDialog( tr("Curve Import").toStdString(), curves[i]->getName().toStdString() + tr(" doesn't support X values that are not integers.").toStdString() );
+                Dialogs::warningDialog( tr("Curve Import").toStdString(), tr("%1 doesn't support X values that are not integers.").arg( curves[i]->getName() ).toStdString() );
 
                 return;
             }

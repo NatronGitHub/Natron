@@ -357,26 +357,29 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
 std::list<ViewerTabPrivate::PluginViewerContext>::iterator
 ViewerTabPrivate::findActiveNodeContextForPlugin(const std::string& pluginID)
 {
-    for (std::list<PluginViewerContext>::iterator it = currentNodeContext.begin(); it!=currentNodeContext.end(); ++it) {
+    for (std::list<PluginViewerContext>::iterator it = currentNodeContext.begin(); it != currentNodeContext.end(); ++it) {
         if (it->pluginID == pluginID) {
             return it;
         }
     }
+
     return currentNodeContext.end();
 }
 
 bool
-ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node) {
-    std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForPlugin(node->getPluginID());
-    if (found == currentNodeContext.end()) {
+ViewerTabPrivate::hasInactiveNodeViewerContext(const NodePtr& node)
+{
+    std::list<ViewerTabPrivate::PluginViewerContext>::iterator found = findActiveNodeContextForPlugin( node->getPluginID() );
+
+    if ( found == currentNodeContext.end() ) {
         return false;
     }
     NodeGuiPtr n = found->currentNode.lock();
     if (!n) {
         return false;
     }
+
     return n->getNode() != node;
 }
-
 
 NATRON_NAMESPACE_EXIT;

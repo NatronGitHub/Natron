@@ -193,9 +193,6 @@ public:
     virtual void setCurrentLogicalDPI(double dpiX, double dpiY) OVERRIDE FINAL;
     virtual double getLogicalDPIXRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double getLogicalDPIYRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-   
-
     virtual void updateAboutWindowLibrariesVersion() OVERRIDE FINAL;
 
 public Q_SLOTS:

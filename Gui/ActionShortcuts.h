@@ -19,21 +19,21 @@
 #ifndef ACTIONSHORTCUTS_H
 #define ACTIONSHORTCUTS_H
 
-/**
- * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
- **/
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+/**
+ * @brief In this file all Natron's actions that can have their shortcut edited should be listed.
+ **/
 
 #include <map>
 #include <list>
 #include <vector>
+
+#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -164,6 +164,35 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionConnectViewerToInput10 "connectViewerInput10"
 #define kShortcutDescActionConnectViewerToInput10 "Connect Viewer to Input 10"
 
+#define kShortcutIDActionConnectViewerBToInput1 "connectViewerBInput1"
+#define kShortcutDescActionConnectViewerBToInput1 "Connect Viewer B Side to Input 1"
+
+#define kShortcutIDActionConnectViewerBToInput2 "connectViewerBInput2"
+#define kShortcutDescActionConnectViewerBToInput2 "Connect Viewer B Side to Input 2"
+
+#define kShortcutIDActionConnectViewerBToInput3 "connectViewerBInput3"
+#define kShortcutDescActionConnectViewerBToInput3 "Connect Viewer B Side to Input 3"
+
+#define kShortcutIDActionConnectViewerBToInput4 "connectViewerBInput4"
+#define kShortcutDescActionConnectViewerBToInput4 "Connect Viewer B Side to Input 4"
+
+#define kShortcutIDActionConnectViewerBToInput5 "connectViewerBInput5"
+#define kShortcutDescActionConnectViewerBToInput5 "Connect Viewer B Side to Input 5"
+
+#define kShortcutIDActionConnectViewerBToInput6 "connectViewerBInput6"
+#define kShortcutDescActionConnectViewerBToInput6 "Connect Viewer B Side to Input 6"
+
+#define kShortcutIDActionConnectViewerBToInput7 "connectViewerBInput7"
+#define kShortcutDescActionConnectViewerBToInput7 "Connect Viewer B Side to Input 7"
+
+#define kShortcutIDActionConnectViewerBToInput8 "connectViewerBInput8"
+#define kShortcutDescActionConnectViewerBToInput8 "Connect Viewer B Side to Input 8"
+
+#define kShortcutIDActionConnectViewerBToInput9 "connectViewerBInput9"
+#define kShortcutDescActionConnectViewerBToInput9 "Connect Viewer B Side to Input 9"
+
+#define kShortcutIDActionConnectViewerBToInput10 "connectViewerBInput10"
+#define kShortcutDescActionConnectViewerBToInput10 "Connect Viewer B Side to Input 10"
 
 #define kShortcutIDActionShowPaneFullScreen "showPaneFullScreen"
 #define kShortcutDescActionShowPaneFullScreen "Show Pane Full Screen"
@@ -676,7 +705,6 @@ public:
     }
 
     virtual ~ActionWithShortcut();
-
     virtual void setShortcutWrapper(const QString& actionID, const QKeySequence& shortcut);
 };
 

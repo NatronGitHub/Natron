@@ -32,8 +32,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QProcess>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -941,6 +945,7 @@ ReadNode::knobChanged(KnobI* k,
                       bool originatedFromMainThread)
 {
     bool ret =  true;
+
     if ( ( k == _imp->inputFileKnob.lock().get() ) && (reason != eValueChangedReasonTimeChanged) ) {
         if (_imp->creatingReadNode) {
             if (_imp->embeddedPlugin) {
@@ -958,7 +963,6 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
@@ -977,7 +981,6 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
         if (!_imp->embeddedPlugin) {
             return false;
@@ -1008,13 +1011,13 @@ ReadNode::knobChanged(KnobI* k,
                 Dialogs::informationDialog( getNode()->getLabel(), procStdError.toStdString() + procStdOutput.toStdString() );
             }
         }
-
     } else {
         ret = false;
     }
     if (!ret && _imp->embeddedPlugin) {
         ret |= _imp->embeddedPlugin->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
+
     return ret;
 } // ReadNode::knobChanged
 

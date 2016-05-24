@@ -813,8 +813,9 @@ Settings::initializeKnobsAppearance()
     std::vector<std::string> configs;
     int defaultIndex = 0;
     QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
-    for (int i = 0; i < defaultOcioConfigsPaths.size(); ++i) {
-        QDir ocioConfigsDir(defaultOcioConfigsPaths[i]);
+    Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
+        QDir ocioConfigsDir(defaultOcioConfigsDir);
+
         if ( ocioConfigsDir.exists() ) {
             QStringList entries = ocioConfigsDir.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
             for (int j = 0; j < entries.size(); ++j) {
@@ -1079,14 +1080,24 @@ Settings::initializeKnobsViewers()
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _viewersTab->addKnob(_autoProxyLevel);
 
-
-    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>(this, tr("Max. opened node viewer interface"));
+    _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( this, tr("Max. opened node viewer interface") );
     _maximumNodeViewerUIOpened->setName("maxNodeUiOpened");
     _maximumNodeViewerUIOpened->setMinimum(1);
     _maximumNodeViewerUIOpened->setAnimationEnabled(false);
     _maximumNodeViewerUIOpened->disableSlider();
-    _maximumNodeViewerUIOpened->setHintToolTip(tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer"));
+    _maximumNodeViewerUIOpened->setHintToolTip( tr("Controls the maximum amount of nodes that can have their interface showing up at the same time in the viewer") );
     _viewersTab->addKnob(_maximumNodeViewerUIOpened);
+
+    _viewerKeys = AppManager::createKnob<KnobBool>( this, tr("Use number keys for the viewer") );
+    _viewerKeys->setName("viewerNumberKeys");
+    _viewerKeys->setAnimationEnabled(false);
+    _viewerKeys->setHintToolTip( tr("When enabled, the row of number keys on the keyboard "
+                                    "is used for switching input (<key> connects input to A side, "
+                                    "<shift-key> connects input to B side), even if the corresponding "
+                                    "character in the current keyboard layout is not a number.\n"
+                                    "This may have to be disabled when using a remote display connection "
+                                    "to Linux from a different OS.") );
+    _viewersTab->addKnob(_viewerKeys);
 } // Settings::initializeKnobsViewers
 
 void
@@ -1094,6 +1105,12 @@ Settings::initializeKnobsNodeGraph()
 {
     /////////// Nodegraph tab
     _nodegraphTab = AppManager::createKnob<KnobPage>( this, tr("Nodegraph") );
+
+    _autoScroll = AppManager::createKnob<KnobBool>( this, tr("Auto Scroll") );
+    _autoScroll->setName("autoScroll");
+    _autoScroll->setHintToolTip( tr("When checked the node graph will auto scroll if you move a node outside the current graph view.") );
+    _autoScroll->setAnimationEnabled(false);
+    _nodegraphTab->addKnob(_autoScroll);
 
     _autoTurbo = AppManager::createKnob<KnobBool>( this, tr("Auto-turbo") );
     _autoTurbo->setName("autoTurbo");
@@ -1492,6 +1509,7 @@ Settings::setDefaultValues()
     _autoProxyWhenScrubbingTimeline->setDefaultValue(true);
     _autoProxyLevel->setDefaultValue(1);
     _maximumNodeViewerUIOpened->setDefaultValue(2);
+    _viewerKeys->setDefaultValue(true);
 
     _warnOcioConfigKnobChanged->setDefaultValue(true);
     _ocioStartupCheck->setDefaultValue(true);
@@ -1503,6 +1521,7 @@ Settings::setDefaultValues()
     _maxViewerDiskCacheGB->setDefaultValue(5, 0);
     _maxDiskCacheNodeGB->setDefaultValue(10, 0);
     setCachingLabels();
+    _autoScroll->setDefaultValue(false);
     _autoTurbo->setDefaultValue(false);
     _usePluginIconsInNodeGraph->setDefaultValue(true);
     _useAntiAliasing->setDefaultValue(true);
@@ -1975,17 +1994,18 @@ Settings::tryLoadOpenColorIOConfig()
             QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
-            for (int i = 0; i < defaultConfigsPaths.size(); ++i) {
-                QDir defaultConfigsDir(defaultConfigsPaths[i]);
+            Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
+                QDir defaultConfigsDir(defaultConfigsDirStr);
+
                 if ( !defaultConfigsDir.exists() ) {
                     qDebug() << "Attempt to read an OpenColorIO configuration but the configuration directory"
-                             << defaultConfigsPaths[i] << "does not exist.";
+                             << defaultConfigsDirStr << "does not exist.";
                     continue;
                 }
                 ///try to open the .ocio config file first in the defaultConfigsDir
                 ///if we can't find it, try to look in a subdirectory with the name of the config for the file config.ocio
                 if ( !defaultConfigsDir.exists(configFileName) ) {
-                    QDir subDir(defaultConfigsPaths[i] + QDir::separator() + activeEntryText);
+                    QDir subDir(defaultConfigsDirStr + QDir::separator() + activeEntryText);
                     if ( !subDir.exists() ) {
                         Dialogs::errorDialog( "OpenColorIO", tr("%1: No such file or directory.").arg( subDir.absoluteFilePath( QString::fromUtf8("config.ocio") ) ).toStdString() );
 
@@ -2044,8 +2064,8 @@ Settings::onKnobValueChanged(KnobI* k,
                              bool /*originatedFromMainThread*/)
 {
     Q_EMIT settingChanged(k);
-
     bool ret = true;
+
     if ( k == _maxViewerDiskCacheGB.get() ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
@@ -2177,8 +2197,12 @@ Settings::onKnobValueChanged(KnobI* k,
             Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
     }
+
     return ret;
 } // onKnobValueChanged
+
+////////////////////////////////////////////////////////
+// "Viewers" pane
 
 ImageBitDepthEnum
 Settings::getViewersBitDepth() const
@@ -2198,6 +2222,75 @@ int
 Settings::getViewerTilesPowerOf2() const
 {
     return _powerOf2Tiling->getValue();
+}
+
+int
+Settings::getCheckerboardTileSize() const
+{
+    return _checkerboardTileSize->getValue();
+}
+
+void
+Settings::getCheckerboardColor1(double* r,
+                                double* g,
+                                double* b,
+                                double* a) const
+{
+    *r = _checkerboardColor1->getValue(0);
+    *g = _checkerboardColor1->getValue(1);
+    *b = _checkerboardColor1->getValue(2);
+    *a = _checkerboardColor1->getValue(3);
+}
+
+void
+Settings::getCheckerboardColor2(double* r,
+                                double* g,
+                                double* b,
+                                double* a) const
+{
+    *r = _checkerboardColor2->getValue(0);
+    *g = _checkerboardColor2->getValue(1);
+    *b = _checkerboardColor2->getValue(2);
+    *a = _checkerboardColor2->getValue(3);
+}
+
+bool
+Settings::isAutoWipeEnabled() const
+{
+    return _autoWipe->getValue();
+}
+
+bool
+Settings::isAutoProxyEnabled() const
+{
+    return _autoProxyWhenScrubbingTimeline->getValue();
+}
+
+unsigned int
+Settings::getAutoProxyMipMapLevel() const
+{
+    return (unsigned int)_autoProxyLevel->getValue() + 1;
+}
+
+int
+Settings::getMaxOpenedNodesViewerContext() const
+{
+    return _maximumNodeViewerUIOpened->getValue();
+}
+
+bool
+Settings::isViewerKeysEnabled() const
+{
+    return _viewerKeys->getValue();
+}
+
+///////////////////////////////////////////////////////
+// "Caching" pane
+
+bool
+Settings::isAggressiveCachingEnabled() const
+{
+    return _aggressiveCaching->getValue();
 }
 
 double
@@ -2223,6 +2316,8 @@ Settings::getMaximumDiskCacheNodeSize() const
 {
     return (U64)( _maxDiskCacheNodeGB->getValue() ) * std::pow(1024., 3.);
 }
+
+///////////////////////////////////////////////////
 
 double
 Settings::getUnreachableRamPercent() const
@@ -2596,6 +2691,12 @@ Settings::setServerPort(int port) const
     _wwwServerPort->setValue(port);
 }
 
+bool
+Settings::isAutoScrollEnabled() const
+{
+    return _autoScroll->getValue();
+}
+
 QString
 Settings::makeHTMLDocumentation(bool genHTML) const
 {
@@ -2613,8 +2714,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n<h1>" << tr("Preferences") << "</h1>\n";
-    }
-    else {
+    } else {
         ts << tr("Preferences") << "\n==========\n\n";
     }
 
@@ -2629,35 +2729,32 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
 
-            if (isPage) {
+        if (isPage) {
+            if (genHTML) {
+                ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
+            } else {
+                ts << knobLabel << "\n----------\n\n";
+            }
+        } else if (isSep) {
+            if (genHTML) {
+                ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
+            } else {
+                //ts << knobLabel << "\n----------\n\n";
+                ts << "**" << knobLabel << "**\n\n";
+            }
+        } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
+            if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
                 if (genHTML) {
-                    ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
-                }
-                else {
-                    ts << knobLabel << "\n----------\n\n";
-                }
-            } else if (isSep) {
-                if (genHTML) {
-                    ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
-                }
-                else {
-                    //ts << knobLabel << "\n----------\n\n";
+                    ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
+                    //Markdown markdown;
+                    //ts << markdown.convert2html(knobHint);
+                    ts << "<p>" << knobHint << "</p>\n";
+                } else {
                     ts << "**" << knobLabel << "**\n\n";
-                }
-            } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
-                if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
-                    if (genHTML) {
-                        ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
-                        //Markdown markdown;
-                        //ts << markdown.convert2html(knobHint);
-                        ts << "<p>" << knobHint << "</p>\n";
-                    }
-                    else {
-                        ts << "**" << knobLabel << "**\n\n";
-                        ts << knobHint << "\n\n";
-                    }
+                    ts << knobHint << "\n\n";
                 }
             }
+        }
     }
 
     if (genHTML) {
@@ -3133,36 +3230,6 @@ Settings::isAutoFixRelativeFilePathEnabled() const
 }
 
 int
-Settings::getCheckerboardTileSize() const
-{
-    return _checkerboardTileSize->getValue();
-}
-
-void
-Settings::getCheckerboardColor1(double* r,
-                                double* g,
-                                double* b,
-                                double* a) const
-{
-    *r = _checkerboardColor1->getValue(0);
-    *g = _checkerboardColor1->getValue(1);
-    *b = _checkerboardColor1->getValue(2);
-    *a = _checkerboardColor1->getValue(3);
-}
-
-void
-Settings::getCheckerboardColor2(double* r,
-                                double* g,
-                                double* b,
-                                double* a) const
-{
-    *r = _checkerboardColor2->getValue(0);
-    *g = _checkerboardColor2->getValue(1);
-    *b = _checkerboardColor2->getValue(2);
-    *a = _checkerboardColor2->getValue(3);
-}
-
-int
 Settings::getNumberOfParallelRenders() const
 {
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
@@ -3248,7 +3315,7 @@ Settings::doOCIOStartupCheckIfNeeded()
 
         if (reply == eStandardButtonYes) {
             int defaultIndex = -1;
-            for (int i = 0; i < (int)entries.size(); ++i) {
+            for (unsigned i = 0; i < entries.size(); ++i) {
                 if (entries[i].find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
                     defaultIndex = i;
                     break;
@@ -3276,12 +3343,6 @@ bool
 Settings::notifyOnFileChange() const
 {
     return _notifyOnFileChange->getValue();
-}
-
-bool
-Settings::isAggressiveCachingEnabled() const
-{
-    return _aggressiveCaching->getValue();
 }
 
 bool
@@ -3741,24 +3802,6 @@ Settings::getDopeSheetEditorNodeSeparationWith() const
     return 4;
 }
 
-int
-Settings::getMaxOpenedNodesViewerContext() const
-{
-    return _maximumNodeViewerUIOpened->getValue();
-}
-
-bool
-Settings::isAutoProxyEnabled() const
-{
-    return _autoProxyWhenScrubbingTimeline->getValue();
-}
-
-unsigned int
-Settings::getAutoProxyMipMapLevel() const
-{
-    return (unsigned int)_autoProxyLevel->getValue() + 1;
-}
-
 bool
 Settings::isNaNHandlingEnabled() const
 {
@@ -3812,12 +3855,6 @@ std::string
 Settings::getUserStyleSheetFilePath() const
 {
     return _qssFile->getValue();
-}
-
-bool
-Settings::isAutoWipeEnabled() const
-{
-    return _autoWipe->getValue();
 }
 
 void

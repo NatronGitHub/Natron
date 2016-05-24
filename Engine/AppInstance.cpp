@@ -29,6 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QTextStream>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
@@ -564,8 +565,8 @@ AppInstance::load(const CLArgs& cl,
 
     if (getAppID() == 0) {
         QString missingOpenGLError;
-        if (!appPTR->hasPlatformNecessaryOpenGLRequirements(&missingOpenGLError)) {
-            throw std::runtime_error(missingOpenGLError.toStdString());
+        if ( !appPTR->hasPlatformNecessaryOpenGLRequirements(&missingOpenGLError) ) {
+            throw std::runtime_error( missingOpenGLError.toStdString() );
         }
     }
 
@@ -1338,7 +1339,7 @@ AppInstance::exportDocs(const QString path)
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                 if (plugin) {
-                    if ( !plugin->getIsForInternalUseOnly() && plugin->getPythonModule().isEmpty() /*&& ( pluginID != QString::fromUtf8("fr.inria.built-in.Tracker") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferRead") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferWrite") )*/ ) {
+                    if (!plugin->getIsForInternalUseOnly() && plugin->getPythonModule().isEmpty() /*&& ( pluginID != QString::fromUtf8("fr.inria.built-in.Tracker") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferRead") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferWrite") )*/) {
                         QStringList groups = plugin->getGrouping();
                         categories << groups.at(0);
                         QStringList plugList;
@@ -1358,7 +1359,7 @@ AppInstance::exportDocs(const QString path)
                             bool hasImg = false;
                             QFile imgFile( plugin->getIconFilePath() );
                             if ( imgFile.exists() ) {
-                                if (!imgFile.copy( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".png") )) {
+                                if ( !imgFile.copy( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".png") ) ) {
                                     std::cout << "ERROR: failed to copy image" << imgFile.fileName().toStdString() << std::endl;
                                 } else {
                                     hasImg = true;
@@ -1383,33 +1384,33 @@ AppInstance::exportDocs(const QString path)
         // Generate RST for plugin categories
         categories.removeDuplicates();
         QString groupMD;
-        groupMD.append(tr("Reference"));
-        groupMD.append(QString::fromUtf8("\n"));
-        groupMD.append(QString::fromUtf8("=========\n\n"));
-        groupMD.append(QString::fromUtf8("Contents:\n\n"));
-        groupMD.append(QString::fromUtf8(".. toctree::\n"));
-        groupMD.append(QString::fromUtf8("    :maxdepth: 1\n\n"));
+        groupMD.append( tr("Reference") );
+        groupMD.append( QString::fromUtf8("\n") );
+        groupMD.append( QString::fromUtf8("=========\n\n") );
+        groupMD.append( QString::fromUtf8("Contents:\n\n") );
+        groupMD.append( QString::fromUtf8(".. toctree::\n") );
+        groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
 
-        for (int i = 0; i < categories.size(); ++i) {
+        Q_FOREACH(const QString &category, categories) {
             QString plugMD;
-            plugMD.append(categories.at(i));
-            plugMD.append(QString::fromUtf8("\n==========\n\n"));
-            plugMD.append(QString::fromUtf8("Contents:\n\n"));
-            plugMD.append(QString::fromUtf8(".. toctree::\n"));
-            plugMD.append(QString::fromUtf8("    :maxdepth: 1\n\n"));
 
-            for (int y = 0; y < plugins.size(); ++y) {
-                QStringList currPlugin = plugins.at(y);
+            plugMD.append( category );
+            plugMD.append( QString::fromUtf8("\n==========\n\n") );
+            plugMD.append( QString::fromUtf8("Contents:\n\n") );
+            plugMD.append( QString::fromUtf8(".. toctree::\n") );
+            plugMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
+
+            Q_FOREACH(const QStringList &currPlugin, plugins) {
                 if (currPlugin.size() == 3) {
-                    if ( categories.at(i) == currPlugin.at(0) ) {
-                        plugMD.append(QString::fromUtf8("    plugins/")+currPlugin.at(1)+QString::fromUtf8(".rst\n"));
+                    if ( category == currPlugin.at(0) ) {
+                        plugMD.append( QString::fromUtf8("    plugins/") + currPlugin.at(1) + QString::fromUtf8(".rst\n") );
                     }
                 }
             }
-            groupMD.append(QString::fromUtf8("    _group")+categories.at(i)+QString::fromUtf8(".rst\n"));
+            groupMD.append( QString::fromUtf8("    _group") + category + QString::fromUtf8(".rst\n") );
 
-            QFile plugFile( path + QString::fromUtf8("/_group") + categories.at(i) + QString::fromUtf8(".rst") );
-            plugMD.append(QString::fromUtf8("\n"));
+            QFile plugFile( path + QString::fromUtf8("/_group") + category + QString::fromUtf8(".rst") );
+            plugMD.append( QString::fromUtf8("\n") );
             if ( plugFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
                 QTextStream out(&plugFile);
                 out << plugMD;
@@ -1419,7 +1420,7 @@ AppInstance::exportDocs(const QString path)
 
         // Generate RST for plugins ToC
         QFile groupFile( path + QString::fromUtf8("/_group.rst") );
-        groupMD.append(QString::fromUtf8("\n"));
+        groupMD.append( QString::fromUtf8("\n") );
         if ( groupFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
             QTextStream out(&groupFile);
             out << groupMD;
@@ -1631,7 +1632,7 @@ AppInstance::startWritersRendering(bool doBlockingRender,
             item.process.reset( new ProcessHandler(savePath, item.work.writer) );
             QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
         } else {
-            QObject::connect(item.work.writer->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
+            QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
         }
 
         bool canPause = !item.work.writer->isVideoWriter();

@@ -25,9 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <map>
 #include <vector>
-#include "Global/Macros.h"
+
 #ifndef Q_MOC_RUN
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(sign-compare)
@@ -577,12 +579,12 @@ class KnobSerialization
                 isStringAnimated->loadAnimation(extraDatas);
             }
         }
-        if ( (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS && version < KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS) &&
+        if ( ( (version >= KNOB_SERIALIZATION_INTRODUCES_SLAVED_TRACKS) && (version < KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS) ) &&
              isDouble && ( isDouble->getName() == "center") && ( isDouble->getDimension() == 2) ) {
             int count;
             ar & ::boost::serialization::make_nvp("SlavePtsNo", count);
             for (int i = 0; i < count; ++i) {
-                std::string rotoNodeName,bezierName;
+                std::string rotoNodeName, bezierName;
                 int cpIndex;
                 bool isFeather;
                 int offsetTime;
@@ -853,8 +855,6 @@ public:
     }
 
     static KnobPtr createKnob(const std::string & typeName, int dimension);
-
-
     const TypeExtraData* getExtraData() const { return _extraData; }
 
     bool isPersistent() const

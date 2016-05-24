@@ -25,12 +25,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <map>
 #include <list>
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QDateTime>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDateTime>
 #include <QtCore/QString>
 #include <QFuture>
 #include <QFutureWatcher>
@@ -46,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TLSHolder.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Project.h"
+#include "Engine/GenericSchedulerThreadWatcher.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -104,6 +108,14 @@ public:
     mutable QMutex projectClosingMutex;
     bool projectClosing;
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
+    
+    // only used on the main-thread
+    struct RenderWatcher {
+        boost::shared_ptr<NodeRenderWatcher> watcher;
+        AfterQuitProcessingI* receiver;
+    };
+
+    std::list<RenderWatcher> renderWatchers;
 
     ProjectPrivate(Project* project);
 

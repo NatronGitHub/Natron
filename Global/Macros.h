@@ -480,6 +480,7 @@ ignore_result( T x __attribute__( (unused) ) )
 {
     return x;
 }
+
 #endif
 
 #else // !GCC
@@ -492,6 +493,7 @@ ignore_result(T x)
 {
     return x;
 }
+
 #endif
 
 #endif // !GCC

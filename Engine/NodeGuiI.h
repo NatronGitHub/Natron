@@ -24,6 +24,9 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
 #include <list>
 
 #include "Global/KeySymbols.h"
@@ -112,9 +115,8 @@ public:
                                          const RenderScale& renderScale,
                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;
     virtual bool onOverlayPenDoubleClickedDefault(double time,
-                                         const RenderScale& renderScale,
-                                         ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  = 0;
-
+                                                  const RenderScale& renderScale,
+                                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  = 0;
     virtual bool onOverlayPenMotionDefault(double time,
                                            const RenderScale& renderScale,
                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  = 0;

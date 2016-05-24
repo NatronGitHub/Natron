@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <bitset>
 
@@ -494,7 +496,8 @@ public:
     /**
      * @brief Returns whether the plugin  description is written in markdown or not
      **/
-    virtual bool isPluginDescriptionInMarkdown() const  {
+    virtual bool isPluginDescriptionInMarkdown() const
+    {
         return false;
     }
 
@@ -1060,7 +1063,6 @@ public:
     }
 
     void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
-
     OverlaySupport* getCurrentViewportForOverlays() const;
 
 protected:
@@ -1515,10 +1517,10 @@ public:
     bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
     virtual void onInteractViewportSelectionCleared() {}
 
-    virtual void onInteractViewportSelectionUpdated(const RectD& /*rectangle*/, bool /*onRelease*/) {}
+    virtual void onInteractViewportSelectionUpdated(const RectD& /*rectangle*/,
+                                                    bool /*onRelease*/) {}
 
     void setDoingInteractAction(bool doing);
 
@@ -1817,10 +1819,10 @@ protected:
     }
 
     virtual bool onOverlayPenDoubleClicked(double /*time*/,
-                                  const RenderScale & /*renderScale*/,
-                                  ViewIdx /*view*/,
-                                  const QPointF & /*viewportPos*/,
-                                  const QPointF & /*pos*/) WARN_UNUSED_RETURN
+                                           const RenderScale & /*renderScale*/,
+                                           ViewIdx /*view*/,
+                                           const QPointF & /*viewportPos*/,
+                                           const QPointF & /*pos*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1830,7 +1832,8 @@ protected:
                                     ViewIdx /*view*/,
                                     const QPointF & /*viewportPos*/,
                                     const QPointF & /*pos*/,
-                                    double /*pressure*/, double /*timestamp*/) WARN_UNUSED_RETURN
+                                    double /*pressure*/,
+                                    double /*timestamp*/) WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -1840,7 +1843,8 @@ protected:
                                 ViewIdx /*view*/,
                                 const QPointF & /*viewportPos*/,
                                 const QPointF & /*pos*/,
-                                double /*pressure*/, double /*timestamp*/) WARN_UNUSED_RETURN
+                                double /*pressure*/,
+                                double /*timestamp*/) WARN_UNUSED_RETURN
     {
         return false;
     }

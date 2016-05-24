@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <set>
 
@@ -32,6 +34,12 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ViewIdx.h"
@@ -184,10 +192,7 @@ public:
     void refreshPreviews();
     void forceRefreshPreviews();
 
-    /**
-     * @brief Set the aborted flag on all nodes recursively on each subgroup.
-     **/
-    void notifyRenderBeingAborted();
+    void quitAnyProcessingForAllNodes_non_blocking();
 
     /**
      * @brief For all active nodes, find all file-paths that uses the given projectPathName and if the location was valid,
@@ -218,12 +223,6 @@ public:
      * @brief Get all Writers in the group and sub groups
      **/
     void getWriters(std::list<OutputEffectInstance*>* writers) const;
-
-    /**
-     * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
-     * This is called only when calling AppManager::abortAnyProcessing()
-     **/
-    void quitAnyProcessingForAllNodes();
 
     /**
      * @brief Checks if a node in the project already has this cacheID

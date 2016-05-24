@@ -25,6 +25,8 @@
 #include "AbortableRenderInfo.h"
 
 #include <set>
+#include <sstream>
+#include <string>
 
 #include <QtCore/QMutex>
 #include <QtCore/QAtomicInt>
@@ -33,6 +35,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/Node.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/Timer.h"
 
@@ -58,7 +61,7 @@ struct AbortableRenderInfoPrivate
     ThreadSet threadsForThisRender;
 #endif
 
-    boost::shared_ptr<QTimer> abortTimeoutTimer;
+    boost::scoped_ptr<QTimer> abortTimeoutTimer;
 
     AbortableRenderInfoPrivate(bool canAbort,
                                U64 age)
@@ -88,9 +91,6 @@ AbortableRenderInfo::AbortableRenderInfo(bool canAbort,
 
 AbortableRenderInfo::~AbortableRenderInfo()
 {
-    if (_imp->abortTimeoutTimer) {
-        _imp->abortTimeoutTimer->stop();
-    }
 }
 
 U64
@@ -181,9 +181,8 @@ AbortableRenderInfo::onAbortTimerTimeout()
         NodePtr node;
         (*it)->getCurrentActionInfos(&actionName, &node);
         if (node) {
-
             // Don't show a dialog on timeout for writers since reading/writing from/to a file may be long and most libraries don't provide write callbacks anyway
-            if (node->getEffectInstance()->isReader() || node->getEffectInstance()->isWriter()) {
+            if ( node->getEffectInstance()->isReader() || node->getEffectInstance()->isWriter() ) {
                 return;
             }
             std::string nodeName, pluginId;
@@ -205,7 +204,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
         }
     }
     ss << std::endl;
-    
+
     if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();
     } else {
@@ -221,7 +220,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
             }
         }
     }
-#endif
+#endif // ifdef QT_CUSTOM_THREADPOOL
 } // AbortableRenderInfo::onAbortTimerTimeout
 
 NATRON_NAMESPACE_EXIT;

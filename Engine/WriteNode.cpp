@@ -32,6 +32,12 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include <ofxNatron.h>
 
 #include "Engine/AppInstance.h"
@@ -984,7 +990,6 @@ WriteNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
         std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
@@ -1003,7 +1008,6 @@ WriteNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-
     } else if ( k == _imp->readBackKnob.lock().get() ) {
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
@@ -1029,6 +1033,7 @@ WriteNode::knobChanged(KnobI* k,
     if (!ret && writer) {
         ret |= writer->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
+
     return ret;
 } // WriteNode::knobChanged
 

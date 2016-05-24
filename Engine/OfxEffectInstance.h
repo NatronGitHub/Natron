@@ -26,11 +26,14 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 #include <map>
 #include <string>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
+
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QString>

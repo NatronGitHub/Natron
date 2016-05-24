@@ -38,7 +38,7 @@
 
 
 #ifdef DEBUG
-#define TRACKER_GENERATE_DATA_SEQUENTIALLY
+//#define TRACKER_GENERATE_DATA_SEQUENTIALLY
 #endif
 
 
@@ -194,6 +194,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     }
 
     boost::shared_ptr<KnobPage> settingsPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Tracking"), 1, false);
+    trackingPageKnob = settingsPage;
     boost::shared_ptr<KnobPage> transformPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Transform"), 1, false);
     transformPageKnob = transformPage;
 
@@ -467,14 +468,36 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(robustModelKnob);
     robustModel = robustModelKnob;
 
-    boost::shared_ptr<KnobString>  fittingErrorKnob = AppManager::createKnob<KnobString>(effect.get(), tr(kTrackerParamFittingErrorLabel), 1);
+    boost::shared_ptr<KnobString>  fittingErrorWarningKnob = AppManager::createKnob<KnobString>(effect.get(), tr(kTrackerParamFittingErrorWarningLabel), 1);
+    fittingErrorWarningKnob->setName(kTrackerParamFittingErrorWarning);
+    fittingErrorWarningKnob->setHintToolTip( tr(kTrackerParamFittingErrorWarningHint) );
+    fittingErrorWarningKnob->setAnimationEnabled(false);
+    fittingErrorWarningKnob->setDefaultValue( tr(kTrackerParamFittingErrorWarningLabel).toStdString() );
+    fittingErrorWarningKnob->setIconLabel("dialog-warning");
+    fittingErrorWarningKnob->setEvaluateOnChange(false);
+    fittingErrorWarningKnob->setSecretByDefault(true);
+    fittingErrorWarningKnob->setAsLabel();
+    transformPage->addKnob(fittingErrorWarningKnob);
+    fittingErrorWarning = fittingErrorWarningKnob;
+
+
+    boost::shared_ptr<KnobDouble>  fittingErrorKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kTrackerParamFittingErrorLabel), 1);
     fittingErrorKnob->setName(kTrackerParamFittingError);
     fittingErrorKnob->setHintToolTip( tr(kTrackerParamFittingErrorHint) );
-    fittingErrorKnob->setAnimationEnabled(false);
     fittingErrorKnob->setEvaluateOnChange(false);
-    fittingErrorKnob->setAsLabel();
+    fittingErrorKnob->setAddNewLine(false);
+    fittingErrorKnob->setAllDimensionsEnabled(false);
     transformPage->addKnob(fittingErrorKnob);
     fittingError = fittingErrorKnob;
+
+    boost::shared_ptr<KnobDouble>  fittingErrorWarnAboveKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kTrackerParamFittingErrorWarnValueLabel), 1);
+    fittingErrorWarnAboveKnob->setName(kTrackerParamFittingErrorWarnValue);
+    fittingErrorWarnAboveKnob->setHintToolTip( tr(kTrackerParamFittingErrorWarnValueHint) );
+    fittingErrorWarnAboveKnob->setAnimationEnabled(false);
+    fittingErrorWarnAboveKnob->setEvaluateOnChange(false);
+    fittingErrorWarnAboveKnob->setDefaultValue(1);
+    transformPage->addKnob(fittingErrorWarnAboveKnob);
+    fittingErrorWarnIfAbove = fittingErrorWarnAboveKnob;
 
 
     boost::shared_ptr<KnobString> transformOutOfDateLabelKnob = AppManager::createKnob<KnobString>(effect.get(), std::string(), 1);
@@ -492,6 +515,14 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformPage->addKnob(transformSeparator);
     transformSeparator->setSecret(true);
     transformControlsSeparator = transformSeparator;
+
+    boost::shared_ptr<KnobBool> disableTransformKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamDisableTransformLabel), 1);
+    disableTransformKnob->setName(kTrackerParamDisableTransform);
+    disableTransformKnob->setHintToolTip( tr(kTrackerParamDisableTransformHint) );
+    disableTransformKnob->setEvaluateOnChange(false);
+    disableTransformKnob->setSecret(true);
+    transformPage->addKnob(disableTransformKnob);
+    disableTransform = disableTransformKnob;
 
 
     NodePtr tNode = transformNode.lock();
@@ -549,6 +580,16 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             toPoints[i].lock()->setAddNewLine(false);
             enableToPoint[i] = createDuplicateKnob<KnobBool>(enablePointNames[i], cNode, effect, transformPage, toGroupKnob);
         }
+        boost::shared_ptr<KnobButton> setToInputRod = AppManager::createKnob<KnobButton>(effect.get(), tr(kCornerPinParamSetToInputRoDLabel), 1);
+        setToInputRod->setName(kCornerPinParamSetToInputRoD);
+        setToInputRod->setHintToolTip( tr(kCornerPinParamSetToInputRoDHint) );
+        fromGroupKnob->addKnob(setToInputRod);
+        setFromPointsToInputRod = setToInputRod;
+
+        boost::shared_ptr<KnobBool> cornerPinSet = AppManager::createKnob<KnobBool>( effect.get(), std::string(kTrackerParamCornerPinFromPointsSetOnce) );
+        cornerPinSet->setSecretByDefault(true);
+        fromGroupKnob->addKnob(cornerPinSet);
+        cornerPinFromPointsSetOnceAutomatically = cornerPinSet;
 
         cornerPinOverlayPoints = createDuplicateKnob<KnobChoice>(kCornerPinParamOverlayPoints, cNode, effect, transformPage);
         cornerPinOverlayPoints.lock()->setSecret(true);
@@ -1060,7 +1101,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     if (overlayInteract) {
         viewer = overlayInteract->getInternalViewerNode();
     }
-    
+
 
     /// The channels we are going to use for tracking
     bool enabledChannels[3];
@@ -1101,7 +1142,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         std::set<int> userKeys;
         t->natronMarker->getUserKeyframes(&userKeys);
 
-        if (userKeys.empty()) {
+        if ( userKeys.empty() ) {
             // Set a user keyframe on tracking start if the marker does not have any user keys
             t->natronMarker->setUserKeyframe(start);
         }
@@ -1204,7 +1245,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
        Launch tracking in the scheduler thread.
      */
-    TrackArgs args(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight);
+    boost::shared_ptr<TrackArgs> args(new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight));
     _imp->scheduler.track(args);
 } // TrackerContext::trackMarkers
 
@@ -1297,15 +1338,20 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     }
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum motionType = (TrackerMotionTypeEnum)motionType_i;
+    boost::shared_ptr<KnobBool> disableTransformKnob = disableTransform.lock();
+    bool disableNodes = disableTransformKnob->getValue();
 
-    transformNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
-    cornerPinNode.lock()->setNodeDisabled(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+    transformNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    cornerPinNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
 
     transformControlsSeparator.lock()->setSecret(motionType == eTrackerMotionTypeNone);
+    disableTransformKnob->setSecret(motionType == eTrackerMotionTypeNone);
     if (transformType == eTrackerTransformNodeTransform) {
-        transformControlsSeparator.lock()->setLabel("Transform Controls");
+        transformControlsSeparator.lock()->setLabel( tr("Transform Controls") );
+        disableTransformKnob->setLabel( tr("Disable Transform") );
     } else if (transformType == eTrackerTransformNodeCornerPin) {
-        transformControlsSeparator.lock()->setLabel("CornerPin Controls");
+        transformControlsSeparator.lock()->setLabel( tr("CornerPin Controls") );
+        disableTransformKnob->setLabel( tr("Disable CornerPin") );
     }
 
 
@@ -1319,6 +1365,7 @@ TrackerContextPrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransfo
     if (matrix) {
         matrix->setSecret(transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
     }
+
 
     translate.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
     scale.lock()->setSecret(transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
@@ -1863,6 +1910,7 @@ TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime(double refTime,
 
 void
 TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
+                                                        double maxFittingError,
                                                         const QList<CornerPinData>& results)
 {
     QList<CornerPinData> validResults;
@@ -1874,11 +1922,11 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
 
     boost::shared_ptr<KnobInt> smoothCornerPinKnob = smoothCornerPin.lock();
     int smoothJitter = smoothCornerPinKnob->getValue();
-    RectD rodRef = getInputRoDAtTime(refTime);
-    boost::shared_ptr<KnobString> fittingErrorKnob = fittingError.lock();
+    boost::shared_ptr<KnobDouble> fittingErrorKnob = fittingError.lock();
     boost::shared_ptr<KnobDouble> fromPointsKnob[4];
     boost::shared_ptr<KnobDouble> toPointsKnob[4];
     boost::shared_ptr<KnobBool> enabledPointsKnob[4];
+    boost::shared_ptr<KnobString> fittingWarningKnob = fittingErrorWarning.lock();
     for (int i = 0; i < 4; ++i) {
         fromPointsKnob[i] = fromPoints[i].lock();
         toPointsKnob[i] = toPoints[i].lock();
@@ -1896,34 +1944,26 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
     }
 
     Point refFrom[4];
-    refFrom[0].x = rodRef.x1;
-    refFrom[0].y = rodRef.y1;
-
-    refFrom[1].x = rodRef.x2;
-    refFrom[1].y = rodRef.y1;
-
-    refFrom[2].x = rodRef.x2;
-    refFrom[2].y = rodRef.y2;
-
-    refFrom[3].x = rodRef.x1;
-    refFrom[3].y = rodRef.y2;
-
     for (int c = 0; c < 4; ++c) {
-        fromPointsKnob[c]->setValues(refFrom[c].x, refFrom[c].y, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
+        refFrom[c].x = fromPointsKnob[c]->getValueAtTime(refTime, 0);
+        refFrom[c].y = fromPointsKnob[c]->getValueAtTime(refTime, 1);
     }
 
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
     // signals to create keyframes in keyframeSet
     Curve tmpToPointsCurveX[4], tmpToPointsCurveY[4];
-    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, std::string(), 1, false) );
-    tmpFitErrorKnob->populate();
-
-    QString rmsErrorPrefix = QLatin1String("Fitting Error: ");
-    QString rmsErrorSuffix = QLatin1String(" px");
+    Curve tmpFittingErrorCurve;
+    bool mustShowFittingWarn = false;
     for (QList<CornerPinData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const CornerPinData& dataAtTime = *itResults;
-        QString rmsStr = rmsErrorPrefix + QString::number(dataAtTime.rms, 'f', 3) + rmsErrorSuffix;
-        tmpFitErrorKnob->setValueAtTime(dataAtTime.time, rmsStr.toStdString(), ViewSpec::all(), 0);
+
+        {
+            KeyFrame kf(dataAtTime.time, dataAtTime.rms);
+            if (dataAtTime.rms >= maxFittingError) {
+                mustShowFittingWarn = true;
+            }
+            tmpFittingErrorCurve.addKeyFrame(kf);
+        }
 
         if (smoothJitter > 1) {
             int halfJitter = smoothJitter / 2;
@@ -2018,7 +2058,8 @@ TrackerContextPrivate::computeCornerParamsFromTracksEnd(double refTime,
             }
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
-    fittingErrorKnob->clone( tmpFitErrorKnob.get() );
+    fittingWarningKnob->setSecret(!mustShowFittingWarn);
+    fittingErrorKnob->cloneCurve( ViewSpec::all(), 0, tmpFittingErrorCurve);
     for (int c = 0; c < 4; ++c) {
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 0, tmpToPointsCurveX[c]);
         toPointsKnob[c]->cloneCurve(ViewSpec::all(), 1, tmpToPointsCurveY[c]);
@@ -2058,7 +2099,7 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
             thisNode->getApp()->progressUpdate(thisNode, progress);
         }
     }
-    computeCornerParamsFromTracksEnd(lastSolveRequest.refTime, validResults);
+    computeCornerParamsFromTracksEnd(lastSolveRequest.refTime, lastSolveRequest.maxFittingError, validResults);
 #endif
 } // TrackerContext::computeCornerParamsFromTracks
 
@@ -2067,19 +2108,15 @@ TrackerContextPrivate::resetTransformParamsAnimation()
 {
     {
         // Revert animation on the corner pin
-        boost::shared_ptr<KnobDouble> fromPointsKnob[4];
         boost::shared_ptr<KnobDouble> toPointsKnob[4];
         boost::shared_ptr<KnobBool> enabledPointsKnob[4];
         for (int i = 0; i < 4; ++i) {
-            fromPointsKnob[i] = fromPoints[i].lock();
             toPointsKnob[i] = toPoints[i].lock();
             enabledPointsKnob[i] = enableToPoint[i].lock();
         }
 
 
         for (int i = 0; i < 4; ++i) {
-            fromPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
-            fromPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
             toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
             toPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(1);
             enabledPointsKnob[i]->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
@@ -2107,6 +2144,7 @@ TrackerContextPrivate::resetTransformParamsAnimation()
 
 void
 TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
+                                                           double maxFittingError,
                                                            const QList<TransformData>& results)
 {
     QList<TransformData> validResults;
@@ -2126,8 +2164,8 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     boost::shared_ptr<KnobDouble> translationKnob = translate.lock();
     boost::shared_ptr<KnobDouble> scaleKnob = scale.lock();
     boost::shared_ptr<KnobDouble> rotationKnob = rotate.lock();
-    boost::shared_ptr<KnobString> fittingErrorKnob = fittingError.lock();
-
+    boost::shared_ptr<KnobDouble> fittingErrorKnob = fittingError.lock();
+    boost::shared_ptr<KnobString> fittingWarningKnob = fittingErrorWarning.lock();
     translationKnob->blockValueChanges();
     scaleKnob->blockValueChanges();
     rotationKnob->blockValueChanges();
@@ -2140,17 +2178,17 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
     animatedKnobsChanged.push_back(fittingErrorKnob);
 
 
-    Curve tmpTXCurve, tmpTYCurve, tmpRotateCurve, tmpScaleCurve;
-    boost::shared_ptr<KnobString> tmpFitErrorKnob( new KnobString(0, std::string(), 1, false) );
-    tmpFitErrorKnob->populate();
-
-    QString rmsErrorPrefix = QLatin1String("Fitting Error: ");
-    QString rmsErrorSuffix = QLatin1String(" px");
-
+    Curve tmpTXCurve, tmpTYCurve, tmpRotateCurve, tmpScaleCurve, tmpFittingErrorCurve;
+    bool mustShowFittingWarn = false;
     for (QList<TransformData>::const_iterator itResults = validResults.begin(); itResults != validResults.end(); ++itResults) {
         const TransformData& dataAtTime = *itResults;
-        QString rmsStr = rmsErrorPrefix + QString::number(dataAtTime.rms, 'f', 3) + rmsErrorSuffix;
-        tmpFitErrorKnob->setValueAtTime(dataAtTime.time, rmsStr.toStdString(), ViewSpec::all(), 0);
+        {
+            KeyFrame kf(dataAtTime.time, dataAtTime.rms);
+            if (dataAtTime.rms >= maxFittingError) {
+                mustShowFittingWarn = true;
+            }
+            tmpFittingErrorCurve.addKeyFrame(kf);
+        }
 
         if (smoothTJitter > 1) {
             int halfJitter = smoothTJitter / 2;
@@ -2347,7 +2385,8 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
         }
     } // for (std::size_t i = 0; i < dataAtTime.size(); ++i)
 
-    fittingErrorKnob->clone( tmpFitErrorKnob.get() );
+    fittingWarningKnob->setSecret(!mustShowFittingWarn);
+    fittingErrorKnob->cloneCurve(ViewSpec::all(), 0, tmpFittingErrorCurve);
     translationKnob->cloneCurve(ViewSpec::all(), 0, tmpTXCurve);
     translationKnob->cloneCurve(ViewSpec::all(), 1, tmpTYCurve);
     rotationKnob->cloneCurve(ViewSpec::all(), 0, tmpRotateCurve);
@@ -2388,7 +2427,7 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
             thisNode->getApp()->progressUpdate(thisNode, progress);
         }
     }
-    computeTransformParamsFromTracksEnd(lastSolveRequest.refTime, validResults);
+    computeTransformParamsFromTracksEnd(lastSolveRequest.refTime, lastSolveRequest.maxFittingError, validResults);
 #endif
 } // TrackerContextPrivate::computeTransformParamsFromTracks
 
@@ -2396,14 +2435,14 @@ void
 TrackerContextPrivate::onCornerPinSolverWatcherFinished()
 {
     assert(lastSolveRequest.cpWatcher);
-    computeCornerParamsFromTracksEnd( lastSolveRequest.refTime, lastSolveRequest.cpWatcher->future().results() );
+    computeCornerParamsFromTracksEnd( lastSolveRequest.refTime, lastSolveRequest.maxFittingError, lastSolveRequest.cpWatcher->future().results() );
 }
 
 void
 TrackerContextPrivate::onTransformSolverWatcherFinished()
 {
     assert(lastSolveRequest.tWatcher);
-    computeTransformParamsFromTracksEnd( lastSolveRequest.refTime, lastSolveRequest.tWatcher->future().results() );
+    computeTransformParamsFromTracksEnd( lastSolveRequest.refTime, lastSolveRequest.maxFittingError, lastSolveRequest.tWatcher->future().results() );
 }
 
 void

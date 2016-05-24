@@ -245,7 +245,7 @@ ViewerTab::startPause(bool b)
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
         }
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, OutputSchedulerThread::eRenderDirectionForward);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionForward);
     }
 }
 
@@ -270,7 +270,7 @@ ViewerTab::abortRendering()
         for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
             ViewerInstance* viewer = (*it)->getInternalNode();
             if (viewer) {
-                viewer->getRenderEngine()->abortRendering(false, true);
+                viewer->getRenderEngine()->abortRenderingNoRestart();
             }
         }
     }
@@ -335,6 +335,25 @@ ViewerTab::onEngineStopped()
 }
 
 void
+ViewerTab::abortViewersAndRefresh()
+{
+    if (!getGui()) {
+        return;
+    }
+    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
+        ViewerInstance* viewer = (*it)->getInternalNode();
+        if (viewer) {
+            boost::shared_ptr<RenderEngine> engine = viewer->getRenderEngine();
+            if ( engine && engine->hasThreadsWorking() ) {
+                engine->abortRenderingAutoRestart();
+                engine->renderCurrentFrame(false, true);
+            }
+        }
+    }
+}
+
+void
 ViewerTab::startBackward(bool b)
 {
     abortRendering();
@@ -348,7 +367,7 @@ ViewerTab::startBackward(bool b)
             QMutexLocker k(&_imp->currentViewMutex);
             viewsToRender.push_back(_imp->currentViewIndex);
         }
-        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, OutputSchedulerThread::eRenderDirectionBackward);
+        _imp->viewerNode->getRenderEngine()->renderFromCurrentFrame(getGui()->getApp()->isRenderStatsActionChecked(), viewsToRender, eRenderDirectionBackward);
     }
 }
 
@@ -490,7 +509,6 @@ ViewerTab::~ViewerTab()
         }
     }
     _imp->nodesContext.clear();
-
 }
 
 void
@@ -539,21 +557,21 @@ ViewerTab::leaveEvent(QEvent* e)
 void
 ViewerTab::keyPressEvent(QKeyEvent* e)
 {
+    //qDebug() << "ViewerTab::keyPressed:" << e->text() << "modifiers:" << e->modifiers();
     if ( getGui() ) {
         getGui()->setActiveViewer(this);
     }
 
     bool accept = true;
     Qt::KeyboardModifiers modifiers = e->modifiers();
-    Qt::Key key = (Qt::Key)e->key();
+    Qt::Key key = (Qt::Key)Gui::handleNativeKeys( e->key(), e->nativeScanCode(), e->nativeVirtualKey() );
     double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
 
     if ( e->isAutoRepeat() && notifyOverlaysKeyRepeat(RenderScale(scale), e) ) {
         update();
     } else if ( notifyOverlaysKeyDown(RenderScale(scale), e) ) {
         update();
-    }
-    else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionLuminance, modifiers, key) ) {
         int currentIndex = _imp->viewerChannels->activeIndex();
         if (currentIndex == 0) {
             _imp->viewerChannels->setCurrentIndex_no_emit(1);
@@ -724,25 +742,45 @@ ViewerTab::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDPrevLayer, modifiers, key) ) {
         previousLayer();
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
-        connectToInput(0);
+        connectToAInput(0);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
-        connectToInput(1);
+        connectToAInput(1);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, modifiers, key) ) {
-        connectToInput(2);
+        connectToAInput(2);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, modifiers, key) ) {
-        connectToInput(3);
+        connectToAInput(3);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, modifiers, key) ) {
-        connectToInput(4);
+        connectToAInput(4);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, modifiers, key) ) {
-        connectToInput(5);
+        connectToAInput(5);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, modifiers, key) ) {
-        connectToInput(6);
+        connectToAInput(6);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, modifiers, key) ) {
-        connectToInput(7);
+        connectToAInput(7);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, modifiers, key) ) {
-        connectToInput(8);
+        connectToAInput(8);
     } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
-        connectToInput(9);
+        connectToAInput(9);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput1, modifiers, key) ) {
+        connectToBInput(0);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput2, modifiers, key) ) {
+        connectToBInput(1);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput3, modifiers, key) ) {
+        connectToBInput(2);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput4, modifiers, key) ) {
+        connectToBInput(3);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput5, modifiers, key) ) {
+        connectToBInput(4);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput6, modifiers, key) ) {
+        connectToBInput(5);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput7, modifiers, key) ) {
+        connectToBInput(6);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput8, modifiers, key) ) {
+        connectToBInput(7);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput9, modifiers, key) ) {
+        connectToBInput(8);
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
+        connectToBInput(9);
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDActionHideOverlays, modifiers, key) ) {
         _imp->viewer->toggleOverlays();
     } else if ( isKeybind(kShortcutGroupViewer, kShortcutIDToggleWipe, modifiers, key) ) {

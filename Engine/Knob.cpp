@@ -253,7 +253,6 @@ struct KnobHelperPrivate
     int inViewerContextAddNewLine;
     std::string inViewerContextLabel;
     bool inViewerContextHasShortcut;
-
     boost::weak_ptr<KnobI> parentKnob;
     mutable QMutex stateMutex; // protects IsSecret defaultIsSecret enabled
     bool IsSecret, defaultIsSecret, inViewerContextSecret;
@@ -1687,6 +1686,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
         }
         checkAnimationLevel(view, dimension);
     }
+
     return ret;
 }
 
@@ -1739,6 +1739,7 @@ std::string
 KnobHelper::getInViewerContextLabel() const
 {
     QMutexLocker k(&_imp->labelMutex);
+
     return _imp->inViewerContextLabel;
 }
 
@@ -1746,6 +1747,7 @@ void
 KnobHelper::setInViewerContextLabel(const QString& label)
 {
     QMutexLocker k(&_imp->labelMutex);
+
     _imp->inViewerContextLabel = label.toStdString();
 }
 
@@ -3206,6 +3208,7 @@ KnobHelper::getWidgetFontHeight() const
     if (hasGui) {
         return hasGui->getWidgetFontHeight();
     }
+
     return 0;
 }
 
@@ -3217,11 +3220,13 @@ KnobHelper::getStringWidthForCurrentFont(const std::string& string) const
     if (hasGui) {
         return hasGui->getStringWidthForCurrentFont(string);
     }
+
     return 0;
 }
 
 void
-KnobHelper::toWidgetCoordinates(double *x, double *y) const
+KnobHelper::toWidgetCoordinates(double *x,
+                                double *y) const
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
 
@@ -3230,9 +3235,9 @@ KnobHelper::toWidgetCoordinates(double *x, double *y) const
     }
 }
 
-
 void
-KnobHelper::toCanonicalCoordinates(double *x, double *y) const
+KnobHelper::toCanonicalCoordinates(double *x,
+                                   double *y) const
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
 
@@ -3240,7 +3245,6 @@ KnobHelper::toCanonicalCoordinates(double *x, double *y) const
         hasGui->toCanonicalCoordinates(x, y);
     }
 }
-
 
 RectD
 KnobHelper::getViewportRect() const
@@ -3255,7 +3259,8 @@ KnobHelper::getViewportRect() const
 }
 
 void
-KnobHelper::getCursorPosition(double& x, double& y) const
+KnobHelper::getCursorPosition(double& x,
+                              double& y) const
 {
     boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
 
@@ -3265,7 +3270,6 @@ KnobHelper::getCursorPosition(double& x, double& y) const
         x = 0;
         y = 0;
     }
-
 }
 
 void
@@ -4156,15 +4160,15 @@ KnobHelper::setHasModifications(int dimension,
 
 KnobPtr
 KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
-                                  const boost::shared_ptr<KnobPage>& page,
-                                  const boost::shared_ptr<KnobGroup>& group,
-                                  int indexInParent,
-                                  bool makeAlias,
-                                  const std::string& newScriptName,
-                                  const std::string& newLabel,
-                                  const std::string& newToolTip,
-                                  bool refreshParams,
-                                  bool isUserKnob)
+                                    const boost::shared_ptr<KnobPage>& page,
+                                    const boost::shared_ptr<KnobGroup>& group,
+                                    int indexInParent,
+                                    bool makeAlias,
+                                    const std::string& newScriptName,
+                                    const std::string& newLabel,
+                                    const std::string& newToolTip,
+                                    bool refreshParams,
+                                    bool isUserKnob)
 {
     ///find-out to which node that master knob belongs to
     if ( !getHolder()->getApp() ) {
@@ -4174,7 +4178,6 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
     KnobHolder* holder = getHolder();
     EffectInstance* otherIsEffect = dynamic_cast<EffectInstance*>(otherHolder);
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
-
     KnobBool* isBool = dynamic_cast<KnobBool*>(this);
     KnobInt* isInt = dynamic_cast<KnobInt*>(this);
     KnobDouble* isDbl = dynamic_cast<KnobDouble*>(this);
@@ -4314,7 +4317,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
         } else {
             destPage->insertKnob(indexInParent, output);
         }
-    } 
+    }
     if (isUserKnob && otherIsEffect) {
         otherIsEffect->getNode()->declarePythonFields();
     }
@@ -4570,21 +4573,22 @@ KnobHolder::~KnobHolder()
 void
 KnobHolder::addKnobToViewerUI(const KnobPtr& knob)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     _imp->knobsWithViewerUI.push_back(knob);
 }
 
 KnobsVec
 KnobHolder::getViewerUIKnobs() const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     KnobsVec ret;
-    for (std::vector<KnobWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
+    for (std::vector<KnobWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it != _imp->knobsWithViewerUI.end(); ++it) {
         KnobPtr k = it->lock();
         if (k) {
             ret.push_back(k);
         }
     }
+
     return ret;
 }
 
@@ -5394,6 +5398,7 @@ KnobHolder::endChanges(bool discardRendering)
             evaluate(hasHadSignificantChange, mustRefreshMetadatas);
         }
     }
+
     return ret;
 } // KnobHolder::endChanges
 
@@ -5762,6 +5767,7 @@ KnobHolder::onKnobValueChanged_public(KnobI* k,
         return false;
     }
     RECURSIVE_ACTION();
+
     return onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
 }
 
@@ -5810,7 +5816,7 @@ KnobHolder::restoreDefaultValues()
         KnobSeparator* isSeparator = dynamic_cast<KnobSeparator*>( _imp->knobs[i].get() );
 
         ///Don't restore buttons and the node label
-        if ( (!isBtn || isBtn->getIsCheckable()) && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
+        if ( ( !isBtn || isBtn->getIsCheckable() ) && !isSeparator && (_imp->knobs[i]->getName() != kUserLabelKnobName) ) {
             for (int d = 0; d < _imp->knobs[i]->getDimension(); ++d) {
                 _imp->knobs[i]->resetToDefaultValue(d);
             }

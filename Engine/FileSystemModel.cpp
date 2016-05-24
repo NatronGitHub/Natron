@@ -32,6 +32,7 @@
 #include <windows.h>
 #endif
 
+#include "Global/Macros.h"
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -485,10 +486,11 @@ FileSystemModel::initDriveLettersToNetworkShareNamesMapping()
 {
     QFileInfoList drives = QDir::drives();
 
-    for (int i = 0; i < drives.size(); ++i) {
+    Q_FOREACH(const QFileInfo &drive, drives) {
         // for drives, there is no filename
-        QString driveName  = drives[i].canonicalPath();
+        QString driveName  = drive.canonicalPath();
         QString uncPath = mapPathWithDriveLetterToPathWithNetworkShareName(driveName);
+
 #ifdef DEBUG
         qDebug() << "Filesystem: " << driveName << " = " << uncPath;
 #endif
@@ -936,17 +938,20 @@ FileSystemModel::setRegexpFilters(const QString& filters)
 QString
 FileSystemModel::generateRegexpFilterFromFileExtensions(const QStringList& extensions)
 {
+    if ( extensions.empty() ) {
+        return QString();
+    }
+
     QString ret;
 
-    for (int i = 0; i < extensions.size(); ++i) {
-        if ( extensions[i] != QString::fromUtf8("*") ) {
+    Q_FOREACH(const QString &ext, extensions) {
+        if ( ext != QString::fromUtf8("*") ) {
             ret.append( QString::fromUtf8("*.") );
         }
-        ret.append( extensions[i] );
-        if (i < extensions.size() - 1) {
-            ret.append( QChar::fromLatin1(' ') );
-        }
+        ret.append( ext );
+        ret.append( QChar::fromLatin1(' ') );
     }
+    ret.chop(1); // remove trailing space
 
     return ret;
 }
@@ -1016,21 +1021,22 @@ FileSystemModel::resetCompletly(bool rebuild)
         QFileInfoList drives = QDir::drives();
 
         ///Fetch all drives by default
-        for (int i = 0; i < drives.size(); ++i) {
+        Q_FOREACH(const QFileInfo &drive, drives) {
             QString driveName;
+
 #ifdef __NATRON_WIN32__
             // for drives, there is no filename
-            driveName = drives[i].canonicalPath();
+            driveName = drive.canonicalPath();
 #else
-            driveName = generateChildAbsoluteName( _imp->rootItem.get(), drives[i].fileName() );
+            driveName = generateChildAbsoluteName( _imp->rootItem.get(), drive.fileName() );
 #endif
 
             boost::shared_ptr<FileSystemItem> child( new FileSystemItem(model, true, //isDir
                                                                         driveName, //drives have canonical path
                                                                         driveName,
                                                                         boost::shared_ptr<SequenceParsing::SequenceFromFiles>(),
-                                                                        drives[i].lastModified(),
-                                                                        drives[i].size(),
+                                                                        drive.lastModified(),
+                                                                        drive.size(),
                                                                         _imp->rootItem) );
             _imp->registerItem(child);
             _imp->rootItem->addChild(child);

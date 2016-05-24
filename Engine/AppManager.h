@@ -44,6 +44,7 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/noncopyable.hpp>
 #endif
 
+#include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/EngineFwd.h"
@@ -88,7 +89,7 @@ public:
 
 struct AppManagerPrivate;
 class AppManager
-    : public QObject, public boost::noncopyable
+    : public QObject, public AfterQuitProcessingI, public boost::noncopyable
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -298,8 +299,6 @@ public:
         return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
     }
 
-
-
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
      * short message. Otherwise the longMessage is printed to stdout
@@ -441,7 +440,8 @@ public:
 
     virtual int getAppFontSize() const { return 11; }
 
-    virtual void setCurrentLogicalDPI(double /*dpiX*/, double /*dpiY*/) {}
+    virtual void setCurrentLogicalDPI(double /*dpiX*/,
+                                      double /*dpiY*/) {}
 
     virtual double getLogicalDPIXRATIO() const
     {
@@ -617,6 +617,7 @@ public Q_SLOTS:
 
     void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
 
+    void onQuitWatcherFinished(const WatcherCallerArgsPtr& args);
 
 Q_SIGNALS:
 
@@ -659,6 +660,7 @@ protected:
 
 private:
 
+    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
 

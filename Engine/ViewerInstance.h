@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <string>
-
 #include "Global/Macros.h"
+
+#include <string>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -201,7 +201,7 @@ public:
                                      const NodePtr& rotoPaintNode,
                                      bool useTLS,
                                      boost::shared_ptr<ViewerArgs> args[2],
-                                     const boost::shared_ptr<RequestedFrame>& request,
+                                     const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                      const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
 
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
@@ -274,13 +274,11 @@ public:
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
-    void refreshActiveInputs(int inputNbChanged);
+    void getActiveInputs(int & a, int &b) const;
 
     void setInputA(int inputNb);
 
     void setInputB(int inputNb);
-
-    void getActiveInputs(int & a, int &b) const;
 
     int getLastRenderedTime() const;
 
@@ -355,10 +353,6 @@ Q_SIGNALS:
 
     void viewerDisconnected();
 
-    void refreshOptionalState();
-
-    void activeInputsChanged();
-
     void clipPreferencesChanged();
 
     void availableComponentsChanged();
@@ -429,16 +423,12 @@ private:
                                               bool canAbort,
                                               const NodePtr& rotoPaintNode,
                                               bool useTLS,
-                                              const boost::shared_ptr<RequestedFrame>& request,
+                                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                               const boost::shared_ptr<RenderStats>& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
 
     virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
-    void setCurrentlyUpdatingOpenGLViewer(bool updating);
-    bool isCurrentlyUpdatingOpenGLViewer() const;
 
 private:
 

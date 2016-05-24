@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -32,8 +34,6 @@
 #endif
 
 #include <QtCore/QMutex>
-
-#include "Global/Macros.h"
 
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
@@ -66,11 +66,7 @@ private:
 
     mutable QMutex _outputEffectDataLock;
     std::list<RenderSequenceArgs> _renderSequenceRequests;
-    RenderEngine* _engine;
-    SequenceTime _writerCurrentFrame; /*!< for writers only: indicates the current frame
-                                         It avoids snchronizing all viewers in the app to the render*/
-    SequenceTime _writerFirstFrame;
-    SequenceTime _writerLastFrame;
+    boost::shared_ptr<RenderEngine> _engine;
 
 public:
 
@@ -83,7 +79,7 @@ public:
         return true;
     }
 
-    RenderEngine* getRenderEngine() const
+    boost::shared_ptr<RenderEngine> getRenderEngine() const
     {
         return _engine;
     }
@@ -97,7 +93,6 @@ public:
      * @brief Is this node currently doing playback ?
      **/
     bool isDoingSequentialRender() const;
-
 
     /**
      * @brief Starts rendering of all the sequence available, from start to end.
@@ -113,25 +108,6 @@ public:
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
-    /**
-     * @brief Returns the frame number this effect is currently rendering.
-     * Note that this function can be used only for Writers or OpenFX writers,
-     * it doesn't work with the Viewer.
-     **/
-    int getCurrentFrame() const;
-
-    void setCurrentFrame(int f);
-
-    void incrementCurrentFrame();
-    void decrementCurrentFrame();
-
-    int getFirstFrame() const;
-
-    void setFirstFrame(int f);
-
-    int getLastFrame() const;
-
-    void setLastFrame(int f);
 
     virtual void initializeData() OVERRIDE FINAL;
     virtual void reportStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats > & stats);

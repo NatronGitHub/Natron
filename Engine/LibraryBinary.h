@@ -25,11 +25,12 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <string>
 #include <map>
 #include <vector>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 

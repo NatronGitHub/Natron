@@ -24,6 +24,8 @@
 
 #include "OfxHost.h"
 
+#include "Global/Macros.h"
+
 #include <cassert>
 #include <cstdarg>
 #include <memory>
@@ -891,7 +893,7 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
         std::set<std::string>::const_iterator foundWriter = contexts.find(kOfxImageEffectContextWriter);
         const bool isDeprecated = p->getDescriptor().isDeprecated();
         Plugin* natronPlugin = appPTR->registerPlugin( resourcesPath,
-                                                      groups,
+                                                       groups,
                                                        QString::fromUtf8( openfxId.c_str() ),
                                                        QString::fromUtf8( pluginLabel.c_str() ),
                                                        iconFileName,

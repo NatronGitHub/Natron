@@ -25,10 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <vector>
-
-#include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -99,6 +99,7 @@ NATRON_NAMESPACE_ENTER;
 class AbortableRenderInfo;
 class AbortableThread;
 class AbstractOfxEffectInstance;
+class AfterQuitProcessingI;
 class AppInstance;
 class AppTLS;
 class Bezier;
@@ -120,6 +121,9 @@ class FrameEntry;
 class FrameKey;
 class FrameParams;
 class GenericAccess;
+class GenericSchedulerThread;
+class GenericSchedulerThreadWatcher;
+class GenericWatcherCallerArgs;
 class Hash64;
 class Image;
 class ImageComponents;
@@ -182,7 +186,6 @@ class RectI;
 class RenderEngine;
 class RenderStats;
 class RenderingFlagSetter;
-class RequestedFrame;
 class RotoContext;
 class RotoPaint;
 class RotoDrawableItem;
@@ -206,6 +209,7 @@ class TrackSerialization;
 class TrackerContextSerialization;
 class UndoCommand;
 class ViewerInstance;
+class ViewerCurrentFrameRequestSchedulerStartArgs;
 class ViewIdx;
 namespace Color {
 class Lut;
@@ -249,6 +253,7 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
 typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
 typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
 typedef boost::shared_ptr<TrackMarker> TrackMarkerPtr;

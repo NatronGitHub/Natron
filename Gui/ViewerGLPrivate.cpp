@@ -464,8 +464,6 @@ ViewerGL::Implementation::initializeGL()
     glCheckError();
 }
 
-
-
 bool
 ViewerGL::Implementation::initAndCheckGlExtensions()
 {
@@ -473,7 +471,8 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
     const QGLContext* context = _this->context();
-    assert(QGLShaderProgram::hasOpenGLShaderPrograms(context));
+    assert( QGLShaderProgram::hasOpenGLShaderPrograms(context) );
+
     return true;
 }
 

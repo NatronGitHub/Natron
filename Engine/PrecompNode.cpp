@@ -30,6 +30,12 @@
 #include "Global/GlobalDefines.h"
 #include "Global/QtCompat.h"
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
+
 #include <ofxNatron.h>
 
 #include "Engine/AppInstance.h"
@@ -333,6 +339,7 @@ PrecompNode::knobChanged(KnobI* k,
                          bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( (reason != eValueChangedReasonTimeChanged) && ( k == _imp->projectFileNameKnob.lock().get() ) ) {
         _imp->reloadProject(true);
     } else if ( k == _imp->editProjectKnob.lock().get() ) {
@@ -354,6 +361,7 @@ PrecompNode::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
+
     return ret;
 }
 
@@ -677,9 +685,9 @@ PrecompNodePrivate::launchPreRender()
                               false);
 
     if (w.writer) {
-        RenderEngine* engine = w.writer->getRenderEngine();
+        boost::shared_ptr<RenderEngine> engine = w.writer->getRenderEngine();
         if (engine) {
-            QObject::connect( engine, SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
         }
     }
 
@@ -699,9 +707,9 @@ PrecompNode::onPreRenderFinished()
     OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>( output->getEffectInstance().get() );
     assert(writer);
     if (writer) {
-        RenderEngine* engine = writer->getRenderEngine();
+        boost::shared_ptr<RenderEngine> engine = writer->getRenderEngine();
         if (engine) {
-            QObject::disconnect( engine, SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
+            QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
         }
     }
     _imp->refreshReadNodeInput();

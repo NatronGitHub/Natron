@@ -25,9 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <algorithm> // min, max
-
 #include "Global/Macros.h"
+
+#include <algorithm> // min, max
 
 #include "Engine/RectI.h"
 #include "Engine/EngineFwd.h"

@@ -288,7 +288,6 @@ BezierCurve::setFeatherPointAtIndex(int index,
     _bezier->setPointAtIndex(true, index, time, x, y, lx, ly, rx, ry);
 }
 
-
 int
 BezierCurve::getNumControlPoints() const
 {

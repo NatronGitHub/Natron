@@ -34,10 +34,8 @@
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QPointF>
 
-
 #include "Global/Macros.h"
 
-#include "Global/Macros.h"
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
@@ -345,7 +343,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->nbSourceClips = (int)clips.size();
 
         _imp->clipsInfos.resize( clips.size() );
-        for (int i = 0; i < (int)clips.size(); ++i) {
+        for (unsigned i = 0; i < clips.size(); ++i) {
             OfxEffectInstancePrivate::ClipsInfo info;
             info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.optional = clips[i]->isOptional() || info.rotoBrush;
@@ -384,7 +382,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             stat = _imp->effect->populate();
 
 
-            for (int i = 0; i < (int)clips.size(); ++i) {
+            for (unsigned i = 0; i < clips.size(); ++i) {
                 _imp->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip( clips[i]->getName() ) );
                 assert(_imp->clipsInfos[i].clip);
             }
@@ -921,8 +919,8 @@ OfxEffectInstance::getPluginGrouping(std::list<std::string>* grouping) const
     std::string label = getPluginLabel();
     const OFX::Host::ImageEffect::ImageEffectPlugin *p = effectInstance()->getPlugin();
     QStringList groups = ofxExtractAllPartsOfGrouping( QString::fromUtf8( p->getIdentifier().c_str() ), p->getVersionMajor(), p->getVersionMinor(), QString::fromUtf8( label.c_str() ), QString::fromUtf8( groupStr.c_str() ) );
-    for (int i = 0; i < groups.size(); ++i) {
-        grouping->push_back( groups[i].toStdString() );
+    Q_FOREACH(const QString &group, groups) {
+        grouping->push_back( group.toStdString() );
     }
 }
 
@@ -2229,7 +2227,6 @@ OfxEffectInstance::redrawOverlayInteract()
     Q_UNUSED(st);
 }
 
-
 std::string
 OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)
 {
@@ -2260,7 +2257,6 @@ OfxEffectInstance::knobChanged(KnobI* k,
                                double time,
                                bool /*originatedFromMainThread*/)
 {
-
     if (!_imp->initialized) {
         return false;
     }
@@ -2297,6 +2293,7 @@ OfxEffectInstance::knobChanged(KnobI* k,
         return false;
     }
     Q_UNUSED(stat);
+
     return true;
 } // knobChanged
 

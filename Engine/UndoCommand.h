@@ -25,20 +25,23 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #include <string>
+
 #include "Engine/EngineFwd.h"
 
 
 NATRON_NAMESPACE_ENTER;
 
-class UndoCommand {
-
+class UndoCommand
+{
     std::string _text;
+
 public:
 
-    UndoCommand(const std::string& text = std::string())
-    : _text(text)
+    UndoCommand( const std::string& text = std::string() )
+        : _text(text)
     {}
 
     virtual ~UndoCommand() {}

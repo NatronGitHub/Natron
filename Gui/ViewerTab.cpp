@@ -277,7 +277,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                            tr("Activates the downscaling by the amount indicated by the value on the right. "
                               "The rendered images are degraded and as a result of this the whole rendering pipeline "
                               "is much faster.").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->activateRenderScale);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->activateRenderScale);
 
     _imp->activateRenderScale->setCheckable(true);
     _imp->activateRenderScale->setChecked(false);
@@ -314,9 +314,9 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
         refreshActions.push_back(kShortcutIDActionRefresh);
         refreshActions.push_back(kShortcutIDActionRefreshWithStats);
         setToolTipWithShortcut2(kShortcutGroupViewer, refreshActions, "<p>" + tr("Forces a new render of the current frame.").toStdString() +
-                                "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p><p>" +
-                                tr("Press ").toStdString() + "%2" + tr(" to activate in-depth render statistics useful "
-                                                                       "for debugging the composition.").toStdString() + "</p>", _imp->refreshButton);
+                                "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p><p>" +
+                                tr("Press %2 to activate in-depth render statistics useful "
+                                   "for debugging the composition.").toStdString() + "</p>", _imp->refreshButton);
     }
     _imp->firstRowLayout->addWidget(_imp->refreshButton);
 
@@ -336,7 +336,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                                 "<p><b>" + tr("Pause Updates:").toStdString() + "</b></p><p>" +
                                 tr("When activated the viewer will not update after any change that would modify the image "
                                    "displayed in the viewport.").toStdString() + "</p>" +
-                                "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>" +
+                                "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>" +
                                 tr("Use %2 to pause both input A and B").toStdString() + "</b></p>", _imp->pauseButton);
     }
     _imp->firstRowLayout->addWidget(_imp->pauseButton);
@@ -594,7 +594,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->firstFrame_Button->setFixedSize(buttonSize);
     _imp->firstFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerFirst, "<p>" + tr("First frame").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->firstFrame_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->firstFrame_Button);
 
 
     _imp->previousKeyFrame_Button = new Button(_imp->playerButtonsContainer);
@@ -602,7 +602,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->previousKeyFrame_Button->setFixedSize(buttonSize);
     _imp->previousKeyFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevKF, "<p>" + tr("Previous Keyframe").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->previousKeyFrame_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->previousKeyFrame_Button);
 
 
     _imp->previousFrame_Button = new Button(_imp->playerButtonsContainer);
@@ -610,7 +610,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->previousFrame_Button->setFixedSize(buttonSize);
     _imp->previousFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, "<p>" + tr("Previous frame").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->previousFrame_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->previousFrame_Button);
 
 
     _imp->play_Backward_Button = new Button(_imp->playerButtonsContainer);
@@ -622,7 +622,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
         actions.push_back(kShortcutIDActionPlayerBackward);
         actions.push_back(kShortcutIDActionPlayerStop);
         setToolTipWithShortcut2(kShortcutGroupPlayer, actions, "<p>" + tr("Play backward").toStdString() + "</p>" +
-                                "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b> (%2 to stop)</p>", _imp->play_Backward_Button);
+                                "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b> " +
+                                tr("(%2 to stop)").toStdString() + "</p>", _imp->play_Backward_Button);
     }
     _imp->play_Backward_Button->setCheckable(true);
     _imp->play_Backward_Button->setDown(false);
@@ -636,7 +637,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
         actions.push_back(kShortcutIDActionPlayerForward);
         actions.push_back(kShortcutIDActionPlayerStop);
         setToolTipWithShortcut2(kShortcutGroupPlayer, actions, "<p>" + tr("Play forward").toStdString() + "</p>" +
-                                "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b> (%2 to stop)</p>", _imp->play_Forward_Button);
+                                "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b> " +
+                                tr("(%2 to stop)").toStdString() + "</p>", _imp->play_Forward_Button);
     }
     _imp->play_Forward_Button->setCheckable(true);
     _imp->play_Forward_Button->setDown(false);
@@ -647,7 +649,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->nextFrame_Button->setFixedSize(buttonSize);
     _imp->nextFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, "<p>" + tr("Next frame").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->nextFrame_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->nextFrame_Button);
 
 
     _imp->nextKeyFrame_Button = new Button(_imp->playerButtonsContainer);
@@ -655,7 +657,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->nextKeyFrame_Button->setFixedSize(buttonSize);
     _imp->nextKeyFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextKF, "<p>" + tr("Next Keyframe").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->nextKeyFrame_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->nextKeyFrame_Button);
 
 
     _imp->lastFrame_Button = new Button(_imp->playerButtonsContainer);
@@ -663,7 +665,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->lastFrame_Button->setFixedSize(buttonSize);
     _imp->lastFrame_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerLast, "<p>" + tr("Last Frame").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->lastFrame_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->lastFrame_Button);
 
 
     _imp->previousIncrement_Button = new Button(_imp->playerButtonsContainer);
@@ -671,7 +673,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->previousIncrement_Button->setFixedSize(buttonSize);
     _imp->previousIncrement_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevIncr, "<p>" + tr("Previous Increment").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->previousIncrement_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->previousIncrement_Button);
 
 
     _imp->incrementSpinBox = new SpinBox(_imp->playerButtonsContainer);
@@ -687,19 +689,19 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->nextIncrement_Button->setFixedSize(buttonSize);
     _imp->nextIncrement_Button->setIconSize(buttonIconSize);
     setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerNextIncr, "<p>" + tr("Next Increment").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->nextIncrement_Button);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->nextIncrement_Button);
 
     _imp->playBackInputButton = new Button(_imp->playerButtonsContainer);
     _imp->playBackInputButton->setFocusPolicy(Qt::NoFocus);
     _imp->playBackInputButton->setFixedSize(buttonSize);
     _imp->playBackInputButton->setIconSize(buttonIconSize);
-    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, "<p>" + tr("Set the playback in point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->playBackInputButton);
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackIn, "<p>" + tr("Set the playback in point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->playBackInputButton);
 
     _imp->playBackOutputButton = new Button(_imp->playerButtonsContainer);
     _imp->playBackOutputButton->setFocusPolicy(Qt::NoFocus);
     _imp->playBackOutputButton->setFixedSize(buttonSize);
     _imp->playBackOutputButton->setIconSize(buttonIconSize);
-    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, "<p>" + tr("Set the playback out point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->playBackOutputButton);
+    setToolTipWithShortcut(kShortcutGroupPlayer, kShortcutIDActionPlayerPlaybackOut, "<p>" + tr("Set the playback out point at the current frame.").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->playBackOutputButton);
 
     _imp->playBackInputSpinbox = new SpinBox(_imp->playerButtonsContainer);
     _imp->playBackInputSpinbox->setToolTip( tr("The playback in point") );
@@ -880,14 +882,14 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionFitViewer, "<p>" +
                            tr("Scales the image so it doesn't exceed the size of the viewer and centers it.").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->centerViewerButton);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->centerViewerButton);
 
     setToolTipWithShortcut(kShortcutGroupViewer, kShortcutIDActionClipEnabled, "<p>" +
                            tr("Clips the portion of the image displayed "
                               "on the viewer to the project format. "
                               "When off, everything in the union of all nodes "
                               "region of definition is displayed.").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->clipToProjectFormatButton);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->clipToProjectFormatButton);
 
     std::list<std::string> roiActions;
     roiActions.push_back(kShortcutIDActionROIEnabled);
@@ -895,13 +897,12 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     setToolTipWithShortcut2(kShortcutGroupViewer, roiActions, "<p>" +
                             tr("When active, enables the region of interest that limits"
                                " the portion of the viewer that is kept updated.").toStdString() + "</p>" +
-                            "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>" +
-                            "<p>" + tr("Press ").toStdString() + " %2 " + tr("to activate and drag a new region.").toStdString() + "</p>", _imp->enableViewerRoI);
+                            "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>" +
+                            "<p>" + tr("Press %2 to activate and drag a new region.").toStdString() + "</p>", _imp->enableViewerRoI);
 
 
     _imp->playerLayout->addWidget(_imp->playBackInputButton);
     _imp->playerLayout->addWidget(_imp->playBackInputSpinbox);
-    _imp->playerLayout->addWidget(_imp->firstFrame_Button);
 
     _imp->playerLayout->addStretch();
 
@@ -914,13 +915,15 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playerLayout->addSpacing( TO_DPIX(10) );
     _imp->playerLayout->addWidget(_imp->tripleSyncButton);
 
-
     _imp->playerLayout->addStretch();
 
-
+    _imp->playerLayout->addWidget(_imp->firstFrame_Button);
+    _imp->playerLayout->addWidget(_imp->previousFrame_Button);
     _imp->playerLayout->addWidget(_imp->play_Backward_Button);
     _imp->playerLayout->addWidget(_imp->currentFrameBox);
     _imp->playerLayout->addWidget(_imp->play_Forward_Button);
+    _imp->playerLayout->addWidget(_imp->nextFrame_Button);
+    _imp->playerLayout->addWidget(_imp->lastFrame_Button);
 
     _imp->playerLayout->addStretch();
 
@@ -931,13 +934,9 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playerLayout->addWidget(_imp->incrementSpinBox);
     _imp->playerLayout->addWidget(_imp->nextIncrement_Button);
     _imp->playerLayout->addSpacing( TO_DPIX(10) );
-    _imp->playerLayout->addWidget(_imp->previousFrame_Button);
-    _imp->playerLayout->addWidget(_imp->nextFrame_Button);
-
 
     _imp->playerLayout->addStretch();
 
-    _imp->playerLayout->addWidget(_imp->lastFrame_Button);
     _imp->playerLayout->addWidget(_imp->playBackOutputSpinbox);
     _imp->playerLayout->addWidget(_imp->playBackOutputButton);
 
@@ -970,13 +969,18 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp(), SLOT(goToNextKeyframe()) );
     QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp(), SLOT(goToPreviousKeyframe()) );
     NodePtr wrapperNode = _imp->viewerNode->getNode();
+    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
     QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
                       this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputChanged(int)), this, SLOT(onInputChanged(int)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputLabelChanged(int,QString)), this, SLOT(onInputNameChanged(int,QString)) );
     QObject::connect( _imp->viewerNode, SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
     QObject::connect( _imp->viewerNode, SIGNAL(availableComponentsChanged()), this, SLOT(onAvailableComponentsChanged()) );
-    QObject::connect( _imp->viewerNode, SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
+
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(wrapperNode.get());
+    if (isInspector) {
+        QObject::connect( isInspector, SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
+    }
     QObject::connect( _imp->viewerColorSpace, SIGNAL(currentIndexChanged(int)), this,
                       SLOT(onColorSpaceComboBoxChanged(int)) );
     QObject::connect( _imp->zoomCombobox, SIGNAL(currentIndexChanged(int)), this, SLOT(onZoomComboboxCurrentIndexChanged(int)) );
@@ -1002,8 +1006,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()) );
     QObject::connect( _imp->viewerNode, SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
     QObject::connect( _imp->fpsBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinboxFpsChanged(double)) );
-    QObject::connect( _imp->viewerNode->getRenderEngine(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
-    QObject::connect( _imp->viewerNode->getRenderEngine(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
+    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
+    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
     manageSlotsForInfoWidget(0, true);
 
     QObject::connect( _imp->clipToProjectFormatButton, SIGNAL(clicked(bool)), this, SLOT(onClipToProjectButtonToggle(bool)) );

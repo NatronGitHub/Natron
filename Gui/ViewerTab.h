@@ -56,7 +56,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-   
 
     explicit ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                        const std::list<NodeGuiPtr>& activePluginsContext,
@@ -186,7 +185,7 @@ public:
     void setPluginViewerInterface(const NodeGuiPtr& n);
 
     /**
-     * @brief Removes the interface associated to the given node. 
+     * @brief Removes the interface associated to the given node.
      * @param permanently The interface is destroyed instead of being hidden
      * @param setAnotherFromSamePlugin If true, if another node of the same plug-in is a candidate for a viewer interface, it will replace the existing
      * viewer interface for this plug-in
@@ -275,7 +274,9 @@ public:
 
     void refresh(bool enableRenderStats);
 
-    void connectToInput(int inputNb);
+    void connectToInput(int inputNb, bool isASide);
+    void connectToAInput(int inputNb);
+    void connectToBInput(int inputNb);
 
     bool isPickerEnabled() const;
     void setPickerEnabled(bool enabled);
@@ -442,6 +443,8 @@ public Q_SLOTS:
     void toggleTripleSync(bool toggled);
 
 private:
+
+    void abortViewersAndRefresh();
 
     void refreshFPSBoxFromClipPreferences();
 

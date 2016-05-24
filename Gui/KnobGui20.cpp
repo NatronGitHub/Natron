@@ -527,22 +527,22 @@ KnobGui::getBackgroundColour(double &r,
 }
 
 void
-KnobGui::toWidgetCoordinates(double *x, double *y) const
+KnobGui::toWidgetCoordinates(double *x,
+                             double *y) const
 {
     if (_imp->customInteract) {
-        _imp->customInteract->toWidgetCoordinates(x,y);
+        _imp->customInteract->toWidgetCoordinates(x, y);
     }
 }
 
-
 void
-KnobGui::toCanonicalCoordinates(double *x, double *y) const
+KnobGui::toCanonicalCoordinates(double *x,
+                                double *y) const
 {
     if (_imp->customInteract) {
         _imp->customInteract->toCanonicalCoordinates(x, y);
     }
 }
-
 
 /**
  * @brief Returns the font height, i.e: the height of the highest letter for this font
@@ -553,6 +553,7 @@ KnobGui::getWidgetFontHeight() const
     if (_imp->customInteract) {
         return _imp->customInteract->getWidgetFontHeight();
     }
+
     return getGui()->fontMetrics().height();
 }
 
@@ -565,7 +566,8 @@ KnobGui::getStringWidthForCurrentFont(const std::string& string) const
     if (_imp->customInteract) {
         return _imp->customInteract->getStringWidthForCurrentFont(string);
     }
-    return getGui()->fontMetrics().width(QString::fromUtf8(string.c_str()));
+
+    return getGui()->fontMetrics().width( QString::fromUtf8( string.c_str() ) );
 }
 
 void
@@ -590,11 +592,13 @@ KnobGui::getViewportRect() const
     if (_imp->customInteract) {
         return _imp->customInteract->getViewportRect();
     }
+
     return RectD();
 }
 
 void
-KnobGui::getCursorPosition(double& x, double& y) const
+KnobGui::getCursorPosition(double& x,
+                           double& y) const
 {
     if (_imp->customInteract) {
         _imp->customInteract->getCursorPosition(x, y);

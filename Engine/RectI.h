@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -34,7 +36,6 @@
 #include <limits>
 
 #include "Global/GlobalDefines.h"
-#include "Global/Macros.h"
 
 #include "Engine/EngineFwd.h"
 

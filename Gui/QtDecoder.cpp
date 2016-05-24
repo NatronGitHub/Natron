@@ -171,6 +171,7 @@ QtReader::knobChanged(KnobI* k,
                       bool /*originatedFromMainThread*/)
 {
     bool ret = true;
+
     if ( k == _fileKnob.get() ) {
         SequenceTime first, last;
         getSequenceTimeDomain(first, last);
@@ -226,6 +227,7 @@ QtReader::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
+
     return ret;
 } // knobChanged
 

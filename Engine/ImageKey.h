@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/KeyHelper.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"

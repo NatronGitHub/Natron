@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "ViewerInstance.h"
 
 #include <map>
@@ -135,15 +137,11 @@ public:
         , viewerParamsAlphaLayer( ImageComponents::getRGBAComponents() )
         , viewerParamsAlphaChannelName("a")
         , viewerMipMapLevel(0)
-        , activeInputsMutex(QMutex::Recursive)
-        , activeInputs()
         , activateInputChangedFromViewer(false)
         , gammaLookupMutex()
         , gammaLookup()
         , lastRenderParamsMutex()
         , lastRenderParams()
-        , currentlyUpdatingOpenGLViewerMutex()
-        , currentlyUpdatingOpenGLViewer(false)
         , partialUpdateRects()
         , viewportCenter()
         , viewportCenterSet(false)
@@ -154,7 +152,6 @@ public:
     {
         for (int i = 0; i < 2; ++i) {
             forceRender[i] = false;
-            activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
             isViewerPaused[i] = false;
@@ -380,8 +377,6 @@ public:
     ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
-    mutable QMutex activeInputsMutex;
-    int activeInputs[2]; //< indexes of the inputs used for the wipe
 
     ///Only accessed from MT
     bool activateInputChangedFromViewer;
@@ -394,8 +389,6 @@ public:
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRenderParamsMutex;
     boost::shared_ptr<UpdateViewerParams> lastRenderParams[2];
-    mutable QMutex currentlyUpdatingOpenGLViewerMutex;
-    bool currentlyUpdatingOpenGLViewer;
 
     /*
      * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly

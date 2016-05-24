@@ -100,6 +100,7 @@ void
 ViewerToolButton::handleSelection()
 {
     QAction* curAction = defaultAction();
+
     if (!curAction) {
         return;
     }

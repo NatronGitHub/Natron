@@ -93,7 +93,8 @@ AbortableThread::getThreadName() const
 }
 
 void
-AbortableThread::setCurrentActionInfos(const std::string& actionName,const NodePtr& node)
+AbortableThread::setCurrentActionInfos(const std::string& actionName,
+                                       const NodePtr& node)
 {
     assert(QThread::currentThread() == _imp->thread);
 

@@ -29,6 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QFile>
 #include <QtCore/QFileInfo>
@@ -138,8 +139,8 @@ CLArgs:: CLArgs(const QStringList &arguments,
     if (forceBackground) {
         _imp->isBackground = true;
     }
-    for (int i = 0; i < arguments.size(); ++i) {
-        QString str = arguments[i];
+    Q_FOREACH(const QString &arg, arguments) {
+        QString str = arg;
 
         // Remove surrounding quotes
         if ( (str.size() >= 2) && ( str[0] == QChar::fromLatin1('"') ) && ( str[str.size() - 1] == QChar::fromLatin1('"') ) ) {
@@ -636,10 +637,11 @@ tryParseMultipleFrameRanges(const QString& args,
     QStringList splits = args.split( QChar::fromLatin1(',') );
     bool added = false;
 
-    for (int i = 0; i < splits.size(); ++i) {
+    Q_FOREACH(const QString &split, splits) {
         std::pair<int, int> frameRange;
         int frameStep = 0;
-        if ( tryParseFrameRange(splits[i], frameRange, frameStep) ) {
+
+        if ( tryParseFrameRange(split, frameRange, frameStep) ) {
             added = true;
             frameRanges.push_back( std::make_pair(frameStep, frameRange) );
         }

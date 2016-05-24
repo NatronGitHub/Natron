@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -230,7 +232,6 @@ public:
      * @brief Returns for a string the estimated pixel size it would take on the widget
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE = 0;
-
 };
 
 NATRON_NAMESPACE_EXIT;

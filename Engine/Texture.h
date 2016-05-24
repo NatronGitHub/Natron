@@ -84,7 +84,7 @@ public:
     bool ensureTextureHasSize(const TextureRect& texRect, DataTypeEnum type);
 
     /**
-     * @brief Update the texture with the currently bound PBO across the given rectangle. 
+     * @brief Update the texture with the currently bound PBO across the given rectangle.
      * @param texRect The bounds of the texture, if the texture does not match these bounds, it will be reallocated
      * using ensureTextureHasSize(texRect,type)/
      * @param type The bitdepth of the texture

@@ -257,18 +257,13 @@ AppManager::load(int &argc,
 {
     ///if the user didn't specify launch arguments (e.g unit testing)
     ///find out the binary path
-    bool hadArgs = true;
+    char* argv0;
+    QString argv0QString = QDir::currentPath();
 
     if (!argv) {
-        QString binaryPath = QDir::currentPath();
+        argv0 = const_cast<char*>( argv0QString.toStdString().c_str() );
         argc = 1;
-        argv = new char*[1];
-        argv[0] = new char[binaryPath.size() + 1];
-        for (int i = 0; i < binaryPath.size(); ++i) {
-            argv[0][i] = binaryPath.at(i).unicode();
-        }
-        argv[0][binaryPath.size()] = '\0';
-        hadArgs = false;
+        argv = &argv0;
     }
     initializeQApp(argc, argv);
 
@@ -314,10 +309,6 @@ AppManager::load(int &argc,
     assert(qApp);
 
     bool ret = loadInternal(cl);
-    if (!hadArgs) {
-        delete [] argv[0];
-        delete [] argv;
-    }
 
     return ret;
 } // AppManager::load
@@ -386,9 +377,33 @@ AppManager::~AppManager()
     delete qApp;
 }
 
-void
-AppManager::quit(AppInstance* instance)
+class QuitInstanceArgs : public GenericWatcherCallerArgs
 {
+    
+public:
+    
+    AppInstance* instance;
+    
+    QuitInstanceArgs()
+    : GenericWatcherCallerArgs()
+    , instance(0)
+    {
+        
+    }
+    
+    virtual ~QuitInstanceArgs() {}
+};
+
+void
+AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+{
+    QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>(args.get());
+    if (!inArgs) {
+        return;
+    }
+
+    AppInstance* instance = inArgs->instance;
+
     instance->aboutToQuit();
 
     int nbApps;
@@ -406,6 +421,14 @@ AppManager::quit(AppInstance* instance)
         qApp->quit();
     }
     delete instance;
+}
+
+void
+AppManager::quit(AppInstance* instance)
+{
+    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    args->instance = instance;
+    instance->getProject()->quitAnyProcessingForAllNodes(this, args);
 }
 
 void
@@ -586,6 +609,7 @@ void
 AppManager::initializeOpenGLFunctionsOnce()
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
+
     if (!_imp->hasInitializedOpenGLFunctions) {
         _imp->initGl();
         updateAboutWindowLibrariesVersion();
@@ -942,7 +966,7 @@ AppManager::abortAnyProcessing()
     }
 
     for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->getProject()->quitAnyProcessingForAllNodes();
+        it->second.app->getProject()->quitAnyProcessingForAllNodes_non_blocking();
     }
 }
 
@@ -1146,14 +1170,12 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
 
     // Empty since statically bundled
     QString resourcesPath = QString();
-
-    Plugin* p = registerPlugin(resourcesPath,qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
+    Plugin* p = registerPlugin(resourcesPath, qgrouping, QString::fromUtf8( node->getPluginID().c_str() ), QString::fromUtf8( node->getPluginLabel().c_str() ),
                                iconPath, QStringList(), node->isReader(), node->isWriter(), binary, node->renderThreadSafety() == eRenderSafetyUnsafe, node->getMajorVersion(), node->getMinorVersion(), isDeprecated);
-
     std::list<PluginActionShortcut> shortcuts;
     node->getPluginShortcuts(&shortcuts);
     p->setShorcuts(shortcuts);
-    
+
     if (internalUseOnly) {
         p->setForInternalUseOnly(true);
     }
@@ -1313,9 +1335,9 @@ AppManager::getAllNonOFXPluginsPaths() const
     templatesSearchPath.push_back(mainPath);
 
     ///look-in the locations indicated by NATRON_PLUGIN_PATH
-    for (int i = 0; i < splitDirs.size(); ++i) {
-        if ( !splitDirs[i].isEmpty() ) {
-            templatesSearchPath.push_back(splitDirs[i]);
+    Q_FOREACH(const QString &splitDir, splitDirs) {
+        if ( !splitDir.isEmpty() ) {
+            templatesSearchPath.push_back(splitDir);
         }
     }
 
@@ -1346,8 +1368,9 @@ operateOnPathRecursive(NatronPathFunctor functor,
     functor(directory);
 
     QStringList subDirs = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-    for (int i = 0; i < subDirs.size(); ++i) {
-        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDirs[i]);
+    Q_FOREACH(const QString &subDir, subDirs) {
+        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDir);
+
         operateOnPathRecursive(functor, d);
     }
 }
@@ -1403,8 +1426,9 @@ findAllScriptsRecursive(const QDir& directory,
     }
 
     QStringList subDirs = directory.entryList(QDir::AllDirs | QDir::NoDotAndDotDot);
-    for (int i = 0; i < subDirs.size(); ++i) {
-        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDirs[i]);
+    Q_FOREACH(const QString &subDir, subDirs) {
+        QDir d(directory.absolutePath() + QChar::fromLatin1('/') + subDir);
+
         findAllScriptsRecursive(d, allPlugins, foundInit, foundInitGui);
     }
 }
@@ -1422,12 +1446,12 @@ AppManager::loadPythonGroups()
     QStringList allPlugins;
 
     ///For all search paths, first add the path to the python path, then run in order the init.py and initGui.py
-    for (int i = 0; i < templatesSearchPath.size(); ++i) {
+    Q_FOREACH(const QString &templatesSearchDir, templatesSearchPath) {
         //Adding Qt resources to Python path is useless as Python does not know how to use it
-        if ( templatesSearchPath[i].startsWith( QString::fromUtf8(":/Resources") ) ) {
+        if ( templatesSearchDir.startsWith( QString::fromUtf8(":/Resources") ) ) {
             continue;
         }
-        QDir d(templatesSearchPath[i]);
+        QDir d(templatesSearchDir);
         operateOnPathRecursive(&addToPythonPathFunctor, d);
     }
 
@@ -1468,8 +1492,9 @@ AppManager::loadPythonGroups()
 
     QStringList foundInit;
     QStringList foundInitGui;
-    for (int i = 0; i < templatesSearchPath.size(); ++i) {
-        QDir d(templatesSearchPath[i]);
+    Q_FOREACH(const QString &templatesSearchDir, templatesSearchPath) {
+        QDir d(templatesSearchDir);
+
         findAllScriptsRecursive(d, allPlugins, &foundInit, &foundInitGui);
     }
     if ( foundInit.isEmpty() ) {
@@ -1479,8 +1504,9 @@ AppManager::loadPythonGroups()
             std::cout << message.toStdString() << std::endl;
         }
     } else {
-        for (int i = 0; i < foundInit.size(); ++i) {
-            QString message = tr("init.py script found and loaded at %1").arg(foundInit[i]);
+        Q_FOREACH(const QString &found, foundInit) {
+            QString message = tr("init.py script found and loaded at %1").arg(found);
+
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;
@@ -1496,8 +1522,9 @@ AppManager::loadPythonGroups()
                 std::cout << message.toStdString() << std::endl;
             }
         } else {
-            for (int i = 0; i < foundInitGui.size(); ++i) {
-                QString message = tr("initGui.py script found and loaded at %1").arg(foundInitGui[i]);
+            Q_FOREACH(const QString &found, foundInitGui) {
+                QString message = tr("initGui.py script found and loaded at %1").arg(found);
+
                 appPTR->setLoadingStatus(message);
                 if ( !appPTR->isBackground() ) {
                     std::cout << message.toStdString() << std::endl;
@@ -1512,25 +1539,27 @@ AppManager::loadPythonGroups()
     QStringList newTemplatesSearchPath = getAllNonOFXPluginsPaths();
     {
         QStringList diffSearch;
-        for (int i = 0; i < newTemplatesSearchPath.size(); ++i) {
-            if ( !templatesSearchPath.contains(newTemplatesSearchPath[i]) ) {
-                diffSearch.push_back(newTemplatesSearchPath[i]);
+        Q_FOREACH(const QString &newTemplatesSearchDir, newTemplatesSearchPath) {
+            if ( !templatesSearchPath.contains(newTemplatesSearchDir) ) {
+                diffSearch.push_back(newTemplatesSearchDir);
             }
         }
 
         //Add only paths that did not exist so far
-        for (int i = 0; i < diffSearch.size(); ++i) {
-            QDir d(diffSearch[i]);
+        Q_FOREACH(const QString &diffDir, diffSearch) {
+            QDir d(diffDir);
+
             operateOnPathRecursive(&addToPythonPathFunctor, d);
         }
     }
 
     appPTR->setLoadingStatus( tr("Loading PyPlugs...") );
 
-    for (int i = 0; i < allPlugins.size(); ++i) {
-        QString moduleName = allPlugins[i];
+    Q_FOREACH(const QString &plugin, allPlugins) {
+        QString moduleName = plugin;
         QString modulePath;
         int lastDot = moduleName.lastIndexOf( QChar::fromLatin1('.') );
+
         if (lastDot != -1) {
             moduleName = moduleName.left(lastDot);
         }
@@ -3005,13 +3034,13 @@ AppManager::hasThreadsRendering() const
     return false;
 }
 
-
 bool
 AppManager::hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError) const
 {
     if (missingOpenGLError) {
         *missingOpenGLError = _imp->missingOpenglError;
     }
+
     return _imp->hasRequiredOpenGLVersionAndExtensions;
 }
 
@@ -3021,8 +3050,9 @@ AppManager::getOpenGLVersion() const
     if (!glad_glGetString) {
         return QString();
     }
-    QString glslVer = QString::fromUtf8((const char*)glGetString(GL_SHADING_LANGUAGE_VERSION));
-    QString openglVer = QString::fromUtf8((const char*)glGetString(GL_VERSION));
+    QString glslVer = QString::fromUtf8( (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION) );
+    QString openglVer = QString::fromUtf8( (const char*)glGetString(GL_VERSION) );
+
     return openglVer + QString::fromUtf8(", GLSL ") + glslVer;
 }
 

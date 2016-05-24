@@ -30,7 +30,11 @@
 #include <list>
 #include <map>
 
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"

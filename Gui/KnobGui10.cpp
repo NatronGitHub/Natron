@@ -559,15 +559,14 @@ KnobGui::toolTip() const
     }
 
     if (isMarkdown) {
-        Markdown markdown;
-        tt = markdown.convert2html(tt);
+        tt = Markdown::convert2html(tt);
         // Shrink H1/H2 (Can't do it in qt stylesheet)
         tt.replace( QString::fromUtf8("<h1>"), QString::fromUtf8("<h1 style=\"font-size:large;\">") );
         tt.replace( QString::fromUtf8("<h2>"), QString::fromUtf8("<h2 style=\"font-size:large;\">") );
     }
 
     return tt;
-}
+} // KnobGui::toolTip
 
 bool
 KnobGui::hasToolTip() const

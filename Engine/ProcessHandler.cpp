@@ -101,11 +101,9 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
 
 
     ///start the process
-    _processLog.push_back( QString::fromUtf8("Starting background rendering: ") + QCoreApplication::applicationFilePath() );
-    _processLog.push_back( QString::fromUtf8(" ") );
-    for (int i = 0; i < _processArgs.size(); ++i) {
-        _processLog.push_back( _processArgs[i] + QString::fromUtf8(" ") );
-    }
+    _processLog.push_back( tr("Starting background rendering: %1 %2")
+                           .arg( QCoreApplication::applicationFilePath() )
+                           .arg( _processArgs.join( QString::fromUtf8(" ") ) ) );
 }
 
 ProcessHandler::~ProcessHandler()

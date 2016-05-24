@@ -372,7 +372,7 @@ RemoveMultipleNodesCommand::redo()
                         for (std::size_t i = 0; i < inputs.size(); ++i) {
                             NodePtr input = inputs[i].lock();
                             if (input) {
-                                inspector->setActiveInputAndRefresh(i, false);
+                                inspector->setActiveInputAndRefresh(i, true);
                                 ///make sure we don't refresh it a second time
                                 std::list<ViewerInstance*>::iterator foundViewer =
                                     std::find( viewersToRefresh.begin(), viewersToRefresh.end(), inspector->isEffectViewer() );
@@ -1145,7 +1145,6 @@ LoadNodePresetsCommand::getListAsShared(const std::list< NodeWPtr >& original,
 
 LoadNodePresetsCommand::~LoadNodePresetsCommand()
 {
-
 }
 
 void

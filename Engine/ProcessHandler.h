@@ -26,10 +26,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QProcess>
 #include <QtCore/QThread>
-#include <QStringList>
+#include <QtCore/QStringList>
 #include <QtCore/QString>
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>

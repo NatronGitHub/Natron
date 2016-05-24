@@ -84,8 +84,10 @@ Backdrop::knobChanged(KnobI* k,
     if ( k == _imp->knobLabel.lock().get() ) {
         QString text = QString::fromUtf8( _imp->knobLabel.lock()->getValue().c_str() );
         Q_EMIT labelChanged(text);
+
         return true;
     }
+
     return false;
 }
 

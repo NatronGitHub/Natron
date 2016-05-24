@@ -2905,7 +2905,7 @@ EffectInstance::onKnobSlaved(const KnobPtr& slave,
 void
 EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     getNode()->setCurrentViewportForHostOverlays(viewport);
     _imp->overlaysViewport = viewport;
     setCurrentViewportForOverlays(viewport);
@@ -2914,7 +2914,8 @@ EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
 OverlaySupport*
 EffectInstance::getCurrentViewportForOverlays() const
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->overlaysViewport;
 }
 
@@ -2989,7 +2990,11 @@ EffectInstance::onOverlayPenDown_public(double time,
 }
 
 bool
-EffectInstance::onOverlayPenDoubleClicked_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos)
+EffectInstance::onOverlayPenDoubleClicked_public(double time,
+                                                 const RenderScale & renderScale,
+                                                 ViewIdx view,
+                                                 const QPointF & viewportPos,
+                                                 const QPointF & pos)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3424,6 +3429,15 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
                 return eStatusOK;
             }
+        }
+
+        if ( getNode()->isNodeDisabled() ) {
+            NodePtr preferredInput = getNode()->getPreferredInputNode();
+            if (!preferredInput) {
+                return eStatusFailed;
+            }
+
+            return preferredInput->getEffectInstance()->getRegionOfDefinition_public(preferredInput->getEffectInstance()->getRenderHash(), time, scale, view, rod, isProjectFormat);
         }
 
         StatusEnum ret;
@@ -4112,6 +4126,7 @@ void
 EffectInstance::pushUndoCommand(UndoCommand* command)
 {
     UndoCommandPtr ptr(command);
+
     getNode()->pushUndoCommand(ptr);
 }
 
@@ -4124,19 +4139,21 @@ EffectInstance::pushUndoCommand(const UndoCommandPtr& command)
 bool
 EffectInstance::setCurrentCursor(CursorEnum defaultCursor)
 {
-    if (!isDoingInteractAction()) {
-        return  false;
+    if ( !isDoingInteractAction() ) {
+        return false;
     }
     getNode()->setCurrentCursor(defaultCursor);
+
     return true;
 }
 
 bool
 EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
 {
-    if (!isDoingInteractAction()) {
-        return  false;
+    if ( !isDoingInteractAction() ) {
+        return false;
     }
+
     return getNode()->setCurrentCursor(customCursorFilePath);
 }
 
@@ -4219,7 +4236,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         {
             RECURSIVE_ACTION();
 #ifdef QT_CUSTOM_THREADPOOL
-            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode());
+            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
 #endif
             ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
         }
@@ -4263,6 +4280,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     ///pointers for the render thread. This is helpful for analysis effects which call getImage() on the main-thread
     ///and whose render() function is never called.
     _imp->clearInputImagePointers();
+
     return ret;
 } // onKnobValueChanged_public
 
@@ -4548,7 +4566,6 @@ EffectInstance::abortAnyEvaluation()
             assert(context);
             if (context) {
                 NodePtr rotonode = context->getNode();
-                assert(rotonode);
                 if (rotonode) {
                     rotonode->hasOutputNodesConnected(&outputNodes);
                 }
@@ -4560,7 +4577,7 @@ EffectInstance::abortAnyEvaluation()
     for (std::list<OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         //Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
         //well not be finished
-        (*it)->getRenderEngine()->abortRendering(true, false);
+        (*it)->getRenderEngine()->abortRenderingAutoRestart();
     }
 }
 
@@ -5230,7 +5247,8 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 } //refreshMetaDataProxy
 
 void
-EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback, double time)
+EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback,
+                                                  double time)
 {
     KnobHolder::refreshExtraStateAfterTimeChanged(isPlayback, time);
 

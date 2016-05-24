@@ -25,7 +25,6 @@ if [ ! -d "$DOC_FOLDER/source/plugins" ]; then
 fi
 
 touch dummy.ntp
-mkdir -p "$TMP_FOLDER" || exit 1
 "$NATRON_BIN" --export-docs "$TMP_FOLDER" dummy.ntp
 cd "$TMP_FOLDER" || exit 1
 
@@ -33,24 +32,28 @@ for i in *.md;do pandoc $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
 for i in plugins/*.md;do pandoc $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
 
 for y in *.rst; do
-if [ ! -f "$DOC_FOLDER/source/${y}" ]; then
-  cp "$TMP_FOLDER"/$y "$DOC_FOLDER/source/" || exit 1
-else
-  DIFF=`diff ${DOC_FOLDER}/source/${y} ${TMP_FOLDER}/${y}`
-  if [ ! -z "$DIFF" ]; then
+  if [ ! -f "$DOC_FOLDER/source/${y}" ]; then
     cp "$TMP_FOLDER"/$y "$DOC_FOLDER/source/" || exit 1
+  else
+    DIFF=`diff ${DOC_FOLDER}/source/${y} ${TMP_FOLDER}/${y}`
+    if [ ! -z "$DIFF" ]; then
+      cp "$TMP_FOLDER"/$y "$DOC_FOLDER/source/" || exit 1
+    fi
   fi
-fi
 done
 for z in plugins/*.rst; do
-if [ ! -f "$DOC_FOLDER/source/${z}" ]; then
-  cp "$TMP_FOLDER"/$z "$DOC_FOLDER/source/plugins/" || exit 1
-else
-  DIFF=`diff ${DOC_FOLDER}/source/${z} ${TMP_FOLDER}/${z}`
-  if [ ! -z "$DIFF" ]; then
+  # Replace custom link, example: [linux](|html::/guide/linux.html#linux||rst::linux<Linux>|)
+  # removes html::* and convert rst::* to a proper RST link, example: :ref:`linux<Linux>`
+  sed -i 's/<|html::.*||/|/g;s/|rst::\(.*\)|>.*__/:ref:\`\1\`/g' ${z}
+
+  if [ ! -f "$DOC_FOLDER/source/${z}" ]; then
     cp "$TMP_FOLDER"/$z "$DOC_FOLDER/source/plugins/" || exit 1
+  else
+    DIFF=`diff ${DOC_FOLDER}/source/${z} ${TMP_FOLDER}/${z}`
+    if [ ! -z "$DIFF" ]; then
+      cp "$TMP_FOLDER"/$z "$DOC_FOLDER/source/plugins/" || exit 1
+    fi
   fi
-fi
 done
 for x in plugins/*.png; do 
 cp "$TMP_FOLDER"/$x "$DOC_FOLDER/source/plugins/" || exit 1

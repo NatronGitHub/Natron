@@ -87,7 +87,7 @@ class PyModalDialog
 
 public:
 
-    PyModalDialog(Gui* gui, StandardButtons defaultButtons = StandardButtons(eStandardButtonOk | eStandardButtonCancel));
+    PyModalDialog( Gui* gui, StandardButtons defaultButtons = StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
 
     virtual ~PyModalDialog();
 

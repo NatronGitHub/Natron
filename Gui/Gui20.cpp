@@ -336,7 +336,6 @@ ViewerTab*
 Gui::addNewViewerTab(ViewerInstance* viewer,
                      TabWidget* where)
 {
-
     if (!viewer) {
         return 0;
     }
@@ -349,31 +348,29 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
         if ( !_imp->_viewerTabs.empty() ) {
             ( *_imp->_viewerTabs.begin() )->getNodesViewerInterface(&nodeViewerUi, &activeNodeViewerUi);
         } else {
-            NodeGraph* graph = dynamic_cast<NodeGraph*>(group->getNodeGraph());
+            NodeGraph* graph = dynamic_cast<NodeGraph*>( group->getNodeGraph() );
             if (!graph) {
                 graph = _imp->_nodeGraphArea;
             }
 
             if (graph) {
                 const NodesGuiList & allNodes = graph->getAllActiveNodes();
-
                 std::set<std::string> activeNodesPluginID;
 
                 for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
-                        nodeViewerUi.push_back( *it );
-                        std::string pluginID = (*it)->getNode()->getPluginID();
-                        std::set<std::string>::iterator found = activeNodesPluginID.find(pluginID);
-                        if (found == activeNodesPluginID.end()) {
-                            activeNodesPluginID.insert(pluginID);
-                            activeNodeViewerUi.push_back(*it);
-                        }
+                    nodeViewerUi.push_back( *it );
+                    std::string pluginID = (*it)->getNode()->getPluginID();
+                    std::set<std::string>::iterator found = activeNodesPluginID.find(pluginID);
+                    if ( found == activeNodesPluginID.end() ) {
+                        activeNodesPluginID.insert(pluginID);
+                        activeNodeViewerUi.push_back(*it);
                     }
-                
+                }
             }
         }
     }
 
-    ViewerTab* tab = new ViewerTab(nodeViewerUi,activeNodeViewerUi, this, viewer, where);
+    ViewerTab* tab = new ViewerTab(nodeViewerUi, activeNodeViewerUi, this, viewer, where);
     QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
@@ -1276,10 +1273,11 @@ Gui::createReader()
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadSequenceOpenedDir = QString::fromUtf8( path.c_str() );
 
-        std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
+        QString ext_qs = QtCompat::removeFileExtension(qpattern).toLower();
+        std::string ext = ext_qs.toStdString();
         std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
         if ( found == readersForFormat.end() ) {
-            errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
+            errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding \"%1\" files was found.").arg(ext_qs).toStdString(), false);
         } else {
             CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, group);
             args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, pattern) );

@@ -42,8 +42,6 @@ struct DiskCacheNodePrivate;
 class DiskCacheNode
     : public OutputEffectInstance
 {
-
-
 public:
 
     static EffectInstance* BuildEffect(NodePtr n)

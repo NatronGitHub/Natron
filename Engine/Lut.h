@@ -16,11 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-///
-///// This namespace is kept is synch with what can be found in openfx-io repository. It is used here in Natron for the viewer essentially.
-///
-
-
 #ifndef NATRON_ENGINE_LUT_H
 #define NATRON_ENGINE_LUT_H
 
@@ -32,11 +27,17 @@
 
 #include "Global/Macros.h"
 
+///
+///// This namespace is kept is synch with what can be found in openfx-io repository. It is used here in Natron for the viewer essentially.
+///
+
+
 #include <cmath>
 #include <map>
 #include <string>
 
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
@@ -489,7 +490,6 @@ to_func_srgb(float v)
         return 1.055f * std::pow(v, 1.0f / 2.4f) - 0.055f;
     }
 }
-
 
 // r,g,b values are from 0 to 1
 // h = [0,NATRON_COLOR_HUE_CIRCLE], s = [0,1], v = [0,1]

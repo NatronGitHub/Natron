@@ -16,11 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-/**
- * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
- * doesn't generate the Natron namespace
- **/
-
 #ifndef GLOBALFUNCTIONSWRAPPER_H
 #define GLOBALFUNCTIONSWRAPPER_H
 
@@ -31,6 +26,12 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+/**
+ * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
+ * doesn't generate the Natron namespace
+ **/
+
 #include "Engine/AppManager.h"
 #include "Engine/PyAppInstance.h"
 #include "Global/MemoryInfo.h"

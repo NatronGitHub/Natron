@@ -245,6 +245,7 @@ private:
 
 private:
     KnobLineEdit *_lineEdit; //< if single line
+    Label* _label; // if label and the actual label is an icon
     QWidget* _container; //< only used when multiline is on
     QVBoxLayout* _mainLayout; //< only used when multiline is on
     AnimatingTextEdit *_textEdit; //< if multiline

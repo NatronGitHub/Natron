@@ -196,7 +196,6 @@ public Q_SLOTS:
 
     virtual bool isDraftRenderEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDraftRenderEnabled(bool b) OVERRIDE FINAL;
-
     virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
     virtual bool save(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool saveAs(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -249,7 +249,7 @@ public:
 
     void setNodesBendPointsVisible(bool visible);
 
-    void rearrangeSelectedNodes();
+    bool rearrangeSelectedNodes();
 
     void toggleSelectedNodesEnabled();
 };

@@ -320,7 +320,6 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     , _imp( new TrackerPanelPrivate(this, n) )
 {
     QObject::connect( parent, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
-    
     boost::shared_ptr<TrackerContext> context = getContext();
     QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
                       SLOT(onTimeChanged(SequenceTime,int)) );

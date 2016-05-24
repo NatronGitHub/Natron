@@ -25,12 +25,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "EffectInstance.h"
 
 #include <map>
 #include <list>
 #include <string>
 
+#include <QtCore/QCoreApplication>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QMutex>
 

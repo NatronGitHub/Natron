@@ -25,15 +25,20 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <string>
 #include <cstdarg>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Global/Macros.h"
-
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare)
@@ -240,7 +245,6 @@ public:
     bool getInputsHoldingTransform(std::list<int>* inputs) const;
 
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
-
     static bool ofxCursorToNatronCursor(const std::string& ofxCursor, CursorEnum* cursor);
 
 private:

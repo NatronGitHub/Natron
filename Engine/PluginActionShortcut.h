@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef PLUGINACTIONSHORTCUT_H
 #define PLUGINACTIONSHORTCUT_H
 
@@ -26,32 +25,36 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
+
 NATRON_NAMESPACE_ENTER;
 
 struct PluginActionShortcut
 {
     std::string actionID;
     std::string actionLabel;
-
     KeyboardModifiers modifiers;
     Key key;
 
     PluginActionShortcut()
-    : actionID()
-    , actionLabel()
-    , modifiers(eKeyboardModifierNone)
-    , key(Key_Unknown)
+        : actionID()
+        , actionLabel()
+        , modifiers(eKeyboardModifierNone)
+        , key(Key_Unknown)
     {
-
     }
 
-    PluginActionShortcut(const std::string& id, const std::string& label, Key symbol = Key_Unknown, const KeyboardModifiers& mods = KeyboardModifiers(eKeyboardModifierNone))
-    : actionID(id)
-    , actionLabel(label)
-    , modifiers(mods)
-    , key(symbol)
+    PluginActionShortcut( const std::string& id,
+                          const std::string& label,
+                          Key symbol = Key_Unknown,
+                          const KeyboardModifiers& mods = KeyboardModifiers(eKeyboardModifierNone) )
+        : actionID(id)
+        , actionLabel(label)
+        , modifiers(mods)
+        , key(symbol)
     {}
 };
 

@@ -13,6 +13,11 @@ include(../../global.pri)
 include(../../libs.pri)
 include(../../config.pri)
 
+# hoedown has too many "unused parameter" warnings
+*clang*|*g++*|*xcode {
+  QMAKE_CFLAGS_WARN_ON += -Wno-unused-parameter
+}
+
 OBJECTS_DIR = build
 MOC_DIR = build
 DESTDIR = build

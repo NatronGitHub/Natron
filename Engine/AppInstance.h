@@ -35,7 +35,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-#include <QStringList>
+#include <QtCore/QStringList>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"

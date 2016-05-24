@@ -1834,15 +1834,15 @@ AddKnobDialog::onOkClicked()
 
         try {
             _imp->knob = _imp->isKnobAlias->createDuplicateOnHolder(effect,
-                                                                  page,
-                                                                  shrdGrp,
-                                                                  oldIndexInParent,
-                                                                  true,
-                                                                  stdName,
-                                                                  _imp->labelLineEdit->text().toStdString(),
-                                                                  _imp->tooltipArea->toPlainText().toStdString(),
-                                                                  false,
-                                                                  true);
+                                                                    page,
+                                                                    shrdGrp,
+                                                                    oldIndexInParent,
+                                                                    true,
+                                                                    stdName,
+                                                                    _imp->labelLineEdit->text().toStdString(),
+                                                                    _imp->tooltipArea->toPlainText().toStdString(),
+                                                                    false,
+                                                                    true);
         } catch (const std::exception& e) {
             Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), e.what() );
 
