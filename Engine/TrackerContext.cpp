@@ -483,6 +483,12 @@ TrackerContext::quitTrackerThread_non_blocking()
     _imp->scheduler.quitThread(true);
 }
 
+bool
+TrackerContext::hasTrackerThreadQuit() const
+{
+    return !_imp->scheduler.isRunning();
+}
+
 void
 TrackerContext::quitTrackerThread_blocking(bool allowRestart)
 {

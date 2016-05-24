@@ -179,6 +179,8 @@ public:
 
     void quitTrackerThread_non_blocking();
 
+    bool hasTrackerThreadQuit() const;
+
     void quitTrackerThread_blocking(bool allowRestart);
 
     void beginEditSelection(TrackSelectionReason reason);

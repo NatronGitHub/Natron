@@ -172,6 +172,11 @@ public:
     void quitAnyProcessing_non_blocking();
     void quitAnyProcessing_blocking(bool allowThreadsToRestart);
 
+    /**
+     * @brief Returns true if all processing threads controlled by this node have quit
+     **/
+    bool areAllProcessingThreadsQuit() const;
+
     /* @brief Similar to quitAnyProcessing except that the threads aren't destroyed
      * This is called when a node is deleted by the user
      */

@@ -136,12 +136,14 @@ NodeGraphPrivate::editSelectionFromSelectionRectangle(bool addToSelection)
     }
 }
 
-void
+bool
 NodeGraphPrivate::rearrangeSelectedNodes()
 {
     if ( !_selection.empty() ) {
         _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_selection) );
+        return true;
     }
+    return false;
 }
 
 void

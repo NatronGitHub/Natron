@@ -2355,6 +2355,34 @@ Node::Implementation::checkForExitPreview()
     }
 }
 
+bool
+Node::areAllProcessingThreadsQuit() const
+{
+    {
+        QMutexLocker locker(&_imp->mustQuitPreviewMutex);
+        if (!_imp->previewThreadQuit) {
+            return false;
+        }
+    }
+
+    //If this effect has a RenderEngine, make sure it is finished
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
+
+    if (isOutput) {
+        if (isOutput->getRenderEngine()->hasThreadsAlive()) {
+            return false;
+        }
+    }
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        if (!trackerContext->hasTrackerThreadQuit()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void
 Node::quitAnyProcessing_non_blocking()
 {
@@ -6005,27 +6033,29 @@ Node::destroyNodeInternal(bool fromDest,
         _imp->isBeingDestroyed = true;
     }
 
-
-
-    if (!fromDest) {
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
-        NodesList nodesToWatch;
-        nodesToWatch.push_back(shared_from_this());
-        if (isGrp) {
-            isGrp->getNodes_recursive(nodesToWatch, false);
-        }
-        _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
-        QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
-        boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
-        args->autoReconnect = autoReconnect;
-        _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-
-
-    } else {
-        // Well, we are in the destructor, we better have nothing left to render
-        quitAnyProcessing_blocking(false);
+    bool allProcessingQuit = areAllProcessingThreadsQuit();
+    if (allProcessingQuit) {
         doDestroyNodeInternalEnd(true, false);
-    }
+    } else {
+        if (!fromDest) {
+            NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+            NodesList nodesToWatch;
+            nodesToWatch.push_back(shared_from_this());
+            if (isGrp) {
+                isGrp->getNodes_recursive(nodesToWatch, false);
+            }
+            _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
+            QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
+            boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
+            args->autoReconnect = autoReconnect;
+            _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
+
+        } else {
+            // Well, we are in the destructor, we better have nothing left to render
+            quitAnyProcessing_blocking(false);
+            doDestroyNodeInternalEnd(true, false);
+        }
+    } 
 
 } // Node::destroyNodeInternal
 
