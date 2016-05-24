@@ -54,6 +54,7 @@
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+#include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
 

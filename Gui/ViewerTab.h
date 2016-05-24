@@ -443,6 +443,8 @@ public Q_SLOTS:
 
 private:
 
+    void abortViewersAndRefresh();
+
     void refreshFPSBoxFromClipPreferences();
 
     void onSpinboxFpsChangedInternal(double fps);

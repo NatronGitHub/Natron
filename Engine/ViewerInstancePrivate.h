@@ -144,8 +144,6 @@ public:
         , gammaLookup()
         , lastRenderParamsMutex()
         , lastRenderParams()
-        , currentlyUpdatingOpenGLViewerMutex()
-        , currentlyUpdatingOpenGLViewer(false)
         , partialUpdateRects()
         , viewportCenter()
         , viewportCenterSet(false)
@@ -396,8 +394,6 @@ public:
     //When painting, this is the last texture we've drawn onto so that we can update only the specific portion needed
     mutable QMutex lastRenderParamsMutex;
     boost::shared_ptr<UpdateViewerParams> lastRenderParams[2];
-    mutable QMutex currentlyUpdatingOpenGLViewerMutex;
-    bool currentlyUpdatingOpenGLViewer;
 
     /*
      * @brief If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly

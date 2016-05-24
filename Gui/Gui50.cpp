@@ -824,7 +824,7 @@ Gui::abortAllViewers()
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getNode()->abortAnyProcessing();
+            (*it)->getInternalNode()->getNode()->abortAnyProcessing_non_blocking();
         }
     }
 }

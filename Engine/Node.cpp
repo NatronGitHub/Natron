@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Format.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
@@ -212,7 +213,6 @@ public:
         , inputsMutex()
         , inputs()
         , guiInputs()
-        , mustCopyGuiInputs(false)
         , effect()
         , inputsComponents()
         , outputComponents()
@@ -234,10 +234,11 @@ public:
         , pyPlugGrouping()
         , pyPlugVersion(0)
         , computingPreview(false)
+        , previewThreadQuit(false)
         , computingPreviewMutex()
         , pluginInstanceMemoryUsed(0)
         , memoryUsedMutex()
-        , mustQuitPreview(false)
+        , mustQuitPreview(0)
         , mustQuitPreviewMutex()
         , mustQuitPreviewCond()
         , renderInstancesSharedMutex(QMutex::Recursive)
@@ -289,8 +290,6 @@ public:
         , nodeIsDequeuingCond()
         , nodeIsRendering(0)
         , nodeIsRenderingMutex()
-        , mustQuitProcessing(false)
-        , mustQuitProcessingMutex()
         , persistentMessage()
         , persistentMessageType(0)
         , persistentMessageMutex()
@@ -326,7 +325,9 @@ public:
         gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
     }
 
-    void abortPreview();
+    void abortPreview_non_blocking();
+
+    void abortPreview_blocking(bool allowPreviewRenders);
 
     bool checkForExitPreview();
 
@@ -385,9 +386,6 @@ public:
     ///guiInputs
     InputsV inputs, guiInputs;
 
-    ///Set to true when inputs must be refreshed to reflect the value of guiInputs
-    bool mustCopyGuiInputs;
-
     //to the inputs in a thread-safe manner.
     EffectInstPtr effect;  //< the effect hosted by this node
 
@@ -421,10 +419,11 @@ public:
     std::list<std::string> pyPlugGrouping;
     int pyPlugVersion;
     bool computingPreview;
+    bool previewThreadQuit;
     mutable QMutex computingPreviewMutex;
     size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
     QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
-    bool mustQuitPreview;
+    int mustQuitPreview;
     QMutex mustQuitPreviewMutex;
     QWaitCondition mustQuitPreviewCond;
     QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
@@ -501,8 +500,6 @@ public:
     ///Counter counting how many parallel renders are active on the node
     int nodeIsRendering;
     mutable QMutex nodeIsRenderingMutex;
-    bool mustQuitProcessing;
-    mutable QMutex mustQuitProcessingMutex;
     QString persistentMessage;
     int persistentMessageType;
     mutable QMutex persistentMessageMutex;
@@ -530,7 +527,7 @@ public:
     bool useAlpha0ToConvertFromRGBToRGBA;
     mutable QMutex isBeingDestroyedMutex;
     bool isBeingDestroyed;
-
+    boost::shared_ptr<NodeRenderWatcher> renderWatcher;
     /*
        Used to block render emitions while modifying nodes links
        MT-safe: only accessed/used on main thread
@@ -2307,7 +2304,7 @@ Node::hasOverlay() const
 }
 
 void
-Node::Implementation::abortPreview()
+Node::Implementation::abortPreview_non_blocking()
 {
     bool computing;
     {
@@ -2317,8 +2314,24 @@ Node::Implementation::abortPreview()
 
     if (computing) {
         QMutexLocker l(&mustQuitPreviewMutex);
+        ++mustQuitPreview;
+    }
+}
+
+void
+Node::Implementation::abortPreview_blocking(bool allowPreviewRenders)
+{
+    bool computing;
+    {
+        QMutexLocker locker(&computingPreviewMutex);
+        computing = computingPreview;
+        previewThreadQuit = !allowPreviewRenders;
+    }
+
+    if (computing) {
+        QMutexLocker l(&mustQuitPreviewMutex);
         assert(!mustQuitPreview);
-        mustQuitPreview = true;
+        ++mustQuitPreview;
         while (mustQuitPreview) {
             mustQuitPreviewCond.wait(&mustQuitPreviewMutex);
         }
@@ -2330,8 +2343,8 @@ Node::Implementation::checkForExitPreview()
 {
     {
         QMutexLocker locker(&mustQuitPreviewMutex);
-        if (mustQuitPreview) {
-            mustQuitPreview = false;
+        if (mustQuitPreview || previewThreadQuit) {
+            mustQuitPreview = 0;
             mustQuitPreviewCond.wakeOne();
 
             return true;
@@ -2342,38 +2355,35 @@ Node::Implementation::checkForExitPreview()
 }
 
 void
-Node::abortAnyProcessing()
+Node::quitAnyProcessing_non_blocking()
 {
-    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+
+    //If this effect has a RenderEngine, make sure it is finished
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        isOutput->getRenderEngine()->abortRendering(false, true);
+        isOutput->getRenderEngine()->quitEngine(true);
     }
-    _imp->abortPreview();
-}
 
-void
-Node::setMustQuitProcessing(bool mustQuit)
-{
-    {
-        QMutexLocker k(&_imp->mustQuitProcessingMutex);
-        _imp->mustQuitProcessing = mustQuit;
+    //Returns when the preview is done computign
+    _imp->abortPreview_non_blocking();
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->quitTrackerThread_non_blocking();
     }
-    if ( getRotoContext() ) {
+
+    if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
         for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->setMustQuitProcessing(mustQuit);
+            (*it)->quitAnyProcessing_non_blocking();
         }
     }
-    //Attempt to wake-up  sleeping threads of the thread pool
-    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-    _imp->nodeIsDequeuing = false;
-    _imp->nodeIsDequeuingCond.wakeAll();
 }
 
 void
-Node::quitAnyProcessing()
+Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 {
     {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
@@ -2390,19 +2400,65 @@ Node::quitAnyProcessing()
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine();
+        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        assert(engine);
+        engine->quitEngine(allowThreadsToRestart);
+        engine->waitForEngineToQuit_enforce_blocking();
     }
 
     //Returns when the preview is done computign
-    _imp->abortPreview();
+    _imp->abortPreview_blocking(allowThreadsToRestart);
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
+    }
 
     if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
         for (NodesList::iterator it = rotopaintNodes.begin(); it != rotopaintNodes.end(); ++it) {
-            (*it)->quitAnyProcessing();
+            (*it)->quitAnyProcessing_blocking(allowThreadsToRestart);
         }
     }
+}
+
+void
+Node::abortAnyProcessing_non_blocking()
+{
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+
+    if (isOutput) {
+        isOutput->getRenderEngine()->abortRenderingNoRestart();
+    }
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->abortTracking();
+    }
+
+    _imp->abortPreview_non_blocking();
+}
+
+void
+Node::abortAnyProcessing_blocking()
+{
+    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( getEffectInstance().get() );
+
+    if (isOutput) {
+        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        assert(engine);
+        engine->abortRenderingNoRestart();
+        engine->waitForAbortToComplete_enforce_blocking();
+
+    }
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->abortTracking_blocking();
+    }
+
+    _imp->abortPreview_blocking(false);
 }
 
 Node::~Node()
@@ -5006,7 +5062,6 @@ Node::connectInput(const NodePtr & input,
             _imp->guiInputs[inputNumber] = input;
         } else {
             _imp->guiInputs[inputNumber] = input;
-            _imp->mustCopyGuiInputs = true;
         }
         input->connectOutput( useGuiInputs, shared_from_this() );
     }
@@ -5120,7 +5175,6 @@ Node::replaceInput(const NodePtr& input,
                 curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
-            _imp->mustCopyGuiInputs = true;
         }
         input->connectOutput( useGuiInputs, shared_from_this() );
     }
@@ -5221,7 +5275,6 @@ Node::switchInput0And1()
             input0 = _imp->guiInputs[inputAIndex].lock();
             _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
             _imp->guiInputs[inputBIndex] = input0;
-            _imp->mustCopyGuiInputs = true;
         }
     }
     Q_EMIT inputChanged(inputAIndex);
@@ -5339,7 +5392,6 @@ Node::disconnectInput(int inputNumber)
             _imp->guiInputs[inputNumber].reset();
         } else {
             _imp->guiInputs[inputNumber].reset();
-            _imp->mustCopyGuiInputs = true;
         }
     }
 
@@ -5416,7 +5468,6 @@ Node::disconnectInput(Node* input)
                 _imp->guiInputs[found].reset();
             } else {
                 _imp->guiInputs[found].reset();
-                _imp->mustCopyGuiInputs = true;
             }
         }
         input->disconnectOutput(useGuiValues, this);
@@ -5705,12 +5756,12 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     //quitAnyProcessing();
     if (!beingDestroyed) {
         _imp->effect->abortAnyEvaluation();
-        _imp->abortPreview();
+        _imp->abortPreview_non_blocking();
     }
 
     ///Free all memory used by the plug-in.
 
-    ///COMMENTED-OUT: Don't do this, the node may still be rendering here.
+    ///COMMENTED-OUT: Don't do this, the node may still be rendering here since the abort call is not blocking.
     ///_imp->effect->clearPluginMemoryChunks();
     clearLastRenderedImage();
 
@@ -5718,7 +5769,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         parentCol->notifyNodeDeactivated( shared_from_this() );
     }
 
-    if (hideGui) {
+    if (hideGui && !beingDestroyed) {
         Q_EMIT deactivated(triggerRender);
     }
     {
@@ -5845,30 +5896,44 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     _imp->runOnNodeCreatedCB(true);
 } // activate
 
-void
-Node::destroyNodeInternal(bool fromDest,
-                          bool autoReconnect)
+class NodeDestroyNodeInternalArgs : public GenericWatcherCallerArgs
 {
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if (!_imp->effect) {
-        return;
-    }
+public:
 
-    {
-        QMutexLocker k(&_imp->activatedMutex);
-        _imp->isBeingDestroyed = true;
-    }
+    bool autoReconnect;
 
-    quitAnyProcessing();
+    NodeDestroyNodeInternalArgs()
+    : GenericWatcherCallerArgs()
+    {}
 
+    virtual ~NodeDestroyNodeInternalArgs() {}
+};
+
+void
+Node::onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args)
+{
+    assert(_imp->renderWatcher);
+    assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
+    assert(args);
+    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>(args.get());
+    assert(thisArgs);
+    doDestroyNodeInternalEnd(false, thisArgs->autoReconnect);
+    _imp->renderWatcher.reset();
+}
+
+void
+Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
+{
 
     ///Remove the node from the project
-    deactivate(NodesList(),
-               true,
-               autoReconnect,
-               true,
-               false);
+    if (!fromDest) {
+        deactivate(NodesList(),
+                   true,
+                   autoReconnect,
+                   true,
+                   false);
+    }
 
     {
         boost::shared_ptr<NodeGuiI> guiPtr = _imp->guiPointer.lock();
@@ -5887,7 +5952,7 @@ Node::destroyNodeInternal(bool fromDest,
     ///Quit any rendering
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
     if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine();
+        isOutput->getRenderEngine()->quitEngine(true);
     }
 
     ///Remove all images in the cache associated to this node
@@ -5901,9 +5966,9 @@ Node::destroyNodeInternal(bool fromDest,
 
     ///Disconnect all inputs
     /*int maxInputs = getMaxInputCount();
-       for (int i = 0; i < maxInputs; ++i) {
-       disconnectInput(i);
-       }*/
+     for (int i = 0; i < maxInputs; ++i) {
+     disconnectInput(i);
+     }*/
 
     ///Kill the effect
     _imp->effect->clearPluginMemoryChunks();
@@ -5920,6 +5985,47 @@ Node::destroyNodeInternal(bool fromDest,
             getGroup()->removeNode(thisShared);
         }
     }
+
+}
+
+
+void
+Node::destroyNodeInternal(bool fromDest,
+                          bool autoReconnect)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    if (!_imp->effect) {
+        return;
+    }
+
+    {
+        QMutexLocker k(&_imp->activatedMutex);
+        _imp->isBeingDestroyed = true;
+    }
+
+
+
+    if (!fromDest) {
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
+        NodesList nodesToWatch;
+        nodesToWatch.push_back(shared_from_this());
+        if (isGrp) {
+            isGrp->getNodes_recursive(nodesToWatch, false);
+        }
+        _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
+        QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
+        boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
+        args->autoReconnect = autoReconnect;
+        _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
+
+
+    } else {
+        // Well, we are in the destructor, we better have nothing left to render
+        quitAnyProcessing_blocking(false);
+        doDestroyNodeInternalEnd(true, false);
+    }
+
 } // Node::destroyNodeInternal
 
 void
@@ -6125,7 +6231,7 @@ Node::makePreviewImage(SequenceTime time,
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
 
     NodePtr thisNode = shared_from_this();
-    RenderingFlagSetter flagIsRendering(this);
+    RenderingFlagSetter flagIsRendering(thisNode);
 
 
     {
@@ -6454,22 +6560,6 @@ Node::aborted() const
     return _imp->effect->aborted();
 }
 
-void
-Node::notifyRenderBeingAborted()
-{
-//
-//    if (QThread::currentThread() == qApp->thread()) {
-    ///The render thread is waiting for the main-thread to dequeue actions
-    ///but the main-thread is waiting for the render thread to abort
-    ///cancel the dequeuing
-    QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-
-    if (_imp->nodeIsDequeuing) {
-        _imp->nodeIsDequeuing = false;
-        //Attempt to wake-up  sleeping threads of the thread pool
-        _imp->nodeIsDequeuingCond.wakeAll();
-    }
-}
 
 bool
 Node::message(MessageTypeEnum type,
@@ -8903,29 +8993,20 @@ Node::canOthersConnectToThisNode() const
 }
 
 void
-Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
+Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 {
     ///If marked, we alredy set render args
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-
-    if ( found != markedNodes.end() ) {
-        return;
+    for (std::list<NodeWPtr>::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
+        if (it->lock().get() == this) {
+            return;
+        }
     }
 
     ///Wait for the main-thread to be done dequeuing the connect actions queue
     if ( QThread::currentThread() != qApp->thread() ) {
-        bool mustQuitProcessing;
-        {
-            QMutexLocker k(&_imp->mustQuitProcessingMutex);
-            mustQuitProcessing = _imp->mustQuitProcessing;
-        }
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while (_imp->nodeIsDequeuing && !aborted() && !mustQuitProcessing) {
+        while (_imp->nodeIsDequeuing && !aborted()) {
             _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
-            {
-                QMutexLocker k(&_imp->mustQuitProcessingMutex);
-                mustQuitProcessing = _imp->mustQuitProcessing;
-            }
         }
     }
 
@@ -8937,7 +9018,7 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
 
 
     ///mark this
-    markedNodes.push_back(this);
+    markedNodes.push_back(shared_from_this());
 
     ///Call recursively
 
@@ -8950,15 +9031,34 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
     }
 }
 
-void
-Node::setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes)
+RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
+: node(n)
+, nodes()
 {
-    ///If marked, we alredy set render args
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    n->setNodeIsRendering(nodes);
+}
 
-    if ( found != markedNodes.end() ) {
-        return;
+RenderingFlagSetter::~RenderingFlagSetter()
+{
+    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodePtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        n->unsetNodeIsRendering();
     }
+}
+
+
+void
+Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
+{
+    setNodeIsRenderingInternal(nodes);
+}
+
+void
+Node::unsetNodeIsRendering()
+{
 
     bool mustDequeue;
     {
@@ -8979,36 +9079,6 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes)
     if (mustDequeue) {
         Q_EMIT mustDequeueActions();
     }
-
-
-    ///mark this
-    markedNodes.push_back(this);
-
-    ///Call recursively
-
-    int maxInpu = getMaxInputCount();
-    for (int i = 0; i < maxInpu; ++i) {
-        NodePtr input = getInput(i);
-        if (input) {
-            input->setNodeIsNoLongerRenderingInternal(markedNodes);
-        }
-    }
-}
-
-void
-Node::setNodeIsRendering()
-{
-    std::list<Node*> marked;
-
-    setNodeIsRenderingInternal(marked);
-}
-
-void
-Node::unsetNodeIsRendering()
-{
-    std::list<Node*> marked;
-
-    setNodeIsNoLongerRenderingInternal(marked);
 }
 
 bool
@@ -9062,14 +9132,16 @@ Node::dequeueActions()
         _imp->outputs = _imp->guiOutputs;
     }
 
-    beginInputEdition();
-    hasChanged |= !inputChanges.empty();
-    for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
-        onInputChanged(*it);
+    if (!inputChanges.empty()) {
+        beginInputEdition();
+        hasChanged = true;
+        for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
+            onInputChanged(*it);
+        }
+        endInputEdition(true);
     }
-    endInputEdition(true);
-
     if (hasChanged) {
+        computeHash();
         refreshIdentityState();
     }
 

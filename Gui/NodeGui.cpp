@@ -250,7 +250,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( internalNode->getEffectInstance().get() );
     if (isOutput) {
-        QObject::connect ( isOutput->getRenderEngine(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
+        QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
     ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isOutput);
@@ -1957,12 +1957,13 @@ NodeGui::deactivate(bool triggerRender)
 {
     ///first deactivate all child instance if any
     NodePtr node = getNode();
-    bool isMultiInstanceChild = node->getParentMultiInstance().get() != NULL;
+
+    bool isMultiInstanceChild = node ? node->getParentMultiInstance().get() != NULL : false;
 
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
+    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
     if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
     }

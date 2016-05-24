@@ -559,7 +559,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                                   canAbort,
                                                   rotoPaintNode,
                                                   false, //useTLS
-                                                  boost::shared_ptr<RequestedFrame>(),
+                                                  boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(),
                                                   stats,
                                                   *args[i]);
             }
@@ -597,7 +597,7 @@ ViewerInstance::renderViewer(ViewIdx view,
                              const NodePtr& rotoPaintNode,
                              bool useTLS,
                              boost::shared_ptr<ViewerArgs> args[2],
-                             const boost::shared_ptr<RequestedFrame>& request,
+                             const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                              const boost::shared_ptr<RenderStats>& stats)
 {
     if (!_imp->uiContext) {
@@ -924,6 +924,10 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
             _imp->fillGammaLut(1. / outArgs->params->gamma);
         }
     }
+
+    // Flag that we are going to render
+    outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
+
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
 ViewerInstance::ViewerRenderRetCode
@@ -1225,7 +1229,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       bool /*canAbort*/,
                                       const NodePtr& rotoPaintNode,
                                       bool useTLS,
-                                      const boost::shared_ptr<RequestedFrame>& request,
+                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                       const boost::shared_ptr<RenderStats>& stats,
                                       ViewerArgs& inArgs)
 {
@@ -1273,8 +1277,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     }
 #endif
 
-    // Flag that we are going to render
-    inArgs.isRenderingFlag.reset( new RenderingFlagSetter( getNode().get() ) );
+
 
     assert( !inArgs.params->nbCachedTile || inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
 
@@ -1879,22 +1882,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
     return eViewerRenderRetCodeRender;
 } // renderViewer_internal
-
-void
-ViewerInstance::setCurrentlyUpdatingOpenGLViewer(bool updating)
-{
-    QMutexLocker k(&_imp->currentlyUpdatingOpenGLViewerMutex);
-
-    _imp->currentlyUpdatingOpenGLViewer = updating;
-}
-
-bool
-ViewerInstance::isCurrentlyUpdatingOpenGLViewer() const
-{
-    QMutexLocker k(&_imp->currentlyUpdatingOpenGLViewerMutex);
-
-    return _imp->currentlyUpdatingOpenGLViewer;
-}
 
 void
 ViewerInstance::aboutToUpdateTextures()

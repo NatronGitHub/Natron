@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TLSHolder.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Project.h"
+#include "Engine/GenericSchedulerThreadWatcher.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -107,6 +108,14 @@ public:
     mutable QMutex projectClosingMutex;
     bool projectClosing;
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
+    
+    // only used on the main-thread
+    struct RenderWatcher {
+        boost::shared_ptr<NodeRenderWatcher> watcher;
+        AfterQuitProcessingI* receiver;
+    };
+
+    std::list<RenderWatcher> renderWatchers;
 
     ProjectPrivate(Project* project);
 

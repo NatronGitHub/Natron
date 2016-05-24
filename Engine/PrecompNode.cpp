@@ -685,9 +685,9 @@ PrecompNodePrivate::launchPreRender()
                               false);
 
     if (w.writer) {
-        RenderEngine* engine = w.writer->getRenderEngine();
+        boost::shared_ptr<RenderEngine> engine = w.writer->getRenderEngine();
         if (engine) {
-            QObject::connect( engine, SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
         }
     }
 
@@ -707,9 +707,9 @@ PrecompNode::onPreRenderFinished()
     OutputEffectInstance* writer = dynamic_cast<OutputEffectInstance*>( output->getEffectInstance().get() );
     assert(writer);
     if (writer) {
-        RenderEngine* engine = writer->getRenderEngine();
+        boost::shared_ptr<RenderEngine> engine = writer->getRenderEngine();
         if (engine) {
-            QObject::disconnect( engine, SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
+            QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
         }
     }
     _imp->refreshReadNodeInput();

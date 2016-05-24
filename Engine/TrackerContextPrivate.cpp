@@ -1245,7 +1245,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
        Launch tracking in the scheduler thread.
      */
-    TrackArgs args(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight);
+    boost::shared_ptr<TrackArgs> args(new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight));
     _imp->scheduler.track(args);
 } // TrackerContext::trackMarkers
 

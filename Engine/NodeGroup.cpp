@@ -251,42 +251,6 @@ NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
     }
 }
 
-void
-NodeCollection::notifyRenderBeingAborted()
-{
-    QMutexLocker k(&_imp->nodesMutex);
-
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->notifyRenderBeingAborted();
-        NodeGroup* isGrp = (*it)->isEffectGroup();
-        if (isGrp) {
-            isGrp->notifyRenderBeingAborted();
-        }
-        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->notifyRenderBeingAborted();
-        }
-    }
-}
-
-static void
-setMustQuitProcessingRecursive(bool mustQuit,
-                               NodeCollection* grp)
-{
-    NodesList nodes = grp->getNodes();
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->setMustQuitProcessing(mustQuit);
-        NodeGroup* isGrp = (*it)->isEffectGroup();
-        if (isGrp) {
-            setMustQuitProcessingRecursive(mustQuit, isGrp);
-        }
-        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
-        if (isPrecomp) {
-            setMustQuitProcessingRecursive( mustQuit, isPrecomp->getPrecompApp()->getProject().get() );
-        }
-    }
-}
 
 static void
 quitAnyProcessingInternal(NodeCollection* grp)
@@ -294,7 +258,7 @@ quitAnyProcessingInternal(NodeCollection* grp)
     NodesList nodes = grp->getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->quitAnyProcessing();
+        (*it)->quitAnyProcessing_non_blocking();
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             quitAnyProcessingInternal(isGrp);
@@ -307,11 +271,9 @@ quitAnyProcessingInternal(NodeCollection* grp)
 }
 
 void
-NodeCollection::quitAnyProcessingForAllNodes()
+NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 {
-    setMustQuitProcessingRecursive(true, this);
     quitAnyProcessingInternal(this);
-    setMustQuitProcessingRecursive(false, this);
 }
 
 bool
@@ -429,9 +391,12 @@ NodeCollection::clearNodes(bool emitSignal)
         nodesToDelete = _imp->nodes;
     }
 
-    ///First quit any processing
+    ///Clear recursively containers inside this group
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-        (*it)->quitAnyProcessing();
+
+        // You should have called quitAnyProcessing before!
+        assert(!(*it)->isNodeRendering());
+        
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             isGrp->clearNodes(emitSignal);

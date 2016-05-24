@@ -883,8 +883,8 @@ Gui::onTimelineTimeAboutToChange()
     assert( QThread::currentThread() == qApp->thread() );
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        RenderEngine* engine = (*it)->getInternalNode()->getRenderEngine();
-        engine->abortRendering(true, false);
+        boost::shared_ptr<RenderEngine> engine = (*it)->getInternalNode()->getRenderEngine();
+        engine->abortRenderingAutoRestart();
     }
 }
 

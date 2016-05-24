@@ -377,9 +377,33 @@ AppManager::~AppManager()
     delete qApp;
 }
 
-void
-AppManager::quit(AppInstance* instance)
+class QuitInstanceArgs : public GenericWatcherCallerArgs
 {
+    
+public:
+    
+    AppInstance* instance;
+    
+    QuitInstanceArgs()
+    : GenericWatcherCallerArgs()
+    , instance(0)
+    {
+        
+    }
+    
+    virtual ~QuitInstanceArgs() {}
+};
+
+void
+AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+{
+    QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>(args.get());
+    if (!inArgs) {
+        return;
+    }
+
+    AppInstance* instance = inArgs->instance;
+
     instance->aboutToQuit();
 
     int nbApps;
@@ -397,6 +421,14 @@ AppManager::quit(AppInstance* instance)
         qApp->quit();
     }
     delete instance;
+}
+
+void
+AppManager::quit(AppInstance* instance)
+{
+    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    args->instance = instance;
+    instance->getProject()->quitAnyProcessingForAllNodes(this, args);
 }
 
 void
@@ -934,7 +966,7 @@ AppManager::abortAnyProcessing()
     }
 
     for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->getProject()->quitAnyProcessingForAllNodes();
+        it->second.app->getProject()->quitAnyProcessingForAllNodes_non_blocking();
     }
 }
 

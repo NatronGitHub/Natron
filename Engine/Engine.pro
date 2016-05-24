@@ -94,6 +94,8 @@ SOURCES += \
     FrameKey.cpp \
     FrameParamsSerialization.cpp \
     FStreamsSupport.cpp \
+    GenericSchedulerThread.cpp \
+    GenericSchedulerThreadWatcher.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -233,6 +235,7 @@ SOURCES += \
 
 HEADERS += \
     AbortableRenderInfo.h \
+    AfterQuitProcessingI.h \
     AppInstance.h \
     AppManager.h \
     AppManagerPrivate.h \
@@ -273,6 +276,8 @@ HEADERS += \
     FrameParamsSerialization.h \
     FStreamsSupport.h \
     fstream_mingw.h \
+    GenericSchedulerThread.h \
+    GenericSchedulerThreadWatcher.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \

@@ -692,7 +692,10 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
 
                 if (isButton) {
                     if ( isButton->getIsCheckable() ) {
-                        isButton->onValueChanged(!isButton->getValue(), ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                        isButton->setValue(!isButton->getValue(), ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+
+                        //Refresh the button state, because the setValue with reason eValueChangedReasonUserEdited will skip refreshing the UI
+                        isButton->getSignalSlotHandler()->s_valueChanged(ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
                         ret = true;
                     } else {
                         ret = isButton->trigger();

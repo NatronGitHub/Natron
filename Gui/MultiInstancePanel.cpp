@@ -1781,7 +1781,7 @@ TrackerPanelV1::TrackerPanelV1(const boost::shared_ptr<NodeGui> & node)
 
 TrackerPanelV1::~TrackerPanelV1()
 {
-    _imp->scheduler.quitThread();
+    _imp->scheduler.quitThread(false);
 }
 
 void
@@ -2129,7 +2129,7 @@ TrackerPanelV1::trackForward(ViewerInstance* /*viewer*/)
 void
 TrackerPanelV1::stopTracking()
 {
-    _imp->scheduler.abortTracking();
+    _imp->scheduler.abortThreadedTask();
 }
 
 bool

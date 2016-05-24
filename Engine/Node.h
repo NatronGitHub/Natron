@@ -166,23 +166,17 @@ public:
 
     void refreshAcceptedBitDepths();
 
-    /*@brief Quit all processing done by all render instances of this node
-       This is called when the effect is about to be deleted pluginsly
-     */
-    void setMustQuitProcessing(bool mustQuit);
-
     /**
-     * @brief Quits any processing on going on this node and waits until done
-     * After this call all threads launched by this node are stopped.
-     * This is called when clearing all nodes of the project (see Project::reset) or when calling
-     * AppManager::abortAnyProcessing()
+     * @brief Quits any processing on going on this node, this call is non blocking
      **/
-    void quitAnyProcessing();
+    void quitAnyProcessing_non_blocking();
+    void quitAnyProcessing_blocking(bool allowThreadsToRestart);
 
     /* @brief Similar to quitAnyProcessing except that the threads aren't destroyed
      * This is called when a node is deleted by the user
      */
-    void abortAnyProcessing();
+    void abortAnyProcessing_non_blocking();
+    void abortAnyProcessing_blocking();
 
     /*Never call this yourself. This is needed by OfxEffectInstance so the pointer to the live instance
      * is set earlier.
@@ -696,6 +690,8 @@ private:
 
     void destroyNodeInternal(bool fromDest, bool autoReconnect);
 
+    void doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect);
+
 public:
 
 
@@ -707,12 +703,6 @@ public:
     /*@brief The derived class should query this to abort any long process
        in the engine function.*/
     bool aborted() const;
-
-    /**
-     * @brief Called externally when the rendering is aborted. You should never
-     * call this yourself.
-     **/
-    void notifyRenderBeingAborted();
 
     bool makePreviewByDefault() const;
 
@@ -1011,7 +1001,7 @@ public:
     bool hasAnimatedKnob() const;
 
 
-    void setNodeIsRendering();
+    void setNodeIsRendering(std::list<NodeWPtr>& nodes);
     void unsetNodeIsRendering();
 
     /**
@@ -1316,6 +1306,8 @@ private:
 public Q_SLOTS:
 
 
+    void onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args);
+
     void onRefreshIdentityStateRequestReceived();
 
     void setKnobsAge(U64 newAge);
@@ -1451,8 +1443,7 @@ private:
     std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
 
-    void setNodeIsRenderingInternal(std::list<Node*>& markedNodes);
-    void setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes);
+    void setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes);
 
 
     /**
@@ -1511,20 +1502,14 @@ public:
 
 class RenderingFlagSetter
 {
-    Node* node;
+    NodeWPtr node;
+    std::list<NodeWPtr> nodes;
 
 public:
 
-    RenderingFlagSetter(Node* n)
-        : node(n)
-    {
-        node->setNodeIsRendering();
-    }
+    RenderingFlagSetter(const NodePtr& n);
 
-    ~RenderingFlagSetter()
-    {
-        node->unsetNodeIsRendering();
-    }
+    ~RenderingFlagSetter();
 };
 
 NATRON_NAMESPACE_EXIT;

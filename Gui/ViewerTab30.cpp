@@ -908,17 +908,7 @@ ViewerTab::setInputA(int index)
     _imp->firstInputImage->setCurrentIndex(comboboxIndex);
     _imp->viewerNode->setInputA(index);
 
-    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* viewer = (*it)->getInternalNode();
-        if (viewer) {
-            RenderEngine* engine = viewer->getRenderEngine();
-            if ( engine && engine->hasThreadsWorking() ) {
-                engine->abortRendering(true, false);
-                engine->renderCurrentFrame(false, true);
-            }
-        }
-    }
+    abortViewersAndRefresh();
 }
 
 void
@@ -936,18 +926,7 @@ ViewerTab::setInputB(int index)
     }
     _imp->secondInputImage->setCurrentIndex(comboboxIndex);
     _imp->viewerNode->setInputB(index);
-
-    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* viewer = (*it)->getInternalNode();
-        if (viewer) {
-            RenderEngine* engine = viewer->getRenderEngine();
-            if ( engine && engine->hasThreadsWorking() ) {
-                engine->abortRendering(true, false);
-                engine->renderCurrentFrame(false, true);
-            }
-        }
-    }
+    abortViewersAndRefresh();
 }
 
 void
@@ -980,17 +959,7 @@ ViewerTab::switchInputAAndB()
     _imp->viewerNode->setInputA(inputBIndex);
     _imp->viewerNode->setInputB(inputAIndex);
 
-    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* viewer = (*it)->getInternalNode();
-        if (viewer) {
-            RenderEngine* engine = viewer->getRenderEngine();
-            if ( engine && engine->hasThreadsWorking() ) {
-                engine->abortRendering(true, false);
-            }
-            engine->renderCurrentFrame(false, true);
-        }
-    }
+    abortViewersAndRefresh();
 }
 
 ///Called when the user change the combobox choice
@@ -1007,17 +976,7 @@ ViewerTab::onFirstInputNameChanged(const QString & text)
     }
     _imp->viewerNode->setInputA(inputIndex);
 
-    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* viewer = (*it)->getInternalNode();
-        if (viewer) {
-            RenderEngine* engine = viewer->getRenderEngine();
-            if (engine) {
-                engine->abortRendering(true, false);
-                engine->renderCurrentFrame(false, true);
-            }
-        }
-    }
+    abortViewersAndRefresh();
 }
 
 ///Called when the user change the combobox choice
@@ -1048,17 +1007,7 @@ ViewerTab::onSecondInputNameChanged(const QString & text)
             }
         }
     }
-    const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();
-    for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        ViewerInstance* viewer = (*it)->getInternalNode();
-        if (viewer) {
-            RenderEngine* engine = viewer->getRenderEngine();
-            if (engine) {
-                engine->abortRendering(true, false);
-                engine->renderCurrentFrame(false, true);
-            }
-        }
-    }
+    abortViewersAndRefresh();
 }
 
 ///This function is called only when the user changed inputs on the node graph

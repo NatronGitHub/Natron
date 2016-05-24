@@ -53,6 +53,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTimer>
 #include <QtCore/QThreadPool>
+#include <QtCore/QThread>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryFile>
 #include <QtCore/QFileInfo>
@@ -1664,6 +1665,25 @@ Project::resetProject()
     }
 }
 
+class ResetWatcherArgs : public GenericWatcherCallerArgs
+{
+public:
+    
+    bool aboutToQuit;
+    
+    ResetWatcherArgs()
+    : GenericWatcherCallerArgs()
+    , aboutToQuit(false)
+    {
+        
+    }
+    
+    virtual ~ResetWatcherArgs()
+    {
+        
+    }
+};
+
 void
 Project::reset(bool aboutToQuit)
 {
@@ -1672,9 +1692,18 @@ Project::reset(bool aboutToQuit)
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
     }
+    
+    boost::shared_ptr<ResetWatcherArgs> args(new ResetWatcherArgs());
+    args->aboutToQuit = aboutToQuit;
+    quitAnyProcessingForAllNodes(this, args);
 
+} // Project::reset
+
+void
+Project::doResetEnd(bool aboutToQuit)
+{
     _imp->runOnProjectCloseCallback();
-
+    
     QString lockFilePath = getLockAbsoluteFilePath();
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
@@ -1690,8 +1719,10 @@ Project::reset(bool aboutToQuit)
             }
         }
     }
+    
+    
     clearNodes(!aboutToQuit);
-
+    
     if (!aboutToQuit) {
         {
             QMutexLocker l(&_imp->projectLock);
@@ -1704,28 +1735,83 @@ Project::reset(bool aboutToQuit)
             _imp->additionalFormats.clear();
         }
         getApp()->removeAllKeyframesIndicators();
-
+        
         Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
         const KnobsVec & knobs = getKnobs();
-
+        
         beginChanges();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int j = 0; j < knobs[i]->getDimension(); ++j) {
                 knobs[i]->resetToDefaultValue(j);
             }
         }
-
-
+        
+        
         onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), true);
-
+        
         endChanges(true);
     }
-
+    
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = false;
     }
-} // Project::reset
+
+}
+
+void
+Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    
+    NodesList nodesToWatch;
+    getNodes_recursive(nodesToWatch, false);
+    boost::shared_ptr<NodeRenderWatcher> renderWatcher(new NodeRenderWatcher(nodesToWatch));
+    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
+    ProjectPrivate::RenderWatcher p;
+    p.receiver = receiver;
+    p.watcher = renderWatcher;
+    _imp->renderWatchers.push_back(p);
+    renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
+
+}
+
+void
+Project::onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args)
+{
+    NodeRenderWatcher* watcher = dynamic_cast<NodeRenderWatcher*>(sender());
+    assert(watcher);
+    if (!watcher) {
+        return;
+    }
+    assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
+
+    std::list<ProjectPrivate::RenderWatcher>::iterator found = _imp->renderWatchers.end();
+    for (std::list<ProjectPrivate::RenderWatcher>::iterator it = _imp->renderWatchers.begin(); it!=_imp->renderWatchers.end(); ++it) {
+        if (it->watcher.get() == watcher) {
+            found = it;
+            break;
+        }
+    }
+    assert(found != _imp->renderWatchers.end());
+
+    if (found != _imp->renderWatchers.end()) {
+        _imp->renderWatchers.erase(found);
+        found->receiver->afterQuitProcessingCallback(args);
+    }
+
+    
+}
+
+void
+Project::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+{
+    ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>(args.get());
+    if (inArgs) {
+        doResetEnd(inArgs->aboutToQuit);
+    }
+}
+
 
 bool
 Project::isAutoSetProjectFormatEnabled() const

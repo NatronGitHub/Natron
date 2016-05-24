@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef PREVIEWTHREAD_H
-#define PREVIEWTHREAD_H
+
+#ifndef AFTERQUITPROCESSINGI_H
+#define AFTERQUITPROCESSINGI_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,46 +26,30 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#include <QtCore/QThread>
-#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
-
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#endif
-
-#include "Engine/GenericSchedulerThread.h"
-
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct PreviewThreadPrivate;
-class PreviewThread
-    : public GenericSchedulerThread
+/**
+ * @brief This class is used to be able to perform an action after a call to Project::quitAnyProcessingForAllNodes has been made.
+ **/
+
+class AfterQuitProcessingI
 {
 public:
-    PreviewThread();
 
-    virtual ~PreviewThread();
+    AfterQuitProcessingI() {}
 
-    void appendToQueue(const NodeGuiPtr& node, double time);
+    virtual ~AfterQuitProcessingI() {}
 
-private:
+protected:
 
-    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return eTaskQueueBehaviorProcessInOrder;
-    }
 
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
-    boost::scoped_ptr<PreviewThreadPrivate> _imp;
+    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) = 0;
+
+    friend class Project;
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // PREVIEWTHREAD_H
+#endif // AFTERQUITPROCESSINGI_H

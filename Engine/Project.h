@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Knob.h"
 #include "Engine/Format.h"
 #include "Engine/TimeLine.h"
@@ -59,7 +60,7 @@ NATRON_NAMESPACE_ENTER;
 struct ProjectPrivate;
 
 class Project
-    :  public KnobHolder, public NodeCollection,  public boost::noncopyable, public boost::enable_shared_from_this<Project>
+    :  public KnobHolder, public NodeCollection, public AfterQuitProcessingI, public boost::noncopyable, public boost::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -286,6 +287,18 @@ public:
     void resetProject();
 
 
+    /**
+    * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
+    * This is called only when calling AppManager::abortAnyProcessing()
+    **/
+    void quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
+
+private:
+
+    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+
+public:
+
     struct TreeOutput
     {
         NodePtr node;
@@ -317,6 +330,8 @@ public:
     void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
 
 public Q_SLOTS:
+
+    void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
 
     void onAutoSaveTimerTriggered();
 
@@ -363,6 +378,8 @@ private:
      * @brief Resets the project state clearing all nodes and the project name.
      **/
     void reset(bool aboutToQuit);
+
+    void doResetEnd(bool aboutToQuit);
 
     /**
      * @brief Must be implemented to initialize any knob using the
