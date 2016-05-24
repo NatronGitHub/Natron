@@ -41,7 +41,7 @@
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-App::App(AppInstance* instance)
+App::App(const AppInstPtr& instance)
     : Group()
     , _instance(instance)
 {
@@ -53,13 +53,13 @@ App::App(AppInstance* instance)
 int
 App::getAppID() const
 {
-    return _instance->getAppID();
+    return getInternalApp()->getAppID();
 }
 
-AppInstance*
+AppInstPtr
 App::getInternalApp() const
 {
-    return _instance;
+    return _instance.lock();
 }
 
 boost::shared_ptr<NodeCollection>
@@ -86,7 +86,7 @@ App::getCollectionFromGroup(Group* group) const
     }
 
     if (!collection) {
-        collection = boost::dynamic_pointer_cast<NodeCollection>( _instance->getProject() );
+        collection = boost::dynamic_pointer_cast<NodeCollection>( getInternalApp()->getProject() );
     }
 
     return collection;
@@ -104,7 +104,7 @@ App::createNode(const QString& pluginID,
     CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, collection);
     args.majorV = majorVersion;
 
-    NodePtr node = _instance->createNode(args);
+    NodePtr node = getInternalApp()->createNode(args);
     if (node) {
         return new Effect(node);
     } else {
@@ -119,7 +119,7 @@ App::createReader(const QString& filename,
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
 
     assert(collection);
-    NodePtr node = _instance->createReader(filename.toStdString(), eCreateNodeReasonInternal, collection);
+    NodePtr node = getInternalApp()->createReader(filename.toStdString(), eCreateNodeReasonInternal, collection);
     if (node) {
         return new Effect(node);
     } else {
@@ -134,7 +134,7 @@ App::createWriter(const QString& filename,
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
 
     assert(collection);
-    NodePtr node = _instance->createWriter(filename.toStdString(), eCreateNodeReasonInternal, collection);
+    NodePtr node = getInternalApp()->createWriter(filename.toStdString(), eCreateNodeReasonInternal, collection);
     if (node) {
         return new Effect(node);
     } else {
@@ -145,7 +145,7 @@ App::createWriter(const QString& filename,
 int
 App::timelineGetTime() const
 {
-    return _instance->getTimeLine()->currentFrame();
+    return getInternalApp()->getTimeLine()->currentFrame();
 }
 
 int
@@ -153,7 +153,7 @@ App::timelineGetLeftBound() const
 {
     double left, right;
 
-    _instance->getFrameRange(&left, &right);
+    getInternalApp()->getFrameRange(&left, &right);
 
     return left;
 }
@@ -163,7 +163,7 @@ App::timelineGetRightBound() const
 {
     double left, right;
 
-    _instance->getFrameRange(&left, &right);
+    getInternalApp()->getFrameRange(&left, &right);
 
     return right;
 }
@@ -264,7 +264,7 @@ App::renderInternal(bool forceBlocking,
 
     std::list<AppInstance::RenderWork> l;
     l.push_back(w);
-    _instance->startWritersRendering(forceBlocking, l);
+    getInternalApp()->startWritersRendering(forceBlocking, l);
 }
 
 void
@@ -308,13 +308,13 @@ App::renderInternal(bool forceBlocking,
 
         l.push_back(w);
     }
-    _instance->startWritersRendering(forceBlocking, l);
+    getInternalApp()->startWritersRendering(forceBlocking, l);
 }
 
 Param*
 App::getProjectParam(const QString& name) const
 {
-    KnobPtr knob =  _instance->getProject()->getKnobByName( name.toStdString() );
+    KnobPtr knob =  getInternalApp()->getProject()->getKnobByName( name.toStdString() );
 
     if (!knob) {
         return 0;
@@ -326,39 +326,39 @@ App::getProjectParam(const QString& name) const
 void
 App::writeToScriptEditor(const QString& message)
 {
-    _instance->appendToScriptEditor( message.toStdString() );
+    getInternalApp()->appendToScriptEditor( message.toStdString() );
 }
 
 void
 App::addFormat(const QString& formatSpec)
 {
-    if ( !_instance->getProject()->addFormat( formatSpec.toStdString() ) ) {
-        _instance->appendToScriptEditor( formatSpec.toStdString() );
+    if ( !getInternalApp()->getProject()->addFormat( formatSpec.toStdString() ) ) {
+        getInternalApp()->appendToScriptEditor( formatSpec.toStdString() );
     }
 }
 
 bool
 App::saveTempProject(const QString& filename)
 {
-    return _instance->saveTemp( filename.toStdString() );
+    return getInternalApp()->saveTemp( filename.toStdString() );
 }
 
 bool
 App::saveProject(const QString& filename)
 {
-    return _instance->save( filename.toStdString() );
+    return getInternalApp()->save( filename.toStdString() );
 }
 
 bool
 App::saveProjectAs(const QString& filename)
 {
-    return _instance->saveAs( filename.toStdString() );
+    return getInternalApp()->saveAs( filename.toStdString() );
 }
 
 App*
 App::loadProject(const QString& filename)
 {
-    AppInstance* app  = _instance->loadProject( filename.toStdString() );
+    AppInstPtr app  = getInternalApp()->loadProject( filename.toStdString() );
 
     if (!app) {
         return 0;
@@ -371,21 +371,21 @@ App::loadProject(const QString& filename)
 bool
 App::resetProject()
 {
-    return _instance->resetProject();
+    return getInternalApp()->resetProject();
 }
 
 ///Reset + close window, quit if last window
 bool
 App::closeProject()
 {
-    return _instance->closeProject();
+    return getInternalApp()->closeProject();
 }
 
 ///Opens a new window
 App*
 App::newProject()
 {
-    AppInstance* app  = _instance->newProject();
+    AppInstPtr app  = getInternalApp()->newProject();
 
     if (!app) {
         return 0;
@@ -398,7 +398,7 @@ std::list<QString>
 App::getViewNames() const
 {
     std::list<QString> ret;
-    const std::vector<std::string>& v = _instance->getProject()->getProjectViewNames();
+    const std::vector<std::string>& v = getInternalApp()->getProject()->getProjectViewNames();
 
     for (std::size_t i = 0; i < v.size(); ++i) {
         ret.push_back( QString::fromUtf8( v[i].c_str() ) );
@@ -410,7 +410,7 @@ App::getViewNames() const
 void
 App::addProjectLayer(const ImageLayer& layer)
 {
-    _instance->getProject()->addProjectDefaultLayer( layer.getInternalComps() );
+    getInternalApp()->getProject()->addProjectDefaultLayer( layer.getInternalComps() );
 }
 
 NATRON_PYTHON_NAMESPACE_EXIT;

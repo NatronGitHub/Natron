@@ -65,13 +65,6 @@ enum AppInstanceStatusEnum
     eAppInstanceStatusActive     //< the app is active and can be used
 };
 
-struct AppInstanceRef
-{
-    AppInstance* app;
-    AppInstanceStatusEnum status;
-};
-
-
 class GlobalOFXTLS
 {
 public:
@@ -86,6 +79,8 @@ public:
     {
     }
 };
+
+typedef std::vector<AppInstPtr> AppInstanceVec;
 
 struct AppManagerPrivate;
 class AppManager
@@ -141,12 +136,12 @@ public:
 
     bool isLoaded() const;
 
-    AppInstance* newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
-    AppInstance* newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstPtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstPtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 
 private:
 
-    AppInstance* newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
+    AppInstPtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
 
 public:
 
@@ -165,9 +160,7 @@ public:
 #endif
                                   ) const;
 
-    void registerAppInstance(AppInstance* app);
-
-    AppInstance* getAppInstance(int appID) const WARN_UNUSED_RETURN;
+    AppInstPtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
     int getNumInstances() const WARN_UNUSED_RETURN;
 
@@ -175,8 +168,8 @@ public:
 
     void setAsTopLevelInstance(int appID);
 
-    const std::map<int, AppInstanceRef> & getAppInstances() const WARN_UNUSED_RETURN;
-    AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
+    const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
+    AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
     QMutex* getMutexForPlugin(const QString & pluginId, int major, int minor) const WARN_UNUSED_RETURN;
     Plugin* getPluginBinary(const QString & pluginId,
@@ -324,7 +317,7 @@ public:
     /**
      * @brief Called when the instance is exited
      **/
-    void quit(AppInstance* instance);
+    void quit(const AppInstPtr& instance);
 
     /*
        @brief Calls quit() on all AppInstance's
@@ -523,7 +516,6 @@ public:
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
 
-    bool hasThreadsRendering() const;
 
     /**
      * @brief Return the concatenation of all search paths of Natron, i.e:
@@ -635,7 +627,7 @@ protected:
     template <typename PLUGIN>
     void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
 
-    virtual AppInstance* makeNewInstance(int appID) const;
+    virtual AppInstPtr makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {
     }

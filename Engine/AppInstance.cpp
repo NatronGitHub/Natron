@@ -196,17 +196,11 @@ AppInstance::AppInstance(int appID)
     : QObject()
     , _imp( new AppInstancePrivate(appID, this) )
 {
-    appPTR->registerAppInstance(this);
-    appPTR->setAsTopLevelInstance(appID);
 
-
-    ///initialize the knobs of the project before loading anything else.
-    _imp->_currentProject->initializeKnobsPublic();
 }
 
 AppInstance::~AppInstance()
 {
-    appPTR->removeInstance(_imp->_appID);
     _imp->_currentProject->clearNodes(false);
 }
 
@@ -544,6 +538,16 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
 
 void
 AppInstance::load(const CLArgs& cl,
+                  bool makeEmptyInstance)
+{
+    // Initialize the knobs of the project before loading anything else.
+    _imp->_currentProject->initializeKnobsPublic();
+    
+    loadInternal(cl, makeEmptyInstance);
+}
+
+void
+AppInstance::loadInternal(const CLArgs& cl,
                   bool makeEmptyInstance)
 {
     declareCurrentAppVariable_Python();
@@ -1862,13 +1866,12 @@ AppInstance::aboutToQuit()
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
     _imp->_currentProject->closeProject(true);
-    _imp->_currentProject->discardAppPointer();
 }
 
 void
 AppInstance::quit()
 {
-    appPTR->quit(this);
+    appPTR->quit(shared_from_this());
 }
 
 ViewerColorSpaceEnum
@@ -2065,13 +2068,13 @@ AppInstance::saveAs(const std::string& filename)
     return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
 }
 
-AppInstance*
+AppInstPtr
 AppInstance::loadProject(const std::string& filename)
 {
     QFileInfo file( QString::fromUtf8( filename.c_str() ) );
 
     if ( !file.exists() ) {
-        return 0;
+        return AppInstPtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QChar::fromLatin1('/');
@@ -2082,12 +2085,12 @@ AppInstance::loadProject(const std::string& filename)
 
     bool ok  = project->loadProject( path, fileUnPathed);
     if (ok) {
-        return this;
+        return shared_from_this();
     }
 
     project->resetProject();
 
-    return 0;
+    return AppInstPtr();
 }
 
 ///Close the current project but keep the window
@@ -2110,11 +2113,11 @@ AppInstance::closeProject()
 }
 
 ///Opens a new project
-AppInstance*
+AppInstPtr
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl, false);
+    AppInstPtr app = appPTR->newAppInstance(cl, false);
 
     return app;
 }

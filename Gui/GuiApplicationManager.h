@@ -210,7 +210,7 @@ private:
     virtual void loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
                                         std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap) OVERRIDE;
     virtual bool initGui(const CLArgs& args) OVERRIDE FINAL;
-    virtual AppInstance* makeNewInstance(int appID) const OVERRIDE FINAL;
+    virtual AppInstPtr makeNewInstance(int appID) const OVERRIDE FINAL;
     virtual void registerGuiMetaTypes() const OVERRIDE FINAL;
     virtual void initializeQApp(int &argc, char **argv)  OVERRIDE FINAL;
 

@@ -327,10 +327,10 @@ AppManager::~AppManager()
         appsEmpty = _imp->_appInstances.empty();
     }
     while (!appsEmpty) {
-        AppInstance* front = 0;
+        AppInstPtr front;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
-            front = _imp->_appInstances.begin()->second.app;
+            front = _imp->_appInstances.front();
         }
         if (front) {
             front->quit();
@@ -382,11 +382,11 @@ class QuitInstanceArgs : public GenericWatcherCallerArgs
     
 public:
     
-    AppInstance* instance;
+    AppInstWPtr instance;
     
     QuitInstanceArgs()
     : GenericWatcherCallerArgs()
-    , instance(0)
+    , instance()
     {
         
     }
@@ -402,29 +402,28 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
         return;
     }
 
-    AppInstance* instance = inArgs->instance;
+    AppInstPtr instance = inArgs->instance.lock();
 
     instance->aboutToQuit();
 
-    int nbApps;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        std::map<int, AppInstanceRef>::iterator found = _imp->_appInstances.find( instance->getAppID() );
-        assert( found != _imp->_appInstances.end() );
-        found->second.status = eAppInstanceStatusInactive;
-        nbApps = (int)_imp->_appInstances.size();
-    }
+    appPTR->removeInstance(instance->getAppID());
+
+    int nbApps = getNumInstances();
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.
     if (nbApps == 1) {
         assert(qApp);
         qApp->quit();
     }
-    delete instance;
+    
+    // This should kill the AppInstance
+    instance.reset();
+    
+
 }
 
 void
-AppManager::quit(AppInstance* instance)
+AppManager::quit(const AppInstPtr& instance)
 {
     boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
     args->instance = instance;
@@ -441,10 +440,10 @@ AppManager::quitApplication()
     }
 
     while (!appsEmpty) {
-        AppInstance* app = 0;
+        AppInstPtr app;
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
-            app = _imp->_appInstances.begin()->second.app;
+            app = _imp->_appInstances.front();
         }
         if (app) {
             quit(app);
@@ -706,7 +705,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         args = cl;
     }
 
-    AppInstance* mainInstance = newAppInstance(args, false);
+    AppInstPtr mainInstance = newAppInstance(args, false);
 
     hideSplashScreen();
 
@@ -720,9 +719,9 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
                ( _imp->_appType == eAppTypeBackgroundAutoRunLaunchedFromGui) ||
                ( _imp->_appType == eAppTypeInterpreter) ) && mainInstance ) {
             bool wasKilled = true;
-            const std::map<int, AppInstanceRef>& instances = appPTR->getAppInstances();
-            for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-                if ( (it->second.app == mainInstance) && (it->second.status == eAppInstanceStatusActive) ) {
+            const AppInstanceVec& instances = appPTR->getAppInstances();
+            for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+                if ( (*it == mainInstance) ) {
                     wasKilled = false;
                 }
             }
@@ -745,18 +744,26 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 } // AppManager::loadInternalAfterInitGui
 
-AppInstance*
+AppInstPtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
                                    bool alwaysBackground,
                                    bool makeEmptyInstance)
 {
-    AppInstance* instance;
+    AppInstPtr instance;
 
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance = new AppInstance(_imp->_availableID);
+        instance.reset(new AppInstance(_imp->_availableID));
     }
+    
+    {
+        QMutexLocker k(&_imp->_appInstancesMutex);
+        _imp->_appInstances.push_back(instance);
+    }
+    
+    setAsTopLevelInstance(instance->getAppID());
+    
     ++_imp->_availableID;
 
     try {
@@ -764,17 +771,17 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     } catch (const std::exception & e) {
         Dialogs::errorDialog( NATRON_APPLICATION_NAME, e.what(), false );
         removeInstance(_imp->_availableID);
-        delete instance;
+        instance.reset();
         --_imp->_availableID;
 
-        return NULL;
+        return instance;
     } catch (...) {
         Dialogs::errorDialog( NATRON_APPLICATION_NAME, tr("Cannot load project").toStdString(), false );
         removeInstance(_imp->_availableID);
-        delete instance;
+        instance.reset();
         --_imp->_availableID;
 
-        return NULL;
+        return instance;
     }
 
     ///flag that we finished loading the Appmanager even if it was already true
@@ -783,47 +790,43 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     return instance;
 }
 
-AppInstance*
+AppInstPtr
 AppManager::newBackgroundInstance(const CLArgs& cl,
                                   bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, true, makeEmptyInstance);
 }
 
-AppInstance*
+AppInstPtr
 AppManager::newAppInstance(const CLArgs& cl,
                            bool makeEmptyInstance)
 {
     return newAppInstanceInternal(cl, false, makeEmptyInstance);
 }
 
-AppInstance*
+AppInstPtr
 AppManager::getAppInstance(int appID) const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
-    std::map<int, AppInstanceRef>::const_iterator it;
-
-    it = _imp->_appInstances.find(appID);
-    if ( it != _imp->_appInstances.end() ) {
-        return it->second.app;
-    } else {
-        return NULL;
+    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
+        if ((*it)->getAppID() == appID) {
+            return *it;
+        }
     }
+    return AppInstPtr();
 }
 
 int
 AppManager::getNumInstances() const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
-
     return (int)_imp->_appInstances.size();
 }
 
-const std::map<int, AppInstanceRef> &
+const AppInstanceVec &
 AppManager::getAppInstances() const
 {
     assert( QThread::currentThread() == qApp->thread() );
-
     return _imp->_appInstances;
 }
 
@@ -833,10 +836,17 @@ AppManager::removeInstance(int appID)
     int newApp = -1;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
-        _imp->_appInstances.erase(appID);
-        if ( !_imp->_appInstances.empty() ) {
-            newApp = _imp->_appInstances.begin()->first;
+        for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
+            if ((*it)->getAppID() == appID) {
+                _imp->_appInstances.erase(it);
+                break;
+            }
         }
+
+        if ( !_imp->_appInstances.empty() ) {
+            newApp = _imp->_appInstances.front()->getAppID();
+        }
+        
     }
 
     if (newApp != -1) {
@@ -874,14 +884,14 @@ AppManager::clearDiskCache()
 void
 AppManager::clearNodeCache()
 {
-    std::map<int, AppInstanceRef> copy;
+    AppInstanceVec copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->clearAllLastRenderedImages();
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->clearAllLastRenderedImages();
     }
     _imp->_nodeCache->clear();
 }
@@ -895,14 +905,14 @@ AppManager::clearPluginsLoadedCache()
 void
 AppManager::clearAllCaches()
 {
-    std::map<int, AppInstanceRef> copy;
+    AppInstanceVec copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->abortAllViewers();
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->abortAllViewers();
     }
 
     clearDiskCache();
@@ -910,12 +920,12 @@ AppManager::clearAllCaches()
 
 
     ///for each app instance clear all its nodes cache
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->clearOpenFXPluginsCaches();
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->clearOpenFXPluginsCaches();
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->renderAllViewers(true);
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->renderAllViewers(true);
     }
 
     Project::clearAutoSavesDir();
@@ -937,17 +947,17 @@ AppManager::wipeAndCreateDiskCacheStructure()
     _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() );
 }
 
-AppInstance*
+AppInstPtr
 AppManager::getTopLevelInstance () const
 {
-    QMutexLocker k(&_imp->_appInstancesMutex);
-    std::map<int, AppInstanceRef>::const_iterator it = _imp->_appInstances.find(_imp->_topLevelInstanceID);
 
-    if ( it == _imp->_appInstances.end() ) {
-        return NULL;
-    } else {
-        return it->second.app;
+    QMutexLocker k(&_imp->_appInstancesMutex);
+    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
+        if ((*it)->getAppID() == _imp->_topLevelInstanceID) {
+            return *it;
+        }
     }
+    return AppInstPtr();
 }
 
 bool
@@ -959,14 +969,14 @@ AppManager::isLoaded() const
 void
 AppManager::abortAnyProcessing()
 {
-    std::map<int, AppInstanceRef> copy;
+    AppInstanceVec copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->getProject()->quitAnyProcessingForAllNodes_non_blocking();
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->getProject()->quitAnyProcessingForAllNodes_non_blocking();
     }
 }
 
@@ -989,17 +999,6 @@ AppManager::writeToOutputPipe(const QString & longMessage,
     return true;
 }
 
-void
-AppManager::registerAppInstance(AppInstance* app)
-{
-    AppInstanceRef ref;
-
-    ref.app = app;
-    ref.status = eAppInstanceStatusActive;
-
-    QMutexLocker k(&_imp->_appInstancesMutex);
-    _imp->_appInstances.insert( std::make_pair(app->getAppID(), ref) );
-}
 
 void
 AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
@@ -1388,7 +1387,7 @@ addToPythonPathFunctor(const QDir& directory)
     if (!ok) {
         std::string message = QCoreApplication::translate("AppManager", "Could not add %1 to python path:").arg( directory.absolutePath() ).toStdString() + ' ' + err;
         std::cerr << message << std::endl;
-        AppInstance* topLevel = appPTR->getTopLevelInstance();
+        AppInstPtr topLevel = appPTR->getTopLevelInstance();
         if (topLevel) {
             topLevel->appendToScriptEditor( message.c_str() );
         }
@@ -1654,19 +1653,18 @@ AppManager::setAsTopLevelInstance(int appID)
         return;
     }
     _imp->_topLevelInstanceID = appID;
-    for (std::map<int, AppInstanceRef>::iterator it = _imp->_appInstances.begin();
+    for (AppInstanceVec::iterator it = _imp->_appInstances.begin();
          it != _imp->_appInstances.end();
          ++it) {
-        if (it->first != _imp->_topLevelInstanceID) {
+        if ((*it)->getAppID() != _imp->_topLevelInstanceID) {
             if ( !isBackground() ) {
-                it->second.app->disconnectViewersFromViewerCache();
+                (*it)->disconnectViewersFromViewerCache();
             }
         } else {
             if ( !isBackground() ) {
-                if (it->second.app) {
-                    it->second.app->connectViewersToViewerCache();
-                    setOFXHostHandle( it->second.app->getOfxHostOSHandle() );
-                }
+                (*it)->connectViewersToViewerCache();
+                setOFXHostHandle( (*it)->getOfxHostOSHandle() );
+                
             }
         }
     }
@@ -2024,10 +2022,10 @@ AppManager::setLoadingStatus(const QString & str)
     std::cout << str.toStdString() << std::endl;
 }
 
-AppInstance*
+AppInstPtr
 AppManager::makeNewInstance(int appID) const
 {
-    return new AppInstance(appID);
+    return AppInstPtr(new AppInstance(appID));
 }
 
 void
@@ -2117,28 +2115,28 @@ AppManager::decreaseNCacheFilesOpened()
 void
 AppManager::onMaxPanelsOpenedChanged(int maxPanels)
 {
-    std::map<int, AppInstanceRef> copy;
+    AppInstanceVec copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->onMaxPanelsOpenedChanged(maxPanels);
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->onMaxPanelsOpenedChanged(maxPanels);
     }
 }
 
 void
 AppManager::onQueueRendersChanged(bool queuingEnabled)
 {
-    std::map<int, AppInstanceRef> copy;
+    AppInstanceVec copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->onRenderQueuingChanged(queuingEnabled);
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->onRenderQueuingChanged(queuingEnabled);
     }
 }
 
@@ -2199,10 +2197,10 @@ AppManager::clearOfxLog_mt_safe()
 void
 AppManager::exitApp(bool /*warnUserForSave*/)
 {
-    const std::map<int, AppInstanceRef> & instances = getAppInstances();
+    const AppInstanceVec & instances = getAppInstances();
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        it->second.app->quit();
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        (*it)->quit();
     }
 }
 
@@ -2315,14 +2313,14 @@ AppManager::onOCIOConfigPathChanged(const std::string& path)
 {
     _imp->currentOCIOConfigPath = path;
 
-    std::map<int, AppInstanceRef> copy;
+    AppInstanceVec copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->onOCIOConfigPathChanged(path);
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->onOCIOConfigPathChanged(path);
     }
 }
 
@@ -2857,14 +2855,14 @@ AppManager::wasProjectCreatedDuringRC2Or3() const
 void
 AppManager::toggleAutoHideGraphInputs()
 {
-    std::map<int, AppInstanceRef> copy;
+    AppInstanceVec copy;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         copy = _imp->_appInstances;
     }
 
-    for (std::map<int, AppInstanceRef>::iterator it = copy.begin(); it != copy.end(); ++it) {
-        it->second.app->toggleAutoHideGraphInputs();
+    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
+        (*it)->toggleAutoHideGraphInputs();
     }
 }
 
@@ -2890,14 +2888,14 @@ AppManager::isProjectAlreadyOpened(const std::string& projectFilePath) const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
 
-    for (std::map<int, AppInstanceRef>::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        boost::shared_ptr<Project> proj = it->second.app->getProject();
+    for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        boost::shared_ptr<Project> proj = (*it)->getProject();
         if (proj) {
             QString path = proj->getProjectPath();
             QString name = proj->getProjectFilename();
             std::string existingProject = path.toStdString() + name.toStdString();
             if (existingProject == projectFilePath) {
-                return it->first;
+                return (*it)->getAppID();
             }
         }
     }
@@ -3016,23 +3014,6 @@ AppManager::getAppTLS() const
     return &_imp->globalTLS;
 }
 
-bool
-AppManager::hasThreadsRendering() const
-{
-    std::map<int, AppInstanceRef> copy;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        copy = _imp->_appInstances;
-    }
-
-    for (std::map<int, AppInstanceRef>::const_iterator it = copy.begin(); it != copy.end(); ++it) {
-        if ( it->second.app->getProject()->hasNodeRendering() ) {
-            return true;
-        }
-    }
-
-    return false;
-}
 
 bool
 AppManager::hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError) const
@@ -3092,7 +3073,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, useHtml);
     } else {
@@ -3107,7 +3088,7 @@ Dialogs::errorDialog(const std::string & title,
                      bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->errorDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3121,7 +3102,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, useHtml);
     } else {
@@ -3136,7 +3117,7 @@ Dialogs::warningDialog(const std::string & title,
                        bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->warningDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3150,7 +3131,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, useHtml);
     } else {
@@ -3165,7 +3146,7 @@ Dialogs::informationDialog(const std::string & title,
                            bool useHtml)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         topLvlInstance->informationDialog(title, message, stopAsking, useHtml);
     } else {
@@ -3181,7 +3162,7 @@ Dialogs::questionDialog(const std::string & title,
                         StandardButtonEnum defaultButton)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton);
     } else {
@@ -3201,7 +3182,7 @@ Dialogs::questionDialog(const std::string & title,
                         bool* stopAsking)
 {
     appPTR->hideSplashScreen();
-    AppInstance* topLvlInstance = appPTR->getTopLevelInstance();
+    AppInstPtr topLvlInstance = appPTR->getTopLevelInstance();
     if ( topLvlInstance && !appPTR->isBackground() ) {
         return topLvlInstance->questionDialog(title, message, useHtml, buttons, defaultButton, stopAsking);
     } else {

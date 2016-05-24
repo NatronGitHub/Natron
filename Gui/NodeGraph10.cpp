@@ -307,7 +307,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
 
         assert( getGui() );
-        GuiAppInstance* guiApp = getGui()->getApp();
+        GuiAppInstPtr guiApp = getGui()->getApp();
         assert(guiApp);
         boost::shared_ptr<Project> project = guiApp->getProject();
         assert(project);

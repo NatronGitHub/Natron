@@ -62,7 +62,7 @@ public:
     Gui* _gui; //< ptr to the public interface
     mutable QMutex _isInDraftModeMutex;
     bool _isInDraftMode; //< true if the user is actively moving the cursor on the timeline or a slider. False on mouse release.
-    GuiAppInstance* _appInstance; //< ptr to the appInstance
+    boost::weak_ptr<GuiAppInstance> _appInstance; //< ptr to the appInstance
 
     ///Dialogs handling members
     QWaitCondition _uiUsingMainThreadCond; //< used with _uiUsingMainThread
@@ -253,7 +253,7 @@ public:
     bool keyUpEventHasVisitedFocusWidget;
     bool applicationConsoleVisible;
 
-    GuiPrivate(GuiAppInstance* app,
+    GuiPrivate(const GuiAppInstPtr& app,
                Gui* gui);
 
     void restoreGuiGeometry();

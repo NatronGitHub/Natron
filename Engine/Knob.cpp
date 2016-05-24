@@ -1654,7 +1654,7 @@ KnobHelper::evaluateValueChangeInternal(int dimension,
                                         ValueChangedReasonEnum reason,
                                         ValueChangedReasonEnum originalReason)
 {
-    AppInstance* app = 0;
+    AppInstPtr app;
 
     if (_imp->holder) {
         app = _imp->holder->getApp();
@@ -2608,7 +2608,7 @@ KnobHelper::setExpressionInternal(int dimension,
             EXPR_RECURSION_LEVEL();
             _imp->parseListenersFromExpression(dimension);
         } else {
-            AppInstance* app = getHolder()->getApp();
+            AppInstPtr app = getHolder()->getApp();
             if (app) {
                 app->addInvalidExpressionKnob( shared_from_this() );
             }
@@ -4488,7 +4488,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
 
 struct KnobHolder::KnobHolderPrivate
 {
-    AppInstance* app;
+    AppInstWPtr app;
     QMutex knobsMutex;
     std::vector< KnobPtr > knobs;
     bool knobsInitialized;
@@ -4519,7 +4519,7 @@ struct KnobHolder::KnobHolderPrivate
     bool hasAnimation;
     DockablePanelI* settingsPanel;
 
-    KnobHolderPrivate(AppInstance* appInstance_)
+    KnobHolderPrivate(const AppInstPtr& appInstance_)
         : app(appInstance_)
         , knobsMutex()
         , knobs()
@@ -4548,7 +4548,7 @@ struct KnobHolder::KnobHolderPrivate
     }
 };
 
-KnobHolder::KnobHolder(AppInstance* appInstance)
+KnobHolder::KnobHolder(const AppInstPtr& appInstance)
     : QObject()
     , _imp( new KnobHolderPrivate(appInstance) )
 {
@@ -5559,10 +5559,10 @@ KnobHolder::setMultipleParamsEditLevel(KnobHolder::MultipleParamsEditEnum level)
     }
 }
 
-AppInstance*
+AppInstPtr
 KnobHolder::getApp() const
 {
-    return _imp->app;
+    return _imp->app.lock();
 }
 
 void
@@ -5580,7 +5580,7 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback,
                                    double time)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    AppInstance* app = getApp();
+    AppInstPtr app = getApp();
     if ( !app || app->isGuiFrozen() ) {
         return;
     }
@@ -5886,12 +5886,6 @@ double
 KnobHolder::getCurrentTime() const
 {
     return getApp() ? getApp()->getTimeLine()->currentFrame() : 0;
-}
-
-void
-KnobHolder::discardAppPointer()
-{
-    _imp->app = 0;
 }
 
 int

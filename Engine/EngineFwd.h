@@ -253,6 +253,8 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+typedef boost::weak_ptr<AppInstance> AppInstWPtr;
+typedef boost::shared_ptr<AppInstance> AppInstPtr;
 typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
 typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
 typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;

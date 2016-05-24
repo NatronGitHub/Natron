@@ -1121,10 +1121,10 @@ GuiApplicationManager::setCurrentLogicalDPI(double dpiX,
 void
 GuiApplicationManager::updateAboutWindowLibrariesVersion()
 {
-    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+    const AppInstanceVec& instances = getAppInstances();
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>(it->get());
         if (isGuiInstance) {
             Gui* gui = isGuiInstance->getGui();
             if (gui) {

@@ -69,7 +69,7 @@ public:
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;
-    std::map<int, AppInstanceRef> _appInstances; //< the instances mapped against their ID
+    std::vector<AppInstPtr> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings

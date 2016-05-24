@@ -105,7 +105,14 @@ private:
 public:
 
     virtual void aboutToQuit() OVERRIDE FINAL;
-    virtual void load(const CLArgs& cl, bool makeEmptyInstance) OVERRIDE FINAL;
+    
+private:
+    
+    virtual void loadInternal(const CLArgs& cl, bool makeEmptyInstance) OVERRIDE FINAL;
+    
+public:
+    
+    
     Gui* getGui() const WARN_UNUSED_RETURN;
 
 
@@ -199,7 +206,7 @@ public Q_SLOTS:
     virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
     virtual bool save(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool saveAs(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual AppInstance* loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AppInstPtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Close the current project but keep the window
     virtual bool resetProject()  OVERRIDE FINAL;
@@ -208,7 +215,7 @@ public Q_SLOTS:
     virtual bool closeProject()  OVERRIDE FINAL;
 
     ///Opens a new window
-    virtual AppInstance* newProject()  OVERRIDE FINAL;
+    virtual AppInstPtr newProject()  OVERRIDE FINAL;
 
     void handleFileOpenEvent(const std::string& filename);
 

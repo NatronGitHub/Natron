@@ -106,7 +106,7 @@ public:
 
     void getPrecompInputs(NodesList* nodes) const;
 
-    AppInstance* getPrecompApp() const;
+    AppInstPtr getPrecompApp() const;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
 public Q_SLOTS:

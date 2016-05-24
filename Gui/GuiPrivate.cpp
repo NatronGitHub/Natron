@@ -132,7 +132,7 @@ GCC_DIAG_ON(unused-parameter)
 
 
 NATRON_NAMESPACE_ENTER;
-GuiPrivate::GuiPrivate(GuiAppInstance* app,
+GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
                        Gui* gui)
     : _gui(gui)
     , _isInDraftModeMutex()
@@ -396,7 +396,7 @@ GuiPrivate::createNodeGraphGui()
     QGraphicsScene* scene = new QGraphicsScene(_gui);
 
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
-    _nodeGraphArea = new NodeGraph(_gui, _appInstance->getProject(), scene, _gui);
+    _nodeGraphArea = new NodeGraph(_gui, _appInstance.lock()->getProject(), scene, _gui);
     _nodeGraphArea->setScriptName(kNodeGraphObjectName);
     _nodeGraphArea->setLabel( tr("Node Graph").toStdString() );
     _nodeGraphArea->setVisible(false);
@@ -406,7 +406,7 @@ GuiPrivate::createNodeGraphGui()
 void
 GuiPrivate::createCurveEditorGui()
 {
-    _curveEditor = new CurveEditor(_gui, _appInstance->getTimeLine(), _gui);
+    _curveEditor = new CurveEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
     _curveEditor->setScriptName(kCurveEditorObjectName);
     _curveEditor->setLabel( tr("Curve Editor").toStdString() );
     _curveEditor->setVisible(false);
@@ -416,7 +416,7 @@ GuiPrivate::createCurveEditorGui()
 void
 GuiPrivate::createDopeSheetGui()
 {
-    _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance->getTimeLine(), _gui);
+    _dopeSheetEditor = new DopeSheetEditor(_gui, _appInstance.lock()->getTimeLine(), _gui);
     _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
     _dopeSheetEditor->setLabel( tr("Dope Sheet").toStdString() );
     _dopeSheetEditor->setVisible(false);
@@ -589,7 +589,7 @@ bool
 GuiPrivate::checkProjectLockAndWarn(const QString& projectPath,
                                     const QString& projectName)
 {
-    boost::shared_ptr<Project> project = _appInstance->getProject();
+    boost::shared_ptr<Project> project = _appInstance.lock()->getProject();
     QString author;
     QString lockCreationDate;
     QString lockHost;
