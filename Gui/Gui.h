@@ -614,10 +614,11 @@ public Q_SLOTS:
 
     void createNewViewer();
 
-    void connectInput();
+    void connectAInput();
     void connectBInput();
 
-    void connectInput(int inputNb);
+    void connectInput(int inputNb, bool isASide);
+    void connectAInput(int inputNb);
     void connectBInput(int inputNb);
 
 

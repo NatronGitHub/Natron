@@ -486,7 +486,7 @@ Gui::selectNode(NodeGuiPtr node)
 }
 
 void
-Gui::connectInput(int inputNb)
+Gui::connectInput(int inputNb, bool isASide)
 {
     NodeGraph* graph = 0;
 
@@ -495,11 +495,11 @@ Gui::connectInput(int inputNb)
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    graph->connectCurrentViewerToSelection(inputNb);
+    graph->connectCurrentViewerToSelection(inputNb, isASide);
 }
 
 void
-Gui::connectInput()
+Gui::connectAInput()
 {
     QAction* action = qobject_cast<QAction*>( sender() );
 
@@ -507,16 +507,19 @@ Gui::connectInput()
         return;
     }
     int inputNb = action->data().toInt();
-    connectInput(inputNb);
+    connectAInput(inputNb);
+}
+
+void
+Gui::connectAInput(int inputNb)
+{
+    connectInput(inputNb, true);
 }
 
 void
 Gui::connectBInput(int inputNb)
 {
-#pragma message WARN("TODO: Gui::connectBInput()")
-    qDebug() << "Gui::connectBInput" << inputNb;
-
-    return connectInput(inputNb);
+    connectInput(inputNb, false);
 }
 
 void

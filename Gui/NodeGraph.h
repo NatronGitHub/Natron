@@ -177,7 +177,7 @@ public Q_SLOTS:
 
     void deleteSelection();
 
-    void connectCurrentViewerToSelection(int inputNB);
+    void connectCurrentViewerToSelection(int inputNB, bool isASide);
 
     void updateCacheSizeText();
 
