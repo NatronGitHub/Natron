@@ -41,13 +41,12 @@
 
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
-#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
-#include "Engine/ThreadPool.h"
+#include "Engine/GenericSchedulerThread.h"
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 
@@ -110,7 +109,9 @@ class TrackerContextPrivate;
 class TrackerContext
     : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
 {
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -172,7 +173,13 @@ public:
 
     void abortTracking();
 
+    void abortTracking_blocking();
+
     bool isCurrentlyTracking() const;
+
+    void quitTrackerThread_non_blocking();
+
+    void quitTrackerThread_blocking(bool allowRestart);
 
     void beginEditSelection(TrackSelectionReason reason);
 
@@ -406,48 +413,8 @@ private:
     boost::scoped_ptr<TrackerContextPrivate> _imp;
 };
 
-class TrackSchedulerBase
-    : public QThread
-#ifdef QT_CUSTOM_THREADPOOL
-      , public AbortableThread
-#endif
-{
-    Q_OBJECT
-
-public:
-
-    TrackSchedulerBase();
-
-    virtual ~TrackSchedulerBase() {}
-
-    void emit_trackingStarted(int step)
-    {
-        Q_EMIT trackingStarted(step);
-    }
-
-    void emit_trackingFinished( )
-    {
-        Q_EMIT trackingFinished();
-    }
-
-private Q_SLOTS:
-
-    void doRenderCurrentFrameForViewer(ViewerInstance* viewer);
-
-
-Q_SIGNALS:
-
-    void trackingStarted(int step);
-
-    void trackingFinished();
-
-    void trackingProgress(double progress);
-
-    void renderCurrentFrameForViewer(ViewerInstance* viewer);
-};
-
 struct TrackArgsPrivate;
-class TrackArgs
+class TrackArgs : public GenericThreadStartArgs
 {
 public:
 
@@ -467,7 +434,7 @@ public:
     TrackArgs(const TrackArgs& other);
     void operator=(const TrackArgs& other);
 
-    ~TrackArgs();
+    virtual ~TrackArgs();
 
     double getFormatHeight() const;
     double getFormatWidth() const;
@@ -497,8 +464,13 @@ private:
 
 struct TrackSchedulerPrivate;
 class TrackScheduler
-    : public TrackSchedulerBase
+    : public GenericSchedulerThread
 {
+
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
 
@@ -512,17 +484,46 @@ public:
      * @param start the first frame to track, if forward is true then start < end otherwise start > end
      * @param end the next frame after the last frame to track (a la STL iterators), if forward is true then end > start
      **/
-    void track(const TrackArgs& args);
+    void track(const boost::shared_ptr<TrackArgs>& args)
+    {
+        startTask(args);
+    }
 
-    void abortTracking();
+    void emit_trackingStarted(int step)
+    {
+        Q_EMIT trackingStarted(step);
+    }
 
-    void quitThread();
+    void emit_trackingFinished( )
+    {
+        Q_EMIT trackingFinished();
+    }
 
-    bool isWorking() const;
+private Q_SLOTS:
+
+    void doRenderCurrentFrameForViewer(ViewerInstance* viewer);
+
+
+Q_SIGNALS:
+
+    void trackingStarted(int step);
+
+    void trackingFinished();
+
+    void trackingProgress(double progress);
+
+    void renderCurrentFrameForViewer(ViewerInstance* viewer);
 
 private:
 
-    virtual void run() OVERRIDE FINAL;
+    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return eTaskQueueBehaviorSkipToMostRecent;
+    }
+
+    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;
 };
 

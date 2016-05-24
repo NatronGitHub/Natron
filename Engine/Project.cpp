@@ -1695,7 +1695,7 @@ Project::reset(bool aboutToQuit)
     
     boost::shared_ptr<ResetWatcherArgs> args(new ResetWatcherArgs());
     args->aboutToQuit = aboutToQuit;
-    quitAnyProcessingForAllNodes(this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int, WatcherCallerArgsPtr)), args);
+    quitAnyProcessingForAllNodes(this, args);
 
 } // Project::reset
 
@@ -1760,15 +1760,18 @@ Project::doResetEnd(bool aboutToQuit)
 }
 
 void
-Project::quitAnyProcessingForAllNodes(QObject* receiver, const char* member, const WatcherCallerArgsPtr& args)
+Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args)
 {
     assert(QThread::currentThread() == qApp->thread());
     
     NodesList nodesToWatch;
     getNodes_recursive(nodesToWatch, false);
     boost::shared_ptr<NodeRenderWatcher> renderWatcher(new NodeRenderWatcher(nodesToWatch));
-    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), receiver, member, Qt::UniqueConnection);
-    _imp->renderWatchers.push_back(renderWatcher);
+    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
+    ProjectPrivate::RenderWatcher p;
+    p.receiver = receiver;
+    p.watcher = renderWatcher;
+    _imp->renderWatchers.push_back(p);
     renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
 
 }
@@ -1781,21 +1784,34 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerA
     if (!watcher) {
         return;
     }
-  
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
+
+    std::list<ProjectPrivate::RenderWatcher>::iterator found = _imp->renderWatchers.end();
+    for (std::list<ProjectPrivate::RenderWatcher>::iterator it = _imp->renderWatchers.begin(); it!=_imp->renderWatchers.end(); ++it) {
+        if (it->watcher.get() == watcher) {
+            found = it;
+            break;
+        }
+    }
+    assert(found != _imp->renderWatchers.end());
+
+    if (found != _imp->renderWatchers.end()) {
+        _imp->renderWatchers.erase(found);
+        found->receiver->afterQuitProcessingCallback(args);
+    }
+
+    
+}
+
+void
+Project::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+{
     ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>(args.get());
     if (inArgs) {
         doResetEnd(inArgs->aboutToQuit);
     }
-    
-    for (std::list<boost::shared_ptr<NodeRenderWatcher> >::iterator it = _imp->renderWatchers.begin(); it!=_imp->renderWatchers.end(); ++it) {
-        if (it->get() == watcher) {
-            _imp->renderWatchers.erase(it);
-            break;
-        }
-    }
-    
 }
+
 
 bool
 Project::isAutoSetProjectFormatEnabled() const

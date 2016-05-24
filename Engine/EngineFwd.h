@@ -99,6 +99,7 @@ NATRON_NAMESPACE_ENTER;
 class AbortableRenderInfo;
 class AbortableThread;
 class AbstractOfxEffectInstance;
+class AfterQuitProcessingI;
 class AppInstance;
 class AppTLS;
 class Bezier;

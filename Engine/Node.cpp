@@ -2372,6 +2372,11 @@ Node::quitAnyProcessing_non_blocking()
     //Returns when the preview is done computign
     _imp->abortPreview_non_blocking();
 
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->quitTrackerThread_non_blocking();
+    }
+
     if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
@@ -2408,6 +2413,11 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     //Returns when the preview is done computign
     _imp->abortPreview_blocking(allowThreadsToRestart);
 
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
+    }
+
     if ( isRotoPaintingNode() ) {
         NodesList rotopaintNodes;
         getRotoContext()->getRotoPaintTreeNodes(&rotopaintNodes);
@@ -2425,6 +2435,12 @@ Node::abortAnyProcessing_non_blocking()
     if (isOutput) {
         isOutput->getRenderEngine()->abortRenderingNoRestart();
     }
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->abortTracking();
+    }
+
     _imp->abortPreview_non_blocking();
 }
 
@@ -2440,6 +2456,12 @@ Node::abortAnyProcessing_blocking()
         engine->waitForAbortToComplete_enforce_blocking();
 
     }
+
+    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    if (trackerContext) {
+        trackerContext->abortTracking_blocking();
+    }
+
     _imp->abortPreview_blocking(false);
 }
 
@@ -5914,11 +5936,13 @@ Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
 {
 
     ///Remove the node from the project
-    deactivate(NodesList(),
-               true,
-               autoReconnect,
-               true,
-               false);
+    if (!fromDest) {
+        deactivate(NodesList(),
+                   true,
+                   autoReconnect,
+                   true,
+                   false);
+    }
 
     {
         boost::shared_ptr<NodeGuiI> guiPtr = _imp->guiPointer.lock();

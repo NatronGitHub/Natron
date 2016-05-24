@@ -235,6 +235,7 @@ SOURCES += \
 
 HEADERS += \
     AbortableRenderInfo.h \
+    AfterQuitProcessingI.h \
     AppInstance.h \
     AppManager.h \
     AppManagerPrivate.h \

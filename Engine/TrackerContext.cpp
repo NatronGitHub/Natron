@@ -51,6 +51,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
 
+#define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 500
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -465,7 +467,27 @@ TrackerContext::isCurrentlyTracking() const
 void
 TrackerContext::abortTracking()
 {
-    _imp->scheduler.abortTracking();
+    _imp->scheduler.abortThreadedTask();
+}
+
+void
+TrackerContext::abortTracking_blocking()
+{
+    _imp->scheduler.abortThreadedTask();
+    _imp->scheduler.waitForAbortToComplete_enforce_blocking();
+}
+
+void
+TrackerContext::quitTrackerThread_non_blocking()
+{
+    _imp->scheduler.quitThread(true);
+}
+
+void
+TrackerContext::quitTrackerThread_blocking(bool allowRestart)
+{
+    _imp->scheduler.quitThread(allowRestart);
+    _imp->scheduler.waitForThreadToQuit_enforce_blocking();
 }
 
 void
@@ -1441,7 +1463,7 @@ void
 TrackerContext::onSchedulerTrackingProgress(double progress)
 {
     if ( !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
-        _imp->scheduler.abortTracking();
+        _imp->scheduler.abortThreadedTask();
     }
 }
 
@@ -1642,59 +1664,17 @@ struct TrackSchedulerPrivate
 {
     TrackerParamsProvider* paramsProvider;
     NodeWPtr node;
-    mutable QMutex mustQuitMutex;
-    bool mustQuit;
-    QWaitCondition mustQuitCond;
-    mutable QMutex abortRequestedMutex;
-    int abortRequested;
-    QWaitCondition abortRequestedCond;
-    QMutex startRequesstMutex;
-    int startRequests;
-    QWaitCondition startRequestsCond;
-    mutable QMutex isWorkingMutex;
-    bool isWorking;
-    QMutex argsMutex;
-    TrackArgs curArgs, requestedArgs;
-
 
     TrackSchedulerPrivate(TrackerParamsProvider* paramsProvider,
                           const NodeWPtr& node)
-        : paramsProvider(paramsProvider)
-        , node(node)
-        , mustQuitMutex()
-        , mustQuit(false)
-        , mustQuitCond()
-        , abortRequestedMutex()
-        , abortRequested(0)
-        , abortRequestedCond()
-        , startRequesstMutex()
-        , startRequests(0)
-        , startRequestsCond()
-        , isWorkingMutex()
-        , isWorking(false)
-        , argsMutex()
-        , curArgs()
-        , requestedArgs()
+    : paramsProvider(paramsProvider)
+    , node(node)
     {
     }
 
     NodePtr getNode() const
     {
         return node.lock();
-    }
-
-    bool checkForExit()
-    {
-        QMutexLocker k(&mustQuitMutex);
-
-        if (mustQuit) {
-            mustQuit = false;
-            mustQuitCond.wakeAll();
-
-            return true;
-        }
-
-        return false;
     }
 
     /*
@@ -1705,24 +1685,17 @@ struct TrackSchedulerPrivate
     static bool trackStepFunctor(int trackIndex, const TrackArgs& args, int time);
 };
 
-TrackSchedulerBase::TrackSchedulerBase()
-    : QThread()
-#ifdef QT_CUSTOM_THREADPOOL
-    , AbortableThread(this)
-#endif
+
+TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
+                               const NodeWPtr& node)
+    : GenericSchedulerThread()
+    , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
 {
     QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
 
 #ifdef QT_CUSTOM_THREADPOOL
     setThreadName("TrackScheduler");
 #endif
-}
-
-TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
-                               const NodeWPtr& node)
-    : TrackSchedulerBase()
-    , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
-{
 }
 
 TrackScheduler::~TrackScheduler()
@@ -1760,14 +1733,6 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     return ret;
 }
 
-bool
-TrackScheduler::isWorking() const
-{
-    QMutexLocker k(&_imp->isWorkingMutex);
-
-    return _imp->isWorking;
-}
-
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class IsTrackingFlagSetter_RAII
@@ -1777,14 +1742,14 @@ class IsTrackingFlagSetter_RAII
 private:
     ViewerInstance* _v;
     EffectInstPtr _effect;
-    TrackSchedulerBase* _base;
+    TrackScheduler* _base;
     bool _reportProgress;
     bool _doPartialUpdates;
 
 public:
 
     IsTrackingFlagSetter_RAII(const EffectInstPtr& effect,
-                              TrackSchedulerBase* base,
+                              TrackScheduler* base,
                               int step,
                               bool reportProgress,
                               ViewerInstance* viewer,
@@ -1817,268 +1782,183 @@ public:
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
-void
-TrackScheduler::run()
+GenericSchedulerThread::ThreadStateEnum
+TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 {
-    for (;; ) {
-        ///Check for exit of the thread
-        if ( _imp->checkForExit() ) {
-            return;
+
+    boost::shared_ptr<TrackArgs> args = boost::dynamic_pointer_cast<TrackArgs>(inArgs);
+    assert(args);
+
+    ThreadStateEnum state = eThreadStateActive;
+
+    boost::shared_ptr<TimeLine> timeline = args->getTimeLine();
+    ViewerInstance* viewer =  args->getViewer();
+    int end = args->getEnd();
+    int start = args->getStart();
+    int cur = start;
+    int frameStep = args->getStep();
+    int framesCount = 0;
+    if (frameStep != 0) {
+        framesCount = frameStep > 0 ? (end - start) / frameStep : (start - end) / std::abs(frameStep);
+    }
+
+
+    const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args->getTracks();
+    const int numTracks = (int)tracks.size();
+    std::vector<int> trackIndexes( tracks.size() );
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
+        trackIndexes[i] = i;
+
+        // unslave the enabled knob, since it is slaved to the gui but we may modify it
+        boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
+        enabledKnob->unSlave(0, false);
+    }
+
+
+    // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
+    // than just render the whole viewer RoI
+    const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
+    int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
+    bool reportProgress = numTracks > 1 || framesCount > 1;
+    EffectInstPtr effect = _imp->getNode()->getEffectInstance();
+
+    timeval lastProgressUpdateTime;
+    gettimeofday(&lastProgressUpdateTime, 0);
+
+    bool allTrackFailed = false;
+    {
+        ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
+        IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, frameStep, reportProgress, viewer, doPartialUpdates);
+
+        if ( (frameStep == 0) || ( (frameStep > 0) && (start >= end) ) || ( (frameStep < 0) && (start <= end) ) ) {
+            // Invalid range
+            cur = end;
         }
 
-        ///Flag that we're working
-        {
-            QMutexLocker k(&_imp->isWorkingMutex);
-            _imp->isWorking = true;
-        }
 
-        ///Copy the requested args to the args used for processing
-        {
-            QMutexLocker k(&_imp->argsMutex);
-            _imp->curArgs = _imp->requestedArgs;
-        }
+        while (cur != end) {
+            ///Launch parallel thread for each track using the global thread pool
+            QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
+                                                        boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
+                                                                    _1,
+                                                                    *args,
+                                                                    cur) );
+            future.waitForFinished();
 
-
-        boost::shared_ptr<TimeLine> timeline = _imp->curArgs.getTimeLine();
-        ViewerInstance* viewer =  _imp->curArgs.getViewer();
-        int end = _imp->curArgs.getEnd();
-        int start = _imp->curArgs.getStart();
-        int cur = start;
-        int frameStep = _imp->curArgs.getStep();
-        int framesCount = 0;
-        if (frameStep != 0) {
-            framesCount = frameStep > 0 ? (end - start) / frameStep : (start - end) / std::abs(frameStep);
-        }
-
-
-        const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = _imp->curArgs.getTracks();
-        const int numTracks = (int)tracks.size();
-        std::vector<int> trackIndexes( tracks.size() );
-        for (std::size_t i = 0; i < tracks.size(); ++i) {
-            trackIndexes[i] = i;
-
-            // unslave the enabled knob, since it is slaved to the gui but we may modify it
-            boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
-            enabledKnob->unSlave(0, false);
-        }
-
-
-        // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
-        // than just render the whole viewer RoI
-        const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
-        int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
-        bool reportProgress = numTracks > 1 || framesCount > 1;
-        EffectInstPtr effect = _imp->getNode()->getEffectInstance();
-        bool allTrackFailed = false;
-        bool aborted = false;
-        {
-            ///Use RAII style for setting the isDoingPartialUpdates flag so we're sure it gets removed
-            IsTrackingFlagSetter_RAII __istrackingflag__(effect, this, frameStep, reportProgress, viewer, doPartialUpdates);
-
-            if ( (frameStep == 0) || ( (frameStep > 0) && (start >= end) ) || ( (frameStep < 0) && (start <= end) ) ) {
-                // Invalid range
-                cur = end;
-            }
-
-
-            while (cur != end) {
-                ///Launch parallel thread for each track using the global thread pool
-                QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
-                                                             boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
-                                                                         _1,
-                                                                         _imp->curArgs,
-                                                                         cur) );
-                future.waitForFinished();
-
-                allTrackFailed = true;
-                for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
-                    if ( (*it) ) {
-                        allTrackFailed = false;
-                        break;
-                    }
-                }
-
-                // We don't have any successful track, stop
-                if (allTrackFailed) {
+            allTrackFailed = true;
+            for (QFuture<bool>::const_iterator it = future.begin(); it != future.end(); ++it) {
+                if ( (*it) ) {
+                    allTrackFailed = false;
                     break;
                 }
+            }
 
-                lastValidFrame = cur;
+            // We don't have any successful track, stop
+            if (allTrackFailed) {
+                break;
+            }
 
-                cur += frameStep;
+            lastValidFrame = cur;
 
-                double progress;
-                if (frameStep > 0) {
-                    progress = (double)(cur - start) / framesCount;
-                } else {
-                    progress = (double)(start - cur) / framesCount;
+            cur += frameStep;
+
+            double progress;
+            if (frameStep > 0) {
+                progress = (double)(cur - start) / framesCount;
+            } else {
+                progress = (double)(start - cur) / framesCount;
+            }
+
+            bool isUpdateViewerOnTrackingEnabled = _imp->paramsProvider->getUpdateViewer();
+            bool isCenterViewerEnabled = _imp->paramsProvider->getCenterOnTrack();
+
+            bool enoughTimePassedToReportProgress;
+            {
+                timeval now;
+                gettimeofday(&now, 0);
+                double dt =  now.tv_sec  - lastProgressUpdateTime.tv_sec +
+                (now.tv_usec - lastProgressUpdateTime.tv_usec) * 1e-6f;
+                dt *= 1000; // switch to MS
+                enoughTimePassedToReportProgress = dt > NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS;
+                if (enoughTimePassedToReportProgress) {
+                    lastProgressUpdateTime = now;
                 }
+            }
+            
+            
+            ///Ok all tracks are finished now for this frame, refresh viewer if needed
+            if (isUpdateViewerOnTrackingEnabled && viewer) {
+                //This will not refresh the viewer since when tracking, renderCurrentFrame()
+                //is not called on viewers, see Gui::onTimeChanged
+                timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
 
-                bool isUpdateViewerOnTrackingEnabled = _imp->paramsProvider->getUpdateViewer();
-                bool isCenterViewerEnabled = _imp->paramsProvider->getCenterOnTrack();
-
-
-                ///Ok all tracks are finished now for this frame, refresh viewer if needed
-                if (isUpdateViewerOnTrackingEnabled && viewer) {
-                    //This will not refresh the viewer since when tracking, renderCurrentFrame()
-                    //is not called on viewers, see Gui::onTimeChanged
-                    timeline->seekFrame(cur, true, 0, eTimelineChangeReasonOtherSeek);
-
-
+                if (enoughTimePassedToReportProgress) {
                     if (doPartialUpdates) {
                         std::list<RectD> updateRects;
-                        _imp->curArgs.getRedrawAreasNeeded(cur, &updateRects);
+                        args->getRedrawAreasNeeded(cur, &updateRects);
                         viewer->setPartialUpdateParams(updateRects, isCenterViewerEnabled);
                     } else {
                         viewer->clearPartialUpdateParams();
                     }
                     Q_EMIT renderCurrentFrameForViewer(viewer);
                 }
-
-                if (reportProgress && effect) {
-                    ///Notify we progressed of 1 frame
-                    Q_EMIT trackingProgress(progress);
-                }
-
-                ///Check for abortion
-                {
-                    QMutexLocker k(&_imp->abortRequestedMutex);
-                    if (_imp->abortRequested > 0) {
-                        _imp->abortRequested = 0;
-                        aborted = true;
-                        _imp->abortRequestedCond.wakeAll();
-                        break;
-                    }
-                }
-            } // while (cur != end) {
-        } // IsTrackingFlagSetter_RAII
-        TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
-        if (isContext) {
-            isContext->solveTransformParams();
-        }
-
-        appPTR->getAppTLS()->cleanupTLSForThread();
-
-
-        boost::shared_ptr<KnobBool> contextEnabledKnob;
-        if (isContext) {
-            contextEnabledKnob = isContext->getEnabledKnob();
-        }
-        // Re-slave the knobs to the gui
-        if (contextEnabledKnob) {
-            for (std::size_t i = 0; i < tracks.size(); ++i) {
-                // unslave the enabled knob, since it is slaved to the gui but we may modify it
-                boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
-
-                contextEnabledKnob->blockListenersNotification();
-                contextEnabledKnob->cloneAndUpdateGui( enabledKnob.get() );
-                contextEnabledKnob->unblockListenersNotification();
-                enabledKnob->slaveTo(0, contextEnabledKnob, 0);
             }
-            contextEnabledKnob->setDirty(tracks.size() > 1);
-        }
 
-
-        //Now that tracking is done update viewer once to refresh the whole visible portion
-
-        if ( _imp->paramsProvider->getUpdateViewer() ) {
-            //Refresh all viewers to the current frame
-            timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
-        }
-
-        ///Flag that we're no longer working
-        {
-            QMutexLocker k(&_imp->isWorkingMutex);
-            _imp->isWorking = false;
-        }
-
-        ///Make sure we really reset the abort flag
-        {
-            QMutexLocker k(&_imp->abortRequestedMutex);
-            if (_imp->abortRequested > 0) {
-                _imp->abortRequested = 0;
-                _imp->abortRequestedCond.wakeAll();
+            if (enoughTimePassedToReportProgress && reportProgress && effect) {
+                ///Notify we progressed of 1 frame
+                Q_EMIT trackingProgress(progress);
             }
-        }
 
-        ///Sleep or restart if we've got requests in the queue
-        {
-            QMutexLocker k(&_imp->startRequesstMutex);
-            while (_imp->startRequests <= 0) {
-                _imp->startRequestsCond.wait(&_imp->startRequesstMutex);
+            // Check for abortion
+            state = resolveState();
+            if (state == eThreadStateAborted || state == eThreadStateStopped) {
+                break;
             }
-            _imp->startRequests = 0;
+        } // while (cur != end) {
+    } // IsTrackingFlagSetter_RAII
+    TrackerContext* isContext = dynamic_cast<TrackerContext*>(_imp->paramsProvider);
+    if (isContext) {
+        isContext->solveTransformParams();
+    }
+
+    appPTR->getAppTLS()->cleanupTLSForThread();
+
+
+    boost::shared_ptr<KnobBool> contextEnabledKnob;
+    if (isContext) {
+        contextEnabledKnob = isContext->getEnabledKnob();
+    }
+    // Re-slave the knobs to the gui
+    if (contextEnabledKnob) {
+        for (std::size_t i = 0; i < tracks.size(); ++i) {
+            // unslave the enabled knob, since it is slaved to the gui but we may modify it
+            boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
+
+            contextEnabledKnob->blockListenersNotification();
+            contextEnabledKnob->cloneAndUpdateGui( enabledKnob.get() );
+            contextEnabledKnob->unblockListenersNotification();
+            enabledKnob->slaveTo(0, contextEnabledKnob, 0);
         }
-    } // for (;;) {
-} // >::run
+        contextEnabledKnob->setDirty(tracks.size() > 1);
+    }
+
+
+    //Now that tracking is done update viewer once to refresh the whole visible portion
+
+    if ( _imp->paramsProvider->getUpdateViewer() ) {
+        //Refresh all viewers to the current frame
+        timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
+    }
+    return state;
+} // >::threadLoopOnce
 
 void
-TrackSchedulerBase::doRenderCurrentFrameForViewer(ViewerInstance* viewer)
+TrackScheduler::doRenderCurrentFrameForViewer(ViewerInstance* viewer)
 {
     assert( QThread::currentThread() == qApp->thread() );
     viewer->renderCurrentFrame(true);
 }
 
-void
-TrackScheduler::track(const TrackArgs& args)
-{
-    {
-        QMutexLocker k(&_imp->argsMutex);
-        _imp->requestedArgs = args;
-    }
-    if ( isRunning() ) {
-        QMutexLocker k(&_imp->startRequesstMutex);
-        ++_imp->startRequests;
-        _imp->startRequestsCond.wakeAll();
-    } else {
-        start();
-    }
-}
-
-void
-TrackScheduler::abortTracking()
-{
-    if ( !isRunning() || !isWorking() ) {
-        return;
-    }
-
-
-    {
-        QMutexLocker k(&_imp->abortRequestedMutex);
-        ++_imp->abortRequested;
-        while (_imp->abortRequested) {
-            _imp->abortRequestedCond.wait(&_imp->abortRequestedMutex);
-        }
-    }
-}
-
-void
-TrackScheduler::quitThread()
-{
-    if ( !isRunning() ) {
-        return;
-    }
-
-    abortTracking();
-
-    {
-        QMutexLocker k(&_imp->mustQuitMutex);
-        _imp->mustQuit = true;
-
-        {
-            QMutexLocker k(&_imp->startRequesstMutex);
-            ++_imp->startRequests;
-            _imp->startRequestsCond.wakeAll();
-        }
-
-        while (_imp->mustQuit) {
-            _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
-        }
-    }
-
-
-    wait();
-}
 
 NATRON_NAMESPACE_EXIT;
 

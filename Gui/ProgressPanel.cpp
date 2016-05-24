@@ -91,6 +91,9 @@ struct ProgressPanelPrivate
     TasksOrdered tasksOrdered;
     ProgressTaskInfoPtr lastTaskAdded;
 
+    // Prevents call to processEvents() recursively on the main-thread
+    int processEventsRecursionCounter;
+
     ProgressPanelPrivate()
         : mainLayout(0)
         , headerContainer(0)
@@ -103,6 +106,7 @@ struct ProgressPanelPrivate
         , tasks()
         , tasksOrdered()
         , lastTaskAdded()
+        , processEventsRecursionCounter(0)
     {
     }
 
@@ -544,7 +548,11 @@ ProgressPanel::updateTask(const NodePtr& node,
     }
 
     if (isMainThread) {
-        QCoreApplication::processEvents();
+        if (_imp->processEventsRecursionCounter == 0) {
+            ++_imp->processEventsRecursionCounter;
+            QCoreApplication::processEvents();
+            --_imp->processEventsRecursionCounter;
+        }
     }
 
     return true;

@@ -110,7 +110,12 @@ public:
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
     
     // only used on the main-thread
-    std::list<boost::shared_ptr<NodeRenderWatcher> > renderWatchers;
+    struct RenderWatcher {
+        boost::shared_ptr<NodeRenderWatcher> watcher;
+        AfterQuitProcessingI* receiver;
+    };
+
+    std::list<RenderWatcher> renderWatchers;
 
     ProjectPrivate(Project* project);
 

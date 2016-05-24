@@ -395,17 +395,17 @@ public:
 };
 
 void
-AppManager::onQuitWatcherFinished(int /*taskID*/, const WatcherCallerArgsPtr& args)
+AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
 {
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>(args.get());
     if (!inArgs) {
         return;
     }
-    
+
     AppInstance* instance = inArgs->instance;
-    
+
     instance->aboutToQuit();
-    
+
     int nbApps;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
@@ -421,7 +421,6 @@ AppManager::onQuitWatcherFinished(int /*taskID*/, const WatcherCallerArgsPtr& ar
         qApp->quit();
     }
     delete instance;
-
 }
 
 void
@@ -429,7 +428,7 @@ AppManager::quit(AppInstance* instance)
 {
     boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
     args->instance = instance;
-    instance->getProject()->quitAnyProcessingForAllNodes(this, SLOT(onQuitWatcherFinished(int, WatcherCallerArgsPtr)), args);
+    instance->getProject()->quitAnyProcessingForAllNodes(this, args);
 }
 
 void
