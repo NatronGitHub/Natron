@@ -407,7 +407,7 @@ ScaleSliderQWidget::centerOn(double left,
                              double right)
 {
     assert(boost::math::isfinite(left) && boost::math::isfinite(right) && left < right);
-    if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) || (left < right) ) {
+    if ( (_imp->zoomCtx.screenHeight() == 0) || (_imp->zoomCtx.screenWidth() == 0) || (left >= right) ) {
         return;
     }
     double w = right - left;
