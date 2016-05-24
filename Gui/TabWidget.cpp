@@ -447,7 +447,7 @@ TabWidget::createMenu()
 
 
         for (std::map<NATRON_PYTHON_NAMESPACE::PyPanel*, std::string>::iterator it = userPanels.begin(); it != userPanels.end(); ++it) {
-            QAction* pAction = new QAction(it->first->getPanelLabel() + tr(" here"), userPanelsMenu);
+            QAction* pAction = new QAction(tr("%1 here").arg( it->first->getPanelLabel() ), userPanelsMenu);
             QObject::connect( pAction, SIGNAL(triggered()), this, SLOT(onUserPanelActionTriggered()) );
             pAction->setData( QString::fromUtf8( it->first->getScriptName().c_str() ) );
             userPanelsMenu->addAction(pAction);
