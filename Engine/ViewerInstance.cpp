@@ -1274,7 +1274,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 #endif
 
     // Flag that we are going to render
-    inArgs.isRenderingFlag.reset( new RenderingFlagSetter( getNode().get() ) );
+    inArgs.isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
 
     assert( !inArgs.params->nbCachedTile || inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
 

@@ -95,7 +95,7 @@ typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> ExecOnMTArgsPtr;
  * To wait for the abortion to complete, call: (this is blocking)
  *      thread.waitForAbortToComplete_not_main_thread();
  *
- * To stop the thread from running from a thread IFFERENT THAN THE MAIN-THREAD and abort any ongoing work:
+ * To stop the thread from running from a thread DIFFERENT THAN THE MAIN-THREAD and abort any ongoing work:
  *      thread.quitThread();
 
  * Note that this is not blocking either, to actually ensure that the thread is not running anymore, call:

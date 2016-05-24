@@ -75,7 +75,7 @@ GuiApplicationManager::~GuiApplicationManager()
             delete it2->second;
         }
     }
-    _imp->previewRenderThread.quitThread();
+    _imp->previewRenderThread.quitThread(false);
 }
 
 void

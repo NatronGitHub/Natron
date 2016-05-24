@@ -2309,7 +2309,7 @@ private:
                     }
                     frameRenderArgs.updateNodesRequest(request);
                 }
-                RenderingFlagSetter flagIsRendering( activeInputToRender->getNode().get() );
+                RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
                 std::map<ImageComponents, ImagePtr> planes;
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs( time, //< the time at which to render
                                                                                                                 scale, //< the scale at which to render
@@ -2421,7 +2421,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
         rod.toPixelEnclosing(0, par, &roi);
 
 
-        RenderingFlagSetter flagIsRendering( effect->getNode().get() );
+        RenderingFlagSetter flagIsRendering( effect->getNode() );
         ImagePtr inputImage = boost::dynamic_pointer_cast<Image>(it->frame);
         assert(inputImage);
 

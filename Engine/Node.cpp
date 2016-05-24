@@ -6216,7 +6216,7 @@ Node::makePreviewImage(SequenceTime time,
     rod.toPixelEnclosing(mipMapLevel, par, &renderWindow);
 
     NodePtr thisNode = shared_from_this();
-    RenderingFlagSetter flagIsRendering(this);
+    RenderingFlagSetter flagIsRendering(thisNode);
 
 
     {
@@ -8978,13 +8978,13 @@ Node::canOthersConnectToThisNode() const
 }
 
 void
-Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
+Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 {
     ///If marked, we alredy set render args
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
-
-    if ( found != markedNodes.end() ) {
-        return;
+    for (std::list<NodeWPtr>::iterator it = markedNodes.begin(); it != markedNodes.end(); ++it) {
+        if (it->lock().get() == this) {
+            return;
+        }
     }
 
     ///Wait for the main-thread to be done dequeuing the connect actions queue
@@ -9003,7 +9003,7 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
 
 
     ///mark this
-    markedNodes.push_back(this);
+    markedNodes.push_back(shared_from_this());
 
     ///Call recursively
 
@@ -9016,15 +9016,34 @@ Node::setNodeIsRenderingInternal(std::list<Node*>& markedNodes)
     }
 }
 
-void
-Node::setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes)
+RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
+: node(n)
+, nodes()
 {
-    ///If marked, we alredy set render args
-    std::list<Node*>::iterator found = std::find(markedNodes.begin(), markedNodes.end(), this);
+    n->setNodeIsRendering(nodes);
+}
 
-    if ( found != markedNodes.end() ) {
-        return;
+RenderingFlagSetter::~RenderingFlagSetter()
+{
+    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodePtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        n->unsetNodeIsRendering();
     }
+}
+
+
+void
+Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
+{
+    setNodeIsRenderingInternal(nodes);
+}
+
+void
+Node::unsetNodeIsRendering()
+{
 
     bool mustDequeue;
     {
@@ -9045,36 +9064,6 @@ Node::setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes)
     if (mustDequeue) {
         Q_EMIT mustDequeueActions();
     }
-
-
-    ///mark this
-    markedNodes.push_back(this);
-
-    ///Call recursively
-
-    int maxInpu = getMaxInputCount();
-    for (int i = 0; i < maxInpu; ++i) {
-        NodePtr input = getInput(i);
-        if (input) {
-            input->setNodeIsNoLongerRenderingInternal(markedNodes);
-        }
-    }
-}
-
-void
-Node::setNodeIsRendering()
-{
-    std::list<Node*> marked;
-
-    setNodeIsRenderingInternal(marked);
-}
-
-void
-Node::unsetNodeIsRendering()
-{
-    std::list<Node*> marked;
-
-    setNodeIsNoLongerRenderingInternal(marked);
 }
 
 bool

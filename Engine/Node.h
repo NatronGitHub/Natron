@@ -1001,7 +1001,7 @@ public:
     bool hasAnimatedKnob() const;
 
 
-    void setNodeIsRendering();
+    void setNodeIsRendering(std::list<NodeWPtr>& nodes);
     void unsetNodeIsRendering();
 
     /**
@@ -1443,8 +1443,7 @@ private:
     std::string makeCacheInfo() const;
     std::string makeInfoForInput(int inputNumber) const;
 
-    void setNodeIsRenderingInternal(std::list<Node*>& markedNodes);
-    void setNodeIsNoLongerRenderingInternal(std::list<Node*>& markedNodes);
+    void setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes);
 
 
     /**
@@ -1503,20 +1502,14 @@ public:
 
 class RenderingFlagSetter
 {
-    Node* node;
+    NodeWPtr node;
+    std::list<NodeWPtr> nodes;
 
 public:
 
-    RenderingFlagSetter(Node* n)
-        : node(n)
-    {
-        node->setNodeIsRendering();
-    }
+    RenderingFlagSetter(const NodePtr& n);
 
-    ~RenderingFlagSetter()
-    {
-        node->unsetNodeIsRendering();
-    }
+    ~RenderingFlagSetter();
 };
 
 NATRON_NAMESPACE_EXIT;

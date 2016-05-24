@@ -1463,7 +1463,7 @@ RotoPaint::render(const RenderActionArgs& args)
             }
         }
         NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
-        RenderingFlagSetter flagIsRendering( bottomMerge.get() );
+        RenderingFlagSetter flagIsRendering( bottomMerge );
         std::bitset<4> copyChannels;
         for (int i = 0; i < 4; ++i) {
             copyChannels[i] = _imp->enabledKnobs[i].lock()->getValue();
@@ -1591,7 +1591,7 @@ RotoPaint::render(const RenderActionArgs& args)
                 plane->second->premultImage(args.roi);
             }
         }
-    } // RenderingFlagSetter flagIsRendering(bottomMerge.get());
+    } // RenderingFlagSetter 
 
     return eStatusOK;
 } // RotoPaint::render
