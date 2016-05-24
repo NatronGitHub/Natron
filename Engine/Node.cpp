@@ -213,7 +213,6 @@ public:
         , inputsMutex()
         , inputs()
         , guiInputs()
-        , mustCopyGuiInputs(false)
         , effect()
         , inputsComponents()
         , outputComponents()
@@ -386,9 +385,6 @@ public:
     ///the node is currently rendering. Once the render is finished, inputs are refreshed automatically to the value of
     ///guiInputs
     InputsV inputs, guiInputs;
-
-    ///Set to true when inputs must be refreshed to reflect the value of guiInputs
-    bool mustCopyGuiInputs;
 
     //to the inputs in a thread-safe manner.
     EffectInstPtr effect;  //< the effect hosted by this node
@@ -5066,7 +5062,6 @@ Node::connectInput(const NodePtr & input,
             _imp->guiInputs[inputNumber] = input;
         } else {
             _imp->guiInputs[inputNumber] = input;
-            _imp->mustCopyGuiInputs = true;
         }
         input->connectOutput( useGuiInputs, shared_from_this() );
     }
@@ -5180,7 +5175,6 @@ Node::replaceInput(const NodePtr& input,
                 curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
-            _imp->mustCopyGuiInputs = true;
         }
         input->connectOutput( useGuiInputs, shared_from_this() );
     }
@@ -5281,7 +5275,6 @@ Node::switchInput0And1()
             input0 = _imp->guiInputs[inputAIndex].lock();
             _imp->guiInputs[inputAIndex] = _imp->guiInputs[inputBIndex];
             _imp->guiInputs[inputBIndex] = input0;
-            _imp->mustCopyGuiInputs = true;
         }
     }
     Q_EMIT inputChanged(inputAIndex);
@@ -5399,7 +5392,6 @@ Node::disconnectInput(int inputNumber)
             _imp->guiInputs[inputNumber].reset();
         } else {
             _imp->guiInputs[inputNumber].reset();
-            _imp->mustCopyGuiInputs = true;
         }
     }
 
@@ -5476,7 +5468,6 @@ Node::disconnectInput(Node* input)
                 _imp->guiInputs[found].reset();
             } else {
                 _imp->guiInputs[found].reset();
-                _imp->mustCopyGuiInputs = true;
             }
         }
         input->disconnectOutput(useGuiValues, this);
@@ -9141,14 +9132,16 @@ Node::dequeueActions()
         _imp->outputs = _imp->guiOutputs;
     }
 
-    beginInputEdition();
-    hasChanged |= !inputChanges.empty();
-    for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
-        onInputChanged(*it);
+    if (!inputChanges.empty()) {
+        beginInputEdition();
+        hasChanged = true;
+        for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
+            onInputChanged(*it);
+        }
+        endInputEdition(true);
     }
-    endInputEdition(true);
-
     if (hasChanged) {
+        computeHash();
         refreshIdentityState();
     }
 

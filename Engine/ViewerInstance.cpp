@@ -924,6 +924,10 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
             _imp->fillGammaLut(1. / outArgs->params->gamma);
         }
     }
+
+    // Flag that we are going to render
+    outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
+
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
 ViewerInstance::ViewerRenderRetCode
@@ -1273,8 +1277,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     }
 #endif
 
-    // Flag that we are going to render
-    inArgs.isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
+
 
     assert( !inArgs.params->nbCachedTile || inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
 
