@@ -1280,10 +1280,11 @@ Gui::createReader()
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadSequenceOpenedDir = QString::fromUtf8( path.c_str() );
 
-        std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
+        QString ext_qs = QtCompat::removeFileExtension(qpattern).toLower();
+        std::string ext = ext_qs.toStdString();
         std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
         if ( found == readersForFormat.end() ) {
-            errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding ").toStdString() + ext + tr(" was found.").toStdString(), false);
+            errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding \"%1\" files was found.").arg(ext_qs).toStdString(), false);
         } else {
             CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, group);
             args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, pattern) );

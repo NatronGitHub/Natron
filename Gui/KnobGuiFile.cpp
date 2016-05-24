@@ -283,7 +283,8 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
     if ( foundModificationDate != _lastModificationDates.end() ) {
         if ( doCheck && (date != foundModificationDate->second) ) {
             if (errorAndAbortRender) {
-                QString warn = tr("The file ") + qfilePath + tr(" has changed on disk. Press reload file to load the new version of the file");
+                QString warn = tr("The file \"%1\" has changed on disk.\n"
+                                  "Press reload file to load the new version of the file").arg(qfilePath);
                 effect->setPersistentMessage( eMessageTypeError, warn.toStdString() );
                 effect->abortAnyEvaluation();
             }

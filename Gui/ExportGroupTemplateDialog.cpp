@@ -314,9 +314,9 @@ ExportGroupTemplateDialog::onOkClicked()
     filters.push_back( QString( pluginLabel + QString::fromUtf8(".py") ) );
     if ( !d.entryList(filters, QDir::Files | QDir::NoDotAndDotDot).isEmpty() ) {
         StandardButtonEnum rep = Dialogs::questionDialog(tr("Existing plug-in").toStdString(),
-                                                         tr("A group plug-in with the same name already exists "
+                                                         tr("A group plug-in with the name \"%1\" already exists "
                                                             "would you like to "
-                                                            "override it?").toStdString(), false);
+                                                            "overwrite it?").arg(pluginLabel).toStdString(), false);
         if  (rep == eStandardButtonNo) {
             return;
         }
@@ -334,7 +334,7 @@ ExportGroupTemplateDialog::onOkClicked()
     }
 
     if (!foundInPath) {
-        QString message = dirPath + tr(" does not exist in the group plug-in search path, would you like to add it?");
+        QString message = tr("Directory \"%1\" is not in the group plug-in search path, would you like to add it?").arg(dirPath);
         StandardButtonEnum rep = Dialogs::questionDialog(tr("Plug-in path").toStdString(),
                                                          message.toStdString(), false);
 

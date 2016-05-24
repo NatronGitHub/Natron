@@ -134,7 +134,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->undoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->undoB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     _imp->undoB->setFocusPolicy(Qt::NoFocus);
-    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, "<p>" + tr("Previous Script").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->undoB);
+    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorPrevScript, "<p>" + tr("Previous Script").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->undoB);
     _imp->undoB->setEnabled(false);
     QObject::connect( _imp->undoB, SIGNAL(clicked(bool)), this, SLOT(onUndoClicked()) );
 
@@ -143,7 +143,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->redoB->setFocusPolicy(Qt::NoFocus);
     _imp->redoB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->redoB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
-    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorNextScript, "<p>" + tr("Next Script").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->redoB);
+    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorNextScript, "<p>" + tr("Next Script").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->redoB);
     _imp->redoB->setEnabled(false);
     QObject::connect( _imp->redoB, SIGNAL(clicked(bool)), this, SLOT(onRedoClicked()) );
 
@@ -152,7 +152,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->clearHistoB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     _imp->clearHistoB->setFocusPolicy(Qt::NoFocus);
     setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptEditorClearHistory, "<p>" + tr("Clear History").toStdString() + "</p>" +
-                           "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->clearHistoB);
+                           "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->clearHistoB);
 
     QObject::connect( _imp->clearHistoB, SIGNAL(clicked(bool)), this, SLOT(onClearHistoryClicked()) );
 
@@ -182,14 +182,14 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->execScriptB->setFocusPolicy(Qt::NoFocus);
     _imp->execScriptB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->execScriptB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
-    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptExecScript, "<p>" + tr("Execute the current script").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->execScriptB);
+    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptExecScript, "<p>" + tr("Execute the current script").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->execScriptB);
 
     QObject::connect( _imp->execScriptB, SIGNAL(clicked(bool)), this, SLOT(onExecScriptClicked()) );
     QIcon icShowHide;
     icShowHide.addPixmap(outputVisiblePix, QIcon::Normal, QIcon::On);
     icShowHide.addPixmap(outputHiddenPix, QIcon::Normal, QIcon::Off);
     _imp->showHideOutputB = new Button(icShowHide, QString(), _imp->buttonsContainer);
-    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptShowOutput, "<p>" + tr("Show/Hide the output area").toStdString() + "</p>" +  "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->showHideOutputB);
+    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptShowOutput, "<p>" + tr("Show/Hide the output area").toStdString() + "</p>" +  "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->showHideOutputB);
     _imp->showHideOutputB->setFocusPolicy(Qt::NoFocus);
     _imp->showHideOutputB->setCheckable(true);
     _imp->showHideOutputB->setChecked(true);
@@ -203,7 +203,7 @@ ScriptEditor::ScriptEditor(Gui* gui)
     _imp->clearOutputB->setFocusPolicy(Qt::NoFocus);
     _imp->clearOutputB->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _imp->clearOutputB->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
-    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptClearOutput, "<p>" + tr("Clear the output area").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut").toStdString() + ": %1</b></p>", _imp->clearOutputB);
+    setToolTipWithShortcut(kShortcutGroupScriptEditor, kShortcutIDActionScriptClearOutput, "<p>" + tr("Clear the output area").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->clearOutputB);
     QObject::connect( _imp->clearOutputB, SIGNAL(clicked(bool)), this, SLOT(onClearOutputClicked()) );
 
     _imp->showAutoDeclVarsB = new Button(QIcon(), QString::fromUtf8("..."), _imp->buttonsContainer);
