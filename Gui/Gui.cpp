@@ -567,7 +567,7 @@ Gui::createMenuActions()
         _imp->actionConnectInput[i]->setData( i % (NATRON_CONNECT_INPUT_NB / 2) );
         _imp->actionConnectInput[i]->setShortcutContext(Qt::WidgetShortcut);
         if (i < NATRON_CONNECT_INPUT_NB / 2) {
-            QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectInput()) );
+            QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectAInput()) );
         } else {
             QObject::connect( _imp->actionConnectInput[i], SIGNAL(triggered()), this, SLOT(connectBInput()) );
         }

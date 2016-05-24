@@ -1066,31 +1066,34 @@ ViewerTab::onActiveInputsChanged()
 }
 
 void
-ViewerTab::connectToInput(int inputNb)
+ViewerTab::connectToInput(int inputNb, bool isASide)
 {
     InspectorNode* node = dynamic_cast<InspectorNode*>( getInternalNode()->getNode().get() );
 
     assert(node);
     if (!node) {
-        throw std::logic_error("ViewerTab::connectToInput");
+        return;
     }
     bool isAutoWipeEnabled = appPTR->getCurrentSettings()->isAutoWipeEnabled();
     if (isAutoWipeEnabled) {
         getInternalNode()->setActivateInputChangeRequestedFromViewer(true);
     }
-    node->setActiveInputAndRefresh(inputNb, true);
+    node->setActiveInputAndRefresh(inputNb, isASide);
     if (isAutoWipeEnabled) {
         getInternalNode()->setActivateInputChangeRequestedFromViewer(false);
     }
 }
 
 void
+ViewerTab::connectToAInput(int inputNb)
+{
+    connectToInput(inputNb, true);
+}
+
+void
 ViewerTab::connectToBInput(int inputNb)
 {
-#pragma message WARN("TODO: ViewerTab::connectToBInput()")
-    qDebug() << "ViewerTab::connectToBInput" << inputNb;
-
-    return connectToInput(inputNb);
+    connectToInput(inputNb, false);
 }
 
 void

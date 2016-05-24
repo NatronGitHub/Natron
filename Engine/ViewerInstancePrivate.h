@@ -137,8 +137,6 @@ public:
         , viewerParamsAlphaLayer( ImageComponents::getRGBAComponents() )
         , viewerParamsAlphaChannelName("a")
         , viewerMipMapLevel(0)
-        , activeInputsMutex(QMutex::Recursive)
-        , activeInputs()
         , activateInputChangedFromViewer(false)
         , gammaLookupMutex()
         , gammaLookup()
@@ -154,7 +152,6 @@ public:
     {
         for (int i = 0; i < 2; ++i) {
             forceRender[i] = false;
-            activeInputs[i] = -1;
             renderAge[i] = 1;
             displayAge[i] = 0;
             isViewerPaused[i] = false;
@@ -380,8 +377,6 @@ public:
     ImageComponents viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
-    mutable QMutex activeInputsMutex;
-    int activeInputs[2]; //< indexes of the inputs used for the wipe
 
     ///Only accessed from MT
     bool activateInputChangedFromViewer;

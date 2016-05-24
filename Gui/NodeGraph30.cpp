@@ -60,7 +60,7 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 void
-NodeGraph::connectCurrentViewerToSelection(int inputNB)
+NodeGraph::connectCurrentViewerToSelection(int inputNB,bool isASide)
 {
     ViewerTab* lastUsedViewer =  getLastSelectedViewer();
 
@@ -110,11 +110,10 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB)
     boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
-
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.
     bool viewerAlreadySelected = std::find(_imp->_selection.begin(), _imp->_selection.end(), gui) != _imp->_selection.end();
     if (_imp->_selection.empty() || (_imp->_selection.size() > 1) || viewerAlreadySelected) {
-        v->setActiveInputAndRefresh(inputNB, false);
+        v->setActiveInputAndRefresh(inputNB, isASide);
         gui->refreshEdges();
 
         return;

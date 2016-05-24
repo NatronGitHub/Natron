@@ -1186,16 +1186,16 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         return eViewerRenderRetCodeRedraw;
     }
 
+    int activeA,activeB;
+    getActiveInputs(activeA, activeB);
     // Fetch the viewer indexes that we should render from the A or B input depending on the textureIndex parameter
     if (textureIndex == 0) {
-        QMutexLocker l(&_imp->activeInputsMutex);
-        outArgs->activeInputIndex =  _imp->activeInputs[0];
+        outArgs->activeInputIndex =  activeA;
     } else {
         if (_imp->uiContext->getCompositingOperator() == eViewerCompositingOperatorNone) {
             outArgs->activeInputIndex = -1;
         } else {
-            QMutexLocker l(&_imp->activeInputsMutex);
-            outArgs->activeInputIndex =  _imp->activeInputs[1];
+            outArgs->activeInputIndex =  activeB;
         }
     }
 
@@ -3210,39 +3210,6 @@ ViewerInstance::isViewerPaused(int texIndex) const
 }
 
 void
-ViewerInstance::refreshActiveInputs(int inputNbChanged)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    NodePtr inputNode = getNode()->getRealInput(inputNbChanged);
-    {
-        QMutexLocker l(&_imp->activeInputsMutex);
-        if (!inputNode) {
-            ///check if the input was one of the active ones if so set to -1
-            if (_imp->activeInputs[0] == inputNbChanged) {
-                _imp->activeInputs[0] = -1;
-            } else if (_imp->activeInputs[1] == inputNbChanged) {
-                _imp->activeInputs[1] = -1;
-            }
-        } else {
-            if ( (_imp->activeInputs[0] != -1) && _imp->activateInputChangedFromViewer ) {
-                ViewerCompositingOperatorEnum op = _imp->uiContext->getCompositingOperator();
-                if (op == eViewerCompositingOperatorNone) {
-                    _imp->uiContext->setCompositingOperator(eViewerCompositingOperatorWipeUnder);
-                }
-                _imp->activeInputs[1] = inputNbChanged;
-            } else {
-                _imp->activeInputs[0] = inputNbChanged;
-                if (_imp->activeInputs[1] == -1) {
-                    _imp->activeInputs[1] = inputNbChanged;
-                }
-            }
-        }
-    }
-    Q_EMIT activeInputsChanged();
-    Q_EMIT refreshOptionalState();
-}
-
-void
 ViewerInstance::onInputChanged(int /*inputNb*/)
 {
     Q_EMIT clipPreferencesChanged();
@@ -3272,32 +3239,34 @@ void
 ViewerInstance::getActiveInputs(int & a,
                                 int &b) const
 {
-    QMutexLocker l(&_imp->activeInputsMutex);
-
-    a = _imp->activeInputs[0];
-    b = _imp->activeInputs[1];
+    NodePtr n = getNode();
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    assert(isInspector);
+    if (isInspector) {
+        isInspector->getActiveInputs(a, b);
+    }
 }
 
 void
 ViewerInstance::setInputA(int inputNb)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&_imp->activeInputsMutex);
-        _imp->activeInputs[0] = inputNb;
+    NodePtr n = getNode();
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    assert(isInspector);
+    if (isInspector) {
+        isInspector->setInputA(inputNb);
     }
-    Q_EMIT refreshOptionalState();
 }
 
 void
 ViewerInstance::setInputB(int inputNb)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-    {
-        QMutexLocker l(&_imp->activeInputsMutex);
-        _imp->activeInputs[1] = inputNb;
+    NodePtr n = getNode();
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    assert(isInspector);
+    if (isInspector) {
+        isInspector->setInputB(inputNb);
     }
-    Q_EMIT refreshOptionalState();
 }
 
 int

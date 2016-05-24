@@ -274,13 +274,11 @@ public:
 
     virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
-    void refreshActiveInputs(int inputNbChanged);
+    void getActiveInputs(int & a, int &b) const;
 
     void setInputA(int inputNb);
 
     void setInputB(int inputNb);
-
-    void getActiveInputs(int & a, int &b) const;
 
     int getLastRenderedTime() const;
 
@@ -354,10 +352,6 @@ Q_SIGNALS:
     void s_callRedrawOnMainThread();
 
     void viewerDisconnected();
-
-    void refreshOptionalState();
-
-    void activeInputsChanged();
 
     void clipPreferencesChanged();
 

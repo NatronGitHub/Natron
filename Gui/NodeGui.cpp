@@ -253,9 +253,9 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(isOutput);
-    if (isViewer) {
-        QObject::connect( isViewer, SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(internalNode.get());
+    if (isInspector) {
+        QObject::connect( isInspector, SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
     }
 
     createGui();

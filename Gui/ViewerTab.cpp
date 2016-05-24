@@ -976,7 +976,11 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( wrapperNode.get(), SIGNAL(inputLabelChanged(int,QString)), this, SLOT(onInputNameChanged(int,QString)) );
     QObject::connect( _imp->viewerNode, SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
     QObject::connect( _imp->viewerNode, SIGNAL(availableComponentsChanged()), this, SLOT(onAvailableComponentsChanged()) );
-    QObject::connect( _imp->viewerNode, SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
+
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(wrapperNode.get());
+    if (isInspector) {
+        QObject::connect( isInspector, SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
+    }
     QObject::connect( _imp->viewerColorSpace, SIGNAL(currentIndexChanged(int)), this,
                       SLOT(onColorSpaceComboBoxChanged(int)) );
     QObject::connect( _imp->zoomCombobox, SIGNAL(currentIndexChanged(int)), this, SLOT(onZoomComboboxCurrentIndexChanged(int)) );

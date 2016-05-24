@@ -77,6 +77,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OpenGLViewerI.h"
 #include "Engine/Plugin.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/Project.h"
@@ -7283,7 +7284,7 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb)
+Node::onInputChanged(int inputNb, bool isInputA)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -7298,9 +7299,9 @@ Node::onInputChanged(int inputNb)
     refreshMaskEnabledNess(inputNb);
     refreshLayersChoiceSecretness(inputNb);
 
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( _imp->effect.get() );
-    if (isViewer) {
-        isViewer->refreshActiveInputs(inputNb);
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(this);
+    if (isInspector) {
+        isInspector->refreshActiveInputs(inputNb, isInputA);
     }
 
     bool shouldDoInputChanged = ( !getApp()->getProject()->isProjectClosing() && !getApp()->isCreatingNodeTree() ) ||
@@ -10967,6 +10968,10 @@ InspectorNode::InspectorNode(AppInstance* app,
                              Plugin* plugin)
     : Node(app, group, plugin)
 {
+    for (int i = 0; i < 2; ++i) {
+        _activeInputs[i] = -1;
+    }
+
 }
 
 InspectorNode::~InspectorNode()
@@ -11026,13 +11031,12 @@ InspectorNode::connectInput(const NodePtr& input,
 }
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb,
-                                        bool /*fromViewer*/)
+InspectorNode::setActiveInputAndRefresh(int inputNb,bool isASide)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
     int maxInputs = getMaxInputCount();
-    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || (getInput(inputNb) == NULL) ) {
+    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || (!getInput(inputNb)) ) {
         return;
     }
 
@@ -11043,7 +11047,7 @@ InspectorNode::setActiveInputAndRefresh(int inputNb,
     }
 
     Q_EMIT inputChanged(inputNb);
-    onInputChanged(inputNb);
+    onInputChanged(inputNb, isASide);
 
     runInputChangedCallback(inputNb);
 
@@ -11056,6 +11060,47 @@ InspectorNode::setActiveInputAndRefresh(int inputNb,
         }
     }
 }
+
+void
+InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    NodePtr inputNode = getRealInput(inputNbChanged);
+    {
+        QMutexLocker l(&_activeInputsMutex);
+        if (!inputNode) {
+            ///check if the input was one of the active ones if so set to -1
+            if (_activeInputs[0] == inputNbChanged) {
+                _activeInputs[0] = -1;
+            } else if (_activeInputs[1] == inputNbChanged) {
+                _activeInputs[1] = -1;
+            }
+        } else {
+            if (!isASide && _activeInputs[0] != -1) {
+
+                ViewerInstance* isViewer = isEffectViewer();
+                if (isViewer) {
+                    OpenGLViewerI* viewerUI = isViewer->getUiContext();
+                    if (viewerUI) {
+                        ViewerCompositingOperatorEnum op = viewerUI->getCompositingOperator();
+                        if (op == eViewerCompositingOperatorNone) {
+                            viewerUI->setCompositingOperator(eViewerCompositingOperatorWipeUnder);
+                        }
+                    }
+                }
+                _activeInputs[1] = inputNbChanged;
+            } else {
+                _activeInputs[0] = inputNbChanged;
+                if (_activeInputs[1] == -1) {
+                    _activeInputs[1] = inputNbChanged;
+                }
+            }
+        }
+    }
+    Q_EMIT activeInputsChanged();
+    Q_EMIT refreshOptionalState();
+}
+
 
 int
 InspectorNode::getPreferredInputInternal(bool connected) const
@@ -11114,6 +11159,39 @@ InspectorNode::getPreferredInputForConnection() const
 {
     return getPreferredInputInternal(false);
 }
+
+void
+InspectorNode::getActiveInputs(int & a,
+                               int &b) const
+{
+    QMutexLocker l(&_activeInputsMutex);
+
+    a = _activeInputs[0];
+    b = _activeInputs[1];
+}
+
+void
+InspectorNode::setInputA(int inputNb)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker l(&_activeInputsMutex);
+        _activeInputs[0] = inputNb;
+    }
+    Q_EMIT refreshOptionalState();
+}
+
+void
+InspectorNode::setInputB(int inputNb)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker l(&_activeInputsMutex);
+        _activeInputs[1] = inputNb;
+    }
+    Q_EMIT refreshOptionalState();
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

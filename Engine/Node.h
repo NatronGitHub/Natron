@@ -851,7 +851,7 @@ public:
 
     void endInputEdition(bool triggerRender);
 
-    void onInputChanged(int inputNb);
+    void onInputChanged(int inputNb, bool isInputA = true);
 
     bool onEffectKnobValueChanged(KnobI* what, ValueChangedReasonEnum reason);
 
@@ -1490,13 +1490,29 @@ public:
     virtual int getPreferredInputForConnection() const OVERRIDE FINAL;
     virtual int getPreferredInput() const OVERRIDE FINAL;
 
+    void refreshActiveInputs(int inputNbChanged, bool isASide);
+
+    void setInputA(int inputNb);
+
+    void setInputB(int inputNb);
+
+    void getActiveInputs(int & a, int &b) const;
+
+    void setActiveInputAndRefresh(int inputNb, bool isASide);
+
+Q_SIGNALS:
+
+    void refreshOptionalState();
+
+    void activeInputsChanged();
+
 private:
 
     int getPreferredInputInternal(bool connected) const;
 
-public:
 
-    void setActiveInputAndRefresh(int inputNb, bool fromViewer);
+    mutable QMutex _activeInputsMutex;
+    int _activeInputs[2]; //< indexes of the inputs used for the wipe
 };
 
 
