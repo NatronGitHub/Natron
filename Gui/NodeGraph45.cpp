@@ -479,7 +479,7 @@ EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 
     mainLayout->setContentsMargins(0, 0, 0, 0);
-    setWindowFlags(Qt::Popup);
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     _imp->field = new LineEdit(this);
     _imp->field->setText( QString::fromUtf8( node->getNode()->getLabel().c_str() ) );
     mainLayout->addWidget(_imp->field);
