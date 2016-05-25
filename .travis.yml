@@ -29,8 +29,8 @@ addons:
     - ppa:xorg-edgers/ppa
     # ubuntu-toolchain-r/test contains recent versions of gcc
     - ubuntu-toolchain-r-test
-    # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1)
-    - ppa:archivematica/externals
+    # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1) or ppa:spvkgn/ffmpeg-dev(2.8.6)
+    - ppa:spvkgn/ffmpeg-dev
     - kalakris-cmake
     - pythonxy-devel
     packages:
@@ -47,11 +47,11 @@ addons:
     - libpyside-dev
     - libshiboken-dev
     # packages for building openfx-io:
-    - libavcodec-dev
-    - libavformat-dev
-    - libswscale-dev
-    - libavutil-dev
-    - libswresample-dev
+    #- libavcodec-dev
+    #- libavformat-dev
+    #- libswscale-dev
+    #- libavutil-dev
+    #- libswresample-dev
     - libtinyxml-dev
     - liblcms2-dev
     - libyaml-cpp-dev
