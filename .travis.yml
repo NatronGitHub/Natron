@@ -90,13 +90,9 @@ addons:
 matrix:
   include:
     - os: linux
-      dist: trusty
+      dist: precise
       sudo: required
       compiler: gcc
-    - os: linux
-      dist: trusty
-      sudo: required
-      compiler: clang
     - os: linux
       dist: precise
       sudo: required
