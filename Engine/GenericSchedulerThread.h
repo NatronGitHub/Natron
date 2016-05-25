@@ -281,9 +281,19 @@ protected:
     virtual void onAbortRequested() {}
 
     /**
+     * @brief Called when quitThread has been requested
+     **/
+    virtual void onQuitRequested(bool /*allowRestarts*/) {}
+
+    /**
      * @brief Called when we successfully waited for an abort to be processed. This can be used to wait for extra threads
      **/
     virtual void onWaitForAbortCompleted() {}
+
+    /**
+     * @brief Called when we successfully waited for the thread to exit the run function. This can be used to wait for extra threads
+     **/
+    virtual void onWaitForThreadToQuit() {}
 
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread

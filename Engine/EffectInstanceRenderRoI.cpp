@@ -162,7 +162,7 @@ optimizeRectsToRender(EffectInstance* self,
 } // optimizeRectsToRender
 
 ImagePtr
-EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
+EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                              const ImagePtr& inputImage,
                                              const RectI& roi,
                                              const ImageComponents& targetComponents,
@@ -586,7 +586,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     if (fetchUserSelectedComponentsUpstream) {
                         // We fetched potentially different components, so convert them to the format requested
                         std::map<ImageComponents, ImagePtr> convertedPlanes;
-                        AppInstance* app = getApp();
+                        AppInstPtr app = getApp();
                         bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                         std::list<ImageComponents>::const_iterator compIt = args.components.begin();
 

@@ -797,7 +797,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     }
 
     NodePtr thisNode = getNode();
-    AppInstance* app = thisNode->getApp();
+    AppInstPtr app = thisNode->getApp();
     CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, thisNode->getGroup() );
     NodePtr createdNode = app->createNode(args);
     if (!createdNode) {

@@ -347,11 +347,7 @@ AppManager::~AppManager()
         }
     }
 
-    Q_FOREACH (Format * f, _imp->_formats) {
-        delete f;
-    }
-
-    delete _imp->_backgroundIPC;
+    _imp->_backgroundIPC.reset();
 
     try {
         _imp->saveCaches();
@@ -374,6 +370,7 @@ AppManager::~AppManager()
 
     _instance = 0;
 
+    // After this line, everything is cleaned-up (should be) and the process may resume in the main and could in theory be able to re-create a new AppManager
     delete qApp;
 }
 
@@ -1628,20 +1625,19 @@ AppManager::registerPlugin(const QString& resourcesPath,
     return plugin;
 }
 
-Format*
+Format
 AppManager::findExistingFormat(int w,
                                int h,
                                double par) const
 {
     for (U32 i = 0; i < _imp->_formats.size(); ++i) {
-        Format* frmt = _imp->_formats[i];
-        assert(frmt);
-        if ( (frmt->width() == w) && (frmt->height() == h) && (frmt->getPixelAspectRatio() == par) ) {
+        const Format& frmt = _imp->_formats[i];
+        if ( (frmt.width() == w) && (frmt.height() == h) && (frmt.getPixelAspectRatio() == par) ) {
             return frmt;
         }
     }
 
-    return NULL;
+    return Format();
 }
 
 void
@@ -1705,7 +1701,7 @@ AppManager::getMutexForPlugin(const QString & pluginId,
     throw std::invalid_argument(exc);
 }
 
-const std::vector<Format*> &
+const std::vector<Format> &
 AppManager::getFormats() const
 {
     return _imp->_formats;
@@ -2002,7 +1998,7 @@ AppManager::getCachesTotalMemorySize() const
     return _imp->_viewerCache->getMemoryCacheSize() + _imp->_nodeCache->getMemoryCacheSize();
 }
 
-CacheSignalEmitter*
+boost::shared_ptr<CacheSignalEmitter>
 AppManager::getOrActivateViewerCacheSignalEmitter() const
 {
     return _imp->_viewerCache->activateSignalEmitter();

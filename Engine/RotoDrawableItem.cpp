@@ -167,7 +167,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
 
     boost::shared_ptr<RotoContext> context = getContext();
     NodePtr node = context->getNode();
-    AppInstance* app = node->getApp();
+    AppInstPtr app = node->getApp();
     QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
     fixedNamePrefix.append( QLatin1Char('_') );
     fixedNamePrefix.append( QString::fromUtf8( getScriptName().c_str() ) );

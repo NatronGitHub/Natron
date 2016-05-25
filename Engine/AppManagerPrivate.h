@@ -73,7 +73,7 @@ public:
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
     boost::shared_ptr<Settings> _settings; //< app settings
-    std::vector<Format*> _formats; //<a list of the "base" formats available in the application
+    std::vector<Format> _formats; //<a list of the "base" formats available in the application
     PluginsMap _plugins; //< list of the plugins
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
@@ -82,7 +82,7 @@ public:
     boost::shared_ptr<Cache<FrameEntry> > _viewerCache; //< Viewer textures cache
     mutable QMutex diskCachesLocationMutex;
     QString diskCachesLocation;
-    ProcessInputChannel* _backgroundIPC; //< object used to communicate with the main app
+    boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
     //if this app is background, see the ProcessInputChannel def
     bool _loaded; //< true when the first instance is completly loaded.
     QString _binaryPath; //< the path to the application's binary

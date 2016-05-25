@@ -76,7 +76,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 Settings::Settings()
-    : KnobHolder(0)
+    : KnobHolder(AppInstPtr()) // < Settings are process wide and do not belong to a single AppInstance
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)

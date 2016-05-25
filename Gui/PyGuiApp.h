@@ -40,7 +40,7 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 class PyViewer
 {
-    NodePtr _node;
+    NodeWPtr _node;
     ViewerTab* _viewer;
 
 public:
@@ -48,6 +48,12 @@ public:
     PyViewer(const NodePtr& node);
 
     ~PyViewer();
+
+
+    NodePtr getInternalNode() const
+    {
+        return _node.lock();
+    }
 
     void seek(int frame);
 
@@ -108,13 +114,18 @@ class GuiApp
     Q_DECLARE_TR_FUNCTIONS(GuiApp)
 
 private:
-    GuiAppInstance* _app;
+    boost::weak_ptr<GuiAppInstance> _app;
 
 public:
 
-    GuiApp(AppInstance* app);
+    GuiApp(const GuiAppInstPtr& app);
 
     virtual ~GuiApp();
+
+    GuiAppInstPtr getInternalGuiApp() const
+    {
+        return _app.lock();
+    }
 
     Gui* getGui() const;
     PyModalDialog* createModalDialog();

@@ -179,8 +179,8 @@ public:
     Plugin* getPluginBinaryFromOldID(const QString & pluginId, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
-    Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
-    const std::vector<Format*> & getFormats() const WARN_UNUSED_RETURN;
+    Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
+    const std::vector<Format> & getFormats() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
@@ -244,7 +244,7 @@ public:
     }
 
     U64 getCachesTotalMemorySize() const;
-    CacheSignalEmitter* getOrActivateViewerCacheSignalEmitter() const;
+    boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
 

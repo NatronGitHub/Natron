@@ -56,9 +56,7 @@ struct PluginMemory::Implementation
 PluginMemory::PluginMemory(const EffectInstPtr& effect)
     : _imp( new Implementation(effect) )
 {
-    if (effect) {
-        effect->addPluginMemoryPointer(this);
-    }
+    
 }
 
 PluginMemory::~PluginMemory()

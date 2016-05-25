@@ -773,9 +773,9 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                                  QKeyEvent* e)
 {
     bool didSomething = false;
-    GuiAppInstance* app = getGui()->getApp();
+    GuiAppInstPtr app = getGui()->getApp();
 
-    if ( !app  || getGui()->getApp()->isClosing() ) {
+    if ( !app  || app->isClosing() ) {
         return false;
     }
 
@@ -843,9 +843,9 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
                                QKeyEvent* e)
 {
     bool didSomething = false;
-    GuiAppInstance* app = getGui()->getApp();
+    GuiAppInstPtr app = getGui()->getApp();
 
-    if ( !app || getGui()->getApp()->isClosing() ) {
+    if ( !app || app->isClosing() ) {
         return false;
     }
 

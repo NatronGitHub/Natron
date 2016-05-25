@@ -198,7 +198,7 @@ struct Node::Implementation
 
 public:
     Implementation(Node* publicInterface,
-                   AppInstance* app_,
+                   const AppInstPtr& app_,
                    const boost::shared_ptr<NodeCollection>& collection,
                    Plugin* plugin_)
         : _publicInterface(publicInterface)
@@ -374,7 +374,7 @@ public:
     Node* _publicInterface;
     boost::weak_ptr<NodeCollection> group;
     boost::weak_ptr<PrecompNode> precomp;
-    AppInstance* app; // pointer to the app: needed to access the application's default-project's format
+    AppInstWPtr app; // pointer to the app: needed to access the application's default-project's format
     bool isPartOfProject;
     bool knobsInitialized;
     bool inputsInitialized;
@@ -578,7 +578,7 @@ toBGRA(unsigned char r,
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-Node::Node(AppInstance* app,
+Node::Node(const AppInstPtr& app,
            const boost::shared_ptr<NodeCollection>& group,
            Plugin* plugin)
     : QObject()
@@ -1543,7 +1543,11 @@ Node::computeHashRecursive(std::list<Node*>& marked)
 void
 Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 {
-    boost::shared_ptr<Project> proj = getApp()->getProject();
+    AppInstPtr app = getApp();
+    if (!app) {
+        return;
+    }
+    boost::shared_ptr<Project> proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
@@ -1560,7 +1564,11 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 void
 Node::removeAllImagesFromCache(bool blocking)
 {
-    boost::shared_ptr<Project> proj = getApp()->getProject();
+    AppInstPtr app = getApp();
+    if (!app) {
+        return;
+    }
+    boost::shared_ptr<Project> proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
@@ -3028,10 +3036,10 @@ Node::setScriptName(const std::string& name)
     setNameInternal(newName, true, true);
 }
 
-AppInstance*
+AppInstPtr
 Node::getApp() const
 {
-    return _imp->app;
+    return _imp->app.lock();
 }
 
 bool
@@ -5988,7 +5996,10 @@ Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
 
-    getApp()->recheckInvalidExpressions();
+    AppInstPtr app = getApp();
+    if (app) {
+        app->recheckInvalidExpressions();
+    }
 
     ///Remove the Python node
     deleteNodeVariableToPython( getFullyQualifiedName() );
@@ -6744,7 +6755,11 @@ Node::clearPersistentMessageInternal()
 void
 Node::clearPersistentMessage(bool recurse)
 {
-    if ( getApp()->isBackground() ) {
+    AppInstPtr app = getApp();
+    if (!app) {
+        return;
+    }
+    if ( app->isBackground() ) {
         return;
     }
     if (recurse) {
@@ -9922,6 +9937,11 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
     if ( getParentMultiInstance() ) {
         return;
     }
+
+    AppInstPtr app = getApp();
+    if (!app) {
+        return;
+    }
     QString appID = QString::fromUtf8( getApp()->getAppIDString().c_str() );
     std::string nodeFullName = appID.toStdString() + "." + nodeName;
     bool alreadyDefined = false;
@@ -10993,7 +11013,7 @@ Node::getHostMixingValue(double time,
 
 //////////////////////////////////
 
-InspectorNode::InspectorNode(AppInstance* app,
+InspectorNode::InspectorNode(const AppInstPtr& app,
                              const boost::shared_ptr<NodeCollection>& group,
                              Plugin* plugin)
     : Node(app, group, plugin)

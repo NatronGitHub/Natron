@@ -631,7 +631,7 @@ KnobGui::removeAllKeyframeMarkersOnTimeline(int dimension)
     KnobPtr knob = getKnob();
 
     if ( knob->getHolder() && knob->getHolder()->getApp() && !knob->getIsSecret() && ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) ) {
-        AppInstance* app = knob->getHolder()->getApp();
+        AppInstPtr app = knob->getHolder()->getApp();
         assert(app);
         std::list<SequenceTime> times;
         std::set<SequenceTime> tmpTimes;
@@ -668,7 +668,7 @@ void
 KnobGui::setAllKeyframeMarkersOnTimeline(int dimension)
 {
     KnobPtr knob = getKnob();
-    AppInstance* app = knob->getHolder()->getApp();
+    AppInstPtr app = knob->getHolder()->getApp();
 
     assert(app);
     std::list<SequenceTime> times;
@@ -712,7 +712,7 @@ KnobGui::onKeyFrameMoved(ViewSpec /*view*/,
         return;
     }
     if ( knob->isDeclaredByPlugin() || knob->isUserKnob() ) {
-        AppInstance* app = knob->getHolder()->getApp();
+        AppInstPtr app = knob->getHolder()->getApp();
         assert(app);
         app->removeKeyFrameIndicator(oldTime);
         app->addKeyframeIndicator(newTime);
