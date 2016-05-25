@@ -53,6 +53,13 @@ run-without-python {
     }
 }
 
+win32-g++ {
+    # on Mingw LD is extremely slow in  debug mode and can take hours. Optimizing the build seems to make it faster
+    CONFIG(debug, debug|release){
+        QMAKE_CXXFLAGS += -O -g
+    }
+}
+
 win32-msvc* {
     CONFIG(relwithdebinfo) {
         CONFIG += release

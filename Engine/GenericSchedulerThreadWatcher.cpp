@@ -106,12 +106,6 @@ GenericWatcher::stopWatching()
         QMutexLocker k(&_imp->tasksMutex);
         _imp->tasks.clear();
     }
-    // Post a stub request to wake up the thread
-    {
-        QMutexLocker k(&_imp->startRequestsMutex);
-        ++_imp->startRequests;
-        _imp->startRequestsCond.wakeOne();
-    }
 
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);
@@ -120,6 +114,14 @@ GenericWatcher::stopWatching()
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
     }
+
+    // Post a stub request to wake up the thread
+    {
+        QMutexLocker k(&_imp->startRequestsMutex);
+        ++_imp->startRequests;
+        _imp->startRequestsCond.wakeOne();
+    }
+
     wait();
 }
 
