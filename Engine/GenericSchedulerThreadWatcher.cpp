@@ -27,6 +27,7 @@
 #include "GenericSchedulerThreadWatcher.h"
 
 #include <QtCore/QMetaType>
+#include <QtCore/QWaitCondition>
 
 #include "Engine/GenericSchedulerThread.h"
 #include "Engine/OutputSchedulerThread.h"
