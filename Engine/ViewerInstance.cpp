@@ -1131,7 +1131,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         return eViewerRenderRetCodeRedraw;
     }
 
-    int activeA,activeB;
+    int activeA, activeB;
     getActiveInputs(activeA, activeB);
     // Fetch the viewer indexes that we should render from the A or B input depending on the textureIndex parameter
     if (textureIndex == 0) {
@@ -3081,7 +3081,8 @@ ViewerInstance::getActiveInputs(int & a,
                                 int &b) const
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+
     assert(isInspector);
     if (isInspector) {
         isInspector->getActiveInputs(a, b);
@@ -3092,7 +3093,8 @@ void
 ViewerInstance::setInputA(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+
     assert(isInspector);
     if (isInspector) {
         isInspector->setInputA(inputNb);
@@ -3103,7 +3105,8 @@ void
 ViewerInstance::setInputB(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+
     assert(isInspector);
     if (isInspector) {
         isInspector->setInputB(inputNb);

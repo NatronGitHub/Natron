@@ -486,7 +486,8 @@ Gui::selectNode(NodeGuiPtr node)
 }
 
 void
-Gui::connectInput(int inputNb, bool isASide)
+Gui::connectInput(int inputNb,
+                  bool isASide)
 {
     NodeGraph* graph = 0;
 

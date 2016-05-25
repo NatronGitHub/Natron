@@ -1095,7 +1095,8 @@ ViewerTab::onActiveInputsChanged()
 }
 
 void
-ViewerTab::connectToInput(int inputNb, bool isASide)
+ViewerTab::connectToInput(int inputNb,
+                          bool isASide)
 {
     InspectorNode* node = dynamic_cast<InspectorNode*>( getInternalNode()->getNode().get() );
 
