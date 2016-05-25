@@ -467,7 +467,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         containerLayout->addWidget(_imp->dimensionSwitchButton);
 
         bool showSlider = true;
-        double firstDimensionValue;
+        double firstDimensionValue = 0.;
         SequenceTime time = 0;
         if ( knob->getHolder() && knob->getHolder()->getApp() ) {
             time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();

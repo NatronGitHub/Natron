@@ -53,6 +53,10 @@ protected:
     virtual void SetUp();
     virtual void TearDown();
 
+    AppInstPtr getApp() const {
+        return _app.lock();
+    }
+
     ///Useful function to create a node for all the tests.
     ///You should not call this function
     NodePtr createNode(const QString & pluginID, int majorVersion = -1, int minorVersion = -1);
@@ -83,7 +87,7 @@ protected:
     QString _readOIIOPluginID;
     QString _writeOIIOPluginID;
     std::vector<QString> _allTestPluginIDs;
-    AppInstance* _app;
+    AppInstWPtr _app;
 };
 
 NATRON_NAMESPACE_EXIT

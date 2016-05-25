@@ -1037,7 +1037,7 @@ Gui::centerOpenedViewersOn(SequenceTime left,
 void
 Gui::ddeOpenFile(const QString& filePath)
 {
-    _imp->_appInstance->handleFileOpenEvent( filePath.toStdString() );
+    getApp()->handleFileOpenEvent( filePath.toStdString() );
 }
 
 #endif
