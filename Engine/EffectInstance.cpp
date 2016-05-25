@@ -4768,7 +4768,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     double inputPar = 1.;
     bool inputParSet = false;
-    ImagePremultiplicationEnum premult;
+    ImagePremultiplicationEnum premult = eImagePremultiplicationOpaque;
     bool premultSet = false;
     for (int i = 0; i < nInputs; ++i) {
         const EffectInstPtr& input = inputs[i];
