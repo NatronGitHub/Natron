@@ -60,7 +60,8 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 void
-NodeGraph::connectCurrentViewerToSelection(int inputNB,bool isASide)
+NodeGraph::connectCurrentViewerToSelection(int inputNB,
+                                           bool isASide)
 {
     ViewerTab* lastUsedViewer =  getLastSelectedViewer();
 

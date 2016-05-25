@@ -253,7 +253,7 @@ NodeGui::initialize(NodeGraph* dag,
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(internalNode.get());
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( internalNode.get() );
     if (isInspector) {
         QObject::connect( isInspector, SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
     }

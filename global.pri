@@ -186,6 +186,10 @@ macx {
   LIBS += -framework CoreServices
 }
 
+CONFIG(debug) {
+    CONFIG += nopch
+}
+
 # CONFIG+=nopch disables precompiled headers
 !nopch {
   !macx|!universal {

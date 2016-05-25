@@ -7327,7 +7327,8 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb, bool isInputA)
+Node::onInputChanged(int inputNb,
+                     bool isInputA)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -11017,7 +11018,6 @@ InspectorNode::InspectorNode(const AppInstPtr& app,
     for (int i = 0; i < 2; ++i) {
         _activeInputs[i] = -1;
     }
-
 }
 
 InspectorNode::~InspectorNode()
@@ -11077,12 +11077,13 @@ InspectorNode::connectInput(const NodePtr& input,
 }
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb,bool isASide)
+InspectorNode::setActiveInputAndRefresh(int inputNb,
+                                        bool isASide)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
     int maxInputs = getMaxInputCount();
-    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || (!getInput(inputNb)) ) {
+    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || ( !getInput(inputNb) ) ) {
         return;
     }
 
@@ -11108,7 +11109,8 @@ InspectorNode::setActiveInputAndRefresh(int inputNb,bool isASide)
 }
 
 void
-InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
+InspectorNode::refreshActiveInputs(int inputNbChanged,
+                                   bool isASide)
 {
     assert( QThread::currentThread() == qApp->thread() );
     NodePtr inputNode = getRealInput(inputNbChanged);
@@ -11122,8 +11124,7 @@ InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
                 _activeInputs[1] = -1;
             }
         } else {
-            if (!isASide && _activeInputs[0] != -1) {
-
+            if ( !isASide && (_activeInputs[0] != -1) ) {
                 ViewerInstance* isViewer = isEffectViewer();
                 if (isViewer) {
                     OpenGLViewerI* viewerUI = isViewer->getUiContext();
@@ -11146,7 +11147,6 @@ InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
     Q_EMIT activeInputsChanged();
     Q_EMIT refreshOptionalState();
 }
-
 
 int
 InspectorNode::getPreferredInputInternal(bool connected) const
@@ -11237,7 +11237,6 @@ InspectorNode::setInputB(int inputNb)
     }
     Q_EMIT refreshOptionalState();
 }
-
 
 NATRON_NAMESPACE_EXIT;
 
