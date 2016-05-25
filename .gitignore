@@ -13,6 +13,7 @@ build64
 sed*
 *latex*
 DerivedData
+Documentation/html
 tools/normalize/normalize
 libs/gflags/gflags.xcodeproj
 libs/glog/glog.xcodeproj
