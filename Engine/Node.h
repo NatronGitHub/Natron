@@ -89,7 +89,7 @@ public:
     struct Implementation;
 
 
-    Node(AppInstance* app,
+    Node(const AppInstPtr& app,
          const boost::shared_ptr<NodeCollection>& group,
          Plugin* plugin);
 
@@ -653,7 +653,7 @@ public:
     std::string getPluginIconFilePath() const;
 
     /*============================*/
-    AppInstance* getApp() const;
+    AppInstPtr getApp() const;
 
     /* @brief Make this node inactive. It will appear
        as if it was removed from the graph editor
@@ -1480,7 +1480,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    InspectorNode(AppInstance* app,
+    InspectorNode(const AppInstPtr& app,
                   const boost::shared_ptr<NodeCollection>& group,
                   Plugin* plugin);
 

@@ -581,7 +581,11 @@ private:
 
     virtual void onWaitForAbortCompleted() OVERRIDE FINAL;
 
+    virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
+
     virtual void onAbortRequested() OVERRIDE FINAL;
+
+    virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
 
     virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
 

@@ -192,7 +192,7 @@ OfxOverlayInteract::redraw()
 
     assert(effect);
     if ( effect && effect->getOfxEffectInstance()->getNode()->shouldDrawOverlay() ) {
-        AppInstance* app =  effect->getOfxEffectInstance()->getApp();
+        AppInstPtr app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
         if ( effect->getOfxEffectInstance()->isDoingInteractAction() ) {
             app->queueRedrawForAllViewers();

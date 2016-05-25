@@ -862,7 +862,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
             parentToolButton = othersGroup;
         }
     }
-    ToolButton* pluginsToolButton = new ToolButton(_imp->_appInstance, plugin, plugin->getID(), plugin->getMajorVersion(),
+    ToolButton* pluginsToolButton = new ToolButton(getApp(), plugin, plugin->getID(), plugin->getMajorVersion(),
                                                    plugin->getMinorVersion(),
                                                    plugin->getLabel(), toolButtonIcon, menuIcon);
 
@@ -981,11 +981,11 @@ Gui::getToolButtonMenuOpened() const
     return _imp->_toolButtonMenuOpened;
 }
 
-AppInstance*
+AppInstPtr
 Gui::createNewProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl, false);
+    AppInstPtr app = appPTR->newAppInstance(cl, false);
 
     app->execOnProjectCreatedCallback();
 
@@ -1010,34 +1010,34 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = QString::fromUtf8( path.c_str() );
-        AppInstance* appInstance = openProjectInternal(selectedFile, true);
+        AppInstPtr appInstance = openProjectInternal(selectedFile, true);
         Q_UNUSED(appInstance);
     }
 }
 
-AppInstance*
+AppInstPtr
 Gui::openProject(const std::string & filename)
 {
     return openProjectInternal(filename, true);
 }
 
-AppInstance*
+AppInstPtr
 Gui::openProjectInternal(const std::string & absoluteFileName,
                          bool attemptToLoadAutosave)
 {
     QFileInfo file( QString::fromUtf8( absoluteFileName.c_str() ) );
 
     if ( !file.exists() ) {
-        return 0;
+        return AppInstPtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QLatin1Char('/');
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
-        AppInstance* instance = appPTR->getAppInstance(openedProject);
+        AppInstPtr instance = appPTR->getAppInstance(openedProject);
         if (instance) {
-            GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+            GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance.get());
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
 
@@ -1046,16 +1046,17 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         }
     }
 
-    AppInstance* ret = 0;
+    AppInstPtr ret;
+    boost::shared_ptr<Project> project = getApp()->getProject();
     ///if the current graph has no value, just load the project in the same window
-    if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-        bool ok = _imp->_appInstance->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
+    if ( project->isGraphWorthLess() ) {
+        bool ok = project->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
-            ret = _imp->_appInstance;
+            ret = _imp->_appInstance.lock();
         }
     } else {
         CLArgs cl;
-        AppInstance* newApp = appPTR->newAppInstance(cl, false);
+        AppInstPtr newApp = appPTR->newAppInstance(cl, false);
         bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = newApp;
@@ -1095,7 +1096,7 @@ updateRecentFiles(const QString & filename)
 bool
 Gui::saveProject()
 {
-    boost::shared_ptr<Project> project = _imp->_appInstance->getProject();
+    boost::shared_ptr<Project> project = getApp()->getProject();
 
     if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
@@ -1137,7 +1138,7 @@ Gui::saveProjectAs(const std::string& filename)
     }
     _imp->_lastSaveProjectOpenedDir = QString::fromUtf8( path.c_str() );
 
-    bool ret = _imp->_appInstance->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
+    bool ret = getApp()->getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( fileCopy.c_str() ), 0);
 
     if (ret) {
         QString filePath = QString::fromUtf8( path.c_str() ) + QString::fromUtf8( fileCopy.c_str() );
@@ -1164,8 +1165,9 @@ Gui::saveProjectAs()
 void
 Gui::saveAndIncrVersion()
 {
-    QString path = _imp->_appInstance->getProject()->getProjectPath();
-    QString name = _imp->_appInstance->getProject()->getProjectFilename();
+    boost::shared_ptr<Project> project = getApp()->getProject();
+    QString path = project->getProjectPath();
+    QString name = project->getProjectFilename();
     int currentVersion = 0;
     int positionToInsertVersion;
     bool mustAppendFileExtension = false;
@@ -1223,7 +1225,7 @@ Gui::saveAndIncrVersion()
         name.insert(positionToInsertVersion, toInsert);
     }
 
-    _imp->_appInstance->getProject()->saveProject(path, name, 0);
+    project->saveProject(path, name, 0);
 
     QString filename = path + QLatin1Char('/') + name;
     updateRecentFiles(filename);
@@ -1239,7 +1241,7 @@ Gui::createNewViewer()
         throw std::logic_error("");
     }
     CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup() );
-    ignore_result( _imp->_appInstance->createNode(args) );
+    ignore_result( getApp()->createNode(args) );
 }
 
 NodePtr
@@ -1288,7 +1290,7 @@ Gui::createReader()
             args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
 
 
-            ret = _imp->_appInstance->createNode(args);
+            ret = getApp()->createNode(args);
 
             if (!ret) {
                 return ret;
@@ -1409,14 +1411,14 @@ Gui::popSaveFileDialog(bool sequenceDialog,
 void
 Gui::autoSave()
 {
-    _imp->_appInstance->getProject()->autoSave();
+    getApp()->getProject()->autoSave();
 }
 
 int
 Gui::saveWarning()
 {
-    if ( !_imp->_appInstance->getProject()->isSaveUpToDate() ) {
-        StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to %1?").arg( _imp->_appInstance->getProject()->getProjectFilename() ).toStdString(),
+    if ( !getApp()->getProject()->isSaveUpToDate() ) {
+        StandardButtonEnum ret =  Dialogs::questionDialog(NATRON_APPLICATION_NAME, tr("Save changes to %1?").arg( getApp()->getProject()->getProjectFilename() ).toStdString(),
                                                           false,
                                                           StandardButtons(eStandardButtonSave | eStandardButtonDiscard | eStandardButtonCancel), eStandardButtonSave);
         if ( (ret == eStandardButtonEscape) || (ret == eStandardButtonCancel) ) {

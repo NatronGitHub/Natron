@@ -122,8 +122,10 @@ Gui::setupUi()
 
     createDefaultLayoutInternal(false);
 
+    boost::shared_ptr<Project> project = getApp()->getProject();
+
     _imp->_projectGui = new ProjectGui(this);
-    _imp->_projectGui->create(_imp->_appInstance->getProject(),
+    _imp->_projectGui->create(project,
                               _imp->_layoutPropertiesBin,
                               this);
 
@@ -141,7 +143,6 @@ Gui::setupUi()
 
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
 
-    boost::shared_ptr<Project> project = _imp->_appInstance->getProject();
     QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
     boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
@@ -161,7 +162,7 @@ Gui::setupUi()
      */
     QMetaObject::connectSlotsByName(this);
 
-    appPTR->setOFXHostHandle( _imp->_appInstance->getOfxHostOSHandle() );
+    appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
 } // setupUi
 
 void

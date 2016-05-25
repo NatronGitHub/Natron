@@ -139,7 +139,7 @@ generateUserFriendlyNatronVersionName()
     return ret;
 }
 
-Project::Project(AppInstance* appInstance)
+Project::Project(const AppInstPtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
@@ -163,11 +163,11 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER;
 
 class LoadProjectSplashScreen_RAII
 {
-    AppInstance* app;
+    AppInstWPtr app;
 
 public:
 
-    LoadProjectSplashScreen_RAII(AppInstance* app,
+    LoadProjectSplashScreen_RAII(const AppInstPtr& app,
                                  const QString& filename)
         : app(app)
     {
@@ -178,8 +178,9 @@ public:
 
     ~LoadProjectSplashScreen_RAII()
     {
-        if (app) {
-            app->closeLoadPRojectSplashScreen();
+        AppInstPtr a = app.lock();
+        if (a) {
+            a->closeLoadPRojectSplashScreen();
         }
     }
 };
@@ -745,16 +746,16 @@ Project::initializeKnobs()
     _imp->formatKnob->setHintToolTip( tr("The project output format is what is used as canvas on the viewers.") );
     _imp->formatKnob->setName("outputFormat");
 
-    const std::vector<Format*> & appFormats = appPTR->getFormats();
+    const std::vector<Format> & appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
-        Format* f = appFormats[i];
-        QString formatStr = ProjectPrivate::generateStringFromFormat(*f);
-        if ( (f->width() == 1920) && (f->height() == 1080) && (f->getPixelAspectRatio() == 1) ) {
+        const Format& f = appFormats[i];
+        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+        if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
             _imp->formatKnob->setDefaultValue(i, 0);
         }
         entries.push_back( formatStr.toStdString() );
-        _imp->builtinFormats.push_back(*f);
+        _imp->builtinFormats.push_back(f);
     }
     _imp->formatKnob->setAddNewLine(false);
 
@@ -1845,9 +1846,9 @@ Project::setOrAddProjectFormat(const Format & frmt,
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 
-            Format* df = appPTR->findExistingFormat( dispW.width(), dispW.height(), dispW.getPixelAspectRatio() );
-            if (df) {
-                dispW.setName( df->getName() );
+            Format df = appPTR->findExistingFormat( dispW.width(), dispW.height(), dispW.getPixelAspectRatio() );
+            if (!df.isNull()) {
+                dispW.setName( df.getName() );
                 setProjectDefaultFormat(dispW);
             } else {
                 setProjectDefaultFormat(dispW);

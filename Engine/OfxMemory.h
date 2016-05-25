@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 class OfxMemory
     : public OFX::Host::Memory::Instance
 {
-    PluginMemory* _memory;
+    boost::shared_ptr<PluginMemory> _memory;
 
 public:
 

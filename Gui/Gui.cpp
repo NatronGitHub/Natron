@@ -70,7 +70,7 @@ get_icon(const std::string &name)
     return QIcon::fromTheme( str, QIcon(QString::fromUtf8(":icons/") + str) );
 }
 
-Gui::Gui(GuiAppInstance* app,
+Gui::Gui(const GuiAppInstPtr& app,
          QWidget* parent)
 #ifndef __NATRON_WIN32__
     : QMainWindow(parent)
@@ -96,7 +96,7 @@ Gui::Gui(GuiAppInstance* app,
                       SLOT(onDoDialog(int,QString,QString,bool,StandardButtons,int)) );
     QObject::connect( this, SIGNAL(doDialogWithStopAskingCheckbox(int,QString,QString,bool,StandardButtons,int)), this,
                       SLOT(onDoDialogWithStopAskingCheckbox(int,QString,QString,bool,StandardButtons,int)) );
-    QObject::connect( app, SIGNAL(pluginsPopulated()), this, SLOT(addToolButttonsToToolBar()) );
+    QObject::connect( app.get(), SIGNAL(pluginsPopulated()), this, SLOT(addToolButttonsToToolBar()) );
     QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
 
 
@@ -183,7 +183,7 @@ Gui::reloadProject()
         return;
     }
 
-    AppInstance* appInstance = openProjectInternal(projectPath.toStdString(), false);
+    AppInstPtr appInstance = openProjectInternal(projectPath.toStdString(), false);
     Q_UNUSED(appInstance);
 }
 
@@ -222,12 +222,17 @@ Gui::abortProject(bool quitApp,
 
     _imp->setUndoRedoActions(0, 0);
     if (quitApp) {
-        assert(_imp->_appInstance);
-        _imp->_appInstance->quit();
+        GuiAppInstPtr app = getApp();
+        if (app) {
+            app->quit();
+        }
     } else {
         setGuiAboutToClose(true);
-        _imp->_appInstance->resetPreviewProvider();
-        _imp->_appInstance->getProject()->closeProject(false);
+        GuiAppInstPtr app = getApp();
+        if (app) {
+            app->resetPreviewProvider();
+            app->getProject()->closeProject(false);
+        }
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
         setGuiAboutToClose(false);
@@ -261,7 +266,8 @@ void
 Gui::closeEvent(QCloseEvent* e)
 {
     assert(e);
-    if ( _imp->_appInstance->isClosing() ) {
+    GuiAppInstPtr app = getApp();
+    if ( app && app->isClosing() ) {
         e->ignore();
     } else {
         if ( !closeInstance(true) ) {
@@ -384,11 +390,13 @@ Gui::eventFilter(QObject *target,
     if (_imp->_aboutToClose) {
         return true;
     }
-    assert(_imp->_appInstance);
     if ( dynamic_cast<QInputEvent*>(e) ) {
         /*Make top level instance this instance since it receives all
            user inputs.*/
-        appPTR->setAsTopLevelInstance( _imp->_appInstance->getAppID() );
+        GuiAppInstPtr app = getApp();
+        if (app) {
+            appPTR->setAsTopLevelInstance( app->getAppID() );
+        }
     }
 
     return QMainWindow::eventFilter(target, e);
@@ -487,7 +495,7 @@ Gui::createMenuActions()
 
     _imp->actionClearNodeCache = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionClearNodeCache, kShortcutDescActionClearNodeCache, this);
     QObject::connect( _imp->actionClearNodeCache, SIGNAL(triggered()), appPTR, SLOT(clearNodeCache()) );
-    QObject::connect( _imp->actionClearNodeCache, SIGNAL(triggered()), _imp->_appInstance, SLOT(clearOpenFXPluginsCaches()) );
+    QObject::connect( _imp->actionClearNodeCache, SIGNAL(triggered()), _imp->_appInstance.lock().get(), SLOT(clearOpenFXPluginsCaches()) );
 
     _imp->actionClearPluginsLoadingCache = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionClearPluginsLoadCache, kShortcutDescActionClearPluginsLoadCache, this);
     QObject::connect( _imp->actionClearPluginsLoadingCache, SIGNAL(triggered()), appPTR, SLOT(clearPluginsLoadedCache()) );

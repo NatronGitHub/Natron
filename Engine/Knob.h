@@ -2247,7 +2247,7 @@ public:
      * When appInstance is NULL the holder will be considered "application global" in which case
      * the knob holder will interact directly with the AppManager singleton.
      **/
-    KnobHolder(AppInstance* appInstance);
+    KnobHolder(const AppInstPtr& appInstance);
 
     virtual ~KnobHolder();
 
@@ -2283,7 +2283,7 @@ public:
 
     template<typename K>
     boost::shared_ptr<K> createKnob(const std::string &label, int dimension = 1) const WARN_UNUSED_RETURN;
-    AppInstance* getApp() const WARN_UNUSED_RETURN;
+    AppInstPtr getApp() const WARN_UNUSED_RETURN;
     KnobPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     KnobPtr getOtherKnobByName(const std::string & name, const KnobI* caller) const WARN_UNUSED_RETURN;
 
@@ -2368,8 +2368,6 @@ public:
     bool dequeueValuesSet();
 
     bool isDequeueingValuesSet() const;
-
-    void discardAppPointer();
 
     /**
      * @brief Returns true if at least a parameter is animated
@@ -2733,7 +2731,7 @@ class NamedKnobHolder
 {
 public:
 
-    NamedKnobHolder(AppInstance* instance)
+    NamedKnobHolder(const AppInstPtr& instance)
         : KnobHolder(instance)
     {
     }

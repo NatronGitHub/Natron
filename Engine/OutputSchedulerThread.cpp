@@ -3711,13 +3711,28 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested()
     //This function marks all active renders of the viewer as aborted (except the oldest one)
     //and each node actually check if the render has been aborted in EffectInstance::Implementation::aborted()
     _imp->viewer->markAllOnGoingRendersAsAborted();
+    _imp->backupThread.abortThreadedTask();
 
+}
+
+void
+ViewerCurrentFrameRequestScheduler::onQuitRequested(bool allowRestarts)
+{
+    _imp->backupThread.quitThread(allowRestarts);
+}
+
+void
+ViewerCurrentFrameRequestScheduler::onWaitForThreadToQuit()
+{
+    _imp->waitForRunnableTasks();
+    _imp->backupThread.waitForThreadToQuit_enforce_blocking();
 }
 
 void
 ViewerCurrentFrameRequestScheduler::onWaitForAbortCompleted()
 {
     _imp->waitForRunnableTasks();
+    _imp->backupThread.waitForAbortToComplete_enforce_blocking();
 }
 
 void

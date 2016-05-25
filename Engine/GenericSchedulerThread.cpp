@@ -187,6 +187,8 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
         _imp->startRequestsCond.wakeOne();
     }
 
+    onQuitRequested(allowRestarts);
+    
     return true;
 }
 
@@ -225,6 +227,9 @@ GenericSchedulerThreadPrivate::waitForThreadsToQuit_internal(bool allowBlockingF
 
     // call pthread_join() to ensure the thread has stopped, this should be instantaneous anyway since we ensured we returned from the run() function already
     _p->wait();
+
+    _p->onWaitForThreadToQuit();
+
     return true;
 }
 

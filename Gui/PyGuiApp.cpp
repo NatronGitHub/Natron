@@ -55,11 +55,10 @@ CLANG_DIAG_ON(uninitialized)
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-GuiApp::GuiApp(AppInstance* app)
+GuiApp::GuiApp(const GuiAppInstPtr& app)
     : App(app)
-    , _app( dynamic_cast<GuiAppInstance*>(app) )
+    , _app(app)
 {
-    assert(_app);
 }
 
 GuiApp::~GuiApp()
@@ -69,13 +68,13 @@ GuiApp::~GuiApp()
 Gui*
 GuiApp::getGui() const
 {
-    return _app->getGui();
+    return getInternalGuiApp()->getGui();
 }
 
 PyModalDialog*
 GuiApp::createModalDialog()
 {
-    PyModalDialog* ret = new PyModalDialog( _app->getGui() );
+    PyModalDialog* ret = new PyModalDialog( getInternalGuiApp()->getGui() );
 
     return ret;
 }
@@ -83,7 +82,7 @@ GuiApp::createModalDialog()
 PyTabWidget*
 GuiApp::getTabWidget(const QString& name) const
 {
-    const std::list<TabWidget*>& tabs = _app->getGui()->getPanes();
+    const std::list<TabWidget*>& tabs = getInternalGuiApp()->getGui()->getPanes();
 
     for (std::list<TabWidget*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
         if ( (*it)->objectName_mt_safe() == name ) {
@@ -97,7 +96,7 @@ GuiApp::getTabWidget(const QString& name) const
 PyTabWidget*
 GuiApp::getActiveTabWidget() const
 {
-    TabWidget* tab =  _app->getGui()->getLastEnteredTabWidget();
+    TabWidget* tab =  getInternalGuiApp()->getGui()->getLastEnteredTabWidget();
 
     if (!tab) {
         return 0;
@@ -113,7 +112,7 @@ GuiApp::moveTab(const QString& scriptName,
     PanelWidget* w;
     ScriptObject* o;
 
-    _app->getGui()->findExistingTab(scriptName.toStdString(), &w, &o);
+    getInternalGuiApp()->getGui()->findExistingTab(scriptName.toStdString(), &w, &o);
     if (!w || !o) {
         return false;
     }
@@ -125,20 +124,20 @@ void
 GuiApp::registerPythonPanel(PyPanel* panel,
                             const QString& pythonFunction)
 {
-    _app->getGui()->registerPyPanel( panel, pythonFunction.toStdString() );
+    getInternalGuiApp()->getGui()->registerPyPanel( panel, pythonFunction.toStdString() );
 }
 
 void
 GuiApp::unregisterPythonPanel(PyPanel* panel)
 {
-    _app->getGui()->unregisterPyPanel(panel);
+    getInternalGuiApp()->getGui()->unregisterPyPanel(panel);
 }
 
 QString
 GuiApp::getFilenameDialog(const QStringList& filters,
                           const QString& location) const
 {
-    Gui* gui = _app->getGui();
+    Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
@@ -164,7 +163,7 @@ QString
 GuiApp::getSequenceDialog(const QStringList& filters,
                           const QString& location) const
 {
-    Gui* gui = _app->getGui();
+    Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
@@ -189,7 +188,7 @@ GuiApp::getSequenceDialog(const QStringList& filters,
 QString
 GuiApp::getDirectoryDialog(const QString& location) const
 {
-    Gui* gui = _app->getGui();
+    Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
     SequenceFileDialog dialog(gui,
                               f,
@@ -212,7 +211,7 @@ QString
 GuiApp::saveFilenameDialog(const QStringList& filters,
                            const QString& location) const
 {
-    Gui* gui = _app->getGui();
+    Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
@@ -238,7 +237,7 @@ QString
 GuiApp::saveSequenceDialog(const QStringList& filters,
                            const QString& location) const
 {
-    Gui* gui = _app->getGui();
+    Gui* gui = getInternalGuiApp()->getGui();
     std::vector<std::string> f;
 
     for (QStringList::const_iterator it = filters.begin(); it != filters.end(); ++it) {
@@ -302,10 +301,10 @@ GuiApp::getSelectedNodes(Group* group) const
             }
         }
     } else {
-        graph = _app->getGui()->getLastSelectedGraph();
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
     }
     if (!graph) {
-        graph = _app->getGui()->getNodeGraph();
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
     }
     assert(graph);
     if (!graph) {
@@ -343,7 +342,7 @@ GuiApp::selectNode(Effect* effect,
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
     } else {
-        graph = _app->getGui()->getNodeGraph();
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
     }
     assert(graph);
     if (!graph) {
@@ -378,14 +377,14 @@ GuiApp::setSelection(const std::list<Effect*>& nodes)
         selection.push_back(nodeUi);
     }
     if (printWarn) {
-        _app->appendToScriptEditor( tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString() );
+        getInternalGuiApp()->appendToScriptEditor( tr("Python: Invalid selection from setSelection(): Some nodes in the list do not belong to the same group.").toStdString() );
     } else {
         NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
         NodeGraph* graph = 0;
         if (isGroup) {
             graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
         } else {
-            graph = _app->getGui()->getNodeGraph();
+            graph = getInternalGuiApp()->getGui()->getNodeGraph();
         }
         assert(graph);
         if (!graph) {
@@ -413,10 +412,10 @@ GuiApp::selectAllNodes(Group* group)
             }
         }
     } else {
-        graph = _app->getGui()->getLastSelectedGraph();
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
     }
     if (!graph) {
-        graph = _app->getGui()->getNodeGraph();
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
     }
     assert(graph);
     if (!graph) {
@@ -446,7 +445,7 @@ GuiApp::deselectNode(Effect* effect)
     if (isGroup) {
         graph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
     } else {
-        graph = _app->getGui()->getNodeGraph();
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
     }
     assert(graph);
     if (!graph) {
@@ -474,10 +473,10 @@ GuiApp::clearSelection(Group* group)
             }
         }
     } else {
-        graph = _app->getGui()->getLastSelectedGraph();
+        graph = getInternalGuiApp()->getGui()->getLastSelectedGraph();
     }
     if (!graph) {
-        graph = _app->getGui()->getNodeGraph();
+        graph = getInternalGuiApp()->getGui()->getNodeGraph();
     }
     assert(graph);
     if (!graph) {
@@ -489,7 +488,7 @@ GuiApp::clearSelection(Group* group)
 PyViewer*
 GuiApp::getViewer(const QString& scriptName) const
 {
-    NodePtr ptr = _app->getNodeByFullySpecifiedName( scriptName.toStdString() );
+    NodePtr ptr = getInternalGuiApp()->getNodeByFullySpecifiedName( scriptName.toStdString() );
 
     if ( !ptr || !ptr->isActivated() ) {
         return 0;
@@ -506,7 +505,7 @@ GuiApp::getViewer(const QString& scriptName) const
 PyViewer*
 GuiApp::getActiveViewer() const
 {
-    ViewerTab* tab = _app->getGui()->getActiveViewer();
+    ViewerTab* tab = getInternalGuiApp()->getGui()->getActiveViewer();
 
     if (!tab) {
         return 0;
@@ -526,7 +525,7 @@ GuiApp::getActiveViewer() const
 PyPanel*
 GuiApp::getUserPanel(const QString& scriptName) const
 {
-    PanelWidget* w = _app->getGui()->findExistingTab( scriptName.toStdString() );
+    PanelWidget* w = getInternalGuiApp()->getGui()->findExistingTab( scriptName.toStdString() );
 
     if (!w) {
         return 0;
@@ -571,7 +570,7 @@ PyViewer::~PyViewer()
 void
 PyViewer::seek(int frame)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->seek(frame);
@@ -580,17 +579,17 @@ PyViewer::seek(int frame)
 int
 PyViewer::getCurrentFrame()
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return 0;
     }
 
-    return _node->getApp()->getTimeLine()->currentFrame();
+    return getInternalNode()->getApp()->getTimeLine()->currentFrame();
 }
 
 void
 PyViewer::startForward()
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->startPause(true);
@@ -599,7 +598,7 @@ PyViewer::startForward()
 void
 PyViewer::startBackward()
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->startBackward(true);
@@ -608,7 +607,7 @@ PyViewer::startBackward()
 void
 PyViewer::pause()
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->abortRendering();
@@ -617,7 +616,7 @@ PyViewer::pause()
 void
 PyViewer::redraw()
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->redrawGLWidgets();
@@ -626,7 +625,7 @@ PyViewer::redraw()
 void
 PyViewer::renderCurrentFrame(bool useCache)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     if (useCache) {
@@ -640,7 +639,7 @@ void
 PyViewer::setFrameRange(int firstFrame,
                         int lastFrame)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->setFrameRange(firstFrame, lastFrame);
@@ -650,7 +649,7 @@ void
 PyViewer::getFrameRange(int* firstFrame,
                         int* lastFrame) const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->getTimelineBounds(firstFrame, lastFrame);
@@ -659,7 +658,7 @@ PyViewer::getFrameRange(int* firstFrame,
 void
 PyViewer::setPlaybackMode(PlaybackModeEnum mode)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->setPlaybackMode(mode);
@@ -668,7 +667,7 @@ PyViewer::setPlaybackMode(PlaybackModeEnum mode)
 PlaybackModeEnum
 PyViewer::getPlaybackMode() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return ePlaybackModeLoop;
     }
 
@@ -678,7 +677,7 @@ PyViewer::getPlaybackMode() const
 ViewerCompositingOperatorEnum
 PyViewer::getCompositingOperator() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return eViewerCompositingOperatorNone;
     }
 
@@ -688,7 +687,7 @@ PyViewer::getCompositingOperator() const
 void
 PyViewer::setCompositingOperator(ViewerCompositingOperatorEnum op)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->setCompositingOperator(op);
@@ -697,7 +696,7 @@ PyViewer::setCompositingOperator(ViewerCompositingOperatorEnum op)
 int
 PyViewer::getAInput() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return -1;
     }
     int a, b;
@@ -709,7 +708,7 @@ PyViewer::getAInput() const
 void
 PyViewer::setAInput(int index)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
@@ -722,7 +721,7 @@ PyViewer::setAInput(int index)
 int
 PyViewer::getBInput() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return -1;
     }
     int a, b;
@@ -734,7 +733,7 @@ PyViewer::getBInput() const
 void
 PyViewer::setBInput(int index)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     EffectInstPtr input = _viewer->getInternalNode()->getInput(index);
@@ -747,7 +746,7 @@ PyViewer::setBInput(int index)
 void
 PyViewer::setChannels(DisplayChannelsEnum channels)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     std::string c = ViewerTab::getChannelsString(channels);
@@ -757,7 +756,7 @@ PyViewer::setChannels(DisplayChannelsEnum channels)
 DisplayChannelsEnum
 PyViewer::getChannels() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return eDisplayChannelsRGB;
     }
 
@@ -767,7 +766,7 @@ PyViewer::getChannels() const
 void
 PyViewer::setProxyModeEnabled(bool enabled)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->setRenderScaleActivated(enabled);
@@ -776,7 +775,7 @@ PyViewer::setProxyModeEnabled(bool enabled)
 bool
 PyViewer::isProxyModeEnabled() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return false;
     }
 
@@ -786,7 +785,7 @@ PyViewer::isProxyModeEnabled() const
 void
 PyViewer::setProxyIndex(int index)
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->setMipMapLevel(index + 1);
@@ -795,7 +794,7 @@ PyViewer::setProxyIndex(int index)
 int
 PyViewer::getProxyIndex() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return 0;
     }
 
@@ -808,7 +807,7 @@ PyViewer::setCurrentView(int index)
     if (index < 0) {
         return;
     }
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return;
     }
     _viewer->setCurrentView( ViewIdx(index) );
@@ -817,7 +816,7 @@ PyViewer::setCurrentView(int index)
 int
 PyViewer::getCurrentView() const
 {
-    if ( !_node->isActivated() ) {
+    if ( !getInternalNode()->isActivated() ) {
         return 0;
     }
 

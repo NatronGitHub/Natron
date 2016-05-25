@@ -61,7 +61,7 @@ struct PrecompNodePrivate
 
 public:
     PrecompNode* _publicInterface;
-    AppInstance* app;
+    AppInstWPtr app;
     boost::weak_ptr<KnobFile> projectFileNameKnob;
     //boost::weak_ptr<KnobButton> reloadProjectKnob;
     boost::weak_ptr<KnobButton> editProjectKnob;
@@ -83,7 +83,7 @@ public:
 
     PrecompNodePrivate(PrecompNode* publicInterface)
         : _publicInterface(publicInterface)
-        , app(0)
+        , app()
         , projectFileNameKnob()
         //, reloadProjectKnob()
         , editProjectKnob()
@@ -122,6 +122,7 @@ public:
     void refreshOutputNode();
 
     void launchPreRender();
+    
 };
 
 PrecompNode::PrecompNode(NodePtr n)
@@ -133,8 +134,9 @@ PrecompNode::PrecompNode(NodePtr n)
 
 PrecompNode::~PrecompNode()
 {
-    if (_imp->app) {
-        _imp->app->quit();
+    AppInstPtr app = _imp->app.lock();
+    if (app) {
+        app->quit();
     }
 }
 
@@ -344,7 +346,7 @@ PrecompNode::knobChanged(KnobI* k,
         _imp->reloadProject(true);
     } else if ( k == _imp->editProjectKnob.lock().get() ) {
         std::string filename = _imp->projectFileNameKnob.lock()->getValue();
-        AppInstance* appInstance = getApp()->loadProject(filename);
+        AppInstPtr appInstance = getApp()->loadProject(filename);
         Q_UNUSED(appInstance);
     } else if ( k == _imp->preRenderKnob.lock().get() ) {
         _imp->launchPreRender();
@@ -413,7 +415,7 @@ PrecompNodePrivate::reloadProject(bool setWriteNodeChoice)
 
     precompInputs.clear();
 
-    boost::shared_ptr<Project> project = app->getProject();
+    boost::shared_ptr<Project> project = app.lock()->getProject();
     project->resetProject();
     {
         //Set a temporary timeline that will be used while loading the project.
@@ -451,7 +453,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     choices.push_back("None");
 
     NodesList nodes;
-    app->getProject()->getNodes_recursive(nodes, true);
+    app.lock()->getProject()->getNodes_recursive(nodes, true);
     boost::shared_ptr<PrecompNode> precomp;
     if (setPartOfPrecomp) {
         precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
@@ -494,7 +496,7 @@ PrecompNodePrivate::getWriteNodeFromPreComp() const
     if (userChoiceNodeName == "None") {
         return NodePtr();
     }
-    NodePtr writeNode = app->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName);
+    NodePtr writeNode = app.lock()->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName);
     if (!writeNode) {
         std::stringstream ss;
         ss << tr("Could not find a node named %1 in the pre-comp project")
@@ -577,13 +579,13 @@ PrecompNodePrivate::createReadNode()
     fixedNamePrefix.append( QString::fromUtf8("readNode") );
     fixedNamePrefix.append( QLatin1Char('_') );
 
-    CreateNodeArgs args( readPluginID, eCreateNodeReasonInternal, app->getProject() );
+    CreateNodeArgs args( readPluginID, eCreateNodeReasonInternal, app.lock()->getProject() );
     args.createGui = false;
     args.fixedName = fixedNamePrefix;
     args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
 
 
-    NodePtr read = app->createNode(args);
+    NodePtr read = app.lock()->createNode(args);
     if (!read) {
         return;
     }
@@ -610,7 +612,7 @@ PrecompNodePrivate::refreshOutputNode()
         boost::shared_ptr<KnobString> outputNodeKnob = outputNodeNameKnob.lock();
         std::string outputNodeName = outputNodeKnob->getValue();
 
-        outputnode = app->getProject()->getNodeByFullySpecifiedName(outputNodeName);
+        outputnode = app.lock()->getProject()->getNodeByFullySpecifiedName(outputNodeName);
     }
 
     //Clear any persistent message set
@@ -735,10 +737,10 @@ PrecompNode::onReadNodePersistentMessageChanged()
     }
 }
 
-AppInstance*
+AppInstPtr
 PrecompNode::getPrecompApp() const
 {
-    return _imp->app;
+    return _imp->app.lock();
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -64,12 +64,12 @@ NATRON_NAMESPACE_ENTER;
 
 struct NodeCollectionPrivate
 {
-    AppInstance* app;
+    AppInstWPtr app;
     NodeGraphI* graph;
     mutable QMutex nodesMutex;
     NodesList nodes;
 
-    NodeCollectionPrivate(AppInstance* app)
+    NodeCollectionPrivate(const AppInstPtr& app)
         : app(app)
         , graph(0)
         , nodesMutex()
@@ -80,7 +80,7 @@ struct NodeCollectionPrivate
     NodePtr findNodeInternal(const std::string& name, const std::string& recurseName) const;
 };
 
-NodeCollection::NodeCollection(AppInstance* app)
+NodeCollection::NodeCollection(const AppInstPtr& app)
     : _imp( new NodeCollectionPrivate(app) )
 {
 }
@@ -89,10 +89,10 @@ NodeCollection::~NodeCollection()
 {
 }
 
-AppInstance*
+AppInstPtr
 NodeCollection::getApplication() const
 {
-    return _imp->app;
+    return _imp->app.lock();
 }
 
 void
@@ -348,7 +348,7 @@ NodeCollection::refreshPreviews()
     if ( getApplication()->isBackground() ) {
         return;
     }
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getApplication()->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -368,7 +368,7 @@ NodeCollection::forceRefreshPreviews()
     if ( getApplication()->isBackground() ) {
         return;
     }
-    double time = _imp->app->getTimeLine()->currentFrame();
+    double time = getApplication()->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -793,7 +793,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
                                      bool blockEval)
 {
     NodesList nodes = getNodes();
-    boost::shared_ptr<Project> project = _imp->app->getProject();
+    boost::shared_ptr<Project> project = getApplication()->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
@@ -831,7 +831,7 @@ NodeCollection::fixPathName(const std::string& oldName,
                             const std::string& newName)
 {
     NodesList nodes = getNodes();
-    boost::shared_ptr<Project> project = _imp->app->getProject();
+    boost::shared_ptr<Project> project = getApplication()->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
@@ -1024,7 +1024,7 @@ struct NodeGroupPrivate
 
 NodeGroup::NodeGroup(const NodePtr &node)
     : OutputEffectInstance(node)
-    , NodeCollection(node ? node->getApp() : 0)
+    , NodeCollection(node ? node->getApp() : AppInstPtr())
     , _imp( new NodeGroupPrivate() )
 {
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);

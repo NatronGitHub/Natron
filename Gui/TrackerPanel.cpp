@@ -1487,7 +1487,7 @@ TrackerPanel::onTrackKeyframeRemoved(const TrackMarkerPtr& marker,
     if ( it2 != found->second.userKeys.end() ) {
         found->second.userKeys.erase(it2);
         if (found->second.visible) {
-            AppInstance* app = _imp->node.lock()->getNode()->getApp();
+            AppInstPtr app = _imp->node.lock()->getNode()->getApp();
             _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
             app->removeUserKeyFrameIndicator(key);
         }
@@ -1511,7 +1511,7 @@ TrackerPanel::onTrackAllKeyframesRemoved(const TrackMarkerPtr& marker)
 
 
     if (it->second.visible) {
-        AppInstance* app = _imp->node.lock()->getNode()->getApp();
+        AppInstPtr app = _imp->node.lock()->getNode()->getApp();
         _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
         app->removeUserMultipleKeyframeIndicator(toRemove, true);
     }
@@ -1530,7 +1530,7 @@ TrackerPanel::onKeyframeSetOnTrackCenter(const TrackMarkerPtr &marker,
     } else {
         std::pair<std::set<double>::iterator, bool> ret = found->second.centerKeys.insert(key);
         if (ret.second && found->second.visible) {
-            AppInstance* app = _imp->node.lock()->getNode()->getApp();
+            AppInstPtr app = _imp->node.lock()->getNode()->getApp();
             _imp->updateTrackKeysInfoBar( app->getTimeLine()->currentFrame() );
             app->addKeyframeIndicator(key);
         }

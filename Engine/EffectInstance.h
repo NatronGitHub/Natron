@@ -1228,15 +1228,15 @@ public:
     /**
      * @brief Constructs a new memory holder, with nBytes allocated. If the allocation failed, bad_alloc is thrown
      **/
-    PluginMemory* newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
+    PluginMemoryPtr newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
 
     /// used to count the memory used by a plugin
     /// Don't call these, they're called by PluginMemory automatically
     void registerPluginMemory(size_t nBytes);
     void unregisterPluginMemory(size_t nBytes);
 
-    void addPluginMemoryPointer(PluginMemory* mem);
-    void removePluginMemoryPointer(PluginMemory* mem);
+    void addPluginMemoryPointer(const PluginMemoryPtr& mem);
+    void removePluginMemoryPointer(const PluginMemory* mem);
 
     void clearPluginMemoryChunks();
 
@@ -1969,7 +1969,7 @@ private:
                                              EffectInstance::InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
-    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstance* app,
+    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                                                  const boost::shared_ptr<Image>& inputImage,
                                                                  const RectI& roi,
                                                                  const ImageComponents& targetComponents,

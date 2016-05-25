@@ -98,7 +98,7 @@ EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
 }
 
 EffectInstance::EffectInstance(NodePtr node)
-    : NamedKnobHolder(node ? node->getApp() : NULL)
+    : NamedKnobHolder(node ? node->getApp() : AppInstPtr())
     , _node(node)
     , _imp( new Implementation(this) )
 {
@@ -135,20 +135,23 @@ EffectInstance::unlock(const boost::shared_ptr<Image> & entry)
 void
 EffectInstance::clearPluginMemoryChunks()
 {
-    int toRemove;
+
+    PluginMemoryPtr mem;
     {
         QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-        toRemove = (int)_imp->pluginMemoryChunks.size();
-    }
-
-    while (toRemove > 0) {
-        PluginMemory* mem;
-        {
-            QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+        if (!_imp->pluginMemoryChunks.empty()) {
             mem = ( *_imp->pluginMemoryChunks.begin() );
         }
-        delete mem;
-        --toRemove;
+    }
+    while (mem) {
+        // This will remove the mem from the pluginMemoryChunks list
+        mem.reset();
+        {
+            QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+            if (!_imp->pluginMemoryChunks.empty()) {
+                mem = ( *_imp->pluginMemoryChunks.begin() );
+            }
+        }
     }
 }
 
@@ -2843,10 +2846,11 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     }
 }
 
-PluginMemory*
+PluginMemoryPtr
 EffectInstance::newMemoryInstance(size_t nBytes)
 {
-    PluginMemory* ret = new PluginMemory( getNode()->getEffectInstance() ); //< hack to get "this" as a shared ptr
+    PluginMemoryPtr ret(new PluginMemory(shared_from_this())); //< hack to get "this" as a shared ptr
+    addPluginMemoryPointer(ret);
     bool wasntLocked = ret->alloc(nBytes);
 
     assert(wasntLocked);
@@ -2856,21 +2860,21 @@ EffectInstance::newMemoryInstance(size_t nBytes)
 }
 
 void
-EffectInstance::addPluginMemoryPointer(PluginMemory* mem)
+EffectInstance::addPluginMemoryPointer(const PluginMemoryPtr& mem)
 {
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-
     _imp->pluginMemoryChunks.push_back(mem);
 }
 
 void
-EffectInstance::removePluginMemoryPointer(PluginMemory* mem)
+EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
 {
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-    std::list<PluginMemory*>::iterator it = std::find(_imp->pluginMemoryChunks.begin(), _imp->pluginMemoryChunks.end(), mem);
-
-    if ( it != _imp->pluginMemoryChunks.end() ) {
-        _imp->pluginMemoryChunks.erase(it);
+    for (std::list<PluginMemoryPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        if (it->get() == mem) {
+            _imp->pluginMemoryChunks.erase(it);
+            return;
+        }
     }
 }
 

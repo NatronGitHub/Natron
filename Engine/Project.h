@@ -68,7 +68,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    Project(AppInstance* appInstance);
+    Project(const AppInstPtr& appInstance);
 
     virtual ~Project();
 

@@ -66,7 +66,7 @@ struct DialogParamHolderPrivate
 };
 
 DialogParamHolder::DialogParamHolder(const QString& uniqueID,
-                                     AppInstance* app,
+                                     const AppInstPtr& app,
                                      UserParamHolder* widget)
     : NamedKnobHolder(app)
     , _imp( new DialogParamHolderPrivate(widget, uniqueID) )
