@@ -31,15 +31,13 @@
 #include <set>
 #include <string>
 
-#include "Global/Macros.h"
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated-declarations)
-#include <QObject>
+#include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"

@@ -38,6 +38,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
+
 GCC_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QThread>

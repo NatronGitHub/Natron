@@ -41,7 +41,6 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QDebug>
 #include <QtCore/QTextStream>
-#include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
 
 #include "Global/MemoryInfo.h"

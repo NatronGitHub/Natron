@@ -24,9 +24,10 @@
 
 #include "GenericSchedulerThread.h"
 
-#include <QMutex>
-#include <QWaitCondition>
-#include <QMetaType>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QMetaType>
 
 #include "Engine/GenericSchedulerThreadWatcher.h"
 

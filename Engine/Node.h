@@ -35,7 +35,7 @@
 
 #include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
-#include <QMetaType>
+#include <QtCore/QMetaType>
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QMutex>

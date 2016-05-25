@@ -37,6 +37,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QEventLoop>
 #include <QtCore/QSettings>
+#include <QtNetwork/QNetworkReply>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

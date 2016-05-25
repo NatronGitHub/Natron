@@ -31,7 +31,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QtCore/QThreadPool>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTextStream>
 

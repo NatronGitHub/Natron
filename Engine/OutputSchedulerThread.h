@@ -35,7 +35,8 @@
 #endif
 
 #include <QtCore/QThread>
-#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 
 #include "Global/GlobalDefines.h"
 
