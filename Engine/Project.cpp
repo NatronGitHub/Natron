@@ -52,7 +52,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTimer>
-#include <QtCore/QThreadPool>
 #include <QtCore/QThread>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryFile>

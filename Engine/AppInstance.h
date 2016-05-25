@@ -36,7 +36,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-#include <QtCore/QStringList>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"

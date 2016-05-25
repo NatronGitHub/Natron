@@ -21,9 +21,9 @@
 
 #include "Global/Macros.h"
 
-#include <QFlags>
+#include <QtCore/QFlags>
 CLANG_DIAG_OFF(deprecated)
-#include <QMetaType>
+#include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;

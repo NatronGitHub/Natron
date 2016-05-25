@@ -30,6 +30,7 @@
 #include <QtCore/QAtomicInt>
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
+#include <QtCore/QThreadPool>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/Node.h"
@@ -167,6 +168,10 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
     return true;
 }
 
+// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
+// of the EffectInstance::aborted() function
+#ifdef QT_CUSTOM_THREADPOOL
+
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 class ThreadPoolThread
@@ -186,9 +191,6 @@ public:
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
-// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
-// of the EffectInstance::aborted() function
-#ifdef QT_CUSTOM_THREADPOOL
 
 ThreadPool::ThreadPool()
     : QThreadPool()

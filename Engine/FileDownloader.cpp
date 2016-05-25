@@ -29,6 +29,9 @@
 
 #include <QtCore/QTimer>
 #include <QtNetwork/QAbstractNetworkCache>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QNetworkRequest>
 
 #define NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS 5000
 
@@ -39,13 +42,14 @@ FileDownloader::FileDownloader(const QUrl& imageUrl,
                                QObject *parent)
     : QObject(parent)
     , m_reply(0)
-    , m_timer(0)
+    , m_WebCtrl(new QNetworkAccessManager)
+    , m_DownloadedData(new QByteArray)
+    , m_timer(new QTimer())
 {
-    m_timer = new QTimer();
     m_timer->setInterval(NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS);
-    QObject::connect( m_timer, SIGNAL(timeout()), this, SLOT(onTimerTimeout()) );
+    QObject::connect( m_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerTimeout()) );
 
-    connect( &m_WebCtrl, SIGNAL(finished(QNetworkReply*)),
+    connect( m_WebCtrl.get(), SIGNAL(finished(QNetworkReply*)),
              SLOT(fileDownloaded(QNetworkReply*)) );
 
     QNetworkRequest request(imageUrl);
@@ -53,7 +57,7 @@ FileDownloader::FileDownloader(const QUrl& imageUrl,
         request.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysNetwork);
     }
 
-    m_reply = m_WebCtrl.get(request);
+    m_reply = m_WebCtrl->get(request);
     m_timer->start();
     QObject::connect( m_reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SIGNAL(error()) );
     QObject::connect( m_reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(onDownloadProgress(qint64,qint64)) );
@@ -61,7 +65,6 @@ FileDownloader::FileDownloader(const QUrl& imageUrl,
 
 FileDownloader::~FileDownloader()
 {
-    delete m_timer;
     if (m_reply) {
         m_reply->deleteLater();
     }
@@ -93,14 +96,14 @@ FileDownloader::onDownloadProgress(qint64 /*bytesReceived*/,
 void
 FileDownloader::fileDownloaded(QNetworkReply* pReply)
 {
-    m_DownloadedData = pReply->readAll();
+    *m_DownloadedData = pReply->readAll();
     Q_EMIT downloaded();
 }
 
-QByteArray
+const QByteArray&
 FileDownloader::downloadedData() const
 {
-    return m_DownloadedData;
+    return *m_DownloadedData;
 }
 
 NATRON_NAMESPACE_EXIT;

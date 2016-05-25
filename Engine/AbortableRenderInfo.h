@@ -30,7 +30,6 @@
 #include "Global/GlobalDefines.h"
 
 #include <QtCore/QObject>
-#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #include "Engine/EngineFwd.h"
 

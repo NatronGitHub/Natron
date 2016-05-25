@@ -32,9 +32,9 @@
 #include <string>
 
 CLANG_DIAG_OFF(deprecated-declarations)
-#include <QObject>
+#include <QtCore/QObject>
 #include <QtCore/QMutex>
-#include <QMetaType>
+#include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"

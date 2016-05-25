@@ -39,7 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTreeView>
 #include <QAbstractItemModel>
 #include <QItemEditorFactory>
-#include <QMetaType>
+#include <QtCore/QMetaType>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 

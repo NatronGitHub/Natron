@@ -29,7 +29,9 @@
 
 #include <list>
 #include <string>
+
 #include "Global/GlobalDefines.h"
+
 CLANG_DIAG_OFF(deprecated)
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
 #include <QtCore/QObject>
