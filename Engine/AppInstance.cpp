@@ -553,7 +553,11 @@ void
 AppInstance::loadInternal(const CLArgs& cl,
                   bool makeEmptyInstance)
 {
-    declareCurrentAppVariable_Python();
+    try {
+        declareCurrentAppVariable_Python();
+    } catch (const std::exception& e) {
+        throw std::runtime_error( e.what() );
+    }
 
     if (makeEmptyInstance) {
         return;
@@ -1892,6 +1896,10 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
 void
 AppInstance::declareCurrentAppVariable_Python()
 {
+
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return;
+#endif
     /// define the app variable
     std::stringstream ss;
 

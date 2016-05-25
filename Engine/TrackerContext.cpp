@@ -1820,7 +1820,6 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
         enabledKnob->unSlave(0, false);
     }
 
-
     // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
     // than just render the whole viewer RoI
     const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;

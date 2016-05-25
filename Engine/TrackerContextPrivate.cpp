@@ -24,6 +24,8 @@
 
 #include "TrackerContextPrivate.h"
 
+#include <QtCore/QThreadPool>
+
 #include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/Project.h"
@@ -982,6 +984,12 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
                                       int trackTime)
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
+
+#ifdef CERES_USE_OPENMP
+    // Set the number of threads Ceres may use
+    QThreadPool* tp = QThreadPool::globalInstance();
+    omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() - 1);
+#endif
 
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
     const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];

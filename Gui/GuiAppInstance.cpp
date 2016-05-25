@@ -960,6 +960,10 @@ GuiAppInstance::discardLastViewerUsingTimeline()
 void
 GuiAppInstance::declareCurrentAppVariable_Python()
 {
+
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    return;
+#endif
     std::string appIDStr = getAppIDString();
     /// define the app variable
     std::stringstream ss;
