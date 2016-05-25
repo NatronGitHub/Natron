@@ -393,7 +393,7 @@ TableModel::removeColumns(int column,
 void
 TableModel::setTable(const std::vector<TableItem*>& items)
 {
-    beginRemoveRows(QModelIndex(), 0, std::max(0,_imp->rowCount - 1));
+    beginRemoveRows( QModelIndex(), 0, std::max(0, _imp->rowCount - 1) );
     for (std::size_t i = 0; i < _imp->tableItems.size(); ++i) {
         if ( _imp->tableItems.at(i) ) {
             _imp->tableItems[i]->view = 0;
@@ -410,7 +410,7 @@ TableModel::setTable(const std::vector<TableItem*>& items)
     TableView *view = qobject_cast<TableView*>( QObject::parent() );
 
 
-    beginInsertRows(QModelIndex(), 0, std::max(0,_imp->rowCount - 1));
+    beginInsertRows( QModelIndex(), 0, std::max(0, _imp->rowCount - 1) );
 
 
     for (int i = 0; i < (int)_imp->tableItems.size(); ++i) {
