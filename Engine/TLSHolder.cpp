@@ -69,7 +69,6 @@ static void
 copyAbortInfo(QThread* fromThread,
               QThread* toThread)
 {
-#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* fromAbortable = dynamic_cast<AbortableThread*>(fromThread);
     AbortableThread* toAbortable = dynamic_cast<AbortableThread*>(toThread);
     if (fromAbortable && toAbortable) {
@@ -79,10 +78,6 @@ copyAbortInfo(QThread* fromThread,
         fromAbortable->getAbortInfo(&isRenderResponseToUserInteraction, &abortInfo, &treeRoot);
         toAbortable->setAbortInfo(isRenderResponseToUserInteraction, abortInfo, treeRoot);
     }
-#else
-    Q_UNUSED(fromThread);
-    Q_UNUSED(toThread);
-#endif
 }
 
 void
@@ -125,12 +120,10 @@ AppTLS::cleanupTLSForThread()
 {
     QThread* curThread = QThread::currentThread();
 
-#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(curThread);
     if (isAbortableThread) {
         isAbortableThread->clearAbortInfo();
     }
-#endif
 
     //Cleanup any cached data on the TLSHolder
     {

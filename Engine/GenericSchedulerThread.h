@@ -111,9 +111,7 @@ typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> ExecOnMTArgsPtr;
 struct GenericSchedulerThreadPrivate;
 class GenericSchedulerThread
 : public QThread
-#ifdef QT_CUSTOM_THREADPOOL
 , public AbortableThread
-#endif
 {
 
     GCC_DIAG_SUGGEST_OVERRIDE_OFF

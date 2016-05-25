@@ -74,9 +74,7 @@ PreviewThread::PreviewThread()
     : GenericSchedulerThread()
     , _imp( new PreviewThreadPrivate() )
 {
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("PreviewThread");
-#endif
 }
 
 PreviewThread::~PreviewThread()

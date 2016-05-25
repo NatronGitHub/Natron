@@ -39,6 +39,15 @@ NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief Holds infos necessary to identify one render request and whether it was aborted or not.
+ *
+ * Typical usage is to start a render on a thread deriving the AbortableThread class, then make a new
+ * AbortableRenderInfo object and set the info on the thread with the AbortableThread::setAbortInfo function.
+ *
+ * Whenever the GenericSchedulerThread::abortThreadedTask() function is called, this will set the aborted flag on this info
+ * and the thread will be notified. The thread should then periodically call AbortableThread::getAbortInfo and call the AbortableRenderInfo::isAborted()
+ * function to find out whether the render was aborted or not. Some renders relying on a 3rd party library might not peek the isAborted() function.
+ * In this case, if this thread does not return from its task after some time that the user called setAborted(), then the user will be notified about a potentially
+ * stalled render.
  **/
 struct AbortableRenderInfoPrivate;
 class AbortableRenderInfo
@@ -50,37 +59,61 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    AbortableRenderInfo();
-
+    /**
+     * @brief Create new infos for a specific render that can be aborted with the given age.
+     * The render age identifies one single frame render in the Viewer. The older a render is, the smaller its render age is.
+     * This is used in the Viewer keep and order on the render requests, even though each request runs concurrently of another.
+     * This is not used by playback since in playback the ordering is controlled by the frame number.
+     **/
     AbortableRenderInfo(bool canAbort,
                         U64 age);
+
+    /**
+     * @brief Same as AbortableRenderInfo(true, 0)
+     **/
+    AbortableRenderInfo();
+
     ~AbortableRenderInfo();
 
     // Is this render abortable ?
     bool canAbort() const;
 
-    // Is this render aborted ?
+    // Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
     bool isAborted() const;
 
-    // Set this render as aborted, cannot be reversed
+    /**
+     * @brief Set this render as aborted, cannot be reversed. This is call when the function GenericSchedulerThread::abortThreadedTask() is called
+     **/
     void setAborted();
 
-    // Get the render age
+    /**
+     * @brief Get the render age. The render age identifies one single frame render in the Viewer. The older a render is, the smaller its render age is.
+     * This is used in the Viewer keep and order on the render requests, even though each request runs concurrently of another. 
+     * This is not used by playback since in playback the ordering is controlled by the frame number.
+     **/
     U64 getRenderAge() const;
 
-#ifdef QT_CUSTOM_THREADPOOL
-    // Register the thread as part of this render request
+    /**
+     * @brief Registers the thread as part of this render request. Whenever AbortableThread::setAbortInfo is called, the thread is automatically registered
+     * in this class as to be part of this render. This is used to monitor running threads for a specific render and to know if a thread has stalled when 
+     * the user called setAborted()
+     **/
     void registerThreadForRender(AbortableThread* thread);
 
-    // Unregister the thread as part of this render, returns true
-    // if it was registered and found
-    // This is called whenever a thread calls cleanupTLSForThread(), i.e:
-    // when its processing is finished
+    /**
+     * @brief Unregister the thread as part of this render, returns true
+     * if it was registered and found.
+     * This is called whenever a thread calls cleanupTLSForThread(), i.e:
+     * when its processing is finished.
+     **/
     bool unregisterThreadForRender(AbortableThread* thread);
-#endif
 
 public Q_SLOTS:
 
+    /**
+     * @brief Triggered by a timer after some time that a thread called setAborted(). This is used to detect stalled threads that do not seem 
+     * to want to abort.
+     **/
     void onAbortTimerTimeout();
 
 private:

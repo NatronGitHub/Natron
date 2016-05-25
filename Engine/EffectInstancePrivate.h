@@ -361,9 +361,9 @@ public:
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
 
-    bool aborted(bool isRenderResponseToUserInteraction,
+    static bool aborted(bool isRenderResponseToUserInteraction,
                  const AbortableRenderInfoPtr& abortInfo,
-                 const EffectInstPtr& treeRoot) const WARN_UNUSED_RETURN;
+                 const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
 
     void checkMetadata(NodeMetadata &metadata);
 };

@@ -47,9 +47,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#ifdef QT_CUSTOM_THREADPOOL
 typedef std::set<AbortableThread*> ThreadSet;
-#endif
 
 struct AbortableRenderInfoPrivate
 {
@@ -57,9 +55,7 @@ struct AbortableRenderInfoPrivate
     QAtomicInt aborted;
     U64 age;
     mutable QMutex threadsMutex;
-#ifdef QT_CUSTOM_THREADPOOL
     ThreadSet threadsForThisRender;
-#endif
 
     boost::scoped_ptr<QTimer> abortTimeoutTimer;
 
@@ -69,9 +65,7 @@ struct AbortableRenderInfoPrivate
         , aborted()
         , age(age)
         , threadsMutex()
-#ifdef QT_CUSTOM_THREADPOOL
         , threadsForThisRender()
-#endif
         , abortTimeoutTimer()
     {
         aborted.fetchAndStoreAcquire(0);
@@ -128,7 +122,6 @@ AbortableRenderInfo::setAborted()
     _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
 }
 
-#ifdef QT_CUSTOM_THREADPOOL
 
 void
 AbortableRenderInfo::registerThreadForRender(AbortableThread* thread)
@@ -157,12 +150,9 @@ AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
     return ret;
 }
 
-#endif // QT_CUSTOM_THREADPOOL
-
 void
 AbortableRenderInfo::onAbortTimerTimeout()
 {
-#ifdef QT_CUSTOM_THREADPOOL
 
     // In background mode, let the process continue
 
@@ -220,7 +210,6 @@ AbortableRenderInfo::onAbortTimerTimeout()
             }
         }
     }
-#endif // ifdef QT_CUSTOM_THREADPOOL
 } // AbortableRenderInfo::onAbortTimerTimeout
 
 NATRON_NAMESPACE_EXIT;

@@ -37,30 +37,27 @@
 NATRON_NAMESPACE_ENTER;
 
 
-// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
-// of the EffectInstance::aborted() function
-#ifdef QT_CUSTOM_THREADPOOL
-
 struct AbortableThreadPrivate
 {
+    QThread* thread;
+    std::string threadName;
+
     mutable QMutex abortInfoMutex;
     bool isRenderResponseToUserInteraction;
     AbortableRenderInfoPtr abortInfo;
     EffectInstWPtr treeRoot;
     bool abortInfoValid;
-    QThread* thread;
-    std::string threadName;
     std::string currentActionName;
     NodeWPtr currentActionNode;
 
     AbortableThreadPrivate(QThread* thread)
-        : abortInfoMutex()
+        : thread(thread)
+        , threadName()
+        , abortInfoMutex()
         , isRenderResponseToUserInteraction(false)
         , abortInfo()
         , treeRoot()
         , abortInfoValid(false)
-        , thread(thread)
-        , threadName()
         , currentActionName()
         , currentActionNode()
     {
@@ -189,6 +186,9 @@ public:
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
+// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
+// of the EffectInstance::aborted() function
+#ifdef QT_CUSTOM_THREADPOOL
 
 ThreadPool::ThreadPool()
     : QThreadPool()

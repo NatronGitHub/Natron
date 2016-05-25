@@ -531,9 +531,7 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
     QObject::connect( &_imp->threadSpawnsTimer, SIGNAL(timeout()), this, SLOT(onThreadSpawnsTimerTriggered()) );
 #endif
 
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("Scheduler thread");
-#endif
 }
 
 OutputSchedulerThread::~OutputSchedulerThread()
@@ -1442,7 +1440,6 @@ OutputSchedulerThread::onAbortRequested()
     ///This function (abortRendering) was probably called from a user event that was posted earlier in the
     ///event-loop, we just flag that the next event that will process the frame should NOT process it by
     ///reseting the processRunning flag
-#ifdef QT_CUSTOM_THREADPOOL
     // Flag directly all threads that they are aborted, this enables each thread to have a shorter code-path
     // when checking for abortion and will generally abort faster
     {
@@ -1460,7 +1457,6 @@ OutputSchedulerThread::onAbortRequested()
             }
         }
     }
-#endif
 
     ///If the scheduler is asleep waiting for the buffer to be filling up, we post a fake request
     ///that will not be processed anyway because the first thing it does is checking for abort
@@ -1990,14 +1986,10 @@ struct RenderThreadTaskPrivate
 RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
                                    OutputSchedulerThread* scheduler)
     : QThread()
-#ifdef QT_CUSTOM_THREADPOOL
     , AbortableThread(this)
-#endif
     , _imp( new RenderThreadTaskPrivate(output, scheduler) )
 {
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("Parallel render thread");
-#endif
 }
 
 #else
@@ -2161,9 +2153,7 @@ private:
             return;
         }
 
-#ifdef QT_CUSTOM_THREADPOOL
         AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-#endif
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
@@ -2279,11 +2269,9 @@ private:
 
 
                 AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
-#ifdef QT_CUSTOM_THREADPOOL
                 if (isAbortableThread) {
                     isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
                 }
-#endif
 
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
@@ -2399,9 +2387,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
 
-#ifdef QT_CUSTOM_THREADPOOL
         setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
-#endif
 
         ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
@@ -3597,9 +3583,7 @@ ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerIns
     : GenericSchedulerThread()
     , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
 {
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("ViewerCurrentFrameRequestScheduler");
-#endif
 }
 
 ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
@@ -3901,9 +3885,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
 ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup()
     : GenericSchedulerThread()
 {
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("ViewerCurrentFrameRequestRendererBackup");
-#endif
 }
 
 ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()

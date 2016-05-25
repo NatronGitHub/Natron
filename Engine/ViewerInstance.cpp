@@ -1270,12 +1270,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             return eViewerRenderRetCodeRender;
         }
     }
-#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( !isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance() );
     }
-#endif
 
 
 
