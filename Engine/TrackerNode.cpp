@@ -2106,7 +2106,7 @@ TrackerNode::onOverlayKeyDown(double /*time*/,
 
     bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
 
-    if ( !trackingPageSecret && !_imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
+    if ( !trackingPageSecret && _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
         _imp->ui->clickToAddTrackEnabled = true;
         _imp->ui->addTrackButton.lock()->setValue(true);
         didSomething = true;
