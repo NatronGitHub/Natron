@@ -833,7 +833,7 @@ AppManager::removeInstance(int appID)
     int newApp = -1;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
-        for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
+        for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
             if ((*it)->getAppID() == appID) {
                 _imp->_appInstances.erase(it);
                 break;

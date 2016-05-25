@@ -36,7 +36,6 @@
 
 #include <QtCore/QThread>
 #include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
 
 #include "Global/GlobalDefines.h"
 
