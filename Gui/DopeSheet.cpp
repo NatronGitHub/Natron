@@ -827,9 +827,6 @@ DopeSheet::renameSelectedNode()
         return;
     }
 
-    ;
-
-
     EditNodeNameDialog* dialog = new EditNodeNameDialog(selectedNodes.front()->getNodeGui(), _imp->editor);
     QPoint global = QCursor::pos();
     QSize sizeH = dialog->sizeHint();
