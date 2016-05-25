@@ -1519,7 +1519,8 @@ TrackArgs::TrackArgs(int start,
                      const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
                      double formatWidth,
                      double formatHeight)
-    : _imp( new TrackArgsPrivate() )
+    : GenericThreadStartArgs()
+      ,_imp( new TrackArgsPrivate() )
 {
     _imp->start = start;
     _imp->end = end;
@@ -1538,7 +1539,8 @@ TrackArgs::~TrackArgs()
 }
 
 TrackArgs::TrackArgs(const TrackArgs& other)
-    : _imp( new TrackArgsPrivate() )
+    : GenericThreadStartArgs()
+    , _imp( new TrackArgsPrivate() )
 {
     *this = other;
 }

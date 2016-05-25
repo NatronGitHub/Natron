@@ -167,7 +167,7 @@ DiskCacheNode::knobChanged(KnobI* k,
         ret = false;
     }
 
-    return false;
+    return ret;
 }
 
 void
