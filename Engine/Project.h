@@ -290,8 +290,9 @@ public:
     /**
     * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
     * This is called only when calling AppManager::abortAnyProcessing()
+    * @returns True if a node is in the project and a watcher was installed, false otherwise
     **/
-    void quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
+    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
 
 private:
 

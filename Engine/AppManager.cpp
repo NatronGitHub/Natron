@@ -424,7 +424,9 @@ AppManager::quit(const AppInstPtr& instance)
 {
     boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
     args->instance = instance;
-    instance->getProject()->quitAnyProcessingForAllNodes(this, args);
+    if (!instance->getProject()->quitAnyProcessingForAllNodes(this, args)) {
+        afterQuitProcessingCallback(args);
+    }
 }
 
 void

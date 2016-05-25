@@ -1695,7 +1695,9 @@ Project::reset(bool aboutToQuit)
     
     boost::shared_ptr<ResetWatcherArgs> args(new ResetWatcherArgs());
     args->aboutToQuit = aboutToQuit;
-    quitAnyProcessingForAllNodes(this, args);
+    if (!quitAnyProcessingForAllNodes(this, args)) {
+        doResetEnd(aboutToQuit);
+    }
 
 } // Project::reset
 
@@ -1759,7 +1761,7 @@ Project::doResetEnd(bool aboutToQuit)
 
 }
 
-void
+bool
 Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args)
 {
     assert(QThread::currentThread() == qApp->thread());
@@ -1767,7 +1769,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const Watc
     NodesList nodesToWatch;
     getNodes_recursive(nodesToWatch, false);
     if (nodesToWatch.empty()) {
-        return;
+        return false;
     }
     boost::shared_ptr<NodeRenderWatcher> renderWatcher(new NodeRenderWatcher(nodesToWatch));
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
@@ -1776,7 +1778,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const Watc
     p.watcher = renderWatcher;
     _imp->renderWatchers.push_back(p);
     renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-
+    return true;
 }
 
 void

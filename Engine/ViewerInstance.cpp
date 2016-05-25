@@ -3256,6 +3256,8 @@ ViewerInstance::setInputA(int inputNb)
     if (isInspector) {
         isInspector->setInputA(inputNb);
     }
+    
+    Q_EMIT availableComponentsChanged();
 }
 
 void
@@ -3268,6 +3270,8 @@ ViewerInstance::setInputB(int inputNb)
     if (isInspector) {
         isInspector->setInputB(inputNb);
     }
+    
+    Q_EMIT availableComponentsChanged();
 }
 
 int
