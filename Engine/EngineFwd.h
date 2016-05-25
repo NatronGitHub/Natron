@@ -53,18 +53,23 @@ class access;
 
 // Qt
 
+class QByteArray;
 class QChar;
 class QDateTime;
 class QFileInfo;
 class QLocalServer;
 class QLocalSocket;
 class QMutex;
+class QNetworkAccessManager;
+class QNetworkReply;
+class QNetworkRequest;
 class QProcess;
 class QSettings;
 class QString;
 class QStringList;
 class QThread;
 class QTimer;
+class QUrl;
 class QWaitCondition;
 
 // cairo
