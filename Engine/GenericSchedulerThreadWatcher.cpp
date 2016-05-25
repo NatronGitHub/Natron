@@ -80,6 +80,7 @@ struct GenericWatcherPrivate
     , mustQuit(false)
     , mustQuitCond()
     , mustQuitMutex()
+    , startRequests(0)
     {
 
     }
@@ -110,16 +111,18 @@ GenericWatcher::stopWatching()
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
+
+
+
+        // Post a stub request to wake up the thread
+        {
+            QMutexLocker k(&_imp->startRequestsMutex);
+            ++_imp->startRequests;
+            _imp->startRequestsCond.wakeOne();
+        }
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
         }
-    }
-
-    // Post a stub request to wake up the thread
-    {
-        QMutexLocker k(&_imp->startRequestsMutex);
-        ++_imp->startRequests;
-        _imp->startRequestsCond.wakeOne();
     }
 
     wait();

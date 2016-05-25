@@ -9910,6 +9910,10 @@ void
 Node::setNodeVariableToPython(const std::string& oldName,
                               const std::string& newName)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     if (!_imp->isPartOfProject) {
         return;
     }
@@ -9928,6 +9932,10 @@ Node::setNodeVariableToPython(const std::string& oldName,
 void
 Node::deleteNodeVariableToPython(const std::string& nodeName)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     if ( !_imp->isPartOfProject || nodeName.empty() ) {
         return;
     }
@@ -10048,6 +10056,10 @@ Node::removeParameterFromPython(const std::string& parameterName)
 void
 Node::declareAllPythonAttributes()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     try {
         declareNodeVariableToPython( getFullyQualifiedName() );
         declarePythonFields();

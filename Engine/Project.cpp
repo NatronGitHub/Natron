@@ -1766,6 +1766,9 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const Watc
     
     NodesList nodesToWatch;
     getNodes_recursive(nodesToWatch, false);
+    if (nodesToWatch.empty()) {
+        return;
+    }
     boost::shared_ptr<NodeRenderWatcher> renderWatcher(new NodeRenderWatcher(nodesToWatch));
     QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
