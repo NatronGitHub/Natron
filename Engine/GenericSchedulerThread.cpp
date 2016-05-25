@@ -25,6 +25,7 @@
 #include "GenericSchedulerThread.h"
 
 #include <QMutex>
+#include <QCoreApplication>
 #include <QWaitCondition>
 #include <QMetaType>
 
