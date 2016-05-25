@@ -346,6 +346,11 @@ NodeGraph::showMenu(const QPoint & pos)
     QObject::connect( deleteAction, SIGNAL(triggered()), this, SLOT(deleteSelection()) );
     editMenu->addAction(deleteAction);
 
+    QAction* renameAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode,
+                                                   kShortcutDescActionGraphRenameNode, editMenu);
+    QObject::connect( renameAction, SIGNAL(triggered()), this, SLOT(renameNode()) );
+    editMenu->addAction(renameAction);
+
     QAction* duplicateAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate,
                                                       kShortcutDescActionGraphDuplicate, editMenu);
     editMenu->addAction(duplicateAction);
