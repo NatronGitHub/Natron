@@ -44,6 +44,7 @@ NATRON_NAMESPACE_ENTER;
 class OfxMemory
     : public OFX::Host::Memory::Instance
 {
+
     boost::shared_ptr<PluginMemory> _memory;
 
 public:
@@ -57,6 +58,9 @@ public:
     virtual void* getPtr() OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void lock() OVERRIDE FINAL;
     virtual void unlock() OVERRIDE FINAL;
+
+private:
+
 };
 
 NATRON_NAMESPACE_EXIT;

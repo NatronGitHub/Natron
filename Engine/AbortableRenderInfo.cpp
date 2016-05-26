@@ -51,40 +51,75 @@ typedef std::set<AbortableThread*> ThreadSet;
 
 struct AbortableRenderInfoPrivate
 {
+    AbortableRenderInfo* _p;
     bool canAbort;
     QAtomicInt aborted;
     U64 age;
     mutable QMutex threadsMutex;
     ThreadSet threadsForThisRender;
 
+    mutable QMutex timerMutex;
+    bool timerStarted;
     boost::scoped_ptr<QTimer> abortTimeoutTimer;
 
-    AbortableRenderInfoPrivate(bool canAbort,
+
+    // This is to check that we correctly stop the timer in the thread that created it
+    QThread* timerThread;
+
+    AbortableRenderInfoPrivate(AbortableRenderInfo* p,
+                               bool canAbort,
                                U64 age)
-        : canAbort(canAbort)
+        : _p(p)
+        , canAbort(canAbort)
         , aborted()
         , age(age)
         , threadsMutex()
         , threadsForThisRender()
+        , timerMutex()
+        , timerStarted(false)
         , abortTimeoutTimer()
+        , timerThread(0)
     {
         aborted.fetchAndStoreAcquire(0);
+
+       // QObject::connect(p, SIGNAL(startTimerInOriginalThread()), p, SLOT(onStartTimerInOriginalThreadTriggered()));
     }
 };
 
 AbortableRenderInfo::AbortableRenderInfo()
-    : _imp( new AbortableRenderInfoPrivate(true, 0) )
+    : _imp( new AbortableRenderInfoPrivate(this, true, 0) )
 {
 }
 
 AbortableRenderInfo::AbortableRenderInfo(bool canAbort,
                                          U64 age)
-    : _imp( new AbortableRenderInfoPrivate(canAbort, age) )
+    : _imp( new AbortableRenderInfoPrivate(this, canAbort, age) )
 {
+
+
+
 }
 
 AbortableRenderInfo::~AbortableRenderInfo()
 {
+    // If the timer is still alive, we need to ensure it gets killed in the thread that created it, we block until in gets killed
+    bool mustCallStopTimer = false;
+    bool mustCallStopTimerInOtherThread = false;
+    {
+        QMutexLocker k(&_imp->timerMutex);
+        if (_imp->abortTimeoutTimer) {
+            assert(_imp->timerThread);
+            mustCallStopTimerInOtherThread = _imp->timerThread != QThread::currentThread();
+            mustCallStopTimer = true;
+        }
+    }
+    if (mustCallStopTimer) {
+        if (mustCallStopTimerInOtherThread) {
+            Q_EMIT stopTimerInOriginalThread();
+        } else {
+            onStopTimerInOriginalThreadTriggered();
+        }
+    }
 }
 
 U64
@@ -113,13 +148,11 @@ AbortableRenderInfo::setAborted()
     if (abortedValue > 0) {
         return;
     }
-
-    QMutexLocker k(&_imp->threadsMutex);
-    assert(!_imp->abortTimeoutTimer);
-    _imp->abortTimeoutTimer.reset( new QTimer() );
-    _imp->abortTimeoutTimer->setSingleShot(true);
-    QObject::connect( _imp->abortTimeoutTimer.get(), SIGNAL(timeout()), this, SLOT(onAbortTimerTimeout()) );
-    _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
+    {
+        QMutexLocker k(&_imp->timerMutex);
+        _imp->timerStarted = true;
+    }
+    onStartTimerInOriginalThreadTriggered();
 }
 
 
@@ -134,27 +167,76 @@ AbortableRenderInfo::registerThreadForRender(AbortableThread* thread)
 bool
 AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
 {
-    QMutexLocker k(&_imp->threadsMutex);
-    ThreadSet::iterator found = _imp->threadsForThisRender.find(thread);
     bool ret = false;
+    bool emitStopTimerSignal = false;
+    {
+        QMutexLocker k(&_imp->threadsMutex);
+        ThreadSet::iterator found = _imp->threadsForThisRender.find(thread);
 
-    if ( found != _imp->threadsForThisRender.end() ) {
-        _imp->threadsForThisRender.erase(found);
-        ret = true;
+        if ( found != _imp->threadsForThisRender.end() ) {
+            _imp->threadsForThisRender.erase(found);
+            ret = true;
+        }
+        // Stop the timer has no more threads are running for this render
+        if (_imp->threadsForThisRender.empty() && _imp->abortTimeoutTimer) {
+            emitStopTimerSignal = true;
+        }
     }
-    // Stop the timer has no more threads are running for this render
-    if (_imp->threadsForThisRender.empty() && _imp->abortTimeoutTimer) {
-        _imp->abortTimeoutTimer->stop();
+    if (emitStopTimerSignal) {
+        bool mustCallStopTimerInOtherThread;
+        {
+            QMutexLocker k(&_imp->timerMutex);
+            _imp->timerStarted = false;
+            mustCallStopTimerInOtherThread = QThread::currentThread() != _imp->timerThread;
+        }
+        if (mustCallStopTimerInOtherThread) {
+            Q_EMIT stopTimerInOriginalThread();
+        } else {
+            onStopTimerInOriginalThreadTriggered();
+        }
     }
-
     return ret;
+}
+
+void
+AbortableRenderInfo::onStartTimerInOriginalThreadTriggered()
+{
+
+    _imp->timerThread = QThread::currentThread();
+
+    {
+        QMutexLocker k(&_imp->timerMutex);
+        _imp->abortTimeoutTimer.reset( new QTimer() );
+        _imp->abortTimeoutTimer->setSingleShot(true);
+        QObject::connect( _imp->abortTimeoutTimer.get(), SIGNAL(timeout()), this, SLOT(onAbortTimerTimeout()) );
+        QObject::connect(this, SIGNAL(stopTimerInOriginalThread()), this, SLOT(onStopTimerInOriginalThreadTriggered()), Qt::BlockingQueuedConnection);
+    }
+    _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
+}
+
+void
+AbortableRenderInfo::onStopTimerInOriginalThreadTriggered()
+{
+    assert(QThread::currentThread() == _imp->timerThread);
+    QMutexLocker k(&_imp->timerMutex);
+    if ( _imp->abortTimeoutTimer) {
+        _imp->abortTimeoutTimer->stop();
+        _imp->abortTimeoutTimer.reset();
+        _imp->timerThread = 0;
+    }
+
 }
 
 void
 AbortableRenderInfo::onAbortTimerTimeout()
 {
-
-    // In background mode, let the process continue
+    {
+        QMutexLocker k(&_imp->timerMutex);
+        if (!_imp->timerStarted) {
+            // The timer was stopped but the onStopTimerInOriginalThreadTriggered() handler has not been executed yet on the timerThreads
+            return;
+        }
+    }
 
     // Runs in the thread that called setAborted()
     QMutexLocker k(&_imp->threadsMutex);

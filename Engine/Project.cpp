@@ -1801,8 +1801,11 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerA
     assert(found != _imp->renderWatchers.end());
 
     if (found != _imp->renderWatchers.end()) {
+        AfterQuitProcessingI* receiver = found->receiver;
+        assert(receiver);
+        // Erase before calling the callback, because the callback might destroy this object
         _imp->renderWatchers.erase(found);
-        found->receiver->afterQuitProcessingCallback(args);
+        receiver->afterQuitProcessingCallback(args);
     }
 
     

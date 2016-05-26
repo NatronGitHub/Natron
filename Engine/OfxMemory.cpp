@@ -49,7 +49,9 @@ OfxMemory::OfxMemory(const EffectInstPtr& effect)
 
 OfxMemory::~OfxMemory()
 {
+
 }
+
 
 void*
 OfxMemory::getPtr()
