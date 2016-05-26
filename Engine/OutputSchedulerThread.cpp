@@ -1423,8 +1423,10 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             // Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
             _imp->bufEmptyCondition.wait(&_imp->bufMutex);
         } else {
-            //Move the timeline to the last rendered frame to keep it in sync with what is displayed
-            timelineGoTo( getLastRenderedTime() );
+            if (!_imp->engine->isPlaybackAutoRestartEnabled()) {
+                //Move the timeline to the last rendered frame to keep it in sync with what is displayed
+                timelineGoTo( getLastRenderedTime() );
+            }
             break;
         }
     } // for (;;)
@@ -3144,8 +3146,9 @@ RenderEngine::waitForEngineToQuit_enforce_blocking()
 }
 
 bool
-RenderEngine::abortRenderingInternal()
+RenderEngine::abortRenderingInternal( )
 {
+  
     bool ret = false;
     if (_imp->currentFrameScheduler) {
         ret |= _imp->currentFrameScheduler->abortThreadedTask();
@@ -3171,6 +3174,7 @@ RenderEngine::abortRenderingAutoRestart()
     setPlaybackAutoRestartEnabled(isDoingSequentialRender());
     return abortRenderingInternal();
 }
+
 
 void
 RenderEngine::waitForAbortToComplete_not_main_thread()
