@@ -1761,7 +1761,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
