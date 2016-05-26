@@ -1,6 +1,6 @@
---- Portfile.orig	2015-12-01 09:13:40.000000000 +0100
-+++ Portfile	2015-12-01 09:13:46.000000000 +0100
-@@ -84,13 +84,17 @@
+--- Portfile.orig	2016-05-26 10:56:58.000000000 +0200
++++ Portfile	2016-05-26 10:57:07.000000000 +0200
+@@ -87,13 +87,17 @@
  if {[variant_isset universal]} {
      set merger_host(x86_64) x86_64-apple-${os.platform}${os.major}
      set merger_host(i386) i686-apple-${os.platform}${os.major}
