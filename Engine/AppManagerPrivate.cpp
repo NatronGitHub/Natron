@@ -333,7 +333,7 @@ restoreCache(AppManagerPrivate* p,
             }
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
-
+            p->cleanUpCacheDiskStructure( cache->getCachePath() );
             return;
         }
 
