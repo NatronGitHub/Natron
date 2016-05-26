@@ -724,8 +724,9 @@ KnobGuiValue::onDisplayMinMaxChanged(const double mini,
         } else {
             _imp->slider->setVisible(false);
         }
-
-        _imp->slider->setMinimumAndMaximum(sliderMin, sliderMax);
+        if (sliderMax > sliderMin) {
+            _imp->slider->setMinimumAndMaximum(sliderMin, sliderMax);
+        }
     }
 } // KnobGuiValue::onDisplayMinMaxChanged
 
