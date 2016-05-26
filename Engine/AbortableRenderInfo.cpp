@@ -63,10 +63,9 @@ struct AbortableRenderInfoPrivate
     boost::scoped_ptr<QTimer> abortTimeoutTimer;
 
 
-#ifdef DEBUG
     // This is to check that we correctly stop the timer in the thread that created it
     QThread* timerThread;
-#endif
+
     AbortableRenderInfoPrivate(AbortableRenderInfo* p,
                                bool canAbort,
                                U64 age)
@@ -79,9 +78,7 @@ struct AbortableRenderInfoPrivate
         , timerMutex()
         , timerStarted(false)
         , abortTimeoutTimer()
-    #ifdef DEBUG
         , timerThread(0)
-    #endif
     {
         aborted.fetchAndStoreAcquire(0);
 
@@ -107,17 +104,21 @@ AbortableRenderInfo::~AbortableRenderInfo()
 {
     // If the timer is still alive, we need to ensure it gets killed in the thread that created it, we block until in gets killed
     bool mustCallStopTimer = false;
+    bool mustCallStopTimerInOtherThread = false;
     {
         QMutexLocker k(&_imp->timerMutex);
         if (_imp->abortTimeoutTimer) {
-#ifdef DEBUG
             assert(_imp->timerThread);
-#endif
+            mustCallStopTimerInOtherThread = _imp->timerThread != QThread::currentThread();
             mustCallStopTimer = true;
         }
     }
     if (mustCallStopTimer) {
-        Q_EMIT stopTimerInOriginalThread();
+        if (mustCallStopTimerInOtherThread) {
+            Q_EMIT stopTimerInOriginalThread();
+        } else {
+            onStopTimerInOriginalThreadTriggered();
+        }
     }
 }
 
@@ -195,9 +196,7 @@ void
 AbortableRenderInfo::onStartTimerInOriginalThreadTriggered()
 {
 
-#ifdef DEBUG
     _imp->timerThread = QThread::currentThread();
-#endif
 
     {
         QMutexLocker k(&_imp->timerMutex);
@@ -212,10 +211,7 @@ AbortableRenderInfo::onStartTimerInOriginalThreadTriggered()
 void
 AbortableRenderInfo::onStopTimerInOriginalThreadTriggered()
 {
-#ifdef DEBUG
     assert(QThread::currentThread() == _imp->timerThread);
-#endif
-
     QMutexLocker k(&_imp->timerMutex);
     if ( _imp->abortTimeoutTimer) {
         _imp->abortTimeoutTimer->stop();
