@@ -459,7 +459,8 @@ void
 AppManager::initializeQApp(int &argc,
                            char **argv)
 {
-    new QCoreApplication(argc, argv);
+    assert(!_imp->_qApp);
+    _imp->_qApp.reset(new QCoreApplication(argc, argv));
 }
 
 bool
