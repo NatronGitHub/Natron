@@ -859,13 +859,17 @@ GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
 void
 GuiAppInstance::connectViewersToViewerCache()
 {
-    _imp->_gui->connectViewersToViewerCache();
+    if (_imp->_gui) {
+        _imp->_gui->connectViewersToViewerCache();
+    }
 }
 
 void
 GuiAppInstance::disconnectViewersFromViewerCache()
 {
-    _imp->_gui->disconnectViewersFromViewerCache();
+    if (_imp->_gui) {
+        _imp->_gui->disconnectViewersFromViewerCache();
+    }
 }
 
 boost::shared_ptr<FileDialogPreviewProvider>

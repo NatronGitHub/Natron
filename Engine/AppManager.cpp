@@ -333,7 +333,7 @@ AppManager::~AppManager()
             front = _imp->_appInstances.front();
         }
         if (front) {
-            front->quit();
+            front->quitNow();
         }
         {
             QMutexLocker k(&_imp->_appInstancesMutex);
@@ -408,7 +408,7 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
     int nbApps = getNumInstances();
     ///if we exited the last instance, exit the event loop, this will make
     /// the exec() function return.
-    if (nbApps == 1) {
+    if (nbApps == 0) {
         assert(qApp);
         qApp->quit();
     }
@@ -416,6 +416,22 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
     // This should kill the AppInstance
     instance.reset();
     
+
+}
+
+void
+AppManager::quitNow(const AppInstPtr& instance)
+{
+    NodesList nodesToWatch;
+    instance->getProject()->getNodes_recursive(nodesToWatch, false);
+    if (!nodesToWatch.empty()) {
+        for (NodesList::iterator it = nodesToWatch.begin(); it!=nodesToWatch.end(); ++it) {
+            (*it)->quitAnyProcessing_blocking(false);
+        }
+    }
+    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    args->instance = instance;
+    afterQuitProcessingCallback(args);
 
 }
 
@@ -733,7 +749,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
                 }
 
                 try {
-                    mainInstance->quit();
+                    mainInstance->quitNow();
                 } catch (std::logic_error) {
                     // ignore
                 }
@@ -2199,7 +2215,7 @@ AppManager::exitApp(bool /*warnUserForSave*/)
     const AppInstanceVec & instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        (*it)->quit();
+        (*it)->quitNow();
     }
 }
 
