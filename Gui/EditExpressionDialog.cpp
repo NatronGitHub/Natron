@@ -68,7 +68,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Variant.h"
 #include "Engine/ViewerInstance.h"
 
-#include "Gui/AnimationButton.h"
 #include "Gui/ComboBox.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveGui.h"

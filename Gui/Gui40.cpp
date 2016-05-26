@@ -62,7 +62,6 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/RenderingProgressDialog.h"
 #include "Gui/RenderStatsDialog.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/ProgressPanel.h"
