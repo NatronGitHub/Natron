@@ -1,0 +1,15 @@
+--- IlmImf/ImfSystemSpecific.cpp.orig	2014-08-09 21:23:57.000000000 -0700
++++ IlmImf/ImfSystemSpecific.cpp	2016-05-24 05:49:44.000000000 -0700
+@@ -45,8 +45,10 @@
+     void cpuid(int n, int &eax, int &ebx, int &ecx, int &edx)
+     {
+         __asm__ __volatile__ (
+-            "cpuid"
+-            : /* Output  */ "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) 
++            "mov %%ebx, %%edi\n"
++            "cpuid\n"
++            "xchg %%edi, %%ebx"
++            : /* Output  */ "=a"(eax), "=D"(ebx), "=c"(ecx), "=d"(edx) 
+             : /* Input   */ "a"(n)
+             : /* Clobber */);
+     }
