@@ -183,11 +183,17 @@ AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
         }
     }
     if (emitStopTimerSignal) {
+        bool mustCallStopTimerInOtherThread;
         {
             QMutexLocker k(&_imp->timerMutex);
             _imp->timerStarted = false;
+            mustCallStopTimerInOtherThread = QThread::currentThread() != _imp->timerThread;
         }
-        Q_EMIT stopTimerInOriginalThread();
+        if (mustCallStopTimerInOtherThread) {
+            Q_EMIT stopTimerInOriginalThread();
+        } else {
+            onStopTimerInOriginalThreadTriggered();
+        }
     }
     return ret;
 }
@@ -216,6 +222,7 @@ AbortableRenderInfo::onStopTimerInOriginalThreadTriggered()
     if ( _imp->abortTimeoutTimer) {
         _imp->abortTimeoutTimer->stop();
         _imp->abortTimeoutTimer.reset();
+        _imp->timerThread = 0;
     }
 
 }
