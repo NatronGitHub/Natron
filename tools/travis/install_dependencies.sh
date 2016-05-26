@@ -43,8 +43,14 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     #sudo add-apt-repository -y ppa:irie/boost
     # now we use ppa:boost-latest/ppa
     sudo add-apt-repository -y ppa:boost-latest/ppa
+    sudo apt-get update -qq
+    sudo apt-get install libboost-dev
+
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
+    sudo apt-get update -qq
+    sudo apt-get install libcairo2-dev
+
     # ubuntu-toolchain-r/test contains recent versions of gcc
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; sudo apt-get update -qq; sudo apt-get install gcc-${GCC_VERSION} g++-${GCC_VERSION}; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 90; fi
 
