@@ -115,6 +115,16 @@ public Q_SLOTS:
      **/
     void onAbortTimerTimeout();
 
+    void onStartTimerInOriginalThreadTriggered();
+
+    void onStopTimerInOriginalThreadTriggered();
+
+Q_SIGNALS:
+
+    void startTimerInOriginalThread();
+
+    // Signal requesting to call stop on the timer in the thread that called setAborted()
+    void stopTimerInOriginalThread();
 private:
 
     boost::scoped_ptr<AbortableRenderInfoPrivate> _imp;

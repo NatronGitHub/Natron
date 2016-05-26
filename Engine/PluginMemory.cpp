@@ -62,7 +62,6 @@ PluginMemory::PluginMemory(const EffectInstPtr& effect)
 PluginMemory::~PluginMemory()
 {
     EffectInstPtr e = _imp->effect.lock();
-
     if (e) {
         e->removePluginMemoryPointer(this);
     }

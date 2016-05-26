@@ -140,7 +140,11 @@ EffectInstance::clearPluginMemoryChunks()
     {
         QMutexLocker l(&_imp->pluginMemoryChunksMutex);
         if (!_imp->pluginMemoryChunks.empty()) {
-            mem = ( *_imp->pluginMemoryChunks.begin() );
+            mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+            while (!mem && !_imp->pluginMemoryChunks.empty()) {
+                _imp->pluginMemoryChunks.erase(_imp->pluginMemoryChunks.begin());
+                 mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+            }
         }
     }
     while (mem) {
@@ -149,7 +153,11 @@ EffectInstance::clearPluginMemoryChunks()
         {
             QMutexLocker l(&_imp->pluginMemoryChunksMutex);
             if (!_imp->pluginMemoryChunks.empty()) {
-                mem = ( *_imp->pluginMemoryChunks.begin() );
+                mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+                while (!mem && !_imp->pluginMemoryChunks.empty()) {
+                    _imp->pluginMemoryChunks.erase(_imp->pluginMemoryChunks.begin());
+                     mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+                }
             }
         }
     }
@@ -2876,8 +2884,12 @@ void
 EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
 {
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-    for (std::list<PluginMemoryPtr>::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
-        if (it->get() == mem) {
+    for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        PluginMemoryPtr p = it->lock();
+        if (!p) {
+            continue;
+        }
+        if (p.get() == mem) {
             _imp->pluginMemoryChunks.erase(it);
             return;
         }

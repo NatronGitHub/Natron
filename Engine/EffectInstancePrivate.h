@@ -163,7 +163,7 @@ public:
 
     ///Current chuncks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
-    std::list<PluginMemoryPtr> pluginMemoryChunks;
+    std::list<boost::weak_ptr<PluginMemory> > pluginMemoryChunks;
 
     ///Does this plug-in supports render scale ?
     QMutex supportsRenderScaleMutex;
