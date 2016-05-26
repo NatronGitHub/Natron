@@ -36,6 +36,10 @@ struct TrackerNodePrivate;
 class TrackerNode
     : public NodeGroup
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 public:
 
     static EffectInstance* BuildEffect(boost::shared_ptr<Node> n)

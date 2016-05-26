@@ -1409,13 +1409,11 @@ Bezier::setPointByIndexInternal(bool useGuiCurve,
         Transform::Point3D left(0., 0., 1.);
         Transform::Point3D right(0., 0., 1.);
         boost::shared_ptr<BezierCP> cp;
-        bool isOnKeyframe = false;
         BezierCPs::const_iterator it = _imp->atIndex(index);
         assert( it != _imp->points.end() );
         cp = *it;
         cp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &p.x, &p.y);
-        isOnKeyframe |= cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y);
-        Q_UNUSED(isOnKeyframe);
+        cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y);
         cp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y);
 
         p = Transform::matApply(trans, p);

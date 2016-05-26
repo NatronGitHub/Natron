@@ -89,7 +89,6 @@ depends_lib         port:lame \
 build.cmd           ${prefix}/bin/gmake
 build.env-append    V=1
 
-patchfiles ffmpeg_videotoolbox.patch
 #
 # enable auto configure of asm optimizations
 # requires Xcode 3.1 or better on Leopard

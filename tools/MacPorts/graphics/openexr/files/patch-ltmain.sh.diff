@@ -1,0 +1,12 @@
+--- ltmain.sh.orig	2016-05-22 18:07:05.000000000 -0700
++++ ltmain.sh	2016-05-22 18:14:50.000000000 -0700
+@@ -4765,7 +4765,8 @@ func_mode_link ()
+       # -p, -pg, --coverage, -fprofile-* pass through profiling flag for GCC
+       # @file GCC response files
+       -64|-mips[0-9]|-r[0-9][0-9]*|-xarch=*|-xtarget=*|+DA*|+DD*|-q*|-m*| \
+-      -t[45]*|-txscale*|-p|-pg|--coverage|-fprofile-*|-F*|@*)
++      -t[45]*|-txscale*|-p|-pg|--coverage|-fprofile-*|-F*|@*|-tp=*|--sysroot=*| \
++      -O*|-flto*|-fwhopr*|-fuse-linker-plugin|-stdlib=*)
+         func_quote_for_eval "$arg"
+ 	arg="$func_quote_for_eval_result"
+         func_append compile_command " $arg"
