@@ -264,6 +264,7 @@ typedef boost::shared_ptr<AppInstance> AppInstPtr;
 typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
 typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
 typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
+typedef boost::weak_ptr<AbortableRenderInfo> AbortableRenderInfoWPtr;
 typedef boost::shared_ptr<TrackMarker> TrackMarkerPtr;
 typedef boost::shared_ptr<Node> NodePtr;
 typedef std::list<NodePtr> NodesList;

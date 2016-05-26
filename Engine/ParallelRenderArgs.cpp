@@ -868,7 +868,8 @@ ParallelRenderArgs::ParallelRenderArgs()
 bool
 ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
 {
-    return isRenderResponseToUserInteraction && ( !abortInfo || !abortInfo->canAbort() );
+    boost::shared_ptr<AbortableRenderInfo> info = abortInfo.lock();
+    return isRenderResponseToUserInteraction && ( !info || !info->canAbort() );
 }
 
 NATRON_NAMESPACE_EXIT;

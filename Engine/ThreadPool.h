@@ -97,6 +97,8 @@ public:
      **/
     void killThread();
 
+    QThread* getThread() const;
+
 private:
 
     boost::scoped_ptr<AbortableThreadPrivate> _imp;

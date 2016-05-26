@@ -45,7 +45,7 @@ struct AbortableThreadPrivate
 
     mutable QMutex abortInfoMutex;
     bool isRenderResponseToUserInteraction;
-    AbortableRenderInfoPtr abortInfo;
+    AbortableRenderInfoWPtr abortInfo;
     EffectInstWPtr treeRoot;
     bool abortInfoValid;
     std::string currentActionName;
@@ -117,6 +117,13 @@ AbortableThread::killThread()
     _imp->thread->terminate();
 }
 
+QThread*
+AbortableThread::getThread() const
+{
+    return _imp->thread;
+}
+
+
 void
 AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,
                               const AbortableRenderInfoPtr& abortInfo,
@@ -140,7 +147,7 @@ AbortableThread::clearAbortInfo()
     AbortableRenderInfoPtr abortInfo;
     {
         QMutexLocker k(&_imp->abortInfoMutex);
-        abortInfo = _imp->abortInfo;
+        abortInfo = _imp->abortInfo.lock();
         _imp->abortInfo.reset();
         _imp->treeRoot.reset();
         _imp->abortInfoValid = false;
@@ -162,7 +169,7 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
         return false;
     }
     *isRenderResponseToUserInteraction = _imp->isRenderResponseToUserInteraction;
-    *abortInfo = _imp->abortInfo;
+    *abortInfo = _imp->abortInfo.lock();
     *treeRoot = _imp->treeRoot.lock();
 
     return true;

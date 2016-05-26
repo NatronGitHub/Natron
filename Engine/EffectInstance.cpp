@@ -294,7 +294,7 @@ EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderA
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
-    assert(args->abortInfo);
+    assert(args->abortInfo.lock());
     tls->frameArgs.push_back(args);
 }
 
@@ -443,7 +443,7 @@ EffectInstance::aborted() const
         }
         const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
         isRenderUserInteraction = args->isRenderResponseToUserInteraction;
-        abortInfo = args->abortInfo;
+        abortInfo = args->abortInfo.lock();
         if (args->treeRoot) {
             treeRoot = args->treeRoot->getEffectInstance();
         }

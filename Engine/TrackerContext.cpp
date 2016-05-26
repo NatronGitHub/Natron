@@ -51,7 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 500
+#define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 200
 
 NATRON_NAMESPACE_ENTER;
 

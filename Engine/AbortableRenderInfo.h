@@ -29,6 +29,10 @@
 
 #include "Global/GlobalDefines.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/enable_shared_from_this.hpp>
+#endif
+
 #include <QtCore/QObject>
 
 #include "Engine/EngineFwd.h"
@@ -51,6 +55,7 @@ NATRON_NAMESPACE_ENTER;
 struct AbortableRenderInfoPrivate;
 class AbortableRenderInfo
     : public QObject
+    , public boost::enable_shared_from_this<AbortableRenderInfo>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -117,14 +122,10 @@ public Q_SLOTS:
 
     void onStartTimerInOriginalThreadTriggered();
 
-    void onStopTimerInOriginalThreadTriggered();
-
 Q_SIGNALS:
 
     void startTimerInOriginalThread();
 
-    // Signal requesting to call stop on the timer in the thread that called setAborted()
-    void stopTimerInOriginalThread();
 private:
 
     boost::scoped_ptr<AbortableRenderInfoPrivate> _imp;

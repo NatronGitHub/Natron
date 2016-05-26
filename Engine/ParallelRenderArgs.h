@@ -97,7 +97,7 @@ struct ParallelRenderArgs
     ViewIdx view;
 
     ///A number identifying the current frame render to determine if we can really abort for abortable renders
-    AbortableRenderInfoPtr abortInfo;
+    AbortableRenderInfoWPtr abortInfo;
 
     ///A pointer to the node that requested the current render.
     NodePtr treeRoot;
