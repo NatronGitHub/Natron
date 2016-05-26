@@ -240,4 +240,7 @@ DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 }
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING;
+
+#include "moc_DiskCacheNode.cpp"
 

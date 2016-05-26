@@ -2248,3 +2248,6 @@ TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
 }
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING;
+
+#include "moc_TrackerNode.cpp"
