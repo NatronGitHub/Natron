@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <boost/algorithm/clamp.hpp>
+
 #include "TrackerNode.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
@@ -892,7 +894,7 @@ TrackerNode::drawOverlay(double time,
                                    Also clamp to the interval if the correlation is higher, and reverse.
                                  */
 
-                                double error = std::min(std::max(it2->second.second, 0.), CORRELATION_ERROR_MAX_DISPLAY);
+                                double error = boost::algorithm::clamp(it2->second.second, 0., CORRELATION_ERROR_MAX_DISPLAY);
                                 double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                 float r, g, b;
                                 Color::hsv_to_rgb(mappedError, 1, 1, &r, &g, &b);
@@ -1723,8 +1725,8 @@ TrackerNode::onOverlayPenMotion(double time,
             searchWindowCorners[1].x = searchWndTopRight->getValueAtTime(time, 0)  + center.x + offset.x;
             searchWindowCorners[1].y = searchWndTopRight->getValueAtTime(time, 1)  + center.y + offset.y;
 
-            cur.x = std::max(std::min(cur.x, searchWindowCorners[1].x), searchWindowCorners[0].x);
-            cur.y = std::max(std::min(cur.y, searchWindowCorners[1].y), searchWindowCorners[0].y);
+            cur.x = boost::algorithm::clamp(cur.x, searchWindowCorners[0].x, searchWindowCorners[1].x);
+            cur.y = boost::algorithm::clamp(cur.y, searchWindowCorners[0].y, searchWindowCorners[1].y);
 
             cur.x -= (center.x + offset.x);
             cur.y -= (center.y + offset.y);
@@ -1761,7 +1763,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -1814,7 +1816,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -2010,7 +2012,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
                 double ratio = dist / prevDist;
                 _imp->ui->selectedMarkerScale.x *= ratio;
-                _imp->ui->selectedMarkerScale.x = std::max( 0.05, std::min(1., _imp->ui->selectedMarkerScale.x) );
+                _imp->ui->selectedMarkerScale.x = boost::algorithm::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
                 _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
                 didSomething = true;
             }

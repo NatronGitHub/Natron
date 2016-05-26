@@ -149,6 +149,9 @@ public:
     bool hasInitializedOpenGLFunctions;
     mutable QMutex openGLFunctionsMutex;
 
+    boost::scoped_ptr<QCoreApplication> _qApp;
+
+public:
     AppManagerPrivate();
 
     ~AppManagerPrivate();

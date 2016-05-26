@@ -93,7 +93,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/RightClickableWidget.h"
-#include "Gui/RenderingProgressDialog.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/SpinBox.h"

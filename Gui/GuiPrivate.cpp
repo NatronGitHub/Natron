@@ -115,7 +115,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/PropertiesBinWrapper.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/PythonPanels.h"
-#include "Gui/RenderingProgressDialog.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/SequenceFileDialog.h"

@@ -99,7 +99,6 @@ NATRON_NAMESPACE_ENTER;
 class AboutWindow;
 class ActionWithShortcut;
 class AnimatedCheckBox;
-class AnimationButton;
 class BoundAction;
 class Button;
 class ChannelsComboBox;

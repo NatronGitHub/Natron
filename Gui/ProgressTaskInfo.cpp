@@ -28,6 +28,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/algorithm/clamp.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -498,8 +499,8 @@ ProgressTaskInfo::updateProgressBar(double totalProgress,
                                     double subTaskProgress)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    totalProgress = std::max(std::min(totalProgress, 1.), 0.);
-    subTaskProgress = std::max(std::min(subTaskProgress, 1.), 0.);
+    totalProgress = boost::algorithm::clamp(totalProgress, 0., 1.);
+    subTaskProgress = boost::algorithm::clamp(subTaskProgress, 0., 1.);
 
     _imp->progressPercent = totalProgress * 100.;
     if (_imp->progressBar) {

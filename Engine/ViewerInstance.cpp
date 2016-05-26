@@ -1032,6 +1032,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 for (std::list<FrameEntryPtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                     appPTR->removeFromViewerCache(*it);
                 }
+#pragma message WARN("Value stored to hasTextureCached is never read")
                 hasTextureCached = false;
             }
             // Find out if we have a corresponding tile in the cache

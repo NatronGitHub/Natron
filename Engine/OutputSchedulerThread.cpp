@@ -32,6 +32,7 @@
 #include <stdexcept>
 
 #include <boost/scoped_ptr.hpp>
+#include <boost/algorithm/clamp.hpp>
 
 #include <QtCore/QMetaType>
 #include <QtCore/QMutex>
@@ -912,7 +913,7 @@ OutputSchedulerThread::startTasks(int startingFrame)
 #else
     //Start one more thread until we use all the thread pool.
     //We leave some CPU available so that the multi-thread suite can take advantage of it
-    nFrames = std::max(std::min(maxThreads - activeThreads, 2), 1);
+    nFrames = boost::algorithm::clamp(maxThreads - activeThreads, 1, 1);
 #endif
 
 
