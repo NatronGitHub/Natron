@@ -1,0 +1,24 @@
+--- Portfile.orig	2016-05-26 13:00:15.000000000 +0200
++++ Portfile	2016-05-26 13:00:15.000000000 +0200
+@@ -61,9 +61,7 @@
+     # avoid "can't find a register in class 'BREG' while reloading 'asm'
+     # see #51470 for MacPorts report
+     # see https://github.com/openexr/openexr/issues/128 for upstream report
+-    if { ${build_arch} eq "i386" && [string match *gcc-4* ${configure.compiler}] } {
+         patchfiles-append patch-pic.diff
+-    }
+ }
+ 
+ subport ilmbase {
+@@ -72,6 +70,11 @@
+         rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3 \
+         sha256  ecf815b60695555c1fbc73679e84c7c9902f4e8faa6e8000d2f905b8b86cedc7
+ 
++    depends_build   port:gsed
++
++    # https://github.com/openexr/openexr/pull/170
++    patchfiles-append ilmbase-threadpool.diff
++
+     # Bitrotted ucontext usage is buggy, don't bother with it.
+     patchfiles-append patch-configure.diff
+ }
