@@ -1,0 +1,11 @@
+--- configure.orig	2016-05-22 21:23:29.000000000 -0700
++++ configure	2016-05-22 21:24:03.000000000 -0700
+@@ -16433,7 +16433,7 @@ fi
+ 
+ 
+ 
+-for ac_header in limits.h unistd.h ucontext.h
++for ac_header in limits.h unistd.h
+ do
+ as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
+ if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
