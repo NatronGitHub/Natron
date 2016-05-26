@@ -954,7 +954,11 @@ ReadNode::knobChanged(KnobI* k,
 
             return false;
         }
-        _imp->refreshPluginSelectorKnob();
+        try {
+            _imp->refreshPluginSelectorKnob();
+        } catch (const std::exception& e) {
+            setPersistentMessage( eMessageTypeError, e.what() );
+        }
         boost::shared_ptr<KnobFile> fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);
         std::string filename = fileKnob->getValue();

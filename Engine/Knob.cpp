@@ -3805,10 +3805,12 @@ KnobHelper::cloneOneCurve(KnobI* other,
                 guiCurve->clone(*otherGuiCurve, offset, range);
             }
         } else {
-            if (!range) {
-                guiCurve->clone(*otherCurve);
-            } else {
-                guiCurve->clone(*otherCurve, offset, range);
+            if (otherCurve) {
+                if (!range) {
+                    guiCurve->clone(*otherCurve);
+                } else {
+                    guiCurve->clone(*otherCurve, offset, range);
+                }
             }
         }
     }
