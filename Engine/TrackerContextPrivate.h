@@ -406,16 +406,16 @@ public:
     struct TransformData
     {
         TransformData()
-        : rotation(0.)
-        , scale(0.)
-        , hasRotationAndScale(false)
-        , time(-1.)
-        , valid(false)
-        , rms(-1.)
+            : rotation(0.)
+            , scale(0.)
+            , hasRotationAndScale(false)
+            , time(-1.)
+            , valid(false)
+            , rms(-1.)
         {
             translation.x = translation.y = 0.;
         }
-        
+
         Point translation;
         double rotation;
         double scale;
@@ -428,13 +428,14 @@ public:
     struct CornerPinData
     {
         CornerPinData()
-        : h()
-        , nbEnabledPoints(0)
-        , time(-1.)
-        , valid(false)
-        , rms(-1.)
+            : h()
+            , nbEnabledPoints(0)
+            , time(-1.)
+            , valid(false)
+            , rms(-1.)
         {
         }
+
         Transform::Matrix3x3 h;
         int nbEnabledPoints;
         double time;

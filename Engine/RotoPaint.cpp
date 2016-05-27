@@ -1591,7 +1591,7 @@ RotoPaint::render(const RenderActionArgs& args)
                 plane->second->premultImage(args.roi);
             }
         }
-    } // RenderingFlagSetter 
+    } // RenderingFlagSetter
 
     return eStatusOK;
 } // RotoPaint::render

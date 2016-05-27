@@ -60,7 +60,6 @@ private:
     }
 
     virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
 

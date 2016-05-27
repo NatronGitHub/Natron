@@ -374,27 +374,27 @@ AppManager::~AppManager()
     delete qApp;
 }
 
-class QuitInstanceArgs : public GenericWatcherCallerArgs
+class QuitInstanceArgs
+    : public GenericWatcherCallerArgs
 {
-    
 public:
-    
+
     AppInstWPtr instance;
-    
+
     QuitInstanceArgs()
-    : GenericWatcherCallerArgs()
-    , instance()
+        : GenericWatcherCallerArgs()
+        , instance()
     {
-        
     }
-    
+
     virtual ~QuitInstanceArgs() {}
 };
 
 void
 AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
 {
-    QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>(args.get());
+    QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
+
     if (!inArgs) {
         return;
     }
@@ -403,7 +403,7 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
 
     instance->aboutToQuit();
 
-    appPTR->removeInstance(instance->getAppID());
+    appPTR->removeInstance( instance->getAppID() );
 
     int nbApps = getNumInstances();
     ///if we exited the last instance, exit the event loop, this will make
@@ -412,35 +412,34 @@ AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
         assert(qApp);
         qApp->quit();
     }
-    
+
     // This should kill the AppInstance
     instance.reset();
-    
-
 }
 
 void
 AppManager::quitNow(const AppInstPtr& instance)
 {
     NodesList nodesToWatch;
+
     instance->getProject()->getNodes_recursive(nodesToWatch, false);
-    if (!nodesToWatch.empty()) {
-        for (NodesList::iterator it = nodesToWatch.begin(); it!=nodesToWatch.end(); ++it) {
+    if ( !nodesToWatch.empty() ) {
+        for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
     boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
     args->instance = instance;
     afterQuitProcessingCallback(args);
-
 }
 
 void
 AppManager::quit(const AppInstPtr& instance)
 {
     boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+
     args->instance = instance;
-    if (!instance->getProject()->quitAnyProcessingForAllNodes(this, args)) {
+    if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
         afterQuitProcessingCallback(args);
     }
 }
@@ -476,7 +475,7 @@ AppManager::initializeQApp(int &argc,
                            char **argv)
 {
     assert(!_imp->_qApp);
-    _imp->_qApp.reset(new QCoreApplication(argc, argv));
+    _imp->_qApp.reset( new QCoreApplication(argc, argv) );
 }
 
 bool
@@ -770,16 +769,16 @@ AppManager::newAppInstanceInternal(const CLArgs& cl,
     if (!alwaysBackground) {
         instance = makeNewInstance(_imp->_availableID);
     } else {
-        instance.reset(new AppInstance(_imp->_availableID));
+        instance.reset( new AppInstance(_imp->_availableID) );
     }
-    
+
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
         _imp->_appInstances.push_back(instance);
     }
-    
-    setAsTopLevelInstance(instance->getAppID());
-    
+
+    setAsTopLevelInstance( instance->getAppID() );
+
     ++_imp->_availableID;
 
     try {
@@ -824,11 +823,13 @@ AppInstPtr
 AppManager::getAppInstance(int appID) const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
-    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
-        if ((*it)->getAppID() == appID) {
+
+    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        if ( (*it)->getAppID() == appID ) {
             return *it;
         }
     }
+
     return AppInstPtr();
 }
 
@@ -836,6 +837,7 @@ int
 AppManager::getNumInstances() const
 {
     QMutexLocker k(&_imp->_appInstancesMutex);
+
     return (int)_imp->_appInstances.size();
 }
 
@@ -843,6 +845,7 @@ const AppInstanceVec &
 AppManager::getAppInstances() const
 {
     assert( QThread::currentThread() == qApp->thread() );
+
     return _imp->_appInstances;
 }
 
@@ -852,8 +855,8 @@ AppManager::removeInstance(int appID)
     int newApp = -1;
     {
         QMutexLocker k(&_imp->_appInstancesMutex);
-        for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
-            if ((*it)->getAppID() == appID) {
+        for (AppInstanceVec::iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+            if ( (*it)->getAppID() == appID ) {
                 _imp->_appInstances.erase(it);
                 break;
             }
@@ -862,7 +865,6 @@ AppManager::removeInstance(int appID)
         if ( !_imp->_appInstances.empty() ) {
             newApp = _imp->_appInstances.front()->getAppID();
         }
-        
     }
 
     if (newApp != -1) {
@@ -966,13 +968,14 @@ AppManager::wipeAndCreateDiskCacheStructure()
 AppInstPtr
 AppManager::getTopLevelInstance () const
 {
-
     QMutexLocker k(&_imp->_appInstancesMutex);
-    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it!=_imp->_appInstances.end();++it) {
-        if ((*it)->getAppID() == _imp->_topLevelInstanceID) {
+
+    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
+        if ( (*it)->getAppID() == _imp->_topLevelInstanceID ) {
             return *it;
         }
     }
+
     return AppInstPtr();
 }
 
@@ -1014,7 +1017,6 @@ AppManager::writeToOutputPipe(const QString & longMessage,
 
     return true;
 }
-
 
 void
 AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
@@ -1671,7 +1673,7 @@ AppManager::setAsTopLevelInstance(int appID)
     for (AppInstanceVec::iterator it = _imp->_appInstances.begin();
          it != _imp->_appInstances.end();
          ++it) {
-        if ((*it)->getAppID() != _imp->_topLevelInstanceID) {
+        if ( (*it)->getAppID() != _imp->_topLevelInstanceID ) {
             if ( !isBackground() ) {
                 (*it)->disconnectViewersFromViewerCache();
             }
@@ -1679,7 +1681,6 @@ AppManager::setAsTopLevelInstance(int appID)
             if ( !isBackground() ) {
                 (*it)->connectViewersToViewerCache();
                 setOFXHostHandle( (*it)->getOfxHostOSHandle() );
-                
             }
         }
     }
@@ -2040,7 +2041,7 @@ AppManager::setLoadingStatus(const QString & str)
 AppInstPtr
 AppManager::makeNewInstance(int appID) const
 {
-    return AppInstPtr(new AppInstance(appID));
+    return AppInstPtr( new AppInstance(appID) );
 }
 
 void
@@ -2768,13 +2769,13 @@ AppManager::initPython(int argc,
     std::string modulename = NATRON_ENGINE_PYTHON_MODULE_NAME;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nfrom math import *\nimport " + modulename, &err, 0);
     if (!ok) {
-        throw std::runtime_error(tr("Error while loading python module %1: %2").arg(QString::fromUtf8(modulename.c_str())).arg(QString::fromUtf8(err.c_str())).toStdString());
+        throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
     }
 
     ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(modulename + ".natron = " + modulename + ".PyCoreApplication()\n", &err, 0);
     assert(ok);
     if (!ok) {
-        throw std::runtime_error(tr("Error while loading python module %1: %2").arg(QString::fromUtf8(modulename.c_str())).arg(QString::fromUtf8(err.c_str())).toStdString());
+        throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
     }
 
     if ( !isBackground() ) {
@@ -2782,14 +2783,14 @@ AppManager::initPython(int argc,
         ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript("import sys\nimport " + modulename, &err, 0);
         assert(ok);
         if (!ok) {
-            throw std::runtime_error(tr("Error while loading python module %1: %2").arg(QString::fromUtf8(modulename.c_str())).arg(QString::fromUtf8(err.c_str())).toStdString());
+            throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
 
         ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(modulename + ".natron = " +
                                                             modulename + ".PyGuiApplication()\n", &err, 0);
         assert(ok);
         if (!ok) {
-            throw std::runtime_error(tr("Error while loading python module %1: %2").arg(QString::fromUtf8(modulename.c_str())).arg(QString::fromUtf8(err.c_str())).toStdString());
+            throw std::runtime_error( tr("Error while loading python module %1: %2").arg( QString::fromUtf8( modulename.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
 
         //redirect stdout/stderr
@@ -2808,7 +2809,7 @@ AppManager::initPython(int argc,
         ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
         assert(ok);
         if (!ok) {
-            throw std::runtime_error(tr("Error while loading StreamCatcher: %1").arg(QString::fromUtf8(err.c_str())).toStdString());
+            throw std::runtime_error( tr("Error while loading StreamCatcher: %1").arg( QString::fromUtf8( err.c_str() ) ).toStdString() );
         }
     }
 } // AppManager::initPython
@@ -3030,7 +3031,6 @@ AppManager::getAppTLS() const
 {
     return &_imp->globalTLS;
 }
-
 
 bool
 AppManager::hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError) const

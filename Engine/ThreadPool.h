@@ -39,7 +39,6 @@
 NATRON_NAMESPACE_ENTER;
 
 
-
 /**
  * @brief This class provides a fast way to determine whether a render thread
  * is aborted or not.
@@ -66,7 +65,7 @@ public:
     void clearAbortInfo();
 
     /**
-     * @brief Returns the abort info related on the specific render ongoing on this thread. 
+     * @brief Returns the abort info related on the specific render ongoing on this thread.
      * This is used in EffectInstance::aborted() to figure out if a render thread was aborted or not.
      **/
     bool getAbortInfo(bool* isRenderResponseToUserInteraction,
@@ -92,7 +91,7 @@ public:
      * When the thread is terminated, all threads waiting for the thread to finish will be woken up.
      *
      * ||||WARNING|||: This function is dangerous and its use is discouraged.
-     * The thread can be terminated at any point in its code path. Threads can be terminated while modifying data. 
+     * The thread can be terminated at any point in its code path. Threads can be terminated while modifying data.
      * There is no chance for the thread to clean up after itself, unlock any held mutexes, etc. In short, use this function only if absolutely necessary.
      **/
     void killThread();

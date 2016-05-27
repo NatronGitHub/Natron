@@ -326,7 +326,7 @@ OfxImageEffectInstance::getEffectDuration() const
     if (!node) {
         return 0;
     }
-    int firstFrame,lastFrame;
+    int firstFrame, lastFrame;
     bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
     if (lifetimeEnabled) {
         return std::max(double(lastFrame - firstFrame) + 1., 1.);
@@ -334,6 +334,7 @@ OfxImageEffectInstance::getEffectDuration() const
         // return the project duration if the effect has no lifetime
         double projFirstFrame, projLastFrame;
         node->getApp()->getProject()->getFrameRange(&projFirstFrame, &projLastFrame);
+
         return std::max(projLastFrame - projFirstFrame + 1., 1.);
     }
 }

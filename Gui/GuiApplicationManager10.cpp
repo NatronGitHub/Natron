@@ -110,7 +110,7 @@ GuiApplicationManager::updateAllRecentFileMenus()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->get());
+        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>( it->get() );
         if (appInstance) {
             Gui* gui = appInstance->getGui();
             assert(gui);
@@ -207,7 +207,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector<
 AppInstPtr
 GuiApplicationManager::makeNewInstance(int appID) const
 {
-    return AppInstPtr(new GuiAppInstance(appID));
+    return AppInstPtr( new GuiAppInstance(appID) );
 }
 
 KnobGui*
@@ -347,7 +347,7 @@ GuiApplicationManager::setUndoRedoStackLimit(int limit)
     const AppInstanceVec & apps = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->get());
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->setUndoRedoStackLimit(limit);
         }
@@ -426,7 +426,7 @@ void
 GuiApplicationManager::handleOpenFileRequest()
 {
     AppInstPtr mainApp = getAppInstance(0);
-    GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp.get());
+    GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( mainApp.get() );
 
     assert(guiApp);
     if (guiApp) {
@@ -1099,7 +1099,7 @@ GuiApplicationManager::clearLastRenderedTextures()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->get());
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->clearAllLastRenderedImages();
         }
@@ -1185,7 +1185,7 @@ GuiApplicationManager::reloadStylesheets()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->get());
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->reloadStylesheet();
         }
@@ -1198,7 +1198,7 @@ GuiApplicationManager::reloadScriptEditorFonts()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->get());
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->reloadScriptEditorFonts();
         }

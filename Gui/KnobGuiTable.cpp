@@ -534,7 +534,7 @@ KnobGuiTable::onItemDoubleClicked(TableItem* item)
     assert(row >= 0 && col >= 0);
     boost::shared_ptr<KnobTable> knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
     assert(knob);
-    if (!knob || row < 0 || col < 0) {
+    if ( !knob || (row < 0) || (col < 0) ) {
         return;
     }
 
@@ -564,7 +564,7 @@ KnobGuiTable::onItemDoubleClicked(TableItem* item)
     std::string oldTable = knob->getValue();
     std::string newTable = _imp->encodeTable(knob);
     pushUndoCommand( new KnobUndoCommand<std::string>( shared_from_this(), oldTable, newTable) );
-}
+} // KnobGuiTable::onItemDoubleClicked
 
 void
 KnobGuiTable::onItemDataChanged(TableItem* item)

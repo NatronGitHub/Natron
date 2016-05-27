@@ -70,7 +70,8 @@ struct BufferedFrame
 
 typedef std::list<BufferedFrame> BufferedFrames;
 
-class ViewerCurrentFrameRequestSchedulerStartArgs : public GenericThreadStartArgs
+class ViewerCurrentFrameRequestSchedulerStartArgs
+    : public GenericThreadStartArgs
 {
 public:
 
@@ -78,8 +79,8 @@ public:
     U64 age;
 
     ViewerCurrentFrameRequestSchedulerStartArgs()
-    : GenericThreadStartArgs()
-    , age(0)
+        : GenericThreadStartArgs()
+        , age(0)
     {
     }
 
@@ -146,10 +147,9 @@ enum RenderDirectionEnum
 };
 
 
-
-class OutputSchedulerThreadStartArgs : public GenericThreadStartArgs
+class OutputSchedulerThreadStartArgs
+    : public GenericThreadStartArgs
 {
-
 public:
 
     bool isBlocking;
@@ -161,7 +161,6 @@ public:
     RenderDirectionEnum processTimelineDirection, pushTimelineDirection;
 
 
-
     OutputSchedulerThreadStartArgs(bool isBlocking,
                                    bool enableRenderStats,
                                    int firstFrame,
@@ -169,15 +168,15 @@ public:
                                    int frameStep,
                                    const std::vector<ViewIdx>& viewsToRender,
                                    RenderDirectionEnum forward)
-    : GenericThreadStartArgs()
-    , isBlocking(isBlocking)
-    , enableRenderStats(enableRenderStats)
-    , firstFrame(firstFrame)
-    , lastFrame(lastFrame)
-    , frameStep(frameStep)
-    , viewsToRender(viewsToRender)
-    , processTimelineDirection(forward)
-    , pushTimelineDirection(forward)
+        : GenericThreadStartArgs()
+        , isBlocking(isBlocking)
+        , enableRenderStats(enableRenderStats)
+        , firstFrame(firstFrame)
+        , lastFrame(lastFrame)
+        , frameStep(frameStep)
+        , viewsToRender(viewsToRender)
+        , processTimelineDirection(forward)
+        , pushTimelineDirection(forward)
     {
     }
 
@@ -200,7 +199,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     friend class RenderThreadTask;
-
     enum ProcessFrameModeEnum
     {
         eProcessFrameBySchedulerThread = 0, //< the processFrame function will be called by the OutputSchedulerThread thread.
@@ -258,7 +256,6 @@ public:
     void renderFromCurrentFrame(bool enableRenderStats,
                                 const std::vector<ViewIdx>& viewsToRender,
                                 RenderDirectionEnum forward);
-
 
 
     /**
@@ -320,8 +317,6 @@ public:
     double getDesiredFPS() const;
 
     void runCallbackWithVariables(const QString& callback);
-
-
 
 private Q_SLOTS:
 
@@ -414,7 +409,6 @@ protected:
 private:
 
     virtual void onAbortRequested() OVERRIDE FINAL;
-
     virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
 
     /**
@@ -503,9 +497,7 @@ private:
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     virtual void aboutToStartRender() OVERRIDE FINAL;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
-
     boost::weak_ptr<OutputEffectInstance> _effect;
-
     mutable QMutex _currentTimeMutex;
     int _currentTime;
 };
@@ -575,13 +567,9 @@ public:
 private:
 
     virtual void onWaitForAbortCompleted() OVERRIDE FINAL;
-
     virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
-
     virtual void onAbortRequested() OVERRIDE FINAL;
-
     virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
-
     virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
 
     /**
@@ -593,8 +581,6 @@ private:
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
     virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
     boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
 };
 
@@ -629,7 +615,6 @@ private:
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
     virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
 };
 
 

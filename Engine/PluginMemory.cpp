@@ -56,12 +56,12 @@ struct PluginMemory::Implementation
 PluginMemory::PluginMemory(const EffectInstPtr& effect)
     : _imp( new Implementation(effect) )
 {
-    
 }
 
 PluginMemory::~PluginMemory()
 {
     EffectInstPtr e = _imp->effect.lock();
+
     if (e) {
         e->removePluginMemoryPointer(this);
     }

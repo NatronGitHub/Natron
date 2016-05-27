@@ -1546,6 +1546,7 @@ void
 Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 {
     AppInstPtr app = getApp();
+
     if (!app) {
         return;
     }
@@ -1567,6 +1568,7 @@ void
 Node::removeAllImagesFromCache(bool blocking)
 {
     AppInstPtr app = getApp();
+
     if (!app) {
         return;
     }
@@ -2382,24 +2384,24 @@ Node::areAllProcessingThreadsQuit() const
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        if (isOutput->getRenderEngine()->hasThreadsAlive()) {
+        if ( isOutput->getRenderEngine()->hasThreadsAlive() ) {
             return false;
         }
     }
 
     boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
     if (trackerContext) {
-        if (!trackerContext->hasTrackerThreadQuit()) {
+        if ( !trackerContext->hasTrackerThreadQuit() ) {
             return false;
         }
     }
+
     return true;
 }
 
 void
 Node::quitAnyProcessing_non_blocking()
 {
-
     //If this effect has a RenderEngine, make sure it is finished
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
@@ -2492,7 +2494,6 @@ Node::abortAnyProcessing_blocking()
         assert(engine);
         engine->abortRenderingNoRestart();
         engine->waitForAbortToComplete_enforce_blocking();
-
     }
 
     boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
@@ -5940,37 +5941,38 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     _imp->runOnNodeCreatedCB(true);
 } // activate
 
-class NodeDestroyNodeInternalArgs : public GenericWatcherCallerArgs
+class NodeDestroyNodeInternalArgs
+    : public GenericWatcherCallerArgs
 {
-
 public:
 
     bool autoReconnect;
 
     NodeDestroyNodeInternalArgs()
-    : GenericWatcherCallerArgs()
-    , autoReconnect(false)
+        : GenericWatcherCallerArgs()
+        , autoReconnect(false)
     {}
 
     virtual ~NodeDestroyNodeInternalArgs() {}
 };
 
 void
-Node::onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args)
+Node::onProcessingQuitInDestroyNodeInternal(int taskID,
+                                            const WatcherCallerArgsPtr& args)
 {
     assert(_imp->renderWatcher);
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
     assert(args);
-    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>(args.get());
+    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
     assert(thisArgs);
     doDestroyNodeInternalEnd(false, thisArgs ? thisArgs->autoReconnect : false);
     _imp->renderWatcher.reset();
 }
 
 void
-Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
+Node::doDestroyNodeInternalEnd(bool fromDest,
+                               bool autoReconnect)
 {
-
     ///Remove the node from the project
     if (!fromDest) {
         deactivate(NodesList(),
@@ -6014,9 +6016,9 @@ Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
 
     ///Disconnect all inputs
     /*int maxInputs = getMaxInputCount();
-     for (int i = 0; i < maxInputs; ++i) {
-     disconnectInput(i);
-     }*/
+       for (int i = 0; i < maxInputs; ++i) {
+       disconnectInput(i);
+       }*/
 
     ///Kill the effect
     _imp->effect->clearPluginMemoryChunks();
@@ -6033,9 +6035,7 @@ Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
             getGroup()->removeNode(thisShared);
         }
     }
-
-}
-
+} // Node::doDestroyNodeInternalEnd
 
 void
 Node::destroyNodeInternal(bool fromDest,
@@ -6059,23 +6059,21 @@ Node::destroyNodeInternal(bool fromDest,
         if (!fromDest) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
             NodesList nodesToWatch;
-            nodesToWatch.push_back(shared_from_this());
+            nodesToWatch.push_back( shared_from_this() );
             if (isGrp) {
                 isGrp->getNodes_recursive(nodesToWatch, false);
             }
-            _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
-            QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
-            boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
+            _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
+            QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
+            boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
             args->autoReconnect = autoReconnect;
             _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-
         } else {
             // Well, we are in the destructor, we better have nothing left to render
             quitAnyProcessing_blocking(false);
             doDestroyNodeInternalEnd(true, false);
         }
-    } 
-
+    }
 } // Node::destroyNodeInternal
 
 void
@@ -6608,7 +6606,6 @@ Node::aborted() const
     return _imp->effect->aborted();
 }
 
-
 bool
 Node::message(MessageTypeEnum type,
               const std::string & content) const
@@ -6762,6 +6759,7 @@ void
 Node::clearPersistentMessage(bool recurse)
 {
     AppInstPtr app = getApp();
+
     if (!app) {
         return;
     }
@@ -9056,7 +9054,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
     ///Wait for the main-thread to be done dequeuing the connect actions queue
     if ( QThread::currentThread() != qApp->thread() ) {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while (_imp->nodeIsDequeuing && !aborted()) {
+        while ( _imp->nodeIsDequeuing && !aborted() ) {
             _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
         }
     }
@@ -9069,7 +9067,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 
 
     ///mark this
-    markedNodes.push_back(shared_from_this());
+    markedNodes.push_back( shared_from_this() );
 
     ///Call recursively
 
@@ -9083,15 +9081,15 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 }
 
 RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
-: node(n)
-, nodes()
+    : node(n)
+    , nodes()
 {
     n->setNodeIsRendering(nodes);
 }
 
 RenderingFlagSetter::~RenderingFlagSetter()
 {
-    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr n = it->lock();
         if (!n) {
             continue;
@@ -9099,7 +9097,6 @@ RenderingFlagSetter::~RenderingFlagSetter()
         n->unsetNodeIsRendering();
     }
 }
-
 
 void
 Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
@@ -9110,7 +9107,6 @@ Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
 void
 Node::unsetNodeIsRendering()
 {
-
     bool mustDequeue;
     {
         int nodeIsRendering;
@@ -9183,7 +9179,7 @@ Node::dequeueActions()
         _imp->outputs = _imp->guiOutputs;
     }
 
-    if (!inputChanges.empty()) {
+    if ( !inputChanges.empty() ) {
         beginInputEdition();
         hasChanged = true;
         for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {

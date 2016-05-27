@@ -931,7 +931,6 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 
     // Flag that we are going to render
     outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
-
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
 ViewerInstance::ViewerRenderRetCode
@@ -1277,7 +1276,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     if (isAbortable) {
         isAbortable->setAbortInfo( !isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance() );
     }
-
 
 
     assert( !inArgs.params->nbCachedTile || inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
@@ -3259,7 +3257,7 @@ ViewerInstance::setInputA(int inputNb)
     if (isInspector) {
         isInspector->setInputA(inputNb);
     }
-    
+
     Q_EMIT availableComponentsChanged();
 }
 
@@ -3273,7 +3271,7 @@ ViewerInstance::setInputB(int inputNb)
     if (isInspector) {
         isInspector->setInputB(inputNb);
     }
-    
+
     Q_EMIT availableComponentsChanged();
 }
 

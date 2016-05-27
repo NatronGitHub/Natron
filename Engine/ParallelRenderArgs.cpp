@@ -869,6 +869,7 @@ bool
 ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
 {
     boost::shared_ptr<AbortableRenderInfo> info = abortInfo.lock();
+
     return isRenderResponseToUserInteraction && ( !info || !info->canAbort() );
 }
 

@@ -1957,7 +1957,6 @@ NodeGui::deactivate(bool triggerRender)
 {
     ///first deactivate all child instance if any
     NodePtr node = getNode();
-
     bool isMultiInstanceChild = node ? node->getParentMultiInstance().get() != NULL : false;
 
     if (!isMultiInstanceChild) {

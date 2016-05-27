@@ -71,6 +71,7 @@ copyAbortInfo(QThread* fromThread,
 {
     AbortableThread* fromAbortable = dynamic_cast<AbortableThread*>(fromThread);
     AbortableThread* toAbortable = dynamic_cast<AbortableThread*>(toThread);
+
     if (fromAbortable && toAbortable) {
         bool isRenderResponseToUserInteraction;
         AbortableRenderInfoPtr abortInfo;
@@ -119,8 +120,8 @@ void
 AppTLS::cleanupTLSForThread()
 {
     QThread* curThread = QThread::currentThread();
-
     AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(curThread);
+
     if (isAbortableThread) {
         isAbortableThread->clearAbortInfo();
     }

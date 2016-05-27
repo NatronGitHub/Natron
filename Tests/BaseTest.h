@@ -53,7 +53,8 @@ protected:
     virtual void SetUp();
     virtual void TearDown();
 
-    AppInstPtr getApp() const {
+    AppInstPtr getApp() const
+    {
         return _app.lock();
     }
 

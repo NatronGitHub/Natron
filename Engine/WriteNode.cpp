@@ -985,6 +985,7 @@ WriteNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
+
         boost::shared_ptr<KnobOutputFile> fileKnob = _imp->outputFileKnob.lock();
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
@@ -1046,6 +1047,7 @@ bool
 WriteNode::isViewAware() const
 {
     NodePtr writer = _imp->embeddedPlugin.lock();
+
     if (writer) {
         return writer->getEffectInstance()->isViewAware();
     } else {
@@ -1054,13 +1056,15 @@ WriteNode::isViewAware() const
 }
 
 void
-WriteNode::getFrameRange(double *first, double *last)
+WriteNode::getFrameRange(double *first,
+                         double *last)
 {
     NodePtr writer = _imp->embeddedPlugin.lock();
+
     if (writer) {
         writer->getEffectInstance()->getFrameRange(first, last);
     } else {
-        EffectInstance::getFrameRange(first,last);
+        EffectInstance::getFrameRange(first, last);
     }
 }
 

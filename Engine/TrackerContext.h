@@ -109,9 +109,9 @@ class TrackerContextPrivate;
 class TrackerContext
     : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -416,7 +416,8 @@ private:
 };
 
 struct TrackArgsPrivate;
-class TrackArgs : public GenericThreadStartArgs
+class TrackArgs
+    : public GenericThreadStartArgs
 {
 public:
 
@@ -468,10 +469,9 @@ struct TrackSchedulerPrivate;
 class TrackScheduler
     : public GenericSchedulerThread
 {
-
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -524,8 +524,6 @@ private:
     }
 
     virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-
-
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;
 };
 

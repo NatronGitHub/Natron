@@ -141,8 +141,10 @@ NodeGraphPrivate::rearrangeSelectedNodes()
 {
     if ( !_selection.empty() ) {
         _publicInterface->pushUndoCommand( new RearrangeNodesCommand(_selection) );
+
         return true;
     }
+
     return false;
 }
 

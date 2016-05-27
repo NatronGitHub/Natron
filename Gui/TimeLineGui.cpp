@@ -206,6 +206,7 @@ void
 TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
 {
     GuiAppInstPtr app = _imp->gui->getApp();
+
     assert(app);
     if (_imp->timeline) {
         //connect the internal timeline to the gui

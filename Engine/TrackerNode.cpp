@@ -1873,7 +1873,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
             }
@@ -1932,7 +1932,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
             }
