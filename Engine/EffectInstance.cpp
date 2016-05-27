@@ -4132,10 +4132,6 @@ EffectInstance::getOverlayInteractRenderScale() const
     }
 
     return renderScale;
-
-    RenderScale r(1.);
-
-    return r;
 }
 
 void

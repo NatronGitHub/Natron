@@ -79,13 +79,12 @@ public:
 
     ViewerCurrentFrameRequestSchedulerStartArgs()
     : GenericThreadStartArgs()
+    , age(0)
     {
-
     }
 
     virtual ~ViewerCurrentFrameRequestSchedulerStartArgs()
     {
-        
     }
 };
 
@@ -180,12 +179,10 @@ public:
     , processTimelineDirection(forward)
     , pushTimelineDirection(forward)
     {
-
     }
 
     virtual ~OutputSchedulerThreadStartArgs()
     {
-
     }
 };
 
