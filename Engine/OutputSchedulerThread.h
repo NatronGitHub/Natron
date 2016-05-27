@@ -869,6 +869,7 @@ private:
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
 
     friend class ViewerInstance;
+    friend class OutputEffectInstance;
     void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request);
 
 
