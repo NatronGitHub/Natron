@@ -575,9 +575,13 @@ public:
 
     QString getPySideVersion() const;
 
-    void initializeOpenGLFunctionsOnce();
+    bool initializeOpenGLFunctionsOnce();
 
     virtual void updateAboutWindowLibrariesVersion() {}
+
+#ifdef __NATRON_WIN32__
+    const OSGLContext_wgl_data* getWGLData() const;
+#endif
 
 public Q_SLOTS:
 

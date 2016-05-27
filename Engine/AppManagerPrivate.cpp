@@ -63,6 +63,10 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RectISerialization.h"
 #include "Engine/StandardPaths.h"
 
+#ifdef Q_OS_WIN32
+#include <windows.h>
+#endif
+
 
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::FrameParams)
 BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
@@ -553,6 +557,61 @@ post_gl_call(const char */*name*/,
 
 #endif // debug
 
+#ifdef Q_OS_WIN32
+bool stringInExtensionString(const char* string, const char* extensions)
+{
+    const char* start = extensions;
+
+    for (;;)
+    {
+        const char* where;
+        const char* terminator;
+
+        where = strstr(start, string);
+        if (!where)
+            return false;
+
+        terminator = where + strlen(string);
+        if (where == start || *(where - 1) == ' ')
+        {
+            if (*terminator == ' ' || *terminator == '\0')
+                break;
+        }
+
+        start = terminator;
+    }
+    
+    return true;
+}
+
+static bool extensionSupported(const char* extension, OSGLContext_wgl_data* data)
+{
+    const char* extensions;
+
+    _GLFWwindow* window = _glfwPlatformGetCurrentContext();
+
+    if (data->GetExtensionsStringEXT) {
+        extensions = data->GetExtensionsStringEXT();
+        if (extensions) {
+            if (stringInExtensionString(extension, extensions))
+                return true;
+        }
+    }
+
+    if (data->GetExtensionsStringARB)
+    {
+        extensions = data->GetExtensionsStringARB(window->context.wgl.dc);
+        if (extensions) {
+            if (stringInExtensionString(extension, extensions)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+#endif
+
 void
 AppManagerPrivate::initGl()
 {
@@ -582,7 +641,65 @@ AppManagerPrivate::initGl()
         return;
     }
 
+#ifdef Q_OS_WIN32
+    wglInfo.reset(new OSGLContext_wgl_data);
+    wglInfo->instance = LoadLibraryA("opengl32.dll");
+    if (!wglInfo->instance) {
+        assert(false);
+        throw std::runtime_error("WGL: Failed to load opengl32.dll");
+        return GLFW_FALSE;
+    }
+
+    wglInfo->CreateContext = (WGLCREATECONTEXT_T)GetProcAddress(wglInfo->instance, "wglCreateContext");
+    wglInfo->DeleteContext = (WGLDELETECONTEXT_T)GetProcAddress(wglInfo->instance, "wglDeleteContext");
+    wglInfo->GetProcAddress = (WGLGETPROCADDRESS_T)GetProcAddress(wglInfo->instance, "wglGetProcAddress");
+    wglInfo->MakeCurrent = (WGLMAKECURRENT_T)GetProcAddress(wglInfo->instance, "wglMakeCurrent");
+    wglInfo->ShareLists = (WGLSHARELISTS_T)GetProcAddress(wglInfo->instance, "wglShareLists");
+
+
+    // Functions for WGL_EXT_extension_string
+    // NOTE: These are needed by extensionSupported
+    wglInfo->GetExtensionsStringEXT = (PFNWGLGETEXTENSIONSSTRINGEXTPROC)wglInfo->GetProcAddress("wglGetExtensionsStringEXT");
+    wglInfo->GetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglInfo->GetProcAddress("wglGetExtensionsStringARB");
+
+    // Functions for WGL_ARB_create_context
+    wglInfo->CreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglInfo->GetProcAddress("wglCreateContextAttribsARB");
+
+    // Functions for WGL_EXT_swap_control
+    wglInfo->SwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglInfo->GetProcAddress("wglSwapIntervalEXT");
+
+    // Functions for WGL_ARB_pixel_format
+    wglInfo->GetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)wglInfo->GetProcAddress("wglGetPixelFormatAttribivARB");
+
+    // This needs to include every extension used below except for
+    // WGL_ARB_extensions_string and WGL_EXT_extensions_string
+    wglInfo->ARB_multisample = extensionSupported("WGL_ARB_multisample");
+    wglInfo->ARB_framebuffer_sRGB = extensionSupported("WGL_ARB_framebuffer_sRGB");
+    wglInfo->EXT_framebuffer_sRGB = extensionSupported("WGL_EXT_framebuffer_sRGB");
+    wglInfo->ARB_create_context = extensionSupported("WGL_ARB_create_context");
+    wglInfo->ARB_create_context_profile = extensionSupported("WGL_ARB_create_context_profile");
+    wglInfo->EXT_create_context_es2_profile = extensionSupported("WGL_EXT_create_context_es2_profile");
+    wglInfo->ARB_create_context_robustness = extensionSupported("WGL_ARB_create_context_robustness");
+    wglInfo->EXT_swap_control = extensionSupported("WGL_EXT_swap_control");
+    wglInfo->ARB_pixel_format = extensionSupported("WGL_ARB_pixel_format");
+    wglInfo->ARB_context_flush_control = extensionSupported("WGL_ARB_context_flush_control");
+
+    wglInfo->extensionsLoaded = GL_TRUE;
+#endif
+
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
+}
+
+void
+AppManagerPrivate::tearDownGL()
+{
+#ifdef Q_OS_WIN32
+    if (wglInfo) {
+        if (wglInfo->instance) {
+            FreeLibrary(wglInfo->instance);
+        }
+    }
+#endif
 }
 
 NATRON_NAMESPACE_EXIT;

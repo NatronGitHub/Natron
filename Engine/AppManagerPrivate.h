@@ -47,6 +47,7 @@
 #include "client/linux/crash_generation/crash_generation_server.h"
 #elif defined(Q_OS_WIN32)
 #include "client/windows/handler/exception_handler.h"
+#include "Engine/OSGLContext_win.h"
 #endif
 #endif
 
@@ -149,6 +150,10 @@ public:
     bool hasInitializedOpenGLFunctions;
     mutable QMutex openGLFunctionsMutex;
 
+#ifdef Q_OS_WIN32
+    boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;
+#endif
+
     boost::scoped_ptr<QCoreApplication> _qApp;
 
 public:
@@ -184,6 +189,8 @@ public:
 #endif
 
     void initGl();
+
+    void tearDownGL();
 };
 
 NATRON_NAMESPACE_EXIT;

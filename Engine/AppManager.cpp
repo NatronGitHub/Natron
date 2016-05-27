@@ -367,6 +367,7 @@ AppManager::~AppManager()
     _imp->_diskCache.reset();
 
     tearDownPython();
+    _imp->tearDownGL();
 
     _instance = 0;
 
@@ -620,7 +621,7 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
     return _imp->pluginsUseInputImageCopyToRender;
 }
 
-void
+bool
 AppManager::initializeOpenGLFunctionsOnce()
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
@@ -628,8 +629,19 @@ AppManager::initializeOpenGLFunctionsOnce()
     if (!_imp->hasInitializedOpenGLFunctions) {
         _imp->initGl();
         updateAboutWindowLibrariesVersion();
+        return true;
     }
+    return false;
 }
+
+#ifdef __NATRON_WIN32__
+const
+AppManager::OSGLContext_wgl_data* getWGLData() const
+{
+    return _imp->wglInfo.get();
+}
+#endif
+
 
 bool
 AppManager::initGui(const CLArgs& cl)
