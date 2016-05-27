@@ -75,7 +75,7 @@ class ViewerCurrentFrameRequestSchedulerStartArgs : public GenericThreadStartArg
 public:
 
 
-    int id;
+    U64 age;
 
     ViewerCurrentFrameRequestSchedulerStartArgs()
     : GenericThreadStartArgs()
@@ -590,10 +590,7 @@ private:
     /**
      * @brief How to pick the task to process from the consumer thread
      **/
-    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL
-    {
-        return eTaskQueueBehaviorProcessInOrder;
-    }
+    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL;
 
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
@@ -872,6 +869,7 @@ private:
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
 
     friend class ViewerInstance;
+    friend class OutputEffectInstance;
     void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request);
 
 
