@@ -320,6 +320,11 @@ public:
      * @brief Called when the instance is exited
      **/
     void quit(const AppInstPtr& instance);
+    
+    /**
+     * @brief Same as quit except that it blocks until all processing is done instead of doing it in a separate thread.
+     **/
+    void quitNow(const AppInstPtr& instance);
 
     /*
        @brief Calls quit() on all AppInstance's

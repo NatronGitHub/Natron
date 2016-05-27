@@ -464,6 +464,9 @@ public:
 public Q_SLOTS:
 
     void quit();
+    
+    void quitNow();
+    
     virtual void redrawAllViewers() {}
 
     void triggerAutoSave();

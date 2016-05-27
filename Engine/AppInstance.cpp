@@ -1881,6 +1881,12 @@ AppInstance::quit()
     appPTR->quit(shared_from_this());
 }
 
+void
+AppInstance::quitNow()
+{
+    appPTR->quitNow(shared_from_this());
+}
+
 ViewerColorSpaceEnum
 AppInstance::getDefaultColorSpaceForBitDepth(ImageBitDepthEnum bitdepth) const
 {
