@@ -44,8 +44,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     # now we use ppa:boost-latest/ppa (contains boost 1.55)
     sudo add-apt-repository -y ppa:boost-latest/ppa
     BOOSTVER=1.55
-    #PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
-    PKGS="$PKGS libboost${BOOSTVER}-all-dev"
+    PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
 
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
@@ -66,7 +65,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6
 
     # Note: Python 3 packages are python3-dev and python3-pyside
-    PKGS="$PKGS libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
+    PKGS="$PKGS libqt4-dev libglew-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
 
     echo "*** Python version:"
     python --version
