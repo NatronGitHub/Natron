@@ -734,7 +734,9 @@ Node::load(const CreateNodeArgs& args)
             } else {
                 WriteNode* isWriter = dynamic_cast<WriteNode*>( args.ioContainer->getEffectInstance().get() );
                 assert(isWriter);
-                isWriter->setEmbeddedWriter(thisShared);
+                if (isWriter) {
+                    isWriter->setEmbeddedWriter(thisShared);
+                }
             }
         }
 #endif
@@ -2198,7 +2200,10 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 KnobChoice* createdKnob = dynamic_cast<KnobChoice*>( knob.get() );
                 assert(createdKnob);
                 if (data && createdKnob) {
-                    createdKnob->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
+                    KnobChoice* sKnobChoice = dynamic_cast<KnobChoice*>( sKnob.get() );
+                    if (sKnobChoice) {
+                        createdKnob->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
+                    }
                 }
             } else {
                 knob->clone( sKnob.get() );
@@ -4368,7 +4373,9 @@ Node::setEffect(const EffectInstPtr& effect)
         } else {
             WriteNode* isWriter = dynamic_cast<WriteNode*>( ioContainer->getEffectInstance().get() );
             assert(isWriter);
-            isWriter->setEmbeddedWriter(thisShared);
+            if (isWriter) {
+                isWriter->setEmbeddedWriter(thisShared);
+            }
         }
     }
 #endif
@@ -5942,6 +5949,7 @@ public:
 
     NodeDestroyNodeInternalArgs()
     : GenericWatcherCallerArgs()
+    , autoReconnect(false)
     {}
 
     virtual ~NodeDestroyNodeInternalArgs() {}
@@ -5955,7 +5963,7 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsP
     assert(args);
     NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>(args.get());
     assert(thisArgs);
-    doDestroyNodeInternalEnd(false, thisArgs->autoReconnect);
+    doDestroyNodeInternalEnd(false, thisArgs ? thisArgs->autoReconnect : false);
     _imp->renderWatcher.reset();
 }
 
@@ -10578,6 +10586,9 @@ maskChannelEqualityFunctor(const std::string& a,
     MergeMaskChannelData* mergeData = dynamic_cast<MergeMaskChannelData*>(data);
 
     assert(mergeData);
+    if (!mergeData) {
+        return false;
+    }
     std::string aNode, aLayer, aChannel;
     bool aIsColor;
     parseMaskChannelString(a, &aNode, &aLayer, &aChannel, &aIsColor);
@@ -10622,6 +10633,9 @@ layerEqualityFunctor(const std::string& a,
     MergeLayerData* mergeData = dynamic_cast<MergeLayerData*>(data);
 
     assert(mergeData);
+    if (!mergeData) {
+        return false;
+    }
     bool aIsColor;
     parseLayerString(a, &aIsColor);
     if (!mergeData->dataSet) {

@@ -531,9 +531,12 @@ KnobGuiTable::onItemDoubleClicked(TableItem* item)
             break;
         }
     }
+    assert(row >= 0 && col >= 0);
     boost::shared_ptr<KnobTable> knob = boost::dynamic_pointer_cast<KnobTable>( getKnob() );
     assert(knob);
-
+    if (!knob || row < 0 || col < 0) {
+        return;
+    }
 
     Row& r = _imp->items[row];
     QStringList values;

@@ -233,6 +233,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
     , menuRender(0)
     , viewersMenu(0)
     , viewerInputsMenu(0)
+    , viewerInputsBMenu(0)
     , viewersViewMenu(0)
     , cacheMenu(0)
     , menuHelp(0)

@@ -3694,7 +3694,9 @@ ViewerCurrentFrameRequestScheduler::executeOnMainThread(const ExecOnMTArgsPtr& i
 {
     ViewerCurrentFrameRequestSchedulerExecOnMT* args = dynamic_cast<ViewerCurrentFrameRequestSchedulerExecOnMT*>(inArgs.get());
     assert(args);
-    _imp->processProducedFrame(args->stats, args->frames);
+    if (args) {
+        _imp->processProducedFrame(args->stats, args->frames);
+    }
 }
 
 void
