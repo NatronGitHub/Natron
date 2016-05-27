@@ -1,4 +1,4 @@
-/* ***** BEGIN LICENSE BLOCK *****
+    /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
  * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
@@ -211,20 +211,31 @@ AbortableRenderInfo::onAbortTimerTimeout()
     }
 
     // Runs in the thread that called setAborted()
-    QMutexLocker k(&_imp->threadsMutex);
-    if ( _imp->threadsForThisRender.empty() ) {
-        return;
+    ThreadSet threads;
+    {
+        QMutexLocker k(&_imp->threadsMutex);
+        if ( _imp->threadsForThisRender.empty() ) {
+            return;
+        }
+        threads = _imp->threadsForThisRender;
     }
+
+
     QString timeoutStr = Timer::printAsTime(NATRON_ABORT_TIMEOUT_MS / 1000, false);
     std::stringstream ss;
     ss << tr("One or multiple render seems to not be responding anymore after numerous attempt made by %1 to abort them for the last %2.").arg ( QString::fromUtf8( NATRON_APPLICATION_NAME) ).arg(timeoutStr).toStdString() << std::endl;
     ss << tr("This is likely due to a render taking too long in a plug-in.").toStdString() << std::endl << std::endl;
-    ss << tr("List of stalled renders:").toStdString() << std::endl << std::endl;
-    for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
+
+    std::stringstream ssThreads;
+    ssThreads << tr("List of stalled render(s):").toStdString() << std::endl << std::endl;
+
+    bool hasAtLeastOneThreadInNodeAction = false;
+    for (ThreadSet::const_iterator it = threads.begin(); it != threads.end(); ++it) {
         std::string actionName;
         NodePtr node;
         (*it)->getCurrentActionInfos(&actionName, &node);
         if (node) {
+            hasAtLeastOneThreadInNodeAction = true;
             // Don't show a dialog on timeout for writers since reading/writing from/to a file may be long and most libraries don't provide write callbacks anyway
             if ( node->getEffectInstance()->isReader() || node->getEffectInstance()->isWriter() ) {
                 return;
@@ -233,21 +244,28 @@ AbortableRenderInfo::onAbortTimerTimeout()
             nodeName = node->getFullyQualifiedName();
             pluginId = node->getPluginID();
 
-            ss << " - " << (*it)->getThreadName()  << tr(" stalled in:").toStdString() << std::endl << std::endl;
+            ssThreads << " - " << (*it)->getThreadName()  << tr(" stalled in:").toStdString() << std::endl << std::endl;
 
             if ( !nodeName.empty() ) {
-                ss << "    Node: " << nodeName << std::endl;
+                ssThreads << "    Node: " << nodeName << std::endl;
             }
             if ( !pluginId.empty() ) {
-                ss << "    Plugin: " << pluginId << std::endl;
+                ssThreads << "    Plugin: " << pluginId << std::endl;
             }
             if ( !actionName.empty() ) {
-                ss << "    Action: " << actionName << std::endl;
+                ssThreads << "    Action: " << actionName << std::endl;
             }
-            ss << std::endl;
+            ssThreads << std::endl;
         }
     }
     ss << std::endl;
+
+    if (hasAtLeastOneThreadInNodeAction) {
+        ss << ssThreads.str();
+    }
+
+    // Hold a sharedptr to this because it might get destroyed before the dialog returns
+    boost::shared_ptr<AbortableRenderInfo> thisShared = shared_from_this();
 
     if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();
@@ -259,6 +277,7 @@ AbortableRenderInfo::onAbortTimerTimeout()
         StandardButtonEnum reply = Dialogs::questionDialog(tr("A Render is not responding anymore").toStdString(), ss.str(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonNo);
         if (reply == eStandardButtonYes) {
             // Kill threads
+            QMutexLocker k(&_imp->threadsMutex);
             for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
                 (*it)->killThread();
             }

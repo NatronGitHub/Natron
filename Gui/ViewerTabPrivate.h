@@ -33,6 +33,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
+#include <QtCore/QTimer>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -150,6 +151,8 @@ struct ViewerTabPrivate
     SpinBox* fpsBox;
     double userFps;
     Button* turboButton;
+
+    QTimer mustSetUpPlaybackButtonsTimer;
 
     /*frame seeker*/
     TimeLineGui* timeLineGui;

@@ -138,9 +138,19 @@ typedef std::list<RenderThread> RenderThreads;
 struct ProducedFrame
 {
     BufferableObjectList frames;
-    boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request;
+    U64 age;
     RenderStatsPtr stats;
 };
+
+struct ProducedFrameCompareAgeLess
+{
+    bool operator() (const ProducedFrame& lhs, const ProducedFrame& rhs) const
+    {
+        return lhs.age < rhs.age;
+    }
+};
+
+typedef std::set<ProducedFrame, ProducedFrameCompareAgeLess> ProducedFrameSet;
 
 class OutputSchedulerThreadExecMTArgs : public GenericThreadExecOnMainThreadArgs
 {
@@ -3164,15 +3174,22 @@ RenderEngine::abortRenderingInternal( )
 bool
 RenderEngine::abortRenderingNoRestart()
 {
-    setPlaybackAutoRestartEnabled(false);
-    return abortRenderingInternal();
+    if (abortRenderingInternal()) {
+        setPlaybackAutoRestartEnabled(false);
+        return true;
+    }
+    return false;
+
 }
 
 bool
 RenderEngine::abortRenderingAutoRestart()
 {
-    setPlaybackAutoRestartEnabled(isDoingSequentialRender());
-    return abortRenderingInternal();
+    if (abortRenderingInternal()) {
+        setPlaybackAutoRestartEnabled(isDoingSequentialRender());
+        return true;
+    }
+    return false;
 }
 
 
@@ -3410,9 +3427,9 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 {
     ViewerInstance* viewer;
     QThreadPool* threadPool;
-    QMutex producedQueueMutex;
-    std::list<ProducedFrame> producedQueue;
-    QWaitCondition producedQueueNotEmpty;
+    QMutex producedFramesMutex;
+    ProducedFrameSet producedFrames;
+    QWaitCondition producedFramesNotEmpty;
 
 
     /**
@@ -3424,15 +3441,19 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     QWaitCondition currentFrameRenderTasksCond;
     std::list<RenderCurrentFrameFunctorRunnable*> currentFrameRenderTasks;
 
+    // Used to attribute an age to each renderCurrentFrameRequest
+    U64 ageCounter;
+
     ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
         : viewer(viewer)
         , threadPool( QThreadPool::globalInstance() )
-        , producedQueueMutex()
-        , producedQueue()
-        , producedQueueNotEmpty()
+        , producedFramesMutex()
+        , producedFrames()
+        , producedFramesNotEmpty()
         , backupThread()
         , currentFrameRenderTasksCond()
         , currentFrameRenderTasks()
+        , ageCounter(0)
     {
     }
 
@@ -3472,16 +3493,16 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 
     void notifyFrameProduced(const BufferableObjectList& frames,
                              const RenderStatsPtr& stats,
-                             const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request)
+                             U64 age)
     {
-        QMutexLocker k(&producedQueueMutex);
+        QMutexLocker k(&producedFramesMutex);
         ProducedFrame p;
 
         p.frames = frames;
-        p.request = request;
+        p.age = age;
         p.stats = stats;
-        producedQueue.push_back(p);
-        producedQueueNotEmpty.wakeOne();
+        producedFrames.insert(p);
+        producedFramesNotEmpty.wakeOne();
     }
 
     void processProducedFrame(const RenderStatsPtr& stats, const BufferableObjectList& frames);
@@ -3547,7 +3568,7 @@ public:
                 }
             }
 #endif
-            _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request);
+            _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request->age);
         } else {
             assert( QThread::currentThread() == qApp->thread() );
             _args->scheduler->processProducedFrame(_args->stats, ret);
@@ -3594,6 +3615,12 @@ ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 {
 }
 
+GenericSchedulerThread::TaskQueueBehaviorEnum
+ViewerCurrentFrameRequestScheduler::tasksQueueBehaviour() const
+{
+    return eTaskQueueBehaviorProcessInOrder;
+}
+
 GenericSchedulerThread::ThreadStateEnum
 ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 {
@@ -3606,37 +3633,46 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
     ///Wait for the work to be done
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
     {
-        QMutexLocker k(&_imp->producedQueueMutex);
-        std::list<ProducedFrame>::iterator found = _imp->producedQueue.end();
-        for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it != _imp->producedQueue.end(); ++it) {
-            if (it->request == args) {
+        QMutexLocker k(&_imp->producedFramesMutex);
+        ProducedFrameSet::iterator found = _imp->producedFrames.end();
+        for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
+            if (it->age == args->age) {
                 found = it;
                 break;
             }
         }
 
-        while ( found == _imp->producedQueue.end() ) {
+        while ( found == _imp->producedFrames.end() ) {
 
             state = resolveState();
             if (state == eThreadStateStopped || state == eThreadStateAborted) {
+                _imp->producedFrames.clear();
                 break;
             }
-            _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
+            _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
 
-            for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it != _imp->producedQueue.end(); ++it) {
-                if (it->request == args) {
+            for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
+                if (it->age == args->age) {
                     found = it;
                     break;
                 }
             }
         }
         
-        if ( found != _imp->producedQueue.end() ) {
-            
-            found->request.reset();
+        if ( found != _imp->producedFrames.end() ) {
+
             mtArgs->frames = found->frames;
             mtArgs->stats = found->stats;
-            _imp->producedQueue.erase(found);
+
+            // Erase from the produced frames all renders that are older that the age we want to render
+            // since they are no longer going to be used.
+            // Only do this if the render had frames it is not just a redraw
+            //if (!found->frames.empty()) {
+            //    ++found;
+            //    _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
+            //} else {
+                _imp->producedFrames.erase(found);
+            //}
         }
     } // QMutexLocker k(&_imp->producedQueueMutex);
     
@@ -3728,7 +3764,7 @@ ViewerCurrentFrameRequestScheduler::notifyFrameProduced(const BufferableObjectLi
                                                         const RenderStatsPtr& stats,
                                                         const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request)
 {
-    _imp->notifyFrameProduced(frames, stats,  request);
+    _imp->notifyFrameProduced(frames, stats,  request->age);
 }
 
 void
@@ -3860,8 +3896,18 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         RenderCurrentFrameFunctorRunnable task(functorArgs);
         task.run();
     } else {
+
+        // Identify this render request with an age
         boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request(new ViewerCurrentFrameRequestSchedulerStartArgs);
-        request->id = 0;
+        request->age = _imp->ageCounter;
+
+        // If we reached the max amount of age, reset to 0... should never happen anyway
+        if (_imp->ageCounter >= std::numeric_limits<U64>::max()) {
+            _imp->ageCounter = 0;
+        } else {
+            ++_imp->ageCounter;
+        }
+
         startTask(request);
         functorArgs->request = request;
 

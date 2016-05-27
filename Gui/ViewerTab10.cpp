@@ -33,6 +33,7 @@
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QtGui/QKeyEvent>
+#include <QtCore/QTimer>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Node.h"
@@ -303,13 +304,9 @@ ViewerTab::onEngineStarted(bool forward)
 }
 
 void
-ViewerTab::onEngineStopped()
+ViewerTab::onSetDownPlaybackButtonsTimeout()
 {
-    if ( !getGui() ) {
-        return;
-    }
-
-    if ( !_imp->viewerNode->getRenderEngine()->isPlaybackAutoRestartEnabled() ) {
+    if ( !_imp->viewerNode->getRenderEngine()->isDoingSequentialRender() ) {
         const std::list<ViewerTab*>& viewers = getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
             if ( (*it)->_imp->play_Forward_Button ) {
@@ -323,6 +320,18 @@ ViewerTab::onEngineStopped()
             }
         }
     }
+}
+
+void
+ViewerTab::onEngineStopped()
+{
+    if ( !getGui() ) {
+        return;
+    }
+
+    // Don't set the playback buttons up now, do it a bit later, maybe the user will restart playback  just aftewards
+    _imp->mustSetUpPlaybackButtonsTimer.start(200);
+
     _imp->currentFrameBox->setValue( _imp->viewerNode->getTimeline()->currentFrame() );
 
     if ( getGui() && getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
