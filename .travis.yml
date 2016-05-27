@@ -38,7 +38,9 @@ addons:
     - g++-4.9
     - libqt4-dev
     - libglew-dev
-    - libboost-serialization-dev
+    - libboost1.55-dev
+    - libboost-math1.55-dev
+    - libboost-serialization1.55-dev
     - libexpat1-dev
     - gdb
     - libcairo2-dev
