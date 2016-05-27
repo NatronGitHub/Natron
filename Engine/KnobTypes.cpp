@@ -779,7 +779,7 @@ KnobChoice::refreshMenu()
         KnobPtr hasRefreshButton = holder->getKnobByName(getName() + "RefreshButton");
         if (hasRefreshButton) {
             KnobButton* button = dynamic_cast<KnobButton*>( hasRefreshButton.get() );
-            if (buffon) {
+            if (button) {
                 button->trigger();
             }
 
