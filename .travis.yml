@@ -21,15 +21,19 @@ addons:
     sources:
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
-    # we use the ppa:boost-latest/ppa for that purpose
+    # we use the ppa:boost-latest/ppa for that purpose (boost 1.55)
+    # (ppa:afrank/boost offers 1.57, but is not whitelisted)
     - boost-latest
     # kubuntu-ppa/backports contains OpenCV
     - kubuntu-backports
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
+    # NOT WHITELISTED https://github.com/travis-ci/apt-source-whitelist/issues/181
+    # (ppa:ricotz/testing contains cairo 1.14, but only for trusty)
     - ppa:xorg-edgers/ppa
     # ubuntu-toolchain-r/test contains recent versions of gcc
     - ubuntu-toolchain-r-test
     # get a recent ffmpeg (>=2.5) for precise from ppa:archivematica/externals(2.5.1) or ppa:pavlyshko/precise(2.6.1) or ppa:spvkgn/ffmpeg-dev(2.8.6)
+    # NOT WHITELISTED
     - ppa:spvkgn/ffmpeg-dev
     - kalakris-cmake
     - pythonxy-devel
@@ -41,6 +45,10 @@ addons:
     - libboost1.55-dev
     - libboost-math1.55-dev
     - libboost-serialization1.55-dev
+    - libboost-filesystem1.55-dev
+    - libboost-regex1.55-dev
+    - libboost-thread1.55-dev
+    - libboost-system1.55-dev
     - libexpat1-dev
     - gdb
     - libcairo2-dev
@@ -57,17 +65,12 @@ addons:
     - libtinyxml-dev
     - liblcms2-dev
     - libyaml-cpp-dev
-    - libboost-dev
     - libopenexr-dev
     - libilmbase-dev
     - libopenjpeg-dev
     - libtiff4-dev
     - libjpeg-dev
     - libpng-dev
-    - libboost-filesystem-dev
-    - libboost-regex-dev
-    - libboost-thread-dev
-    - libboost-system-dev
     - libwebp-dev
     - libfreetype6-dev
     - libssl-dev
