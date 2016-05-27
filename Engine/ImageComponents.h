@@ -85,6 +85,24 @@ public:
                     const char** componentsName,
                     int count);
 
+    ImageComponents(const ImageComponents& other)
+        : _layerName(other._layerName)
+        , _pairedLayer(other._pairedLayer)
+        , _componentNames(other._componentNames)
+        , _globalComponentsName(other._globalComponentsName)
+    {
+    }
+
+    ImageComponents& operator=(const ImageComponents& other)
+    {
+        _layerName = other._layerName;
+        _pairedLayer = other._pairedLayer;
+        _componentNames = other._componentNames;
+        _globalComponentsName = other._globalComponentsName;
+
+        return *this;
+    }
+
     ~ImageComponents();
 
     // Is it Alpha, RGB or RGBA
@@ -161,9 +179,8 @@ public:
     void serialize(Archive & ar, const unsigned int version);
 
 private:
-
-
-    std::string _layerName, _pairedLayer;
+    std::string _layerName;
+    std::string _pairedLayer;
     std::vector<std::string> _componentNames;
     std::string _globalComponentsName;
 };

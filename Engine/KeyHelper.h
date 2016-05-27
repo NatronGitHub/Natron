@@ -91,6 +91,14 @@ public:
     {
     }
 
+    KeyHelper& operator=(const KeyHelper & other)
+    {
+        _holderID = other.getCacheHolderID();
+        _hash = other.getHash();
+        _hashComputed = true;
+        return *this;
+    }
+
     virtual ~KeyHelper()
     {
     }

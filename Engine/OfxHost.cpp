@@ -421,7 +421,7 @@ OfxHost::getStringProperty(const std::string &name,
 
         ///Proxy known plug-ins that filter hostnames
         if ( pluginID.empty() ) {
-            qDebug() << "OfxHost::getStringProperty("kOfxPropName "): Error: no plugin ID! (ignoring)";
+            qDebug() << "OfxHost::getStringProperty(" kOfxPropName "): Error: no plugin ID! (ignoring)";
         } else {
             Settings::KnownHostNameEnum e = getHostNameProxy(pluginID, pluginVersionMajor, pluginVersionMinor);
             if (e != Settings::eKnownHostNameNone) {
