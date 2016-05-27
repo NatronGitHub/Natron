@@ -562,6 +562,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                                   boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(),
                                                   stats,
                                                   *args[i]);
+                args[i]->isRenderingFlag.reset();
             }
 
             if (args[i] && args[i]->params) {
@@ -636,6 +637,9 @@ ViewerInstance::renderViewer(ViewIdx view,
                 ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, useTLS, request,
                                                i == 0 ? stats : boost::shared_ptr<RenderStats>(),
                                                *args[i]);
+
+                // Reset the rednering flag
+                args[i]->isRenderingFlag.reset();
             }
 
             if (ret[i] != eViewerRenderRetCodeRender) {
