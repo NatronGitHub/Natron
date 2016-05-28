@@ -212,9 +212,10 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, tr("Premultiply"), 1, false);
     premultKnob->setName("premultiply");
-    premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
-                                    " This will result in the pixels outside of the shapes and paint strokes "
-                                    "being black and transparent.") );
+    premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels of the output are premultiplied by the alpha channel.\n"
+                                    "This will result in the pixels outside of the shapes and paint strokes being black and transparent.\n"
+                                    "This should only be used if all the inputs are Opaque or UnPremultiplied, and only the Alpha channel "
+                                    "is selected to be drawn by this node.") );
     premultKnob->setDefaultValue(false);
     premultKnob->setAnimationEnabled(false);
     premultKnob->setIsMetadataSlave(true);
