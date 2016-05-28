@@ -556,7 +556,19 @@ post_gl_call(const char */*name*/,
 
 #endif // debug
 
+void
+AppManagerPrivate::initGLAPISpecific()
+{
 
+#ifdef Q_OS_WIN32
+    wglInfo.reset(new OSGLContext_wgl_data);
+    OSGLContext_wgl::initWGLData(wglInfo.get());
+#elif defined(Q_OS_LINUX)
+    glxInfo.reset(new OSGLContext_glx_data);
+    OSGLContext_glx::initGLXData(glxInfo.get());
+
+#endif // Q_OS_WIN32
+}
 
 void
 AppManagerPrivate::initGl()
@@ -587,14 +599,6 @@ AppManagerPrivate::initGl()
         return;
     }
 
-#ifdef Q_OS_WIN32
-    wglInfo.reset(new OSGLContext_wgl_data);
-    OSGLContext_wgl::initWGLData(wglInfo.get());
-#elif defined(Q_OS_LINUX)
-    glxInfo.reset(new OSGLContext_glx_data);
-    OSGLContext_glx::initGLXData(glxInfo.get());
-
-#endif // Q_OS_WIN32
 
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }

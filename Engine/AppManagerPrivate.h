@@ -198,6 +198,8 @@ public:
 
     void initGl();
 
+    void initGLAPISpecific();
+
     void tearDownGL();
 };
 
