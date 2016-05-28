@@ -197,7 +197,6 @@ AppInstance::AppInstance(int appID)
     : QObject()
     , _imp( new AppInstancePrivate(appID, this) )
 {
-
 }
 
 AppInstance::~AppInstance()
@@ -543,15 +542,15 @@ AppInstance::load(const CLArgs& cl,
 {
     // Initialize the knobs of the project before loading anything else.
     assert(!_imp->_currentProject); // < This function may only be called once per AppInstance
-    _imp->_currentProject.reset(new Project(shared_from_this()));
+    _imp->_currentProject.reset( new Project( shared_from_this() ) );
     _imp->_currentProject->initializeKnobsPublic();
-    
+
     loadInternal(cl, makeEmptyInstance);
 }
 
 void
 AppInstance::loadInternal(const CLArgs& cl,
-                  bool makeEmptyInstance)
+                          bool makeEmptyInstance)
 {
     try {
         declareCurrentAppVariable_Python();
@@ -755,7 +754,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
 
         std::string output;
         FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        CreatingNodeTreeFlag_RAII createNodeTree(shared_from_this());
+        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
             if ( !err.empty() ) {
                 Dialogs::errorDialog(tr("Python").toStdString(), err);
@@ -850,7 +849,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        CreatingNodeTreeFlag_RAII createNodeTree(shared_from_this());
+        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
         NodePtr containerNode;
         if (!istoolsetScript) {
             CreateNodeArgs groupArgs(QString::fromUtf8(PLUGINID_NATRON_GROUP), reason, group);
@@ -1878,13 +1877,13 @@ AppInstance::aboutToQuit()
 void
 AppInstance::quit()
 {
-    appPTR->quit(shared_from_this());
+    appPTR->quit( shared_from_this() );
 }
 
 void
 AppInstance::quitNow()
 {
-    appPTR->quitNow(shared_from_this());
+    appPTR->quitNow( shared_from_this() );
 }
 
 ViewerColorSpaceEnum
@@ -1902,8 +1901,8 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
 void
 AppInstance::declareCurrentAppVariable_Python()
 {
-
 #ifdef NATRON_RUN_WITHOUT_PYTHON
+
     return;
 #endif
     /// define the app variable

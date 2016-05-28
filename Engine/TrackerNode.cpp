@@ -697,7 +697,14 @@ TrackerNode::drawOverlay(double time,
         bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
         bool showErrorColor = _imp->ui->showCorrelationButton.lock()->getValue();
         TrackMarkerPtr selectedMarker = _imp->ui->selectedMarker.lock();
-        Point selectedCenter, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedOffset, selectedSearchBtmLeft, selectedSearchTopRight;
+        Point selectedCenter;
+        Point selectedPtnTopLeft;
+        Point selectedPtnTopRight;
+        Point selectedPtnBtmRight;
+        Point selectedPtnBtmLeft;
+        Point selectedOffset;
+        Point selectedSearchBtmLeft;
+        Point selectedSearchTopRight;
 
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
             if ( !(*it)->isEnabled( (*it)->getCurrentTime() ) ) {
@@ -1100,7 +1107,7 @@ TrackerNode::drawOverlay(double time,
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
         if (_imp->ui->showMarkerTexture) {
-            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset,  selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
+            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
 
@@ -1656,7 +1663,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             int index = 0;
             if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
                 index = 1;
@@ -1745,6 +1755,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -1752,10 +1766,9 @@ TrackerNode::onOverlayPenMotion(double time,
             offset.x = offsetKnob->getValueAtTime(time, 0);
             offset.y = offsetKnob->getValueAtTime(time, 1);
 
-            Point p;
+            Point p = {0, 0.};
             p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
             p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
             Point topLeft;
             topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
             topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
@@ -1796,6 +1809,10 @@ TrackerNode::onOverlayPenMotion(double time,
             if (_imp->ui->controlDown == 0) {
                 _imp->ui->transformPattern(time, _imp->ui->eventState, delta);
                 didSomething = true;
+                break;
+            }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
                 break;
             }
             Point center;
@@ -1856,6 +1873,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -1863,9 +1884,11 @@ TrackerNode::onOverlayPenMotion(double time,
             offset.x = offsetKnob->getValueAtTime(time, 0);
             offset.y = offsetKnob->getValueAtTime(time, 1);
 
-            Point p;
-            p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+            Point p = {0, 0};
+            if (searchWndTopRight) {
+                p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
+                p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+            }
 
             Point topLeft;
             topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -1874,7 +1897,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -1909,6 +1932,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -1927,7 +1954,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;

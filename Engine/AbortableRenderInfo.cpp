@@ -1,4 +1,4 @@
-    /* ***** BEGIN LICENSE BLOCK *****
+/* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
  * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
  *
@@ -53,18 +53,14 @@ typedef std::set<AbortableThread*> ThreadSet;
 struct AbortableRenderInfoPrivate
 {
     AbortableRenderInfo* _p;
-
     bool canAbort;
     QAtomicInt aborted;
     U64 age;
-
     mutable QMutex threadsMutex;
     ThreadSet threadsForThisRender;
-
     mutable QMutex timerMutex;
     bool timerStarted;
     QTimer* abortTimeoutTimer;
-
     QThread* ownerThread;
 
     AbortableRenderInfoPrivate(AbortableRenderInfo* p,
@@ -79,14 +75,13 @@ struct AbortableRenderInfoPrivate
         , timerMutex()
         , timerStarted(false)
         , abortTimeoutTimer(new QTimer)
-        , ownerThread(QThread::currentThread())
+        , ownerThread( QThread::currentThread() )
     {
         aborted.fetchAndStoreAcquire(0);
 
         abortTimeoutTimer->setSingleShot(true);
         QObject::connect( abortTimeoutTimer, SIGNAL(timeout()), p, SLOT(onAbortTimerTimeout()) );
-        QObject::connect(p, SIGNAL(startTimerInOriginalThread()), p, SLOT(onStartTimerInOriginalThreadTriggered()));
-
+        QObject::connect( p, SIGNAL(startTimerInOriginalThread()), p, SLOT(onStartTimerInOriginalThreadTriggered()) );
     }
 };
 
@@ -99,7 +94,6 @@ AbortableRenderInfo::AbortableRenderInfo(bool canAbort,
                                          U64 age)
     : _imp( new AbortableRenderInfoPrivate(this, canAbort, age) )
 {
-
 }
 
 AbortableRenderInfo::~AbortableRenderInfo()
@@ -149,14 +143,13 @@ AbortableRenderInfo::setAborted()
     } else {
         onStartTimerInOriginalThreadTriggered();
     }
-
 }
-
 
 void
 AbortableRenderInfo::registerThreadForRender(AbortableThread* thread)
 {
     QMutexLocker k(&_imp->threadsMutex);
+
     _imp->threadsForThisRender.insert(thread);
 }
 
@@ -175,8 +168,8 @@ AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
         }
         // Stop the timer if no more threads are running for this render
         threadsEmpty = _imp->threadsForThisRender.empty();
-
     }
+
     if (threadsEmpty) {
         {
             QMutexLocker k(&_imp->timerMutex);
@@ -184,8 +177,8 @@ AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
                 _imp->timerStarted = false;
             }
         }
-
     }
+
     return ret;
 }
 
@@ -219,10 +212,9 @@ AbortableRenderInfo::onAbortTimerTimeout()
         }
         threads = _imp->threadsForThisRender;
     }
-
-
     QString timeoutStr = Timer::printAsTime(NATRON_ABORT_TIMEOUT_MS / 1000, false);
     std::stringstream ss;
+
     ss << tr("One or multiple render seems to not be responding anymore after numerous attempt made by %1 to abort them for the last %2.").arg ( QString::fromUtf8( NATRON_APPLICATION_NAME) ).arg(timeoutStr).toStdString() << std::endl;
     ss << tr("This is likely due to a render taking too long in a plug-in.").toStdString() << std::endl << std::endl;
 

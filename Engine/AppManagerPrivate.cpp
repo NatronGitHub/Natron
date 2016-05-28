@@ -200,7 +200,7 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 void
 AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName)
 {
-    _backgroundIPC.reset(new ProcessInputChannel(mainProcessServerName));
+    _backgroundIPC.reset( new ProcessInputChannel(mainProcessServerName) );
 }
 
 void
@@ -336,6 +336,7 @@ restoreCache(AppManagerPrivate* p,
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
             p->cleanUpCacheDiskStructure( cache->getCachePath() );
+
             return;
         }
 

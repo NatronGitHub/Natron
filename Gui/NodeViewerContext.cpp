@@ -337,7 +337,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
         ret->setEnabledSlot();
         ret->setSecret();
 
-        if ( next == knobsOrdered.end() ) {
+        if ( next != knobsOrdered.end() ) {
             ++next;
         }
     }

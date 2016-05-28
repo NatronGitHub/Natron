@@ -250,7 +250,6 @@ NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
     }
 }
 
-
 static void
 quitAnyProcessingInternal(NodeCollection* grp)
 {
@@ -392,10 +391,9 @@ NodeCollection::clearNodes(bool emitSignal)
 
     ///Clear recursively containers inside this group
     for (NodesList::iterator it = nodesToDelete.begin(); it != nodesToDelete.end(); ++it) {
-
         // You should have called quitAnyProcessing before!
-        assert(!(*it)->isNodeRendering());
-        
+        assert( !(*it)->isNodeRendering() );
+
         NodeGroup* isGrp = (*it)->isEffectGroup();
         if (isGrp) {
             isGrp->clearNodes(emitSignal);
@@ -1023,7 +1021,7 @@ struct NodeGroupPrivate
 
 NodeGroup::NodeGroup(const NodePtr &node)
     : OutputEffectInstance(node)
-    , NodeCollection(node ? node->getApp() : AppInstPtr())
+    , NodeCollection( node ? node->getApp() : AppInstPtr() )
     , _imp( new NodeGroupPrivate() )
 {
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);

@@ -98,7 +98,7 @@ EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
 }
 
 EffectInstance::EffectInstance(NodePtr node)
-    : NamedKnobHolder(node ? node->getApp() : AppInstPtr())
+    : NamedKnobHolder( node ? node->getApp() : AppInstPtr() )
     , _node(node)
     , _imp( new Implementation(this) )
 {
@@ -135,28 +135,28 @@ EffectInstance::unlock(const boost::shared_ptr<Image> & entry)
 void
 EffectInstance::clearPluginMemoryChunks()
 {
-
     PluginMemoryPtr mem;
     {
         QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-        if (!_imp->pluginMemoryChunks.empty()) {
+        if ( !_imp->pluginMemoryChunks.empty() ) {
             mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-            while (!mem && !_imp->pluginMemoryChunks.empty()) {
-                _imp->pluginMemoryChunks.erase(_imp->pluginMemoryChunks.begin());
-                 mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+            while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
+                _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
+                mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
             }
         }
     }
+
     while (mem) {
         // This will remove the mem from the pluginMemoryChunks list
         mem.reset();
         {
             QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-            if (!_imp->pluginMemoryChunks.empty()) {
+            if ( !_imp->pluginMemoryChunks.empty() ) {
                 mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
-                while (!mem && !_imp->pluginMemoryChunks.empty()) {
-                    _imp->pluginMemoryChunks.erase(_imp->pluginMemoryChunks.begin());
-                     mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+                while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
+                    _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
+                    mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
                 }
             }
         }
@@ -294,7 +294,7 @@ EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderA
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
-    assert(args->abortInfo.lock());
+    assert( args->abortInfo.lock() );
     tls->frameArgs.push_back(args);
 }
 
@@ -376,12 +376,10 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
             if (effect) {
                 return effect->isSequentialRenderBeingAborted();
             }
-
         }
 
         // We have no other means to know if abort was called
         return false;
-
     } else {
         // This is a render issued to refresh the image on the Viewer
 
@@ -418,21 +416,19 @@ EffectInstance::aborted() const
     AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(thisThread);
 
     /**
-      The solution here is to store per-render info on the thread that we retrieve.
-      These info contain an atomic integer determining whether this particular render was aborted or not.
-      If this thread does not have abort info yet on it, we retrieve them from the thread local storage of this node
-      and set it.
-      Threads that start a render generally already have the AbortableThread::setAbortInfo function called on them, but
-      threads spawned from the thread pool may not.
+       The solution here is to store per-render info on the thread that we retrieve.
+       These info contain an atomic integer determining whether this particular render was aborted or not.
+       If this thread does not have abort info yet on it, we retrieve them from the thread local storage of this node
+       and set it.
+       Threads that start a render generally already have the AbortableThread::setAbortInfo function called on them, but
+       threads spawned from the thread pool may not.
      **/
-
     bool isRenderUserInteraction;
     AbortableRenderInfoPtr abortInfo;
     EffectInstPtr treeRoot;
 
 
-    if ( !isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot) )
-    {
+    if ( !isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot) ) {
         // If this thread is not abortable or we did not set the abort info for this render yet, retrieve them from the TLS of this node.
         EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
         if (!tls) {
@@ -2863,7 +2859,8 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
 PluginMemoryPtr
 EffectInstance::newMemoryInstance(size_t nBytes)
 {
-    PluginMemoryPtr ret(new PluginMemory(shared_from_this())); //< hack to get "this" as a shared ptr
+    PluginMemoryPtr ret( new PluginMemory( shared_from_this() ) ); //< hack to get "this" as a shared ptr
+
     addPluginMemoryPointer(ret);
     bool wasntLocked = ret->alloc(nBytes);
 
@@ -2877,6 +2874,7 @@ void
 EffectInstance::addPluginMemoryPointer(const PluginMemoryPtr& mem)
 {
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+
     _imp->pluginMemoryChunks.push_back(mem);
 }
 
@@ -2884,6 +2882,7 @@ void
 EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
 {
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+
     for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
         PluginMemoryPtr p = it->lock();
         if (!p) {
@@ -2891,6 +2890,7 @@ EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
         }
         if (p.get() == mem) {
             _imp->pluginMemoryChunks.erase(it);
+
             return;
         }
     }
@@ -4132,10 +4132,6 @@ EffectInstance::getOverlayInteractRenderScale() const
     }
 
     return renderScale;
-
-    RenderScale r(1.);
-
-    return r;
 }
 
 void

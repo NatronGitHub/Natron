@@ -105,14 +105,14 @@ private:
 public:
 
     virtual void aboutToQuit() OVERRIDE FINAL;
-    
+
 private:
-    
+
     virtual void loadInternal(const CLArgs& cl, bool makeEmptyInstance) OVERRIDE FINAL;
-    
+
 public:
-    
-    
+
+
     Gui* getGui() const WARN_UNUSED_RETURN;
 
 

@@ -42,7 +42,6 @@ struct AbortableThreadPrivate
 {
     QThread* thread;
     std::string threadName;
-
     mutable QMutex abortInfoMutex;
     bool isRenderResponseToUserInteraction;
     AbortableRenderInfoWPtr abortInfo;
@@ -122,7 +121,6 @@ AbortableThread::getThread() const
 {
     return _imp->thread;
 }
-
 
 void
 AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,

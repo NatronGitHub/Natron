@@ -192,11 +192,11 @@ public:
     };
 
     void load(const CLArgs& cl, bool makeEmptyInstance);
-    
+
 protected:
-    
+
     virtual void loadInternal(const CLArgs& cl, bool makeEmptyInstance);
-    
+
 public:
 
     int getAppID() const;
@@ -464,9 +464,9 @@ public:
 public Q_SLOTS:
 
     void quit();
-    
+
     void quitNow();
-    
+
     virtual void redrawAllViewers() {}
 
     void triggerAutoSave();
@@ -533,6 +533,7 @@ public:
     ~CreatingNodeTreeFlag_RAII()
     {
         AppInstPtr a = _app.lock();
+
         if (a) {
             a->setIsCreatingNodeTree(false);
         }

@@ -51,23 +51,21 @@ class GenericWatcherCallerArgs
 public:
     GenericWatcherCallerArgs()
     {
-
     }
 
     virtual ~GenericWatcherCallerArgs()
     {
-
     }
 };
 
 
 struct GenericWatcherPrivate;
-class GenericWatcher : public QThread
+class GenericWatcher
+    : public QThread
 {
-
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -81,7 +79,7 @@ public:
      * @params inArgs This can be derived from GenericWatcherCallerArgs to store any arguments relevant to the local function you were in when calling scheduleBlockingTask()
      * and that you want to retrieve when the taskFinished() signal is emitted.
      **/
-    void scheduleBlockingTask(int taskID, const WatcherCallerArgsPtr& inArgs = WatcherCallerArgsPtr());
+    void scheduleBlockingTask( int taskID, const WatcherCallerArgsPtr& inArgs = WatcherCallerArgsPtr() );
 
     void stopWatching();
 
@@ -94,18 +92,16 @@ protected:
 
     virtual void handleBlockingTask(int taskID) = 0;
 
-
 private:
 
     virtual void run() OVERRIDE FINAL;
-
     boost::scoped_ptr<GenericWatcherPrivate> _imp;
 };
 
 
-class GenericSchedulerThreadWatcher : public GenericWatcher
+class GenericSchedulerThreadWatcher
+    : public GenericWatcher
 {
-
 public:
 
     // The kind of tasks that this watcher supports, each of them will call the corresponding wait function on the GenericSchedulerThread
@@ -115,34 +111,29 @@ public:
         eBlockingTaskWaitForAbort,
         eBlockingTaskWaitForQuitDisallowRestart,
         eBlockingTaskWaitForQuitAllowRestart,
-
     };
 
 
     GenericSchedulerThreadWatcher(GenericSchedulerThread* thread)
-    : GenericWatcher()
-    , _thread(thread)
+        : GenericWatcher()
+        , _thread(thread)
     {
-        
     }
 
     virtual ~GenericSchedulerThreadWatcher()
     {
-
     }
 
 private:
 
     virtual void handleBlockingTask(int taskID) OVERRIDE FINAL;
-
-
     GenericSchedulerThread* _thread;
 };
 
 
-class RenderEngineWatcher : public GenericWatcher
+class RenderEngineWatcher
+    : public GenericWatcher
 {
-
 public:
 
     // The kind of tasks that this watcher supports, each of them will call the corresponding wait function on the GenericSchedulerThread
@@ -152,31 +143,28 @@ public:
         eBlockingTaskWaitForAbort,
         eBlockingTaskWaitForQuitDisallowRestart,
         eBlockingTaskWaitForQuitAllowRestart,
-
     };
 
 
     RenderEngineWatcher(RenderEngine* engine)
-    : GenericWatcher()
-    , _engine(engine)
+        : GenericWatcher()
+        , _engine(engine)
     {
-
     }
 
     virtual ~RenderEngineWatcher()
     {
-
     }
 
 private:
 
     virtual void handleBlockingTask(int taskID) OVERRIDE FINAL;
-
     RenderEngine* _engine;
 };
 
 
-class NodeRenderWatcher : public GenericWatcher
+class NodeRenderWatcher
+    : public GenericWatcher
 {
 public:
 
@@ -186,37 +174,33 @@ public:
     {
         eBlockingTaskQuitAnyProcessing,
         eBlockingTaskAbortAnyProcessing
-
     };
 
 
     NodeRenderWatcher(const NodePtr& node)
-    : GenericWatcher()
+        : GenericWatcher()
     {
         _nodes.push_back(node);
     }
 
     NodeRenderWatcher(const NodesList& nodes)
-    : GenericWatcher()
-    , _nodes()
+        : GenericWatcher()
+        , _nodes()
     {
-        for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             _nodes.push_back(*it);
         }
     }
 
     virtual ~NodeRenderWatcher()
     {
-        
     }
 
 private:
 
     virtual void handleBlockingTask(int taskID) OVERRIDE FINAL;
-
     NodesWList _nodes;
 };
-
 
 
 NATRON_NAMESPACE_EXIT;

@@ -217,6 +217,7 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                        bool declaredByPlugin)
     : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _spatial(false)
+    , _isRectangle(false)
     , _increments(dimension, 1)
     , _decimals(dimension, 2)
     , _disableSlider(false)
@@ -446,7 +447,7 @@ KnobDouble::computeValuesHaveModifications(int dimension,
 
 /******************************KnobButton**************************************/
 
-KnobButton::KnobButton(KnobHolder*  holder,
+KnobButton::KnobButton(KnobHolder* holder,
                        const std::string &label,
                        int dimension,
                        bool declaredByPlugin)
@@ -458,12 +459,14 @@ KnobButton::KnobButton(KnobHolder*  holder,
     //setIsPersistant(false);
 }
 
-KnobButton::KnobButton(KnobHolder*  holder,
+KnobButton::KnobButton(KnobHolder* holder,
                        const QString &label,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _renderButton(false)
+    , _checkable(false)
+    , _isToolButtonAction(false)
 {
     //setIsPersistant(false);
 }
@@ -776,7 +779,9 @@ KnobChoice::refreshMenu()
         KnobPtr hasRefreshButton = holder->getKnobByName(getName() + "RefreshButton");
         if (hasRefreshButton) {
             KnobButton* button = dynamic_cast<KnobButton*>( hasRefreshButton.get() );
-            button->trigger();
+            if (button) {
+                button->trigger();
+            }
 
             return;
         }
@@ -1553,6 +1558,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
+    , _isToolBar(false)
 {
     setIsPersistant(false);
 }

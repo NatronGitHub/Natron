@@ -122,7 +122,6 @@ public:
     void refreshOutputNode();
 
     void launchPreRender();
-    
 };
 
 PrecompNode::PrecompNode(NodePtr n)
@@ -135,6 +134,7 @@ PrecompNode::PrecompNode(NodePtr n)
 PrecompNode::~PrecompNode()
 {
     AppInstPtr app = _imp->app.lock();
+
     if (app) {
         app->quit();
     }

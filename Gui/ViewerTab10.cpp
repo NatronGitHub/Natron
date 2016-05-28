@@ -346,7 +346,7 @@ ViewerTab::onEngineStopped()
 void
 ViewerTab::abortViewersAndRefresh()
 {
-    if (!getGui()) {
+    if ( !getGui() ) {
         return;
     }
     const std::list<ViewerTab*> & activeNodes = getGui()->getViewersList();

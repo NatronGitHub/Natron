@@ -941,12 +941,23 @@ Bezier::addControlPointAfterIndex(int index,
             (*next)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p3.x, &p3.y);
             (*next)->getLeftBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p2.x, &p2.y);
 
-            Point p0f, p1f, p2f, p3f;
-            (*prevF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p0f.x, &p0f.y);
-            (*prevF)->getRightBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p1f.x, &p1f.y);
-            (*nextF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p3f.x, &p3f.y);
-            (*nextF)->getLeftBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p2f.x, &p2f.y);
-
+            Point p0f;
+            Point p1f;
+            if (*prevF) {
+                (*prevF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p0f.x, &p0f.y);
+                (*prevF)->getRightBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p1f.x, &p1f.y);
+            } else {
+                p0f = p0;
+                p1f = p1;
+            }
+            Point p2f, p3f;
+            if (*nextF) {
+                (*nextF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p3f.x, &p3f.y);
+                (*nextF)->getLeftBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p2f.x, &p2f.y);
+            } else {
+                p2f = p2;
+                p3f = p3;
+            }
 
             Point dest;
             Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;

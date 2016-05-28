@@ -71,7 +71,6 @@ public:
     virtual ~FileDownloader();
 
     const QByteArray& downloadedData() const;
-
     QNetworkReply* getReply() const;
 
 Q_SIGNALS:

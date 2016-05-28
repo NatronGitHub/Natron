@@ -1124,7 +1124,7 @@ GuiApplicationManager::updateAboutWindowLibrariesVersion()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>(it->get());
+        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>( it->get() );
         if (isGuiInstance) {
             Gui* gui = isGuiInstance->getGui();
             if (gui) {

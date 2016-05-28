@@ -40,23 +40,22 @@
 
 NATRON_NAMESPACE_ENTER;
 
-class ComputePreviewRequest : public GenericThreadStartArgs
+class ComputePreviewRequest
+    : public GenericThreadStartArgs
 {
-
 public:
 
     double time;
     NodeGuiWPtr node;
 
     ComputePreviewRequest()
-    : GenericThreadStartArgs()
-    , time(0)
-    , node()
+        : GenericThreadStartArgs()
+        , time(0)
+        , node()
     {}
 
     virtual ~ComputePreviewRequest()
     {
-        
     }
 };
 
@@ -65,7 +64,7 @@ struct PreviewThreadPrivate
     std::vector<unsigned int> data;
 
     PreviewThreadPrivate()
-    : data( NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int) )
+        : data( NATRON_PREVIEW_HEIGHT * NATRON_PREVIEW_WIDTH * sizeof(unsigned int) )
     {
     }
 };
@@ -85,7 +84,8 @@ void
 PreviewThread::appendToQueue(const NodeGuiPtr& node,
                              double time)
 {
-    boost::shared_ptr<ComputePreviewRequest> r(new ComputePreviewRequest());
+    boost::shared_ptr<ComputePreviewRequest> r( new ComputePreviewRequest() );
+
     r->node = node;
     r->time = time;
     startTask(r);
@@ -94,8 +94,8 @@ PreviewThread::appendToQueue(const NodeGuiPtr& node,
 GenericSchedulerThread::ThreadStateEnum
 PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 {
-
     boost::shared_ptr<ComputePreviewRequest> args = boost::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
+
     assert(args);
 
 
@@ -118,7 +118,7 @@ PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 #endif
         NodePtr internalNode = node->getNode();
         if (internalNode) {
-            bool ok = internalNode->makePreviewImage(args->time, &w, &h, &_imp->data.front());
+            bool ok = internalNode->makePreviewImage( args->time, &w, &h, &_imp->data.front() );
             Q_UNUSED(ok);
             node->copyPreviewImageBuffer(_imp->data, w, h);
         }
@@ -126,6 +126,7 @@ PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
         ///Unmark this thread as running
         appPTR->fetchAndAddNRunningThreads(-1);
     }
+
     return eThreadStateActive;
 } // PreviewThread::threadLoopOnce
 

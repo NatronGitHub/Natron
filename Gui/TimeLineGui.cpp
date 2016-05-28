@@ -119,13 +119,13 @@ struct TimelineGuiPrivate
     TimeLineGui *parent;
     ViewerInstance* viewer;
     ViewerTab* viewerTab;
-    boost::shared_ptr<TimeLine> timeline; //ptr to the internal timeline
-    Gui* gui; //< ptr to the gui
-    bool alphaCursor; // should cursor be drawn semi-transparant
+    boost::shared_ptr<TimeLine> timeline; ///< ptr to the internal timeline
+    Gui* gui; ///< ptr to the gui
+    bool alphaCursor; ///< should cursor be drawn semi-transparent
     QPoint lastMouseEventWidgetCoord;
-    TimelineStateEnum state; //state machine for mouse events
-    int mousePressX; // widget X coordinate of last click
-    int mouseMoveX; // widget X coordinate of last mousemove position
+    TimelineStateEnum state; ///< state machine for mouse events
+    int mousePressX; ///< widget X coordinate of last click
+    int mouseMoveX; ///< widget X coordinate of last mousemove position
     TimeLineZoomContext tlZoomCtx;
     TextRenderer textRenderer;
     QFont font;
@@ -206,6 +206,7 @@ void
 TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
 {
     GuiAppInstPtr app = _imp->gui->getApp();
+
     assert(app);
     if (_imp->timeline) {
         //connect the internal timeline to the gui

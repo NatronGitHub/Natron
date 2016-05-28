@@ -362,8 +362,8 @@ public:
                                           ImagePlanesToRender & planes);
 
     static bool aborted(bool isRenderResponseToUserInteraction,
-                 const AbortableRenderInfoPtr& abortInfo,
-                 const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
+                        const AbortableRenderInfoPtr& abortInfo,
+                        const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
 
     void checkMetadata(NodeMetadata &metadata);
 };

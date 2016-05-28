@@ -136,6 +136,7 @@ TrackRegionOptions::TrackRegionOptions()
       max_iterations(20),
       use_esm(true),
       use_brute_initialization(true),
+      attempt_refine_before_brute(true),
       use_normalized_intensities(false),
       sigma(0.9),
       num_extra_points(0),

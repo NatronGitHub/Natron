@@ -80,6 +80,12 @@ public:
         QVariant::setValue(list);
     }
 
+    // explicit copy c'tor (necessary because we define de destructor)
+    Variant(const Variant & variant)
+        : QVariant(variant)
+    {
+    }
+
     virtual ~Variant()
     {
     }

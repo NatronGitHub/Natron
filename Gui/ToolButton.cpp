@@ -184,6 +184,7 @@ void
 ToolButton::onTriggered()
 {
     GuiAppInstPtr app = _imp->_app.lock();
+
     if (!app) {
         return;
     }

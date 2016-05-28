@@ -151,7 +151,6 @@ struct ViewerTabPrivate
     SpinBox* fpsBox;
     double userFps;
     Button* turboButton;
-
     QTimer mustSetUpPlaybackButtonsTimer;
 
     /*frame seeker*/

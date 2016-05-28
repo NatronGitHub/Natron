@@ -242,7 +242,7 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<P
 
 void
 GuiAppInstance::loadInternal(const CLArgs& cl,
-                     bool makeEmptyInstance)
+                             bool makeEmptyInstance)
 {
     if (getAppID() == 0) {
         appPTR->setLoadingStatus( tr("Creating user interface...") );
@@ -254,7 +254,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    boost::shared_ptr<GuiAppInstance> thisShared = boost::dynamic_pointer_cast<GuiAppInstance>(shared_from_this());
+    boost::shared_ptr<GuiAppInstance> thisShared = boost::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
     assert(thisShared);
     _imp->_gui = new Gui(thisShared);
     _imp->_gui->createGui();
@@ -964,8 +964,8 @@ GuiAppInstance::discardLastViewerUsingTimeline()
 void
 GuiAppInstance::declareCurrentAppVariable_Python()
 {
-
 #ifdef NATRON_RUN_WITHOUT_PYTHON
+
     return;
 #endif
     std::string appIDStr = getAppIDString();

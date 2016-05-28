@@ -55,7 +55,7 @@ NATRON_NAMESPACE_ENTER;
 struct AbortableRenderInfoPrivate;
 class AbortableRenderInfo
     : public QObject
-    , public boost::enable_shared_from_this<AbortableRenderInfo>
+      , public boost::enable_shared_from_this<AbortableRenderInfo>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -92,14 +92,14 @@ public:
 
     /**
      * @brief Get the render age. The render age identifies one single frame render in the Viewer. The older a render is, the smaller its render age is.
-     * This is used in the Viewer keep and order on the render requests, even though each request runs concurrently of another. 
+     * This is used in the Viewer keep and order on the render requests, even though each request runs concurrently of another.
      * This is not used by playback since in playback the ordering is controlled by the frame number.
      **/
     U64 getRenderAge() const;
 
     /**
      * @brief Registers the thread as part of this render request. Whenever AbortableThread::setAbortInfo is called, the thread is automatically registered
-     * in this class as to be part of this render. This is used to monitor running threads for a specific render and to know if a thread has stalled when 
+     * in this class as to be part of this render. This is used to monitor running threads for a specific render and to know if a thread has stalled when
      * the user called setAborted()
      **/
     void registerThreadForRender(AbortableThread* thread);
@@ -115,7 +115,7 @@ public:
 public Q_SLOTS:
 
     /**
-     * @brief Triggered by a timer after some time that a thread called setAborted(). This is used to detect stalled threads that do not seem 
+     * @brief Triggered by a timer after some time that a thread called setAborted(). This is used to detect stalled threads that do not seem
      * to want to abort.
      **/
     void onAbortTimerTimeout();

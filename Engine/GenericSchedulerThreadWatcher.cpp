@@ -34,8 +34,6 @@
 #include "Engine/Node.h"
 
 
-
-
 NATRON_NAMESPACE_ENTER;
 
 
@@ -52,11 +50,8 @@ public:
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 static GenericWatcherCallerArgsMetaTypesRegistration registration;
-
-
 struct GenericWatcherPrivate
 {
-
     struct Task
     {
         int id;
@@ -65,30 +60,27 @@ struct GenericWatcherPrivate
 
     mutable QMutex tasksMutex;
     std::list<Task> tasks;
-
     bool mustQuit;
     QWaitCondition mustQuitCond;
     mutable QMutex mustQuitMutex;
-
     int startRequests;
     QWaitCondition startRequestsCond;
     mutable QMutex startRequestsMutex;
 
     GenericWatcherPrivate()
-    : tasksMutex()
-    , tasks()
-    , mustQuit(false)
-    , mustQuitCond()
-    , mustQuitMutex()
-    , startRequests(0)
+        : tasksMutex()
+        , tasks()
+        , mustQuit(false)
+        , mustQuitCond()
+        , mustQuitMutex()
+        , startRequests(0)
     {
-
     }
 };
 
 GenericWatcher::GenericWatcher()
-: QThread()
-, _imp(new GenericWatcherPrivate())
+    : QThread()
+    , _imp( new GenericWatcherPrivate() )
 {
 }
 
@@ -100,7 +92,7 @@ GenericWatcher::~GenericWatcher()
 void
 GenericWatcher::stopWatching()
 {
-    if (!isRunning()) {
+    if ( !isRunning() ) {
         return;
     }
     {
@@ -111,7 +103,6 @@ GenericWatcher::stopWatching()
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);
         _imp->mustQuit = true;
-
 
 
         // Post a stub request to wake up the thread
@@ -131,13 +122,13 @@ GenericWatcher::stopWatching()
 void
 GenericWatcher::run()
 {
-    for (;;) {
-
+    for (;; ) {
         {
             QMutexLocker quitLocker(&_imp->mustQuitMutex);
-            if (_imp->mustQuit)  {
+            if (_imp->mustQuit) {
                 _imp->mustQuit = false;
                 _imp->mustQuitCond.wakeAll();
+
                 return;
             }
         }
@@ -145,7 +136,7 @@ GenericWatcher::run()
         boost::shared_ptr<GenericWatcherCallerArgs> inArgs;
         {
             QMutexLocker k(&_imp->tasksMutex);
-            if (!_imp->tasks.empty()) {
+            if ( !_imp->tasks.empty() ) {
                 const GenericWatcherPrivate::Task& t = _imp->tasks.front();
                 taskID = t.id;
                 inArgs = t.args;
@@ -169,17 +160,17 @@ GenericWatcher::run()
 }
 
 void
-GenericWatcher::scheduleBlockingTask(int taskID, const boost::shared_ptr<GenericWatcherCallerArgs>& args)
+GenericWatcher::scheduleBlockingTask(int taskID,
+                                     const boost::shared_ptr<GenericWatcherCallerArgs>& args)
 {
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);
-        if (_imp->mustQuit)  {
+        if (_imp->mustQuit) {
             return;
         }
     }
 
     {
-
         QMutexLocker(&_imp->tasksMutex);
         GenericWatcherPrivate::Task t;
         t.id = taskID;
@@ -197,46 +188,44 @@ GenericWatcher::scheduleBlockingTask(int taskID, const boost::shared_ptr<Generic
         }
         _imp->startRequestsCond.wakeOne();
     }
-
 }
 
 void
 GenericSchedulerThreadWatcher::handleBlockingTask(int taskID)
 {
     BlockingTaskEnum task = (BlockingTaskEnum)taskID;
+
     switch (task) {
-        case eBlockingTaskWaitForAbort:
-            _thread->abortThreadedTask();
-            _thread->waitForAbortToComplete_not_main_thread();
-            break;
+    case eBlockingTaskWaitForAbort:
+        _thread->abortThreadedTask();
+        _thread->waitForAbortToComplete_not_main_thread();
+        break;
 
-        case eBlockingTaskWaitForQuitAllowRestart:
-        case eBlockingTaskWaitForQuitDisallowRestart:
-            _thread->quitThread(task == eBlockingTaskWaitForQuitAllowRestart);
-            _thread->waitForThreadToQuit_not_main_thread();
-            break;
+    case eBlockingTaskWaitForQuitAllowRestart:
+    case eBlockingTaskWaitForQuitDisallowRestart:
+        _thread->quitThread(task == eBlockingTaskWaitForQuitAllowRestart);
+        _thread->waitForThreadToQuit_not_main_thread();
+        break;
     }
-
 }
 
 void
 RenderEngineWatcher::handleBlockingTask(int taskID)
 {
     BlockingTaskEnum task = (BlockingTaskEnum)taskID;
+
     switch (task) {
-        case eBlockingTaskWaitForAbort:
-            _engine->abortRenderingNoRestart();
-            _engine->waitForAbortToComplete_not_main_thread();
-            break;
+    case eBlockingTaskWaitForAbort:
+        _engine->abortRenderingNoRestart();
+        _engine->waitForAbortToComplete_not_main_thread();
+        break;
 
-        case eBlockingTaskWaitForQuitAllowRestart:
-        case eBlockingTaskWaitForQuitDisallowRestart:
-            _engine->quitEngine(task == eBlockingTaskWaitForQuitAllowRestart);
-            _engine->waitForEngineToQuit_not_main_thread();
-            break;
+    case eBlockingTaskWaitForQuitAllowRestart:
+    case eBlockingTaskWaitForQuitDisallowRestart:
+        _engine->quitEngine(task == eBlockingTaskWaitForQuitAllowRestart);
+        _engine->waitForEngineToQuit_not_main_thread();
+        break;
     }
-
-
 }
 
 void
@@ -250,19 +239,16 @@ NodeRenderWatcher::handleBlockingTask(int taskID)
             continue;
         }
         switch (task) {
-            case eBlockingTaskAbortAnyProcessing:
-                node->abortAnyProcessing_blocking();
-                break;
+        case eBlockingTaskAbortAnyProcessing:
+            node->abortAnyProcessing_blocking();
+            break;
 
-            case eBlockingTaskQuitAnyProcessing:
-                node->quitAnyProcessing_blocking(false);
-                break;
+        case eBlockingTaskQuitAnyProcessing:
+            node->quitAnyProcessing_blocking(false);
+            break;
         }
     }
-
 }
-
-
 
 NATRON_NAMESPACE_EXIT;
 
