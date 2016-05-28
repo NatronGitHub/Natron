@@ -52,6 +52,8 @@ typedef GLXPBuffer (*PFNGLXCREATEPBUFFERPROC)(Display*,GLXFBConfig,const int*);
 typedef void (*PFNGLXDESTROYPBUFFERPROC)(Display*,GLXPBuffer);
 typedef void (*PFNGLXMAKECONTEXTCURRENTPROC)(Display*,GLXDrawable,GLXDrawable,GLXContext);
 
+NATRON_NAMESPACE_ENTER;
+
 // X11-specific global data
 //
 struct X11Data
@@ -155,6 +157,9 @@ private:
     X11Window _x11Window;
 
 };
+
+NATRON_NAMESPACE_EXIT;
+
 #endif // __NATRON_LINUX__
 
 #endif // OSGLCONTEXT_X11_H

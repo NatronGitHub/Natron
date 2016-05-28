@@ -110,7 +110,7 @@ GPUContextPool::attachGLContextToThread()
         assert((int)_imp->attachedGLContexts.size() < _imp->maxContexts);
         //  Create a new one
         if (!data->currentContext) {
-            GPUContextPtr context(new GPUContextPtr());
+            GPUContextPtr context(new GPUContext());
             data->currentContext = context;
         }
 
@@ -118,7 +118,7 @@ GPUContextPool::attachGLContextToThread()
 
     } else {
         if (!data->currentContext) {
-            GPUContextPtr context(new GPUContextPtr());
+            GPUContextPtr context(new GPUContext());
             data->currentContext = context;
         }
         data->currentContext->glContext = *(_imp->glContextPool.begin());

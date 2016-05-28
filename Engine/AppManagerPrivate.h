@@ -41,16 +41,21 @@
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
 #include "client/mac/handler/exception_handler.h"
-#include "Engine/OSGLContext_mac.h"
 #elif defined(Q_OS_LINUX)
 #include <fcntl.h>
 #include "client/linux/handler/exception_handler.h"
 #include "client/linux/crash_generation/crash_generation_server.h"
-#include "Engine/OSGLContext_x11.h"
 #elif defined(Q_OS_WIN32)
 #include "client/windows/handler/exception_handler.h"
-#include "Engine/OSGLContext_win.h"
 #endif
+#endif
+
+#ifdef Q_OS_LINUX
+#include "Engine/OSGLContext_x11.h"
+#elif defined(Q_OS_WIN32)
+#include "Engine/OSGLContext_win.h"
+#elif defined(Q_OS_MAC)
+#include "Engine/OSGLContext_mac.h"
 #endif
 
 #include "Engine/AppManager.h"

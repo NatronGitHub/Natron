@@ -24,6 +24,8 @@
 #include "Engine/OSGLContext.h"
 
 
+NATRON_NAMESPACE_ENTER;
+
 static bool extensionSupported(const OSGLContext_glx_data* data, const char* extension)
 {
     const char* extensions = glXQueryExtensionsString(data->x11.display, data->x11.screen);
@@ -644,5 +646,6 @@ OSGLContext_x11::swapInterval(int interval)
 
 }
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // __NATRON_LINUX__

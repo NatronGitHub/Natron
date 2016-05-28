@@ -562,10 +562,10 @@ AppManagerPrivate::initGLAPISpecific()
 
 #ifdef Q_OS_WIN32
     wglInfo.reset(new OSGLContext_wgl_data);
-    OSGLContext_wgl::initWGLData(wglInfo.get());
+    OSGLContext_win::initWGLData(wglInfo.get());
 #elif defined(Q_OS_LINUX)
     glxInfo.reset(new OSGLContext_glx_data);
-    OSGLContext_glx::initGLXData(glxInfo.get());
+    OSGLContext_x11::initGLXData(glxInfo.get());
 
 #endif // Q_OS_WIN32
 }
