@@ -103,7 +103,7 @@ public:
         setStyleSheet( QString::fromUtf8("background:transparent;") );
         setEnabled(false);
         setFocusPolicy(Qt::NoFocus);
-        setObjectName( QString::fromUtf8("__tab_widget_transparant_window__") );
+        setObjectName( QString::fromUtf8("__tab_widget_transparent_window__") );
     }
 
     virtual ~TransparentDropRect() {}
@@ -212,7 +212,7 @@ struct TabWidgetPrivate
     bool tabBarVisible;
 
     ///Used to draw drop rects
-    TransparentDropRect* transparantFloatingWidget;
+    TransparentDropRect* transparentFloatingWidget;
 
     ///Protects  currentWidget, fullScreen, isViewerAnchor
     mutable QMutex tabWidgetStateMutex;
@@ -235,7 +235,7 @@ struct TabWidgetPrivate
         , fullScreen(false)
         , isAnchor(false)
         , tabBarVisible(true)
-        , transparantFloatingWidget(0)
+        , transparentFloatingWidget(0)
         , tabWidgetStateMutex()
     {
     }
@@ -252,7 +252,7 @@ TabWidget::TabWidget(Gui* gui,
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
 
-    _imp->transparantFloatingWidget = new TransparentDropRect(this, 0);
+    _imp->transparentFloatingWidget = new TransparentDropRect(this, 0);
 
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 5, 0, 0);
@@ -318,7 +318,7 @@ TabWidget::TabWidget(Gui* gui,
 
 TabWidget::~TabWidget()
 {
-    delete _imp->transparantFloatingWidget;
+    delete _imp->transparentFloatingWidget;
 }
 
 Gui*
@@ -1338,10 +1338,10 @@ TabWidget::dropEvent(QDropEvent* e)
     _imp->gui->findExistingTab(name.toStdString(), &w, &obj);
     if (w && obj) {
         TabWidget* where = 0;
-        if (_imp->transparantFloatingWidget->getDropType() == eDropRectLeftSplit) {
+        if (_imp->transparentFloatingWidget->getDropType() == eDropRectLeftSplit) {
             splitHorizontally();
             where = this;
-        } else if (_imp->transparantFloatingWidget->getDropType() == eDropRectRightSplit) {
+        } else if (_imp->transparentFloatingWidget->getDropType() == eDropRectRightSplit) {
             where = splitHorizontally();
         } else {
             where = this;
@@ -1709,23 +1709,23 @@ void
 TabWidget::setDrawDropRect(DropRectType type,
                            bool draw)
 {
-    if ( (draw == _imp->drawDropRect) && (_imp->transparantFloatingWidget->getDropType() == type) ) {
+    if ( (draw == _imp->drawDropRect) && (_imp->transparentFloatingWidget->getDropType() == type) ) {
         return;
     }
-    _imp->transparantFloatingWidget->setDropType(type);
+    _imp->transparentFloatingWidget->setDropType(type);
     _imp->drawDropRect = draw;
 
     if ( (type == eDropRectNone) || !draw ) {
-        _imp->transparantFloatingWidget->hide();
+        _imp->transparentFloatingWidget->hide();
     } else {
-        _imp->transparantFloatingWidget->resize( size() );
+        _imp->transparentFloatingWidget->resize( size() );
 
-        if ( !_imp->transparantFloatingWidget->isVisible() ) {
-            _imp->transparantFloatingWidget->show();
+        if ( !_imp->transparentFloatingWidget->isVisible() ) {
+            _imp->transparentFloatingWidget->show();
             activateWindow();
         }
         QPoint globalPos = mapToGlobal( QPoint(0, 0) );
-        _imp->transparantFloatingWidget->move(globalPos);
+        _imp->transparentFloatingWidget->move(globalPos);
     }
 }
 

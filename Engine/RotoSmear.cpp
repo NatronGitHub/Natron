@@ -322,10 +322,10 @@ RotoSmear::render(const RenderActionArgs& args)
                 continue;
             }
 
-            //First copy the source image if this is the first stroke tick
+            // First copy the source image if this is the first stroke tick
 
             if ( (isFirstStrokeTick || !duringPainting) && !bgInitialized && (strokeIndex == 0) ) {
-                //Make sure all areas are black and transparant
+                // Make sure all areas are black and transparent
                 plane->second->fillZero(args.roi);
                 plane->second->pasteFrom(*bgImg, args.roi, false);
                 bgInitialized = true;
@@ -340,7 +340,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
 
             if (isFirstStrokeTick || !duringPainting) {
-                //This is the very first dot we render
+                // This is the very first dot we render
                 prev = *it;
                 ++it;
                 renderSmearDot(maskData, maskStride, maskWidth, maskHeight, prev.first, it->first, brushSizePixel, nComps, plane->second);

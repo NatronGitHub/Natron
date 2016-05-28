@@ -201,7 +201,7 @@ OfxClipInstance::getUnmappedComponents() const
         }
 
 
-        ///last-resort: black and transparant image means RGBA.
+        // last-resort: black and transparent image means RGBA.
         return rgbaStr;
     }
 }

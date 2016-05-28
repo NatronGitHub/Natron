@@ -162,7 +162,7 @@ TextRendererPrivate::createCharacter(QChar c)
 #ifdef NATRON_TEXT_RENDERER_USE_CACHE
 
     ushort unic = c.unicode();
-    //c is already in the cache
+    // c is already in the cache
     BitmapCache::iterator it = _bitmapsCache.find(unic);
     if ( it != _bitmapsCache.end() ) {
         return it.value();
@@ -177,7 +177,7 @@ TextRendererPrivate::createCharacter(QChar c)
     GLsizei width = _fontMetrics.width(c);
     GLsizei height = _fontMetrics.height();
 
-    //render into a new transparant pixmap using QPainter
+    // render into a new transparent pixmap using QPainter
     QImage image(width, height, QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter;
@@ -191,7 +191,7 @@ TextRendererPrivate::createCharacter(QChar c)
     painter.end();
 
 
-    //fill the texture with the QImage
+    // fill the texture with the QImage
     image = QGLWidget::convertToGLFormat(image);
     glCheckError();
 

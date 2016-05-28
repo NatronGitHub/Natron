@@ -1440,7 +1440,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     assert(textureIndex == 0 || textureIndex == 1);
 
     if (updateOnlyRoi) {
-        //Make sure the texture is allocated on the full portion
+        // Make sure the texture is allocated on the full portion
         Texture::DataTypeEnum type = Texture::eDataTypeNone;
         switch (bd) {
         case eImageBitDepthByte: {
@@ -1449,14 +1449,14 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         }
         case eImageBitDepthFloat: {
             type = Texture::eDataTypeFloat;
-            //do 32bit fp textures either way, don't bother with half float. We might support it one day.
+            // do 32bit fp textures either way, don't bother with half float. We might support it one day.
             break;
         }
         default:
             throw std::logic_error("ViewerGL::transferBufferFromRAMtoGPU(): unknown texture type");
         }
         if ( _imp->displayTextures[textureIndex]->mustAllocTexture(region) ) {
-            ///Initialize with black and transparant
+            // Initialize with black and transparent
             std::size_t bytesToInit = region.w * region.h * 4;
             if (depth == eImageBitDepthFloat) {
                 bytesToInit *= sizeof(float);
@@ -1496,7 +1496,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     if (bd == eImageBitDepthByte) {
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeByte, roi, updateOnlyRoi);
     } else if (bd == eImageBitDepthFloat) {
-        //do 32bit fp textures either way, don't bother with half float. We might support it further on.
+        // do 32bit fp textures either way, don't bother with half float. We might support it further on.
         _imp->displayTextures[textureIndex]->fillOrAllocateTexture(region, Texture::eDataTypeFloat, roi, updateOnlyRoi);
     }
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);

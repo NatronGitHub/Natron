@@ -214,7 +214,7 @@ RotoPaint::initializeKnobs()
     premultKnob->setName("premultiply");
     premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels in output of this node are premultiplied by the alpha channel."
                                     " This will result in the pixels outside of the shapes and paint strokes "
-                                    "being black and transparant.") );
+                                    "being black and transparent.") );
     premultKnob->setDefaultValue(false);
     premultKnob->setAnimationEnabled(false);
     premultKnob->setIsMetadataSlave(true);
@@ -468,14 +468,14 @@ RotoPaint::render(const RenderActionArgs& args)
                 }
             }
             if ( !rotoImagesIt->second->getBounds().contains(args.roi) ) {
-                ///We first fill with the bg image because the bounds of the image produced by the last merge of the rotopaint tree
-                ///might not be equal to the bounds of the image produced by the rotopaint. This is because the RoD of the rotopaint is the
-                ///union of all the mask strokes bounds, whereas all nodes inside the rotopaint tree don't take the mask RoD into account.
+                // We first fill with the bg image because the bounds of the image produced by the last merge of the rotopaint tree
+                // might not be equal to the bounds of the image produced by the rotopaint. This is because the RoD of the rotopaint is the
+                // union of all the mask strokes bounds, whereas all nodes inside the rotopaint tree don't take the mask RoD into account.
                 if (bgImg) {
                     RectI bgBounds = bgImg->getBounds();
 
-                    ///The bg bounds might not be inside the roi, but yet we need to fill the whole roi, so just fill borders
-                    ///with black and transparant, e.g:
+                    // The bg bounds might not be inside the roi, but yet we need to fill the whole roi, so just fill borders
+                    // with black and transparent, e.g:
                     /*
                         AAAAAAAAA
                         DDXXXXXBB

@@ -88,7 +88,7 @@ FrameEntry::copy(const FrameEntry& other)
     }
     dstRowSize *= dstPixelSize;
 
-    //Fill with black and transparant because src might be smaller
+    // Fill with black and transparent because src might be smaller
     bool filledZero = false;
     if ( !srcBounds.contains(dstBounds) ) {
         std::memset(dstPixels, 0, dstRowSize * dstBounds.h);
