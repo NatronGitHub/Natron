@@ -29,7 +29,9 @@
 
 #include <list>
 #include <string>
+
 #include "Global/GlobalDefines.h"
+
 CLANG_DIAG_OFF(deprecated)
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
 #include <QtCore/QObject>
@@ -65,13 +67,6 @@ enum AppInstanceStatusEnum
     eAppInstanceStatusActive     //< the app is active and can be used
 };
 
-struct AppInstanceRef
-{
-    AppInstance* app;
-    AppInstanceStatusEnum status;
-};
-
-
 class GlobalOFXTLS
 {
 public:
@@ -86,6 +81,8 @@ public:
     {
     }
 };
+
+typedef std::vector<AppInstPtr> AppInstanceVec;
 
 struct AppManagerPrivate;
 class AppManager
@@ -141,12 +138,12 @@ public:
 
     bool isLoaded() const;
 
-    AppInstance* newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
-    AppInstance* newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstPtr newAppInstance(const CLArgs& cl, bool makeEmptyInstance);
+    AppInstPtr newBackgroundInstance(const CLArgs& cl, bool makeEmptyInstance);
 
 private:
 
-    AppInstance* newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
+    AppInstPtr newAppInstanceInternal(const CLArgs& cl, bool alwaysBackground, bool makeEmptyInstance);
 
 public:
 
@@ -165,9 +162,7 @@ public:
 #endif
                                   ) const;
 
-    void registerAppInstance(AppInstance* app);
-
-    AppInstance* getAppInstance(int appID) const WARN_UNUSED_RETURN;
+    AppInstPtr getAppInstance(int appID) const WARN_UNUSED_RETURN;
 
     int getNumInstances() const WARN_UNUSED_RETURN;
 
@@ -175,8 +170,8 @@ public:
 
     void setAsTopLevelInstance(int appID);
 
-    const std::map<int, AppInstanceRef> & getAppInstances() const WARN_UNUSED_RETURN;
-    AppInstance* getTopLevelInstance () const WARN_UNUSED_RETURN;
+    const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
+    AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
     QMutex* getMutexForPlugin(const QString & pluginId, int major, int minor) const WARN_UNUSED_RETURN;
     Plugin* getPluginBinary(const QString & pluginId,
@@ -186,8 +181,8 @@ public:
     Plugin* getPluginBinaryFromOldID(const QString & pluginId, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
-    Format* findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
-    const std::vector<Format*> & getFormats() const WARN_UNUSED_RETURN;
+    Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
+    const std::vector<Format> & getFormats() const WARN_UNUSED_RETURN;
 
     /**
      * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
@@ -251,7 +246,7 @@ public:
     }
 
     U64 getCachesTotalMemorySize() const;
-    CacheSignalEmitter* getOrActivateViewerCacheSignalEmitter() const;
+    boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
 
@@ -324,7 +319,12 @@ public:
     /**
      * @brief Called when the instance is exited
      **/
-    void quit(AppInstance* instance);
+    void quit(const AppInstPtr& instance);
+
+    /**
+     * @brief Same as quit except that it blocks until all processing is done instead of doing it in a separate thread.
+     **/
+    void quitNow(const AppInstPtr& instance);
 
     /*
        @brief Calls quit() on all AppInstance's
@@ -523,7 +523,6 @@ public:
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
 
-    bool hasThreadsRendering() const;
 
     /**
      * @brief Return the concatenation of all search paths of Natron, i.e:
@@ -617,8 +616,6 @@ public Q_SLOTS:
 
     void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
 
-    void onQuitWatcherFinished(const WatcherCallerArgsPtr& args);
-
 Q_SIGNALS:
 
 
@@ -635,7 +632,7 @@ protected:
     template <typename PLUGIN>
     void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
 
-    virtual AppInstance* makeNewInstance(int appID) const;
+    virtual AppInstPtr makeNewInstance(int appID) const;
     virtual void registerGuiMetaTypes() const
     {
     }

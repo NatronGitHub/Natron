@@ -1,0 +1,40 @@
+--- IlmImf/Makefile.am.orig	2016-01-27 22:22:38.000000000 +0100
++++ IlmImf/Makefile.am	2016-01-27 22:26:22.000000000 +0100
+@@ -136,6 +136,7 @@
+ 			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
+ 			   ImfRgbaYca.h \
+ 			   ImfTestFile.h ImfThreading.h \
++			   ImfCompressor.h \
+ 			   ImfB44Compressor.h ImfStringVectorAttribute.h \
+ 			   ImfMultiView.h \
+ 			   ImfAcesFile.h \
+@@ -164,8 +165,7 @@
+ 			   ImfDeepImageState.h \
+ 			   ImfDeepImageStateAttribute.h
+ 
+-noinst_HEADERS = ImfCompressor.h    \
+-		 ImfRleCompressor.h \
++noinst_HEADERS = ImfRleCompressor.h \
+ 		 ImfZipCompressor.h \
+ 		 ImfPizCompressor.h \
+ 		 ImfDwaCompressor.h \
+--- IlmImf/Makefile.in.orig	2016-01-27 22:22:44.000000000 +0100
++++ IlmImf/Makefile.in	2016-01-27 22:26:26.000000000 +0100
+@@ -409,6 +409,7 @@
+ 			   ImfTiledOutputFile.h ImfTiledRgbaFile.h \
+ 			   ImfRgbaYca.h \
+ 			   ImfTestFile.h ImfThreading.h \
++			   ImfCompressor.h \
+ 			   ImfB44Compressor.h ImfStringVectorAttribute.h \
+ 			   ImfMultiView.h \
+ 			   ImfAcesFile.h \
+@@ -437,8 +438,7 @@
+ 			   ImfDeepImageState.h \
+ 			   ImfDeepImageStateAttribute.h
+ 
+-noinst_HEADERS = ImfCompressor.h    \
+-		 ImfRleCompressor.h \
++noinst_HEADERS = ImfRleCompressor.h \
+ 		 ImfZipCompressor.h \
+ 		 ImfPizCompressor.h \
+ 		 ImfDwaCompressor.h \

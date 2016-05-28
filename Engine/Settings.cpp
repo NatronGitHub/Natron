@@ -76,7 +76,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 Settings::Settings()
-    : KnobHolder(0)
+    : KnobHolder( AppInstPtr() ) // < Settings are process wide and do not belong to a single AppInstance
     , _restoringSettings(false)
     , _ocioRestored(false)
     , _settingsExisted(false)
@@ -1756,10 +1756,10 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                 }
             }
         } else if ( knobs[i] == _texturesMode.get() ) {
-            std::map<int, AppInstanceRef> apps = appPTR->getAppInstances();
-            for (std::map<int, AppInstanceRef>::iterator it = apps.begin(); it != apps.end(); ++it) {
+            AppInstanceVec apps = appPTR->getAppInstances();
+            for (AppInstanceVec::iterator it = apps.begin(); it != apps.end(); ++it) {
                 std::list<ViewerInstance*> allViewers;
-                it->second.app->getProject()->getViewers(&allViewers);
+                (*it)->getProject()->getViewers(&allViewers);
                 for (std::list<ViewerInstance*>::iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
                     (*it)->renderCurrentFrame(true);
                 }
@@ -3283,7 +3283,7 @@ void
 Settings::doOCIOStartupCheckIfNeeded()
 {
     bool docheck = _ocioStartupCheck->getValue();
-    AppInstance* mainInstance = appPTR->getTopLevelInstance();
+    AppInstPtr mainInstance = appPTR->getTopLevelInstance();
 
     if (!mainInstance) {
         qDebug() << "WARNING: doOCIOStartupCheckIfNeeded() called without a AppInstance";

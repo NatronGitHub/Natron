@@ -1065,12 +1065,10 @@ TrackMarker::getMarkerImage(int time,
     AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
-#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
     }
-#endif
 
     ParallelRenderArgsSetter frameRenderArgs( time,
                                               ViewIdx(0), //<  view 0 (left)

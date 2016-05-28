@@ -35,7 +35,6 @@ NATRON_NAMESPACE_ENTER;
 
 class GenericThreadStartArgs
 {
-
     // Used to wake-up the thread when calling abortThreadedTask
     bool _isNull;
 
@@ -43,9 +42,8 @@ public:
 
 
     GenericThreadStartArgs(bool isNullTask = false)
-    : _isNull(isNullTask)
+        : _isNull(isNullTask)
     {
-
     }
 
     virtual ~GenericThreadStartArgs() {}
@@ -58,17 +56,14 @@ public:
 
 class GenericThreadExecOnMainThreadArgs
 {
-
 public:
 
     GenericThreadExecOnMainThreadArgs()
     {
-
     }
 
     virtual ~GenericThreadExecOnMainThreadArgs()
     {
-
     }
 };
 
@@ -83,15 +78,15 @@ typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> ExecOnMTArgsPtr;
  * Here is an example usage of this thread class:
  *
  * Create a thread:
- * 
+ *
  *      GenericSchedulerThread thread;
- * 
+ *
  * Request work: way:
  *      thread.startTask(task);
  *
  * Abort ongoing work from a thread DIFFERENT THAN THE MAIN-THREAD. Note that this is not blocking! The thread may not be aborted after the return of this call:
  *      thread.abortThreadedTask();
- * 
+ *
  * To wait for the abortion to complete, call: (this is blocking)
  *      thread.waitForAbortToComplete_not_main_thread();
  *
@@ -110,15 +105,12 @@ typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> ExecOnMTArgsPtr;
  **/
 struct GenericSchedulerThreadPrivate;
 class GenericSchedulerThread
-: public QThread
-#ifdef QT_CUSTOM_THREADPOOL
-, public AbortableThread
-#endif
+    : public QThread
+      , public AbortableThread
 {
-
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
@@ -154,7 +146,7 @@ public:
     virtual ~GenericSchedulerThread();
 
     /**
-     * @brief Requests the thread to finish its execution. 
+     * @brief Requests the thread to finish its execution.
      * @param allowRestarts, if true, this object may be used again. If false this
      * object will no longer be usable.
      * Note: this function is not blocking and the thread may still be running when returning this function,
@@ -176,7 +168,7 @@ public:
     bool waitForThreadToQuit_not_main_thread();
 
     /**
-     * @brief Same as waitForThreadToQuit_not_main_thread() but can be safely called on the main-thread (and should be only called on the main-thread). 
+     * @brief Same as waitForThreadToQuit_not_main_thread() but can be safely called on the main-thread (and should be only called on the main-thread).
      * The thread may NOT yet be finished when returning from this function.
      * Connect to the signal threadFinished() to be notified when the thread is really done.
      **/
@@ -222,7 +214,7 @@ public:
     bool waitForAbortToComplete_enforce_blocking();
 
     /**
-     * @brief Same as waitForAbortToComplete_not_main_thread() but can be safely called on the main-thread (and should be only called on the main-thread). 
+     * @brief Same as waitForAbortToComplete_not_main_thread() but can be safely called on the main-thread (and should be only called on the main-thread).
      * The task may NOT yet be aborted when returning from this function.
      * Connect to the signal taskAborted() to be notified when the task is really done.
      **/
@@ -252,21 +244,19 @@ Q_SIGNALS:
 public Q_SLOTS:
 
     /**
-    * @brief Requests to abort all computations.
-    * This function is not blocking and once returned you may NOT assume that the thread is completly aborted.
-    * @returns true if the thread was running and actively working and we did not post any abort request before, false otherwise
-    **/
+     * @brief Requests to abort all computations.
+     * This function is not blocking and once returned you may NOT assume that the thread is completly aborted.
+     * @returns true if the thread was running and actively working and we did not post any abort request before, false otherwise
+     **/
     bool abortThreadedTask();
 
     void onWatcherTaskAbortedEmitted();
-    
+
     void onWatcherTaskFinishedEmitted();
 
 private Q_SLOTS:
 
     void onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args);
-
-
 
 protected:
 
@@ -281,9 +271,19 @@ protected:
     virtual void onAbortRequested() {}
 
     /**
+     * @brief Called when quitThread has been requested
+     **/
+    virtual void onQuitRequested(bool /*allowRestarts*/) {}
+
+    /**
      * @brief Called when we successfully waited for an abort to be processed. This can be used to wait for extra threads
      **/
     virtual void onWaitForAbortCompleted() {}
+
+    /**
+     * @brief Called when we successfully waited for the thread to exit the run function. This can be used to wait for extra threads
+     **/
+    virtual void onWaitForThreadToQuit() {}
 
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
@@ -311,14 +311,12 @@ protected:
      **/
     void requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs);
 
-
 private:
 
     virtual void run() OVERRIDE FINAL;
 
     friend struct GenericSchedulerThreadPrivate;
     boost::scoped_ptr<GenericSchedulerThreadPrivate> _imp;
-
 };
 
 NATRON_NAMESPACE_EXIT;

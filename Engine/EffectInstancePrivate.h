@@ -163,7 +163,7 @@ public:
 
     ///Current chuncks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
-    std::list<PluginMemory*> pluginMemoryChunks;
+    std::list<boost::weak_ptr<PluginMemory> > pluginMemoryChunks;
 
     ///Does this plug-in supports render scale ?
     QMutex supportsRenderScaleMutex;
@@ -361,9 +361,9 @@ public:
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
 
-    bool aborted(bool isRenderResponseToUserInteraction,
-                 const AbortableRenderInfoPtr& abortInfo,
-                 const EffectInstPtr& treeRoot) const WARN_UNUSED_RETURN;
+    static bool aborted(bool isRenderResponseToUserInteraction,
+                        const AbortableRenderInfoPtr& abortInfo,
+                        const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
 
     void checkMetadata(NodeMetadata &metadata);
 };

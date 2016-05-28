@@ -198,7 +198,7 @@ struct Node::Implementation
 
 public:
     Implementation(Node* publicInterface,
-                   AppInstance* app_,
+                   const AppInstPtr& app_,
                    const boost::shared_ptr<NodeCollection>& collection,
                    Plugin* plugin_)
         : _publicInterface(publicInterface)
@@ -374,7 +374,7 @@ public:
     Node* _publicInterface;
     boost::weak_ptr<NodeCollection> group;
     boost::weak_ptr<PrecompNode> precomp;
-    AppInstance* app; // pointer to the app: needed to access the application's default-project's format
+    AppInstWPtr app; // pointer to the app: needed to access the application's default-project's format
     bool isPartOfProject;
     bool knobsInitialized;
     bool inputsInitialized;
@@ -578,7 +578,7 @@ toBGRA(unsigned char r,
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
 
-Node::Node(AppInstance* app,
+Node::Node(const AppInstPtr& app,
            const boost::shared_ptr<NodeCollection>& group,
            Plugin* plugin)
     : QObject()
@@ -734,7 +734,9 @@ Node::load(const CreateNodeArgs& args)
             } else {
                 WriteNode* isWriter = dynamic_cast<WriteNode*>( args.ioContainer->getEffectInstance().get() );
                 assert(isWriter);
-                isWriter->setEmbeddedWriter(thisShared);
+                if (isWriter) {
+                    isWriter->setEmbeddedWriter(thisShared);
+                }
             }
         }
 #endif
@@ -1543,7 +1545,12 @@ Node::computeHashRecursive(std::list<Node*>& marked)
 void
 Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 {
-    boost::shared_ptr<Project> proj = getApp()->getProject();
+    AppInstPtr app = getApp();
+
+    if (!app) {
+        return;
+    }
+    boost::shared_ptr<Project> proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
@@ -1560,7 +1567,12 @@ Node::removeAllImagesFromCacheWithMatchingIDAndDifferentKey(U64 nodeHashKey)
 void
 Node::removeAllImagesFromCache(bool blocking)
 {
-    boost::shared_ptr<Project> proj = getApp()->getProject();
+    AppInstPtr app = getApp();
+
+    if (!app) {
+        return;
+    }
+    boost::shared_ptr<Project> proj = app->getProject();
 
     if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
         return;
@@ -2190,7 +2202,10 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 KnobChoice* createdKnob = dynamic_cast<KnobChoice*>( knob.get() );
                 assert(createdKnob);
                 if (data && createdKnob) {
-                    createdKnob->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
+                    KnobChoice* sKnobChoice = dynamic_cast<KnobChoice*>( sKnob.get() );
+                    if (sKnobChoice) {
+                        createdKnob->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
+                    }
                 }
             } else {
                 knob->clone( sKnob.get() );
@@ -2369,24 +2384,24 @@ Node::areAllProcessingThreadsQuit() const
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
     if (isOutput) {
-        if (isOutput->getRenderEngine()->hasThreadsAlive()) {
+        if ( isOutput->getRenderEngine()->hasThreadsAlive() ) {
             return false;
         }
     }
 
     boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
     if (trackerContext) {
-        if (!trackerContext->hasTrackerThreadQuit()) {
+        if ( !trackerContext->hasTrackerThreadQuit() ) {
             return false;
         }
     }
+
     return true;
 }
 
 void
 Node::quitAnyProcessing_non_blocking()
 {
-
     //If this effect has a RenderEngine, make sure it is finished
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( _imp->effect.get() );
 
@@ -2479,7 +2494,6 @@ Node::abortAnyProcessing_blocking()
         assert(engine);
         engine->abortRenderingNoRestart();
         engine->waitForAbortToComplete_enforce_blocking();
-
     }
 
     boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
@@ -3028,10 +3042,10 @@ Node::setScriptName(const std::string& name)
     setNameInternal(newName, true, true);
 }
 
-AppInstance*
+AppInstPtr
 Node::getApp() const
 {
-    return _imp->app;
+    return _imp->app.lock();
 }
 
 bool
@@ -4360,7 +4374,9 @@ Node::setEffect(const EffectInstPtr& effect)
         } else {
             WriteNode* isWriter = dynamic_cast<WriteNode*>( ioContainer->getEffectInstance().get() );
             assert(isWriter);
-            isWriter->setEmbeddedWriter(thisShared);
+            if (isWriter) {
+                isWriter->setEmbeddedWriter(thisShared);
+            }
         }
     }
 #endif
@@ -5925,36 +5941,38 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     _imp->runOnNodeCreatedCB(true);
 } // activate
 
-class NodeDestroyNodeInternalArgs : public GenericWatcherCallerArgs
+class NodeDestroyNodeInternalArgs
+    : public GenericWatcherCallerArgs
 {
-
 public:
 
     bool autoReconnect;
 
     NodeDestroyNodeInternalArgs()
-    : GenericWatcherCallerArgs()
+        : GenericWatcherCallerArgs()
+        , autoReconnect(false)
     {}
 
     virtual ~NodeDestroyNodeInternalArgs() {}
 };
 
 void
-Node::onProcessingQuitInDestroyNodeInternal(int taskID, const WatcherCallerArgsPtr& args)
+Node::onProcessingQuitInDestroyNodeInternal(int taskID,
+                                            const WatcherCallerArgsPtr& args)
 {
     assert(_imp->renderWatcher);
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
     assert(args);
-    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>(args.get());
+    NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
     assert(thisArgs);
-    doDestroyNodeInternalEnd(false, thisArgs->autoReconnect);
+    doDestroyNodeInternalEnd(false, thisArgs ? thisArgs->autoReconnect : false);
     _imp->renderWatcher.reset();
 }
 
 void
-Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
+Node::doDestroyNodeInternalEnd(bool fromDest,
+                               bool autoReconnect)
 {
-
     ///Remove the node from the project
     if (!fromDest) {
         deactivate(NodesList(),
@@ -5988,16 +6006,19 @@ Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
     ///This will not remove from the disk cache if the project is closing
     removeAllImagesFromCache(false);
 
-    getApp()->recheckInvalidExpressions();
+    AppInstPtr app = getApp();
+    if (app) {
+        app->recheckInvalidExpressions();
+    }
 
     ///Remove the Python node
     deleteNodeVariableToPython( getFullyQualifiedName() );
 
     ///Disconnect all inputs
     /*int maxInputs = getMaxInputCount();
-     for (int i = 0; i < maxInputs; ++i) {
-     disconnectInput(i);
-     }*/
+       for (int i = 0; i < maxInputs; ++i) {
+       disconnectInput(i);
+       }*/
 
     ///Kill the effect
     _imp->effect->clearPluginMemoryChunks();
@@ -6014,9 +6035,7 @@ Node::doDestroyNodeInternalEnd(bool fromDest, bool autoReconnect)
             getGroup()->removeNode(thisShared);
         }
     }
-
-}
-
+} // Node::doDestroyNodeInternalEnd
 
 void
 Node::destroyNodeInternal(bool fromDest,
@@ -6040,23 +6059,21 @@ Node::destroyNodeInternal(bool fromDest,
         if (!fromDest) {
             NodeGroup* isGrp = dynamic_cast<NodeGroup*>( _imp->effect.get() );
             NodesList nodesToWatch;
-            nodesToWatch.push_back(shared_from_this());
+            nodesToWatch.push_back( shared_from_this() );
             if (isGrp) {
                 isGrp->getNodes_recursive(nodesToWatch, false);
             }
-            _imp->renderWatcher.reset(new NodeRenderWatcher(nodesToWatch));
-            QObject::connect(_imp->renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr)));
-            boost::shared_ptr<NodeDestroyNodeInternalArgs> args(new NodeDestroyNodeInternalArgs());
+            _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
+            QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
+            boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
             args->autoReconnect = autoReconnect;
             _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
-
         } else {
             // Well, we are in the destructor, we better have nothing left to render
             quitAnyProcessing_blocking(false);
             doDestroyNodeInternalEnd(true, false);
         }
-    } 
-
+    }
 } // Node::destroyNodeInternal
 
 void
@@ -6269,12 +6286,10 @@ Node::makePreviewImage(SequenceTime time,
         AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
-#ifdef QT_CUSTOM_THREADPOOL
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
             isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, thisNode->getEffectInstance() );
         }
-#endif
         ParallelRenderArgsSetter frameRenderArgs( time,
                                                   ViewIdx(0), //< preview only renders view 0 (left)
                                                   isRenderUserInteraction, //<isRenderUserInteraction
@@ -6591,7 +6606,6 @@ Node::aborted() const
     return _imp->effect->aborted();
 }
 
-
 bool
 Node::message(MessageTypeEnum type,
               const std::string & content) const
@@ -6744,7 +6758,12 @@ Node::clearPersistentMessageInternal()
 void
 Node::clearPersistentMessage(bool recurse)
 {
-    if ( getApp()->isBackground() ) {
+    AppInstPtr app = getApp();
+
+    if (!app) {
+        return;
+    }
+    if ( app->isBackground() ) {
         return;
     }
     if (recurse) {
@@ -7314,7 +7333,8 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb, bool isInputA)
+Node::onInputChanged(int inputNb,
+                     bool isInputA)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -7349,12 +7369,10 @@ Node::onInputChanged(int inputNb, bool isInputA)
         AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
-#ifdef QT_CUSTOM_THREADPOOL
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
         if (isAbortable) {
             isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
         }
-#endif
         ParallelRenderArgsSetter frameRenderArgs( time,
                                                   ViewIdx(0),
                                                   isRenderUserInteraction,
@@ -9036,7 +9054,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
     ///Wait for the main-thread to be done dequeuing the connect actions queue
     if ( QThread::currentThread() != qApp->thread() ) {
         QMutexLocker k(&_imp->nodeIsDequeuingMutex);
-        while (_imp->nodeIsDequeuing && !aborted()) {
+        while ( _imp->nodeIsDequeuing && !aborted() ) {
             _imp->nodeIsDequeuingCond.wait(&_imp->nodeIsDequeuingMutex);
         }
     }
@@ -9049,7 +9067,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 
 
     ///mark this
-    markedNodes.push_back(shared_from_this());
+    markedNodes.push_back( shared_from_this() );
 
     ///Call recursively
 
@@ -9063,15 +9081,15 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 }
 
 RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
-: node(n)
-, nodes()
+    : node(n)
+    , nodes()
 {
     n->setNodeIsRendering(nodes);
 }
 
 RenderingFlagSetter::~RenderingFlagSetter()
 {
-    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+    for (std::list<NodeWPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodePtr n = it->lock();
         if (!n) {
             continue;
@@ -9079,7 +9097,6 @@ RenderingFlagSetter::~RenderingFlagSetter()
         n->unsetNodeIsRendering();
     }
 }
-
 
 void
 Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
@@ -9090,7 +9107,6 @@ Node::setNodeIsRendering(std::list<NodeWPtr>& nodes)
 void
 Node::unsetNodeIsRendering()
 {
-
     bool mustDequeue;
     {
         int nodeIsRendering;
@@ -9163,7 +9179,7 @@ Node::dequeueActions()
         _imp->outputs = _imp->guiOutputs;
     }
 
-    if (!inputChanges.empty()) {
+    if ( !inputChanges.empty() ) {
         beginInputEdition();
         hasChanged = true;
         for (std::set<int>::iterator it = inputChanges.begin(); it != inputChanges.end(); ++it) {
@@ -9898,6 +9914,10 @@ void
 Node::setNodeVariableToPython(const std::string& oldName,
                               const std::string& newName)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     if (!_imp->isPartOfProject) {
         return;
     }
@@ -9916,10 +9936,19 @@ Node::setNodeVariableToPython(const std::string& oldName,
 void
 Node::deleteNodeVariableToPython(const std::string& nodeName)
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     if ( !_imp->isPartOfProject || nodeName.empty() ) {
         return;
     }
     if ( getParentMultiInstance() ) {
+        return;
+    }
+
+    AppInstPtr app = getApp();
+    if (!app) {
         return;
     }
     QString appID = QString::fromUtf8( getApp()->getAppIDString().c_str() );
@@ -10031,6 +10060,10 @@ Node::removeParameterFromPython(const std::string& parameterName)
 void
 Node::declareAllPythonAttributes()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     try {
         declareNodeVariableToPython( getFullyQualifiedName() );
         declarePythonFields();
@@ -10549,6 +10582,9 @@ maskChannelEqualityFunctor(const std::string& a,
     MergeMaskChannelData* mergeData = dynamic_cast<MergeMaskChannelData*>(data);
 
     assert(mergeData);
+    if (!mergeData) {
+        return false;
+    }
     std::string aNode, aLayer, aChannel;
     bool aIsColor;
     parseMaskChannelString(a, &aNode, &aLayer, &aChannel, &aIsColor);
@@ -10593,6 +10629,9 @@ layerEqualityFunctor(const std::string& a,
     MergeLayerData* mergeData = dynamic_cast<MergeLayerData*>(data);
 
     assert(mergeData);
+    if (!mergeData) {
+        return false;
+    }
     bool aIsColor;
     parseLayerString(a, &aIsColor);
     if (!mergeData->dataSet) {
@@ -10993,7 +11032,7 @@ Node::getHostMixingValue(double time,
 
 //////////////////////////////////
 
-InspectorNode::InspectorNode(AppInstance* app,
+InspectorNode::InspectorNode(const AppInstPtr& app,
                              const boost::shared_ptr<NodeCollection>& group,
                              Plugin* plugin)
     : Node(app, group, plugin)
@@ -11001,7 +11040,6 @@ InspectorNode::InspectorNode(AppInstance* app,
     for (int i = 0; i < 2; ++i) {
         _activeInputs[i] = -1;
     }
-
 }
 
 InspectorNode::~InspectorNode()
@@ -11061,12 +11099,13 @@ InspectorNode::connectInput(const NodePtr& input,
 }
 
 void
-InspectorNode::setActiveInputAndRefresh(int inputNb,bool isASide)
+InspectorNode::setActiveInputAndRefresh(int inputNb,
+                                        bool isASide)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
     int maxInputs = getMaxInputCount();
-    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || (!getInput(inputNb)) ) {
+    if ( ( inputNb > (maxInputs - 1) ) || (inputNb < 0) || ( !getInput(inputNb) ) ) {
         return;
     }
 
@@ -11092,7 +11131,8 @@ InspectorNode::setActiveInputAndRefresh(int inputNb,bool isASide)
 }
 
 void
-InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
+InspectorNode::refreshActiveInputs(int inputNbChanged,
+                                   bool isASide)
 {
     assert( QThread::currentThread() == qApp->thread() );
     NodePtr inputNode = getRealInput(inputNbChanged);
@@ -11106,8 +11146,7 @@ InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
                 _activeInputs[1] = -1;
             }
         } else {
-            if (!isASide && _activeInputs[0] != -1) {
-
+            if ( !isASide && (_activeInputs[0] != -1) ) {
                 ViewerInstance* isViewer = isEffectViewer();
                 if (isViewer) {
                     OpenGLViewerI* viewerUI = isViewer->getUiContext();
@@ -11130,7 +11169,6 @@ InspectorNode::refreshActiveInputs(int inputNbChanged,bool isASide)
     Q_EMIT activeInputsChanged();
     Q_EMIT refreshOptionalState();
 }
-
 
 int
 InspectorNode::getPreferredInputInternal(bool connected) const
@@ -11221,7 +11259,6 @@ InspectorNode::setInputB(int inputNb)
     }
     Q_EMIT refreshOptionalState();
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

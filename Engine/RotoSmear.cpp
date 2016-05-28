@@ -28,6 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/algorithm/clamp.hpp>
+
 #include <cairo/cairo.h>
 
 
@@ -322,10 +324,10 @@ RotoSmear::render(const RenderActionArgs& args)
                 continue;
             }
 
-            //First copy the source image if this is the first stroke tick
+            // First copy the source image if this is the first stroke tick
 
             if ( (isFirstStrokeTick || !duringPainting) && !bgInitialized && (strokeIndex == 0) ) {
-                //Make sure all areas are black and transparant
+                // Make sure all areas are black and transparent
                 plane->second->fillZero(args.roi);
                 plane->second->pasteFrom(*bgImg, args.roi, false);
                 bgInitialized = true;
@@ -340,7 +342,7 @@ RotoSmear::render(const RenderActionArgs& args)
 
 
             if (isFirstStrokeTick || !duringPainting) {
-                //This is the very first dot we render
+                // This is the very first dot we render
                 prev = *it;
                 ++it;
                 renderSmearDot(maskData, maskStride, maskWidth, maskHeight, prev.first, it->first, brushSizePixel, nComps, plane->second);
@@ -401,8 +403,8 @@ RotoSmear::render(const RenderActionArgs& args)
                 Point v;
                 v.x = renderPoint.first.x - prev.first.x;
                 v.y = renderPoint.first.y - prev.first.y;
-                double vx = std::min(std::max( 0., std::abs(v.x / halfSize) ), .7);
-                double vy = std::min(std::max( 0., std::abs(v.y / halfSize) ), .7);
+                double vx = boost::algorithm::clamp(std::abs(v.x / halfSize), 0., .7);
+                double vy = boost::algorithm::clamp(std::abs(v.y / halfSize), 0., .7);
 
                 prevPoint.x = prev.first.x + vx * v.x;
                 prevPoint.y = prev.first.y + vy * v.y;

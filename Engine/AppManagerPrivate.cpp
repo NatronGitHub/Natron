@@ -85,7 +85,7 @@ AppManagerPrivate::AppManagerPrivate()
     , _viewerCache()
     , diskCachesLocationMutex()
     , diskCachesLocation()
-    , _backgroundIPC(0)
+    , _backgroundIPC()
     , _loaded(false)
     , _binaryPath()
     , _nodesGlobalMemoryUse(0)
@@ -198,13 +198,14 @@ AppManagerPrivate::createBreakpadHandler(const QString& breakpadPipePath,
 void
 AppManagerPrivate::initProcessInputChannel(const QString & mainProcessServerName)
 {
-    _backgroundIPC = new ProcessInputChannel(mainProcessServerName);
+    _backgroundIPC.reset( new ProcessInputChannel(mainProcessServerName) );
 }
 
 void
 AppManagerPrivate::loadBuiltinFormats()
 {
-    /*initializing list of all Formats available*/
+    // Initializing list of all Formats available by default in a project, the user may add formats to this list via Python in the init.py script, see
+    // example here: http://natron.readthedocs.io/en/workshop/startupscripts.html#init-py
     std::vector<std::string> formatNames;
     struct BuiltinFormat
     {
@@ -235,8 +236,7 @@ AppManagerPrivate::loadBuiltinFormats()
     };
 
     for (BuiltinFormat* f = &formats[0]; f->name != NULL; ++f) {
-        Format* _frmt = new Format(0, 0, f->w, f->h, f->name, f->par);
-        assert(_frmt);
+        Format _frmt(0, 0, f->w, f->h, f->name, f->par);
         _formats.push_back(_frmt);
     }
 } // loadBuiltinFormats
@@ -333,6 +333,7 @@ restoreCache(AppManagerPrivate* p,
             }
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
+            p->cleanUpCacheDiskStructure( cache->getCachePath() );
 
             return;
         }

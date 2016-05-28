@@ -74,7 +74,6 @@ SOURCES += \
     ActionShortcuts.cpp \
     AddKnobDialog.cpp \
     AnimatedCheckBox.cpp \
-    AnimationButton.cpp \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
@@ -184,7 +183,6 @@ SOURCES += \
     PythonPanels.cpp \
     QtDecoder.cpp \
     QtEncoder.cpp \
-    RenderingProgressDialog.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
@@ -232,7 +230,6 @@ HEADERS += \
     ActionShortcuts.h \
     AddKnobDialog.h \
     AnimatedCheckBox.h \
-    AnimationButton.h \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \
@@ -329,7 +326,6 @@ HEADERS += \
     QtDecoder.h \
     QtEncoder.h \
     RegisteredTabs.h \
-    RenderingProgressDialog.h \
     RenderStatsDialog.h \
     ResizableMessageBox.h \
     RightClickableWidget.h \

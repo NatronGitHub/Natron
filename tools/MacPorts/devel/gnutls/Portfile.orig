@@ -1,11 +1,11 @@
 # -*- Mode: Tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:et:sw=4:ts=4:sts=4
-# $Id: Portfile 148228 2016-04-30 17:55:10Z mps@macports.org $
+# $Id: Portfile 148866 2016-05-20 18:09:31Z mps@macports.org $
 
 PortSystem      1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.4.11
+version         3.4.12
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -25,8 +25,8 @@ master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
                 http://archive.hmug.org/src/gnutls/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  1d6ac4c2dbc724b5f3e165a4ca6d8bdf023911cf \
-                sha256  70ef9c9f95822d363036c6e6b5479750e5b7fc34f50e750c3464a98ec65a9ab8
+checksums       rmd160  fe435472eee2c0115b1831f945c2d9919b79b31a \
+                sha256  e3370a3bf60f2ca4a6204461ea99e7d7047ee46f96bc2fb7c63f103312d3c9c7
 
 use_xz          yes
 
@@ -41,6 +41,8 @@ depends_lib     port:gmp \
                 path:share/curl/curl-ca-bundle.crt:curl-ca-bundle \
                 port:zlib
 
+patchfiles      patch-tests-pkcs11-pkcs11-mock.c.diff
+
 post-patch {
     # Remove comments which confuse at least Leopard's assembler.
     reinplace {/^#/d} {*}[glob ${worksrcpath}/lib/accelerated/x86/macosx/*.s]
@@ -54,6 +56,7 @@ configure.args  --disable-guile \
                 --disable-silent-rules \
                 --disable-libdane \
                 --enable-local-libopts \
+                --enable-openssl-compatibility \
                 --with-p11-kit \
                 --with-system-priority-file="${prefix}/etc/gnutls/default-priorities" \
                 --with-default-trust-store-file="${prefix}/share/curl/curl-ca-bundle.crt" \

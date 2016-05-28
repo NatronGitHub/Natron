@@ -108,9 +108,10 @@ public:
     mutable QMutex projectClosingMutex;
     bool projectClosing;
     boost::shared_ptr<TLSHolder<Project::ProjectTLSData> > tlsData;
-    
+
     // only used on the main-thread
-    struct RenderWatcher {
+    struct RenderWatcher
+    {
         boost::shared_ptr<NodeRenderWatcher> watcher;
         AfterQuitProcessingI* receiver;
     };

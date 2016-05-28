@@ -32,6 +32,7 @@
 #include <stdexcept>
 
 #include <boost/scoped_ptr.hpp>
+#include <boost/algorithm/clamp.hpp>
 
 #include <QtCore/QMetaType>
 #include <QtCore/QMutex>
@@ -41,7 +42,6 @@
 #include <QtCore/QThreadPool>
 #include <QtCore/QDebug>
 #include <QtCore/QTextStream>
-#include <QtCore/QThreadPool>
 #include <QtCore/QRunnable>
 
 #include "Global/MemoryInfo.h"
@@ -125,7 +125,6 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 static MetaTypesRegistration registration;
-
 struct RenderThread
 {
     RenderThreadTask* thread;
@@ -138,23 +137,33 @@ typedef std::list<RenderThread> RenderThreads;
 struct ProducedFrame
 {
     BufferableObjectList frames;
-    boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request;
+    U64 age;
     RenderStatsPtr stats;
 };
 
-class OutputSchedulerThreadExecMTArgs : public GenericThreadExecOnMainThreadArgs
+struct ProducedFrameCompareAgeLess
 {
+    bool operator() (const ProducedFrame& lhs,
+                     const ProducedFrame& rhs) const
+    {
+        return lhs.age < rhs.age;
+    }
+};
 
+typedef std::set<ProducedFrame, ProducedFrameCompareAgeLess> ProducedFrameSet;
+
+class OutputSchedulerThreadExecMTArgs
+    : public GenericThreadExecOnMainThreadArgs
+{
 public:
 
     BufferedFrames frames;
 
     OutputSchedulerThreadExecMTArgs()
-    : GenericThreadExecOnMainThreadArgs()
+        : GenericThreadExecOnMainThreadArgs()
     {}
 
     virtual ~OutputSchedulerThreadExecMTArgs() {}
-
 };
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
@@ -412,7 +421,6 @@ struct OutputSchedulerThreadPrivate
                                      int* nextFrame);
 
 
-
     void waitForRenderThreadsToBeDone()
     {
         assert( !renderThreadsMutex.tryLock() );
@@ -523,7 +531,6 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
     : GenericSchedulerThread()
     , _imp( new OutputSchedulerThreadPrivate(engine, effect, mode) )
 {
-
     QObject::connect( _imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)) );
 
 
@@ -531,9 +538,7 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
     QObject::connect( &_imp->threadSpawnsTimer, SIGNAL(timeout()), this, SLOT(onThreadSpawnsTimerTriggered()) );
 #endif
 
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("Scheduler thread");
-#endif
 }
 
 OutputSchedulerThread::~OutputSchedulerThread()
@@ -677,8 +682,6 @@ OutputSchedulerThread::pushFramesToRenderInternal(int startingFrame,
 
     RenderDirectionEnum direction;
     int firstFrame, lastFrame, frameStep;
-
-
     boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->runArgs.lock();
     assert(runArgs);
     direction = runArgs->pushTimelineDirection;
@@ -724,6 +727,7 @@ OutputSchedulerThread::pushAllFrameRange()
     RenderDirectionEnum direction;
     int firstFrame, lastFrame, frameStep;
     boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->runArgs.lock();
+
     assert(runArgs);
     direction = runArgs->pushTimelineDirection;
     firstFrame = runArgs->firstFrame;
@@ -757,6 +761,7 @@ OutputSchedulerThread::pushFramesToRender(int nThreads)
     RenderDirectionEnum direction;
     int firstFrame, lastFrame, frameStep;
     boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->runArgs.lock();
+
     assert(runArgs);
     direction = runArgs->pushTimelineDirection;
     firstFrame = runArgs->firstFrame;
@@ -915,7 +920,7 @@ OutputSchedulerThread::startTasks(int startingFrame)
 #else
     //Start one more thread until we use all the thread pool.
     //We leave some CPU available so that the multi-thread suite can take advantage of it
-    nFrames = std::max(std::min(maxThreads - activeThreads, 2), 1);
+    nFrames = boost::algorithm::clamp(maxThreads - activeThreads, 1, 1);
 #endif
 
 
@@ -1007,7 +1012,6 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     }
 }
 
-
 void
 OutputSchedulerThread::startRender()
 {
@@ -1024,8 +1028,7 @@ OutputSchedulerThread::startRender()
     int firstFrame, lastFrame;
     int frameStep;
     bool forward;
-
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args= _imp->runArgs.lock();
+    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = _imp->runArgs.lock();
     ///Copy the last requested run args
 
     firstFrame = args->firstFrame;
@@ -1160,7 +1163,7 @@ OutputSchedulerThread::stopRender()
 
         RenderScale scaleOne(1.);
         ignore_result( effect->endSequenceRender_public( firstFrame, lastFrame,
-                                                        1,
+                                                         1,
                                                          !appPTR->isBackground(),
                                                          scaleOne, true,
                                                          !appPTR->isBackground(),
@@ -1169,19 +1172,15 @@ OutputSchedulerThread::stopRender()
     }
 
 
-
-
-
     bool wasAborted = isBeingAborted();
-
 
 
     ///Notify everyone that the render is finished
     _imp->engine->s_renderFinished(wasAborted ? 1 : 0);
 
     onRenderStopped(wasAborted);
-    
-    
+
+
     {
         QMutexLocker k(&_imp->bufMutex);
         _imp->buf.clear();
@@ -1193,22 +1192,21 @@ OutputSchedulerThread::stopRender()
 GenericSchedulerThread::ThreadStateEnum
 OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 {
-
     boost::shared_ptr<OutputSchedulerThreadStartArgs> args = boost::dynamic_pointer_cast<OutputSchedulerThreadStartArgs>(inArgs);
+
     assert(args);
     _imp->runArgs = args;
 
     ThreadStateEnum state = eThreadStateActive;
-
     int expectedTimeToRenderPreviousIteration = INT_MIN;
 
     // This is the number of time this thread was woken up by a render thread because a frame was available for processing,
     // but this is not the frame this thread expects to render. If it reaches a certain amount, we detected a stall and abort.
     int nbIterationsWithoutProcessing = 0;
-    
+
     startRender();
-    
-    for (;;) {
+
+    for (;; ) {
         ///When set to true, we don't sleep in the bufEmptyCondition but in the startCondition instead, indicating
         ///we finished a render
         bool renderFinished = false;
@@ -1229,9 +1227,8 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 
 
         while (!bufferEmpty) {
-
             state = resolveState();
-            if (state == eThreadStateAborted || state == eThreadStateStopped) {
+            if ( (state == eThreadStateAborted) || (state == eThreadStateStopped) ) {
                 ///Do not wait in the buf wait condition and go directly into the stopEngine()
                 renderFinished = true;
                 break;
@@ -1253,7 +1250,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
                 if (nbIterationsWithoutProcessing >= NATRON_SCHEDULER_ABORT_AFTER_X_UNSUCCESSFUL_ITERATIONS) {
 #ifdef TRACE_SCHEDULER
                     qDebug() << "Scheduler Thread: Detected stall after " << NATRON_SCHEDULER_ABORT_AFTER_X_UNSUCCESSFUL_ITERATIONS
-                    << "unsuccessful iterations";
+                             << "unsuccessful iterations";
 #endif
                     renderFinished = true;
                     break;
@@ -1261,7 +1258,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             } else {
                 nbIterationsWithoutProcessing = 0;
             }
-            boost::shared_ptr<OutputSchedulerThreadExecMTArgs> framesToRender(new OutputSchedulerThreadExecMTArgs());
+            boost::shared_ptr<OutputSchedulerThreadExecMTArgs> framesToRender( new OutputSchedulerThreadExecMTArgs() );
             {
                 QMutexLocker l(&_imp->bufMutex);
                 _imp->getFromBufferAndErase(expectedTimeToRender, framesToRender->frames);
@@ -1300,7 +1297,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
                 timelineDirection = args->processTimelineDirection;
                 frameStep = args->frameStep;
 
-                
+
                 ///////////
                 ///Determine if we finished rendering or if we should just increment/decrement the timeline
                 ///or just loop/bounce
@@ -1363,7 +1360,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 
 
             state = resolveState();
-            if (state == eThreadStateAborted || state == eThreadStateStopped) {
+            if ( (state == eThreadStateAborted) || (state == eThreadStateStopped) ) {
                 // Do not wait in the buf wait condition and go directly into the stopEngine()
                 renderFinished = true;
                 break;
@@ -1373,14 +1370,14 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
                 processFrame(framesToRender->frames);
             } else {
                 requestExecutionOnMainThread(framesToRender);
-            } 
+            }
 
             expectedTimeToRenderPreviousIteration = expectedTimeToRender;
 
 #ifdef TRACE_SCHEDULER
             QString pushDirectionStr = newDirection == eRenderDirectionForward ? QLatin1String("Forward") : QLatin1String("Backward");
             qDebug() << "Scheduler Thread: Frame " << expectedTimeToRender << " processed, setting expectedTimeToRender to " << nextFrameToRender
-            << ", new process direction is " << pushDirectionStr;
+                     << ", new process direction is " << pushDirectionStr;
 #endif
             if (!renderFinished) {
                 ///Timeline might have changed if another thread moved the playhead
@@ -1415,7 +1412,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             state = resolveState();
         }
 
-        if (state == eThreadStateAborted || state == eThreadStateStopped) {
+        if ( (state == eThreadStateAborted) || (state == eThreadStateStopped) ) {
             renderFinished = true;
         }
 
@@ -1425,13 +1422,16 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             // Wait here for more frames to be rendered, we will be woken up once appendToBuffer(...) is called
             _imp->bufEmptyCondition.wait(&_imp->bufMutex);
         } else {
-            //Move the timeline to the last rendered frame to keep it in sync with what is displayed
-            timelineGoTo( getLastRenderedTime() );
+            if ( !_imp->engine->isPlaybackAutoRestartEnabled() ) {
+                //Move the timeline to the last rendered frame to keep it in sync with what is displayed
+                timelineGoTo( getLastRenderedTime() );
+            }
             break;
         }
     } // for (;;)
 
     stopRender();
+
     return state;
 } // OutputSchedulerThread::threadLoopOnce
 
@@ -1442,7 +1442,6 @@ OutputSchedulerThread::onAbortRequested()
     ///This function (abortRendering) was probably called from a user event that was posted earlier in the
     ///event-loop, we just flag that the next event that will process the frame should NOT process it by
     ///reseting the processRunning flag
-#ifdef QT_CUSTOM_THREADPOOL
     // Flag directly all threads that they are aborted, this enables each thread to have a shorter code-path
     // when checking for abortion and will generally abort faster
     {
@@ -1460,7 +1459,6 @@ OutputSchedulerThread::onAbortRequested()
             }
         }
     }
-#endif
 
     ///If the scheduler is asleep waiting for the buffer to be filling up, we post a fake request
     ///that will not be processed anyway because the first thing it does is checking for abort
@@ -1473,7 +1471,8 @@ OutputSchedulerThread::onAbortRequested()
 void
 OutputSchedulerThread::executeOnMainThread(const ExecOnMTArgsPtr& inArgs)
 {
-    OutputSchedulerThreadExecMTArgs* args = dynamic_cast<OutputSchedulerThreadExecMTArgs*>(inArgs.get());
+    OutputSchedulerThreadExecMTArgs* args = dynamic_cast<OutputSchedulerThreadExecMTArgs*>( inArgs.get() );
+
     assert(args);
     processFrame(args->frames);
 }
@@ -1552,8 +1551,6 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 
 
     bool isBackground = appPTR->isBackground();
-
-
     boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->runArgs.lock();
     assert(runArgs);
 
@@ -1599,14 +1596,12 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         }
         //renderingIsFinished = _imp->renderFinished;
     } else {
-
         nbTotalFrames = std::floor( (double)(runArgs->lastFrame - runArgs->firstFrame + 1) / runArgs->frameStep );
         if (runArgs->processTimelineDirection == eRenderDirectionForward) {
             nbFramesRendered = (frame - runArgs->firstFrame) / runArgs->frameStep;
         } else {
             nbFramesRendered = (runArgs->lastFrame - frame) / runArgs->frameStep;
         }
-
     } // if (policy == eSchedulingPolicyFFA) {
 
     double percentage = 0.;
@@ -1774,7 +1769,6 @@ OutputSchedulerThread::appendToBuffer(double time,
     }
 }
 
-
 void
 OutputSchedulerThread::setDesiredFPS(double d)
 {
@@ -1802,7 +1796,7 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
         timelineGoTo(lastFrame);
     }
 
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args(new OutputSchedulerThreadStartArgs(isBlocking, enableRenderStats, firstFrame, lastFrame, frameStep, viewsToRender, direction));
+    boost::shared_ptr<OutputSchedulerThreadStartArgs> args( new OutputSchedulerThreadStartArgs(isBlocking, enableRenderStats, firstFrame, lastFrame, frameStep, viewsToRender, direction) );
 
     {
         QMutexLocker k(&_imp->renderFinishedMutex);
@@ -1813,30 +1807,28 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
     startTask(args);
 }
 
-
-
 void
 OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
                                               const std::vector<ViewIdx>& viewsToRender,
                                               RenderDirectionEnum timelineDirection)
 {
-
     int firstFrame, lastFrame;
+
     getFrameRangeToRender(firstFrame, lastFrame);
 
     ///Make sure current frame is in the frame range
     int currentTime = timelineGetTime();
     OutputSchedulerThreadPrivate::getNearestInSequence(timelineDirection, currentTime, firstFrame, lastFrame, &currentTime);
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args(new OutputSchedulerThreadStartArgs(false, enableRenderStats, firstFrame, lastFrame, 1, viewsToRender, timelineDirection));
+    boost::shared_ptr<OutputSchedulerThreadStartArgs> args( new OutputSchedulerThreadStartArgs(false, enableRenderStats, firstFrame, lastFrame, 1, viewsToRender, timelineDirection) );
     startTask(args);
 }
-
 
 void
 OutputSchedulerThread::notifyRenderFailure(const std::string& errorMessage)
 {
     ///Abort all ongoing rendering
     boost::shared_ptr<OutputSchedulerThreadStartArgs> args = _imp->runArgs.lock();
+
     assert(args);
 
 
@@ -1849,7 +1841,6 @@ OutputSchedulerThread::notifyRenderFailure(const std::string& errorMessage)
         waitForAbortToComplete_enforce_blocking();
     }
 }
-
 
 boost::shared_ptr<OutputSchedulerThreadStartArgs>
 OutputSchedulerThread::getCurrentRunArgs() const
@@ -1990,14 +1981,10 @@ struct RenderThreadTaskPrivate
 RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
                                    OutputSchedulerThread* scheduler)
     : QThread()
-#ifdef QT_CUSTOM_THREADPOOL
     , AbortableThread(this)
-#endif
     , _imp( new RenderThreadTaskPrivate(output, scheduler) )
 {
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("Parallel render thread");
-#endif
 }
 
 #else
@@ -2161,9 +2148,7 @@ private:
             return;
         }
 
-#ifdef QT_CUSTOM_THREADPOOL
         AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-#endif
 
         ///Even if enableRenderStats is false, we at least profile the time spent rendering the frame when rendering with a Write node.
         ///Though we don't enable render stats for sequential renders (e.g: WriteFFMPEG) since this is 1 file.
@@ -2279,11 +2264,9 @@ private:
 
 
                 AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
-#ifdef QT_CUSTOM_THREADPOOL
                 if (isAbortableThread) {
                     isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
                 }
-#endif
 
                 ParallelRenderArgsSetter frameRenderArgs(time,
                                                          viewsToRender[view],
@@ -2399,9 +2382,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
 
-#ifdef QT_CUSTOM_THREADPOOL
         setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
-#endif
 
         ParallelRenderArgsSetter frameRenderArgs(it->time,
                                                  it->view,
@@ -2455,6 +2436,7 @@ void
 DefaultScheduler::timelineStepOne(RenderDirectionEnum direction)
 {
     QMutexLocker k(&_currentTimeMutex);
+
     if (direction == eRenderDirectionForward) {
         ++_currentTime;
     } else {
@@ -2466,6 +2448,7 @@ void
 DefaultScheduler::timelineGoTo(int time)
 {
     QMutexLocker k(&_currentTimeMutex);
+
     _currentTime =  time;
 }
 
@@ -2473,6 +2456,7 @@ int
 DefaultScheduler::timelineGetTime() const
 {
     QMutexLocker k(&_currentTimeMutex);
+
     return _currentTime;
 }
 
@@ -2481,6 +2465,7 @@ DefaultScheduler::getFrameRangeToRender(int& first,
                                         int& last) const
 {
     boost::shared_ptr<OutputSchedulerThreadStartArgs> args = getCurrentRunArgs();
+
     first = args->firstFrame;
     last = args->lastFrame;
 }
@@ -2518,9 +2503,6 @@ DefaultScheduler::aboutToStartRender()
             _currentTime  = args->lastFrame;
         }
     }
-
-
-
     bool isBackGround = appPTR->isBackground();
 
     if (!isBackGround) {
@@ -2919,7 +2901,6 @@ struct RenderEnginePrivate
     //If true then a current frame render can start playback, protected by abortedRequestedMutex
     bool canAutoRestartPlayback;
     QMutex canAutoRestartPlaybackMutex; // protects abortRequested
-
     boost::weak_ptr<OutputEffectInstance> output;
     mutable QMutex pbModeMutex;
     PlaybackModeEnum pbMode;
@@ -2927,7 +2908,6 @@ struct RenderEnginePrivate
 
     // Only used on the main-thread
     boost::scoped_ptr<RenderEngineWatcher> engineWatcher;
-
     struct RefreshRequest
     {
         bool enableStats;
@@ -3060,8 +3040,9 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
             _imp->scheduler->abortThreadedTask();
         }
         boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->scheduler->getCurrentRunArgs();
-        if ((working || isPlaybackAutoRestartEnabled()) && runArgs) {
+        if ( ( working || isPlaybackAutoRestartEnabled() ) && runArgs ) {
             _imp->scheduler->renderFromCurrentFrame( enableRenderStats, runArgs->viewsToRender,  runArgs->pushTimelineDirection);
+
             return;
         }
     }
@@ -3097,14 +3078,15 @@ void
 RenderEngine::setPlaybackAutoRestartEnabled(bool enabled)
 {
     QMutexLocker k(&_imp->canAutoRestartPlaybackMutex);
+
     _imp->canAutoRestartPlayback = enabled;
 }
-
 
 bool
 RenderEngine::isPlaybackAutoRestartEnabled() const
 {
     QMutexLocker k(&_imp->canAutoRestartPlaybackMutex);
+
     return _imp->canAutoRestartPlayback;
 }
 
@@ -3130,16 +3112,15 @@ RenderEngine::waitForEngineToQuit_not_main_thread()
     if (_imp->currentFrameScheduler) {
         _imp->currentFrameScheduler->waitForThreadToQuit_not_main_thread();
     }
-
 }
 
 void
 RenderEngine::waitForEngineToQuit_main_thread(bool allowRestart)
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->engineWatcher);
-    _imp->engineWatcher.reset(new RenderEngineWatcher(this));
-    QObject::connect(_imp->engineWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineQuitEmitted()));
+    _imp->engineWatcher.reset( new RenderEngineWatcher(this) );
+    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineQuitEmitted()) );
     _imp->engineWatcher->scheduleBlockingTask(allowRestart ? RenderEngineWatcher::eBlockingTaskWaitForQuitAllowRestart : RenderEngineWatcher::eBlockingTaskWaitForQuitDisallowRestart);
 }
 
@@ -3153,14 +3134,13 @@ RenderEngine::waitForEngineToQuit_enforce_blocking()
     if (_imp->currentFrameScheduler) {
         _imp->currentFrameScheduler->waitForThreadToQuit_enforce_blocking();
     }
-    
-
 }
 
 bool
-RenderEngine::abortRenderingInternal()
+RenderEngine::abortRenderingInternal( )
 {
     bool ret = false;
+
     if (_imp->currentFrameScheduler) {
         ret |= _imp->currentFrameScheduler->abortThreadedTask();
     }
@@ -3169,21 +3149,32 @@ RenderEngine::abortRenderingInternal()
         //If any playback active, abort it
         ret |= _imp->scheduler->abortThreadedTask();
     }
+
     return ret;
 }
 
 bool
 RenderEngine::abortRenderingNoRestart()
 {
-    setPlaybackAutoRestartEnabled(false);
-    return abortRenderingInternal();
+    if ( abortRenderingInternal() ) {
+        setPlaybackAutoRestartEnabled(false);
+
+        return true;
+    }
+
+    return false;
 }
 
 bool
 RenderEngine::abortRenderingAutoRestart()
 {
-    setPlaybackAutoRestartEnabled(isDoingSequentialRender());
-    return abortRenderingInternal();
+    if ( abortRenderingInternal() ) {
+        setPlaybackAutoRestartEnabled( isDoingSequentialRender() );
+
+        return true;
+    }
+
+    return false;
 }
 
 void
@@ -3207,8 +3198,6 @@ RenderEngine::waitForAbortToComplete_enforce_blocking()
     if (_imp->currentFrameScheduler) {
         _imp->currentFrameScheduler->waitForAbortToComplete_enforce_blocking();
     }
-
-    
 }
 
 void
@@ -3236,10 +3225,10 @@ RenderEngine::onWatcherEngineQuitEmitted()
 void
 RenderEngine::waitForAbortToComplete_main_thread()
 {
-    assert(QThread::currentThread() == qApp->thread());
+    assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->engineWatcher);
-    _imp->engineWatcher.reset(new RenderEngineWatcher(this));
-    QObject::connect(_imp->engineWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineAbortedEmitted()));
+    _imp->engineWatcher.reset( new RenderEngineWatcher(this) );
+    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineAbortedEmitted()) );
     _imp->engineWatcher->scheduleBlockingTask(RenderEngineWatcher::eBlockingTaskWaitForAbort);
 }
 
@@ -3291,7 +3280,6 @@ RenderEngine::isDoingSequentialRender() const
     return _imp->scheduler ? _imp->scheduler->isWorking() : false;
 }
 
-
 void
 RenderEngine::setPlaybackMode(int mode)
 {
@@ -3340,14 +3328,12 @@ ViewerRenderEngine::createScheduler(const boost::shared_ptr<OutputEffectInstance
     return new ViewerDisplayScheduler( this, boost::dynamic_pointer_cast<ViewerInstance>(effect) );
 }
 
-
-
-
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////
-class CurrentFrameFunctorArgs : public GenericThreadStartArgs
+class CurrentFrameFunctorArgs
+    : public GenericThreadStartArgs
 {
 public:
-    
+
     ViewIdx view;
     int time;
     RenderStatsPtr stats;
@@ -3420,9 +3406,9 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 {
     ViewerInstance* viewer;
     QThreadPool* threadPool;
-    QMutex producedQueueMutex;
-    std::list<ProducedFrame> producedQueue;
-    QWaitCondition producedQueueNotEmpty;
+    QMutex producedFramesMutex;
+    ProducedFrameSet producedFrames;
+    QWaitCondition producedFramesNotEmpty;
 
 
     /**
@@ -3434,15 +3420,19 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     QWaitCondition currentFrameRenderTasksCond;
     std::list<RenderCurrentFrameFunctorRunnable*> currentFrameRenderTasks;
 
+    // Used to attribute an age to each renderCurrentFrameRequest
+    U64 ageCounter;
+
     ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
         : viewer(viewer)
         , threadPool( QThreadPool::globalInstance() )
-        , producedQueueMutex()
-        , producedQueue()
-        , producedQueueNotEmpty()
+        , producedFramesMutex()
+        , producedFrames()
+        , producedFramesNotEmpty()
         , backupThread()
         , currentFrameRenderTasksCond()
         , currentFrameRenderTasks()
+        , ageCounter(0)
     {
     }
 
@@ -3479,19 +3469,18 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         }
     }
 
-
     void notifyFrameProduced(const BufferableObjectList& frames,
                              const RenderStatsPtr& stats,
-                             const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request)
+                             U64 age)
     {
-        QMutexLocker k(&producedQueueMutex);
+        QMutexLocker k(&producedFramesMutex);
         ProducedFrame p;
 
         p.frames = frames;
-        p.request = request;
+        p.age = age;
         p.stats = stats;
-        producedQueue.push_back(p);
-        producedQueueNotEmpty.wakeOne();
+        producedFrames.insert(p);
+        producedFramesNotEmpty.wakeOne();
     }
 
     void processProducedFrame(const RenderStatsPtr& stats, const BufferableObjectList& frames);
@@ -3557,7 +3546,7 @@ public:
                 }
             }
 #endif
-            _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request);
+            _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request->age);
         } else {
             assert( QThread::currentThread() == qApp->thread() );
             _args->scheduler->processProducedFrame(_args->stats, ret);
@@ -3572,9 +3561,8 @@ public:
 };
 
 
-
-
-class ViewerCurrentFrameRequestSchedulerExecOnMT : public GenericThreadExecOnMainThreadArgs
+class ViewerCurrentFrameRequestSchedulerExecOnMT
+    : public GenericThreadExecOnMainThreadArgs
 {
 public:
 
@@ -3582,14 +3570,12 @@ public:
     BufferableObjectList frames;
 
     ViewerCurrentFrameRequestSchedulerExecOnMT()
-    : GenericThreadExecOnMainThreadArgs()
+        : GenericThreadExecOnMainThreadArgs()
     {
-
     }
 
     virtual ~ViewerCurrentFrameRequestSchedulerExecOnMT()
     {
-        
     }
 };
 
@@ -3597,66 +3583,77 @@ ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerIns
     : GenericSchedulerThread()
     , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
 {
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("ViewerCurrentFrameRequestScheduler");
-#endif
 }
 
 ViewerCurrentFrameRequestScheduler::~ViewerCurrentFrameRequestScheduler()
 {
 }
 
+GenericSchedulerThread::TaskQueueBehaviorEnum
+ViewerCurrentFrameRequestScheduler::tasksQueueBehaviour() const
+{
+    return eTaskQueueBehaviorProcessInOrder;
+}
+
 GenericSchedulerThread::ThreadStateEnum
 ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 {
     ThreadStateEnum state = eThreadStateActive;
-
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> args = boost::dynamic_pointer_cast<ViewerCurrentFrameRequestSchedulerStartArgs>(inArgs);
+
     assert(args);
 
 
     ///Wait for the work to be done
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
     {
-        QMutexLocker k(&_imp->producedQueueMutex);
-        std::list<ProducedFrame>::iterator found = _imp->producedQueue.end();
-        for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it != _imp->producedQueue.end(); ++it) {
-            if (it->request == args) {
+        QMutexLocker k(&_imp->producedFramesMutex);
+        ProducedFrameSet::iterator found = _imp->producedFrames.end();
+        for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
+            if (it->age == args->age) {
                 found = it;
                 break;
             }
         }
 
-        while ( found == _imp->producedQueue.end() ) {
-
+        while ( found == _imp->producedFrames.end() ) {
             state = resolveState();
-            if (state == eThreadStateStopped || state == eThreadStateAborted) {
+            if ( (state == eThreadStateStopped) || (state == eThreadStateAborted) ) {
+                _imp->producedFrames.clear();
                 break;
             }
-            _imp->producedQueueNotEmpty.wait(&_imp->producedQueueMutex);
+            _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
 
-            for (std::list<ProducedFrame>::iterator it = _imp->producedQueue.begin(); it != _imp->producedQueue.end(); ++it) {
-                if (it->request == args) {
+            for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
+                if (it->age == args->age) {
                     found = it;
                     break;
                 }
             }
         }
-        
-        if ( found != _imp->producedQueue.end() ) {
-            
-            found->request.reset();
+
+        if ( found != _imp->producedFrames.end() ) {
             mtArgs->frames = found->frames;
             mtArgs->stats = found->stats;
-            _imp->producedQueue.erase(found);
+
+            // Erase from the produced frames all renders that are older that the age we want to render
+            // since they are no longer going to be used.
+            // Only do this if the render had frames it is not just a redraw
+            //if (!found->frames.empty()) {
+            //    ++found;
+            //    _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
+            //} else {
+            _imp->producedFrames.erase(found);
+            //}
         }
     } // QMutexLocker k(&_imp->producedQueueMutex);
-    
-    
+
+
     if (state == eThreadStateActive) {
         state = resolveState();
     }
-    if (state == eThreadStateStopped || state == eThreadStateAborted) {
+    if ( (state == eThreadStateStopped) || (state == eThreadStateAborted) ) {
         return state;
     }
 
@@ -3668,9 +3665,12 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 void
 ViewerCurrentFrameRequestScheduler::executeOnMainThread(const ExecOnMTArgsPtr& inArgs)
 {
-    ViewerCurrentFrameRequestSchedulerExecOnMT* args = dynamic_cast<ViewerCurrentFrameRequestSchedulerExecOnMT*>(inArgs.get());
+    ViewerCurrentFrameRequestSchedulerExecOnMT* args = dynamic_cast<ViewerCurrentFrameRequestSchedulerExecOnMT*>( inArgs.get() );
+
     assert(args);
-    _imp->processProducedFrame(args->stats, args->frames);
+    if (args) {
+        _imp->processProducedFrame(args->stats, args->frames);
+    }
 }
 
 void
@@ -3711,13 +3711,27 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested()
     //This function marks all active renders of the viewer as aborted (except the oldest one)
     //and each node actually check if the render has been aborted in EffectInstance::Implementation::aborted()
     _imp->viewer->markAllOnGoingRendersAsAborted();
+    _imp->backupThread.abortThreadedTask();
+}
 
+void
+ViewerCurrentFrameRequestScheduler::onQuitRequested(bool allowRestarts)
+{
+    _imp->backupThread.quitThread(allowRestarts);
+}
+
+void
+ViewerCurrentFrameRequestScheduler::onWaitForThreadToQuit()
+{
+    _imp->waitForRunnableTasks();
+    _imp->backupThread.waitForThreadToQuit_enforce_blocking();
 }
 
 void
 ViewerCurrentFrameRequestScheduler::onWaitForAbortCompleted()
 {
     _imp->waitForRunnableTasks();
+    _imp->backupThread.waitForAbortToComplete_enforce_blocking();
 }
 
 void
@@ -3725,7 +3739,7 @@ ViewerCurrentFrameRequestScheduler::notifyFrameProduced(const BufferableObjectLi
                                                         const RenderStatsPtr& stats,
                                                         const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request)
 {
-    _imp->notifyFrameProduced(frames, stats,  request);
+    _imp->notifyFrameProduced(frames, stats,  request->age);
 }
 
 void
@@ -3857,8 +3871,17 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
         RenderCurrentFrameFunctorRunnable task(functorArgs);
         task.run();
     } else {
+        // Identify this render request with an age
         boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request(new ViewerCurrentFrameRequestSchedulerStartArgs);
-        request->id = 0;
+        request->age = _imp->ageCounter;
+
+        // If we reached the max amount of age, reset to 0... should never happen anyway
+        if ( _imp->ageCounter >= std::numeric_limits<U64>::max() ) {
+            _imp->ageCounter = 0;
+        } else {
+            ++_imp->ageCounter;
+        }
+
         startTask(request);
         functorArgs->request = request;
 
@@ -3881,31 +3904,27 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     }
 } // ViewerCurrentFrameRequestScheduler::renderCurrentFrame
 
-
-
 ViewerCurrentFrameRequestRendererBackup::ViewerCurrentFrameRequestRendererBackup()
     : GenericSchedulerThread()
 {
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("ViewerCurrentFrameRequestRendererBackup");
-#endif
 }
 
 ViewerCurrentFrameRequestRendererBackup::~ViewerCurrentFrameRequestRendererBackup()
 {
 }
 
-
 GenericSchedulerThread::ThreadStateEnum
 ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 {
     boost::shared_ptr<CurrentFrameFunctorArgs> args = boost::dynamic_pointer_cast<CurrentFrameFunctorArgs>(inArgs);
+
     assert(args);
     RenderCurrentFrameFunctorRunnable task(args);
     task.run();
+
     return eThreadStateActive;
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

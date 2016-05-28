@@ -53,6 +53,13 @@ run-without-python {
     }
 }
 
+win32-g++ {
+    # on Mingw LD is extremely slow in  debug mode and can take hours. Optimizing the build seems to make it faster
+    CONFIG(debug, debug|release){
+        QMAKE_CXXFLAGS += -O -g
+    }
+}
+
 win32-msvc* {
     CONFIG(relwithdebinfo) {
         CONFIG += release
@@ -186,6 +193,10 @@ macx {
   LIBS += -framework CoreServices
 }
 
+CONFIG(debug) {
+    CONFIG += nopch
+}
+
 # CONFIG+=nopch disables precompiled headers
 !nopch {
   !macx|!universal {
@@ -257,7 +268,7 @@ win32-g++ {
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
     shiboken:  PKGCONFIG += shiboken-py2
-    PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+    #PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
     pyside:    PKGCONFIG += pyside-py2
     pyside:    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtCore
     pyside:    INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside-py2)/QtGui

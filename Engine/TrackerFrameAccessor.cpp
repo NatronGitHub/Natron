@@ -345,12 +345,10 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
     AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
-#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
     }
-#endif
     ParallelRenderArgsSetter frameRenderArgs( frame,
                                               ViewIdx(0), //<  view 0 (left)
                                               isRenderUserInteraction, //<isRenderUserInteraction

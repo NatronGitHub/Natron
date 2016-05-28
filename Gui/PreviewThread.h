@@ -28,7 +28,6 @@
 #include "Global/Macros.h"
 
 #include <QtCore/QThread>
-#include <QtCore/QThreadPool> // defines QT_CUSTOM_THREADPOOL (or not)
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -61,7 +60,6 @@ private:
     }
 
     virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    
     boost::scoped_ptr<PreviewThreadPrivate> _imp;
 };
 

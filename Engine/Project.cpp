@@ -52,7 +52,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTimer>
-#include <QtCore/QThreadPool>
 #include <QtCore/QThread>
 #include <QtCore/QDir>
 #include <QtCore/QTemporaryFile>
@@ -139,7 +138,7 @@ generateUserFriendlyNatronVersionName()
     return ret;
 }
 
-Project::Project(AppInstance* appInstance)
+Project::Project(const AppInstPtr& appInstance)
     : KnobHolder(appInstance)
     , NodeCollection(appInstance)
     , _imp( new ProjectPrivate(this) )
@@ -163,11 +162,11 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER;
 
 class LoadProjectSplashScreen_RAII
 {
-    AppInstance* app;
+    AppInstWPtr app;
 
 public:
 
-    LoadProjectSplashScreen_RAII(AppInstance* app,
+    LoadProjectSplashScreen_RAII(const AppInstPtr& app,
                                  const QString& filename)
         : app(app)
     {
@@ -178,8 +177,10 @@ public:
 
     ~LoadProjectSplashScreen_RAII()
     {
-        if (app) {
-            app->closeLoadPRojectSplashScreen();
+        AppInstPtr a = app.lock();
+
+        if (a) {
+            a->closeLoadPRojectSplashScreen();
         }
     }
 };
@@ -745,16 +746,16 @@ Project::initializeKnobs()
     _imp->formatKnob->setHintToolTip( tr("The project output format is what is used as canvas on the viewers.") );
     _imp->formatKnob->setName("outputFormat");
 
-    const std::vector<Format*> & appFormats = appPTR->getFormats();
+    const std::vector<Format> & appFormats = appPTR->getFormats();
     std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
-        Format* f = appFormats[i];
-        QString formatStr = ProjectPrivate::generateStringFromFormat(*f);
-        if ( (f->width() == 1920) && (f->height() == 1080) && (f->getPixelAspectRatio() == 1) ) {
+        const Format& f = appFormats[i];
+        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+        if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
             _imp->formatKnob->setDefaultValue(i, 0);
         }
         entries.push_back( formatStr.toStdString() );
-        _imp->builtinFormats.push_back(*f);
+        _imp->builtinFormats.push_back(f);
     }
     _imp->formatKnob->setAddNewLine(false);
 
@@ -1665,22 +1666,21 @@ Project::resetProject()
     }
 }
 
-class ResetWatcherArgs : public GenericWatcherCallerArgs
+class ResetWatcherArgs
+    : public GenericWatcherCallerArgs
 {
 public:
-    
+
     bool aboutToQuit;
-    
+
     ResetWatcherArgs()
-    : GenericWatcherCallerArgs()
-    , aboutToQuit(false)
+        : GenericWatcherCallerArgs()
+        , aboutToQuit(false)
     {
-        
     }
-    
+
     virtual ~ResetWatcherArgs()
     {
-        
     }
 };
 
@@ -1692,18 +1692,19 @@ Project::reset(bool aboutToQuit)
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = true;
     }
-    
-    boost::shared_ptr<ResetWatcherArgs> args(new ResetWatcherArgs());
-    args->aboutToQuit = aboutToQuit;
-    quitAnyProcessingForAllNodes(this, args);
 
+    boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+    args->aboutToQuit = aboutToQuit;
+    if ( !quitAnyProcessingForAllNodes(this, args) ) {
+        doResetEnd(aboutToQuit);
+    }
 } // Project::reset
 
 void
 Project::doResetEnd(bool aboutToQuit)
 {
     _imp->runOnProjectCloseCallback();
-    
+
     QString lockFilePath = getLockAbsoluteFilePath();
     QString projectPath = QString::fromUtf8( _imp->getProjectPath().c_str() );
     QString projectFilename = QString::fromUtf8( _imp->getProjectFilename().c_str() );
@@ -1719,10 +1720,10 @@ Project::doResetEnd(bool aboutToQuit)
             }
         }
     }
-    
-    
+
+
     clearNodes(!aboutToQuit);
-    
+
     if (!aboutToQuit) {
         {
             QMutexLocker l(&_imp->projectLock);
@@ -1735,51 +1736,57 @@ Project::doResetEnd(bool aboutToQuit)
             _imp->additionalFormats.clear();
         }
         getApp()->removeAllKeyframesIndicators();
-        
+
         Q_EMIT projectNameChanged(QString::fromUtf8(NATRON_PROJECT_UNTITLED), false);
         const KnobsVec & knobs = getKnobs();
-        
+
         beginChanges();
         for (U32 i = 0; i < knobs.size(); ++i) {
             for (int j = 0; j < knobs[i]->getDimension(); ++j) {
                 knobs[i]->resetToDefaultValue(j);
             }
         }
-        
-        
+
+
         onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), true);
-        
+
         endChanges(true);
     }
-    
+
     {
         QMutexLocker k(&_imp->projectClosingMutex);
         _imp->projectClosing = false;
     }
+} // Project::doResetEnd
 
-}
-
-void
-Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args)
+bool
+Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
+                                      const WatcherCallerArgsPtr& args)
 {
-    assert(QThread::currentThread() == qApp->thread());
-    
+    assert( QThread::currentThread() == qApp->thread() );
+
     NodesList nodesToWatch;
     getNodes_recursive(nodesToWatch, false);
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher(new NodeRenderWatcher(nodesToWatch));
-    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int, WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
+    if ( nodesToWatch.empty() ) {
+        return false;
+    }
+    boost::shared_ptr<NodeRenderWatcher> renderWatcher( new NodeRenderWatcher(nodesToWatch) );
+    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
     p.watcher = renderWatcher;
     _imp->renderWatchers.push_back(p);
     renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
 
+    return true;
 }
 
 void
-Project::onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args)
+Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
+                                                const WatcherCallerArgsPtr& args)
 {
-    NodeRenderWatcher* watcher = dynamic_cast<NodeRenderWatcher*>(sender());
+    NodeRenderWatcher* watcher = dynamic_cast<NodeRenderWatcher*>( sender() );
+
     assert(watcher);
     if (!watcher) {
         return;
@@ -1787,31 +1794,32 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerA
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
 
     std::list<ProjectPrivate::RenderWatcher>::iterator found = _imp->renderWatchers.end();
-    for (std::list<ProjectPrivate::RenderWatcher>::iterator it = _imp->renderWatchers.begin(); it!=_imp->renderWatchers.end(); ++it) {
+    for (std::list<ProjectPrivate::RenderWatcher>::iterator it = _imp->renderWatchers.begin(); it != _imp->renderWatchers.end(); ++it) {
         if (it->watcher.get() == watcher) {
             found = it;
             break;
         }
     }
-    assert(found != _imp->renderWatchers.end());
+    assert( found != _imp->renderWatchers.end() );
 
-    if (found != _imp->renderWatchers.end()) {
+    if ( found != _imp->renderWatchers.end() ) {
+        AfterQuitProcessingI* receiver = found->receiver;
+        assert(receiver);
+        // Erase before calling the callback, because the callback might destroy this object
         _imp->renderWatchers.erase(found);
-        found->receiver->afterQuitProcessingCallback(args);
+        receiver->afterQuitProcessingCallback(args);
     }
-
-    
 }
 
 void
 Project::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
 {
-    ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>(args.get());
+    ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>( args.get() );
+
     if (inArgs) {
         doResetEnd(inArgs->aboutToQuit);
     }
 }
-
 
 bool
 Project::isAutoSetProjectFormatEnabled() const
@@ -1845,9 +1853,9 @@ Project::setOrAddProjectFormat(const Format & frmt,
             _imp->autoSetProjectFormat = false;
             dispW = frmt;
 
-            Format* df = appPTR->findExistingFormat( dispW.width(), dispW.height(), dispW.getPixelAspectRatio() );
-            if (df) {
-                dispW.setName( df->getName() );
+            Format df = appPTR->findExistingFormat( dispW.width(), dispW.height(), dispW.getPixelAspectRatio() );
+            if ( !df.isNull() ) {
+                dispW.setName( df.getName() );
                 setProjectDefaultFormat(dispW);
             } else {
                 setProjectDefaultFormat(dispW);

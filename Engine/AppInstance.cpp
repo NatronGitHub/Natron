@@ -37,6 +37,7 @@
 #include <QtCore/QFileInfo>
 #include <QtCore/QEventLoop>
 #include <QtCore/QSettings>
+#include <QtNetwork/QNetworkReply>
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -162,7 +163,7 @@ public:
                        AppInstance* app)
 
         : _publicInterface(app)
-        , _currentProject( new Project(app) )
+        , _currentProject()
         , _appID(appID)
         , _projectCreatedWithLowerCaseIDs(false)
         , creatingGroupMutex()
@@ -196,17 +197,10 @@ AppInstance::AppInstance(int appID)
     : QObject()
     , _imp( new AppInstancePrivate(appID, this) )
 {
-    appPTR->registerAppInstance(this);
-    appPTR->setAsTopLevelInstance(appID);
-
-
-    ///initialize the knobs of the project before loading anything else.
-    _imp->_currentProject->initializeKnobsPublic();
 }
 
 AppInstance::~AppInstance()
 {
-    appPTR->removeInstance(_imp->_appID);
     _imp->_currentProject->clearNodes(false);
 }
 
@@ -546,7 +540,23 @@ void
 AppInstance::load(const CLArgs& cl,
                   bool makeEmptyInstance)
 {
-    declareCurrentAppVariable_Python();
+    // Initialize the knobs of the project before loading anything else.
+    assert(!_imp->_currentProject); // < This function may only be called once per AppInstance
+    _imp->_currentProject.reset( new Project( shared_from_this() ) );
+    _imp->_currentProject->initializeKnobsPublic();
+
+    loadInternal(cl, makeEmptyInstance);
+}
+
+void
+AppInstance::loadInternal(const CLArgs& cl,
+                          bool makeEmptyInstance)
+{
+    try {
+        declareCurrentAppVariable_Python();
+    } catch (const std::exception& e) {
+        throw std::runtime_error( e.what() );
+    }
 
     if (makeEmptyInstance) {
         return;
@@ -744,7 +754,7 @@ AppInstance::loadPythonScript(const QFileInfo& file)
 
         std::string output;
         FlagIncrementer flag(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        CreatingNodeTreeFlag_RAII createNodeTree(this);
+        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &err, &output) ) {
             if ( !err.empty() ) {
                 Dialogs::errorDialog(tr("Python").toStdString(), err);
@@ -839,7 +849,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
-        CreatingNodeTreeFlag_RAII createNodeTree(this);
+        CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
         NodePtr containerNode;
         if (!istoolsetScript) {
             CreateNodeArgs groupArgs(QString::fromUtf8(PLUGINID_NATRON_GROUP), reason, group);
@@ -1163,9 +1173,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 
     if (!useInspector) {
-        node.reset( new Node(this, args.group, plugin) );
+        node.reset( new Node(shared_from_this(), args.group, plugin) );
     } else {
-        node.reset( new InspectorNode(this, args.group, plugin) );
+        node.reset( new InspectorNode(shared_from_this(), args.group, plugin) );
     }
 
     AddCreateNode_RAII creatingNode_raii(_imp.get(), node);
@@ -1862,13 +1872,18 @@ AppInstance::aboutToQuit()
     ///Clear nodes now, not in the destructor of the project as
     ///deleting nodes might reference the project.
     _imp->_currentProject->closeProject(true);
-    _imp->_currentProject->discardAppPointer();
 }
 
 void
 AppInstance::quit()
 {
-    appPTR->quit(this);
+    appPTR->quit( shared_from_this() );
+}
+
+void
+AppInstance::quitNow()
+{
+    appPTR->quitNow( shared_from_this() );
 }
 
 ViewerColorSpaceEnum
@@ -1886,6 +1901,10 @@ AppInstance::onOCIOConfigPathChanged(const std::string& path)
 void
 AppInstance::declareCurrentAppVariable_Python()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     /// define the app variable
     std::stringstream ss;
 
@@ -2065,13 +2084,13 @@ AppInstance::saveAs(const std::string& filename)
     return getProject()->saveProject(QString::fromUtf8( path.c_str() ), QString::fromUtf8( outFile.c_str() ), 0);
 }
 
-AppInstance*
+AppInstPtr
 AppInstance::loadProject(const std::string& filename)
 {
     QFileInfo file( QString::fromUtf8( filename.c_str() ) );
 
     if ( !file.exists() ) {
-        return 0;
+        return AppInstPtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QChar::fromLatin1('/');
@@ -2082,12 +2101,12 @@ AppInstance::loadProject(const std::string& filename)
 
     bool ok  = project->loadProject( path, fileUnPathed);
     if (ok) {
-        return this;
+        return shared_from_this();
     }
 
     project->resetProject();
 
-    return 0;
+    return AppInstPtr();
 }
 
 ///Close the current project but keep the window
@@ -2110,11 +2129,11 @@ AppInstance::closeProject()
 }
 
 ///Opens a new project
-AppInstance*
+AppInstPtr
 AppInstance::newProject()
 {
     CLArgs cl;
-    AppInstance* app = appPTR->newAppInstance(cl, false);
+    AppInstPtr app = appPTR->newAppInstance(cl, false);
 
     return app;
 }

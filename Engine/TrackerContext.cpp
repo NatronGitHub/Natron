@@ -51,7 +51,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TrackerSerialization.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 500
+#define NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS 200
 
 NATRON_NAMESPACE_ENTER;
 
@@ -797,7 +797,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     }
 
     NodePtr thisNode = getNode();
-    AppInstance* app = thisNode->getApp();
+    AppInstPtr app = thisNode->getApp();
     CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, thisNode->getGroup() );
     NodePtr createdNode = app->createNode(args);
     if (!createdNode) {
@@ -1519,7 +1519,8 @@ TrackArgs::TrackArgs(int start,
                      const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
                      double formatWidth,
                      double formatHeight)
-    : _imp( new TrackArgsPrivate() )
+    : GenericThreadStartArgs()
+    , _imp( new TrackArgsPrivate() )
 {
     _imp->start = start;
     _imp->end = end;
@@ -1538,7 +1539,8 @@ TrackArgs::~TrackArgs()
 }
 
 TrackArgs::TrackArgs(const TrackArgs& other)
-    : _imp( new TrackArgsPrivate() )
+    : GenericThreadStartArgs()
+    , _imp( new TrackArgsPrivate() )
 {
     *this = other;
 }
@@ -1673,8 +1675,8 @@ struct TrackSchedulerPrivate
 
     TrackSchedulerPrivate(TrackerParamsProvider* paramsProvider,
                           const NodeWPtr& node)
-    : paramsProvider(paramsProvider)
-    , node(node)
+        : paramsProvider(paramsProvider)
+        , node(node)
     {
     }
 
@@ -1691,7 +1693,6 @@ struct TrackSchedulerPrivate
     static bool trackStepFunctor(int trackIndex, const TrackArgs& args, int time);
 };
 
-
 TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
                                const NodeWPtr& node)
     : GenericSchedulerThread()
@@ -1699,9 +1700,7 @@ TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
 {
     QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
 
-#ifdef QT_CUSTOM_THREADPOOL
     setThreadName("TrackScheduler");
-#endif
 }
 
 TrackScheduler::~TrackScheduler()
@@ -1791,12 +1790,11 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 GenericSchedulerThread::ThreadStateEnum
 TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 {
-
     boost::shared_ptr<TrackArgs> args = boost::dynamic_pointer_cast<TrackArgs>(inArgs);
+
     assert(args);
 
     ThreadStateEnum state = eThreadStateActive;
-
     boost::shared_ptr<TimeLine> timeline = args->getTimeLine();
     ViewerInstance* viewer =  args->getViewer();
     int end = args->getEnd();
@@ -1820,14 +1818,12 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
         enabledKnob->unSlave(0, false);
     }
 
-
     // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
     // than just render the whole viewer RoI
     const bool doPartialUpdates = numTracks < TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE;
     int lastValidFrame = frameStep > 0 ? start - 1 : start + 1;
     bool reportProgress = numTracks > 1 || framesCount > 1;
     EffectInstPtr effect = _imp->getNode()->getEffectInstance();
-
     timeval lastProgressUpdateTime;
     gettimeofday(&lastProgressUpdateTime, 0);
 
@@ -1845,10 +1841,10 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
         while (cur != end) {
             ///Launch parallel thread for each track using the global thread pool
             QFuture<bool> future = QtConcurrent::mapped( trackIndexes,
-                                                        boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
-                                                                    _1,
-                                                                    *args,
-                                                                    cur) );
+                                                         boost::bind(&TrackSchedulerPrivate::trackStepFunctor,
+                                                                     _1,
+                                                                     *args,
+                                                                     cur) );
             future.waitForFinished();
 
             allTrackFailed = true;
@@ -1877,21 +1873,20 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
             bool isUpdateViewerOnTrackingEnabled = _imp->paramsProvider->getUpdateViewer();
             bool isCenterViewerEnabled = _imp->paramsProvider->getCenterOnTrack();
-
             bool enoughTimePassedToReportProgress;
             {
                 timeval now;
                 gettimeofday(&now, 0);
                 double dt =  now.tv_sec  - lastProgressUpdateTime.tv_sec +
-                (now.tv_usec - lastProgressUpdateTime.tv_usec) * 1e-6f;
+                            (now.tv_usec - lastProgressUpdateTime.tv_usec) * 1e-6f;
                 dt *= 1000; // switch to MS
                 enoughTimePassedToReportProgress = dt > NATRON_TRACKER_REPORT_PROGRESS_DELTA_MS;
                 if (enoughTimePassedToReportProgress) {
                     lastProgressUpdateTime = now;
                 }
             }
-            
-            
+
+
             ///Ok all tracks are finished now for this frame, refresh viewer if needed
             if (isUpdateViewerOnTrackingEnabled && viewer) {
                 //This will not refresh the viewer since when tracking, renderCurrentFrame()
@@ -1917,7 +1912,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
             // Check for abortion
             state = resolveState();
-            if (state == eThreadStateAborted || state == eThreadStateStopped) {
+            if ( (state == eThreadStateAborted) || (state == eThreadStateStopped) ) {
                 break;
             }
         } // while (cur != end) {
@@ -1955,6 +1950,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
         //Refresh all viewers to the current frame
         timeline->seekFrame(lastValidFrame, true, 0, eTimelineChangeReasonOtherSeek);
     }
+
     return state;
 } // >::threadLoopOnce
 
@@ -1964,7 +1960,6 @@ TrackScheduler::doRenderCurrentFrameForViewer(ViewerInstance* viewer)
     assert( QThread::currentThread() == qApp->thread() );
     viewer->renderCurrentFrame(true);
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

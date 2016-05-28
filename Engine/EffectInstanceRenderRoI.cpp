@@ -122,8 +122,8 @@ optimizeRectsToRender(EffectInstance* self,
                 EffectInstance::RectToRender r;
                 r.isIdentity = true;
 
-                //Walk along the identity branch until we find the non identity input, or NULL in we case we will
-                //just render black and transparant
+                // Walk along the identity branch until we find the non identity input, or NULL in we case we will
+                // just render black and transparent
                 EffectInstPtr identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
@@ -162,7 +162,7 @@ optimizeRectsToRender(EffectInstance* self,
 } // optimizeRectsToRender
 
 ImagePtr
-EffectInstance::convertPlanesFormatsIfNeeded(const AppInstance* app,
+EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                              const ImagePtr& inputImage,
                                              const RectI& roi,
                                              const ImageComponents& targetComponents,
@@ -420,7 +420,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     }
                 }
 
-                // If  the requested component is not present, then it will just return black and transparant to the plug-in.
+                // If  the requested component is not present, then it will just return black and transparent to the plug-in.
                 if (found) {
                     if ( foundNode == getNode() ) {
                         requestedComponents.push_back(foundComponent);
@@ -586,7 +586,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     if (fetchUserSelectedComponentsUpstream) {
                         // We fetched potentially different components, so convert them to the format requested
                         std::map<ImageComponents, ImagePtr> convertedPlanes;
-                        AppInstance* app = getApp();
+                        AppInstPtr app = getApp();
                         bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
                         std::list<ImageComponents>::const_iterator compIt = args.components.begin();
 

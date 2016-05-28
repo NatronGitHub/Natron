@@ -36,17 +36,22 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     TEST_CC=gcc
     lsb_release -a
     GCC_VERSION=4.9
-    
+    PKGS=
     # Natron requires boost >= 1.49 to compile in C++11 mode
     # see http://stackoverflow.com/questions/11302758/error-while-copy-constructing-boostshared-ptr-using-c11
     ## we used the irie/boost ppa for that purpose
     #sudo add-apt-repository -y ppa:irie/boost
-    # now we use ppa:boost-latest/ppa
+    # now we use ppa:boost-latest/ppa (contains boost 1.55)
     sudo add-apt-repository -y ppa:boost-latest/ppa
+    BOOSTVER=1.55
+    PKGS="$PKGS libboost${BOOSTVER}-dev libboost-math${BOOSTVER}-dev libboost-serialization${BOOSTVER}-dev"
+
     # the PPA xorg-edgers contains cairo 1.12 (required for rotoscoping)
     sudo add-apt-repository -y ppa:xorg-edgers/ppa
+    PKGS="$PKGS libcairo2-dev"
+
     # ubuntu-toolchain-r/test contains recent versions of gcc
-    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; sudo apt-get update -qq; sudo apt-get install gcc-${GCC_VERSION} g++-${GCC_VERSION}; sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 90; fi
+    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; PKGS="$PKGS gcc-${GCC_VERSION} g++-${GCC_VERSION}"; fi
 
     if [ "$CC" = "$TEST_CC" ]; then sudo -H pip install cpp-coveralls; fi
     ## Python 3.4
@@ -55,13 +60,12 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:kubuntu-ppa/backports; fi
     # we also need a recent ffmpeg for the newest version of the plugin
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:jon-severinsson/ffmpeg; fi #not available
-    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
+    #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:archivematica/externals; fi #2.5.1
     #if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:pavlyshko/precise; fi #2.6.1
-    sudo apt-get update
-    sudo apt-get update -qq
+    if [ "$CC" = "$TEST_CC" ]; then sudo add-apt-repository -y ppa:spvkgn/ffmpeg-dev; fi #2.8.6
 
     # Note: Python 3 packages are python3-dev and python3-pyside
-    sudo apt-get install libqt4-dev libglew-dev libboost-serialization-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev
+    PKGS="$PKGS libqt4-dev libglew-dev libexpat1-dev gdb libcairo2-dev python-dev python-pyside libpyside-dev libshiboken-dev"
 
     echo "*** Python version:"
     python --version
@@ -72,7 +76,36 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     pkg-config --libs shiboken
     cat /usr/lib/x86_64-linux-gnu/pkgconfig/shiboken.pc
 
+    # OpenFX-IO
+    # - ffmpeg
+    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost${BOOSTVER}-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev"; fi
+    # - opencolorio (available as libopencolorio-dev on trusty)
+    if [ `lsb_release -cs` = "trusty" ]; then
+        if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopencolorio-dev"; OCIO_HOME=/usr; fi
+    fi
+    # - openexr
+    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenexr-dev libilmbase-dev"; fi
+    # - openimageio
+    if [ "$CC" = "$TEST_CC" ]; then PKGS="$PKGS libopenjpeg-dev libtiff4-dev libjpeg-dev libpng-dev libboost-filesystem${BOOSTVER}-dev libboost-regex${BOOSTVER}-dev libboost-thread${BOOSTVER}-dev libboost-system${BOOSTVER}-dev libwebp-dev libfreetype6-dev libssl-dev"; fi
+
+
+
+    ###################################################################
+    # install everything in $PKGS (no apt-get install after this one)
+    echo "*** apt-get install $PKGS"
+
+    sudo apt-get update -qq
+    sudo apt-get install $PKGS
+
+
     
+    ################################################################
+    # build dependencies that cannot be fetched from apt
+    
+    # ubuntu-toolchain-r/test contains recent versions of gcc
+    if [ "$CC" = "$TEST_CC" ]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 90; sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GCC_VERSION} 90; fi
+
+    echo "*** build dependencies"
     # OpenFX
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Examples; fi
     if [ "$CC" = "$TEST_CC" ]; then make -C libs/OpenFX/Support/Plugins; fi
@@ -80,11 +113,13 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "$CC" = "$TEST_CC" ]; then rm -rf Tests/Plugins; mkdir -p Tests/Plugins/Examples Tests/Plugins/Support Tests/Plugins/IO; fi
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Examples/*/*-64-debug/*.ofx.bundle Tests/Plugins/Examples; fi
     if [ "$CC" = "$TEST_CC" ]; then mv libs/OpenFX/Support/Plugins/*/*-64-debug/*.ofx.bundle libs/OpenFX/Support/PropTester/*-64-debug/*.ofx.bundle Tests/Plugins/Support;  fi
-    # OpenFX-IO
-    if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install cmake libtinyxml-dev liblcms2-dev libyaml-cpp-dev libboost-dev libavcodec-dev libavformat-dev libswscale-dev libavutil-dev libswresample-dev; wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz; tar zxf /tmp/ocio-1.0.9.tar.gz; cd OpenColorIO-1.0.9; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $J && make install; cd ../..; fi
-    if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libopenexr-dev libilmbase-dev; fi
-    if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libopenjpeg-dev libtiff4-dev libjpeg-dev libpng-dev libboost-filesystem-dev libboost-regex-dev libboost-thread-dev libboost-system-dev libwebp-dev libfreetype6-dev libssl-dev; wget https://github.com/OpenImageIO/oiio/archive/Release-1.6.13.tar.gz -O /tmp/OpenImageIO-1.6.13.tar.gz; tar zxf /tmp/OpenImageIO-1.6.13.tar.gz; cd oiio-Release-1.6.13; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=1 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$HOME/ocio INSTALLDIR=$HOME/oiio dist_dir=. cmake; make $J dist_dir=.; cd ..; fi
-    if [ "$CC" = "$TEST_CC" ]; then sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libavutil-dev; fi
+    # - opencolorio (build on precise)
+    if [ `lsb_release -cs` = "precise" ]; then
+        if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/imageworks/OpenColorIO/archive/v1.0.9.tar.gz -O /tmp/ocio-1.0.9.tar.gz; tar zxf /tmp/ocio-1.0.9.tar.gz; cd OpenColorIO-1.0.9; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/ocio -DCMAKE_BUILD_TYPE=Release -DOCIO_BUILD_JNIGLUE=OFF -DOCIO_BUILD_NUKE=OFF -DOCIO_BUILD_SHARED=ON -DOCIO_BUILD_STATIC=OFF -DOCIO_STATIC_JNIGLUE=OFF -DOCIO_BUILD_TRUELIGHT=OFF -DUSE_EXTERNAL_LCMS=ON -DUSE_EXTERNAL_TINYXML=ON -DUSE_EXTERNAL_YAML=ON -DOCIO_BUILD_APPS=OFF -DOCIO_USE_BOOST_PTR=ON -DOCIO_BUILD_TESTS=OFF -DOCIO_BUILD_PYGLUE=OFF; make $J && make install; cd ../..; OCIO_HOME=$HOME/ocio; fi
+    fi
+    # - openimageio
+    if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/OpenImageIO/oiio/archive/Release-1.6.13.tar.gz -O /tmp/OpenImageIO-1.6.13.tar.gz; tar zxf /tmp/OpenImageIO-1.6.13.tar.gz; cd oiio-Release-1.6.13; make $J USE_QT=0 USE_TBB=0 USE_PYTHON=0 USE_PYTHON3=0 USE_FIELD3D=0 USE_FFMPEG=0 USE_OPENJPEG=1 USE_OCIO=1 USE_OPENCV=0 USE_OPENSSL=0 USE_FREETYPE=1 USE_GIF=0 USE_PTEX=0 USE_LIBRAW=0 OIIO_BUILD_TESTS=0 OIIO_BUILD_TOOLS=0 OCIO_HOME=$OCIO_HOME INSTALLDIR=$HOME/oiio dist_dir=. cmake; make $J dist_dir=.; cd ..; fi
+    # - SeExpr
     if [ "$CC" = "$TEST_CC" ]; then wget https://github.com/wdas/SeExpr/archive/rel-1.0.1.tar.gz -O /tmp/SeExpr-1.0.1.tar.gz; tar zxf /tmp/SeExpr-1.0.1.tar.gz; cd SeExpr-rel-1.0.1; mkdir _build; cd _build; cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/seexpr; make $J && make install; cd ../..; fi
     # config.pri
     # Ubuntu 12.04 precise doesn't have a pkg-config file for expat (expat.pc)
@@ -93,11 +128,12 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     echo 'expat: PKGCONFIG -= expat' >> config.pri
     # pyside and shiboken for python3 cannot be configured with pkg-config on Ubuntu 12.04LTS Precise
     # pyside and shiboken for python2 still need the extra QtCore and QtGui include directories
+    echo 'PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig' >> config.pri
     echo 'pyside: PKGCONFIG -= pyside' >> config.pri
-    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)' >> config.pri
-    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore' >> config.pri
-    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui' >> config.pri
-    echo 'pyside: INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui' >> config.pri
+    echo 'pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir QtGui)' >> config.pri
     #echo 'pyside: LIBS += -lpyside.cpython-32mu' >> config.pri
     echo 'pyside: LIBS += -lpyside-python2.7' >> config.pri
     # pyside doesn't have PySide::getWrapperForQObject on Ubuntu 12.04LTS Precise 
@@ -171,13 +207,13 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     # Python 2 pyside comes precompiled!
     brew install python pyside shiboken
     if [ "$CC" = "$TEST_CC" ]; then
-	# dependencies for building all OpenFX plugins
-	brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
-	# let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)
-	hdf5lib=`otool -L /usr/local/lib/libOpenImageIO.dylib |fgrep hdf5 | awk '{print $1}'`
-	if [ "$hdf5lib" -a ! -f "$hdf5lib" ]; then
-	    ln -s libhdf5.dylib "$hdf5lib"
-	fi
+        # dependencies for building all OpenFX plugins
+        brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
+        # let OIIO work even if the package is not up to date (happened once, when hdf5 was upgraded to 5.10 but oiio was still using 5.9)
+        hdf5lib=`otool -L /usr/local/lib/libOpenImageIO.dylib |fgrep hdf5 | awk '{print $1}'`
+        if [ "$hdf5lib" -a ! -f "$hdf5lib" ]; then
+            ln -s libhdf5.dylib "$hdf5lib"
+        fi
     fi
 
     PATH=/usr/local/bin:"$PATH"

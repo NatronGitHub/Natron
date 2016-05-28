@@ -467,7 +467,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         containerLayout->addWidget(_imp->dimensionSwitchButton);
 
         bool showSlider = true;
-        double firstDimensionValue;
+        double firstDimensionValue = 0.;
         SequenceTime time = 0;
         if ( knob->getHolder() && knob->getHolder()->getApp() ) {
             time = knob->getHolder()->getApp()->getTimeLine()->currentFrame();
@@ -724,8 +724,9 @@ KnobGuiValue::onDisplayMinMaxChanged(const double mini,
         } else {
             _imp->slider->setVisible(false);
         }
-
-        _imp->slider->setMinimumAndMaximum(sliderMin, sliderMax);
+        if (sliderMax > sliderMin) {
+            _imp->slider->setMinimumAndMaximum(sliderMin, sliderMax);
+        }
     }
 } // KnobGuiValue::onDisplayMinMaxChanged
 

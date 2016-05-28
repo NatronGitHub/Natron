@@ -531,7 +531,7 @@ RestoreDefaultsCommand::undo()
 
     std::list<SequenceTime> times;
     KnobPtr first = _knobs.front().lock();
-    AppInstance* app = first->getHolder()->getApp();
+    AppInstPtr app = first->getHolder()->getApp();
     assert(app);
     std::list<KnobWPtr >::const_iterator itClone = _clones.begin();
     for (std::list<KnobWPtr >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it, ++itClone) {
@@ -575,7 +575,7 @@ RestoreDefaultsCommand::redo()
 {
     std::list<SequenceTime> times;
     KnobPtr first = _knobs.front().lock();
-    AppInstance* app = 0;
+    AppInstPtr app;
     KnobHolder* holder = first->getHolder();
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
 

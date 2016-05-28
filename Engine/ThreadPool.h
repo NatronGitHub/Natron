@@ -38,8 +38,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#ifdef QT_CUSTOM_THREADPOOL
-
 
 /**
  * @brief This class provides a fast way to determine whether a render thread
@@ -54,26 +52,51 @@ public:
 
     virtual ~AbortableThread();
 
+    /**
+     * @brief Set the informations related to a specific render so we know if it was aborted or not in getAbortInfo()
+     **/
     void setAbortInfo(bool isRenderResponseToUserInteraction,
                       const AbortableRenderInfoPtr& abortInfo,
                       const EffectInstPtr& treeRoot);
 
+    /**
+     * @brief Clear any render-specific abort info held on this thread
+     **/
     void clearAbortInfo();
 
+    /**
+     * @brief Returns the abort info related on the specific render ongoing on this thread.
+     * This is used in EffectInstance::aborted() to figure out if a render thread was aborted or not.
+     **/
     bool getAbortInfo(bool* isRenderResponseToUserInteraction,
                       AbortableRenderInfoPtr* abortInfo,
                       EffectInstPtr* treeRoot) const;
 
-    // For debug purposes
+    // For debug purposes, so that the debugger can display the thread name
     void setThreadName(const std::string& threadName);
 
+    // The name of the thread
     const std::string& getThreadName() const;
 
+    /**
+     * @brief Flag that the thread is currently entering the given actionName of the given node. This is used
+     * to report to the user if a thread seems to be unresponding after a long time that the user aborted it.
+     * @see AbortableRenderInfo::onAbortTimerTimeout()
+     **/
     void setCurrentActionInfos(const std::string& actionName, const NodePtr& node);
-
     void getCurrentActionInfos(std::string* actionName, NodePtr* node) const;
 
+    /**
+     * @brief Used with caution! Terminates the execution of the thread.
+     * When the thread is terminated, all threads waiting for the thread to finish will be woken up.
+     *
+     * ||||WARNING|||: This function is dangerous and its use is discouraged.
+     * The thread can be terminated at any point in its code path. Threads can be terminated while modifying data.
+     * There is no chance for the thread to clean up after itself, unlock any held mutexes, etc. In short, use this function only if absolutely necessary.
+     **/
     void killThread();
+
+    QThread* getThread() const;
 
 private:
 
@@ -88,6 +111,10 @@ private:
             isAbortable->setCurrentActionInfos(actionName, node); \
         } \
     } \
+
+// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
+// of the EffectInstance::aborted() function. This is done by enabling QThreadPoolThread* to derive AbortableThread.
+#ifdef QT_CUSTOM_THREADPOOL
 
 class ThreadPool
     : public QThreadPool

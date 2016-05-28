@@ -1017,7 +1017,7 @@ Image::clamp(float x,
              float minval,
              float maxval)
 {
-    return std::min(std::max(x, minval), maxval);
+    return std::min(std::max(minval, x), maxval);
 }
 
 template <>
@@ -1026,7 +1026,7 @@ Image::clamp(double x,
              double minval,
              double maxval)
 {
-    return std::min(std::max(x, minval), maxval);
+    return std::min(std::max(minval, x), maxval);
 }
 
 template<>

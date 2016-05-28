@@ -63,32 +63,32 @@ NodeGraph::getFullSceneScreenShot()
 {
     _imp->isDoingPreviewRender = true;
 
-    ///The bbox of all nodes in the nodegraph
+    // The bbox of all nodes in the nodegraph
     QRectF sceneR = _imp->calcNodesBoundingRect();
 
-    ///The visible portion of the nodegraph
+    // The visible portion of the nodegraph
     QRectF viewRect = visibleSceneRect();
 
-    ///Make sure the visible rect is included in the scene rect
+    // Make sure the visible rect is included in the scene rect
     sceneR = sceneR.united(viewRect);
 
     int navWidth = std::ceil(width() * NATRON_NAVIGATOR_BASE_WIDTH);
     int navHeight = std::ceil(height() * NATRON_NAVIGATOR_BASE_HEIGHT);
 
-    ///Make sceneR and viewRect keep the same aspect ratio as the navigator
+    // Make sceneR and viewRect keep the same aspect ratio as the navigator
     double xScale = navWidth / sceneR.width();
     double yScale =  navHeight / sceneR.height();
     double scaleFactor = std::max( 0.001, std::min(xScale, yScale) );
     int sceneW_navPixelCoord = std::floor(sceneR.width() * scaleFactor);
     int sceneH_navPixelCoord = std::floor(sceneR.height() * scaleFactor);
 
-    ///Render the scene in an image with the same aspect ratio  as the scene rect
+    // Render the scene in an image with the same aspect ratio  as the scene rect
     QImage renderImage(sceneW_navPixelCoord, sceneH_navPixelCoord, QImage::Format_ARGB32_Premultiplied);
 
-    ///Fill the background
+    // Fill the background
     renderImage.fill( QColor(71, 71, 71, 255) );
 
-    ///Offset the visible rect corner as an offset relative to the scene rect corner
+    // Offset the visible rect corner as an offset relative to the scene rect corner
     viewRect.setX( viewRect.x() - sceneR.x() );
     viewRect.setY( viewRect.y() - sceneR.y() );
     viewRect.setWidth( viewRect.width() - sceneR.x() );
@@ -100,33 +100,33 @@ NodeGraph::getFullSceneScreenShot()
     viewRect_navCoordinates.setRight(viewRect.right() * scaleFactor);
     viewRect_navCoordinates.setTop(viewRect.top() * scaleFactor);
 
-    ///Paint the visible portion with a highlight
+    // Paint the visible portion with a highlight
     QPainter painter(&renderImage);
 
-    ///Remove the overlays from the scene before rendering it
+    // Remove the overlays from the scene before rendering it
     scene()->removeItem(_imp->_cacheSizeText);
     scene()->removeItem(_imp->_navigator);
 
-    ///Render into the QImage with downscaling
+    // Render into the QImage with downscaling
     scene()->render(&painter, renderImage.rect(), sceneR, Qt::KeepAspectRatio);
 
-    ///Add the overlays back
+    // Add the overlays back
     scene()->addItem(_imp->_navigator);
     scene()->addItem(_imp->_cacheSizeText);
 
-    ///Fill the highlight with a semi transparant whitish grey
+    // Fill the highlight with a semi transparent whitish grey
     painter.fillRect( viewRect_navCoordinates, QColor(200, 200, 200, 100) );
 
-    ///Draw a border surrounding the
+    // Draw a border surrounding the
     QPen p;
     p.setWidth(2);
     p.setBrush(Qt::yellow);
     painter.setPen(p);
-    ///Make sure the border is visible
+    // Make sure the border is visible
     viewRect_navCoordinates.adjust(2, 2, -2, -2);
     painter.drawRect(viewRect_navCoordinates);
 
-    ///Now make an image of the requested size of the navigator and center the render image into it
+    // Now make an image of the requested size of the navigator and center the render image into it
     QImage img(navWidth, navHeight, QImage::Format_ARGB32_Premultiplied);
     img.fill( QColor(71, 71, 71, 255) );
 
@@ -345,6 +345,11 @@ NodeGraph::showMenu(const QPoint & pos)
                                                    kShortcutDescActionGraphRemoveNodes, editMenu);
     QObject::connect( deleteAction, SIGNAL(triggered()), this, SLOT(deleteSelection()) );
     editMenu->addAction(deleteAction);
+
+    QAction* renameAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode,
+                                                   kShortcutDescActionGraphRenameNode, editMenu);
+    QObject::connect( renameAction, SIGNAL(triggered()), this, SLOT(renameNode()) );
+    editMenu->addAction(renameAction);
 
     QAction* duplicateAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate,
                                                       kShortcutDescActionGraphDuplicate, editMenu);

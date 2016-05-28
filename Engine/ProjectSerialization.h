@@ -73,12 +73,12 @@ class ProjectSerialization
     std::list< boost::shared_ptr<KnobSerialization> > _projectKnobs;
     SequenceTime _timelineCurrent;
     qint64 _creationDate;
-    AppInstance* _app;
+    AppInstWPtr _app;
     unsigned int _version;
 
 public:
 
-    ProjectSerialization(AppInstance* app)
+    ProjectSerialization(const AppInstPtr& app)
         : _timelineCurrent(0)
         , _creationDate(0)
         , _app(app)
@@ -187,8 +187,6 @@ public:
                 }
             }
         }
-        assert(_app);
-        Q_UNUSED(_app);
 
         if (version < PROJECT_SERIALIZATION_INTRODUCES_GROUPS) {
             int nodesCount;

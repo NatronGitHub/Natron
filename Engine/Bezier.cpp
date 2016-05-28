@@ -941,12 +941,23 @@ Bezier::addControlPointAfterIndex(int index,
             (*next)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p3.x, &p3.y);
             (*next)->getLeftBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p2.x, &p2.y);
 
-            Point p0f, p1f, p2f, p3f;
-            (*prevF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p0f.x, &p0f.y);
-            (*prevF)->getRightBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p1f.x, &p1f.y);
-            (*nextF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p3f.x, &p3f.y);
-            (*nextF)->getLeftBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p2f.x, &p2f.y);
-
+            Point p0f;
+            Point p1f;
+            if (*prevF) {
+                (*prevF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p0f.x, &p0f.y);
+                (*prevF)->getRightBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p1f.x, &p1f.y);
+            } else {
+                p0f = p0;
+                p1f = p1;
+            }
+            Point p2f, p3f;
+            if (*nextF) {
+                (*nextF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p3f.x, &p3f.y);
+                (*nextF)->getLeftBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p2f.x, &p2f.y);
+            } else {
+                p2f = p2;
+                p3f = p3;
+            }
 
             Point dest;
             Point p0p1, p1p2, p2p3, p0p1_p1p2, p1p2_p2p3;
@@ -1409,13 +1420,11 @@ Bezier::setPointByIndexInternal(bool useGuiCurve,
         Transform::Point3D left(0., 0., 1.);
         Transform::Point3D right(0., 0., 1.);
         boost::shared_ptr<BezierCP> cp;
-        bool isOnKeyframe = false;
         BezierCPs::const_iterator it = _imp->atIndex(index);
         assert( it != _imp->points.end() );
         cp = *it;
         cp->getPositionAtTime(useGuiCurve, time, ViewIdx(0), &p.x, &p.y);
-        isOnKeyframe |= cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y);
-        Q_UNUSED(isOnKeyframe);
+        cp->getLeftBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &left.x, &left.y);
         cp->getRightBezierPointAtTime(useGuiCurve, time, ViewIdx(0), &right.x, &right.y);
 
         p = Transform::matApply(trans, p);

@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <boost/algorithm/clamp.hpp>
+
 #include "TrackerNode.h"
 #include "Engine/Curve.h"
 #include "Engine/KnobTypes.h"
@@ -695,7 +697,14 @@ TrackerNode::drawOverlay(double time,
         bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
         bool showErrorColor = _imp->ui->showCorrelationButton.lock()->getValue();
         TrackMarkerPtr selectedMarker = _imp->ui->selectedMarker.lock();
-        Point selectedCenter, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedOffset, selectedSearchBtmLeft, selectedSearchTopRight;
+        Point selectedCenter;
+        Point selectedPtnTopLeft;
+        Point selectedPtnTopRight;
+        Point selectedPtnBtmRight;
+        Point selectedPtnBtmLeft;
+        Point selectedOffset;
+        Point selectedSearchBtmLeft;
+        Point selectedSearchTopRight;
 
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
             if ( !(*it)->isEnabled( (*it)->getCurrentTime() ) ) {
@@ -892,7 +901,7 @@ TrackerNode::drawOverlay(double time,
                                    Also clamp to the interval if the correlation is higher, and reverse.
                                  */
 
-                                double error = std::min(std::max(it2->second.second, 0.), CORRELATION_ERROR_MAX_DISPLAY);
+                                double error = boost::algorithm::clamp(it2->second.second, 0., CORRELATION_ERROR_MAX_DISPLAY);
                                 double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                 float r, g, b;
                                 Color::hsv_to_rgb(mappedError, 1, 1, &r, &g, &b);
@@ -1098,7 +1107,7 @@ TrackerNode::drawOverlay(double time,
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
         if (_imp->ui->showMarkerTexture) {
-            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset,  selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
+            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
 
@@ -1654,7 +1663,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             int index = 0;
             if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
                 index = 1;
@@ -1723,8 +1735,8 @@ TrackerNode::onOverlayPenMotion(double time,
             searchWindowCorners[1].x = searchWndTopRight->getValueAtTime(time, 0)  + center.x + offset.x;
             searchWindowCorners[1].y = searchWndTopRight->getValueAtTime(time, 1)  + center.y + offset.y;
 
-            cur.x = std::max(std::min(cur.x, searchWindowCorners[1].x), searchWindowCorners[0].x);
-            cur.y = std::max(std::min(cur.y, searchWindowCorners[1].y), searchWindowCorners[0].y);
+            cur.x = boost::algorithm::clamp(cur.x, searchWindowCorners[0].x, searchWindowCorners[1].x);
+            cur.y = boost::algorithm::clamp(cur.y, searchWindowCorners[0].y, searchWindowCorners[1].y);
 
             cur.x -= (center.x + offset.x);
             cur.y -= (center.y + offset.y);
@@ -1743,6 +1755,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -1750,10 +1766,9 @@ TrackerNode::onOverlayPenMotion(double time,
             offset.x = offsetKnob->getValueAtTime(time, 0);
             offset.y = offsetKnob->getValueAtTime(time, 1);
 
-            Point p;
+            Point p = {0, 0.};
             p.x = searchWndBtmLeft->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
             p.y = searchWndBtmLeft->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
-
             Point topLeft;
             topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
             topLeft.y = patternCorners[0]->getValueAtTime(time, 1) + center.y + offset.y;
@@ -1761,7 +1776,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -1796,6 +1811,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -1814,7 +1833,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -1854,6 +1873,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -1861,9 +1884,11 @@ TrackerNode::onOverlayPenMotion(double time,
             offset.x = offsetKnob->getValueAtTime(time, 0);
             offset.y = offsetKnob->getValueAtTime(time, 1);
 
-            Point p;
-            p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
-            p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+            Point p = {0, 0};
+            if (searchWndTopRight) {
+                p.x = searchWndTopRight->getValueAtTime(time, 0) + center.x + offset.x + delta.x;
+                p.y = searchWndTopRight->getValueAtTime(time, 1) + center.y + offset.y + delta.y;
+            }
 
             Point topLeft;
             topLeft.x = patternCorners[0]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -1872,7 +1897,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -1907,6 +1932,10 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
+            if (!searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -1925,7 +1954,7 @@ TrackerNode::onOverlayPenMotion(double time,
             btmLeft.x = patternCorners[1]->getValueAtTime(time, 0) + center.x + offset.x;
             btmLeft.y = patternCorners[1]->getValueAtTime(time, 1) + center.y + offset.y;
             Point btmRight;
-            btmRight.y = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
+            btmRight.x = patternCorners[2]->getValueAtTime(time, 0) + center.x + offset.x;
             btmRight.y = patternCorners[2]->getValueAtTime(time, 1) + center.y + offset.y;
             Point topRight;
             topRight.x = patternCorners[3]->getValueAtTime(time, 0) + center.x + offset.x;
@@ -2010,7 +2039,7 @@ TrackerNode::onOverlayPenMotion(double time,
                 double dist = std::sqrt( ( pos.x() - centerPoint.x) * ( pos.x() - centerPoint.x) + ( pos.y() - centerPoint.y) * ( pos.y() - centerPoint.y) );
                 double ratio = dist / prevDist;
                 _imp->ui->selectedMarkerScale.x *= ratio;
-                _imp->ui->selectedMarkerScale.x = std::max( 0.05, std::min(1., _imp->ui->selectedMarkerScale.x) );
+                _imp->ui->selectedMarkerScale.x = boost::algorithm::clamp(_imp->ui->selectedMarkerScale.x, 0.05, 1.);
                 _imp->ui->selectedMarkerScale.y = _imp->ui->selectedMarkerScale.x;
                 didSomething = true;
             }
@@ -2106,7 +2135,7 @@ TrackerNode::onOverlayKeyDown(double /*time*/,
 
     bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
 
-    if ( !trackingPageSecret && !_imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
+    if ( !trackingPageSecret && _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
         _imp->ui->clickToAddTrackEnabled = true;
         _imp->ui->addTrackButton.lock()->setValue(true);
         didSomething = true;
@@ -2248,3 +2277,6 @@ TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
 }
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING;
+
+#include "moc_TrackerNode.cpp"

@@ -33,9 +33,9 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
-#include <QtCore/QStringList>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
@@ -140,7 +140,7 @@ public:
 
 
 class AppInstance
-    : public QObject, public boost::noncopyable, public TimeLineKeyFrames
+    : public QObject, public boost::noncopyable, public boost::enable_shared_from_this<AppInstance>, public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -191,7 +191,13 @@ public:
         }
     };
 
-    virtual void load(const CLArgs& cl, bool makeEmptyInstance);
+    void load(const CLArgs& cl, bool makeEmptyInstance);
+
+protected:
+
+    virtual void loadInternal(const CLArgs& cl, bool makeEmptyInstance);
+
+public:
 
     int getAppID() const;
 
@@ -414,7 +420,7 @@ public:
     bool saveTemp(const std::string& filename);
     virtual bool save(const std::string& filename);
     virtual bool saveAs(const std::string& filename);
-    virtual AppInstance* loadProject(const std::string& filename);
+    virtual AppInstPtr loadProject(const std::string& filename);
 
     ///Close the current project but keep the window
     virtual bool resetProject();
@@ -423,7 +429,7 @@ public:
     virtual bool closeProject();
 
     ///Opens a new window
-    virtual AppInstance* newProject();
+    virtual AppInstPtr newProject();
     virtual void* getOfxHostOSHandle() const { return NULL; }
 
     virtual void updateLastPaintStrokeData(int /*newAge*/,
@@ -458,6 +464,9 @@ public:
 public Q_SLOTS:
 
     void quit();
+
+    void quitNow();
+
     virtual void redrawAllViewers() {}
 
     void triggerAutoSave();
@@ -511,11 +520,11 @@ private:
 
 class CreatingNodeTreeFlag_RAII
 {
-    AppInstance* _app;
+    AppInstWPtr _app;
 
 public:
 
-    CreatingNodeTreeFlag_RAII(AppInstance* app)
+    CreatingNodeTreeFlag_RAII(const AppInstPtr& app)
         : _app(app)
     {
         app->setIsCreatingNodeTree(true);
@@ -523,7 +532,11 @@ public:
 
     ~CreatingNodeTreeFlag_RAII()
     {
-        _app->setIsCreatingNodeTree(false);
+        AppInstPtr a = _app.lock();
+
+        if (a) {
+            a->setIsCreatingNodeTree(false);
+        }
     }
 };
 

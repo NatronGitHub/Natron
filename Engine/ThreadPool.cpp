@@ -30,6 +30,7 @@
 #include <QtCore/QAtomicInt>
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
+#include <QtCore/QThreadPool>
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/Node.h"
@@ -37,30 +38,26 @@
 NATRON_NAMESPACE_ENTER;
 
 
-// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
-// of the EffectInstance::aborted() function
-#ifdef QT_CUSTOM_THREADPOOL
-
 struct AbortableThreadPrivate
 {
-    mutable QMutex abortInfoMutex;
-    bool isRenderResponseToUserInteraction;
-    AbortableRenderInfoPtr abortInfo;
-    EffectInstWPtr treeRoot;
-    bool abortInfoValid;
     QThread* thread;
     std::string threadName;
+    mutable QMutex abortInfoMutex;
+    bool isRenderResponseToUserInteraction;
+    AbortableRenderInfoWPtr abortInfo;
+    EffectInstWPtr treeRoot;
+    bool abortInfoValid;
     std::string currentActionName;
     NodeWPtr currentActionNode;
 
     AbortableThreadPrivate(QThread* thread)
-        : abortInfoMutex()
+        : thread(thread)
+        , threadName()
+        , abortInfoMutex()
         , isRenderResponseToUserInteraction(false)
         , abortInfo()
         , treeRoot()
         , abortInfoValid(false)
-        , thread(thread)
-        , threadName()
         , currentActionName()
         , currentActionNode()
     {
@@ -119,6 +116,12 @@ AbortableThread::killThread()
     _imp->thread->terminate();
 }
 
+QThread*
+AbortableThread::getThread() const
+{
+    return _imp->thread;
+}
+
 void
 AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,
                               const AbortableRenderInfoPtr& abortInfo,
@@ -142,7 +145,7 @@ AbortableThread::clearAbortInfo()
     AbortableRenderInfoPtr abortInfo;
     {
         QMutexLocker k(&_imp->abortInfoMutex);
-        abortInfo = _imp->abortInfo;
+        abortInfo = _imp->abortInfo.lock();
         _imp->abortInfo.reset();
         _imp->treeRoot.reset();
         _imp->abortInfoValid = false;
@@ -164,11 +167,15 @@ AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
         return false;
     }
     *isRenderResponseToUserInteraction = _imp->isRenderResponseToUserInteraction;
-    *abortInfo = _imp->abortInfo;
+    *abortInfo = _imp->abortInfo.lock();
     *treeRoot = _imp->treeRoot.lock();
 
     return true;
 }
+
+// We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
+// of the EffectInstance::aborted() function
+#ifdef QT_CUSTOM_THREADPOOL
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 

@@ -1,14 +1,6 @@
---- Portfile.orig	2016-03-14 10:24:12.000000000 +0100
-+++ Portfile	2016-03-15 17:36:40.000000000 +0100
-@@ -90,6 +90,7 @@
- build.cmd           ${prefix}/bin/gmake
- build.env-append    V=1
- 
-+patchfiles ffmpeg_videotoolbox.patch
- #
- # enable auto configure of asm optimizations
- # requires Xcode 3.1 or better on Leopard
-@@ -102,6 +103,11 @@
+--- Portfile.orig	2016-05-26 11:59:50.000000000 +0200
++++ Portfile	2016-05-26 14:18:25.000000000 +0200
+@@ -101,6 +101,11 @@
      compiler.blacklist-append {clang < 422.1.7}
  }
  
@@ -20,7 +12,7 @@
  # The old ffmpeg port was GPL-2+ as base and had a no_gpl variant, so this keeps us consistent
  # Also, -gpl2 causes other ports to fail to build due to the missing libpostproc (#35473)
  default_variants-append +gpl2
-@@ -133,10 +139,12 @@
+@@ -132,10 +137,12 @@
                      --disable-indev=jack \
                      --disable-outdev=xv \
                      --disable-vda \
@@ -34,7 +26,7 @@
  
  # disable asm on Tiger
  # libblueray doesn't build on Tiger so disable for now (#39442)
-@@ -171,8 +179,12 @@
+@@ -170,8 +177,12 @@
      }
  
      # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
@@ -49,7 +41,7 @@
      }
  }
  
-@@ -182,6 +194,17 @@
+@@ -181,6 +192,17 @@
  # configure isn't autoconf and they do use a dep cache
  #
  
@@ -67,7 +59,7 @@
  post-destroot {
      file mkdir ${destroot}${prefix}/share/doc/ffmpeg
      file copy ${worksrcpath}/doc/APIchanges ${destroot}${prefix}/share/doc/ffmpeg
-@@ -206,6 +229,15 @@
+@@ -205,6 +227,15 @@
  configure.universal_args-delete --disable-dependency-tracking
  
  if {[variant_isset universal]} {
@@ -83,7 +75,7 @@
      foreach arch ${configure.universal_archs} {
          set merger_host($arch) ""
          lappend merger_configure_args($arch) --arch=${arch}
-@@ -231,11 +263,52 @@
+@@ -230,11 +261,52 @@
  #
      depends_lib-append      port:xorg-libxcb \
                              port:xorg-libXext \
@@ -136,7 +128,7 @@
  }
  
  default_variants +x11
-@@ -306,6 +379,12 @@
+@@ -305,6 +377,12 @@
                              port:samba3
  
      license                 GPL-3+

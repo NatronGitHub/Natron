@@ -644,6 +644,9 @@ public:
         _overlayPoints = knobs->getKnob<KnobChoice>(CornerPinOverlayKnobs::eKnobsEnumerationOverlayPoints);
         _invert = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationInvert);
         _interactive = knobs->getKnob<KnobBool>(CornerPinOverlayKnobs::eKnobsEnumerationInteractive);
+        for (unsigned i = 0; i < 4; ++i) {
+            _toDrag[i].x = _toDrag[i].y = _fromDrag[i].x = _fromDrag[i].y = 0.;
+        }
     }
 
     virtual ~CornerPinInteract()

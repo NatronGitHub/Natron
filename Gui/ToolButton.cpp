@@ -41,7 +41,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct ToolButtonPrivate
 {
-    GuiAppInstance* _app;
+    boost::weak_ptr<GuiAppInstance> _app;
     QString _id;
     int _major, _minor;
     QString _label;
@@ -51,7 +51,7 @@ struct ToolButtonPrivate
     QAction* _action;
     boost::weak_ptr<PluginGroupNode> _pluginToolButton;
 
-    ToolButtonPrivate(GuiAppInstance* app,
+    ToolButtonPrivate(const GuiAppInstPtr& app,
                       const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                       const QString & pluginID,
                       int major,
@@ -74,7 +74,7 @@ struct ToolButtonPrivate
     }
 };
 
-ToolButton::ToolButton(GuiAppInstance* app,
+ToolButton::ToolButton(const GuiAppInstPtr& app,
                        const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                        const QString & pluginID,
                        int major,
@@ -183,13 +183,18 @@ ToolButton::getPluginToolButton() const
 void
 ToolButton::onTriggered()
 {
-    boost::shared_ptr<NodeCollection> group = _imp->_app->getGui()->getLastSelectedNodeCollection();
+    GuiAppInstPtr app = _imp->_app.lock();
+
+    if (!app) {
+        return;
+    }
+    boost::shared_ptr<NodeCollection> group = app->getGui()->getLastSelectedNodeCollection();
 
     assert(group);
     CreateNodeArgs args(_imp->_id, eCreateNodeReasonUserCreate, group);
     args.majorV = _imp->_major;
     args.minorV = _imp->_minor;
-    _imp->_app->createNode(args);
+    app->createNode(args);
 }
 
 struct ToolButtonChildrenSortFunctor

@@ -69,17 +69,17 @@ public:
 
     GuiApp* getGuiInstance(int idx) const
     {
-        AppInstance* app = appPTR->getAppInstance(idx);
+        AppInstPtr app = appPTR->getAppInstance(idx);
 
         if (!app) {
             return 0;
         }
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(app);
+        GuiAppInstPtr guiApp = boost::dynamic_pointer_cast<GuiAppInstance>(app);
         if (!guiApp) {
             return 0;
         }
 
-        return new GuiApp(app);
+        return new GuiApp(guiApp);
     }
 
     void informationDialog(const QString& title,

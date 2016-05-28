@@ -1,0 +1,15 @@
+--- exrdisplay/Makefile.in.orig	2016-01-31 06:22:45.000000000 -0700
++++ exrdisplay/Makefile.in	2016-01-31 06:24:22.000000000 -0700
+@@ -578,10 +578,10 @@
+ 
+ 
+ @HAVE_FLTK_TRUE@all-local:
+-@HAVE_FLTK_TRUE@	@FLTK_CONFIG@ --post exrdisplay
++#@HAVE_FLTK_TRUE@	@FLTK_CONFIG@ --post exrdisplay
+ 
+ @HAVE_FLTK_TRUE@install-exec-hook:
+-@HAVE_FLTK_TRUE@	@FLTK_CONFIG@ --post $(DESTDIR)$(bindir)/exrdisplay
++#@HAVE_FLTK_TRUE@	@FLTK_CONFIG@ --post $(DESTDIR)$(bindir)/exrdisplay
+ 
+ @HAVE_FLTK_FALSE@install-exec-hook:
+ 

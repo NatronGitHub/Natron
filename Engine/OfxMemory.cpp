@@ -33,6 +33,7 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/EffectInstance.h"
 #include "Engine/PluginMemory.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -41,11 +42,13 @@ OfxMemory::OfxMemory(const EffectInstPtr& effect)
     : OFX::Host::Memory::Instance()
     , _memory( new PluginMemory(effect) )
 {
+    if (effect) {
+        effect->addPluginMemoryPointer(_memory);
+    }
 }
 
 OfxMemory::~OfxMemory()
 {
-    delete _memory;
 }
 
 void*

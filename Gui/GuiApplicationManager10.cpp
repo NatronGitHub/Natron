@@ -107,10 +107,10 @@ NATRON_NAMESPACE_ENTER;
 void
 GuiApplicationManager::updateAllRecentFileMenus()
 {
-    const std::map<int, AppInstanceRef> & instances = getAppInstances();
+    const AppInstanceVec& instances = getAppInstances();
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>(it->second.app);
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* appInstance = dynamic_cast<GuiAppInstance*>( it->get() );
         if (appInstance) {
             Gui* gui = appInstance->getGui();
             assert(gui);
@@ -204,10 +204,10 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string, std::vector<
     AppManager::loadBuiltinNodePlugins(readersMap, writersMap);
 } // loadBuiltinNodePlugins
 
-AppInstance*
+AppInstPtr
 GuiApplicationManager::makeNewInstance(int appID) const
 {
-    return new GuiAppInstance(appID);
+    return AppInstPtr( new GuiAppInstance(appID) );
 }
 
 KnobGui*
@@ -344,10 +344,10 @@ GuiApplicationManager::onAllPluginsLoaded()
 void
 GuiApplicationManager::setUndoRedoStackLimit(int limit)
 {
-    const std::map<int, AppInstanceRef> & apps = getAppInstances();
+    const AppInstanceVec & apps = getAppInstances();
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = apps.begin(); it != apps.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+    for (AppInstanceVec::const_iterator it = apps.begin(); it != apps.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->setUndoRedoStackLimit(limit);
         }
@@ -377,7 +377,7 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
     QString fileCopy( QString::fromUtf8( filename.c_str() ) );
     QString ext = QtCompat::removeFileExtension(fileCopy);
     std::string readerFileType = appPTR->isImageFileSupportedByNatron( ext.toStdString() );
-    AppInstance* mainInstance = appPTR->getTopLevelInstance();
+    AppInstPtr mainInstance = appPTR->getTopLevelInstance();
     bool instanceCreated = false;
 
     if ( !mainInstance || !mainInstance->getProject()->isGraphWorthLess() ) {
@@ -425,8 +425,8 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 void
 GuiApplicationManager::handleOpenFileRequest()
 {
-    AppInstance* mainApp = getAppInstance(0);
-    GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(mainApp);
+    AppInstPtr mainApp = getAppInstance(0);
+    GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( mainApp.get() );
 
     assert(guiApp);
     if (guiApp) {
@@ -449,19 +449,19 @@ void
 GuiApplicationManager::exitApp(bool warnUserForSave)
 {
     ///make a copy of the map because it will be modified when closing projects
-    std::map<int, AppInstanceRef> instances = getAppInstances();
-    std::list<GuiAppInstance*> guiApps;
+    AppInstanceVec instances = getAppInstances();
+    std::list<GuiAppInstPtr> guiApps;
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* app = dynamic_cast<GuiAppInstance*>(it->second.app);
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstPtr app = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
         if (app) {
             guiApps.push_back(app);
         }
     }
 
-    std::set<GuiAppInstance*> triedInstances;
+    std::set<GuiAppInstPtr> triedInstances;
     while ( !guiApps.empty() ) {
-        GuiAppInstance* app = guiApps.front();
+        GuiAppInstPtr app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
             app->getGui()->closeInstance(warnUserForSave);
@@ -470,8 +470,8 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         //refreshg ui instances
         instances = getAppInstances();
         guiApps.clear();
-        for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-            GuiAppInstance* ga = dynamic_cast<GuiAppInstance*>(it->second.app);
+        for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+            GuiAppInstPtr ga = boost::dynamic_pointer_cast<GuiAppInstance>(*it);
             if ( ga && ( triedInstances.find(ga) == triedInstances.end() ) ) {
                 guiApps.push_back(ga);
             }
@@ -1087,7 +1087,7 @@ void
 GuiApplicationManager::showErrorLog()
 {
     hideSplashScreen();
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( getTopLevelInstance() );
+    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( getTopLevelInstance().get() );
     if (app) {
         app->getGui()->showErrorLog();
     }
@@ -1096,10 +1096,10 @@ GuiApplicationManager::showErrorLog()
 void
 GuiApplicationManager::clearLastRenderedTextures()
 {
-    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+    const AppInstanceVec& instances = getAppInstances();
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->clearAllLastRenderedImages();
         }
@@ -1182,10 +1182,10 @@ GuiApplicationManager::getUserPythonCommands() const
 void
 GuiApplicationManager::reloadStylesheets()
 {
-    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+    const AppInstanceVec& instances = getAppInstances();
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->reloadStylesheet();
         }
@@ -1195,10 +1195,10 @@ GuiApplicationManager::reloadStylesheets()
 void
 GuiApplicationManager::reloadScriptEditorFonts()
 {
-    const std::map<int, AppInstanceRef>& instances = getAppInstances();
+    const AppInstanceVec& instances = getAppInstances();
 
-    for (std::map<int, AppInstanceRef>::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(it->second.app);
+    for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
+        GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( it->get() );
         if (guiApp) {
             guiApp->reloadScriptEditorFonts();
         }

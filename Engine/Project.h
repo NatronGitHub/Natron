@@ -68,7 +68,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    Project(AppInstance* appInstance);
+    Project(const AppInstPtr& appInstance);
 
     virtual ~Project();
 
@@ -288,10 +288,11 @@ public:
 
 
     /**
-    * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
-    * This is called only when calling AppManager::abortAnyProcessing()
-    **/
-    void quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
+     * @brief Calls quitAnyProcessing for all nodes in the group and in each subgroup
+     * This is called only when calling AppManager::abortAnyProcessing()
+     * @returns True if a node is in the project and a watcher was installed, false otherwise
+     **/
+    bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
 
 private:
 

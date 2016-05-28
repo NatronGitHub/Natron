@@ -38,6 +38,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
+
 GCC_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 #include <QtCore/QThread>
@@ -479,7 +480,7 @@ private:
 
     /*mutable because it doesn't hold any data, it just emits signals but signals cannot
          be const somehow .*/
-    mutable CacheSignalEmitter* _signalEmitter;
+    mutable boost::shared_ptr<CacheSignalEmitter> _signalEmitter;
 
     ///Store the system physical total RAM in a member
     std::size_t _maxPhysicalRAM;
@@ -526,7 +527,6 @@ public:
         _tearingDown = true;
         _memoryCache.clear();
         _diskCache.clear();
-        delete _signalEmitter;
     }
 
     void waitForDeleterThread()
@@ -1183,7 +1183,7 @@ public:
         return _diskCacheSize;
     }
 
-    CacheSignalEmitter* activateSignalEmitter() const
+    boost::shared_ptr<CacheSignalEmitter> activateSignalEmitter() const
     {
         return _signalEmitter;
     }

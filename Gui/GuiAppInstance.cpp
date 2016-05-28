@@ -241,8 +241,8 @@ GuiAppInstancePrivate::findOrCreateToolButtonRecursive(const boost::shared_ptr<P
 }
 
 void
-GuiAppInstance::load(const CLArgs& cl,
-                     bool makeEmptyInstance)
+GuiAppInstance::loadInternal(const CLArgs& cl,
+                             bool makeEmptyInstance)
 {
     if (getAppID() == 0) {
         appPTR->setLoadingStatus( tr("Creating user interface...") );
@@ -254,7 +254,9 @@ GuiAppInstance::load(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    _imp->_gui = new Gui(this);
+    boost::shared_ptr<GuiAppInstance> thisShared = boost::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
+    assert(thisShared);
+    _imp->_gui = new Gui(thisShared);
     _imp->_gui->createGui();
 
     printAutoDeclaredVariable(_imp->declareAppAndParamsString);
@@ -433,7 +435,7 @@ GuiAppInstance::findAndTryLoadUntitledAutoSave()
             }
         } else {
             CLArgs cl;
-            AppInstance* newApp = appPTR->newAppInstance(cl, false);
+            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
             if ( !newApp->getProject()->loadProject(savesDir.path() + QLatin1Char('/'), autoSaveFileName, true) ) {
                 return false;
             }
@@ -857,13 +859,17 @@ GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
 void
 GuiAppInstance::connectViewersToViewerCache()
 {
-    _imp->_gui->connectViewersToViewerCache();
+    if (_imp->_gui) {
+        _imp->_gui->connectViewersToViewerCache();
+    }
 }
 
 void
 GuiAppInstance::disconnectViewersFromViewerCache()
 {
-    _imp->_gui->disconnectViewersFromViewerCache();
+    if (_imp->_gui) {
+        _imp->_gui->disconnectViewersFromViewerCache();
+    }
 }
 
 boost::shared_ptr<FileDialogPreviewProvider>
@@ -958,6 +964,10 @@ GuiAppInstance::discardLastViewerUsingTimeline()
 void
 GuiAppInstance::declareCurrentAppVariable_Python()
 {
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+
+    return;
+#endif
     std::string appIDStr = getAppIDString();
     /// define the app variable
     std::stringstream ss;
@@ -1181,7 +1191,7 @@ GuiAppInstance::saveAs(const std::string& filename)
     return _imp->_gui->saveProjectAs(filename);
 }
 
-AppInstance*
+AppInstPtr
 GuiAppInstance::loadProject(const std::string& filename)
 {
     return _imp->_gui->openProject(filename);
@@ -1202,7 +1212,7 @@ GuiAppInstance::closeProject()
 }
 
 ///Opens a new window
-AppInstance*
+AppInstPtr
 GuiAppInstance::newProject()
 {
     return _imp->_gui->createNewProject();
@@ -1216,7 +1226,7 @@ GuiAppInstance::handleFileOpenEvent(const std::string &filename)
     fileCopy.replace( QLatin1Char('\\'), QLatin1Char('/') );
     QString ext = QtCompat::removeFileExtension(fileCopy);
     if ( ext == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
-        AppInstance* app = getGui()->openProject(filename);
+        AppInstPtr app = getGui()->openProject(filename);
         if (!app) {
             Dialogs::errorDialog(tr("Project").toStdString(), tr("Failed to open project").toStdString() + ' ' + filename);
         }

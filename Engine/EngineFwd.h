@@ -53,18 +53,23 @@ class access;
 
 // Qt
 
+class QByteArray;
 class QChar;
 class QDateTime;
 class QFileInfo;
 class QLocalServer;
 class QLocalSocket;
 class QMutex;
+class QNetworkAccessManager;
+class QNetworkReply;
+class QNetworkRequest;
 class QProcess;
 class QSettings;
 class QString;
 class QStringList;
 class QThread;
 class QTimer;
+class QUrl;
 class QWaitCondition;
 
 // cairo
@@ -253,9 +258,13 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+typedef boost::shared_ptr<PluginMemory> PluginMemoryPtr;
+typedef boost::weak_ptr<AppInstance> AppInstWPtr;
+typedef boost::shared_ptr<AppInstance> AppInstPtr;
 typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
 typedef boost::shared_ptr<UndoCommand> UndoCommandPtr;
 typedef boost::shared_ptr<AbortableRenderInfo> AbortableRenderInfoPtr;
+typedef boost::weak_ptr<AbortableRenderInfo> AbortableRenderInfoWPtr;
 typedef boost::shared_ptr<TrackMarker> TrackMarkerPtr;
 typedef boost::shared_ptr<Node> NodePtr;
 typedef std::list<NodePtr> NodesList;

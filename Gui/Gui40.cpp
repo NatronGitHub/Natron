@@ -62,7 +62,6 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/RenderingProgressDialog.h"
 #include "Gui/RenderStatsDialog.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/ProgressPanel.h"
@@ -80,13 +79,13 @@ NATRON_NAMESPACE_ENTER;
 void
 Gui::refreshAllPreviews()
 {
-    _imp->_appInstance->getProject()->refreshPreviews();
+    getApp()->getProject()->refreshPreviews();
 }
 
 void
 Gui::forceRefreshAllPreviews()
 {
-    _imp->_appInstance->getProject()->forceRefreshPreviews();
+    getApp()->getProject()->forceRefreshPreviews();
 }
 
 void
@@ -138,9 +137,9 @@ Gui::openRecentFile()
         QString filename = path + f.fileName();
         int openedProject = appPTR->isProjectAlreadyOpened( filename.toStdString() );
         if (openedProject != -1) {
-            AppInstance* instance = appPTR->getAppInstance(openedProject);
+            AppInstPtr instance = appPTR->getAppInstance(openedProject);
             if (instance) {
-                GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>(instance);
+                GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
                 assert(guiApp);
                 if (guiApp) {
                     guiApp->getGui()->activateWindow();
@@ -151,11 +150,11 @@ Gui::openRecentFile()
         }
 
         ///if the current graph has no value, just load the project in the same window
-        if ( _imp->_appInstance->getProject()->isGraphWorthLess() ) {
-            _imp->_appInstance->getProject()->loadProject( path, f.fileName() );
+        if ( getApp()->getProject()->isGraphWorthLess() ) {
+            getApp()->getProject()->loadProject( path, f.fileName() );
         } else {
             CLArgs cl;
-            AppInstance* newApp = appPTR->newAppInstance(cl, false);
+            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
             newApp->getProject()->loadProject( path, f.fileName() );
         }
     }
@@ -387,10 +386,10 @@ Gui::getToolButtons() const
     return _imp->_toolButtons;
 }
 
-GuiAppInstance*
+GuiAppInstPtr
 Gui::getApp() const
 {
-    return _imp->_appInstance;
+    return _imp->_appInstance.lock();
 }
 
 const std::list<TabWidget*> &
@@ -751,7 +750,7 @@ void
 Gui::renderAllWriters()
 {
     try {
-        _imp->_appInstance->startWritersRenderingFromNames( areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int, std::pair<int, int> > >() );
+        getApp()->startWritersRenderingFromNames( areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int, std::pair<int, int> > >() );
     } catch (const std::exception& e) {
         Dialogs::warningDialog( tr("Render").toStdString(), e.what() );
     }
@@ -820,7 +819,7 @@ Gui::renderSelectedNode()
             }
         }
     }
-    _imp->_appInstance->startWritersRendering(false, workList);
+    getApp()->startWritersRendering(false, workList);
 } // Gui::renderSelectedNode
 
 void

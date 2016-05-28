@@ -30,6 +30,8 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
+#include <boost/algorithm/clamp.hpp>
+
 #include "Global/Macros.h"
 
 #include <QApplication> // qApp
@@ -243,8 +245,9 @@ Gui::restoreLayout(bool wipePrevious,
             int w = std::min( (*it)->w, screen.width() );
             int h = std::min( (*it)->h, screen.height() );
             window->resize(w, h);
-            int x = std::min(std::max( (*it)->x, screen.x() ), screen.right() - 50);
-            int y = std::min( std::max( (*it)->y, screen.y() + 50 ), screen.bottom() );
+            // If the screen size changed, make sure at least 50x50 pixels of the window are visible
+            int x = boost::algorithm::clamp( (*it)->x, screen.left(), screen.right() - 50 );
+            int y = boost::algorithm::clamp( (*it)->y, screen.top(), screen.bottom() - 50 );
             window->move( QPoint(x, y) );
         }
 

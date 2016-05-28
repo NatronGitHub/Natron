@@ -59,7 +59,7 @@ class NodeCollection
     Q_DECLARE_TR_FUNCTIONS(NodeCollection)
 
 public:
-    NodeCollection(AppInstance* app);
+    NodeCollection(const AppInstPtr& app);
 
     virtual ~NodeCollection();
 
@@ -68,7 +68,7 @@ public:
     void discardNodeGraphPointer();
 
     NodeGraphI* getNodeGraph() const;
-    AppInstance* getApplication() const;
+    AppInstPtr getApplication() const;
 
     /**
      * @brief Returns a copy of the nodes within the collection. MT-safe.

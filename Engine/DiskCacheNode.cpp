@@ -167,7 +167,7 @@ DiskCacheNode::knobChanged(KnobI* k,
         ret = false;
     }
 
-    return false;
+    return ret;
 }
 
 void
@@ -240,4 +240,7 @@ DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 }
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING;
+
+#include "moc_DiskCacheNode.cpp"
 

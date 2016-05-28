@@ -24,6 +24,8 @@
 
 #include "TrackerContextPrivate.h"
 
+#include <QtCore/QThreadPool>
+
 #include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
 #include "Engine/Project.h"
@@ -983,6 +985,12 @@ TrackerContextPrivate::trackStepLibMV(int trackIndex,
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
 
+#ifdef CERES_USE_OPENMP
+    // Set the number of threads Ceres may use
+    QThreadPool* tp = QThreadPool::globalInstance();
+    omp_set_num_threads(tp->maxThreadCount() - tp->activeThreadCount() - 1);
+#endif
+
     const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks = args.getTracks();
     const boost::shared_ptr<TrackMarkerAndOptions>& track = tracks[trackIndex];
     boost::shared_ptr<mv::AutoTrack> autoTrack = args.getLibMVAutoTrack();
@@ -1245,7 +1253,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
        Launch tracking in the scheduler thread.
      */
-    boost::shared_ptr<TrackArgs> args(new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight));
+    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight) );
     _imp->scheduler.track(args);
 } // TrackerContext::trackMarkers
 
@@ -2265,44 +2273,47 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
                 lastSampleWithRotation = itResults->scale;
             }
             // Get halfJitter samples before the given time
-            QList<TransformData>::const_iterator prevHalfIt = itResults;
             int nSamplesBefore = 0;
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
+            {
+                QList<TransformData>::const_iterator prevHalfIt = itResults;
+                while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
+                    if (prevHalfIt->hasRotationAndScale) {
+                        avg += prevHalfIt->rotation;
+                        lastSampleWithRotation = prevHalfIt->rotation;
+                        ++nSamplesBefore;
+                    }
+                    --prevHalfIt;
+                }
+
+                while (nSamplesBefore <= halfJitter && lastSampleWithRotation != 0. && prevHalfIt->hasRotationAndScale) {
+                    assert( prevHalfIt == validResults.begin() );
                     avg += prevHalfIt->rotation;
-                    lastSampleWithRotation = prevHalfIt->rotation;
                     ++nSamplesBefore;
                 }
-                --prevHalfIt;
-            }
-
-            while (nSamplesBefore <= halfJitter && lastSampleWithRotation != 0. && prevHalfIt->hasRotationAndScale) {
-                assert( prevHalfIt == validResults.begin() );
-                avg += prevHalfIt->rotation;
-                ++nSamplesBefore;
             }
 
             // Get halfJitter samples after the given time
             lastSampleWithRotation = 0.;
-            QList<TransformData>::const_iterator nextHalfIt = itResults;
             int nSamplesAfter = 0;
-            ++nextHalfIt;
+            {
+                QList<TransformData>::const_iterator nextHalfIt = itResults;
+                ++nextHalfIt;
 
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
-                    avg += nextHalfIt->rotation;
-                    lastSampleWithRotation = nextHalfIt->rotation;
+                while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
+                    if (nextHalfIt->hasRotationAndScale) {
+                        avg += nextHalfIt->rotation;
+                        lastSampleWithRotation = nextHalfIt->rotation;
+                        ++nSamplesAfter;
+                    }
+                    ++nextHalfIt;
+                }
+
+                while (nSamplesAfter < halfJitter && lastSampleWithRotation != 0.) {
+                    assert( nextHalfIt == validResults.end() );
+                    avg += lastSampleWithRotation;
                     ++nSamplesAfter;
                 }
-                ++nextHalfIt;
             }
-
-            while (nSamplesAfter < halfJitter && lastSampleWithRotation != 0.) {
-                assert( nextHalfIt == validResults.end() );
-                avg += lastSampleWithRotation;
-                ++nSamplesAfter;
-            }
-
             const int nSamples = nSamplesBefore + nSamplesAfter;
 
             if (nSamples) {
@@ -2330,44 +2341,47 @@ TrackerContextPrivate::computeTransformParamsFromTracksEnd(double refTime,
                 lastSampleWithScale = itResults->scale;
             }
             // Get halfJitter samples before the given time
-            QList<TransformData>::const_iterator prevHalfIt = itResults;
             int nSamplesBefore = 0;
-            while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
-                    avg += prevHalfIt->scale;
-                    lastSampleWithScale = prevHalfIt->scale;
+            {
+                QList<TransformData>::const_iterator prevHalfIt = itResults;
+                while (prevHalfIt != validResults.begin() && nSamplesBefore <= halfJitter) {
+                    if (prevHalfIt->hasRotationAndScale) {
+                        avg += prevHalfIt->scale;
+                        lastSampleWithScale = prevHalfIt->scale;
+                        ++nSamplesBefore;
+                    }
+                    --prevHalfIt;
+                }
+
+                while (nSamplesBefore <= halfJitter && lastSampleWithScale != 0.) {
+                    assert( prevHalfIt == validResults.begin() );
+                    avg += lastSampleWithScale;
                     ++nSamplesBefore;
                 }
-                --prevHalfIt;
-            }
-
-            while (nSamplesBefore <= halfJitter && lastSampleWithScale != 0.) {
-                assert( prevHalfIt == validResults.begin() );
-                avg += lastSampleWithScale;
-                ++nSamplesBefore;
             }
 
             // Get halfJitter samples after the given time
             lastSampleWithScale = 0.;
-            QList<TransformData>::const_iterator nextHalfIt = itResults;
             int nSamplesAfter = 0;
-            ++nextHalfIt;
+            {
+                QList<TransformData>::const_iterator nextHalfIt = itResults;
+                ++nextHalfIt;
 
-            while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
-                if (prevHalfIt->hasRotationAndScale) {
-                    avg += nextHalfIt->scale;
-                    lastSampleWithScale = nextHalfIt->scale;
+                while (nextHalfIt != validResults.end() && nSamplesAfter < halfJitter) {
+                    if (nextHalfIt->hasRotationAndScale) {
+                        avg += nextHalfIt->scale;
+                        lastSampleWithScale = nextHalfIt->scale;
+                        ++nSamplesAfter;
+                    }
+                    ++nextHalfIt;
+                }
+
+                while (nSamplesAfter < halfJitter && lastSampleWithScale != 0.) {
+                    assert( nextHalfIt == validResults.end() );
+                    avg += lastSampleWithScale;
                     ++nSamplesAfter;
                 }
-                ++nextHalfIt;
             }
-
-            while (nSamplesAfter < halfJitter && lastSampleWithScale != 0.) {
-                assert( nextHalfIt == validResults.end() );
-                avg += lastSampleWithScale;
-                ++nSamplesAfter;
-            }
-
             const int nSamples = nSamplesBefore + nSamplesAfter;
             if (nSamples) {
                 avg /= nSamples;

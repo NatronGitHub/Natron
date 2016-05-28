@@ -562,6 +562,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                                   boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>(),
                                                   stats,
                                                   *args[i]);
+                args[i]->isRenderingFlag.reset();
             }
 
             if (args[i] && args[i]->params) {
@@ -636,6 +637,9 @@ ViewerInstance::renderViewer(ViewIdx view,
                 ret[i] = renderViewer_internal(view, singleThreaded, isSequentialRender, viewerHash, canAbort, rotoPaintNode, useTLS, request,
                                                i == 0 ? stats : boost::shared_ptr<RenderStats>(),
                                                *args[i]);
+
+                // Reset the rednering flag
+                args[i]->isRenderingFlag.reset();
             }
 
             if (ret[i] != eViewerRenderRetCodeRender) {
@@ -748,7 +752,7 @@ copyAndSwap(const TextureRect& srcRect,
             unsigned char* srcBuf,
             unsigned char** dstBuf)
 {
-    //Ensure it has the correct size, resize it if needed
+    // Ensure it has the correct size, resize it if needed
     if ( (srcRect.x1 == dstRect.x1) &&
          ( srcRect.y1 == dstRect.y1) &&
          ( srcRect.x2 == dstRect.x2) &&
@@ -758,7 +762,7 @@ copyAndSwap(const TextureRect& srcRect,
         return false;
     }
 
-    //Use calloc so that newly allocated areas are already black and transparant
+    // Use calloc so that newly allocated areas are already black and transparent
     unsigned char* tmpBuf = (unsigned char*)calloc(dstBytesCount, 1);
 
     if (!tmpBuf) {
@@ -927,7 +931,6 @@ ViewerInstance::setupMinimalUpdateViewerParams(const SequenceTime time,
 
     // Flag that we are going to render
     outArgs->isRenderingFlag.reset( new RenderingFlagSetter( getNode() ) );
-
 } // ViewerInstance::setupMinimalUpdateViewerParams
 
 ViewerInstance::ViewerRenderRetCode
@@ -954,7 +957,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
             partialRects = _imp->partialUpdateRects;
             for (std::list<RectD>::iterator it = partialRects.begin(); it != partialRects.end(); ++it) {
                 RectI pixelRect;
-                it->toPixelEnclosing(outArgs->params->mipMapLevel, outArgs->params->pixelAspectRatio, &pixelRect);
+                it->toPixelEnclosing(mipmapLevel, outArgs->params->pixelAspectRatio, &pixelRect);
                 ///Intersect to the RoI
                 if ( pixelRect.intersect(outArgs->params->roi, &pixelRect) ) {
                     tiles.push_back(pixelRect);
@@ -1032,7 +1035,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 for (std::list<FrameEntryPtr>::iterator it = entries.begin(); it != entries.end(); ++it) {
                     appPTR->removeFromViewerCache(*it);
                 }
-                hasTextureCached = false;
             }
             // Find out if we have a corresponding tile in the cache
             FrameEntryPtr foundCachedEntry;
@@ -1186,7 +1188,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
         return eViewerRenderRetCodeRedraw;
     }
 
-    int activeA,activeB;
+    int activeA, activeB;
     getActiveInputs(activeA, activeB);
     // Fetch the viewer indexes that we should render from the A or B input depending on the textureIndex parameter
     if (textureIndex == 0) {
@@ -1270,13 +1272,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             return eViewerRenderRetCodeRender;
         }
     }
-#ifdef QT_CUSTOM_THREADPOOL
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( !isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance() );
     }
-#endif
-
 
 
     assert( !inArgs.params->nbCachedTile || inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
@@ -3240,7 +3239,8 @@ ViewerInstance::getActiveInputs(int & a,
                                 int &b) const
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+
     assert(isInspector);
     if (isInspector) {
         isInspector->getActiveInputs(a, b);
@@ -3251,22 +3251,28 @@ void
 ViewerInstance::setInputA(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+
     assert(isInspector);
     if (isInspector) {
         isInspector->setInputA(inputNb);
     }
+
+    Q_EMIT availableComponentsChanged();
 }
 
 void
 ViewerInstance::setInputB(int inputNb)
 {
     NodePtr n = getNode();
-    InspectorNode* isInspector = dynamic_cast<InspectorNode*>(n.get());
+    InspectorNode* isInspector = dynamic_cast<InspectorNode*>( n.get() );
+
     assert(isInspector);
     if (isInspector) {
         isInspector->setInputB(inputNb);
     }
+
+    Q_EMIT availableComponentsChanged();
 }
 
 int

@@ -43,7 +43,7 @@ NATRON_NAMESPACE_USING
 static AppManager* g_manager = 0;
 BaseTest::BaseTest()
     : testing::Test()
-    , _app(0)
+    , _app()
 {
 }
 
@@ -106,11 +106,11 @@ BaseTest::createNode(const QString & pluginID,
                      int majorVersion,
                      int minorVersion)
 {
-    CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, _app->getProject() );
+    CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, getApp()->getProject() );
 
     args.majorV = majorVersion;
     args.minorV = minorVersion;
-    NodePtr ret =  _app->createNode(args);
+    NodePtr ret =  getApp()->createNode(args);
 
 
     EXPECT_NE(ret.get(), (Node*)NULL);
@@ -136,7 +136,7 @@ BaseTest::connectNodes(NodePtr input,
     }
 
 
-    bool ret = _app->getProject()->connectNodes(inputNumber, input, output);
+    bool ret = getApp()->getProject()->connectNodes(inputNumber, input, output);
     EXPECT_EQ(expectedReturnValue, ret);
 
     if (expectedReturnValue) {
@@ -184,7 +184,7 @@ BaseTest::disconnectNodes(NodePtr input,
     }
 
     ///call disconnect
-    bool ret = _app->getProject()->disconnectNodes(input, output);
+    bool ret = getApp()->getProject()->disconnectNodes(input, output);
     EXPECT_EQ(expectedReturnvalue, ret);
 
     if (expectedReturnvalue) {
@@ -256,7 +256,7 @@ TEST_F(BaseTest, GenerateDot)
     w.frameStep = INT_MIN;
     w.useRenderStats = false;
     works.push_back(w);
-    _app->startWritersRendering(false, works);
+    getApp()->startWritersRendering(false, works);
 
     EXPECT_TRUE( QFile::exists(filePath) );
     QFile::remove(filePath);

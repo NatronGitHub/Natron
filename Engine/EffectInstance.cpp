@@ -98,7 +98,7 @@ EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
 }
 
 EffectInstance::EffectInstance(NodePtr node)
-    : NamedKnobHolder(node ? node->getApp() : NULL)
+    : NamedKnobHolder( node ? node->getApp() : AppInstPtr() )
     , _node(node)
     , _imp( new Implementation(this) )
 {
@@ -135,20 +135,31 @@ EffectInstance::unlock(const boost::shared_ptr<Image> & entry)
 void
 EffectInstance::clearPluginMemoryChunks()
 {
-    int toRemove;
+    PluginMemoryPtr mem;
     {
         QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-        toRemove = (int)_imp->pluginMemoryChunks.size();
+        if ( !_imp->pluginMemoryChunks.empty() ) {
+            mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+            while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
+                _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
+                mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+            }
+        }
     }
 
-    while (toRemove > 0) {
-        PluginMemory* mem;
+    while (mem) {
+        // This will remove the mem from the pluginMemoryChunks list
+        mem.reset();
         {
             QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-            mem = ( *_imp->pluginMemoryChunks.begin() );
+            if ( !_imp->pluginMemoryChunks.empty() ) {
+                mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+                while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
+                    _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
+                    mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
+                }
+            }
         }
-        delete mem;
-        --toRemove;
     }
 }
 
@@ -283,7 +294,7 @@ EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderA
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
-    assert(args->abortInfo);
+    assert( args->abortInfo.lock() );
     tls->frameArgs.push_back(args);
 }
 
@@ -348,10 +359,12 @@ EffectInstance::getRenderHash() const
 bool
 EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
                                         const AbortableRenderInfoPtr& abortInfo,
-                                        const EffectInstPtr& treeRoot) const
+                                        const EffectInstPtr& treeRoot)
 {
     if (!isRenderResponseToUserInteraction) {
         // Rendering is playback or render on disk
+
+        // If we have abort info, e just peek the atomic int inside the abort info, this is very fast
         if ( abortInfo && abortInfo->isAborted() ) {
             return true;
         }
@@ -360,40 +373,36 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
         if (treeRoot) {
             OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( treeRoot.get() );
             assert(effect);
-
-            return effect ? effect->isSequentialRenderBeingAborted() : false;
-        } else {
-            return false;
+            if (effect) {
+                return effect->isSequentialRenderBeingAborted();
+            }
         }
+
+        // We have no other means to know if abort was called
+        return false;
     } else {
         // This is a render issued to refresh the image on the Viewer
 
         if ( !abortInfo || !abortInfo->canAbort() ) {
+            // We do not have any abortInfo set or this render is not abortable. This should be avoided as much as possible!
             return false;
         }
 
-
+        // This is very fast, we just peek the atomic int inside the abort info
         if ( (int)abortInfo->isAborted() ) {
             return true;
         }
 
-        ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( treeRoot.get() );
-        if (isViewer) {
-            // If the viewer is already doing a sequential render, abort
-            if ( isViewer->isDoingSequentialRender() ) {
+        // If this node can start sequential renders (e.g: start playback like on the viewer or render on disk) and it is already doing a sequential render, abort
+        // this render
+        OutputEffectInstance* isRenderEffect = dynamic_cast<OutputEffectInstance*>( treeRoot.get() );
+        if (isRenderEffect) {
+            if ( isRenderEffect->isDoingSequentialRender() ) {
                 return true;
             }
-
-            // If the render was not aborted but it is no longer the latest render and the plug-in safety does not allow
-            // concurrent thread abort it
-            /*if (args->currentThreadSafety == eRenderSafetyInstanceSafe || args->currentThreadSafety == eRenderSafetyUnsafe) {
-                bool isLatestRender = isViewer->isLatestRender(args->textureIndex, args->abortInfo->age);
-                if (!isLatestRender) {
-                    return true;
-                }
-               }*/
         }
 
+        // The render was not aborted
         return false;
     }
 }
@@ -401,21 +410,26 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 bool
 EffectInstance::aborted() const
 {
-#ifdef QT_CUSTOM_THREADPOOL
     QThread* thisThread = QThread::currentThread();
-    AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(thisThread);
-#endif
 
+    /* If this thread is an AbortableThread, this function will be extremely fast*/
+    AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(thisThread);
+
+    /**
+       The solution here is to store per-render info on the thread that we retrieve.
+       These info contain an atomic integer determining whether this particular render was aborted or not.
+       If this thread does not have abort info yet on it, we retrieve them from the thread local storage of this node
+       and set it.
+       Threads that start a render generally already have the AbortableThread::setAbortInfo function called on them, but
+       threads spawned from the thread pool may not.
+     **/
     bool isRenderUserInteraction;
     AbortableRenderInfoPtr abortInfo;
     EffectInstPtr treeRoot;
 
-    // If the thread is an abortable thread, the first call to abort is slow (using TLS) then others are
-    // fast and just dereferences pointers
-#ifdef QT_CUSTOM_THREADPOOL
-    if ( !isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot) )
-#endif
-    {
+
+    if ( !isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot) ) {
+        // If this thread is not abortable or we did not set the abort info for this render yet, retrieve them from the TLS of this node.
         EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
         if (!tls) {
             return false;
@@ -425,21 +439,20 @@ EffectInstance::aborted() const
         }
         const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
         isRenderUserInteraction = args->isRenderResponseToUserInteraction;
-        abortInfo = args->abortInfo;
+        abortInfo = args->abortInfo.lock();
         if (args->treeRoot) {
             treeRoot = args->treeRoot->getEffectInstance();
         }
 
-#ifdef QT_CUSTOM_THREADPOOL
         if (isAbortableThread) {
             isAbortableThread->setAbortInfo(isRenderUserInteraction, abortInfo, treeRoot);
         }
-#endif
     }
 
-    return _imp->aborted(isRenderUserInteraction,
-                         abortInfo,
-                         treeRoot);
+    // The internal function that given a AbortableRenderInfoPtr determines if a render was aborted or not
+    return Implementation::aborted(isRenderUserInteraction,
+                                   abortInfo,
+                                   treeRoot);
 } // EffectInstance::aborted
 
 bool
@@ -2843,10 +2856,12 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     }
 }
 
-PluginMemory*
+PluginMemoryPtr
 EffectInstance::newMemoryInstance(size_t nBytes)
 {
-    PluginMemory* ret = new PluginMemory( getNode()->getEffectInstance() ); //< hack to get "this" as a shared ptr
+    PluginMemoryPtr ret( new PluginMemory( shared_from_this() ) ); //< hack to get "this" as a shared ptr
+
+    addPluginMemoryPointer(ret);
     bool wasntLocked = ret->alloc(nBytes);
 
     assert(wasntLocked);
@@ -2856,7 +2871,7 @@ EffectInstance::newMemoryInstance(size_t nBytes)
 }
 
 void
-EffectInstance::addPluginMemoryPointer(PluginMemory* mem)
+EffectInstance::addPluginMemoryPointer(const PluginMemoryPtr& mem)
 {
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
 
@@ -2864,13 +2879,20 @@ EffectInstance::addPluginMemoryPointer(PluginMemory* mem)
 }
 
 void
-EffectInstance::removePluginMemoryPointer(PluginMemory* mem)
+EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
 {
     QMutexLocker l(&_imp->pluginMemoryChunksMutex);
-    std::list<PluginMemory*>::iterator it = std::find(_imp->pluginMemoryChunks.begin(), _imp->pluginMemoryChunks.end(), mem);
 
-    if ( it != _imp->pluginMemoryChunks.end() ) {
-        _imp->pluginMemoryChunks.erase(it);
+    for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+        PluginMemoryPtr p = it->lock();
+        if (!p) {
+            continue;
+        }
+        if (p.get() == mem) {
+            _imp->pluginMemoryChunks.erase(it);
+
+            return;
+        }
     }
 }
 
@@ -3279,9 +3301,7 @@ StatusEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
-#ifdef QT_CUSTOM_THREADPOOL
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode() );
-#endif
 
     return render(args);
 }
@@ -3567,9 +3587,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                            ViewIdx view)
 {
     NON_RECURSIVE_ACTION();
-#ifdef QT_CUSTOM_THREADPOOL
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
-#endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     ++tls->beginEndRenderCount;
@@ -3590,9 +3608,7 @@ EffectInstance::endSequenceRender_public(double first,
                                          ViewIdx view)
 {
     NON_RECURSIVE_ACTION();
-#ifdef QT_CUSTOM_THREADPOOL
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
-#endif
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     --tls->beginEndRenderCount;
@@ -4116,10 +4132,6 @@ EffectInstance::getOverlayInteractRenderScale() const
     }
 
     return renderScale;
-
-    RenderScale r(1.);
-
-    return r;
 }
 
 void
@@ -4213,12 +4225,10 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
             const bool isRenderUserInteraction = true;
             const bool isSequentialRender = false;
-#ifdef QT_CUSTOM_THREADPOOL
             AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
             if (isAbortable) {
                 isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );
             }
-#endif
             setter.reset( new ParallelRenderArgsSetter( time,
                                                         viewIdx, //view
                                                         isRenderUserInteraction, // isRenderUserInteraction
@@ -4235,9 +4245,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         }
         {
             RECURSIVE_ACTION();
-#ifdef QT_CUSTOM_THREADPOOL
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
-#endif
             ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
         }
     }
@@ -4768,7 +4776,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     double inputPar = 1.;
     bool inputParSet = false;
-    ImagePremultiplicationEnum premult;
+    ImagePremultiplicationEnum premult = eImagePremultiplicationOpaque;
     bool premultSet = false;
     for (int i = 0; i < nInputs; ++i) {
         const EffectInstPtr& input = inputs[i];

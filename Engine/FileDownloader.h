@@ -27,12 +27,10 @@
 
 #include "Global/Macros.h"
 
+#include <boost/scoped_ptr.hpp>
+
 CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
-#include <QObject>
-#include <QtCore/QByteArray>
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
-#include <QNetworkReply>
+#include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated-register)
 
 #include "Engine/EngineFwd.h"
@@ -72,8 +70,7 @@ public:
 
     virtual ~FileDownloader();
 
-    QByteArray downloadedData() const;
-
+    const QByteArray& downloadedData() const;
     QNetworkReply* getReply() const;
 
 Q_SIGNALS:
@@ -90,9 +87,9 @@ public Q_SLOTS:
 private:
 
     QNetworkReply* m_reply;
-    QNetworkAccessManager m_WebCtrl;
-    QByteArray m_DownloadedData;
-    QTimer* m_timer;
+    boost::scoped_ptr<QNetworkAccessManager> m_WebCtrl;
+    boost::scoped_ptr<QByteArray> m_DownloadedData;
+    boost::scoped_ptr<QTimer> m_timer;
 };
 
 NATRON_NAMESPACE_EXIT;

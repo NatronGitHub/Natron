@@ -70,18 +70,18 @@ class App
     Q_DECLARE_TR_FUNCTIONS(App)
 
 private:
-    AppInstance* _instance;
+    AppInstWPtr _instance;
 
 public:
 
 
-    App(AppInstance* instance);
+    App(const AppInstPtr& instance);
 
     virtual ~App() {}
 
     int getAppID() const;
 
-    AppInstance* getInternalApp() const;
+    AppInstPtr getInternalApp() const;
 
     /**
      * @brief Creates a new instance of the plugin identified by the given pluginID.

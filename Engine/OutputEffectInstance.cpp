@@ -91,7 +91,6 @@ OutputEffectInstance::OutputEffectInstance(NodePtr node)
 
 OutputEffectInstance::~OutputEffectInstance()
 {
-
 }
 
 void
@@ -250,6 +249,9 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
                                                   "Would you like to continue?") );
                 StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
                 if (rep != eStandardButtonOk) {
+                    // Notify progress that we were aborted
+                    getRenderEngine()->s_renderFinished(1);
+
                     return;
                 }
             } else {
@@ -352,7 +354,7 @@ OutputEffectInstance::isDoingSequentialRender() const
 void
 OutputEffectInstance::initializeData()
 {
-    _engine.reset(createRenderEngine());
+    _engine.reset( createRenderEngine() );
 }
 
 RenderEngine*

@@ -129,7 +129,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionRenderSelected "Render Selected Writers"
 
 #define kShortcutIDActionEnableRenderStats "enableRenderStats"
-#define kShortcutDescActionEnableRenderStats "Enable render statistics"
+#define kShortcutDescActionEnableRenderStats "Enable Render Statistics"
 
 #define kShortcutIDActionRenderAll "renderAll"
 #define kShortcutDescActionRenderAll "Render All Writers"
@@ -232,22 +232,22 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionAlpha "Display Alpha Channel"
 
 #define kShortcutIDActionLuminanceA "luminanceA"
-#define kShortcutDescActionLuminanceA "Display Luminance on input A only"
+#define kShortcutDescActionLuminanceA "Display Luminance on Input A Only"
 
 #define kShortcutIDActionMatteOverlay "matteOverlay"
-#define kShortcutDescActionMatteOverlay "Overlay the channel alpha channel"
+#define kShortcutDescActionMatteOverlay "Overlay Alpha Channel"
 
 #define kShortcutIDActionRedA "channelRA"
 #define kShortcutDescActionRedA "Display Red Channel on input A only"
 
 #define kShortcutIDActionGreenA "channelGA"
-#define kShortcutDescActionGreenA "Display Green Channel on input A only"
+#define kShortcutDescActionGreenA "Display Green Channel on Input A Only"
 
 #define kShortcutIDActionBlueA "channelBA"
-#define kShortcutDescActionBlueA "Display Blue Channel on input A only"
+#define kShortcutDescActionBlueA "Display Blue Channel on Input A Only"
 
 #define kShortcutIDActionAlphaA "channelAA"
-#define kShortcutDescActionAlphaA "Display Alpha Channel on input A only"
+#define kShortcutDescActionAlphaA "Display Alpha Channel on Input A Only"
 
 #define kShortcutIDActionFitViewer "fitViewer"
 #define kShortcutDescActionFitViewer "Fit Image to Viewer"
@@ -259,19 +259,19 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionRefresh "Refresh Image"
 
 #define kShortcutIDActionRefreshWithStats "refreshWithStats"
-#define kShortcutDescActionRefreshWithStats "Refresh Image and show render statistics"
+#define kShortcutDescActionRefreshWithStats "Refresh Image and Show Render Statistics"
 
 #define kShortcutIDActionROIEnabled "userRoiEnabled"
 #define kShortcutDescActionROIEnabled "Enable User RoI"
 
 #define kShortcutIDActionNewROI "newRoi"
-#define kShortcutDescActionNewROI "New user RoI"
+#define kShortcutDescActionNewROI "New User RoI"
 
 #define kShortcutIDActionPauseViewer "pauseUpdates"
 #define kShortcutDescActionPauseViewer "Pause Updates"
 
 #define kShortcutIDActionPauseViewerInputA "pauseUpdatesA"
-#define kShortcutDescActionPauseViewerInputA "Pause Updates on input A only"
+#define kShortcutDescActionPauseViewerInputA "Pause Updates on Input A Only"
 
 #define kShortcutIDActionProxyEnabled "proxyEnabled"
 #define kShortcutDescActionProxyEnabled "Enable Proxy Rendering"
@@ -319,7 +319,7 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionHideTop "Show/Hide Top Toolbar"
 
 #define kShortcutIDActionHideInfobar "hideInfo"
-#define kShortcutDescActionHideInfobar "Show/Hide info bar"
+#define kShortcutDescActionHideInfobar "Show/Hide Info Bar"
 
 #define kShortcutIDActionHideAll "hideAll"
 #define kShortcutDescActionHideAll "Hide All"
@@ -389,10 +389,10 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionPlayerLast "Go to Last Frame"
 
 #define kShortcutIDActionPlayerPlaybackIn "pbIn"
-#define kShortcutDescActionPlayerPlaybackIn "Set Playback In Point"
+#define kShortcutDescActionPlayerPlaybackIn "Set Playback \"In\" Point"
 
 #define kShortcutIDActionPlayerPlaybackOut "pbOut"
-#define kShortcutDescActionPlayerPlaybackOut "Set Playback Out Point"
+#define kShortcutDescActionPlayerPlaybackOut "Set Playback \"Out\" Point"
 
 
 ///////////NODEGRAPH SHORTCUTS
@@ -495,10 +495,10 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutDescActionGraphExtractNode "Extract Node"
 
 #define kShortcutIDActionGraphMakeGroup "makeGroup"
-#define kShortcutDescActionGraphMakeGroup "Group From Selection"
+#define kShortcutDescActionGraphMakeGroup "Group from Selection"
 
 #define kShortcutIDActionGraphExpandGroup "expandGroup"
-#define kShortcutDescActionGraphExpandGroup "Expand group"
+#define kShortcutDescActionGraphExpandGroup "Expand Group"
 
 ///////////CURVEEDITOR SHORTCUTS
 #define kShortcutIDActionCurveEditorRemoveKeys "remove"
@@ -539,22 +539,22 @@ CLANG_DIAG_ON(uninitialized)
 
 // Dope Sheet Editor shortcuts
 #define kShortcutIDActionDopeSheetEditorDeleteKeys "deleteKeys"
-#define kShortcutDescActionDopeSheetEditorDeleteKeys "Delete selected keyframes"
+#define kShortcutDescActionDopeSheetEditorDeleteKeys "Delete Selected Keyframes"
 
 #define kShortcutIDActionDopeSheetEditorFrameSelection "frameonselection"
-#define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on selection"
+#define kShortcutDescActionDopeSheetEditorFrameSelection "Frame on Selection"
 
 #define kShortcutIDActionDopeSheetEditorSelectAllKeyframes "selectall"
-#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select all"
+#define kShortcutDescActionDopeSheetEditorSelectAllKeyframes "Select All"
 
 #define kShortcutIDActionDopeSheetEditorRenameNode "renamenode"
-#define kShortcutDescActionDopeSheetEditorRenameNode "Rename node label"
+#define kShortcutDescActionDopeSheetEditorRenameNode "Rename Node"
 
 #define kShortcutIDActionDopeSheetEditorCopySelectedKeyframes "copyselectedkeyframes"
-#define kShortcutDescActionDopeSheetEditorCopySelectedKeyframes "Copy selected keyframes"
+#define kShortcutDescActionDopeSheetEditorCopySelectedKeyframes "Copy Selected Keyframes"
 
 #define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
-#define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste keyframes"
+#define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste Keyframes"
 
 // Script editor shortcuts
 #define kShortcutIDActionScriptEditorPrevScript "prevScript"

@@ -2348,7 +2348,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         centers[i] = getCenterKnobForTracker(*it);
         assert(centers[i]);
     }
-    GuiAppInstance* app = publicInterface->getGui()->getApp();
+    GuiAppInstPtr app = publicInterface->getGui()->getApp();
     CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, publicInterface->getMainInstance()->getGroup() );
     NodePtr cornerPin = app->createNode(args);
 

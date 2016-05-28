@@ -980,7 +980,12 @@ WriteNode::knobChanged(KnobI* k,
 
             return false;
         }
-        _imp->refreshPluginSelectorKnob();
+        try {
+            _imp->refreshPluginSelectorKnob();
+        } catch (const std::exception& e) {
+            setPersistentMessage( eMessageTypeError, e.what() );
+        }
+
         boost::shared_ptr<KnobOutputFile> fileKnob = _imp->outputFileKnob.lock();
         assert(fileKnob);
         std::string filename = fileKnob->getValue();
@@ -1027,6 +1032,7 @@ WriteNode::knobChanged(KnobI* k,
                 ( k->getName() == kParamLastFrame) ||
                 ( k->getName() == kParamFrameRange) ) {
         _imp->setReadNodeOriginalFrameRange();
+        ret = false;
     } else {
         ret = false;
     }
@@ -1036,6 +1042,31 @@ WriteNode::knobChanged(KnobI* k,
 
     return ret;
 } // WriteNode::knobChanged
+
+bool
+WriteNode::isViewAware() const
+{
+    NodePtr writer = _imp->embeddedPlugin.lock();
+
+    if (writer) {
+        return writer->getEffectInstance()->isViewAware();
+    } else {
+        return false;
+    }
+}
+
+void
+WriteNode::getFrameRange(double *first,
+                         double *last)
+{
+    NodePtr writer = _imp->embeddedPlugin.lock();
+
+    if (writer) {
+        writer->getEffectInstance()->getFrameRange(first, last);
+    } else {
+        EffectInstance::getFrameRange(first, last);
+    }
+}
 
 void
 WriteNode::renderSequenceStarted()

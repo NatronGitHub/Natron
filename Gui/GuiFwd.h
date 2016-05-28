@@ -99,7 +99,6 @@ NATRON_NAMESPACE_ENTER;
 class AboutWindow;
 class ActionWithShortcut;
 class AnimatedCheckBox;
-class AnimationButton;
 class BoundAction;
 class Button;
 class ChannelsComboBox;
@@ -208,6 +207,7 @@ class PyPanel;
 class PyTabWidget;
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+typedef boost::shared_ptr<GuiAppInstance> GuiAppInstPtr;
 typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
 typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
 typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;

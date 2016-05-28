@@ -27,6 +27,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <cassert>
 
 #include <QtCore/QMutex>
 #include <QtCore/QAtomicInt>
@@ -47,50 +48,60 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#ifdef QT_CUSTOM_THREADPOOL
 typedef std::set<AbortableThread*> ThreadSet;
-#endif
 
 struct AbortableRenderInfoPrivate
 {
+    AbortableRenderInfo* _p;
     bool canAbort;
     QAtomicInt aborted;
     U64 age;
     mutable QMutex threadsMutex;
-#ifdef QT_CUSTOM_THREADPOOL
     ThreadSet threadsForThisRender;
-#endif
+    mutable QMutex timerMutex;
+    bool timerStarted;
+    QTimer* abortTimeoutTimer;
+    QThread* ownerThread;
 
-    boost::scoped_ptr<QTimer> abortTimeoutTimer;
-
-    AbortableRenderInfoPrivate(bool canAbort,
+    AbortableRenderInfoPrivate(AbortableRenderInfo* p,
+                               bool canAbort,
                                U64 age)
-        : canAbort(canAbort)
+        : _p(p)
+        , canAbort(canAbort)
         , aborted()
         , age(age)
         , threadsMutex()
-#ifdef QT_CUSTOM_THREADPOOL
         , threadsForThisRender()
-#endif
-        , abortTimeoutTimer()
+        , timerMutex()
+        , timerStarted(false)
+        , abortTimeoutTimer(new QTimer)
+        , ownerThread( QThread::currentThread() )
     {
         aborted.fetchAndStoreAcquire(0);
+
+        abortTimeoutTimer->setSingleShot(true);
+        QObject::connect( abortTimeoutTimer, SIGNAL(timeout()), p, SLOT(onAbortTimerTimeout()) );
+        QObject::connect( p, SIGNAL(startTimerInOriginalThread()), p, SLOT(onStartTimerInOriginalThreadTriggered()) );
     }
 };
 
 AbortableRenderInfo::AbortableRenderInfo()
-    : _imp( new AbortableRenderInfoPrivate(true, 0) )
+    : _imp( new AbortableRenderInfoPrivate(this, true, 0) )
 {
 }
 
 AbortableRenderInfo::AbortableRenderInfo(bool canAbort,
                                          U64 age)
-    : _imp( new AbortableRenderInfoPrivate(canAbort, age) )
+    : _imp( new AbortableRenderInfoPrivate(this, canAbort, age) )
 {
 }
 
 AbortableRenderInfo::~AbortableRenderInfo()
 {
+    // post an event to delete the timer in the thread that created it
+    if (_imp->abortTimeoutTimer) {
+        _imp->abortTimeoutTimer->deleteLater();
+    }
 }
 
 U64
@@ -119,16 +130,20 @@ AbortableRenderInfo::setAborted()
     if (abortedValue > 0) {
         return;
     }
+    bool callInSeparateThread = false;
+    {
+        QMutexLocker k(&_imp->timerMutex);
+        _imp->timerStarted = true;
+        callInSeparateThread = QThread::currentThread() != _imp->ownerThread;
+    }
 
-    QMutexLocker k(&_imp->threadsMutex);
-    assert(!_imp->abortTimeoutTimer);
-    _imp->abortTimeoutTimer.reset( new QTimer() );
-    _imp->abortTimeoutTimer->setSingleShot(true);
-    QObject::connect( _imp->abortTimeoutTimer.get(), SIGNAL(timeout()), this, SLOT(onAbortTimerTimeout()) );
-    _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
+    // Star the timer in its owner thread, i.e the thread that created it
+    if (callInSeparateThread) {
+        Q_EMIT startTimerInOriginalThread();
+    } else {
+        onStartTimerInOriginalThreadTriggered();
+    }
 }
-
-#ifdef QT_CUSTOM_THREADPOOL
 
 void
 AbortableRenderInfo::registerThreadForRender(AbortableThread* thread)
@@ -141,46 +156,78 @@ AbortableRenderInfo::registerThreadForRender(AbortableThread* thread)
 bool
 AbortableRenderInfo::unregisterThreadForRender(AbortableThread* thread)
 {
-    QMutexLocker k(&_imp->threadsMutex);
-    ThreadSet::iterator found = _imp->threadsForThisRender.find(thread);
     bool ret = false;
+    bool threadsEmpty = false;
+    {
+        QMutexLocker k(&_imp->threadsMutex);
+        ThreadSet::iterator found = _imp->threadsForThisRender.find(thread);
 
-    if ( found != _imp->threadsForThisRender.end() ) {
-        _imp->threadsForThisRender.erase(found);
-        ret = true;
+        if ( found != _imp->threadsForThisRender.end() ) {
+            _imp->threadsForThisRender.erase(found);
+            ret = true;
+        }
+        // Stop the timer if no more threads are running for this render
+        threadsEmpty = _imp->threadsForThisRender.empty();
     }
-    // Stop the timer has no more threads are running for this render
-    if (_imp->threadsForThisRender.empty() && _imp->abortTimeoutTimer) {
-        _imp->abortTimeoutTimer->stop();
+
+    if (threadsEmpty) {
+        {
+            QMutexLocker k(&_imp->timerMutex);
+            if (_imp->abortTimeoutTimer) {
+                _imp->timerStarted = false;
+            }
+        }
     }
 
     return ret;
 }
 
-#endif // QT_CUSTOM_THREADPOOL
+void
+AbortableRenderInfo::onStartTimerInOriginalThreadTriggered()
+{
+    assert(QThread::currentThread() == _imp->ownerThread);
+    _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
+}
 
 void
 AbortableRenderInfo::onAbortTimerTimeout()
 {
-#ifdef QT_CUSTOM_THREADPOOL
-
-    // In background mode, let the process continue
+    {
+        QMutexLocker k(&_imp->timerMutex);
+        assert(QThread::currentThread() == _imp->ownerThread);
+        _imp->abortTimeoutTimer->deleteLater();
+        _imp->abortTimeoutTimer = 0;
+        if (!_imp->timerStarted) {
+            // The timer was stopped
+            return;
+        }
+    }
 
     // Runs in the thread that called setAborted()
-    QMutexLocker k(&_imp->threadsMutex);
-    if ( _imp->threadsForThisRender.empty() ) {
-        return;
+    ThreadSet threads;
+    {
+        QMutexLocker k(&_imp->threadsMutex);
+        if ( _imp->threadsForThisRender.empty() ) {
+            return;
+        }
+        threads = _imp->threadsForThisRender;
     }
     QString timeoutStr = Timer::printAsTime(NATRON_ABORT_TIMEOUT_MS / 1000, false);
     std::stringstream ss;
+
     ss << tr("One or multiple render seems to not be responding anymore after numerous attempt made by %1 to abort them for the last %2.").arg ( QString::fromUtf8( NATRON_APPLICATION_NAME) ).arg(timeoutStr).toStdString() << std::endl;
     ss << tr("This is likely due to a render taking too long in a plug-in.").toStdString() << std::endl << std::endl;
-    ss << tr("List of stalled renders:").toStdString() << std::endl << std::endl;
-    for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
+
+    std::stringstream ssThreads;
+    ssThreads << tr("List of stalled render(s):").toStdString() << std::endl << std::endl;
+
+    bool hasAtLeastOneThreadInNodeAction = false;
+    for (ThreadSet::const_iterator it = threads.begin(); it != threads.end(); ++it) {
         std::string actionName;
         NodePtr node;
         (*it)->getCurrentActionInfos(&actionName, &node);
         if (node) {
+            hasAtLeastOneThreadInNodeAction = true;
             // Don't show a dialog on timeout for writers since reading/writing from/to a file may be long and most libraries don't provide write callbacks anyway
             if ( node->getEffectInstance()->isReader() || node->getEffectInstance()->isWriter() ) {
                 return;
@@ -189,21 +236,28 @@ AbortableRenderInfo::onAbortTimerTimeout()
             nodeName = node->getFullyQualifiedName();
             pluginId = node->getPluginID();
 
-            ss << " - " << (*it)->getThreadName()  << tr(" stalled in:").toStdString() << std::endl << std::endl;
+            ssThreads << " - " << (*it)->getThreadName()  << tr(" stalled in:").toStdString() << std::endl << std::endl;
 
             if ( !nodeName.empty() ) {
-                ss << "    Node: " << nodeName << std::endl;
+                ssThreads << "    Node: " << nodeName << std::endl;
             }
             if ( !pluginId.empty() ) {
-                ss << "    Plugin: " << pluginId << std::endl;
+                ssThreads << "    Plugin: " << pluginId << std::endl;
             }
             if ( !actionName.empty() ) {
-                ss << "    Action: " << actionName << std::endl;
+                ssThreads << "    Action: " << actionName << std::endl;
             }
-            ss << std::endl;
+            ssThreads << std::endl;
         }
     }
     ss << std::endl;
+
+    if (hasAtLeastOneThreadInNodeAction) {
+        ss << ssThreads.str();
+    }
+
+    // Hold a sharedptr to this because it might get destroyed before the dialog returns
+    boost::shared_ptr<AbortableRenderInfo> thisShared = shared_from_this();
 
     if ( appPTR->isBackground() ) {
         qDebug() << ss.str().c_str();
@@ -215,12 +269,12 @@ AbortableRenderInfo::onAbortTimerTimeout()
         StandardButtonEnum reply = Dialogs::questionDialog(tr("A Render is not responding anymore").toStdString(), ss.str(), false, StandardButtons(eStandardButtonYes | eStandardButtonNo), eStandardButtonNo);
         if (reply == eStandardButtonYes) {
             // Kill threads
+            QMutexLocker k(&_imp->threadsMutex);
             for (ThreadSet::const_iterator it = _imp->threadsForThisRender.begin(); it != _imp->threadsForThisRender.end(); ++it) {
                 (*it)->killThread();
             }
         }
     }
-#endif // ifdef QT_CUSTOM_THREADPOOL
 } // AbortableRenderInfo::onAbortTimerTimeout
 
 NATRON_NAMESPACE_EXIT;

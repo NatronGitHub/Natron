@@ -214,30 +214,38 @@ NodeGraph::popFindDialog(const QPoint& p)
 }
 
 void
-NodeGraph::popRenameDialog(const QPoint& pos)
+NodeGraph::renameNode()
 {
     NodeGuiPtr node;
 
     if (_imp->_selection.size() == 1) {
         node = _imp->_selection.front();
     } else {
+        Dialogs::errorDialog( tr("Rename node").toStdString(), tr("You must select exactly 1 node to rename.").toStdString() );
+
         return;
     }
 
     assert(node);
 
 
-    QPoint realPos = pos;
+    QPointF realPos = node->getPos_mt_safe();
+    //qDebug() << "getPos" << realPos.x() << realPos.y();
+    realPos = node->mapFromParent(realPos);
+    //qDebug() << "fromParent" << realPos.x() << realPos.y();
+    realPos = node->mapToScene(realPos);
+    QPoint global = this->mapFromScene(realPos);
+    global = this->mapToGlobal(global);
+    //qDebug() << "toGlobal" << global.x() << global.y();
     EditNodeNameDialog* dialog = new EditNodeNameDialog(node, this);
 
-    if ( (realPos.x() == 0) && (realPos.y() == 0) ) {
-        QPoint global = QCursor::pos();
+    {
         QSize sizeH = dialog->sizeHint();
         global.rx() -= sizeH.width() / 2;
-        global.ry() -= sizeH.height() / 2;
+        global.ry() += sizeH.height() / 2;
         realPos = global;
+        //qDebug() << realPos.x() << realPos.y();
     }
-
     QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()) );
     QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()) );
     dialog->move( realPos.x(), realPos.y() );

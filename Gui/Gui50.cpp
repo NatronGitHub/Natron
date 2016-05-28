@@ -93,7 +93,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/RightClickableWidget.h"
-#include "Gui/RenderingProgressDialog.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/ShortCutEditor.h"
 #include "Gui/SpinBox.h"
@@ -1037,7 +1036,7 @@ Gui::centerOpenedViewersOn(SequenceTime left,
 void
 Gui::ddeOpenFile(const QString& filePath)
 {
-    _imp->_appInstance->handleFileOpenEvent( filePath.toStdString() );
+    getApp()->handleFileOpenEvent( filePath.toStdString() );
 }
 
 #endif
@@ -1233,7 +1232,7 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
         if (extLower == NATRON_PROJECT_FILE_EXT) {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
             assert( !content.empty() );
-            AppInstance* appInstance = openProject( content.begin()->second.absoluteFileName() );
+            AppInstPtr appInstance = openProject( content.begin()->second.absoluteFileName() );
             Q_UNUSED(appInstance);
         } else if (extLower == "py") {
             const std::map<int, SequenceParsing::FileNameContent>& content = sequence->getFrameIndexes();
