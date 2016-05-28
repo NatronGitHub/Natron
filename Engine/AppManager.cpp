@@ -635,10 +635,17 @@ AppManager::initializeOpenGLFunctionsOnce()
 }
 
 #ifdef __NATRON_WIN32__
-const
-AppManager::OSGLContext_wgl_data* getWGLData() const
+const OSGLContext_wgl_data*
+AppManager::getWGLData() const
 {
     return _imp->wglInfo.get();
+}
+#endif
+#ifdef __NATRON_LINUX__
+const OSGLContext_glx_data*
+AppManager::getGLXData() const
+{
+    return _imp->glxInfo.get();
 }
 #endif
 

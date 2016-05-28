@@ -51,19 +51,17 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
     ADD_ATTR(NSOpenGLPFAClosestPolicy);
 
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= 101000
-    if (major >= 4)
-    {
+    if (major >= 4) {
         ADD_ATTR2(NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core);
-    }
-    else
+    } else
 #endif /*MAC_OS_X_VERSION_MAX_ALLOWED*/
-        if (major >= 3)
-        {
+    {
+        if (major >= 3) {
             ADD_ATTR2(NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core);
         }
+    }
 
-    if (major <= 2)
-    {
+    if (major <= 2) {
         if (pixelFormatAttrs.auxBuffers != FramebufferConfig::ATTR_DONT_CARE)
             ADD_ATTR2(NSOpenGLPFAAuxBuffers, pixelFormatAttrs.auxBuffers);
 
@@ -83,8 +81,7 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
 
     if (pixelFormatAttrs.redBits != FramebufferConfig::ATTR_DONT_CARE &&
         pixelFormatAttrs.greenBits != FramebufferConfig::ATTR_DONT_CARE &&
-        pixelFormatAttrs.blueBits != FramebufferConfig::ATTR_DONT_CARE)
-    {
+        pixelFormatAttrs.blueBits != FramebufferConfig::ATTR_DONT_CARE) {
         int colorBits = pixelFormatAttrs.redBits +
         pixelFormatAttrs.greenBits +
         pixelFormatAttrs.blueBits;

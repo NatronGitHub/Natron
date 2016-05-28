@@ -77,12 +77,15 @@ public:
 
     ~OSGLContext_win();
 
-    static void makeContextCurrent(const OSGLContext_win* context);
+    static bool makeContextCurrent(const OSGLContext_win* context);
 
     void swapBuffers();
 
     void swapInterval(int interval);
 
+    static void initWGLData(OSGLContext_wgl_data* wglInfo);
+    static bool loadWGLExtensions(OSGLContext_wgl_data* wglInfo);
+    static void destroyWGLData(OSGLContext_wgl_data* wglInfo);
 private:
 
     int getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, HWND window, int pixelFormat, int attrib);

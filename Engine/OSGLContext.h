@@ -142,6 +142,8 @@ public:
      **/
     static OSGLContextPtr getCurrentContext();
 
+    static bool stringInExtensionString(const char* string, const char* extensions);
+
 private:
 
     boost::scoped_ptr<OSGLContextPrivate> _imp;

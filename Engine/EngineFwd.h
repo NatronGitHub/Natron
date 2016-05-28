@@ -228,6 +228,9 @@ struct Matrix3x3;
 #ifdef __NATRON_WIN32__
 struct OSGLContext_wgl_data;
 #endif
+#ifdef __NATRON_LINUX__
+struct OSGLContext_glx_data;
+#endif
 
 NATRON_PYTHON_NAMESPACE_ENTER;
 class App;

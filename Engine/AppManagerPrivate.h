@@ -45,6 +45,7 @@
 #include <fcntl.h>
 #include "client/linux/handler/exception_handler.h"
 #include "client/linux/crash_generation/crash_generation_server.h"
+#include "Engine/OSGLContext_glx.h"
 #elif defined(Q_OS_WIN32)
 #include "client/windows/handler/exception_handler.h"
 #include "Engine/OSGLContext_win.h"
@@ -152,6 +153,9 @@ public:
 
 #ifdef Q_OS_WIN32
     boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;
+#endif
+#ifdef Q_OS_LINUX
+    boost::scoped_ptr<OSGLContext_glx_data> glxInfo;
 #endif
 
     boost::scoped_ptr<QCoreApplication> _qApp;

@@ -582,6 +582,9 @@ public:
 #ifdef __NATRON_WIN32__
     const OSGLContext_wgl_data* getWGLData() const;
 #endif
+#ifdef __NATRON_LINUX__
+    const OSGLContext_glx_data* getGLXData() const;
+#endif
 
 public Q_SLOTS:
 

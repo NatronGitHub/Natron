@@ -23,7 +23,99 @@
 
 #include <sstream>
 #include "Engine/AppManager.h"
+#include "Engine/OSGLContext.h"
 
+
+static bool extensionSupported(const char* extension, OSGLContext_wgl_data* data)
+{
+    const char* extensions;
+
+    _GLFWwindow* window = _glfwPlatformGetCurrentContext();
+
+    if (data->GetExtensionsStringEXT) {
+        extensions = data->GetExtensionsStringEXT();
+        if (extensions) {
+            if (OSGLContext::stringInExtensionString(extension, extensions))
+                return true;
+        }
+    }
+
+    if (data->GetExtensionsStringARB)
+    {
+        extensions = data->GetExtensionsStringARB(window->context.wgl.dc);
+        if (extensions) {
+            if (OSGLContext::stringInExtensionString(extension, extensions)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void
+OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
+{
+    wglInfo->instance = LoadLibraryA("opengl32.dll");
+    if (!wglInfo->instance) {
+        assert(false);
+        throw std::runtime_error("WGL: Failed to load opengl32.dll");
+    }
+
+    wglInfo->CreateContext = (WGLCREATECONTEXT_T)GetProcAddress(wglInfo->instance, "wglCreateContext");
+    wglInfo->DeleteContext = (WGLDELETECONTEXT_T)GetProcAddress(wglInfo->instance, "wglDeleteContext");
+    wglInfo->GetProcAddress = (WGLGETPROCADDRESS_T)GetProcAddress(wglInfo->instance, "wglGetProcAddress");
+    wglInfo->MakeCurrent = (WGLMAKECURRENT_T)GetProcAddress(wglInfo->instance, "wglMakeCurrent");
+    wglInfo->ShareLists = (WGLSHARELISTS_T)GetProcAddress(wglInfo->instance, "wglShareLists");
+
+}
+
+bool
+OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
+{
+    // This should be protected by a mutex externally
+    if (wglInfo->extensionsLoaded) {
+        return false;
+    }
+    // Functions for WGL_EXT_extension_string
+    // NOTE: These are needed by extensionSupported
+    wglInfo->GetExtensionsStringEXT = (PFNWGLGETEXTENSIONSSTRINGEXTPROC)wglInfo->GetProcAddress("wglGetExtensionsStringEXT");
+    wglInfo->GetExtensionsStringARB = (PFNWGLGETEXTENSIONSSTRINGARBPROC)wglInfo->GetProcAddress("wglGetExtensionsStringARB");
+
+    // Functions for WGL_ARB_create_context
+    wglInfo->CreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglInfo->GetProcAddress("wglCreateContextAttribsARB");
+
+    // Functions for WGL_EXT_swap_control
+    wglInfo->SwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglInfo->GetProcAddress("wglSwapIntervalEXT");
+
+    // Functions for WGL_ARB_pixel_format
+    wglInfo->GetPixelFormatAttribivARB = (PFNWGLGETPIXELFORMATATTRIBIVARBPROC)wglInfo->GetProcAddress("wglGetPixelFormatAttribivARB");
+
+    // This needs to include every extension used below except for
+    // WGL_ARB_extensions_string and WGL_EXT_extensions_string
+    wglInfo->ARB_multisample = extensionSupported("WGL_ARB_multisample");
+    wglInfo->ARB_framebuffer_sRGB = extensionSupported("WGL_ARB_framebuffer_sRGB");
+    wglInfo->EXT_framebuffer_sRGB = extensionSupported("WGL_EXT_framebuffer_sRGB");
+    wglInfo->ARB_create_context = extensionSupported("WGL_ARB_create_context");
+    wglInfo->ARB_create_context_profile = extensionSupported("WGL_ARB_create_context_profile");
+    wglInfo->EXT_create_context_es2_profile = extensionSupported("WGL_EXT_create_context_es2_profile");
+    wglInfo->ARB_create_context_robustness = extensionSupported("WGL_ARB_create_context_robustness");
+    wglInfo->EXT_swap_control = extensionSupported("WGL_EXT_swap_control");
+    wglInfo->ARB_pixel_format = extensionSupported("WGL_ARB_pixel_format");
+    wglInfo->ARB_context_flush_control = extensionSupported("WGL_ARB_context_flush_control");
+
+    wglInfo->extensionsLoaded = GL_TRUE;
+    return true;
+}
+
+void
+OSGLContext_win::destroyWGLData(OSGLContext_wgl_data* wglInfo)
+{
+    if (wglInfo->instance) {
+        FreeLibrary(wglInfo->instance);
+        wglInfo->instance = 0;
+    }
+}
 
 // Creates the GLFW window and rendering context
 //
@@ -319,13 +411,15 @@ OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, in
 {
     bool required = false;
 
+    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+    assert(wglInfo);
+
     makeContextCurrent();
-    if (!appPTR->initializeOpenGLFunctionsOnce()) {
+    if (!loadWGLExtensions()) {
         return false;
     }
 
-    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
-    assert(wglInfo);
+
 
 /*
     if (ctxconfig->forward)
@@ -409,7 +503,7 @@ OSGLContext_win::destroyContext(_GLFWwindow* window)
         const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
         assert(wglInfo);
         wglInfo->DeleteContext(_handle);
-        _handle = NULL;
+        _handle = 0;
     }
 }
 
@@ -452,7 +546,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int 
 
         // Next destroy the Win32 window and WGL context (without resetting
         // or destroying the GLFW window object)
-        window->context.destroyContext(window);
+        destroyContext();
         destroyWindow();
 
         // ...and then create them again, this time with better APIs
@@ -475,58 +569,32 @@ OSGLContext_win::~OSGLContext_win()
 void
 OSGLContext_win::makeContextCurrent(const OSGLContext_win* context)
 {
-    if (window)
-    {
-        if (wglMakeCurrent(window->context.wgl.dc, window->context.wgl.handle))
-            _glfwPlatformSetCurrentContext(window);
-        else
-        {
-            _glfwInputError(GLFW_PLATFORM_ERROR,
-                            "WGL: Failed to make context current");
-            _glfwPlatformSetCurrentContext(NULL);
-        }
+    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+    assert(wglInfo);
+    if (context) {
+        return wglInfo->MakeCurrent(context->_dc, context->_handle);
+    } else {
+        return wglInfo->MakeCurrent(0, 0);
     }
-    else
-    {
-        if (!wglMakeCurrent(NULL, NULL))
-        {
-            _glfwInputError(GLFW_PLATFORM_ERROR,
-                            "WGL: Failed to clear current context");
-        }
-
-        _glfwPlatformSetCurrentContext(NULL);
-    }
-
 }
 
 void
 OSGLContext_win::swapBuffers()
 {
-    // HACK: Use DwmFlush when desktop composition is enabled
-    if (isCompositionEnabled() && !window->monitor)
-    {
-        int count = abs(window->context.wgl.interval);
-        while (count--)
-            _glfw_DwmFlush();
-    }
-
-    SwapBuffers(window->context.wgl.dc);
+    SwapBuffers(_dc);
 }
 
 void
 OSGLContext_win::swapInterval(int interval)
 {
-    _GLFWwindow* window = _glfwPlatformGetCurrentContext();
 
-    window->context.wgl.interval = interval;
+    _interval = interval;
 
-    // HACK: Disable WGL swap interval when desktop composition is enabled to
-    //       avoid interfering with DWM vsync
-    if (isCompositionEnabled() && !window->monitor)
-        interval = 0;
-
-    if (_glfw.wgl.EXT_swap_control)
-        _glfw.wgl.SwapIntervalEXT(interval);
+    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+    assert(wglInfo);
+    if (wglInfo->EXT_swap_control) {
+        wglInfo->SwapIntervalEXT(interval);
+    }
 }
 
 
