@@ -222,6 +222,10 @@ win32 {
   #System library is required on windows to map network share names from drive letters
   LIBS += -lmpr
 
+  # Natron requires a link to opengl32.dll and Gdi32 for offscreen rendering
+  LIBS += -lopengl32 -lGdi32
+
+
 }
 
 win32-msvc* {
@@ -261,9 +265,6 @@ win32-g++ {
    # On MingW everything is defined with pkgconfig except boost
     QT_CONFIG -= no-pkg-config
     CONFIG += link_pkgconfig
-
-    # Natron requires a link to opengl32.dll for offscreen rendering
-    LIBS += -lopengl32
 
     expat:     PKGCONFIG += expat
     cairo:     PKGCONFIG += cairo
