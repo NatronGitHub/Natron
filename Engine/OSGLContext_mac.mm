@@ -82,6 +82,13 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
     // See https://developer.apple.com/library/mac/documentation/GraphicsImaging/Reference/CGL_OpenGL/#//apple_ref/c/tdef/CGLPixelFormatAttribute
     // for a reference to attributes
     std::vector<CGLPixelFormatAttribute> attributes;
+
+    /*
+     * The program chose a config based on the fbconfigs or visuals.
+     * Those are based on the attributes from CGL, so we probably
+     * do want the closest match for the color, depth, and accum.
+     */
+    attributes.push_back(kCGLPFAClosestPolicy);
     attributes.push_back(kCGLPFAAccelerated);
     attributes.push_back(kCGLPFAOpenGLProfile);
     attributes.push_back((CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy);
