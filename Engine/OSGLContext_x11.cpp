@@ -283,21 +283,6 @@ static void ChooseVisualGLX(OSGLContext_glx_data* glxInfo,
 }
 
 
-#define setGLXattrib(attribName, attribValue) \
-{ \
-attribs[index++] = attribName; \
-attribs[index++] = attribValue; \
-assert((size_t) index < sizeof(attribs) / sizeof(attribs[0])); \
-}
-
-// Create the OpenGL context using legacy API
-//
-static GLXContext createLegacyContext(OSGLContext_glx_data* glxInfo,
-                                      GLXFBConfig fbconfig,
-                                      GLXContext share)
-{
-    return glxInfo->CreateNewContext(glxInfo->x11.display, fbconfig, GLX_RGBA_TYPE, share, True);
-}
 
 // Sets the X error handler callback
 //
@@ -315,6 +300,111 @@ static void ReleaseErrorHandlerX11(OSGLContext_glx_data* glxInfo)
     XSync(glxInfo->x11.display, False);
     XSetErrorHandler(NULL);
 }
+
+// Create the X11 window (and its colormap)
+//
+void
+OSGLContext_x11::createWindow(OSGLContext_glx_data* glxInfo,
+                         Visual* visual, int depth)
+{
+
+    const int width = 32;
+    const int height = 32;
+
+    // Every window needs a colormap
+    // Create one based on the visual used by the current context
+    // TODO: Decouple this from context creation
+
+    _x11Window.colormap = XCreateColormap(glxInfo->x11.display,  glxInfo->x11.root, visual, AllocNone);
+
+    // Create the actual window
+    {
+        XSetWindowAttributes wa;
+        const unsigned long wamask = CWBorderPixel | CWColormap | CWEventMask;
+
+        wa.colormap = _x11Window.colormap;
+        wa.border_pixel = 0;
+        wa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
+        PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
+        ExposureMask | FocusChangeMask | VisibilityChangeMask |
+        EnterWindowMask | LeaveWindowMask | PropertyChangeMask;
+
+        GrabErrorHandlerX11(glxInfo);
+
+
+        _x11Window.handle = XCreateWindow(glxInfo->x11.display,
+                                          glxInfo->x11.root,
+                                          0, 0,
+                                          width, height,
+                                          0,      // Border width
+                                          depth,  // Color depth
+                                          InputOutput,
+                                          visual,
+                                          wamask,
+                                          &wa);
+
+        ReleaseErrorHandlerX11(glxInfo);
+
+        if (!_x11Window.handle) {
+            throw std::runtime_error("X11: Failed to create window");
+        }
+
+        /*XSaveContext(glxInfo->x11.display,
+                     _x11Window.handle,
+                     glxInfo->x11.context,
+                     (XPointer) window);*/
+    }
+
+    /*if (!wndconfig->decorated)
+    {
+        struct
+        {
+            unsigned long flags;
+            unsigned long functions;
+            unsigned long decorations;
+            long input_mode;
+            unsigned long status;
+        } hints;
+
+        hints.flags = 2;       // Set decorations
+        hints.decorations = 0; // No decorations
+
+        XChangeProperty(_glfw.x11.display, window->x11.handle,
+                        _glfw.x11.MOTIF_WM_HINTS,
+                        _glfw.x11.MOTIF_WM_HINTS, 32,
+                        PropModeReplace,
+                        (unsigned char*) &hints,
+     sizeof(hints) / sizeof(long));
+     }*/
+
+    /*{
+        XSizeHints* hints = XAllocSizeHints();
+        hints->flags |= (PMinSize | PMaxSize);
+        hints->min_width  = hints->max_width  = width;
+        hints->min_height = hints->max_height = height;
+        XSetWMNormalHints(glxInfo->x11.display, _x11Window.handle, hints);
+        XFree(hints);
+    }*/
+}
+
+
+
+#define setGLXattrib(attribName, attribValue) \
+{ \
+attribs[index++] = attribName; \
+attribs[index++] = attribValue; \
+assert((size_t) index < sizeof(attribs) / sizeof(attribs[0])); \
+}
+
+// Create the OpenGL context using legacy API
+//
+static GLXContext createLegacyContext(OSGLContext_glx_data* glxInfo,
+                                      GLXFBConfig fbconfig,
+                                      GLXContext share)
+{
+    return glxInfo->CreateNewContext(glxInfo->x11.display, fbconfig, GLX_RGBA_TYPE, share, True);
+}
+
 
 
 void
@@ -361,7 +451,7 @@ OSGLContext_x11::createContextGLX(OSGLContext_glx_data* glxInfo, const Framebuff
     GrabErrorHandlerX11(glxInfo);
 
     if (!glxInfo->ARB_create_context) {
-        _glxHandle = createLegacyContext(glxInfo, native, share);
+        _glxContextHandle = createLegacyContext(glxInfo, native, share);
     } else {
 
         int index = 0, mask = 0, flags = 0;
@@ -432,19 +522,19 @@ OSGLContext_x11::createContextGLX(OSGLContext_glx_data* glxInfo, const Framebuff
 
         setGLXattrib(None, None);
 
-        _glxHandle = glxInfo->CreateContextAttribsARB(glxInfo->x11.display, native, share, True, attribs);
+        _glxContextHandle = glxInfo->CreateContextAttribsARB(glxInfo->x11.display, native, share, True, attribs);
 
         // HACK: This is a fallback for broken versions of the Mesa
         //       implementation of GLX_ARB_create_context_profile that fail
         //       default 1.0 context creation with a GLXBadProfileARB error in
         //       violation of the extension spec
-        if (!_glxHandle) {
+        if (!_glxContextHandle) {
             if (glxInfo->x11.errorCode == glxInfo->errorBase + GLXBadProfileARB
                 /*&& ctxconfig->client == GLFW_OPENGL_API &&
                 ctxconfig->profile == GLFW_OPENGL_ANY_PROFILE &&
                 ctxconfig->forward == GLFW_FALSE*/)
             {
-                _glxHandle = createLegacyContext(glxInfo, native, share);
+                _glxContextHandle = createLegacyContext(glxInfo, native, share);
             }
         }
     }
@@ -452,21 +542,16 @@ OSGLContext_x11::createContextGLX(OSGLContext_glx_data* glxInfo, const Framebuff
 
     ReleaseErrorHandlerX11(glxInfo);
 
-    if (!_glxHandle) {
+    if (!_glxContextHandle) {
         throw std::runtime_error("GLX: Failed to create context");
     }
-    
-    int pbufferAttribs[] = {
-        GLX_PBUFFER_WIDTH,  32,
-        GLX_PBUFFER_HEIGHT, 32,
-        None
-    };
-    _pBuffer = glxInfo->CreatePbuffer(glxInfo->x11.display, native, pbufferAttribs );
-    if (!_pBuffer) {
-        throw std::runtime_error("GLX: Failed to create pixel buffer");
+
+
+    _glxWindowHandle = glxInfo->CreateWindow(glxInfo->x11.display, native, _x11Window.handle, NULL);
+    if (!_glxWindowHandle) {
+        throw std::runtime_error("GLX: Failed to create window");
     }
 
-    XSync(glxInfo->x11.display, False);
 
     /*_window = glxInfo->CreateWindow(glxInfo->display, native, window->x11.handle, NULL);
     if (!_window) {
@@ -481,8 +566,9 @@ OSGLContext_x11::createContextGLX(OSGLContext_glx_data* glxInfo, const Framebuff
 
 
 OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs, int major, int minor)
-: _glxHandle(0)
-, _pBuffer(0)
+: _glxContextHandle(0)
+, _glxWindowHandle(0)
+, _x11Window(0)
 {
 
     const OSGLContext_glx_data* glxInfo = appPTR->getGLXData();
@@ -490,8 +576,9 @@ OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs, int 
 
     Visual* visual;
     int depth;
-    ChooseVisualGLX(glxInfo, pixelFormatAttrs, &visual, &depth);
 
+    ChooseVisualGLX(glxInfo, pixelFormatAttrs, &visual, &depth);
+    createWindow(glxInfo, visual, depth)
     createContextGLX(glxInfo, pixelFormatAttrs, major, minor);
 
 
@@ -506,13 +593,13 @@ OSGLContext_x11::~OSGLContext_x11()
     assert(glxInfo);
 
 
-    if (_pBuffer) {
-        glxInfo->DestroyPBuffer(glxInfo->x11.display, _pBuffer);
-        _pBuffer = 0;
+    if (_glxWindowHandle) {
+        glxInfo->DestroyWindow(glxInfo->x11.display, _glxWindowHandle);
+        _glxWindowHandle = 0;
     }
-    if (_glxHandle) {
-        glxInfo->DestroyContext(glxInfo->x11.display,_glxHandle);
-        _glxHandle = 0;
+    if (_glxContextHandle) {
+        glxInfo->DestroyContext(glxInfo->x11.display,_glxContextHandle);
+        _glxContextHandle = 0;
     }
 }
 
@@ -523,9 +610,9 @@ OSGLContext_x11::makeContextCurrent(const OSGLContext_x11* context)
     assert(glxInfo);
 
     if (context) {
-        return glxInfo->MakeContextCurrent(glxInfo->x11.display, _pBuffer, _pBuffer, _glxHandle);
+        return glxInfo->MakeCurrent(glxInfo->x11.display, _glxWindowHandle, _glxContextHandle);
     } else {
-        return glxInfo->MakeContextCurrent(glxInfo->x11.display, None, None, 0);
+        return glxInfo->MakeCurrent(glxInfo->x11.display, None, NULL);
     }
     
 
@@ -536,7 +623,7 @@ OSGLContext_x11::swapBuffers()
 {
     const OSGLContext_glx_data* glxInfo = appPTR->getGLXData();
     assert(glxInfo);
-    glxInfo->SwapBuffers(glxInfo->x11.display, _pBuffer);
+    glxInfo->SwapBuffers(glxInfo->x11.display, _glxWindowHandle);
 }
 
 void
@@ -546,7 +633,7 @@ OSGLContext_x11::swapInterval(int interval)
     assert(glxInfo);
 
     if (glxInfo->EXT_swap_control) {
-        glxInfo->SwapIntervalEXT(glxInfo->x11.display, _pBuffer, interval);
+        glxInfo->SwapIntervalEXT(glxInfo->x11.display, _glxWindowHandle, interval);
     } else if (glxInfo->MESA_swap_control) {
         glxInfo->SwapIntervalMESA(interval);
     } else if (glxInfo->SGI_swap_control) {

@@ -22,17 +22,166 @@
 #include <stdexcept>
 #ifdef __NATRON_OSX__
 
-#import <Cocoa/Cocoa.h>
 
 #include "Engine/OSGLContext.h"
 
 NATRON_NAMESPACE_ENTER;
 
+#if 0
+void
+OSGLContext_mac::createWindow()
+{
+    /*_nsWindow.delegate = [[GLFWWindowDelegate alloc] initWithGlfwWindow:window];
+    if (window->ns.delegate == nil)
+    {
+        _glfwInputError(GLFW_PLATFORM_ERROR,
+                        "Cocoa: Failed to create window delegate");
+        return GLFW_FALSE;
+    }*/
+
+    const int width = 32;
+    const int height = 32;
+
+    NSRect contentRect = NSMakeRect(0, 0, width, height);
+
+    _nsWindow.object = [[GLFWWindow alloc]
+                         initWithContentRect:contentRect
+                         styleMask:getStyleMask(window)
+                         backing:NSBackingStoreBuffered
+                         defer:NO];
+
+    if (_nsWindow.object == nil) {
+        throw std::runtime_error("Cocoa: Failed to create window");
+    }
+
+    [_nsWindow.object center];
+
+    _nsWindow.view = [[GLFWContentView alloc] initWithGlfwWindow:window];
+
+//#if defined(_GLFW_USE_RETINA)
+    [_nsWindow.view setWantsBestResolutionOpenGLSurface:YES];
+//#endif /*_GLFW_USE_RETINA*/
+
+    [_nsWindow.object makeFirstResponder:_nsWindow.view];
+    //[_nsWindow.object setDelegate:window->ns.delegate];
+    [_nsWindow.object setContentView:_nsWindow.view];
+    [_nsWindow.object setRestorable:NO];
+
+}
+#endif
+
+
 OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int /*minor*/)
-: _pixelFormat(0)
-, _object(0)
+: _context(0)
 {
 
+
+    CGLError errorCode;
+
+
+    // See https://developer.apple.com/library/mac/documentation/GraphicsImaging/Reference/CGL_OpenGL/#//apple_ref/c/tdef/CGLPixelFormatAttribute
+    // for a reference to attributes
+    std::vector<CGLPixelFormatAttribute> attributes;
+    attributes.push_back(kCGLPFAAccelerated);
+    attributes.push_back(kCGLPFAOpenGLProfile);
+    attributes.push_back((CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy);
+    if (pixelFormatAttrs.doublebuffer) {
+        attributes.push_back(kCGLPFADoubleBuffer);
+    }
+    /*if (pixelFormatAttrs.stereo) {
+     attributes.push_back(kCGLPFAStereo);
+     }*/
+
+    if (major <= 2) {
+        if (pixelFormatAttrs.auxBuffers && pixelFormatAttrs.auxBuffers != FramebufferConfig::ATTR_DONT_CARE) {
+            attributes.push_back(kCGLPFAAuxBuffers);
+            attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.auxBuffers);
+        }
+        if (pixelFormatAttrs.accumRedBits != FramebufferConfig::ATTR_DONT_CARE &&
+            pixelFormatAttrs.accumGreenBits != FramebufferConfig::ATTR_DONT_CARE &&
+            pixelFormatAttrs.accumBlueBits != FramebufferConfig::ATTR_DONT_CARE &&
+            pixelFormatAttrs.accumAlphaBits != FramebufferConfig::ATTR_DONT_CARE)
+        {
+            const int accumBits = pixelFormatAttrs.accumRedBits +
+            pixelFormatAttrs.accumGreenBits +
+            pixelFormatAttrs.accumBlueBits +
+            pixelFormatAttrs.accumAlphaBits;
+
+            attributes.push_back(kCGLPFAAccumSize);
+            attributes.push_back((CGLPixelFormatAttribute)accumBits);
+
+        }
+
+        attributes.push_back(kCGLPFAOffScreen);
+    }
+    if (pixelFormatAttrs.redBits != FramebufferConfig::ATTR_DONT_CARE &&
+        pixelFormatAttrs.greenBits != FramebufferConfig::ATTR_DONT_CARE &&
+        pixelFormatAttrs.blueBits != FramebufferConfig::ATTR_DONT_CARE) {
+
+        int colorBits = pixelFormatAttrs.redBits +
+        pixelFormatAttrs.greenBits +
+        pixelFormatAttrs.blueBits;
+
+        // OS X needs non-zero color size, so set reasonable values
+        if (colorBits == 0)
+            colorBits = 24;
+        else if (colorBits < 15)
+            colorBits = 15;
+
+        attributes.push_back(kCGLPFAColorSize);
+        attributes.push_back((CGLPixelFormatAttribute)colorBits);
+    }
+
+
+    if (pixelFormatAttrs.alphaBits != FramebufferConfig::ATTR_DONT_CARE) {
+        attributes.push_back(kCGLPFAAlphaSize);
+        attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.alphaBits);
+    }
+
+    if (pixelFormatAttrs.depthBits != FramebufferConfig::ATTR_DONT_CARE) {
+        attributes.push_back(kCGLPFADepthSize);
+        attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.depthBits);
+    }
+
+    if (pixelFormatAttrs.stencilBits != FramebufferConfig::ATTR_DONT_CARE) {
+        attributes.push_back(kCGLPFAStencilSize);
+        attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.stencilBits);
+    }
+
+    // Use float buffers
+    attributes.push_back(kCGLPFAColorFloat);
+
+    if (pixelFormatAttrs.samples != FramebufferConfig::ATTR_DONT_CARE) {
+        if (pixelFormatAttrs.samples == 0) {
+            attributes.push_back(kCGLPFASampleBuffers);
+            attributes.push_back((CGLPixelFormatAttribute)0);
+        } else {
+            attributes.push_back(kCGLPFAMultisample);
+            attributes.push_back(kCGLPFASampleBuffers);
+            attributes.push_back((CGLPixelFormatAttribute)1);
+            attributes.push_back(kCGLPFASamples);
+            attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.samples);
+        }
+    }
+    attributes.push_back((CGLPixelFormatAttribute)0);
+
+
+    CGLPixelFormatObj nativePixelFormat;
+    GLint num; // stores the number of possible pixel formats
+    errorCode = CGLChoosePixelFormat( &attributes[0], &nativePixelFormat, &num );
+    if (errorCode != kCGLNoError) {
+        throw std::runtime_error("CGL: Failed to choose pixel format");
+    }
+
+    errorCode = CGLCreateContext( nativePixelFormat, NULL, &_context ); // second parameter can be another context for object sharing
+    if (errorCode != kCGLNoError) {
+        throw std::runtime_error("CGL: Failed to create context");
+    }
+    CGLDestroyPixelFormat( nativePixelFormat );
+
+    //errorCode = CGLSetCurrentContext( context );
+
+#if 0
     unsigned int attributeCount = 0;
 
     // Context robustness modes (GL_KHR_robustness) are not yet supported on
@@ -147,39 +296,49 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
     }
 
     //[_object setView:window->ns.view];
+#endif
 }
 
 void
 OSGLContext_mac::makeContextCurrent(const OSGLContext_mac* context)
 {
-    if (context) {
+    /*if (context) {
         [context->_object makeCurrentContext];
     } else {
         [NSOpenGLContext clearCurrentContext];
+    }*/
+    if (context) {
+        CGLSetCurrentContext(context->_context);
+    } else {
+        CGLSetCurrentContext(0);
     }
 }
 
 void
 OSGLContext_mac::swapBuffers()
 {
-    // ARP appears to be unnecessary, but this is future-proof
-    [_object flushBuffer];
+ //   [_object flushBuffer];
+    CGLFlushDrawable(_context);
 }
 
 void
 OSGLContext_mac::swapInterval(int interval)
 {
-    GLint sync = interval;
-    [_object setValues:&sync forParameter:NSOpenGLCPSwapInterval];
+    /*GLint sync = interval;
+    [_object setValues:&sync forParameter:NSOpenGLCPSwapInterval];*/
+    GLint value = interval;
+    CGLSetParameter(_context, kCGLCPSwapInterval, &value);
 }
 
 OSGLContext_mac::~OSGLContext_mac()
 {
-    [_pixelFormat release];
+    CGLDestroyContext(_context);
+    _context = 0;
+    /*[_pixelFormat release];
     _pixelFormat = nil;
 
     [_object release];
-    _object = nil;
+    _object = nil;*/
 }
 
 NATRON_NAMESPACE_EXIT;

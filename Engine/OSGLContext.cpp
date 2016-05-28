@@ -24,12 +24,13 @@
 
 #include "OSGLContext.h"
 
-
-NATRON_NAMESPACE_ANONYMOUS_ENTER;
-
-
-
-NATRON_NAMESPACE_ANONYMOUS_EXIT;
+#ifdef __NATRON_WIN32__
+#include "Engine/OSGLContext_win.h"
+#elif defined(__NATRON_OSX__)
+#include "Engine/OSGLContext_mac.h"
+#elif defined(__NATRON_LINUX__)
+#include "Engine/OSGLContext_x11.h"
+#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -197,8 +198,16 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<
 
 struct OSGLContextPrivate
 {
+#ifdef __NATRON_WIN32__
+    boost::scoped_ptr<OSGLContext_win> _platformContext;
+#elif defined(__NATRON_OSX__)
+    boost::scoped_ptr<OSGLContext_mac> _platformContext;
+#elif defined(__NATRON_LINUX__)
+    boost::scoped_ptr<OSGLContext_x11> _platformContext;
+#endif
 
     OSGLContextPrivate()
+    : _platformContext()
     {
        
     }
@@ -207,6 +216,14 @@ struct OSGLContextPrivate
 OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor)
 : _imp(new OSGLContextPrivate())
 {
+
+#ifdef __NATRON_WIN32__
+    _imp->_platformContext.reset(new OSGLContext_win(pixelFormatAttrs, major, minor));
+#elif defined(__NATRON_OSX__)
+    _imp->_platformContext.reset(new OSGLContext_mac(pixelFormatAttrs, major, minor));
+#elif defined(__NATRON_LINUX__)
+    _imp->_platformContext.reset(new OSGLContext_x11(pixelFormatAttrs, major, minor));
+#endif
 }
 
 OSGLContext::~OSGLContext()
@@ -215,15 +232,15 @@ OSGLContext::~OSGLContext()
 }
 
 void
-OSGLContext::makeContextCurrent(const OSGLContextPtr& context)
+OSGLContext::makeContextCurrent()
 {
-
-}
-
-OSGLContextPtr
-OSGLContext::getCurrentContext()
-{
-
+#ifdef __NATRON_WIN32__
+    OSGLContext_win::makeContextCurrent(_imp->_platformContext.get());
+#elif defined(__NATRON_OSX__)
+    OSGLContext_mac::makeContextCurrent(_imp->_platformContext.get());
+#elif defined(__NATRON_LINUX__)
+    OSGLContext_x11::makeContextCurrent(_imp->_platformContext.get());
+#endif
 }
 
 bool

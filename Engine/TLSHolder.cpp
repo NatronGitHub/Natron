@@ -31,6 +31,7 @@
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OfxParamInstance.h"
+#include "Engine/GPUContextPool.h"
 #include "Engine/Project.h"
 #include "Engine/ThreadPool.h"
 
@@ -193,6 +194,7 @@ template class TLSHolder<KnobHelper::KnobTLSData>;
 template class TLSHolder<Project::ProjectTLSData>;
 template class TLSHolder<OfxClipInstance::ClipTLSData>;
 template class TLSHolder<OfxParamToKnob::OfxParamTLSData>;
+template class TLSHolder<GPUContextPool::ContextPoolTLSData>;
 
 NATRON_NAMESPACE_EXIT;
 

@@ -139,8 +139,20 @@ private:
 
     void createContextGLX(OSGLContext_glx_data* glxInfo, const FramebufferConfig& fbconfig, int major, int minor);
 
-    GLXContext      _glxHandle;
-    GLXPBuffer      _pBuffer;
+    void createWindow(OSGLContext_glx_data* glxInfo,
+                      Visual* visual, int depth);
+
+
+    // X11-specific per-window data
+    //
+    struct X11Window {
+        Colormap        colormap;
+        Window          handle;
+    };
+
+    GLXContext _glxContextHandle;
+    GLXWindow _glxWindowHandle;
+    X11Window _x11Window;
 
 };
 #endif // __NATRON_LINUX__

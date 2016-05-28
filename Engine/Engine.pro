@@ -96,6 +96,7 @@ SOURCES += \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
+    GPUContextPool.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -282,6 +283,7 @@ HEADERS += \
     fstream_mingw.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
+    GPUContextPool.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \

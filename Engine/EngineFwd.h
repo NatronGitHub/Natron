@@ -126,6 +126,7 @@ class FrameEntry;
 class FramebufferConfig;
 class FrameKey;
 class FrameParams;
+class GPUContextPool;
 class GenericAccess;
 class GenericSchedulerThread;
 class GenericSchedulerThreadWatcher;

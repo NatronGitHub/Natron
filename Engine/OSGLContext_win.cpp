@@ -125,8 +125,8 @@ static bool createWindow(HWND* window)
 
     int xpos = CW_USEDEFAULT;
     int ypos = CW_USEDEFAULT;
-    int fullWidth = 10;
-    int fullHeight = 10;
+    const int fullWidth = 32;
+    const int fullHeight = 32;
 
     *window = CreateWindowExW(/*exStyle*/0,
                               std::wstring("OffscreenWindow").c_str(),

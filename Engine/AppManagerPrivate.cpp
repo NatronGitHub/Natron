@@ -117,6 +117,7 @@ AppManagerPrivate::AppManagerPrivate()
     , missingOpenglError()
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
+    , renderingContextPool()
 {
     setMaxCacheFiles();
 
@@ -600,6 +601,9 @@ AppManagerPrivate::initGl()
 void
 AppManagerPrivate::tearDownGL()
 {
+    // Kill all rendering context
+    renderingContextPool.reset();
+
 #ifdef Q_OS_WIN32
     if (wglInfo) {
         OSGLContext_win::destroyWGLData(wglInfo.get());

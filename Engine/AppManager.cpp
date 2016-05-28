@@ -294,6 +294,9 @@ AppManager::load(int &argc,
     }
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+
+    _imp->renderingContextPool.reset(new GPUContextPool(_imp->idealThreadCount));
+    
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
 
@@ -3099,6 +3102,12 @@ const NATRON_NAMESPACE::OfxHost*
 AppManager::getOFXHost() const
 {
     return _imp->ofxHost.get();
+}
+
+GPUContextPool*
+AppManager::getGPUContextPool() const
+{
+    return _imp->renderingContextPool.get();
 }
 
 void

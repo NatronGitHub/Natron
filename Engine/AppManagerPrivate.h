@@ -56,6 +56,7 @@
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+#include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
@@ -158,7 +159,10 @@ public:
     boost::scoped_ptr<OSGLContext_glx_data> glxInfo;
 #endif
 
+    boost::scoped_ptr<GPUContextPool> renderingContextPool;
+
     boost::scoped_ptr<QCoreApplication> _qApp;
+
 
 public:
     AppManagerPrivate();

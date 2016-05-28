@@ -523,6 +523,8 @@ public:
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
 
+    GPUContextPool* getGPUContextPool() const;
+
 
     /**
      * @brief Return the concatenation of all search paths of Natron, i.e:

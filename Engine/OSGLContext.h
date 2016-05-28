@@ -122,11 +122,23 @@ class OSGLContext
 public:
 
 
+    /**
+     * @brief Creates a new OpenGL context for offscreen rendering. The constructor may throw an exception if the context
+     * creation failed.
+     * The context must be made current with makeContextCurrent before being ready to use.
+     **/
     OSGLContext(const FramebufferConfig& pixelFormatAttrs, int major = GLVersion.major, int minor = GLVersion.minor);
 
     ~OSGLContext();
 
+
+
+    // Helper functions used by platform dependent implementations
+    static bool stringInExtensionString(const char* string, const char* extensions);
     static const FramebufferConfig& chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count);
+
+private:
+
 
     /*  @brief Makes the context current for the calling
      *  thread. A context can only be made current on
@@ -135,16 +147,9 @@ public:
      *
      *  @thread_safety This function may be called from any thread.
      */
-    static void makeContextCurrent(const OSGLContextPtr& context);
+    void makeContextCurrent();
 
-    /**
-     * @brief Returns the current context for this thread.
-     **/
-    static OSGLContextPtr getCurrentContext();
-
-    static bool stringInExtensionString(const char* string, const char* extensions);
-
-private:
+    friend class GPUContextPool;
 
     boost::scoped_ptr<OSGLContextPrivate> _imp;
 };
