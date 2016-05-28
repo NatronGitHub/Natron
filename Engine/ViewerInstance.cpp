@@ -752,7 +752,7 @@ copyAndSwap(const TextureRect& srcRect,
             unsigned char* srcBuf,
             unsigned char** dstBuf)
 {
-    //Ensure it has the correct size, resize it if needed
+    // Ensure it has the correct size, resize it if needed
     if ( (srcRect.x1 == dstRect.x1) &&
          ( srcRect.y1 == dstRect.y1) &&
          ( srcRect.x2 == dstRect.x2) &&
@@ -762,7 +762,7 @@ copyAndSwap(const TextureRect& srcRect,
         return false;
     }
 
-    //Use calloc so that newly allocated areas are already black and transparant
+    // Use calloc so that newly allocated areas are already black and transparent
     unsigned char* tmpBuf = (unsigned char*)calloc(dstBytesCount, 1);
 
     if (!tmpBuf) {

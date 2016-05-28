@@ -122,8 +122,8 @@ optimizeRectsToRender(EffectInstance* self,
                 EffectInstance::RectToRender r;
                 r.isIdentity = true;
 
-                //Walk along the identity branch until we find the non identity input, or NULL in we case we will
-                //just render black and transparant
+                // Walk along the identity branch until we find the non identity input, or NULL in we case we will
+                // just render black and transparent
                 EffectInstPtr identityInput = self->getInput(identityInputNb);
                 if (identityInput) {
                     for (;; ) {
@@ -420,7 +420,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     }
                 }
 
-                // If  the requested component is not present, then it will just return black and transparant to the plug-in.
+                // If  the requested component is not present, then it will just return black and transparent to the plug-in.
                 if (found) {
                     if ( foundNode == getNode() ) {
                         requestedComponents.push_back(foundComponent);
