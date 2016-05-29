@@ -121,7 +121,10 @@ GPUContextPool::attachGLContextToThread()
             GPUContextPtr context(new GPUContext());
             data->currentContext = context;
         }
-        data->currentContext->glContext = *(_imp->glContextPool.begin());
+
+        std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
+        data->currentContext->glContext = *it;
+        _imp->glContextPool.erase(it);
 
     }
 
