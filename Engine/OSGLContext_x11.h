@@ -24,6 +24,11 @@
 
 #ifdef __NATRON_LINUX__
 
+#include "Global/GLIncludes.h"
+
+#include <dlfcn.h>
+#include <X11/Xlib.h>
+
 typedef XID GLXWindow;
 typedef XID GLXDrawable;
 typedef struct __GLXFBConfig* GLXFBConfig;
