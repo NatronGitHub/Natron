@@ -949,8 +949,8 @@ public:
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
     boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
     boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
-    StatusEnum addControlPoint(int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNControlPoints(int dimension, int *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(int dimension,
@@ -964,16 +964,19 @@ public:
                                   double *leftDerivative,
                                   double *rightDerivative) const WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPointInterpolation(int dimension,
+    StatusEnum setNthControlPointInterpolation(ValueChangedReasonEnum reason,
+                                               int dimension,
                                                int nThCtl,
                                                KeyframeTypeEnum interpolation) WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPoint(int dimension,
+    StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
+                                  int dimension,
                                   int nthCtl,
                                   double key,
                                   double value) WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPoint(int dimension,
+    StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
+                                  int dimension,
                                   int nthCtl,
                                   double key,
                                   double value,
@@ -981,8 +984,8 @@ public:
                                   double rightDerivative) WARN_UNUSED_RETURN;
 
 
-    StatusEnum deleteControlPoint(int dimension, int nthCtl) WARN_UNUSED_RETURN;
-    StatusEnum deleteAllControlPoints(int dimension) WARN_UNUSED_RETURN;
+    StatusEnum deleteControlPoint(ValueChangedReasonEnum reason, int dimension, int nthCtl) WARN_UNUSED_RETURN;
+    StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, int dimension) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::list< Curve >* curves) const;

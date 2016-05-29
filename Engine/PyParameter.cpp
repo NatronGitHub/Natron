@@ -1783,7 +1783,7 @@ ParametricParam::addControlPoint(int dimension,
                                  double value,
                                  NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
 {
-    return _parametricKnob.lock()->addControlPoint(dimension, key, value, interpolation);
+    return _parametricKnob.lock()->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, interpolation);
 }
 
 NATRON_NAMESPACE::StatusEnum
@@ -1794,7 +1794,7 @@ ParametricParam::addControlPoint(int dimension,
                                  double rightDerivative,
                                  NATRON_NAMESPACE::KeyframeTypeEnum interpolation)
 {
-    return _parametricKnob.lock()->addControlPoint(dimension, key, value, leftDerivative, rightDerivative, interpolation);
+    return _parametricKnob.lock()->addControlPoint(eValueChangedReasonNatronInternalEdited, dimension, key, value, leftDerivative, rightDerivative, interpolation);
 }
 
 double
@@ -1843,7 +1843,7 @@ ParametricParam::setNthControlPoint(int dimension,
                                     double leftDerivative,
                                     double rightDerivative)
 {
-    return _parametricKnob.lock()->setNthControlPoint(dimension, nthCtl, key, value, leftDerivative, rightDerivative);
+    return _parametricKnob.lock()->setNthControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
 NATRON_NAMESPACE::StatusEnum
@@ -1851,20 +1851,20 @@ ParametricParam::setNthControlPointInterpolation(int dimension,
                                                  int nThCtl,
                                                  KeyframeTypeEnum interpolation)
 {
-    return _parametricKnob.lock()->setNthControlPointInterpolation(dimension, nThCtl, interpolation);
+    return _parametricKnob.lock()->setNthControlPointInterpolation(eValueChangedReasonNatronInternalEdited, dimension, nThCtl, interpolation);
 }
 
 StatusEnum
 ParametricParam::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
-    return _parametricKnob.lock()->deleteControlPoint(dimension, nthCtl);
+    return _parametricKnob.lock()->deleteControlPoint(eValueChangedReasonNatronInternalEdited, dimension, nthCtl);
 }
 
 StatusEnum
 ParametricParam::deleteAllControlPoints(int dimension)
 {
-    return _parametricKnob.lock()->deleteAllControlPoints(dimension);
+    return _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, dimension);
 }
 
 void
