@@ -32,6 +32,8 @@
 
 #include "Global/Macros.h"
 
+#include <cassert>
+
 #ifdef DEBUG
 #ifdef __cplusplus
 #include <iostream>
