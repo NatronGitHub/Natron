@@ -1843,7 +1843,8 @@ boost::shared_ptr<Curve> KnobParametric::getParametricCurve(int dimension) const
 }
 
 StatusEnum
-KnobParametric::addControlPoint(int dimension,
+KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
+                                int dimension,
                                 double key,
                                 double value,
                                 KeyframeTypeEnum interpolation)
@@ -1861,12 +1862,14 @@ KnobParametric::addControlPoint(int dimension,
     k.setInterpolation(interpolation);
     _curves[dimension]->addKeyFrame(k);
     Q_EMIT curveChanged(dimension);
+    evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
 
     return eStatusOK;
 }
 
 StatusEnum
-KnobParametric::addControlPoint(int dimension,
+KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
+                                int dimension,
                                 double key,
                                 double value,
                                 double leftDerivative,
@@ -1886,7 +1889,7 @@ KnobParametric::addControlPoint(int dimension,
     k.setInterpolation(interpolation);
     _curves[dimension]->addKeyFrame(k);
     Q_EMIT curveChanged(dimension);
-
+    evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
     return eStatusOK;
 }
 
@@ -1968,7 +1971,8 @@ KnobParametric::getNthControlPoint(int dimension,
 }
 
 StatusEnum
-KnobParametric::setNthControlPointInterpolation(int dimension,
+KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
+                                                int dimension,
                                                 int nThCtl,
                                                 KeyframeTypeEnum interpolation)
 {
@@ -1983,12 +1987,13 @@ KnobParametric::setNthControlPointInterpolation(int dimension,
     }
 
     Q_EMIT curveChanged(dimension);
-
+    evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
     return eStatusOK;
 }
 
 StatusEnum
-KnobParametric::setNthControlPoint(int dimension,
+KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
+                                   int dimension,
                                    int nthCtl,
                                    double key,
                                    double value)
@@ -2004,12 +2009,13 @@ KnobParametric::setNthControlPoint(int dimension,
     }
 
     Q_EMIT curveChanged(dimension);
-
+    evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
     return eStatusOK;
 }
 
 StatusEnum
-KnobParametric::setNthControlPoint(int dimension,
+KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
+                                   int dimension,
                                    int nthCtl,
                                    double key,
                                    double value,
@@ -2029,12 +2035,13 @@ KnobParametric::setNthControlPoint(int dimension,
 
     _curves[dimension]->setKeyFrameDerivatives(leftDerivative, rightDerivative, newIdx);
     Q_EMIT curveChanged(dimension);
-
+    evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
     return eStatusOK;
 }
 
 StatusEnum
-KnobParametric::deleteControlPoint(int dimension,
+KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
+                                   int dimension,
                                    int nthCtl)
 {
     ///Mt-safe as Curve is MT-safe
@@ -2044,12 +2051,13 @@ KnobParametric::deleteControlPoint(int dimension,
 
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
     Q_EMIT curveChanged(dimension);
-
+    evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
     return eStatusOK;
 }
 
 StatusEnum
-KnobParametric::deleteAllControlPoints(int dimension)
+KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
+                                       int dimension)
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_curves.size() ) {
@@ -2057,7 +2065,7 @@ KnobParametric::deleteAllControlPoints(int dimension)
     }
     _curves[dimension]->clearKeyFrames();
     Q_EMIT curveChanged(dimension);
-
+    evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
     return eStatusOK;
 }
 
@@ -2161,7 +2169,7 @@ KnobParametric::loadParametricCurves(const std::list< Curve > & curves)
 void
 KnobParametric::resetExtraToDefaultValue(int dimension)
 {
-    StatusEnum s = deleteAllControlPoints(dimension);
+    StatusEnum s = deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, dimension);
 
     Q_UNUSED(s);
     _curves[dimension]->clone(*_defaultCurves[dimension]);

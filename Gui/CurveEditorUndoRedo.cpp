@@ -103,7 +103,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
         if (add && isSetKeyCommand) {
             if (isKnobCurve) {
                 if (isParametric) {
-                    StatusEnum st = isParametric->deleteAllControlPoints( isKnobCurve->getDimension() );
+                    StatusEnum st = isParametric->deleteAllControlPoints( eValueChangedReasonUserEdited, isKnobCurve->getDimension() );
                     assert(st == eStatusOK);
                     if (st != eStatusOK) {
                         throw std::logic_error("addOrRemoveKeyframe");
@@ -134,7 +134,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                     if (add) {
                         int time = it->keyframes[i].getTime();
                         if (isParametric) {
-                            StatusEnum st = isParametric->addControlPoint( it->dimension, it->keyframes[i].getTime(), it->keyframes[i].getValue() );
+                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, it->dimension, it->keyframes[i].getTime(), it->keyframes[i].getValue() );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
@@ -156,7 +156,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                         boost::shared_ptr<KnobParametric> parametricKnob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
 
                         if (parametricKnob) {
-                            StatusEnum st = parametricKnob->deleteControlPoint( it->dimension,
+                            StatusEnum st = parametricKnob->deleteControlPoint( eValueChangedReasonUserEdited, it->dimension,
                                                                                 it->curveUI->getInternalCurve()->keyFrameIndex( it->keyframes[i].getTime() ) );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
@@ -287,7 +287,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         int time = it->second[i].getTime();
 
                         if (isParametric) {
-                            StatusEnum st = isParametric->addControlPoint( isKnobCurve->getDimension(), it->second[i].getTime(), it->second[i].getValue() );
+                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(), it->second[i].getTime(), it->second[i].getValue() );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
@@ -309,7 +309,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         boost::shared_ptr<KnobParametric> knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
 
                         if (knob) {
-                            StatusEnum st = knob->deleteControlPoint( isKnobCurve->getDimension(),
+                            StatusEnum st = knob->deleteControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(),
                                                                       it->first->getInternalCurve()->keyFrameIndex( it->second[i].getTime() ) );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
