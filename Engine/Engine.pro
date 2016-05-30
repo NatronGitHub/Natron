@@ -81,6 +81,7 @@ SOURCES += \
     CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
+    DefaultShaders.cpp \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
@@ -97,6 +98,7 @@ SOURCES += \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
     GPUContextPool.cpp \
+    GLShader.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -261,6 +263,7 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
+    DefaultShaders.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
@@ -283,6 +286,7 @@ HEADERS += \
     fstream_mingw.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
+    GLShader.h \
     GPUContextPool.h \
     GroupInput.h \
     GroupOutput.h \

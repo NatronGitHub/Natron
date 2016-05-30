@@ -56,6 +56,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 NATRON_NAMESPACE_ENTER;
 
+class OfxImageCommon;
 struct OfxClipInstancePrivate;
 class OfxClipInstance
     : public OFX::Host::ImageEffect::ClipInstance
@@ -236,7 +237,7 @@ public:
     {
         //We keep track of the images being rendered (on the output clip) so that we return the same pointer
         //if this is the same image
-        std::list<OfxImage*> imagesBeingRendered;
+        std::list<OfxImageCommon*> imagesBeingRendered;
 
         //Used to determine the plane to render in a call to getOutputImageInternal()
         ImageComponents clipComponents;
@@ -305,37 +306,76 @@ private:
     void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel, EffectInstance* associatedNode,
                                        OfxRectD* rod) const;
 
-    OFX::Host::ImageEffect::Image* getInputImageInternal(const OfxTime time, const ViewSpec view, const OfxRectD *optionalBounds,
-                                                         const std::string* ofxPlane);
-    OFX::Host::ImageEffect::Image* getOutputImageInternal(const std::string* ofxPlane);
-    OFX::Host::ImageEffect::Image* getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane);
+    bool getInputImageInternal(const OfxTime time, const ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
+    bool getOutputImageInternal(const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
+    bool getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
 
 private:
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 
-
-struct OfxImagePrivate;
-class OfxImage
-    : public OFX::Host::ImageEffect::Image
+struct OfxImageCommonPrivate;
+class OfxImageCommon
 {
 public:
-    explicit OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                      const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                      bool isSrcImage,
-                      const RectI& renderWindow,
-                      const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                      const std::string& components,
-                      int nComps);
+    explicit OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
+                            const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
+                            const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                            bool isSrcImage,
+                            const RectI& renderWindow,
+                            const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                            const std::string& components,
+                            int nComps);
 
-    virtual ~OfxImage();
-
+    virtual ~OfxImageCommon();
+    
     const std::string& getComponentsString() const;
     boost::shared_ptr<NATRON_NAMESPACE::Image> getInternalImage() const;
 
 private:
 
-    boost::scoped_ptr<OfxImagePrivate> _imp;
+    boost::scoped_ptr<OfxImageCommonPrivate> _imp;
+
+};
+
+class OfxImage
+    : public OFX::Host::ImageEffect::Image
+    , public OfxImageCommon
+{
+public:
+    explicit OfxImage( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
+                      const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                      bool isSrcImage,
+                      const RectI& renderWindow,
+                      const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                      const std::string& components,
+                      int nComps)
+    : OFX::Host::ImageEffect::Image()
+    , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+    {
+
+    }
+
+};
+
+class OfxTexture
+: public OFX::Host::ImageEffect::Texture
+, public OfxImageCommon
+{
+public:
+    explicit OfxTexture( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
+                      const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                      bool isSrcImage,
+                      const RectI& renderWindow,
+                      const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                      const std::string& components,
+                      int nComps)
+    : OFX::Host::ImageEffect::Texture()
+    , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+    {
+
+    }
+
 };
 
 NATRON_NAMESPACE_EXIT;

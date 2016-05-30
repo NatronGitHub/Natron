@@ -888,6 +888,8 @@ Image::convertToFormat(const RectI & renderWindow,
                        bool requiresUnpremult,
                        Image* dstImg) const
 {
+    // OpenGL textures are always RGBA anyway
+    assert(getStorageMode() != eStorageModeGLTex);
     convertToFormatCommon(renderWindow, srcColorSpace, dstColorSpace, channelForAlpha, false, copyBitmap, requiresUnpremult, dstImg);
 } // convertToFormat
 
@@ -900,6 +902,7 @@ Image::convertToFormatAlpha0(const RectI & renderWindow,
                              bool requiresUnpremult,
                              Image* dstImg) const
 {
+    assert(getStorageMode() != eStorageModeGLTex);
     convertToFormatCommon(renderWindow, srcColorSpace, dstColorSpace, channelForAlpha, true, copyBitmap, requiresUnpremult, dstImg);
 }
 

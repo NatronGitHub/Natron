@@ -71,7 +71,7 @@ OSGLContext_mac::createWindow()
 #endif
 
 
-OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int /*minor*/)
+OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int /*minor*/, const OSGLContext_mac* shareContext)
 : _context(0)
 {
 
@@ -180,7 +180,7 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
         throw std::runtime_error("CGL: Failed to choose pixel format");
     }
 
-    errorCode = CGLCreateContext( nativePixelFormat, NULL, &_context ); // second parameter can be another context for object sharing
+    errorCode = CGLCreateContext( nativePixelFormat, shareContext ? shareContext->_context : 0, &_context ); 
     if (errorCode != kCGLNoError) {
         throw std::runtime_error("CGL: Failed to create context");
     }

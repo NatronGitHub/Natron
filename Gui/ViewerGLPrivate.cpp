@@ -435,8 +435,10 @@ ViewerGL::Implementation::initializeGL()
     _this->makeCurrent();
     initAndCheckGlExtensions();
 
-    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
-    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+    int format,internalFormat,glType;
+    Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format,internalFormat, glType) );
+    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
 
 
     // glGenVertexArrays(1, &_vaoId);

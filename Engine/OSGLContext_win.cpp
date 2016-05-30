@@ -169,7 +169,7 @@ OSGLContext_win::getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, int p
 }
 
 void
-OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor)
+OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext)
 {
     _dc = GetDC(_windowHandle);
     if (!_dc) {
@@ -297,7 +297,7 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
     int pixelFormat = closestConfig.handle;
 
     PIXELFORMATDESCRIPTOR pfd;
-    HGLRC share = NULL;
+    HGLRC share = shareContext ? shareContext->_handle : 0;
 
     if (!DescribePixelFormat(_dc, pixelFormat, sizeof(pfd), &pfd)) {
         throw std::runtime_error("WGL: Failed to retrieve PFD for selected pixel format");
@@ -506,7 +506,7 @@ OSGLContext_win::destroyContext()
 }
 
 
-OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int major, int minor)
+OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext)
 : _dc(0)
 , _handle(0)
 , _interval(0)
@@ -518,7 +518,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int 
         throw std::runtime_error("WGL: Failed to create window");
     }
 
-    createGLContext(pixelFormatAttrs, major, minor);
+    createGLContext(pixelFormatAttrs, major, minor, shareContext);
 
     if (analyzeContextWGL(pixelFormatAttrs, major, minor)) {
         // Some window hints require us to re-create the context using WGL
@@ -552,7 +552,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int 
             throw std::runtime_error("WGL: Failed to create window");
         }
 
-        createGLContext(pixelFormatAttrs, major, minor);
+        createGLContext(pixelFormatAttrs, major, minor, shareContext);
 
     }
 

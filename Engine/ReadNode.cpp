@@ -1076,10 +1076,11 @@ ReadNode::beginSequenceRender(double first,
                               bool isSequentialRender,
                               bool isRenderResponseToUserInteraction,
                               bool draftMode,
-                              ViewIdx view)
+                              ViewIdx view,
+                              bool isOpenGLRender)
 {
     if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        return _imp->embeddedPlugin->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender);
     } else {
         return eStatusFailed;
     }
@@ -1094,10 +1095,11 @@ ReadNode::endSequenceRender(double first,
                             bool isSequentialRender,
                             bool isRenderResponseToUserInteraction,
                             bool draftMode,
-                            ViewIdx view)
+                            ViewIdx view,
+                            bool isOpenGLRender)
 {
     if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        return _imp->embeddedPlugin->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender);
     } else {
         return eStatusFailed;
     }

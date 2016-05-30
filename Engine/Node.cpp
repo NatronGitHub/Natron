@@ -6301,7 +6301,6 @@ Node::makePreviewImage(SequenceTime time,
                                                   NodePtr(), //rotoPaint node
                                                   false, // isAnalysis
                                                   true, // isDraft
-                                                  false, // enableProgress
                                                   boost::shared_ptr<RenderStats>() );
         FrameRequestMap request;
         stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
@@ -6328,7 +6327,11 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            renderWindow,
                                                                                                            rod,
                                                                                                            requestedComps, //< preview is always rgb...
-                                                                                                           depth, false, effect) );
+                                                                                                           depth,
+                                                                                                           false,
+                                                                                                           effect,
+                                                                                                           false /*returnOpenGLTex*/,
+                                                                                                           time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);
             if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
@@ -7382,7 +7385,6 @@ Node::onInputChanged(int inputNb,
                                                   0, //texture index
                                                   getApp()->getTimeLine().get(),
                                                   NodePtr(),
-                                                  false,
                                                   false,
                                                   false,
                                                   boost::shared_ptr<RenderStats>() );

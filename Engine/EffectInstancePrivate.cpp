@@ -298,6 +298,7 @@ EffectInstance::RenderArgs::RenderArgs()
     , firstFrame(0)
     , lastFrame(0)
     , transformRedirections()
+    , isDoingOpenGLRender(false)
 {
 }
 
@@ -317,6 +318,7 @@ EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
     , firstFrame(o.firstFrame)
     , lastFrame(o.lastFrame)
     , transformRedirections(o.transformRedirections)
+    , isDoingOpenGLRender(o.isDoingOpenGLRender)
 {
 }
 
@@ -545,7 +547,8 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,
                                                                    int firstFrame,
-                                                                   int lastFrame)
+                                                                   int lastFrame,
+                                                                   bool isDoingOpenGLRender)
     : tlsData(tlsData)
 {
     tlsData->currentRenderArgs.rod = rod;
@@ -560,6 +563,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
     tlsData->currentRenderArgs.regionOfInterestResults = roiMap;
     tlsData->currentRenderArgs.firstFrame = firstFrame;
     tlsData->currentRenderArgs.lastFrame = lastFrame;
+    tlsData->currentRenderArgs.isDoingOpenGLRender = isDoingOpenGLRender;
 
     tlsData->currentRenderArgs.validArgs = true;
 }

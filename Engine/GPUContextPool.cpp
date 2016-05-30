@@ -29,7 +29,6 @@
 #include <QWaitCondition>
 
 #include "Engine/OSGLContext.h"
-#include "Engine/TLSHolder.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -42,7 +41,8 @@ struct GPUContextPoolPrivate
     // protected by contextPoolMutex
     std::set<OSGLContextPtr> glContextPool, attachedGLContexts;
 
-    boost::shared_ptr<TLSHolder<GPUContextPool::ContextPoolTLSData> > tlsData;
+    // The OpenGL context to use for sharing
+    boost::weak_ptr<OSGLContext> glShareContext;
 
     // protected by contextPoolMutex
     int maxContexts;
@@ -52,7 +52,7 @@ struct GPUContextPoolPrivate
     , glContextPoolEmpty()
     , glContextPool()
     , attachedGLContexts()
-    , tlsData(new TLSHolder<GPUContextPool::ContextPoolTLSData>())
+    , glShareContext()
     , maxContexts(maxContexts)
     {
         
@@ -90,60 +90,48 @@ GPUContextPool::getNumAttachedGLContext() const
     return (int)_imp->attachedGLContexts.size();
 }
 
-void
-GPUContextPool::attachGLContextToThread()
+OSGLContextPtr
+GPUContextPool::attachGLContextToRender()
 {
     QMutexLocker k(&_imp->contextPoolMutex);
-    boost::shared_ptr<ContextPoolTLSData> data = _imp->tlsData->getTLSData();
-    if (data && data->currentContext && data->currentContext->glContext) {
-        data->currentContext->glContext->makeContextCurrent();
-        // A context is already attached
-        return;
-    }
 
     while (_imp->glContextPool.empty() && (int)_imp->attachedGLContexts.size() >= _imp->maxContexts) {
         _imp->glContextPoolEmpty.wait(&_imp->contextPoolMutex);
     }
 
 
+    OSGLContextPtr shareContext = _imp->glShareContext.lock();
+    OSGLContextPtr newContext;
     if (_imp->glContextPool.empty()) {
         assert((int)_imp->attachedGLContexts.size() < _imp->maxContexts);
         //  Create a new one
-        if (!data->currentContext) {
-            GPUContextPtr context(new GPUContext());
-            data->currentContext = context;
-        }
-
-        data->currentContext->glContext.reset(new OSGLContext(FramebufferConfig()));
+        newContext.reset(new OSGLContext(FramebufferConfig(), shareContext.get()));
 
     } else {
-        if (!data->currentContext) {
-            GPUContextPtr context(new GPUContext());
-            data->currentContext = context;
-        }
 
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
-        data->currentContext->glContext = *it;
+        newContext = *it;
         _imp->glContextPool.erase(it);
 
     }
 
-    data->currentContext->glContext->makeContextCurrent();
-    _imp->attachedGLContexts.insert(data->currentContext->glContext);
+    // If this is the first context, set it as the sharing context
+    if (!shareContext) {
+        _imp->glShareContext = newContext;
+    }
 
+    newContext->makeContextCurrent();
+    _imp->attachedGLContexts.insert(newContext);
+    return newContext;
 }
 
 void
-GPUContextPool::releaseGLContextFromThread()
+GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
 {
     QMutexLocker k(&_imp->contextPoolMutex);
-    boost::shared_ptr<ContextPoolTLSData> data = _imp->tlsData->getTLSData();
-    if (!data || !data->currentContext || !data->currentContext->glContext) {
-        return;
-    }
 
     // The thread has a context on its TLS so it must be found in the attached contexts set
-    std::set<OSGLContextPtr>::iterator foundAttached = _imp->attachedGLContexts.find(data->currentContext->glContext);
+    std::set<OSGLContextPtr>::iterator foundAttached = _imp->attachedGLContexts.find(context);
     assert(foundAttached != _imp->attachedGLContexts.end());
     if (foundAttached != _imp->attachedGLContexts.end()) {
         _imp->attachedGLContexts.erase(foundAttached);
@@ -156,16 +144,6 @@ GPUContextPool::releaseGLContextFromThread()
         _imp->glContextPoolEmpty.wakeOne();
     }
 
-}
-
-OSGLContextPtr
-GPUContextPool::getCurrentOGLContext() const
-{
-    boost::shared_ptr<ContextPoolTLSData> data = _imp->tlsData->getTLSData();
-    if (!data || !data->currentContext) {
-        return OSGLContextPtr();
-    }
-    return data->currentContext->glContext;
 }
 
 

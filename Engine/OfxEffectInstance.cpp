@@ -1703,7 +1703,8 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
                                        bool draftMode,
-                                       ViewIdx view)
+                                       ViewIdx view,
+                                       bool isOpenGLRender)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1726,7 +1727,7 @@ OfxEffectInstance::beginSequenceRender(double first,
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
-                                                   /*openGLRender=*/ false, draftMode, view);
+                                                   isOpenGLRender, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1745,7 +1746,8 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      bool draftMode,
-                                     ViewIdx view)
+                                     ViewIdx view,
+                                     bool isOpenGLRender)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1767,7 +1769,7 @@ OfxEffectInstance::endSequenceRender(double first,
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
                                                  isSequentialRender, isRenderResponseToUserInteraction,
-                                                 /*openGLRender=*/ false, draftMode, view);
+                                                 isOpenGLRender, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1855,7 +1857,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                            args.mappedScale,
                                            args.isSequentialRender,
                                            args.isRenderResponseToUserInteraction,
-                                           /*openGLRender=*/ false,
+                                           args.useOpenGL,
                                            args.draftMode,
                                            args.view,
                                            viewsCount,
@@ -2767,6 +2769,24 @@ OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropInstanceId, scriptname);
+}
+
+bool
+OfxEffectInstance::supportsConcurrentOpenGLRenders() const
+{
+#pragma message WARN("TODO")
+}
+
+EffectInstance::OpenGLContextEffectDataPtr
+OfxEffectInstance::attachOpenGLContext()
+{
+#pragma message WARN("TODO")
+}
+
+void
+OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffectDataPtr& data)
+{
+#pragma message WARN("TODO")
 }
 
 NATRON_NAMESPACE_EXIT;

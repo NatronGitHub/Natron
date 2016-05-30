@@ -30,13 +30,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-// Contains all possible gpu context
-struct GPUContext
-{
-    OSGLContextPtr glContext;
-};
-
-typedef boost::shared_ptr<GPUContext> GPUContextPtr;
 
 struct GPUContextPoolPrivate;
 class GPUContextPool
@@ -65,35 +58,28 @@ public:
     int getNumAttachedGLContext() const;
 
     /**
-     * @brief Attaches one of the OpenGL context in the pool to the caller thread.
-     * The context will not be available to other threads until releaseGLContextFromThread() is called
-     * for this thread.
+     * @brief Attaches one of the OpenGL context in the pool to a specific frame render.
+     * The context will not be available to other renders until releaseGLContextFromRender() is called
+     * for on the same thread that called this function.
      * This function is blocking and the calling thread will wait until one context is made available
      * in the pool again.
      * If a context is already attached on the thread, this function returns immediately
      * After returning this function, the context is guarenteed to be made current and 
      * OpenGL called can be made.
+     * If during the render, other threads are participating and needs to make the context current, they 
+     * may call makeContextCurrent with the context returned from this function.
      **/
-    void attachGLContextToThread();
+    OSGLContextPtr attachGLContextToRender();
 
     /**
-     * @brief Releases the OpenGL context held by the caller thread. After this call the context may be re-used
-     * by other threads waiting in attachContextToThread()
+     * @brief Releases the given OpenGL context from a render. After this call the context may be re-used
+     * by other threads waiting in attachContextToThread(). 
+     * This function MUST be call when a render is finished and the argument passed should be the context returned
+     * from the function attachGLContextToRender().
      **/
-    void releaseGLContextFromThread();
+    void releaseGLContextFromRender(const OSGLContextPtr& context);
 
-    /**
-     * @brief Returns the current OpenGL context for this thread.
-     **/
-    OSGLContextPtr getCurrentOGLContext() const;
     ////////////////////////////////////////////////////////////////
-
-    struct ContextPoolTLSData
-    {
-        // One context per thread
-        GPUContextPtr currentContext;
-    };
-
 
 private:
 

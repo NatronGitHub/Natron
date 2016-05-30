@@ -84,7 +84,6 @@ ImageParams::serialize(Archive & ar,
 {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NonKeyParams);
     ar & ::boost::serialization::make_nvp("RoD", _rod);
-    ar & ::boost::serialization::make_nvp("Bounds", _bounds);
     ar & ::boost::serialization::make_nvp("IsProjectFormat", _isRoDProjectFormat);
     // backward compatibility is not necessary
     //if (version < IMAGE_SERIALIZATION_REMOVE_FRAMESNEEDED) {

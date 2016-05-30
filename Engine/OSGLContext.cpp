@@ -24,6 +24,8 @@
 
 #include "OSGLContext.h"
 
+#include <QDebug>
+
 #ifdef __NATRON_WIN32__
 #include "Engine/OSGLContext_win.h"
 #elif defined(__NATRON_OSX__)
@@ -32,7 +34,31 @@
 #include "Engine/OSGLContext_x11.h"
 #endif
 
+#include "Engine/DefaultShaders.h"
+#include "Engine/GLShader.h"
+
 NATRON_NAMESPACE_ENTER;
+
+FramebufferConfig::FramebufferConfig()
+: redBits(8)
+, greenBits(8)
+, blueBits(8)
+, alphaBits(8)
+, depthBits(24)
+, stencilBits(8)
+, accumRedBits(0)
+, accumGreenBits(0)
+, accumBlueBits(0)
+, accumAlphaBits(0)
+, auxBuffers(0)
+, stereo(GL_FALSE)
+, samples(0)
+, sRGB(GL_FALSE)
+, doublebuffer(GL_FALSE)
+, handle(0)
+{
+
+}
 
 const FramebufferConfig&
 OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count)
@@ -206,29 +232,62 @@ struct OSGLContextPrivate
     boost::scoped_ptr<OSGLContext_x11> _platformContext;
 #endif
 
+    // This pbo is used to call glTexSubImage2D and glReadPixels asynchronously
+    GLuint pboID;
+
+    // The main FBO onto which we do all renders
+    GLuint fboID;
+
+    boost::shared_ptr<GLShader> fillImageShader, applyMaskMixShader, copyUnprocessedChannelsShader;
+
     OSGLContextPrivate()
     : _platformContext()
+    , pboID(0)
+    , fboID(0)
+    , fillImageShader()
+    , applyMaskMixShader()
+    , copyUnprocessedChannelsShader()
     {
        
     }
+
+    // Create PBO and FBO if needed
+    void init();
 };
 
-OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor)
+OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs, const OSGLContext* shareContext, int major, int minor)
 : _imp(new OSGLContextPrivate())
 {
 
 #ifdef __NATRON_WIN32__
-    _imp->_platformContext.reset(new OSGLContext_win(pixelFormatAttrs, major, minor));
+    _imp->_platformContext.reset(new OSGLContext_win(pixelFormatAttrs, major, minor, shareContext->_imp->_platformContext.get()));
 #elif defined(__NATRON_OSX__)
-    _imp->_platformContext.reset(new OSGLContext_mac(pixelFormatAttrs, major, minor));
+    _imp->_platformContext.reset(new OSGLContext_mac(pixelFormatAttrs, major, minor, shareContext->_imp->_platformContext.get()));
 #elif defined(__NATRON_LINUX__)
-    _imp->_platformContext.reset(new OSGLContext_x11(pixelFormatAttrs, major, minor));
+    _imp->_platformContext.reset(new OSGLContext_x11(pixelFormatAttrs, major, minor, shareContext->_imp->_platformContext.get()));
 #endif
 }
 
 OSGLContext::~OSGLContext()
 {
+    if (_imp->pboID) {
+        glDeleteBuffers(1, &_imp->pboID);
+    }
+    if (_imp->fboID) {
+        glDeleteFramebuffers(1, &_imp->fboID);
+    }
+}
 
+GLuint
+OSGLContext::getPBOId() const
+{
+    return _imp->pboID;
+}
+
+GLuint
+OSGLContext::getFBOId() const
+{
+    return _imp->fboID;
 }
 
 void
@@ -241,6 +300,20 @@ OSGLContext::makeContextCurrent()
 #elif defined(__NATRON_LINUX__)
     OSGLContext_x11::makeContextCurrent(_imp->_platformContext.get());
 #endif
+
+    // The first time this context is made current, allocate the PBO and FBO
+    // This is thread-safe because we actually call this under the GPUContextPool
+    // before we make this context available to all threads
+    if (!_imp->pboID) {
+        _imp->init();
+    }
+}
+
+void
+OSGLContextPrivate::init()
+{
+    glGenBuffers(1, &pboID);
+    glGenFramebuffers(1, &fboID);
 }
 
 bool
@@ -268,6 +341,88 @@ OSGLContext::stringInExtensionString(const char* string, const char* extensions)
     }
     
     return true;
+}
+
+boost::shared_ptr<GLShader>
+OSGLContext::getOrCreateDefaultShader(DefaultGLShaderEnum type)
+{
+    switch (type) {
+        case eDefaultGLShaderFillConstant: {
+            if (_imp->fillImageShader) {
+                return _imp->fillImageShader;
+            }
+            _imp->fillImageShader.reset(new GLShader());
+#ifdef DEBUG
+            std::string error;
+            bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
+            if (!ok) {
+                qDebug() << error.c_str();
+            }
+#else
+            bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, 0);
+#endif
+
+            assert(ok);
+#ifdef DEBUG
+            ok = _imp->fillImageShader->link(&error);
+            if (!ok) {
+                qDebug() << error.c_str();
+            }
+#else
+            ok = _imp->fillImageShader->link();
+#endif
+            return _imp->fillImageShader; }
+
+        case eDefaultGLShaderApplyMaskMix: {
+            if (_imp->applyMaskMixShader) {
+                return _imp->applyMaskMixShader;
+            }
+            _imp->applyMaskMixShader.reset(new GLShader());
+#ifdef DEBUG
+            std::string error;
+            bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, &error);
+            if (!ok) {
+                qDebug() << error.c_str();
+            }
+#else
+            bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, 0);
+#endif
+#ifdef DEBUG
+            ok = _imp->applyMaskMixShader->link(&error);
+            if (!ok) {
+                qDebug() << error.c_str();
+            }
+#else
+            ok = _imp->applyMaskMixShader->link();
+#endif
+            return _imp->applyMaskMixShader; }
+
+        case eDefaultGLShaderCopyUnprocessedChannels: {
+            if (_imp->copyUnprocessedChannelsShader) {
+                return _imp->copyUnprocessedChannelsShader;
+            }
+            _imp->copyUnprocessedChannelsShader.reset(new GLShader());
+#ifdef DEBUG
+            std::string error;
+            bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, &error);
+            if (!ok) {
+                qDebug() << error.c_str();
+            }
+#else
+            bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, 0);
+#endif
+#ifdef DEBUG
+            ok = _imp->copyUnprocessedChannelsShader->link(&error);
+            if (!ok) {
+                qDebug() << error.c_str();
+            }
+#else
+            ok = _imp->copyUnprocessedChannelsShader->link();
+#endif
+            return _imp->copyUnprocessedChannelsShader; }
+    }
+    assert(false);
+    return boost::shared_ptr<GLShader>();
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -174,9 +174,7 @@ public:
 
     Image(const ImageKey & key,
           const boost::shared_ptr<ImageParams> &  params,
-          const CacheAPI* cache,
-          StorageModeEnum storage,
-          const std::string & path);
+          const CacheAPI* cache);
 
 
     /*This constructor can be used to allocate a local Image. The deallocation should
@@ -190,7 +188,9 @@ public:
           ImageBitDepthEnum bitdepth,
           ImagePremultiplicationEnum premult,
           ImageFieldingOrderEnum fielding,
-          bool useBitmap = false);
+          bool useBitmap = false,
+          StorageModeEnum storage = eStorageModeRAM,
+          U32 textureTarget = GL_TEXTURE_2D);
 
     //Same as above but parameters are in the ImageParams object
     Image(const ImageKey & key,
@@ -201,6 +201,10 @@ public:
 
     bool usesBitMap() const { return _useBitmap; }
 
+    StorageModeEnum getStorageMode() const {
+        return _params->getStorageInfo().mode;
+    }
+
     virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
     static ImageKey makeKey(const CacheEntryHolder* holder,
                             U64 nodeHashKey,
@@ -209,17 +213,17 @@ public:
                             ViewIdx view,
                             bool draftMode,
                             bool fullScaleWithDownscaleInputs);
-    static boost::shared_ptr<ImageParams> makeParams(int cost,
-                                                     const RectD & rod,    // the image rod in canonical coordinates
+    static boost::shared_ptr<ImageParams> makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const double par,
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
                                                      const ImageComponents& components,
                                                      ImageBitDepthEnum bitdepth,
                                                      ImagePremultiplicationEnum premult,
-                                                     ImageFieldingOrderEnum fielding);
-    static boost::shared_ptr<ImageParams> makeParams(int cost,
-                                                     const RectD & rod,    // the image rod in canonical coordinates
+                                                     ImageFieldingOrderEnum fielding,
+                                                     StorageModeEnum storage = eStorageModeRAM,
+                                                     U32 textureTarget = GL_TEXTURE_2D);
+    static boost::shared_ptr<ImageParams> makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const RectI& bounds,
                                                      const double par,
                                                      unsigned int mipMapLevel,
@@ -227,7 +231,9 @@ public:
                                                      const ImageComponents& components,
                                                      ImageBitDepthEnum bitdepth,
                                                      ImagePremultiplicationEnum premult,
-                                                     ImageFieldingOrderEnum fielding);
+                                                     ImageFieldingOrderEnum fielding,
+                                                     StorageModeEnum storage = eStorageModeRAM,
+                                                     U32 textureTarget = GL_TEXTURE_2D);
 
     // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;
 
@@ -706,11 +712,11 @@ public:
      * For example if the image comps is eImageComponentAlpha, then only the alpha value 'a' will
      * be used.
      **/
-    void fill(const RectI & roi, float r, float g, float b, float a);
+    void fill(const RectI & roi, float r, float g, float b, float a, const OSGLContextPtr& glContext = OSGLContextPtr());
 
-    void fillZero(const RectI& roi);
+    void fillZero(const RectI& roi, const OSGLContextPtr& glContext = OSGLContextPtr());
 
-    void fillBoundsZero();
+    void fillBoundsZero(const OSGLContextPtr& glContext = OSGLContextPtr());
 
     /**
      * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B
@@ -718,16 +724,17 @@ public:
      **/
     void fill(const RectI & rect,
               float colorValue = 0.f,
-              float alphaValue = 1.f)
+              float alphaValue = 1.f,
+              const OSGLContextPtr& glContext = OSGLContextPtr())
     {
-        fill(rect, colorValue, colorValue, colorValue, alphaValue);
+        fill(rect, colorValue, colorValue, colorValue, alphaValue, glContext);
     }
 
     /**
      * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
      * The internal bitmap will be copied aswell
      **/
-    void pasteFrom(const Image & src, const RectI & srcRoi, bool copyBitmap = true);
+    void pasteFrom(const Image & src, const RectI & srcRoi, bool copyBitmap = true, const OSGLContextPtr& glContext = OSGLContextPtr());
 
     /**
      * @brief Downscales a portion of this image into output.
@@ -746,15 +753,6 @@ public:
      * If the upscaled roi does not fit into output's bounds, it is cropped first.
      **/
     void upscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
-
-    /**
-     * @brief Scales the roi of this image to the size of the output image.
-     * This is used internally by buildMipMapLevel when the image is a NPOT.
-     * This should not be used for downscaling.
-     * The scale is computed from the RoD of both images.
-     * FIXME: this following function has plenty of bugs (see code).
-     **/
-    void scaleBox(const RectI & roi, Image* output) const;
 
 
     static double getScaleFromMipMapLevel(unsigned int level);
@@ -826,28 +824,46 @@ private:
 
 public:
 
-
+    /**
+     * @brief Premultiply the image by its alpha channel on the given RoI.
+     * Currently there is no implementation for OpenGL textures.
+     **/
     void premultImage(const RectI& roi);
+
+    /**
+     * @brief Unpremultiply the image by its alpha channel on the given RoI.
+     * Currently there is no implementation for OpenGL textures.
+     **/
     void unpremultImage(const RectI& roi);
 
     bool canCallCopyUnProcessedChannels(std::bitset<4> processChannels) const;
 
+    /**
+     * @brief Given the channels to process, this function copies from the originalImage the channels
+     * that are not marked to true in processChannels.
+     **/
     void copyUnProcessedChannels(const RectI& roi,
                                  ImagePremultiplicationEnum outputPremult,
                                  ImagePremultiplicationEnum originalImagePremult,
                                  std::bitset<4> processChannels,
                                  const boost::shared_ptr<Image>& originalImage,
-                                 bool ignorePremult);
+                                 bool ignorePremult,
+                                 const OSGLContextPtr& glContext = OSGLContextPtr());
 
+    /**
+     * @brief Mask the image by the given mask and also disolves it to the originalImg with the given mix.
+     **/
     void applyMaskMix(const RectI& roi,
                       const Image* maskImg,
                       const Image* originalImg,
                       bool masked,
                       bool maskInvert,
-                      float mix);
+                      float mix,
+                      const OSGLContextPtr& glContext = OSGLContextPtr());
 
     /**
-     * @brief returns true if image contains NaNs or infinite values, and fix them.
+     * @brief Eeturns true if image contains NaNs or infinite values, and fix them.
+     * Currently, no OpenGL implementation is provided.
      */
     bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
 

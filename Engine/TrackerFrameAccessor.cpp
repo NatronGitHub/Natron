@@ -360,7 +360,6 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               NodePtr(), // rotoPaintNode
                                               true, //isAnalysis
                                               false,//draftMode
-                                              false, //viewer progress
                                               boost::shared_ptr<RenderStats>() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
@@ -372,7 +371,9 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         components,
                                         eImageBitDepthFloat,
                                         true,
-                                        _imp->context->getNode()->getEffectInstance().get() );
+                                        _imp->context->getNode()->getEffectInstance().get(),
+                                        false/*returnOpenGLTex*/,
+                                        frame);
     std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = _imp->trackerInput->getEffectInstance()->renderRoI(args, &planes);
     if ( (stat != EffectInstance::eRenderRoIRetCodeOk) || planes.empty() ) {

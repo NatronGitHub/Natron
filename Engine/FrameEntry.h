@@ -54,10 +54,8 @@ class FrameEntry
 public:
     FrameEntry(const FrameKey & key,
                const boost::shared_ptr<FrameParams> &  params,
-               const CacheAPI* cache,
-               StorageModeEnum storage,
-               const std::string & path)
-        : CacheEntryHelper<U8, FrameKey, FrameParams>(key, params, cache, storage, path)
+               const CacheAPI* cache)
+        : CacheEntryHelper<U8, FrameKey, FrameParams>(key, params, cache)
         , _abortedMutex()
         , _aborted(false)
     {
@@ -67,11 +65,6 @@ public:
     {
     }
 
-    static boost::shared_ptr<FrameParams> makeParams(const RectI & rod,
-                                                     int bitDepth,
-                                                     int texW,
-                                                     int texH,
-                                                     const boost::shared_ptr<Image>& image) WARN_UNUSED_RETURN;
     const U8* data() const WARN_UNUSED_RETURN
     {
         return _data.readable();

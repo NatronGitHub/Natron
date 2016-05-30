@@ -119,7 +119,7 @@ class OSGLContext_win
 {
 public:
 
-    OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int major, int minor);
+    OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext);
 
     ~OSGLContext_win();
 
@@ -136,7 +136,7 @@ private:
 
     int getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, int pixelFormat, int attrib);
 
-    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor);
+    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext);
 
     bool analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, int major, int minor);
 

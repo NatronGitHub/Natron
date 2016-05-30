@@ -460,7 +460,8 @@ enum StorageModeEnum
 {
     eStorageModeNone = 0, //< no memory will be allocated
     eStorageModeRAM, //< will be allocated in RAM using malloc or a malloc based implementation (such as std::vector)
-    eStorageModeDisk //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
+    eStorageModeDisk, //< will be allocated on virtual memory using mmap(). Fall-back on disk is assured by the operating system
+    eStorageModeGLTex //< will be allocated as an OpenGL texture
 };
 
 enum OrientationEnum

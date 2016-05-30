@@ -124,13 +124,12 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
 #endif
 
         EntryType* value = NULL;
-        StorageModeEnum storage = eStorageModeDisk;
 
         try {
-            value = new EntryType(it->key, it->params, this, storage, it->filePath);
+            value = new EntryType(it->key, it->params, this);
 
             ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
-            value->restoreMetaDataFromFile(it->size);
+            value->restoreMetaDataFromFile(it->size, it->filePath);
         } catch (const std::exception & e) {
             qDebug() << e.what();
             continue;

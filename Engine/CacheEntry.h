@@ -53,9 +53,11 @@
 #include "Engine/CacheEntryHolder.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/NonKeyParams.h"
+#include "Engine/Texture.h"
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -167,62 +169,95 @@ public:
         deallocate();
     }
 
-    void allocate( U64 count,
-                   StorageModeEnum storage,
-                   std::string path = std::string() )
+    void allocateRAM(U64 count)
     {
-        /*allocate should be called only once.*/
-        assert( _path.empty() );
-        assert( ( (_buffer.size() == 0) && !_backingFile ) || ( (_buffer.size() != 0) && !_backingFile ) || (!(_buffer.size() != 0) && _backingFile) );
-        if ( (_buffer.size() > 0) || _backingFile ) {
+        if (_buffer && _buffer->size() > 0) {
+            return;
+        }
+        _storageMode = eStorageModeRAM;
+        if (!_buffer) {
+            _buffer.reset(new RamBuffer<DataType>());
+        }
+        _buffer->resize(count);
+    }
+
+    void allocateMMAP(U64 count,
+                      const std::string& path)
+    {
+        assert(_path.empty());
+        if (_backingFile) {
+            return;
+        }
+        _storageMode = eStorageModeDisk;
+        _path = path;
+        try {
+            _backingFile.reset( new MemoryFile(_path, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
+        } catch (const std::runtime_error & r) {
+            std::cout << r.what() << std::endl;
+
+            // if opening the file mapping failed, just call allocate again, but this time on RAM!
+            _backingFile.reset();
+            _path.clear();
+            allocateRAM(count);
             return;
         }
 
+        assert(_backingFile);
 
-        if (storage == eStorageModeDisk) {
-            _storageMode = eStorageModeDisk;
-            _path = path;
-            try {
-                _backingFile.reset( new MemoryFile(_path, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
-            } catch (const std::runtime_error & r) {
-                std::cout << r.what() << std::endl;
-
-                ///if opening the file mapping failed, just call allocate again, but this time on RA%!
-                _backingFile.reset();
-                _path.clear();
-                allocate(count, eStorageModeRAM, path);
-
-                return;
-            }
-
-            assert(_backingFile);
-
-            if ( !path.empty() && (count != 0) ) {
-                //if the backing file has already the good size and we just wanted to re-open the mapping
-                _backingFile->resize(count);
-            }
-        } else if (storage == eStorageModeRAM) {
-            _storageMode = eStorageModeRAM;
-            _buffer.resize(count);
+        if ( !path.empty() && (count != 0) ) {
+            //if the backing file has already the good size and we just wanted to re-open the mapping
+            _backingFile->resize(count);
         }
+
     }
 
-    /**
-     * @brief Reallocates the internal buffer so that it countains "count" elements of the DataType.
-     * Content defined in the previous portions of the buffer will be kept.
-     *
-     * Pre-condition: allocate(..) must have been called already.
-     **/
-    void reallocate(U64 count)
+    void allocateGLTexture(const RectI& rectangle,
+                           U32 target)
     {
-        if (_storageMode == eStorageModeRAM) {
-            assert(_buffer.size() > 0); // could be 0 if we allocate 0...
-            _buffer.resize(count);
-        } else if (_storageMode == eStorageModeDisk) {
-            assert(_backingFile);
-            _backingFile->resize( count * sizeof(DataType) );
+        if (_glTexture) {
+            return;
         }
+
+        _storageMode = eStorageModeGLTex;
+        assert(!_glTexture);
+
+
+        int glType, internalFormat;
+        int format = GL_RGBA;
+        Texture::DataTypeEnum type = Texture::eDataTypeFloat;
+        /*if (sizeOfData == 1) {
+            type = Texture::eDataTypeByte;
+            internalFormat = GL_RGBA8;
+            glType = GL_UNSIGNED_INT_8_8_8_8_REV;
+        } else if (sizeOfData == 2) {
+            internalFormat = Texture::eDataTypeUShort;
+            internalFormat = GL_RGBA16;
+            glType = GL_UNSIGNED_SHORT;
+        } else {*/
+
+            // EDIT: for now, only use RGBA fp OpenGL textures, let glReadPixels do the conversion for us
+            internalFormat = GL_RGBA32F_ARB;
+            glType = GL_FLOAT;
+        //}
+
+        _glTexture.reset(new Texture(target,
+                                     GL_LINEAR,
+                                     GL_NEAREST,
+                                     GL_CLAMP_TO_EDGE,
+                                     type,
+                                     format,
+                                     internalFormat,
+                                     glType));
+
+        
+        TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);
+
+        // This calls glTexImage2D and allocates a RGBA image
+        _glTexture->ensureTextureHasSize(r);
+
+
     }
+
 
     /**
      * @brief Beware this is not really a "swap" as other do not get the infos from this Buffer.
@@ -231,11 +266,19 @@ public:
     {
         if (_storageMode == eStorageModeRAM) {
             if (other._storageMode == eStorageModeRAM) {
-                _buffer.swap(other._buffer);
+                if (other._buffer) {
+                    if (!_buffer) {
+                        _buffer.reset(new RamBuffer<DataType>());
+                    }
+                    _buffer.swap(other._buffer);
+                }
             } else {
-                _buffer.resize( other._backingFile->size() / sizeof(DataType) );
+                if (!_buffer) {
+                    _buffer.reset(new RamBuffer<DataType>());
+                }
+                _buffer->resize( other._backingFile->size() / sizeof(DataType) );
                 const char* src = other._backingFile->data();
-                char* dst = (char*)_buffer.getData();
+                char* dst = (char*)_buffer->getData();
                 std::memcpy( dst, src, other._backingFile->size() );
             }
         } else if (_storageMode == eStorageModeDisk) {
@@ -244,11 +287,11 @@ public:
                 _backingFile.swap(other._backingFile);
                 _path = other._path;
             } else {
-                _backingFile->resize( other._buffer.size() * sizeof(DataType) );
+                _backingFile->resize( other._buffer->size() * sizeof(DataType) );
                 assert( _backingFile->data() );
-                const char* src = (const char*)other._buffer.getData();
+                const char* src = (const char*)other._buffer->getData();
                 char* dst = (char*)_backingFile->data();
-                std::memcpy( dst, src, other._buffer.size() * sizeof(DataType) );
+                std::memcpy( dst, src, other._buffer->size() * sizeof(DataType) );
             }
         }
     }
@@ -278,14 +321,20 @@ public:
     void deallocate()
     {
         if (_storageMode == eStorageModeRAM) {
-            _buffer.clear();
-        } else {
+            if (_buffer) {
+                _buffer->clear();
+            }
+        } else if (_storageMode == eStorageModeDisk) {
             if (_backingFile) {
                 bool flushOk = _backingFile->flush();
                 _backingFile.reset();
                 if (!flushOk) {
                     throw std::runtime_error("Failed to flush RAM data to backing file.");
                 }
+            }
+        } else if (_storageMode == eStorageModeGLTex) {
+            if (_glTexture) {
+                _glTexture.reset();
             }
         }
     }
@@ -315,15 +364,18 @@ public:
     size_t size() const
     {
         if (_storageMode == eStorageModeRAM) {
-            return _buffer.size() * sizeof(DataType);
-        } else {
+            return _buffer ? _buffer->size() * sizeof(DataType) : 0;
+        } else if (_storageMode == eStorageModeDisk) {
             return _backingFile ? _backingFile->size() : 0;
+        } else if (_storageMode == eStorageModeGLTex) {
+            return _glTexture ? _glTexture->getSize() : 0;
         }
+        return 0;
     }
 
     bool isAllocated() const
     {
-        return (_buffer.size() > 0) || ( _backingFile && _backingFile->data() );
+        return (_buffer && _buffer->size() > 0) || ( _backingFile && _backingFile->data() ) || _glTexture;
     }
 
     DataType* writable()
@@ -334,8 +386,11 @@ public:
             } else {
                 return NULL;
             }
+        } else if (_storageMode == eStorageModeRAM) {
+            return _buffer ? _buffer->getData() : NULL;
         } else {
-            return _buffer.getData();
+            // Other storage modes don't provide direct access to RAM handle
+            return NULL;
         }
     }
 
@@ -343,8 +398,11 @@ public:
     {
         if (_storageMode == eStorageModeDisk) {
             return _backingFile ? (const DataType*)_backingFile->data() : 0;
+        } else if (_storageMode == eStorageModeRAM) {
+            return _buffer ? _buffer->getData() : NULL;
         } else {
-            return _buffer.getData();
+            // Other storage modes don't provide direct access to RAM handle
+            return NULL;
         }
     }
 
@@ -353,14 +411,43 @@ public:
         return _storageMode;
     }
 
+    U32 getGLTextureID() const
+    {
+        return _glTexture ? _glTexture->getTexID() : 0;
+    }
+
+    int getGLTextureTarget() const
+    {
+        return _glTexture ? _glTexture->getTexTarget() : 0;
+    }
+
+    int getGLTextureFormat() const
+    {
+        return _glTexture ? _glTexture->getFormat() : 0;
+    }
+
+    int getGLTextureInternalFormat() const
+    {
+        return _glTexture ? _glTexture->getInternalFormat() : 0;
+    }
+
+    int getGLTextureType() const
+    {
+        return _glTexture ? _glTexture->getGLType() : 0;
+    }
+
 private:
 
     std::string _path;
-    RamBuffer<DataType> _buffer;
+    boost::scoped_ptr<RamBuffer<DataType> > _buffer;
 
     /*mutable so the reOpenFileMapping function can reopen the mmaped file. It doesn't
        change the underlying data*/
     mutable boost::scoped_ptr<MemoryFile> _backingFile;
+
+    // Used when we store images as OpenGL textures
+    boost::scoped_ptr<Texture> _glTexture;
+
     StorageModeEnum _storageMode;
 };
 
@@ -373,6 +460,11 @@ class CacheAPI
 {
 public:
     virtual ~CacheAPI() {}
+
+    /**
+     * @brief Returns the path to the cache location on disk
+     **/
+    virtual QString getCachePath() const = 0;
 
     /**
      * @brief To be called by a CacheEntry whenever it's size is changed.
@@ -517,9 +609,7 @@ public:
         , _params()
         , _data()
         , _cache()
-        , _requestedPath()
         , _entryLock(QReadWriteLock::Recursive)
-        , _requestedStorage(eStorageModeNone)
         , _removeBackingFileBeforeDestruction(false)
     {
     }
@@ -532,16 +622,12 @@ public:
      **/
     CacheEntryHelper(const KeyType & key,
                      const boost::shared_ptr<ParamsType> & params,
-                     const CacheAPI* cache,
-                     StorageModeEnum storage,
-                     const std::string & path)
+                     const CacheAPI* cache)
         : _key(key)
         , _params(params)
         , _data()
         , _cache(cache)
-        , _requestedPath(path)
         , _entryLock(QReadWriteLock::Recursive)
-        , _requestedStorage(storage)
         , _removeBackingFileBeforeDestruction(false)
     {
     }
@@ -561,26 +647,24 @@ public:
 
     void setCacheEntry(const KeyType & key,
                        const boost::shared_ptr<ParamsType> & params,
-                       const CacheAPI* cache,
-                       StorageModeEnum storage,
-                       const std::string & path)
+                       const CacheAPI* cache)
     {
         assert(!_params && _cache == NULL);
         _key = key;
         _params = params;
         _cache = cache;
-        _requestedPath = path;
-        _requestedStorage = storage;
     }
 
     /**
      * @brief Allocates the memory required by the cache entry. It allocates enough memory to contain at least the
      * memory specified by the key.
      * WARNING: This function throws a std::bad_alloc if the allocation fails.
+     *
      **/
     void allocateMemory()
     {
-        if (_requestedStorage == eStorageModeNone) {
+        const CacheEntryStorageInfo& storageInfo = _params->getStorageInfo();
+        if (storageInfo.mode == eStorageModeNone) {
             return;
         }
 
@@ -593,31 +677,29 @@ public:
                 }
             }
             QWriteLocker k(&_entryLock);
-            allocate(_params->getElementsCount(), _requestedStorage, _requestedPath);
+            allocate();
             onMemoryAllocated(false);
         }
 
         if (_cache) {
-            _cache->notifyEntryAllocated( getTime(), size(), _data.getStorageMode() );
+            _cache->notifyEntryAllocated( getTime(), size(), storageInfo.mode );
         }
     }
 
     /**
      * @brief To be called for disk-cached entries when restoring them from a file.
-     * The file-path will be the one passed to the constructor
      **/
-    void restoreMetaDataFromFile(std::size_t size)
+    void restoreMetaDataFromFile(std::size_t size, const std::string& filePath)
     {
-        if ( !_cache || (_requestedStorage != eStorageModeDisk) ) {
+        const CacheEntryStorageInfo& storageInfo = _params->getStorageInfo();
+        if ( !_cache || (storageInfo.mode != eStorageModeDisk) ) {
             return;
         }
-
-        assert( !_requestedPath.empty() );
 
         {
             QWriteLocker k(&_entryLock);
 
-            restoreBufferFromFile(_requestedPath);
+            restoreBufferFromFile(filePath);
 
             onMemoryAllocated(true);
         }
@@ -713,13 +795,18 @@ public:
         }
 
         if (_cache) {
-            if ( isStoredOnDisk() ) {
+            const CacheEntryStorageInfo& info = _params->getStorageInfo();
+            if ( info.mode == eStorageModeDisk ) {
                 if (dataAllocated) {
                     _cache->notifyEntryStorageChanged( eStorageModeRAM, eStorageModeDisk, time, sz );
                 }
-            } else {
+            } else if (info.mode == eStorageModeRAM) {
                 if (dataAllocated) {
                     _cache->notifyEntryDestroyed(time, sz, eStorageModeRAM);
+                }
+            } else if (info.mode == eStorageModeGLTex) {
+                if (dataAllocated) {
+                    _cache->notifyEntryDestroyed(time, sz, eStorageModeGLTex);
                 }
             }
         }
@@ -784,10 +871,10 @@ public:
             _cache->backingFileClosed();
         }
         if (isAlloc) {
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType), eStorageModeRAM);
+            _cache->notifyEntryDestroyed(getTime(), getElementsCountFromParams(), eStorageModeRAM);
         } else {
             ///size() will return 0 at this point, we have to recompute it
-            _cache->notifyEntryDestroyed(getTime(), _params->getElementsCount() * sizeof(DataType), eStorageModeDisk);
+            _cache->notifyEntryDestroyed(getTime(), getElementsCountFromParams(), eStorageModeDisk);
         }
     }
 
@@ -811,18 +898,39 @@ public:
         return _params;
     }
 
+    U64 getElementsCountFromParams() const
+    {
+        const CacheEntryStorageInfo& info = _params->getStorageInfo();
+        return info.dataTypeSize * info.numComponents * info.bounds.area();
+    }
+
+    U32 getGLTextureID() const
+    {
+        return _data.getGLTextureID();
+    }
+
+    int getGLTextureFormat() const
+    {
+        return _data.getGLTextureFormat();
+    }
+
+    int getGLTextureInternalFormat() const
+    {
+        return _data.getGLTextureInternalFormat();
+    }
+
+    int getGLTextureType() const
+    {
+        return _data.getGLTextureType();
+    }
+
+    int getGLTextureTarget() const
+    {
+        return _data.getGLTextureTarget();
+    }
+
 protected:
 
-
-    void reallocate(U64 elemCount)
-    {
-        _params->setElementsCount(elemCount);
-        size_t oldSize = size();
-        _data.reallocate(elemCount);
-        if (_cache) {
-            _cache->notifyEntrySizeChanged( oldSize, size() );
-        }
-    }
 
     void swapBuffer(CacheEntryHelper<DataType, KeyType, ParamsType>& other)
     {
@@ -862,16 +970,22 @@ private:
      * We must ensure that this function is called ONLY by allocateMemory(), that's why
      * it is private.
      **/
-    void allocate( U64 count,
-                   StorageModeEnum storage,
-                   std::string path = std::string() )
+    void allocate()
     {
-        std::string fileName;
 
-        if (storage == eStorageModeDisk) {
+        CacheEntryStorageInfo& info = _params->getStorageInfo();
+
+        if (info.mode == eStorageModeDisk) {
+            std::string fileName;
+
             typename AbstractCacheEntry<KeyType>::hash_type hashKey = getHashKey();
+            
+            assert(_cache);
+            std::string cachePath = _cache->getCachePath().toStdString();
+            cachePath += '/';
+
             try {
-                fileName = generateStringFromHash(path, hashKey);
+                fileName = generateStringFromHash(cachePath, hashKey);
             } catch (const std::invalid_argument & e) {
                 std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
 
@@ -896,8 +1010,15 @@ private:
                 qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
             }
 #endif
+            U64 count = getElementsCountFromParams();
+            _data.allocateMMAP(count, fileName);
+        } else if (info.mode == eStorageModeRAM) {
+            U64 count = getElementsCountFromParams();
+            _data.allocateRAM(count);
+        } else if (info.mode == eStorageModeGLTex) {
+            _data.allocateGLTexture(info.bounds, info.textureTarget);
         }
-        _data.allocate(count, storage, fileName);
+
     }
 
     /** @brief This function is called in allocateMeory() and before the object is exposed
@@ -919,9 +1040,7 @@ protected:
     boost::shared_ptr<ParamsType> _params;
     Buffer<DataType> _data;
     const CacheAPI* _cache;
-    std::string _requestedPath;
     mutable QReadWriteLock _entryLock;
-    StorageModeEnum _requestedStorage;
     bool _removeBackingFileBeforeDestruction;
 };
 

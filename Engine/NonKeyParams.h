@@ -31,9 +31,60 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/RectI.h"
 
 
 NATRON_NAMESPACE_ENTER;
+
+inline int
+getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
+{
+    switch (bitdepth) {
+        case eImageBitDepthByte: {
+            return sizeof(unsigned char);
+        }
+        case eImageBitDepthShort: {
+            return sizeof(unsigned short);
+        }
+        case eImageBitDepthHalf: {
+            return sizeof(unsigned short);
+        }
+        case eImageBitDepthFloat: {
+            return sizeof(float);
+        }
+        case eImageBitDepthNone:
+            break;
+    }
+    return 0;
+}
+
+
+struct CacheEntryStorageInfo
+{
+    RectI bounds;
+    std::size_t dataTypeSize;
+    std::size_t numComponents;
+
+    StorageModeEnum mode;
+    U32 textureTarget;
+
+    CacheEntryStorageInfo()
+    : bounds()
+    , dataTypeSize(0)
+    , numComponents(0)
+    , mode(eStorageModeNone)
+    , textureTarget(0)
+    {
+
+    }
+
+    bool operator==(const CacheEntryStorageInfo& other) const
+    {
+        return dataTypeSize == other.dataTypeSize &&
+        mode == other.mode &&
+        textureTarget == other.textureTarget ;
+    }
+};
 
 class NonKeyParams
 {
@@ -45,18 +96,13 @@ public:
     {
     }
 
-    NonKeyParams(int cost,
-                 U64 elementsCount);
+    NonKeyParams(const CacheEntryStorageInfo& info);
 
     NonKeyParams(const NonKeyParams & other);
 
-    ///the number of elements the associated cache entry should allocate the first time (relative to the datatype of the entry)
-    U64 getElementsCount() const;
+    const CacheEntryStorageInfo& getStorageInfo() const;
 
-    void setElementsCount(U64 count);
-
-    int getCost() const;
-
+    CacheEntryStorageInfo& getStorageInfo();
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /*version*/);
@@ -65,8 +111,7 @@ protected:
 
     bool operator==(const NonKeyParams & other) const
     {
-        return (_cost == other._cost &&
-                _elementsCount == other._elementsCount);
+        return (_storageInfo == other._storageInfo);
     }
 
     bool operator!=(const NonKeyParams & other) const
@@ -76,8 +121,7 @@ protected:
 
 private:
 
-    std::size_t _elementsCount; //< the number of elements the associated cache entry should allocate (relative to the datatype of the entry)
-    int _cost; //< the cost of the element associated to this key
+    CacheEntryStorageInfo _storageInfo;
 };
 
 NATRON_NAMESPACE_EXIT;

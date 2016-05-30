@@ -640,23 +640,9 @@ private:
         }
         {
             QMutexLocker locker(&_lock);
-            StorageModeEnum storage;
-            if (params->getCost() == 0) {
-                storage = eStorageModeRAM;
-            } else if (params->getCost() >= 1) {
-                storage = eStorageModeDisk;
-            } else {
-                storage = eStorageModeNone;
-            }
-
 
             try {
-                std::string filePath;
-                if (storage == eStorageModeDisk) {
-                    filePath = getCachePath().toStdString();
-                    filePath += '/';
-                }
-                returnValue->reset( new EntryType(key, params, this, storage, filePath) );
+                returnValue->reset( new EntryType(key, params, this ) );
 
                 ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
             } catch (const std::bad_alloc & e) {
@@ -1121,7 +1107,7 @@ public:
     }
 
     /*Returns the name of the cache with its path preprended*/
-    QString getCachePath() const
+    QString getCachePath() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         QString cacheFolderName( appPTR->getDiskCacheLocation() );
         Global::ensureLastPathSeparator(cacheFolderName);
@@ -1578,7 +1564,7 @@ private:
 
                 //The entry is not yet deleted for real since it's done in a separate thread when this function
                 ///size() will return 0 at this point, we have to recompute it
-                std::size_t fsize = evictedFromDisk.second->getParams()->getElementsCount() * sizeof(data_t);
+                std::size_t fsize = evictedFromDisk.second->getElementsCountFromParams();
                 diskCacheSize -= fsize;
             }
 

@@ -16,56 +16,24 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef OSGLCONTEXT_MAC_H
-#define OSGLCONTEXT_MAC_H
+#ifndef DEFAULTSHADERS_H
+#define DEFAULTSHADERS_H
+
+
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 #include "Engine/EngineFwd.h"
-#include "Global/Macros.h"
-#ifdef __NATRON_OSX__
-
-//#import <Cocoa/Cocoa.h>
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/CGLTypes.h>
-
 
 NATRON_NAMESPACE_ENTER;
 
-class OSGLContext_mac
-{
-public:
-
-    OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_mac* shareContext);
-
-    ~OSGLContext_mac();
-
-    static void makeContextCurrent(const OSGLContext_mac* context);
-
-    void swapBuffers();
-
-    void swapInterval(int interval);
-
-private:
-
-    /*void createWindow();
-
-    struct WindowNS
-    {
-        id object;
-        id delegate;
-        id view;
-    };
-
-    WindowNS _nsWindow;
-
-    // NSGL-specific per-context data
-    id _pixelFormat;
-    id _object;*/
-    CGLContextObj _context;
-
-};
+extern const char* fillConstant_FragmentShader;
+extern const char* applyMaskMix_FragmentShader;
+extern const char* copyUnprocessedChannels_FragmentShader;
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // __NATRON_OSX__
-
-#endif // OSGLCONTEXT_MAC_H
+#endif // DEFAULTSHADERS_H

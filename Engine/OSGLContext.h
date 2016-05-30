@@ -91,26 +91,7 @@ public:
     GLboolean         doublebuffer;
     uintptr_t   handle;
 
-    FramebufferConfig()
-    : redBits(8)
-    , greenBits(8)
-    , blueBits(8)
-    , alphaBits(8)
-    , depthBits(24)
-    , stencilBits(8)
-    , accumRedBits(0)
-    , accumGreenBits(0)
-    , accumBlueBits(0)
-    , accumAlphaBits(0)
-    , auxBuffers(0)
-    , stereo(GL_FALSE)
-    , samples(0)
-    , sRGB(GL_FALSE)
-    , doublebuffer(GL_TRUE)
-    , handle(0)
-    {
-
-    }
+    FramebufferConfig();
 };
 
 /**
@@ -121,23 +102,30 @@ class OSGLContext
 {
 public:
 
+    enum DefaultGLShaderEnum
+    {
+        eDefaultGLShaderFillConstant,
+        eDefaultGLShaderApplyMaskMix,
+        eDefaultGLShaderCopyUnprocessedChannels
+    };
 
     /**
      * @brief Creates a new OpenGL context for offscreen rendering. The constructor may throw an exception if the context
      * creation failed.
      * The context must be made current with makeContextCurrent before being ready to use.
      **/
-    OSGLContext(const FramebufferConfig& pixelFormatAttrs, int major = GLVersion.major, int minor = GLVersion.minor);
+    OSGLContext(const FramebufferConfig& pixelFormatAttrs, const OSGLContext* shareContext, int major = GLVersion.major, int minor = GLVersion.minor);
 
     ~OSGLContext();
 
 
+    GLuint getPBOId() const;
+
+    GLuint getFBOId() const;
 
     // Helper functions used by platform dependent implementations
     static bool stringInExtensionString(const char* string, const char* extensions);
     static const FramebufferConfig& chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count);
-
-private:
 
 
     /*  @brief Makes the context current for the calling
@@ -148,6 +136,16 @@ private:
      *  @thread_safety This function may be called from any thread.
      */
     void makeContextCurrent();
+
+    /**
+     * @brief Returns one of the built-in shaders, used in the Image class.
+     * Note: this context must be made current before calling this function
+     **/
+    boost::shared_ptr<GLShader> getOrCreateDefaultShader(DefaultGLShaderEnum type);
+    
+private:
+
+
 
     friend class GPUContextPool;
 

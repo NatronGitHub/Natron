@@ -1079,7 +1079,8 @@ OutputSchedulerThread::startRender()
                                                 scaleOne, true,
                                                 true,
                                                 false,
-                                                ViewIdx(0) ) == eStatusFailed) {
+                                                ViewIdx(0),
+                                                false /*useOpenGL*/) == eStatusFailed) {
             l.unlock();
 
 
@@ -1168,7 +1169,8 @@ OutputSchedulerThread::stopRender()
                                                          scaleOne, true,
                                                          !appPTR->isBackground(),
                                                          false,
-                                                         ViewIdx(0) ) );
+                                                         ViewIdx(0),
+                                                         false /*use OpenGL render*/) );
     }
 
 
@@ -2279,7 +2281,6 @@ private:
                                                          NodePtr(),
                                                          false,
                                                          false,
-                                                         false,
                                                          stats);
 
                 {
@@ -2294,17 +2295,19 @@ private:
                 }
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
                 std::map<ImageComponents, ImagePtr> planes;
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs( time, //< the time at which to render
-                                                                                                                scale, //< the scale at which to render
-                                                                                                                mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                                                                viewsToRender[view], //< the view to render
-                                                                                                                false,
-                                                                                                                renderWindow, //< the region of interest (in pixel coordinates)
-                                                                                                                rod, // < any precomputed rod ? in canonical coordinates
-                                                                                                                components,
-                                                                                                                imageDepth,
-                                                                                                                false,
-                                                                                                                activeInputToRender.get() ) );
+                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                                                                                                               scale, //< the scale at which to render
+                                                                                                               mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                                                               viewsToRender[view], //< the view to render
+                                                                                                               false,
+                                                                                                               renderWindow, //< the region of interest (in pixel coordinates)
+                                                                                                               rod, // < any precomputed rod ? in canonical coordinates
+                                                                                                               components,
+                                                                                                               imageDepth,
+                                                                                                               false,
+                                                                                                               activeInputToRender.get(),
+                                                                                                               false,
+                                                                                                               time) );
                 EffectInstance::RenderRoIRetCode retCode;
                 retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
@@ -2395,7 +2398,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  NodePtr(),
                                                  false,
                                                  false,
-                                                 false,
                                                  it->stats);
 
         ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
@@ -2418,6 +2420,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                                                                        imageDepth,
                                                                                                        false,
                                                                                                        effect.get(),
+                                                                                                       false,
+                                                                                                       frame.time,
                                                                                                        inputImages) );
         try {
             std::map<ImageComponents, ImagePtr> planes;

@@ -410,11 +410,11 @@ static GLXContext createLegacyContext(OSGLContext_glx_data* glxInfo,
 
 
 void
-OSGLContext_x11::createContextGLX(OSGLContext_glx_data* glxInfo, const FramebufferConfig& fbconfig, int major, int minor)
+OSGLContext_x11::createContextGLX(OSGLContext_glx_data* glxInfo, const FramebufferConfig& fbconfig, int major, int minor, const OSGLContext_x11* shareContext)
 {
     int attribs[40];
     GLXFBConfig native = NULL;
-    GLXContext share = NULL;
+    GLXContext share = shareContext ? shareContext->_glxContextHandle : 0;
     chooseFBConfig(glxInfo, fbconfig, &native);
 
     /*if (ctxconfig->client == GLFW_OPENGL_ES_API)
@@ -567,7 +567,7 @@ OSGLContext_x11::createContextGLX(OSGLContext_glx_data* glxInfo, const Framebuff
 
 
 
-OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs, int major, int minor)
+OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_x11* shareContext)
 : _glxContextHandle(0)
 , _glxWindowHandle(0)
 , _x11Window(0)
@@ -581,7 +581,7 @@ OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs, int 
 
     ChooseVisualGLX(glxInfo, pixelFormatAttrs, &visual, &depth);
     createWindow(glxInfo, visual, depth)
-    createContextGLX(glxInfo, pixelFormatAttrs, major, minor);
+    createContextGLX(glxInfo, pixelFormatAttrs, major, minor, shareContext);
 
 
 

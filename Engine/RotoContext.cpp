@@ -2705,7 +2705,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
 
     {
         QReadLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
 
     if (image) {
@@ -2771,8 +2771,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
     rotoBbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
 
 
-    boost::shared_ptr<ImageParams> params = Image::makeParams( 0,
-                                                               rotoBbox,
+    boost::shared_ptr<ImageParams> params = Image::makeParams( rotoBbox,
                                                                pixelRod,
                                                                1., // par
                                                                mipmapLevel,
@@ -2792,7 +2791,8 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
-        ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
+        std::size_t size = params->getStorageInfo().bounds.area() * params->getStorageInfo().numComponents * params->getStorageInfo().dataTypeSize;
+        ss << printAsRAM( size ).toStdString();
         Dialogs::errorDialog( tr("Out of memory").toStdString(), ss.str() );
 
         return image;

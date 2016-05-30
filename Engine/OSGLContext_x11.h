@@ -21,13 +21,15 @@
 #define OSGLCONTEXT_X11_H
 
 #include "Global/Macros.h"
+#include "Global/GLIncludes.h"
 
 #ifdef __NATRON_LINUX__
 
-#include "Global/GLIncludes.h"
 
 #include <dlfcn.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/Xmd.h>
 
 typedef XID GLXWindow;
 typedef XID GLXDrawable;
@@ -129,7 +131,7 @@ class OSGLContext_x11
 {
 public:
 
-    OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs, int major, int minor);
+    OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_x11* shareContext);
 
     ~OSGLContext_x11();
 
@@ -144,7 +146,7 @@ public:
 
 private:
 
-    void createContextGLX(OSGLContext_glx_data* glxInfo, const FramebufferConfig& fbconfig, int major, int minor);
+    void createContextGLX(OSGLContext_glx_data* glxInfo, const FramebufferConfig& fbconfig, int major, int minor, const OSGLContext_x11* shareContext);
 
     void createWindow(OSGLContext_glx_data* glxInfo,
                       Visual* visual, int depth);

@@ -96,28 +96,6 @@ isColorComponents(ImageComponentsEnum comp)
     return 0;
 }
 
-inline int
-getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
-{
-    switch (bitdepth) {
-    case eImageBitDepthByte: {
-        return sizeof(unsigned char);
-    }
-    case eImageBitDepthShort: {
-        return sizeof(unsigned short);
-    }
-    case eImageBitDepthHalf: {
-        return sizeof(unsigned short);
-    }
-    case eImageBitDepthFloat: {
-        return sizeof(float);
-    }
-    case eImageBitDepthNone:
-        break;
-    }
-
-    return 0;
-}
 
 class ImageParams
     : public NonKeyParams
@@ -127,7 +105,6 @@ public:
     ImageParams()
         : NonKeyParams()
         , _rod()
-        , _bounds()
         , _par(1.)
         , _components( ImageComponents::getRGBAComponents() )
         , _bitdepth(eImageBitDepthFloat)
@@ -141,7 +118,6 @@ public:
     ImageParams(const ImageParams & other)
         : NonKeyParams(other)
         , _rod(other._rod)
-        , _bounds(other._bounds)
         , _par(other._par)
         , _components(other._components)
         , _bitdepth(other._bitdepth)
@@ -152,8 +128,7 @@ public:
     {
     }
 
-    ImageParams(int cost,
-                const RectD & rod,
+    ImageParams(const RectD & rod,
                 const double par,
                 const unsigned int mipMapLevel,
                 const RectI & bounds,
@@ -161,10 +136,11 @@ public:
                 ImageFieldingOrderEnum fielding,
                 ImagePremultiplicationEnum premult,
                 bool isRoDProjectFormat,
-                const ImageComponents& components)
-        : NonKeyParams( cost, bounds.area() * components.getNumComponents() * getSizeOfForBitDepth(bitdepth) )
+                const ImageComponents& components,
+                StorageModeEnum storageMode,
+                U32 textureTarget)
+        : NonKeyParams()
         , _rod(rod)
-        , _bounds(bounds)
         , _par(par)
         , _components(components)
         , _bitdepth(bitdepth)
@@ -173,6 +149,13 @@ public:
         , _mipMapLevel(mipMapLevel)
         , _isRoDProjectFormat(isRoDProjectFormat)
     {
+
+        CacheEntryStorageInfo& info = getStorageInfo();
+        info.mode = storageMode;
+        info.bounds = bounds;
+        info.dataTypeSize = getSizeOfForBitDepth(bitdepth);
+        info.numComponents = (std::size_t)components.getNumComponents();
+        info.textureTarget = textureTarget;
     }
 
     virtual ~ImageParams()
@@ -192,13 +175,12 @@ public:
 
     const RectI & getBounds() const
     {
-        return _bounds;
+        return getStorageInfo().bounds;
     }
 
     void setBounds(const RectI& bounds)
     {
-        _bounds = bounds;
-        setElementsCount( bounds.area() * _components.getNumComponents() * getSizeOfForBitDepth(_bitdepth) );
+        getStorageInfo().bounds = bounds;
     }
 
     bool isRodProjectFormat() const
@@ -281,7 +263,6 @@ public:
 private:
 
     RectD _rod;
-    RectI _bounds;
     double _par;
     ImageComponents _components;
     ImageBitDepthEnum _bitdepth;

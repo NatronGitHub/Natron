@@ -265,7 +265,8 @@ public:
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
                          int firstFrame,
-                         int lastFrame);
+                         int lastFrame,
+                         bool isDoingOpenGLRender);
 
         ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                          const EffectDataTLSPtr& otherThreadData);

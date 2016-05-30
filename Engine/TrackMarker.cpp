@@ -1081,21 +1081,22 @@ TrackMarker::getMarkerImage(int time,
                                               NodePtr(),
                                               true, //isAnalysis
                                               false, //draftMode
-                                              false, // viewerprogress
                                               boost::shared_ptr<RenderStats>() );
     RenderScale scale;
     scale.x = scale.y = 1.;
     EffectInstance::RenderRoIArgs args( time,
-                                        scale,
-                                        mipmapLevel, //mipmaplevel
-                                        ViewIdx(0),
-                                        false,
-                                        roi,
-                                        RectD(),
-                                        components,
-                                        eImageBitDepthFloat,
-                                        false,
-                                        node->getEffectInstance().get() );
+                                       scale,
+                                       mipmapLevel, //mipmaplevel
+                                       ViewIdx(0),
+                                       false,
+                                       roi,
+                                       RectD(),
+                                       components,
+                                       eImageBitDepthFloat,
+                                       false,
+                                       node->getEffectInstance().get(),
+                                       false /*returnOpenGlTex*/,
+                                       time);
     std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
 

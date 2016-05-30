@@ -1592,15 +1592,22 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     TextureRect textureRectangle;
     if (isPartialRect) {
         // For small partial updates overlays, we make new textures
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+        int format,internalFormat,glType;
+        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
         textureRectangle = region;
     } else {
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
+        if (tex->type() != dataType) {
+            int format,internalFormat,glType;
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+        }
         textureRectangle = roiRoundedToTileSize;
         textureRectangle.par = region.par;
         if (isFirstTile) {
-            tex->ensureTextureHasSize(textureRectangle, dataType);
+            tex->ensureTextureHasSize(textureRectangle);
         }
     }
 
@@ -1615,7 +1622,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    tex->fillOrAllocateTexture(textureRectangle, dataType, region, true);
+    tex->fillOrAllocateTexture(textureRectangle, region, true);
 
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?

@@ -1238,7 +1238,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Ima
 
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
-    tex->fillOrAllocateTexture(region, Texture::eDataTypeByte, RectI(), false);
+    tex->fillOrAllocateTexture(region, RectI(), false);
 
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
 
@@ -1320,7 +1320,10 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
 
     showMarkerTexture = true;
     if (!selectedMarkerTexture) {
-        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+        int format,internalFormat,glType;
+        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                                 format, internalFormat, glType) );
     }
     selectedMarkerTextureTime = (int)ret.first->getTime();
     selectedMarkerTextureRoI = ret.second;
@@ -1358,7 +1361,11 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
                 return;
             }
             TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
-            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+
+            int format,internalFormat,glType;
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                          format, internalFormat, glType) );
             keyTextures[it->first.time] = tex;
             convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
 

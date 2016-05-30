@@ -66,6 +66,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
@@ -171,6 +172,10 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                              ImagePremultiplicationEnum outputPremult,
                                              int channelForAlpha)
 {
+    // Do not do any conversion for OpenGL textures, OpenGL is managing it for us.
+    if (inputImage->getStorageMode() == eStorageModeGLTex) {
+        return inputImage;
+    }
     bool imageConversionNeeded = ( /*!targetIsMultiPlanar &&*/ targetComponents.getNumComponents() != inputImage->getComponents().getNumComponents() ) || targetDepth != inputImage->getBitDepth();
 
     if (!imageConversionNeeded) {
@@ -230,7 +235,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     //Create the TLS data for this node if it did not exist yet
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
-
+    OSGLContextPtr glContext;
     boost::shared_ptr<ParallelRenderArgs>  frameArgs;
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
@@ -246,9 +251,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     } else {
         //The hash must not have changed if we did a pre-pass.
         frameArgs = tls->frameArgs.back();
+        glContext = frameArgs->openGLContext.lock();
         assert(!frameArgs->request || frameArgs->nodeHash == frameArgs->request->nodeHash);
     }
 
+    if (glContext) {
+        // Make the OpenGL context current to this thread
+        glContext->makeContextCurrent();
+    }
 
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
     bool byPassCache = args.byPassCache;
@@ -706,11 +716,68 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
+    const PluginOpenGLRenderSupport openGLSupport = getNode()->getCurrentOpenGLRenderSupport();
+    StorageModeEnum storage = eStorageModeRAM;
+    if (dynamic_cast<DiskCacheNode*>(this)) {
+        storage = eStorageModeDisk;
+    } else if (openGLSupport != ePluginOpenGLRenderSupportNone) {
+        /*
+         We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
+         since we do not use the cache for textures)
+         */
+        storage = eStorageModeGLTex;
+        if (openGLSupport == ePluginOpenGLRenderSupportYes) {
+
+            // If a node has multiple outputs, do not render it on OpenGL since we do not use the cache. We could end-up with this render being executed multiple times.
+            // Also, if the render time is different from the caller render time, don't render using OpenGL otherwise we could computed this render multiple times.
+            NodesWList outputNodes;
+            getNode()->getOutputs_mt_safe(outputNodes);
+            if (outputNodes.size() > 1 ||
+                args.time != args.callerRenderTime) {
+                storage = eStorageModeRAM;
+            }
+
+            // Ensure that the texture will be at least smaller than the maximum OpenGL texture size
+            if (storage == eStorageModeGLTex) {
+                int maxSize;
+                glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
+                if (roi.width() >= maxSize ||
+                    roi.height() >= maxSize) {
+                    // Fallback on CPU rendering since the image is larger than the maximum allowed OpenGL texture size
+                    storage = eStorageModeRAM;
+                }
+            }
+
+        }
+        if (storage == eStorageModeGLTex) {
+            // OpenGL renders always support render scale...
+            if (renderFullScaleThenDownscale) {
+                renderFullScaleThenDownscale = false;
+                renderMappedMipMapLevel = args.mipMapLevel;
+                renderMappedScale.x = renderMappedScale.y = Image::getScaleFromMipMapLevel(renderMappedMipMapLevel);
+                if (frameArgs->tilesSupported) {
+                    roi = args.roi;
+                    if ( !roi.intersect(downscaledImageBoundsNc, &roi) ) {
+                        return eRenderRoIRetCodeOk;
+                    }
+                } else {
+                    roi = downscaledImageBoundsNc;
+                }
+            }
+        }
+    }
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
 
-    // in Analysis, the node upstream of te analysis node should always cache
-    const bool createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view);
+
+    bool createInCache;
+    // Do not use the cache for OpenGL rendering
+    if (storage == eStorageModeGLTex) {
+        createInCache = false;
+    } else {
+        // in Analysis, the node upstream of te analysis node should always cache
+        createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view);
+    }
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
     if (renderFullScaleThenDownscale) {
@@ -737,7 +804,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                           1.,
                                                           false,
                                                           renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
-    bool useDiskCacheNode = dynamic_cast<DiskCacheNode*>(this) != NULL;
+
+
+
 
 
     /*
@@ -747,6 +816,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImageComponents outputClipPrefComps = getComponents(-1);
     boost::shared_ptr<ImagePlanesToRender> planesToRender(new ImagePlanesToRender);
+    planesToRender->useOpenGL = storage == eStorageModeGLTex;
     boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Look-up the cache ///////////////////////////////////////////////////////////////
@@ -785,7 +855,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 int nLookups = draftModeSupported && frameArgs->draftMode ? 2 : 1;
 
                 for (int n = 0; n < nLookups; ++n) {
-                    getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
+                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
                                                         renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                         &rod,
                                                         args.bitdepth, *it,
@@ -900,7 +970,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
     }
 
-    if (isPlaneCached) {
+    if (!isPlaneCached) {
+        if (frameArgs->tilesSupported) {
+            rectsLeftToRender.push_back(roi);
+        } else {
+            rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
+        }
+    } else {
         if ( isDuringPaintStroke && !lastStrokePixelRoD.isNull() ) {
             fillGrownBoundsWithZeroes = true;
             //Clear the bitmap of the cached image in the portion of the last stroke to only recompute what's needed
@@ -997,21 +1073,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             rectsLeftToRender.clear();
             rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
         }
-    } else { // !isPlaneCached
-        if (frameArgs->tilesSupported) {
-            rectsLeftToRender.push_back(roi);
-        } else {
-            rectsLeftToRender.push_back(renderFullScaleThenDownscale ? upscaledImageBounds : downscaledImageBounds);
-        }
-    } //  // !isPlaneCached
+    } // isPlaneCached
 
     /*
      * If the effect has multiple inputs (such as masks) try to call isIdentity if the RoDs do not intersect the RoI
      */
     bool tryIdentityOptim = false;
     RectI inputsRoDIntersectionPixel;
-    if ( frameArgs->tilesSupported && !rectsLeftToRender.empty()
-         && (frameArgs->viewerProgressReportEnabled || isDuringPaintStroke) ) {
+    if ( frameArgs->tilesSupported && !rectsLeftToRender.empty() && isDuringPaintStroke ) {
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
@@ -1110,6 +1179,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             inputCode = renderInputImagesForRoI(requestPassData,
                                                 useTransforms,
+                                                storage == eStorageModeGLTex,
                                                 args.time,
                                                 args.view,
                                                 rod,
@@ -1178,7 +1248,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (!components) {
                 continue;
             }
-            getImageFromCacheAndConvertIfNeeded(createInCache, useDiskCacheNode, *key, renderMappedMipMapLevel,
+            getImageFromCacheAndConvertIfNeeded(createInCache, storage, *key, renderMappedMipMapLevel,
                                                 renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod,
                                                 args.bitdepth, it->first,
@@ -1241,6 +1311,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 RenderRoIRetCode inputRetCode = renderInputImagesForRoI(requestPassData,
                                                                         useTransforms,
+                                                                        storage == eStorageModeGLTex,
                                                                         args.time,
                                                                         args.view,
                                                                         rod,
@@ -1306,7 +1377,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                    par,
                                    args.mipMapLevel,
                                    renderFullScaleThenDownscale,
-                                   useDiskCacheNode,
+                                   storage,
                                    createInCache,
                                    &it->second.fullscaleImage,
                                    &it->second.downscaleImage);
@@ -1565,7 +1636,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////// Make sure all planes rendered have the requested mipmap level and format ///////////////////////////
+    ////////////////// Make sure all planes rendered have the requested  format ///////////////////////////
 
     bool useAlpha0ForRGBToRGBAConversion = args.caller ? args.caller->getNode()->usesAlpha0ToConvertFromRGBToRGBA() : false;
 
@@ -1623,6 +1694,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if (comp) {
             it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
             assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
+
+            StorageModeEnum storage = it->second.downscaleImage->getStorageMode();
+            if (args.mustReturnOpenGLTexture &&  storage != eStorageModeGLTex) {
+                it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
+            } else if (!args.mustReturnOpenGLTexture && storage == eStorageModeGLTex) {
+                it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage);
+            }
+
             outputPlanes->insert( std::make_pair(*comp, it->second.downscaleImage) );
         }
     }
@@ -1761,7 +1840,7 @@ EffectInstance::renderRoIInternal(double time,
     if (callBegin) {
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
-                                       isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view) == eStatusFailed) {
+                                       isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
     }
@@ -1777,7 +1856,7 @@ EffectInstance::renderRoIInternal(double time,
 
 
     if (renderStatus != eRenderingFunctorRetFailed) {
-        if ( (safety == eRenderSafetyFullySafeFrame) && (planesToRender->rectsToRender.size() > 1) ) {
+        if ( (safety == eRenderSafetyFullySafeFrame) && (planesToRender->rectsToRender.size() > 1) && !planesToRender->useOpenGL ) {
             QThread* currentThread = QThread::currentThread();
             boost::scoped_ptr<Implementation::TiledRenderingFunctorArgs> tiledArgs(new Implementation::TiledRenderingFunctorArgs);
             tiledArgs->renderFullScaleThenDownscale = renderFullScaleThenDownscale;
@@ -1863,7 +1942,7 @@ EffectInstance::renderRoIInternal(double time,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
                                      frameArgs->draftMode,
-                                     view) == eStatusFailed) {
+                                     view, planesToRender->useOpenGL) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
     }

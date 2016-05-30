@@ -36,6 +36,8 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/GPUContextPool.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/ViewIdx.h"
@@ -49,6 +51,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const RoIMap& inputRois,
                                    const boost::shared_ptr<InputMatrixMap>& reroutesMap,
                                    bool useTransforms, // roi functor specific
+                                   bool renderIsOpenGL, // if the render of this node is in OpenGL
                                    unsigned int originalMipMapLevel, // roi functor specific
                                    double time,
                                    ViewIdx view,
@@ -270,16 +273,18 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 {
                                     boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                                     renderArgs.reset( new EffectInstance::RenderRoIArgs( f, //< time
-                                                                                         upstreamScale, //< scale
-                                                                                         upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
-                                                                                         viewIt->first, //< view
-                                                                                         byPassCache,
-                                                                                         inputRoIPixelCoords, //< roi in pixel coordinates
-                                                                                         RectD(), // < did we precompute any RoD to speed-up the call ?
-                                                                                         componentsToRender, //< requested comps
-                                                                                         inputPrefDepth,
-                                                                                         false,
-                                                                                         effect.get() ) );
+                                                                                        upstreamScale, //< scale
+                                                                                        upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                                        viewIt->first, //< view
+                                                                                        byPassCache,
+                                                                                        inputRoIPixelCoords, //< roi in pixel coordinates
+                                                                                        RectD(), // < did we precompute any RoD to speed-up the call ?
+                                                                                        componentsToRender, //< requested comps
+                                                                                        inputPrefDepth,
+                                                                                        false,
+                                                                                        effect.get(),
+                                                                                        renderIsOpenGL /*returnOpenGLTex*/,
+                                                                                        time /*callerRenderTime*/) );
 
                                     EffectInstance::RenderRoIRetCode ret;
                                     ret = inputEffect->renderRoI(*renderArgs, &inputImgs); //< requested bitdepth
@@ -508,6 +513,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                               fvPerRequestData.inputsRoi,
                                                               fvRequest->globalData.transforms,
                                                               useTransforms,
+                                                              false /*renderIsOpenGL*/,
                                                               originalMipMapLevel,
                                                               time,
                                                               view,
@@ -703,11 +709,18 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    const NodePtr& activeRotoPaintNode,
                                                    bool isAnalysis,
                                                    bool draftMode,
-                                                   bool viewerProgressReportEnabled,
                                                    const boost::shared_ptr<RenderStats>& stats)
     :  argsMap()
 {
     assert(treeRoot);
+
+    // Ensure this thread gets an OpenGL context for the render of the frame
+    OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToThread();
+    assert(glContext);
+    _openGLContext = glContext;
+
+
+
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
@@ -729,13 +742,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         {
             U64 nodeHash = (*it)->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
-                                                   abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+                                                   abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, stats);
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             U64 nodeHash = (*it2)->getHashValue();
 
 
-            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, stats);
         }
 
         if ( (*it)->isMultiInstance() ) {
@@ -750,14 +763,14 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 EffectInstPtr childLiveInstance = (*it2)->getEffectInstance();
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, stats);
             }
         }
 
 
         /* NodeGroup* isGrp = (*it)->isEffectGroup();
            if (isGrp) {
-             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats);
+             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode,stats);
            }*/
     }
 }
@@ -804,8 +817,14 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args)
     : argsMap(args)
 {
+
+    // Ensure this thread gets an OpenGL context for the render of the frame
+    OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+    assert(glContext);
+    _openGLContext = glContext;
     if (args) {
         for (std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->second->openGLContext = glContext;
             it->first->getEffectInstance()->setParallelRenderArgsTLS(it->second);
         }
     }
@@ -840,6 +859,12 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
             it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
         }
     }
+
+    OSGLContextPtr glContext = _openGLContext.lock();
+    assert(glContext);
+
+    // This render is going to end, release the OpenGL context so that another frame render may use it
+    appPTR->getGPUContextPool()->releaseGLContextFromRender(glContext);
 }
 
 ParallelRenderArgs::ParallelRenderArgs()
@@ -852,6 +877,7 @@ ParallelRenderArgs::ParallelRenderArgs()
     , treeRoot()
     , rotoPaintNodes()
     , stats()
+    , openGLContext()
     , textureIndex(0)
     , currentThreadSafety(eRenderSafetyInstanceSafe)
     , isRenderResponseToUserInteraction(false)
@@ -861,7 +887,6 @@ ParallelRenderArgs::ParallelRenderArgs()
     , doNansHandling(true)
     , draftMode(false)
     , tilesSupported(false)
-    , viewerProgressReportEnabled(false)
 {
 }
 

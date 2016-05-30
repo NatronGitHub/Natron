@@ -51,9 +51,11 @@
 #include "Engine/RotoContext.h"
 #include "Engine/Transform.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
 
 #include <nuke/fnOfxExtensions.h>
+#include <ofxOpenGLRender.h>
 #include <ofxNatron.h>
 
 NATRON_NAMESPACE_ENTER;
@@ -435,9 +437,16 @@ OfxClipInstance::getConnected() const
 double
 OfxClipInstance::getUnmappedFrameRate() const
 {
-#pragma message WARN("OfxClipInstance::getUnmappedFrameRate() Unimplemented")
+    EffectInstPtr inputNode = getAssociatedNode();
 
-    return 25;
+    if (inputNode) {
+        ///Get the input node  preferred frame rate
+        return inputNode->getFrameRate();
+    } else {
+        ///The node is not connected, return project frame rate
+        return getEffectHolder()->getApp()->getProjectFrameRate();
+    }
+
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -449,9 +458,15 @@ void
 OfxClipInstance::getUnmappedFrameRange(double &unmappedStartFrame,
                                        double &unmappedEndFrame) const
 {
-#pragma message WARN("OfxClipInstance::getUnmappedFrameRange() Unimplemented")
-    unmappedStartFrame = 1;
-    unmappedEndFrame = 1;
+    EffectInstPtr inputNode = getAssociatedNode();
+
+    if (inputNode) {
+        ///Get the input node  preferred frame range
+        return inputNode->getFrameRange_public(inputNode->getRenderHash(), &unmappedStartFrame, &unmappedEndFrame);
+    } else {
+        ///The node is not connected, return project frame range
+        return getEffectHolder()->getApp()->getProject()->getFrameRange(&unmappedStartFrame, &unmappedEndFrame);
+    }
 }
 
 // Continuous Samples -
@@ -606,6 +621,34 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     return ret;
 } // getRegionOfDefinition
 
+
+#ifdef OFX_SUPPORTS_OPENGLRENDER
+// overridden from OFX::Host::ImageEffect::ClipInstance
+/// override this to fill in the OpenGL texture at the given time.
+/// The bounds of the image on the image plane should be
+/// 'appropriate', typically the value returned in getRegionsOfInterest
+/// on the effect instance. Outside a render call, the optionalBounds should
+/// be 'appropriate' for the.
+/// If bounds is not null, fetch the indicated section of the canonical image plane.
+OFX::Host::ImageEffect::Texture*
+OfxClipInstance::loadTexture(OfxTime time,
+                             const char *format,
+                             const OfxRectD *optionalBounds)
+{
+    ImageBitDepthEnum depth = eImageBitDepthNone;
+    if (format) {
+        depth = ofxDepthToNatronDepth(std::string(format));
+    }
+
+    OFX::Host::ImageEffect::Texture* texture = 0;
+    if (!getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0 /*plane*/, format ? &depth : 0, 0 /*image*/, &texture)) {
+        return 0;
+    }
+    return texture;
+}
+
+#endif
+
 // overridden from OFX::Host::ImageEffect::ClipInstance
 /// override this to fill in the image at the given time.
 /// The bounds of the image on the image plane should be
@@ -617,7 +660,11 @@ OFX::Host::ImageEffect::Image*
 OfxClipInstance::getImage(OfxTime time,
                           const OfxRectD *optionalBounds)
 {
-    return getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0);
+    OFX::Host::ImageEffect::Image* image = 0;
+    if (!getImagePlaneInternal(time, ViewSpec::current(), optionalBounds, 0/*plane*/, 0 /*texdepth*/, &image, 0 /*tex*/)) {
+        return 0;
+    }
+    return image;
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -626,7 +673,11 @@ OfxClipInstance::getStereoscopicImage(OfxTime time,
                                       int view,
                                       const OfxRectD *optionalBounds)
 {
-    return getImagePlaneInternal(time, ViewSpec(view), optionalBounds, 0);
+    OFX::Host::ImageEffect::Image* image = 0;
+    if (!getImagePlaneInternal(time, ViewSpec(view), optionalBounds, 0/*plane*/, 0 /*texdepth*/, &image, 0 /*tex*/)) {
+        return 0;
+    }
+    return image;
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -650,14 +701,20 @@ OfxClipInstance::getImagePlane(OfxTime time,
         spec = ViewIdx(view);
     }
 
-    return getImagePlaneInternal(time, spec, optionalBounds, &plane);
+    OFX::Host::ImageEffect::Image* image = 0;
+    if (!getImagePlaneInternal(time, spec, optionalBounds, &plane, 0 /*texdepth*/, &image, 0 /*tex*/)) {
+        return 0;
+    }
+    return image;
 }
 
-OFX::Host::ImageEffect::Image*
+bool
 OfxClipInstance::getImagePlaneInternal(OfxTime time,
                                        ViewSpec view,
                                        const OfxRectD *optionalBounds,
-                                       const std::string* ofxPlane)
+                                       const std::string* ofxPlane,
+                                       const ImageBitDepthEnum* textureDepth,
+                                       OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture)
 {
     if (time != time) {
         // time is NaN
@@ -666,19 +723,22 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
     }
 
     if ( isOutput() ) {
-        return getOutputImageInternal(ofxPlane);
+        return getOutputImageInternal(ofxPlane, textureDepth, image, texture);
     } else {
-        return getInputImageInternal(time, view, optionalBounds, ofxPlane);
+        return getInputImageInternal(time, view, optionalBounds, ofxPlane, textureDepth, image, texture);
     }
 }
 
-OFX::Host::ImageEffect::Image*
+bool
 OfxClipInstance::getInputImageInternal(const OfxTime time,
                                        const ViewSpec viewParam,
                                        const OfxRectD *optionalBounds,
-                                       const std::string* ofxPlane)
+                                       const std::string* ofxPlane,
+                                       const ImageBitDepthEnum* textureDepth,
+                                       OFX::Host::ImageEffect::Image** retImage, OFX::Host::ImageEffect::Texture** retTexture)
 {
     assert( !isOutput() );
+    assert((retImage && !retTexture) || (!retImage && retTexture));
 
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
     boost::shared_ptr<RenderActionData> renderData;
@@ -741,11 +801,11 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
     if (comp.getNumComponents() == 0) {
-        return 0;
+        return false;
     }
     if (time != time) {
         // time is NaN
-        return 0;
+        return false;
     }
 
 
@@ -788,7 +848,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     //Check if the plug-in already called clipGetImage on this image, in which case we may already have an OfxImage laying around
     //so we try to re-use it.
     if (renderData) {
-        for (std::list<OfxImage*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
+        for (std::list<OfxImageCommon*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
             ImagePtr internalImage = (*it)->getInternalImage();
             if (!internalImage) {
                 continue;
@@ -798,9 +858,21 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             if ( sameComponents && (internalImage->getMipMapLevel() == mipMapLevel) &&
                  ( time == internalImage->getTime() ) &&
                  ( view == internalImage->getKey().getView() ) ) {
-                (*it)->addReference();
-
-                return *it;
+                if (retImage) {
+                    OfxImage* isImage = dynamic_cast<OfxImage*>(*it);
+                    if (isImage) {
+                        *retImage = isImage;
+                        isImage->addReference();
+                        return true;
+                    }
+                } else if (retTexture) {
+                    OfxTexture* isTex = dynamic_cast<OfxTexture*>(*it);
+                    if (isTex) {
+                        *retTexture = isTex;
+                        isTex->addReference();
+                        return true;
+                    }
+                }
             }
         }
     }
@@ -822,7 +894,9 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                                       optionalBounds ? &bounds : NULL,
                                       &comp,
                                       mapImageToClipPref,
-                                      false,
+                                      false /*dontUpscale*/,
+                                      retTexture != 0,
+                                      textureDepth,
                                       &renderWindow,
                                       &transform);
 
@@ -831,6 +905,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         return 0;
     }
 
+    assert(!retTexture || image->getStorageMode() == eStorageModeGLTex);
 
     std::string components;
     int nComps;
@@ -853,19 +928,35 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
        appPTR->debugImage(image.get(), renderWindow, filename);*/
 #endif
 
-    OfxImage* ret = new OfxImage(renderData, image, true, renderWindow, transform, components, nComps);
+
+    OfxImageCommon* retCommon = 0;
+    if (retImage) {
+        OfxImage* ofxImage = new OfxImage(renderData, image, true, renderWindow, transform, components, nComps);
+        *retImage = ofxImage;
+        retCommon = ofxImage;
+
+    } else if (retTexture) {
+        OfxTexture* ofxTex = new OfxTexture(renderData, image, true, renderWindow, transform, components, nComps);
+        *retTexture = ofxTex;
+        retCommon = ofxTex;
+    }
     if (renderData) {
-        renderData->imagesBeingRendered.push_back(ret);
+        renderData->imagesBeingRendered.push_back(retCommon);
     }
 
-    return ret;
+    return true;
 } // OfxClipInstance::getInputImageInternal
 
-OFX::Host::ImageEffect::Image*
-OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
+bool
+OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
+                                        const ImageBitDepthEnum* /*textureDepth*/, // < ignore requested texture depth because internally we use 32bit fp textures, so we offer the highest possible quality anyway.
+                                        OFX::Host::ImageEffect::Image** retImage,
+                                        OFX::Host::ImageEffect::Texture** retTexture)
 {
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
     boost::shared_ptr<RenderActionData> renderData;
+
+    assert((retImage && !retTexture) || (!retImage && retTexture));
 
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
@@ -898,7 +989,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
     }
 
     if (natronPlane.getNumComponents() == 0) {
-        return 0;
+        return false;
     }
 
 
@@ -908,7 +999,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
     ImageComponents planeBeingRendered;
     bool ok = effect->getThreadLocalRenderedPlanes(&outputPlanes, &planeBeingRendered, &renderWindow);
     if (!ok) {
-        return NULL;
+        return false;
     }
 
     ImagePtr outputImage;
@@ -936,18 +1027,31 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
     //If we don't have it by now then something is really wrong either in TLS or in the plug-in.
     assert(outputImage);
     if (!outputImage) {
-        return 0;
+        return false;
     }
 
 
     //Check if the plug-in already called clipGetImage on this image, in which case we may already have an OfxImage laying around
     //so we try to re-use it.
     if (renderData) {
-        for (std::list<OfxImage*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
+        for (std::list<OfxImageCommon*>::const_iterator it = renderData->imagesBeingRendered.begin(); it != renderData->imagesBeingRendered.end(); ++it) {
             if ( (*it)->getInternalImage() == outputImage ) {
-                (*it)->addReference();
 
-                return *it;
+                if (retImage) {
+                    OfxImage* isImage = dynamic_cast<OfxImage*>(*it);
+                    if (isImage) {
+                        *retImage = isImage;
+                        isImage->addReference();
+                        return true;
+                    }
+                } else if (retTexture) {
+                    OfxTexture* isTex = dynamic_cast<OfxTexture*>(*it);
+                    if (isTex) {
+                        *retTexture = isTex;
+                        isTex->addReference();
+                        return true;
+                    }
+                }
             }
         }
     }
@@ -965,40 +1069,31 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane)
         nComps = natronComps.getNumComponents();
         assert( nComps == (int)outputImage->getComponentsCount() );
         if ( nComps != (int)outputImage->getComponentsCount() ) {
-            return 0;
+            return false;
         }
     }
 
+    assert(!retTexture || outputImage->getStorageMode() == eStorageModeGLTex);
+
     //The output clip doesn't have any transform matrix
-    OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps);
-    if (renderData) {
-        renderData->imagesBeingRendered.push_back(ret);
+    OfxImageCommon* retCommon = 0;
+    if (retImage) {
+        OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps);
+        *retImage = ret;
+        retCommon = ret;
+    } else if (retTexture) {
+        OfxTexture* ret =  new OfxTexture(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps);
+        *retTexture = ret;
+        retCommon = ret;
     }
 
-    return ret;
+    if (renderData) {
+        renderData->imagesBeingRendered.push_back(retCommon);
+    }
+
+    return true;
 } // OfxClipInstance::getOutputImageInternal
 
-#ifdef OFX_SUPPORTS_OPENGLRENDER
-// overridden from OFX::Host::ImageEffect::ClipInstance
-/// override this to fill in the OpenGL texture at the given time.
-/// The bounds of the image on the image plane should be
-/// 'appropriate', typically the value returned in getRegionsOfInterest
-/// on the effect instance. Outside a render call, the optionalBounds should
-/// be 'appropriate' for the.
-/// If bounds is not null, fetch the indicated section of the canonical image plane.
-OFX::Host::ImageEffect::Texture*
-OfxClipInstance::loadTexture(OfxTime time,
-                             const char *format,
-                             const OfxRectD *optionalBounds)
-{
-    Q_UNUSED(time);
-    Q_UNUSED(format);
-    Q_UNUSED(optionalBounds);
-
-    return NULL;
-}
-
-#endif
 
 
 static std::string
@@ -1272,17 +1367,20 @@ OfxClipInstance::natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding)
     return noFielding;
 }
 
-struct OfxImagePrivate
+struct OfxImageCommonPrivate
 {
+    OFX::Host::ImageEffect::ImageBase* ofxImageBase;
     ImagePtr natronImage;
     boost::shared_ptr<GenericAccess> access;
     boost::shared_ptr<OfxClipInstance::RenderActionData> tls;
     std::string components;
     boost::scoped_ptr<RamBuffer<unsigned char> > localBuffer;
 
-    OfxImagePrivate(const ImagePtr& image,
+    OfxImageCommonPrivate(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
+                          const ImagePtr& image,
                     const boost::shared_ptr<OfxClipInstance::RenderActionData>& tls)
-        : natronImage(image)
+        : ofxImageBase(ofxImageBase)
+        , natronImage(image)
         , access()
         , tls(tls)
         , components()
@@ -1292,26 +1390,26 @@ struct OfxImagePrivate
 };
 
 ImagePtr
-OfxImage::getInternalImage() const
+OfxImageCommon::getInternalImage() const
 {
     return _imp->natronImage;
 }
 
 const std::string&
-OfxImage::getComponentsString() const
+OfxImageCommon::getComponentsString() const
 {
     return _imp->components;
 }
 
-OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                   const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                   bool isSrcImage,
-                   const RectI& renderWindow,
-                   const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                   const std::string& components,
-                   int nComps)
-    : OFX::Host::ImageEffect::Image()
-    , _imp( new OfxImagePrivate(internalImage, renderData) )
+OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
+                               const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
+                               const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                               bool isSrcImage,
+                               const RectI& renderWindow,
+                               const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                               const std::string& components,
+                               int nComps)
+: _imp( new OfxImageCommonPrivate(ofxImageBase, internalImage, renderData) )
 {
     _imp->components = components;
 
@@ -1319,9 +1417,15 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
 
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale( NATRON_NAMESPACE::Image::getScaleFromMipMapLevel(mipMapLevel) );
-    setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
-    setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
+    ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
+    ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
 
+    StorageModeEnum storage = internalImage->getStorageMode();
+    if (storage == eStorageModeGLTex) {
+        ofxImageBase->setIntProperty(kOfxImageEffectPropOpenGLTextureTarget, internalImage->getGLTextureTarget());
+        ofxImageBase->setIntProperty(kOfxImageEffectPropOpenGLTextureIndex, internalImage->getGLTextureID());
+
+    }
 
     const RectD & rod = internalImage->getRoD(); // Not the OFX RoD!!! Image::getRoD() is in *CANONICAL* coordinates
 
@@ -1330,62 +1434,64 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
     RectI bounds;
     RectI pluginsSeenBounds;
 
+    if (storage != eStorageModeGLTex) {
 
-    if (isSrcImage) {
-        // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
-        // and if it does so, it may modify the cached output of the node from which this input image comes from.
-        // To circumvent this, we copy the source image into a local temporary buffer only used by the plug-in which is released
-        // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
-        // in the preferences and check "Use input image copy for plug-ins rendering"
-        const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
-        boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
+        if (isSrcImage) {
+            // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
+            // and if it does so, it may modify the cached output of the node from which this input image comes from.
+            // To circumvent this, we copy the source image into a local temporary buffer only used by the plug-in which is released
+            // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
+            // in the preferences and check "Use input image copy for plug-ins rendering"
+            const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
+            boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
 
-        // data ptr
-        bounds = internalImage->getBounds();
-        renderWindow.intersect(bounds, &pluginsSeenBounds);
+            // data ptr
+            bounds = internalImage->getBounds();
+            renderWindow.intersect(bounds, &pluginsSeenBounds);
 
-        const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
-        assert(ptr);
+            const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+            assert(ptr);
 
-        if (!copySrcToPluginLocalData) {
-            setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );
-            _imp->access = access;
-        } else {
-            int dataSizeOf = getSizeOfForBitDepth( internalImage->getBitDepth() );
-            std::size_t bufferSize = bounds.area() * dataSizeOf * nComps;
-            _imp->localBuffer.reset( new RamBuffer<unsigned char>() );
-            _imp->localBuffer->resize(bufferSize);
-            unsigned char* localBufferData = _imp->localBuffer->getData();
-            assert(localBufferData);
-            if (localBufferData) {
-                memcpy(localBufferData, ptr, bufferSize);
+            if (!copySrcToPluginLocalData) {
+                ofxImageBase->setPointerProperty( kOfxImagePropData, const_cast<unsigned char*>(ptr) );
+                _imp->access = access;
+            } else {
+                int dataSizeOf = getSizeOfForBitDepth( internalImage->getBitDepth() );
+                std::size_t bufferSize = bounds.area() * dataSizeOf * nComps;
+                _imp->localBuffer.reset( new RamBuffer<unsigned char>() );
+                _imp->localBuffer->resize(bufferSize);
+                unsigned char* localBufferData = _imp->localBuffer->getData();
+                assert(localBufferData);
+                if (localBufferData) {
+                    memcpy(localBufferData, ptr, bufferSize);
+                }
+                unsigned char* bufferStart = NATRON_NAMESPACE::Image::pixelAtStatic(pluginsSeenBounds.left(), pluginsSeenBounds.bottom(), bounds, nComps, dataSizeOf, localBufferData);
+                ofxImageBase->setPointerProperty( kOfxImagePropData, bufferStart );
             }
-            unsigned char* bufferStart = NATRON_NAMESPACE::Image::pixelAtStatic(pluginsSeenBounds.left(), pluginsSeenBounds.bottom(), bounds, nComps, dataSizeOf, localBufferData);
-            setPointerProperty( kOfxImagePropData, bufferStart );
-        }
-    } else {
-        bounds = internalImage->getBounds();
-        boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
+        } else {
+            bounds = internalImage->getBounds();
+            boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
 
-        // data ptr
-        renderWindow.intersect(bounds, &pluginsSeenBounds);
+            // data ptr
+            renderWindow.intersect(bounds, &pluginsSeenBounds);
 
-        unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
-        assert(ptr);
-        setPointerProperty( kOfxImagePropData, ptr);
-        _imp->access = access;
-    }
-
+            unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
+            assert(ptr);
+            ofxImageBase->setPointerProperty( kOfxImagePropData, ptr);
+            _imp->access = access;
+        } // isSrcImage
+    } // storage!=eStorageModeGLTex
+    
     ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
     ///in which case it is just clipped to the RoD.
     //assert(bounds.contains(renderWindow));
 
     ///We set the render window that was given to the render thread instead of the actual bounds of the image
     ///so we're sure the plug-in doesn't attempt to access outside pixels.
-    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.left(), 0);
-    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.bottom(), 1);
-    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.right(), 2);
-    setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.top(), 3);
+    ofxImageBase->setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.left(), 0);
+    ofxImageBase->setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.bottom(), 1);
+    ofxImageBase->setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.right(), 2);
+    ofxImageBase->setIntProperty(kOfxImagePropBounds, pluginsSeenBounds.top(), 3);
 
     // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImagePropRegionOfDefinition
     // " An image's region of definition, in *PixelCoordinates,* is the full frame area of the image plane that the image covers."
@@ -1393,49 +1499,49 @@ OfxImage::OfxImage(const boost::shared_ptr<OfxClipInstance::RenderActionData>& r
     // OFX::Image RoD is in *PIXEL* coordinates
     RectI pixelRod;
     rod.toPixelEnclosing(mipMapLevel, internalImage->getPixelAspectRatio(), &pixelRod);
-    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
-    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
-    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
-    setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.top(), 3);
+    ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
+    ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
+    ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);
+    ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.top(), 3);
 
     //pluginsSeenBounds must be contained in pixelRod
     assert( pluginsSeenBounds.left() >= pixelRod.left() && pluginsSeenBounds.right() <= pixelRod.right() &&
             pluginsSeenBounds.bottom() >= pixelRod.bottom() && pluginsSeenBounds.top() <= pixelRod.top() );
 
     // row bytes
-    setIntProperty( kOfxImagePropRowBytes, bounds.width() * nComps *
+    ofxImageBase->setIntProperty( kOfxImagePropRowBytes, bounds.width() * nComps *
                     getSizeOfForBitDepth( internalImage->getBitDepth() ) );
-    setStringProperty( kOfxImageEffectPropComponents, components);
-    setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth( internalImage->getBitDepth() ) );
-    setStringProperty( kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult( internalImage->getPremultiplication() ) );
-    setStringProperty( kOfxImagePropField, OfxClipInstance::natronsFieldingToOfxFielding( internalImage->getFieldingOrder() ) );
-    setStringProperty( kOfxImagePropUniqueIdentifier, QString::number(internalImage->getHashKey(), 16).toStdString() );
-    setDoubleProperty( kOfxImagePropPixelAspectRatio, internalImage->getPixelAspectRatio() );
+    ofxImageBase->setStringProperty( kOfxImageEffectPropComponents, components);
+    ofxImageBase->setStringProperty( kOfxImageEffectPropPixelDepth, OfxClipInstance::natronsDepthToOfxDepth( internalImage->getBitDepth() ) );
+    ofxImageBase->setStringProperty( kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult( internalImage->getPremultiplication() ) );
+    ofxImageBase->setStringProperty( kOfxImagePropField, OfxClipInstance::natronsFieldingToOfxFielding( internalImage->getFieldingOrder() ) );
+    ofxImageBase->setStringProperty( kOfxImagePropUniqueIdentifier, QString::number(internalImage->getHashKey(), 16).toStdString() );
+    ofxImageBase->setDoubleProperty( kOfxImagePropPixelAspectRatio, internalImage->getPixelAspectRatio() );
 
     //Attach the transform matrix if any
     if (mat) {
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
 
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
 
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
-        setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
+        ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
     } else {
         for (int i = 0; i < 9; ++i) {
-            setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
+            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
         }
     }
 }
 
-OfxImage::~OfxImage()
+OfxImageCommon::~OfxImageCommon()
 {
     if (_imp->tls) {
-        std::list<OfxImage*>::iterator found = std::find(_imp->tls->imagesBeingRendered.begin(), _imp->tls->imagesBeingRendered.end(), this);
+        std::list<OfxImageCommon*>::iterator found = std::find(_imp->tls->imagesBeingRendered.begin(), _imp->tls->imagesBeingRendered.end(), this);
         if ( found != _imp->tls->imagesBeingRendered.end() ) {
             _imp->tls->imagesBeingRendered.erase(found);
         }

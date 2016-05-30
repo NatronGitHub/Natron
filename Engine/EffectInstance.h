@@ -149,6 +149,12 @@ public:
         bool byPassCache;
         bool calledFromGetImage;
 
+        // True if we need to return an OpenGL texture. If false we must return a RAM image
+        bool mustReturnOpenGLTexture;
+
+        // the time that was passed to the original renderRoI call of the caller node
+        double callerRenderTime;
+
         RenderRoIArgs()
             : time(0)
             , scale(1.)
@@ -162,6 +168,8 @@ public:
             , bitdepth(eImageBitDepthFloat)
             , byPassCache(false)
             , calledFromGetImage(false)
+            , mustReturnOpenGLTexture(false)
+            , callerRenderTime(0.)
         {
         }
 
@@ -176,6 +184,8 @@ public:
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
                        const EffectInstance* caller,
+                       bool renderOpenGLTexture,
+                       double callerRenderTime,
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
             : time(time_)
             , scale(scale_)
@@ -189,6 +199,8 @@ public:
             , bitdepth(bitdepth_)
             , byPassCache(byPassCache_)
             , calledFromGetImage(calledFromGetImage)
+            , mustReturnOpenGLTexture(renderOpenGLTexture)
+            , callerRenderTime(callerRenderTime)
         {
         }
     };
@@ -541,7 +553,7 @@ public:
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
-                                             bool useDiskCache,
+                                             StorageModeEnum storage,
                                              const ImageKey & key,
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
@@ -553,6 +565,20 @@ public:
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
                                              boost::shared_ptr<Image>* image);
+
+    /**
+     * @brief Converts the given OpenGL texture to a RAM-stored image. The resulting image will be cached.
+     * This function is SLOW as it makes use of glReadPixels.
+     * The OpenGL context should have been made current prior to calling this function.
+     **/
+    ImagePtr convertOpenGLTextureToCachedRAMImage(const ImagePtr& image);
+
+   /**
+    * @brief Converts the given RAM-stored image to an OpenGL texture.
+    * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
+    * The OpenGL context should have been made current prior to calling this function.
+    **/
+    ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);
 
 
     /**
@@ -601,6 +627,7 @@ public:
                                   const AbortableRenderInfoPtr& abortInfo,
                                   const NodePtr & treeRoot,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
+                                  const OSGLContextPtr& glContext,
                                   int textureIndex,
                                   const TimeLine* timeline,
                                   bool isAnalysis,
@@ -609,7 +636,6 @@ public:
                                   RenderSafetyEnum currentThreadSafety,
                                   bool doNanHandling,
                                   bool draftMode,
-                                  bool viewerProgressReportEnabled,
                                   const boost::shared_ptr<RenderStats> & stats);
 
     void setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke);
@@ -655,6 +681,7 @@ public:
                                                                const RoIMap & inputRois,
                                                                const boost::shared_ptr<InputMatrixMap> & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
+                                                               bool renderIsOpenGL, // if the render of this node is in OpenGL
                                                                unsigned int originalMipMapLevel,         // roi functor specific
                                                                double time,
                                                                ViewIdx view,
@@ -809,6 +836,7 @@ public:
 
     bool getThreadLocalRegionsOfInterests(RoIMap & roiMap) const;
 
+    OSGLContextPtr getThreadLocalOpenGLContext() const;
 
     void getThreadLocalInputImages(InputImagesMap* images) const;
 
@@ -864,6 +892,7 @@ public:
         bool isRenderResponseToUserInteraction;
         bool byPassCache;
         bool draftMode;
+        bool useOpenGL;
         std::bitset<4> processChannels;
     };
 
@@ -925,6 +954,7 @@ protected:
 
 public:
 
+
     bool isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
                            U64 hash,
                            double time,
@@ -965,6 +995,8 @@ public:
                                       const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
                                       const bool mapToClipPrefs,
                                       const bool dontUpscale,
+                                      const bool returnOpenGLTexture,
+                                      const ImageBitDepthEnum* textureDepth,
                                       RectI* roiPixel,
                                       boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
@@ -1318,6 +1350,7 @@ public:
         std::map<int, ImagePremultiplicationEnum> inputPremult;
         ImagePremultiplicationEnum outputPremult;
         bool isBeingRenderedElsewhere;
+        bool useOpenGL;
 
         ImagePlanesToRender()
             : rectsToRender()
@@ -1325,6 +1358,7 @@ public:
             , inputPremult()
             , outputPremult(eImagePremultiplicationPremultiplied)
             , isBeingRenderedElsewhere(false)
+            , useOpenGL(false)
         {
         }
     };
@@ -1437,7 +1471,8 @@ public:
                                            bool /*isSequentialRender*/,
                                            bool /*isRenderResponseToUserInteraction*/,
                                            bool /*draftMode*/,
-                                           ViewIdx /*view*/)
+                                           ViewIdx /*view*/,
+                                           bool /*isOpenGLRender*/)
     {
         return eStatusOK;
     }
@@ -1450,7 +1485,8 @@ public:
                                          bool /*isSequentialRender*/,
                                          bool /*isRenderResponseToUserInteraction*/,
                                          bool /*draftMode*/,
-                                         ViewIdx /*view*/)
+                                         ViewIdx /*view*/,
+                                         bool /*isOpenGLRender*/)
     {
         return eStatusOK;
     }
@@ -1486,12 +1522,14 @@ public:
                                           double step, bool interactive, const RenderScale & scale,
                                           bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                           bool draftMode,
-                                          ViewIdx view);
+                                          ViewIdx view,
+                                          bool isOpenGLRender);
     StatusEnum endSequenceRender_public(double first, double last,
                                         double step, bool interactive, const RenderScale & scale,
                                         bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                         bool draftMode,
-                                        ViewIdx view);
+                                        ViewIdx view,
+                                        bool isOpenGLRender);
 
     virtual bool canHandleRenderScaleForOverlays() const { return true; }
 
@@ -1603,7 +1641,55 @@ public:
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 
+    class OpenGLContextEffectData
+    {
+
+        OpenGLContextEffectData()
+        {
+
+        }
+
+        virtual ~OpenGLContextEffectData()
+        {
+
+        }
+
+    };
+
+    typedef boost::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
+
+    /**
+     * @brief This function calls the impementation specific attachOpenGLContext()
+     **/
+    OpenGLContextEffectDataPtr attachOpenGLContext_public();
+
+    /**
+    * @brief This function calls the impementation specific dettachOpenGLContext()
+    **/
+    void dettachOpenGLContext_public(const OpenGLContextEffectDataPtr& data);
+
+    /**
+     * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
+     * By default the OpenFX OpenGL render suite cannot support concurrent OpenGL renders, but version 2 specified by natron allows to do so.
+     **/
+    virtual bool supportsConcurrentOpenGLRenders() const { return true; }
+
 private:
+
+    /**
+     * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
+     * This function will be called once per context. The function dettachOpenGLContext() will be called 
+     * on the value returned by this function to deinitialize all context related data.
+     *
+     * If the function supportsConcurrentOpenGLRenders() returns false, each call to attachOpenGLContext must be followed by
+     * a call to dettachOpenGLContext before attaching a DIFFERENT context, meaning the plug-in thread-safety is instance safe at most.
+     **/
+    virtual OpenGLContextEffectDataPtr attachOpenGLContext() { return OpenGLContextEffectDataPtr(); }
+
+    /**
+    * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
+    **/
+    virtual void dettachOpenGLContext(const OpenGLContextEffectDataPtr& /*data*/) {}
 
 
     /**
@@ -1669,6 +1755,8 @@ public:
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
         double firstFrame, lastFrame;
         boost::shared_ptr<InputMatrixMap> transformRedirections;
+
+        bool isDoingOpenGLRender;
 
         RenderArgs();
 
@@ -1955,6 +2043,7 @@ private:
     /// \returns false if rendering was aborted
     RenderRoIRetCode renderInputImagesForRoI(const FrameViewRequest* request,
                                              bool useTransforms,
+                                             bool renderIsOpenGL,
                                              double time,
                                              ViewIdx view,
                                              const RectD & rod,
@@ -2011,7 +2100,7 @@ private:
                             double par,
                             unsigned int mipmapLevel,
                             bool renderFullScaleThenDownscale,
-                            bool useDiskCache,
+                            StorageModeEnum storage,
                             bool createInCache,
                             boost::shared_ptr<Image>* fullScaleImage,
                             boost::shared_ptr<Image>* downscaleImage);
