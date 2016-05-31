@@ -2586,6 +2586,13 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
             // setup the output viewport
             glViewport( 0, 0, actionArgs.roi.width(), actionArgs.roi.height() );
+
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+            glOrtho(actionArgs.roi.x1, actionArgs.roi.x2, actionArgs.roi.y1, actionArgs.roi.y2, -1, 1);
+
             glCheckError();
 
             // Enable scissor to make the plug-in doesn't render outside of the viewport...
