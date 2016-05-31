@@ -282,6 +282,7 @@ OSGLContext::getFBOId() const
 void
 OSGLContext::makeContextCurrent()
 {
+    assert(_imp && _imp->_platformContext);
 #ifdef __NATRON_WIN32__
     OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
 #elif defined(__NATRON_OSX__)

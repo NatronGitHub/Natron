@@ -55,6 +55,9 @@
 
 #include "Global/Macros.h"
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/noncopyable.hpp>
+#endif
 
 #include "Engine/EngineFwd.h"
 #include "Global/GLIncludes.h"
@@ -99,7 +102,7 @@ public:
  * @brief This class encapsulates a cross-platform OpenGL context used for offscreen rendering.
  **/
 struct OSGLContextPrivate;
-class OSGLContext
+class OSGLContext : public boost::noncopyable
 {
 public:
 
@@ -115,14 +118,14 @@ public:
      * creation failed.
      * The context must be made current with makeContextCurrent before being ready to use.
      **/
-    OSGLContext(const FramebufferConfig& pixelFormatAttrs,
-                const OSGLContext* shareContext,
-                int major = GLVersion.major,
-                int minor = GLVersion.minor);
+    explicit OSGLContext(const FramebufferConfig& pixelFormatAttrs,
+                         const OSGLContext* shareContext,
+                         int major = GLVersion.major,
+                         int minor = GLVersion.minor);
 
-    ~OSGLContext();
-
-
+    virtual ~OSGLContext();
+    
+    
     GLuint getPBOId() const;
 
     GLuint getFBOId() const;
@@ -148,9 +151,6 @@ public:
     boost::shared_ptr<GLShader> getOrCreateDefaultShader(DefaultGLShaderEnum type);
 
 private:
-
-
-    friend class GPUContextPool;
 
     boost::scoped_ptr<OSGLContextPrivate> _imp;
 };

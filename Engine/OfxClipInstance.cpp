@@ -1440,20 +1440,22 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
     RectI bounds;
     RectI pluginsSeenBounds;
 
-    if (storage != eStorageModeGLTex) {
-        if (isSrcImage) {
-            // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
-            // and if it does so, it may modify the cached output of the node from which this input image comes from.
-            // To circumvent this, we copy the source image into a local temporary buffer only used by the plug-in which is released
-            // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
-            // in the preferences and check "Use input image copy for plug-ins rendering"
-            const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
-            boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
+    if (isSrcImage) {
+        // Some plug-ins need a local version of the input image because they modify it (e.g: ReMap). This is out of spec
+        // and if it does so, it may modify the cached output of the node from which this input image comes from.
+        // To circumvent this, we copy the source image into a local temporary buffer only used by the plug-in which is released
+        // when this OfxImage is destroyed. By default this local copy is deactivated, to activate it, the user has to go
+        // in the preferences and check "Use input image copy for plug-ins rendering"
+        const bool copySrcToPluginLocalData = appPTR->isCopyInputImageForPluginRenderEnabled();
+        boost::shared_ptr<NATRON_NAMESPACE::Image::ReadAccess> access( new NATRON_NAMESPACE::Image::ReadAccess( internalImage.get() ) );
 
-            // data ptr
-            bounds = internalImage->getBounds();
-            renderWindow.intersect(bounds, &pluginsSeenBounds);
+        // data ptr
+        bounds = internalImage->getBounds();
+        renderWindow.intersect(bounds, &pluginsSeenBounds);
 
+        if (storage == eStorageModeGLTex) {
+            _imp->access = access;
+        } else {
             const unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
             assert(ptr);
 
@@ -1473,19 +1475,21 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                 unsigned char* bufferStart = NATRON_NAMESPACE::Image::pixelAtStatic(pluginsSeenBounds.left(), pluginsSeenBounds.bottom(), bounds, nComps, dataSizeOf, localBufferData);
                 ofxImageBase->setPointerProperty( kOfxImagePropData, bufferStart );
             }
-        } else {
-            bounds = internalImage->getBounds();
-            boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
+        }
+    } else {
+        bounds = internalImage->getBounds();
+        boost::shared_ptr<NATRON_NAMESPACE::Image::WriteAccess> access( new NATRON_NAMESPACE::Image::WriteAccess( internalImage.get() ) );
 
-            // data ptr
-            renderWindow.intersect(bounds, &pluginsSeenBounds);
+        // data ptr
+        renderWindow.intersect(bounds, &pluginsSeenBounds);
 
+        if (storage != eStorageModeGLTex) {
             unsigned char* ptr = access->pixelAt( pluginsSeenBounds.left(), pluginsSeenBounds.bottom() );
             assert(ptr);
             ofxImageBase->setPointerProperty( kOfxImagePropData, ptr);
-            _imp->access = access;
-        } // isSrcImage
-    } // storage!=eStorageModeGLTex
+        }
+        _imp->access = access;
+    } // isSrcImage
 
     ///Do not activate this assert! The render window passed to renderRoI can be bigger than the actual RoD of the effect
     ///in which case it is just clipped to the RoD.

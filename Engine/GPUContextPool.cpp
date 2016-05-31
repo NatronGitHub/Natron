@@ -109,8 +109,10 @@ GPUContextPool::attachGLContextToRender()
     } else {
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
         newContext = *it;
+        assert(newContext);
         _imp->glContextPool.erase(it);
     }
+    assert(newContext);
 
     // If this is the first context, set it as the sharing context
     if (!shareContext) {
@@ -133,10 +135,9 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
 
     assert( foundAttached != _imp->attachedGLContexts.end() );
     if ( foundAttached != _imp->attachedGLContexts.end() ) {
-        _imp->attachedGLContexts.erase(foundAttached);
-
         // Re-insert back into the contextPool so it can be re-used
         _imp->glContextPool.insert(*foundAttached);
+        _imp->attachedGLContexts.erase(foundAttached);
 
         // Wake-up one thread waiting in attachContextToThread().
         // No need to wake all threads because each thread releasing a context will wake up one thread.
