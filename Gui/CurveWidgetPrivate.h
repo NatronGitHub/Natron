@@ -40,6 +40,7 @@
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiFwd.h"
+#include "Engine/OfxOverlayInteract.h"
 
 
 #define CURVEWIDGET_DERIVATIVE_ROUND_PRECISION 3.
@@ -150,6 +151,7 @@ private:
 
 public:
 
+    boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;
