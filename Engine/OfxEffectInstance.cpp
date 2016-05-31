@@ -1720,7 +1720,7 @@ OfxEffectInstance::beginSequenceRender(double first,
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
-                                                   /*openGLRender=*/ false, draftMode, view);
+                                                   /*openGLRender=*/ false, /*contextData=*/ NULL, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1761,7 +1761,7 @@ OfxEffectInstance::endSequenceRender(double first,
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
                                                  isSequentialRender, isRenderResponseToUserInteraction,
-                                                 /*openGLRender=*/ false, draftMode, view);
+                                                 /*openGLRender=*/ false, /*contextData=*/ NULL, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1848,6 +1848,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                            args.isSequentialRender,
                                            args.isRenderResponseToUserInteraction,
                                            /*openGLRender=*/ false,
+                                           /*contextData=*/ NULL,
                                            args.draftMode,
                                            args.view,
                                            viewsCount,
