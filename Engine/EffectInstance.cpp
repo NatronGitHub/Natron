@@ -1436,7 +1436,13 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
         return ramImage;
     }
 
-    ramImage->pasteFrom(*image, image->getBounds());
+    OSGLContextPtr context = getThreadLocalOpenGLContext();
+    assert(context);
+    if (!context) {
+        throw std::runtime_error("No OpenGL context attached");
+    }
+
+    ramImage->pasteFrom(*image, image->getBounds(), false, context);
 
     return ramImage;
 }
@@ -2352,6 +2358,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         GLuint fboID = glContext->getFBOId();
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        glCheckError();
         
     }
 
@@ -2576,15 +2583,18 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             assert(actionArgs.outputPlanes.size() == 1);
 
             const ImagePtr& mainImagePlane = actionArgs.outputPlanes.front().second;
-            int textureTarget = mainImagePlane->getGLTextureTarget();
+            textureTarget = mainImagePlane->getGLTextureTarget();
             glEnable(textureTarget);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(textureTarget, mainImagePlane->getGLTextureID());
+            glCheckError();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, mainImagePlane->getGLTextureID(), 0 /*LoD*/);
+            glCheckError();
             glCheckFramebufferError();
 
             // setup the output viewport
             glViewport(0, 0, actionArgs.roi.width(), actionArgs.roi.height());
+            glCheckError();
 
             // Enable scissor to make the plug-in doesn't render outside of the viewport...
             //glEnable(GL_SCISSOR_TEST);
@@ -2594,9 +2604,13 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         StatusEnum st = _publicInterface->render_public(actionArgs);
 
         if (planes.useOpenGL) {
-            glDisable(GL_SCISSOR_TEST);
+            //glDisable(GL_SCISSOR_TEST);
+            glCheckError();
+            glActiveTexture(GL_TEXTURE0);
             glBindTexture(textureTarget, 0);
+            glCheckError();
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glCheckError();
         }
 
         renderAborted = _publicInterface->aborted();
@@ -3898,7 +3912,6 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext)
     if (found != _imp->attachedContexts.end()) {
         data = found->second;
         _imp->attachedContexts.erase(found);
-        return eStatusOK;
     } else {
         if (!concurrentGLRender) {
             _imp->attachedContextsMutex.unlock();

@@ -119,7 +119,11 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
 
         }
 
-        attributes.push_back(kCGLPFAOffScreen);
+        /*
+         Deprecated in OS X v10.7. This attribute must not be specified if the attributes array also requests a profile other than a legacy OpenGL profile; if present, pixel format creation fails.
+         */
+
+        //attributes.push_back(kCGLPFAOffScreen);
     }
     if (pixelFormatAttrs.redBits != FramebufferConfig::ATTR_DONT_CARE &&
         pixelFormatAttrs.greenBits != FramebufferConfig::ATTR_DONT_CARE &&

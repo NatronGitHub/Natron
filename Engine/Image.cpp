@@ -1261,17 +1261,15 @@ Image::pasteFrom(const Image & src,
         GLuint fboID = glContext->getFBOId();
 
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-
+        glCheckError();
         int target = src.getGLTextureTarget();
         glEnable(target);
         glBindTexture(target, src.getGLTextureID());
-
+        glCheckError();
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
-
+        glCheckError();
         glCheckFramebufferError();
-
-        glReadBuffer(GL_FRONT);
-
+        glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
         ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
 
@@ -1279,7 +1277,8 @@ Image::pasteFrom(const Image & src,
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
             unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
 
-            glReadPixels(roi.x1, roi.y1, roi.width(), roi.height(), getGLTextureFormat(), getGLTextureType(), (GLvoid*)data);
+            glReadPixels(roi.x1, roi.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
+            glCheckError();
             glBindTexture(target, 0);
         }
         glCheckError();

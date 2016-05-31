@@ -260,11 +260,11 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs, const OSGLCo
 {
 
 #ifdef __NATRON_WIN32__
-    _imp->_platformContext.reset(new OSGLContext_win(pixelFormatAttrs, major, minor, shareContext->_imp->_platformContext.get()));
+    _imp->_platformContext.reset(new OSGLContext_win(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0));
 #elif defined(__NATRON_OSX__)
-    _imp->_platformContext.reset(new OSGLContext_mac(pixelFormatAttrs, major, minor, shareContext->_imp->_platformContext.get()));
+    _imp->_platformContext.reset(new OSGLContext_mac(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0));
 #elif defined(__NATRON_LINUX__)
-    _imp->_platformContext.reset(new OSGLContext_x11(pixelFormatAttrs, major, minor, shareContext->_imp->_platformContext.get()));
+    _imp->_platformContext.reset(new OSGLContext_x11(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0));
 #endif
 }
 

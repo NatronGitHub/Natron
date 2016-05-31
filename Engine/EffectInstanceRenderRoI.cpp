@@ -720,7 +720,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     StorageModeEnum storage = eStorageModeRAM;
     if (dynamic_cast<DiskCacheNode*>(this)) {
         storage = eStorageModeDisk;
-    } else if (openGLSupport != ePluginOpenGLRenderSupportNone && args.allowGPURendering) {
+    } else if (openGLSupport != ePluginOpenGLRenderSupportNone && args.allowGPURendering && glContext) {
         /*
          We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
          since we do not use the cache for textures)

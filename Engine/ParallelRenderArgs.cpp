@@ -715,8 +715,12 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     assert(treeRoot);
 
     // Ensure this thread gets an OpenGL context for the render of the frame
-    OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
-    assert(glContext);
+    OSGLContextPtr glContext;
+    try {
+        glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+    }
     _openGLContext = glContext;
 
 
@@ -861,10 +865,10 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
     }
 
     OSGLContextPtr glContext = _openGLContext.lock();
-    assert(glContext);
-
-    // This render is going to end, release the OpenGL context so that another frame render may use it
-    appPTR->getGPUContextPool()->releaseGLContextFromRender(glContext);
+    if (glContext) {
+        // This render is going to end, release the OpenGL context so that another frame render may use it
+        appPTR->getGPUContextPool()->releaseGLContextFromRender(glContext);
+    }
 }
 
 ParallelRenderArgs::ParallelRenderArgs()
