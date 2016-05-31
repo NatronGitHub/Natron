@@ -16,6 +16,7 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+
 //========================================================================
 // GLFW 3.2 - www.glfw.org
 //------------------------------------------------------------------------
@@ -43,7 +44,6 @@
 //
 //========================================================================
 
-
 #ifndef OSGLCONTEXT_H
 #define OSGLCONTEXT_H
 
@@ -52,6 +52,9 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
 
 #include "Engine/EngineFwd.h"
 #include "Global/GLIncludes.h"
