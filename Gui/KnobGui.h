@@ -237,13 +237,7 @@ public:
                  (addedKey != KnobHelper::eValueChangedReturnCodeNothingChanged) );
     }
 
-    virtual void swapOpenGLBuffers() OVERRIDE FINAL;
-    virtual void redraw() OVERRIDE FINAL;
-    virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;
-    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
-    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE FINAL;
-    virtual void saveOpenGLContext() OVERRIDE FINAL;
-    virtual void restoreOpenGLContext() OVERRIDE FINAL;
+
     virtual RectD getViewportRect() const OVERRIDE FINAL;
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
     /**
@@ -267,6 +261,13 @@ public:
      **/
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual void swapOpenGLBuffers() OVERRIDE;
+    virtual void redraw() OVERRIDE;
+    virtual void getViewportSize(double &width, double &height) const OVERRIDE ;
+    virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE ;
+    virtual void getBackgroundColour(double &r, double &g, double &b) const OVERRIDE ;
+    virtual void saveOpenGLContext() OVERRIDE ;
+    virtual void restoreOpenGLContext() OVERRIDE ;
 
     ///Should set to the underlying knob the gui ptr
     virtual void setKnobGuiPointer() OVERRIDE FINAL;

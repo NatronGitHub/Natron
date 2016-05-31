@@ -540,6 +540,13 @@ CurveWidget::paintGL()
 
         _imp->drawScale();
 
+        boost::shared_ptr<OfxParamOverlayInteract> customInteract = getCustomInteract();
+        if (customInteract) {
+            RenderScale scale(1.);
+            customInteract->setCallingViewport(this);
+            customInteract->drawAction(0, scale, 0);
+        }
+
         if (_imp->_timelineEnabled) {
             _imp->drawTimelineMarkers();
         }
@@ -2236,6 +2243,18 @@ CurveWidget::importCurveFromAscii()
         update();
     }
 } // importCurveFromAscii
+
+void
+CurveWidget::setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc)
+{
+    _imp->_customInteract = interactDesc;
+}
+
+boost::shared_ptr<OfxParamOverlayInteract>
+CurveWidget::getCustomInteract() const
+{
+    return _imp->_customInteract.lock();
+}
 
 NATRON_NAMESPACE_EXIT;
 

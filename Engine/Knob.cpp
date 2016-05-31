@@ -3144,6 +3144,11 @@ boost::shared_ptr<OfxParamOverlayInteract> KnobHelper::getCustomInteract() const
 void
 KnobHelper::swapOpenGLBuffers()
 {
+    boost::shared_ptr<KnobGuiI> hasGui = getKnobGuiPointer();
+
+    if (hasGui) {
+        hasGui->swapOpenGLBuffers();
+    }
 }
 
 void

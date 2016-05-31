@@ -58,6 +58,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/OfxOverlayInteract.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -116,6 +117,8 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     boost::shared_ptr<KnobParametric> knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
 
+    boost::shared_ptr<OfxParamOverlayInteract> interact = knob->getCustomInteract();
+
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     treeColumn = new QWidget( layout->parentWidget() );
     QVBoxLayout* treeColumnLayout = new QVBoxLayout(treeColumn);
@@ -139,6 +142,9 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     _curveWidget = new CurveWidget( getGui(), this, boost::shared_ptr<TimeLine>(), layout->parentWidget() );
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    if (interact) {
+        _curveWidget->setCustomInteract(interact);
+    }
     if ( hasToolTip() ) {
         _curveWidget->setToolTip( toolTip() );
     }
@@ -310,6 +316,48 @@ KnobGuiParametric::refreshDimensionName(int dim)
     found.curve->setName(name);
     found.treeItem->setText(0, name);
     _curveWidget->update();
+}
+
+void
+KnobGuiParametric::swapOpenGLBuffers()
+{
+    _curveWidget->swapOpenGLBuffers();
+}
+
+void
+KnobGuiParametric::redraw()
+{
+    _curveWidget->redraw();
+}
+
+void
+KnobGuiParametric::getViewportSize(double &width, double &height) const
+{
+    _curveWidget->getViewportSize(width, height);
+}
+
+void
+KnobGuiParametric::getPixelScale(double & xScale, double & yScale) const
+{
+    _curveWidget->getPixelScale(xScale, yScale);
+}
+
+void
+KnobGuiParametric::getBackgroundColour(double &r, double &g, double &b) const
+{
+    _curveWidget->getBackgroundColour(r, g, b);
+}
+
+void
+KnobGuiParametric::saveOpenGLContext()
+{
+    _curveWidget->saveOpenGLContext();
+}
+
+void
+KnobGuiParametric::restoreOpenGLContext()
+{
+    _curveWidget->restoreOpenGLContext();
 }
 
 NATRON_NAMESPACE_EXIT;
