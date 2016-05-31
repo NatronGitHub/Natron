@@ -61,9 +61,9 @@ struct BufferedFrame
 
     BufferedFrame()
         : view(0)
-        , time(0)
-        , stats()
-        , frame()
+          , time(0)
+          , stats()
+          , frame()
     {
     }
 };
@@ -80,7 +80,7 @@ public:
 
     ViewerCurrentFrameRequestSchedulerStartArgs()
         : GenericThreadStartArgs()
-        , age(0)
+          , age(0)
     {
     }
 
@@ -105,7 +105,8 @@ class RenderThreadTask
 public:
 
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output, OutputSchedulerThread* scheduler);
+    RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
+                     OutputSchedulerThread* scheduler);
 #else
     RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
                      OutputSchedulerThread* scheduler,
@@ -169,14 +170,14 @@ public:
                                    const std::vector<ViewIdx>& viewsToRender,
                                    RenderDirectionEnum forward)
         : GenericThreadStartArgs()
-        , isBlocking(isBlocking)
-        , enableRenderStats(enableRenderStats)
-        , firstFrame(firstFrame)
-        , lastFrame(lastFrame)
-        , frameStep(frameStep)
-        , viewsToRender(viewsToRender)
-        , processTimelineDirection(forward)
-        , pushTimelineDirection(forward)
+          , isBlocking(isBlocking)
+          , enableRenderStats(enableRenderStats)
+          , firstFrame(firstFrame)
+          , lastFrame(lastFrame)
+          , frameStep(frameStep)
+          , viewsToRender(viewsToRender)
+          , processTimelineDirection(forward)
+          , pushTimelineDirection(forward)
     {
     }
 
@@ -475,7 +476,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    DefaultScheduler(RenderEngine* engine, const boost::shared_ptr<OutputEffectInstance>& effect);
+    DefaultScheduler(RenderEngine* engine,
+                     const boost::shared_ptr<OutputEffectInstance>& effect);
 
     virtual ~DefaultScheduler();
 
@@ -509,7 +511,8 @@ class ViewerDisplayScheduler
 {
 public:
 
-    ViewerDisplayScheduler(RenderEngine* engine, const boost::shared_ptr<ViewerInstance>& viewer);
+    ViewerDisplayScheduler(RenderEngine* engine,
+                           const boost::shared_ptr<ViewerInstance>& viewer);
 
     virtual ~ViewerDisplayScheduler();
 

@@ -73,53 +73,52 @@
 
 
 typedef BOOL (WINAPI * PFNWGLSWAPINTERVALEXTPROC)(int);
-typedef BOOL (WINAPI * PFNWGLGETPIXELFORMATATTRIBIVARBPROC)(HDC,int,int,UINT,const int*,int*);
+typedef BOOL (WINAPI * PFNWGLGETPIXELFORMATATTRIBIVARBPROC)(HDC, int, int, UINT, const int*, int*);
 typedef const char* (WINAPI * PFNWGLGETEXTENSIONSSTRINGEXTPROC)(void);
 typedef const char* (WINAPI * PFNWGLGETEXTENSIONSSTRINGARBPROC)(HDC);
-typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC,HGLRC,const int*);
-
+typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC, HGLRC, const int*);
 typedef HGLRC (WINAPI * WGLCREATECONTEXT_T)(HDC);
 typedef BOOL (WINAPI * WGLDELETECONTEXT_T)(HGLRC);
 typedef PROC (WINAPI * WGLGETPROCADDRESS_T)(LPCSTR);
-typedef BOOL (WINAPI * WGLMAKECURRENT_T)(HDC,HGLRC);
-typedef BOOL (WINAPI * WGLSHARELISTS_T)(HGLRC,HGLRC);
+typedef BOOL (WINAPI * WGLMAKECURRENT_T)(HDC, HGLRC);
+typedef BOOL (WINAPI * WGLSHARELISTS_T)(HGLRC, HGLRC);
 
 NATRON_NAMESPACE_ENTER;
 
 struct OSGLContext_wgl_data
 {
-    HINSTANCE                           instance;
-    WGLCREATECONTEXT_T                  CreateContext;
-    WGLDELETECONTEXT_T                  DeleteContext;
-    WGLGETPROCADDRESS_T                 GetProcAddress;
-    WGLMAKECURRENT_T                    MakeCurrent;
-    WGLSHARELISTS_T                     ShareLists;
-
-    GLboolean                            extensionsLoaded;
-
-    PFNWGLSWAPINTERVALEXTPROC           SwapIntervalEXT;
+    HINSTANCE instance;
+    WGLCREATECONTEXT_T CreateContext;
+    WGLDELETECONTEXT_T DeleteContext;
+    WGLGETPROCADDRESS_T GetProcAddress;
+    WGLMAKECURRENT_T MakeCurrent;
+    WGLSHARELISTS_T ShareLists;
+    GLboolean extensionsLoaded;
+    PFNWGLSWAPINTERVALEXTPROC SwapIntervalEXT;
     PFNWGLGETPIXELFORMATATTRIBIVARBPROC GetPixelFormatAttribivARB;
-    PFNWGLGETEXTENSIONSSTRINGEXTPROC    GetExtensionsStringEXT;
-    PFNWGLGETEXTENSIONSSTRINGARBPROC    GetExtensionsStringARB;
-    PFNWGLCREATECONTEXTATTRIBSARBPROC   CreateContextAttribsARB;
-    GLboolean                            EXT_swap_control;
-    GLboolean                            ARB_multisample;
-    GLboolean                            ARB_framebuffer_sRGB;
-    GLboolean                            EXT_framebuffer_sRGB;
-    GLboolean                            ARB_pixel_format;
-    GLboolean                            ARB_create_context;
-    GLboolean                            ARB_create_context_profile;
-    GLboolean                            EXT_create_context_es2_profile;
-    GLboolean                            ARB_create_context_robustness;
-    GLboolean                            ARB_context_flush_control;
-    
+    PFNWGLGETEXTENSIONSSTRINGEXTPROC GetExtensionsStringEXT;
+    PFNWGLGETEXTENSIONSSTRINGARBPROC GetExtensionsStringARB;
+    PFNWGLCREATECONTEXTATTRIBSARBPROC CreateContextAttribsARB;
+    GLboolean EXT_swap_control;
+    GLboolean ARB_multisample;
+    GLboolean ARB_framebuffer_sRGB;
+    GLboolean EXT_framebuffer_sRGB;
+    GLboolean ARB_pixel_format;
+    GLboolean ARB_create_context;
+    GLboolean ARB_create_context_profile;
+    GLboolean EXT_create_context_es2_profile;
+    GLboolean ARB_create_context_robustness;
+    GLboolean ARB_context_flush_control;
 };
 
 class OSGLContext_win
 {
 public:
 
-    OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext);
+    OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
+                    int major,
+                    int minor,
+                    const OSGLContext_win* shareContext);
 
     ~OSGLContext_win();
 
@@ -132,6 +131,7 @@ public:
     static void initWGLData(OSGLContext_wgl_data* wglInfo);
     bool loadWGLExtensions(OSGLContext_wgl_data* wglInfo);
     static void destroyWGLData(OSGLContext_wgl_data* wglInfo);
+
 private:
 
     int getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, int pixelFormat, int attrib);
@@ -147,12 +147,10 @@ private:
     bool extensionSupported(const char* extension, OSGLContext_wgl_data* data);
 
     // WGL-specific per-context data
-    HDC       _dc;
-    HGLRC     _handle;
-    int       _interval;
+    HDC _dc;
+    HGLRC _handle;
+    int _interval;
     HWND _windowHandle;
-
-
 };
 
 

@@ -66,11 +66,11 @@ NATRON_NAMESPACE_ENTER;
 KnobGuiFile::KnobGuiFile(KnobPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _lineEdit(0)
-    , _openFileButton(0)
-    , _reloadButton(0)
-    , _lastOpened()
-    , _lastModificationDates()
+      , _lineEdit(0)
+      , _openFileButton(0)
+      , _reloadButton(0)
+      , _lastOpened()
+      , _lastModificationDates()
 {
     boost::shared_ptr<KnobFile> k = boost::dynamic_pointer_cast<KnobFile>(knob);
 
@@ -466,8 +466,8 @@ KnobGuiFile::updateToolTip()
 KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
                                      KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _lineEdit(0)
-    , _openFileButton(0)
+      , _lineEdit(0)
+      , _openFileButton(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     assert( _knob.lock() );
@@ -722,9 +722,9 @@ KnobGuiOutputFile::updateToolTip()
 KnobGuiPath::KnobGuiPath(KnobPtr knob,
                          KnobGuiContainerI *container)
     : KnobGuiTable(knob, container)
-    , _mainContainer(0)
-    , _lineEdit(0)
-    , _openFileButton(0)
+      , _mainContainer(0)
+      , _lineEdit(0)
+      , _openFileButton(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobPath>(knob);
     assert( _knob.lock() );

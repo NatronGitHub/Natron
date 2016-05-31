@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER;
 
 QtWriter::QtWriter(NodePtr node)
     : OutputEffectInstance(node)
-    , _lut( Color::LutManager::sRGBLut() )
+      , _lut( Color::LutManager::sRGBLut() )
 {
 }
 

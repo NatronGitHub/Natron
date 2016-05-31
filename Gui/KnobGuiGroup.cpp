@@ -91,12 +91,12 @@ using std::make_pair;
 KnobGuiGroup::KnobGuiGroup(KnobPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _checked(false)
-    , _button(0)
-    , _children()
-    , _childrenToEnable()
-    , _tabGroup(0)
-    , _knob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
+      , _checked(false)
+      , _button(0)
+      , _children()
+      , _childrenToEnable()
+      , _tabGroup(0)
+      , _knob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
 {
 }
 

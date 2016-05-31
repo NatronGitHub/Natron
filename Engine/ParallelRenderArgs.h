@@ -238,7 +238,7 @@ class ParallelRenderArgsSetter
     NodesList nodes;
 
 protected:
-    
+
     boost::weak_ptr<OSGLContext> _openGLContext;
 
 public:

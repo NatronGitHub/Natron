@@ -107,7 +107,7 @@ CurveWidget::CurveWidget(Gui* gui,
                          QWidget* parent,
                          const QGLWidget* shareWidget)
     : QGLWidget(parent, shareWidget)
-    , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
+      , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );

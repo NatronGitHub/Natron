@@ -218,11 +218,11 @@ struct TrackerFrameAccessorPrivate
                                 bool enabledChannels[3],
                                 int formatHeight)
         : context(context)
-        , trackerInput()
-        , cacheMutex()
-        , cache()
-        , enabledChannels()
-        , formatHeight(formatHeight)
+          , trackerInput()
+          , cacheMutex()
+          , cache()
+          , enabledChannels()
+          , formatHeight(formatHeight)
     {
         trackerInput = context->getNode()->getInput(0);
         assert(trackerInput);
@@ -236,7 +236,7 @@ TrackerFrameAccessor::TrackerFrameAccessor(const TrackerContext* context,
                                            bool enabledChannels[3],
                                            int formatHeight)
     : mv::FrameAccessor()
-    , _imp( new TrackerFrameAccessorPrivate(context, enabledChannels, formatHeight) )
+      , _imp( new TrackerFrameAccessorPrivate(context, enabledChannels, formatHeight) )
 {
 }
 
@@ -359,7 +359,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               node->getApp()->getTimeLine().get(), //Timeline
                                               NodePtr(), // rotoPaintNode
                                               true, //isAnalysis
-                                              false,//draftMode
+                                              false, //draftMode
                                               boost::shared_ptr<RenderStats>() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
@@ -372,7 +372,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         eImageBitDepthFloat,
                                         true,
                                         _imp->context->getNode()->getEffectInstance().get(),
-                                        false/*returnOpenGLTex*/,
+                                        false /*returnOpenGLTex*/,
                                         frame);
     std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = _imp->trackerInput->getEffectInstance()->renderRoI(args, &planes);

@@ -84,7 +84,8 @@ struct RowInfo
     int rowIndex;
     TableItem* item;
 
-    RowInfo() : node(), rowIndex(-1), item(0) {}
+    RowInfo()
+        : node(), rowIndex(-1), item(0) {}
 };
 
 struct StatRowsCompare
@@ -131,8 +132,8 @@ public:
                     int cols,
                     TableView* view)
         : TableModel(row, cols, view)
-        , view(view)
-        , rows()
+          , view(view)
+          , rows()
     {
     }
 
@@ -717,29 +718,29 @@ struct RenderStatsDialogPrivate
 
     RenderStatsDialogPrivate(Gui* gui)
         : gui(gui)
-        , mainLayout(0)
-        , descriptionLabel(0)
-        , globalInfosContainer(0)
-        , globalInfosLayout(0)
-        , accumulateLabel(0)
-        , accumulateCheckbox(0)
-        , advancedLabel(0)
-        , advancedCheckbox(0)
-        , totalTimeSpentDescLabel(0)
-        , totalTimeSpentValueLabel(0)
-        , totalSpentTime(0)
-        , resetButton(0)
-        , filterContainer(0)
-        , filterLayout(0)
-        , filtersLabel(0)
-        , nameFilterLabel(0)
-        , nameFilterEdit(0)
-        , idFilterLabel(0)
-        , idFilterEdit(0)
-        , useUnixWildcardsLabel(0)
-        , useUnixWildcardsCheckbox(0)
-        , view(0)
-        , model(0)
+          , mainLayout(0)
+          , descriptionLabel(0)
+          , globalInfosContainer(0)
+          , globalInfosLayout(0)
+          , accumulateLabel(0)
+          , accumulateCheckbox(0)
+          , advancedLabel(0)
+          , advancedCheckbox(0)
+          , totalTimeSpentDescLabel(0)
+          , totalTimeSpentValueLabel(0)
+          , totalSpentTime(0)
+          , resetButton(0)
+          , filterContainer(0)
+          , filterLayout(0)
+          , filtersLabel(0)
+          , nameFilterLabel(0)
+          , nameFilterEdit(0)
+          , idFilterLabel(0)
+          , idFilterEdit(0)
+          , useUnixWildcardsLabel(0)
+          , useUnixWildcardsCheckbox(0)
+          , view(0)
+          , model(0)
     {
     }
 
@@ -750,7 +751,7 @@ struct RenderStatsDialogPrivate
 
 RenderStatsDialog::RenderStatsDialog(Gui* gui)
     : QWidget(gui)
-    , _imp( new RenderStatsDialogPrivate(gui) )
+      , _imp( new RenderStatsDialogPrivate(gui) )
 {
     setWindowFlags(Qt::Tool);
     setWindowTitle( tr("Render statistics") );

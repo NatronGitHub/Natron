@@ -56,8 +56,8 @@ public:
                const boost::shared_ptr<FrameParams> &  params,
                const CacheAPI* cache)
         : CacheEntryHelper<U8, FrameKey, FrameParams>(key, params, cache)
-        , _abortedMutex()
-        , _aborted(false)
+          , _abortedMutex()
+          , _aborted(false)
     {
     }
 

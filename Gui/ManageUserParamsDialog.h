@@ -52,7 +52,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    ManageUserParamsDialog(DockablePanel* panel, QWidget* parent);
+    ManageUserParamsDialog(DockablePanel* panel,
+                           QWidget* parent);
 
     virtual ~ManageUserParamsDialog();
 

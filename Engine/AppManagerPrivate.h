@@ -166,9 +166,7 @@ public:
 #endif
 
     boost::scoped_ptr<GPUContextPool> renderingContextPool;
-
     boost::scoped_ptr<QCoreApplication> _qApp;
-
 
 public:
     AppManagerPrivate();

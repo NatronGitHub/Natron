@@ -62,13 +62,13 @@ public:
     DopeSheetView *dopeSheetView;
 };
 
-DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
-    q_ptr(qq),
-    mainLayout(0),
-    model(0),
-    splitter(0),
-    hierarchyView(0),
-    dopeSheetView(0)
+DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)
+    : q_ptr(qq),
+      mainLayout(0),
+      model(0),
+      splitter(0),
+      hierarchyView(0),
+      dopeSheetView(0)
 {}
 
 /**
@@ -78,10 +78,10 @@ DopeSheetEditorPrivate::DopeSheetEditorPrivate(DopeSheetEditor *qq)  :
  */
 DopeSheetEditor::DopeSheetEditor(Gui *gui,
                                  boost::shared_ptr<TimeLine> timeline,
-                                 QWidget *parent) :
-    QWidget(parent),
-    PanelWidget(this, gui),
-    _imp( new DopeSheetEditorPrivate(this) )
+                                 QWidget *parent)
+    : QWidget(parent),
+      PanelWidget(this, gui),
+      _imp( new DopeSheetEditorPrivate(this) )
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 

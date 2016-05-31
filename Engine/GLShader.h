@@ -36,7 +36,8 @@ class GLShader
 {
 public:
 
-    enum ShaderTypeEnum {
+    enum ShaderTypeEnum
+    {
         eShaderTypeVertex,
         eShaderTypeFragment
     };
@@ -44,13 +45,13 @@ public:
     /**
      * @brief Creates an empty shader. To actually use the shader, you must add a fragment shader and optionnally a vertex shader.
      * By default the vertex shader is:
-     
-     void main()
-     {
+
+       void main()
+       {
         gl_TexCoord[0] = gl_MultiTexCoord0;
-     	gl_Position = ftransform();
-     }
-     
+        gl_Position = ftransform();
+       }
+
      *
      * Once programs have been added successfully, you can link() the programs together.
      * When done, the shader is ready to be used. Call bind() to activate the shader
@@ -73,7 +74,7 @@ public:
 
     bool setUniform(const char* name, int value);
     bool setUniform(const char* name, float value);
-    bool setUniform(const char* name, const std::vector<float>& values);
+    bool setUniform(const char* name, const OfxRGBAColourF& values);
 
 private:
 

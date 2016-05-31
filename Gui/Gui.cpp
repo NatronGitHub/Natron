@@ -77,8 +77,8 @@ Gui::Gui(const GuiAppInstPtr& app,
 #else
     : DocumentWindow(parent)
 #endif
-    , SerializableWindow()
-    , _imp( new GuiPrivate(app, this) )
+      , SerializableWindow()
+      , _imp( new GuiPrivate(app, this) )
 
 {
 #ifdef __NATRON_WIN32

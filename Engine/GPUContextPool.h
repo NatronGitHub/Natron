@@ -64,16 +64,16 @@ public:
      * This function is blocking and the calling thread will wait until one context is made available
      * in the pool again.
      * If a context is already attached on the thread, this function returns immediately
-     * After returning this function, the context is guarenteed to be made current and 
+     * After returning this function, the context is guarenteed to be made current and
      * OpenGL called can be made.
-     * If during the render, other threads are participating and needs to make the context current, they 
+     * If during the render, other threads are participating and needs to make the context current, they
      * may call makeContextCurrent with the context returned from this function.
      **/
     OSGLContextPtr attachGLContextToRender();
 
     /**
      * @brief Releases the given OpenGL context from a render. After this call the context may be re-used
-     * by other threads waiting in attachContextToThread(). 
+     * by other threads waiting in attachContextToThread().
      * This function MUST be call when a render is finished and the argument passed should be the context returned
      * from the function attachGLContextToRender().
      **/

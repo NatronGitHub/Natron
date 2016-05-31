@@ -115,8 +115,8 @@ NATRON_NAMESPACE_ENTER;
  **/
 class EffectInstance
     : public NamedKnobHolder
-    , public LockManagerI<Image>
-    , public boost::enable_shared_from_this<EffectInstance>
+      , public LockManagerI<Image>
+      , public boost::enable_shared_from_this<EffectInstance>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -160,20 +160,20 @@ public:
 
         RenderRoIArgs()
             : time(0)
-            , scale(1.)
-            , mipMapLevel(0)
-            , view(0)
-            , roi()
-            , preComputedRoD()
-            , components()
-            , inputImagesList()
-            , caller(0)
-            , bitdepth(eImageBitDepthFloat)
-            , byPassCache(false)
-            , calledFromGetImage(false)
-            , mustReturnOpenGLTexture(false)
-            , allowGPURendering(true)
-            , callerRenderTime(0.)
+              , scale(1.)
+              , mipMapLevel(0)
+              , view(0)
+              , roi()
+              , preComputedRoD()
+              , components()
+              , inputImagesList()
+              , caller(0)
+              , bitdepth(eImageBitDepthFloat)
+              , byPassCache(false)
+              , calledFromGetImage(false)
+              , mustReturnOpenGLTexture(false)
+              , allowGPURendering(true)
+              , callerRenderTime(0.)
         {
         }
 
@@ -192,20 +192,20 @@ public:
                        double callerRenderTime,
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
             : time(time_)
-            , scale(scale_)
-            , mipMapLevel(mipMapLevel_)
-            , view(view_)
-            , roi(roi_)
-            , preComputedRoD(preComputedRoD_)
-            , components(components_)
-            , inputImagesList(inputImages)
-            , caller(caller)
-            , bitdepth(bitdepth_)
-            , byPassCache(byPassCache_)
-            , calledFromGetImage(calledFromGetImage)
-            , mustReturnOpenGLTexture(renderOpenGLTexture)
-            , allowGPURendering(true)
-            , callerRenderTime(callerRenderTime)
+              , scale(scale_)
+              , mipMapLevel(mipMapLevel_)
+              , view(view_)
+              , roi(roi_)
+              , preComputedRoD(preComputedRoD_)
+              , components(components_)
+              , inputImagesList(inputImages)
+              , caller(caller)
+              , bitdepth(bitdepth_)
+              , byPassCache(byPassCache_)
+              , calledFromGetImage(calledFromGetImage)
+              , mustReturnOpenGLTexture(renderOpenGLTexture)
+              , allowGPURendering(true)
+              , callerRenderTime(callerRenderTime)
         {
         }
     };
@@ -1359,12 +1359,12 @@ public:
 
         PlaneToRender()
             : fullscaleImage()
-            , downscaleImage()
-            , renderMappedImage()
-            , tmpImage()
-            , cacheSwapImage()
-            , originalCachedImage(0)
-            , isAllocatedOnTheFly(false)
+              , downscaleImage()
+              , renderMappedImage()
+              , tmpImage()
+              , cacheSwapImage()
+              , originalCachedImage(0)
+              , isAllocatedOnTheFly(false)
         {
         }
     };
@@ -1392,12 +1392,12 @@ public:
 
         ImagePlanesToRender()
             : rectsToRender()
-            , planes()
-            , inputPremult()
-            , outputPremult(eImagePremultiplicationPremultiplied)
-            , isBeingRenderedElsewhere(false)
-            , useOpenGL(false)
-            , glContextData()
+              , planes()
+              , inputPremult()
+              , outputPremult(eImagePremultiplicationPremultiplied)
+              , isBeingRenderedElsewhere(false)
+              , useOpenGL(false)
+              , glContextData()
         {
         }
     };
@@ -1852,12 +1852,12 @@ public:
 
         EffectTLSData()
             : beginEndRenderCount(0)
-            , actionRecursionLevel(0)
+              , actionRecursionLevel(0)
 #ifdef DEBUG
-            , canSetValue()
+              , canSetValue()
 #endif
-            , frameArgs()
-            , currentRenderArgs()
+              , frameArgs()
+              , currentRenderArgs()
         {
         }
     };

@@ -168,7 +168,6 @@ public:
     void setCustomInteract(const boost::shared_ptr<OfxParamOverlayInteract> & interactDesc);
     boost::shared_ptr<OfxParamOverlayInteract> getCustomInteract() const;
 
-
 public Q_SLOTS:
 
     void refreshDisplayedTangents();

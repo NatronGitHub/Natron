@@ -101,7 +101,7 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                const std::string & context,
                                                bool interactive)
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
-    , _ofxEffectInstance()
+      , _ofxEffectInstance()
 {
 }
 
@@ -416,10 +416,9 @@ OfxImageEffectInstance::getOfxParamOverlayInteractDescProps()
         { kOfxParamPropInteractPreferedSize, OFX::Host::Property::eInt,     2, false, "10" },
         OFX::Host::Property::propSpecEnd
     };
+
     return interactDescProps;
 }
-
-
 
 // make a parameter instance
 OFX::Host::Param::Instance *
@@ -1240,11 +1239,11 @@ OfxImageEffectDescriptor::paramDefine(const char *paramType,
     if (std::strcmp(paramType, kOfxParamTypeDouble2D) == 0) {
         const std::string& type = ret->getDoubleType();
         // only kOfxParamDoubleTypeXYAbsolute and kOfxParamDoubleTypeNormalisedXYAbsolute are be supported
-        if ( //type == kOfxParamDoubleTypePlain ||
-                                                  ( type == kOfxParamDoubleTypeNormalisedXYAbsolute) ||
-                                                  //type == kOfxParamDoubleTypeNormalisedXY ||
-                                                  //type == kOfxParamDoubleTypeXY ||
-                                                  ( type == kOfxParamDoubleTypeXYAbsolute) ) {
+        if (  //type == kOfxParamDoubleTypePlain ||
+                                                   ( type == kOfxParamDoubleTypeNormalisedXYAbsolute) ||
+                                                   //type == kOfxParamDoubleTypeNormalisedXY ||
+                                                   //type == kOfxParamDoubleTypeXY ||
+                                                   ( type == kOfxParamDoubleTypeXYAbsolute) ) {
             props.setIntProperty(kOfxParamPropHasHostOverlayHandle, 1);
         }
     }

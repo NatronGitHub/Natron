@@ -74,7 +74,7 @@ public:
 
     RamBuffer()
         : data(0)
-        , count(0)
+          , count(0)
     {
     }
 
@@ -158,9 +158,9 @@ public:
 
     Buffer()
         : _path()
-        , _buffer()
-        , _backingFile()
-        , _storageMode(eStorageModeRAM)
+          , _buffer()
+          , _backingFile()
+          , _storageMode(eStorageModeRAM)
     {
     }
 
@@ -171,12 +171,12 @@ public:
 
     void allocateRAM(U64 count)
     {
-        if (_buffer && _buffer->size() > 0) {
+        if ( _buffer && (_buffer->size() > 0) ) {
             return;
         }
         _storageMode = eStorageModeRAM;
         if (!_buffer) {
-            _buffer.reset(new RamBuffer<DataType>());
+            _buffer.reset( new RamBuffer<DataType>() );
         }
         _buffer->resize(count);
     }
@@ -184,7 +184,7 @@ public:
     void allocateMMAP(U64 count,
                       const std::string& path)
     {
-        assert(_path.empty());
+        assert( _path.empty() );
         if (_backingFile) {
             return;
         }
@@ -199,6 +199,7 @@ public:
             _backingFile.reset();
             _path.clear();
             allocateRAM(count);
+
             return;
         }
 
@@ -208,7 +209,6 @@ public:
             //if the backing file has already the good size and we just wanted to re-open the mapping
             _backingFile->resize(count);
         }
-
     }
 
     void allocateGLTexture(const RectI& rectangle,
@@ -229,35 +229,32 @@ public:
             type = Texture::eDataTypeByte;
             internalFormat = GL_RGBA8;
             glType = GL_UNSIGNED_INT_8_8_8_8_REV;
-        } else if (sizeOfData == 2) {
+           } else if (sizeOfData == 2) {
             internalFormat = Texture::eDataTypeUShort;
             internalFormat = GL_RGBA16;
             glType = GL_UNSIGNED_SHORT;
-        } else {*/
+           } else {*/
 
-            // EDIT: for now, only use RGBA fp OpenGL textures, let glReadPixels do the conversion for us
-            internalFormat = GL_RGBA32F_ARB;
-            glType = GL_FLOAT;
+        // EDIT: for now, only use RGBA fp OpenGL textures, let glReadPixels do the conversion for us
+        internalFormat = GL_RGBA32F_ARB;
+        glType = GL_FLOAT;
         //}
 
-        _glTexture.reset(new Texture(target,
-                                     GL_LINEAR,
-                                     GL_NEAREST,
-                                     GL_CLAMP_TO_EDGE,
-                                     type,
-                                     format,
-                                     internalFormat,
-                                     glType));
+        _glTexture.reset( new Texture(target,
+                                      GL_LINEAR,
+                                      GL_NEAREST,
+                                      GL_CLAMP_TO_EDGE,
+                                      type,
+                                      format,
+                                      internalFormat,
+                                      glType) );
 
-        
+
         TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);
 
         // This calls glTexImage2D and allocates a RGBA image
         _glTexture->ensureTextureHasSize(r);
-
-
     }
-
 
     /**
      * @brief Beware this is not really a "swap" as other do not get the infos from this Buffer.
@@ -268,13 +265,13 @@ public:
             if (other._storageMode == eStorageModeRAM) {
                 if (other._buffer) {
                     if (!_buffer) {
-                        _buffer.reset(new RamBuffer<DataType>());
+                        _buffer.reset( new RamBuffer<DataType>() );
                     }
                     _buffer.swap(other._buffer);
                 }
             } else {
                 if (!_buffer) {
-                    _buffer.reset(new RamBuffer<DataType>());
+                    _buffer.reset( new RamBuffer<DataType>() );
                 }
                 _buffer->resize( other._backingFile->size() / sizeof(DataType) );
                 const char* src = other._backingFile->data();
@@ -370,6 +367,7 @@ public:
         } else if (_storageMode == eStorageModeGLTex) {
             return _glTexture ? _glTexture->getSize() : 0;
         }
+
         return 0;
     }
 
@@ -447,7 +445,6 @@ private:
 
     // Used when we store images as OpenGL textures
     boost::scoped_ptr<Texture> _glTexture;
-
     StorageModeEnum _storageMode;
 };
 
@@ -606,11 +603,11 @@ public:
      **/
     CacheEntryHelper()
         : _key()
-        , _params()
-        , _data()
-        , _cache()
-        , _entryLock(QReadWriteLock::Recursive)
-        , _removeBackingFileBeforeDestruction(false)
+          , _params()
+          , _data()
+          , _cache()
+          , _entryLock(QReadWriteLock::Recursive)
+          , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -624,11 +621,11 @@ public:
                      const boost::shared_ptr<ParamsType> & params,
                      const CacheAPI* cache)
         : _key(key)
-        , _params(params)
-        , _data()
-        , _cache(cache)
-        , _entryLock(QReadWriteLock::Recursive)
-        , _removeBackingFileBeforeDestruction(false)
+          , _params(params)
+          , _data()
+          , _cache(cache)
+          , _entryLock(QReadWriteLock::Recursive)
+          , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -664,6 +661,7 @@ public:
     void allocateMemory()
     {
         const CacheEntryStorageInfo& storageInfo = _params->getStorageInfo();
+
         if (storageInfo.mode == eStorageModeNone) {
             return;
         }
@@ -689,9 +687,11 @@ public:
     /**
      * @brief To be called for disk-cached entries when restoring them from a file.
      **/
-    void restoreMetaDataFromFile(std::size_t size, const std::string& filePath)
+    void restoreMetaDataFromFile(std::size_t size,
+                                 const std::string& filePath)
     {
         const CacheEntryStorageInfo& storageInfo = _params->getStorageInfo();
+
         if ( !_cache || (storageInfo.mode != eStorageModeDisk) ) {
             return;
         }
@@ -796,7 +796,7 @@ public:
 
         if (_cache) {
             const CacheEntryStorageInfo& info = _params->getStorageInfo();
-            if ( info.mode == eStorageModeDisk ) {
+            if (info.mode == eStorageModeDisk) {
                 if (dataAllocated) {
                     _cache->notifyEntryStorageChanged( eStorageModeRAM, eStorageModeDisk, time, sz );
                 }
@@ -901,6 +901,7 @@ public:
     U64 getElementsCountFromParams() const
     {
         const CacheEntryStorageInfo& info = _params->getStorageInfo();
+
         return info.dataTypeSize * info.numComponents * info.bounds.area();
     }
 
@@ -972,14 +973,13 @@ private:
      **/
     void allocate()
     {
-
         CacheEntryStorageInfo& info = _params->getStorageInfo();
 
         if (info.mode == eStorageModeDisk) {
             std::string fileName;
 
             typename AbstractCacheEntry<KeyType>::hash_type hashKey = getHashKey();
-            
+
             assert(_cache);
             std::string cachePath = _cache->getCachePath().toStdString();
             cachePath += '/';
@@ -1018,7 +1018,6 @@ private:
         } else if (info.mode == eStorageModeGLTex) {
             _data.allocateGLTexture(info.bounds, info.textureTarget);
         }
-
     }
 
     /** @brief This function is called in allocateMeory() and before the object is exposed

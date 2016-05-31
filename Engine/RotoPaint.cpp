@@ -69,7 +69,7 @@ RotoPaint::getPluginDescription() const
 RotoPaint::RotoPaint(NodePtr node,
                      bool isPaintByDefault)
     : EffectInstance(node)
-    , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
+      , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }

@@ -45,7 +45,7 @@
 NATRON_NAMESPACE_ENTER;
 DocumentationManager::DocumentationManager(QObject *parent)
     : QObject(parent)
-    , server(NULL)
+      , server(NULL)
 {
     // list of translatable group names
     (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE);

@@ -184,7 +184,8 @@ public:
 
 #endif
 
-#endif // 0
+#endif \
+    // 0
 
 
 ///////////////////////// SequenceFileDialog
@@ -193,63 +194,63 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
                                         const std::vector<std::string> & filters, // the user accepted file types
                                         bool isSequenceDialog, // true if this dialog can display sequences
                                         FileDialogModeEnum mode, // if it is an open or save dialog
-                                        const std::string & currentDirectory,// the directory to show first
+                                        const std::string & currentDirectory, // the directory to show first
                                         Gui* gui,
                                         bool allowRelativePaths)
     : QDialog(parent)
-    , _filters()
-    , _view(0)
-    , _itemDelegate( new SequenceItemDelegate(this) )
-    , _model()
-    , _favoriteViewModel( new QFileSystemModel() )
-    , _lookinViewModel( new QFileSystemModel() )
-    , _mainLayout(0)
-    , _requestedDir()
-    , _lookInLabel(0)
-    , _lookInCombobox(0)
-    , _previousButton(0)
-    , _nextButton(0)
-    , _upButton(0)
-    , _createDirButton(0)
-    , _openButton(0)
-    , _cancelButton(0)
-    , _addFavoriteButton(0)
-    , _removeFavoriteButton(0)
-    , _selectionLineEdit(0)
-    , _relativeLabel(0)
-    , _relativeChoice(0)
-    , _sequenceButton(0)
-    , _filterLabel(0)
-    , _filterLineEdit(0)
-    , _filterDropDown(0)
-    , _fileExtensionCombo(0)
-    , _buttonsLayout(0)
-    , _centerLayout(0)
-    , _favoriteLayout(0)
-    , _favoriteButtonsLayout(0)
-    , _selectionLayout(0)
-    , _filterLineLayout(0)
-    , _filterLayout(0)
-    , _buttonsWidget(0)
-    , _favoriteWidget(0)
-    , _favoriteButtonsWidget(0)
-    , _selectionWidget(0)
-    , _filterLineWidget(0)
-    , _filterWidget(0)
-    , _favoriteView(0)
-    , _centerSplitter(0)
-    , _history()
-    , _currentHistoryLocation(-1)
-    , _showHiddenAction(0)
-    , _newFolderAction(0)
-    , _dialogMode(mode)
-    , _centerArea(0)
-    , _centerAreaLayout(0)
-    , _togglePreviewButton(0)
-    , _preview()
-    , _wasAutosetProjectFormatEnabled(false)
-    , _gui(gui)
-    , _relativePathsAllowed(allowRelativePaths)
+      , _filters()
+      , _view(0)
+      , _itemDelegate( new SequenceItemDelegate(this) )
+      , _model()
+      , _favoriteViewModel( new QFileSystemModel() )
+      , _lookinViewModel( new QFileSystemModel() )
+      , _mainLayout(0)
+      , _requestedDir()
+      , _lookInLabel(0)
+      , _lookInCombobox(0)
+      , _previousButton(0)
+      , _nextButton(0)
+      , _upButton(0)
+      , _createDirButton(0)
+      , _openButton(0)
+      , _cancelButton(0)
+      , _addFavoriteButton(0)
+      , _removeFavoriteButton(0)
+      , _selectionLineEdit(0)
+      , _relativeLabel(0)
+      , _relativeChoice(0)
+      , _sequenceButton(0)
+      , _filterLabel(0)
+      , _filterLineEdit(0)
+      , _filterDropDown(0)
+      , _fileExtensionCombo(0)
+      , _buttonsLayout(0)
+      , _centerLayout(0)
+      , _favoriteLayout(0)
+      , _favoriteButtonsLayout(0)
+      , _selectionLayout(0)
+      , _filterLineLayout(0)
+      , _filterLayout(0)
+      , _buttonsWidget(0)
+      , _favoriteWidget(0)
+      , _favoriteButtonsWidget(0)
+      , _selectionWidget(0)
+      , _filterLineWidget(0)
+      , _filterWidget(0)
+      , _favoriteView(0)
+      , _centerSplitter(0)
+      , _history()
+      , _currentHistoryLocation(-1)
+      , _showHiddenAction(0)
+      , _newFolderAction(0)
+      , _dialogMode(mode)
+      , _centerArea(0)
+      , _centerAreaLayout(0)
+      , _togglePreviewButton(0)
+      , _preview()
+      , _wasAutosetProjectFormatEnabled(false)
+      , _gui(gui)
+      , _relativePathsAllowed(allowRelativePaths)
 {
     for (U32 i = 0; i < filters.size(); ++i) {
         _filters.push_back( QString::fromUtf8( filters[i].c_str() ) );
@@ -1171,7 +1172,7 @@ SequenceDialogView::expandColumnsToFullWidth(int w)
 
 SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd)
     : QStyledItemDelegate()
-    , _fd(fd)
+      , _fd(fd)
 {
 }
 
@@ -1422,7 +1423,7 @@ SequenceFileDialog::createDir()
 AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
                                      QWidget* parent)
     : QDialog(parent)
-    , _fd(fd)
+      , _fd(fd)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -2015,8 +2016,8 @@ SequenceFileDialog::applyFilter(QString filter)
 UrlModel::UrlModel(const std::map<std::string, std::string>& vars,
                    QObject *parent)
     : QStandardItemModel(parent)
-    , fileSystemModel(0)
-    , envVars(vars)
+      , fileSystemModel(0)
+      , envVars(vars)
 {
 }
 
@@ -2383,9 +2384,9 @@ FavoriteItemDelegate::paint(QPainter * painter,
 FavoriteView::FavoriteView(Gui* gui,
                            QWidget *parent)
     : QListView(parent)
-    , _gui(gui)
-    , urlModel(0)
-    , _itemDelegate(0)
+      , _gui(gui)
+      , urlModel(0)
+      , _itemDelegate(0)
 {
     // setAttribute(Qt::WA_MacShowFocusRect,0);
 }
@@ -2684,9 +2685,9 @@ FavoriteView::dragEnterEvent(QDragEnterEvent* e)
 FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,
                                        QWidget *parent)
     : QComboBox(parent)
-    , urlModel( new UrlModel(std::map<std::string, std::string>(), this) )
-    , dialog(p)
-    , doResize(false)
+      , urlModel( new UrlModel(std::map<std::string, std::string>(), this) )
+      , dialog(p)
+      , doResize(false)
 {
     urlModel->setFileSystemModel( p->getLookingFileSystemModel() );
     setModel(urlModel);

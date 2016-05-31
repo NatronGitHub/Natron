@@ -80,33 +80,33 @@ struct TrackMarkerPrivate
     TrackMarkerPrivate(TrackMarker* publicInterface,
                        const boost::shared_ptr<TrackerContext>& context)
         : _publicInterface(publicInterface)
-        , context(context)
-        , searchWindowBtmLeft()
-        , searchWindowTopRight()
-        , patternTopLeft()
-        , patternTopRight()
-        , patternBtmRight()
-        , patternBtmLeft()
-        , center()
-        , offset()
-        , error()
+          , context(context)
+          , searchWindowBtmLeft()
+          , searchWindowTopRight()
+          , patternTopLeft()
+          , patternTopRight()
+          , patternBtmRight()
+          , patternBtmLeft()
+          , center()
+          , offset()
+          , error()
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-        , weight()
+          , weight()
 #endif
-        , motionModel()
-        , trackMutex()
-        , userKeyframes()
-        , trackScriptName()
-        , trackLabel()
-        , enabled()
+          , motionModel()
+          , trackMutex()
+          , userKeyframes()
+          , trackScriptName()
+          , trackLabel()
+          , enabled()
     {
     }
 };
 
 TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
     : NamedKnobHolder( context->getNode()->getApp() )
-    , boost::enable_shared_from_this<TrackMarker>()
-    , _imp( new TrackMarkerPrivate(this, context) )
+      , boost::enable_shared_from_this<TrackMarker>()
+      , _imp( new TrackMarkerPrivate(this, context) )
 {
 }
 
@@ -1085,18 +1085,18 @@ TrackMarker::getMarkerImage(int time,
     RenderScale scale;
     scale.x = scale.y = 1.;
     EffectInstance::RenderRoIArgs args( time,
-                                       scale,
-                                       mipmapLevel, //mipmaplevel
-                                       ViewIdx(0),
-                                       false,
-                                       roi,
-                                       RectD(),
-                                       components,
-                                       eImageBitDepthFloat,
-                                       false,
-                                       node->getEffectInstance().get(),
-                                       false /*returnOpenGlTex*/,
-                                       time);
+                                        scale,
+                                        mipmapLevel, //mipmaplevel
+                                        ViewIdx(0),
+                                        false,
+                                        roi,
+                                        RectD(),
+                                        components,
+                                        eImageBitDepthFloat,
+                                        false,
+                                        node->getEffectInstance().get(),
+                                        false /*returnOpenGlTex*/,
+                                        time);
     std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
 

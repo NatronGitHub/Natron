@@ -667,7 +667,7 @@ Image::Image(const ImageKey & key,
              const boost::shared_ptr<ImageParams>& params,
              const CacheAPI* cache)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache)
-    , _useBitmap(true)
+      , _useBitmap(true)
 {
     _bitDepth = params->getBitDepth();
     _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
@@ -682,7 +682,7 @@ Image::Image(const ImageKey & key,
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<ImageParams>& params)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL )
-    , _useBitmap(false)
+      , _useBitmap(false)
 {
     _bitDepth = params->getBitDepth();
     _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
@@ -711,7 +711,7 @@ Image::Image(const ImageComponents& components,
              StorageModeEnum storage,
              U32 textureTarget)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
-    , _useBitmap(useBitmap)
+      , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
                   boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,

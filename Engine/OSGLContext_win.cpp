@@ -28,22 +28,24 @@
 NATRON_NAMESPACE_ENTER;
 
 bool
-OSGLContext_win::extensionSupported(const char* extension, OSGLContext_wgl_data* data)
+OSGLContext_win::extensionSupported(const char* extension,
+                                    OSGLContext_wgl_data* data)
 {
     const char* extensions;
 
     if (data->GetExtensionsStringEXT) {
         extensions = data->GetExtensionsStringEXT();
         if (extensions) {
-            if (OSGLContext::stringInExtensionString(extension, extensions))
+            if ( OSGLContext::stringInExtensionString(extension, extensions) ) {
                 return true;
+            }
         }
     }
 
     if (data->GetExtensionsStringARB) {
         extensions = data->GetExtensionsStringARB(_dc);
         if (extensions) {
-            if (OSGLContext::stringInExtensionString(extension, extensions)) {
+            if ( OSGLContext::stringInExtensionString(extension, extensions) ) {
                 return true;
             }
         }
@@ -66,7 +68,6 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
     wglInfo->GetProcAddress = (WGLGETPROCADDRESS_T)GetProcAddress(wglInfo->instance, "wglGetProcAddress");
     wglInfo->MakeCurrent = (WGLMAKECURRENT_T)GetProcAddress(wglInfo->instance, "wglMakeCurrent");
     wglInfo->ShareLists = (WGLSHARELISTS_T)GetProcAddress(wglInfo->instance, "wglShareLists");
-
 }
 
 bool
@@ -104,6 +105,7 @@ OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
     wglInfo->ARB_context_flush_control = extensionSupported("WGL_ARB_context_flush_control", wglInfo);
 
     wglInfo->extensionsLoaded = GL_TRUE;
+
     return true;
 }
 
@@ -118,58 +120,64 @@ OSGLContext_win::destroyWGLData(OSGLContext_wgl_data* wglInfo)
 
 // Creates the GLFW window and rendering context
 //
-static bool createWindow(HWND* window)
+static bool
+createWindow(HWND* window)
 {
-
     int xpos = CW_USEDEFAULT;
     int ypos = CW_USEDEFAULT;
     const int fullWidth = 32;
     const int fullHeight = 32;
 
-    *window = CreateWindowExW(/*exStyle*/0,
-                              L"OffscreenWindow",
-                              L"",
-                              /*style*/0,
-                              xpos, ypos,
-                              fullWidth, fullHeight,
-                              NULL, // No parent window
-                              NULL, // No window menu
-                              GetModuleHandleW(NULL),
-                              NULL);
+    *window = CreateWindowExW(/*exStyle*/ 0,
+                                          L"OffscreenWindow",
+                                          L"",
+                                          /*style*/ 0,
+                                          xpos, ypos,
+                                          fullWidth, fullHeight,
+                                          NULL, // No parent window
+                                          NULL, // No window menu
+                                          GetModuleHandleW(NULL),
+                                          NULL);
 
 
     if (!*window) {
         return false;
     }
+
     return true;
 }
 
 int
-OSGLContext_win::getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, int pixelFormat, int attrib)
+OSGLContext_win::getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo,
+                                      int pixelFormat,
+                                      int attrib)
 {
     int value = 0;
 
     assert(wglInfo->ARB_pixel_format);
 
-    if (!wglInfo->GetPixelFormatAttribivARB(_dc, pixelFormat, 0, 1, &attrib, &value)) {
+    if ( !wglInfo->GetPixelFormatAttribivARB(_dc, pixelFormat, 0, 1, &attrib, &value) ) {
         std::stringstream ss;
         ss << "WGL: Failed to retrieve pixel format attribute ";
         ss << attrib;
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error( ss.str() );
     }
 
     return value;
 }
 
 #define setWGLattrib(attribName, attribValue) \
-{ \
-    attribs[index++] = attribName; \
-    attribs[index++] = attribValue; \
-    assert((std::size_t) index < sizeof(attribs) / sizeof(attribs[0])); \
-}
+    { \
+        attribs[index++] = attribName; \
+        attribs[index++] = attribValue; \
+        assert( (std::size_t) index < sizeof(attribs) / sizeof(attribs[0]) ); \
+    }
 
 void
-OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext)
+OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
+                                 int major,
+                                 int minor,
+                                 const OSGLContext_win* shareContext)
 {
     _dc = GetDC(_windowHandle);
     if (!_dc) {
@@ -181,7 +189,6 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
     assert(wglInfo);
 
     std::vector<FramebufferConfig> usableConfigs;
-
     int nativeCount = 0, usableCount = 0;
 
     if (wglInfo->ARB_pixel_format) {
@@ -192,16 +199,15 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
 
     usableConfigs.resize(nativeCount);
 
-    for (int i = 0;  i < nativeCount; ++i)
-    {
+    for (int i = 0; i < nativeCount; ++i) {
         const int n = i + 1;
         FramebufferConfig& u = usableConfigs[usableCount];
 
         if (wglInfo->ARB_pixel_format) {
             // Get pixel format attributes through "modern" extension
 
-            if (!getPixelFormatAttrib(wglInfo, n, WGL_SUPPORT_OPENGL_ARB) ||
-                !getPixelFormatAttrib(wglInfo, n, WGL_DRAW_TO_WINDOW_ARB)) {
+            if ( !getPixelFormatAttrib(wglInfo, n, WGL_SUPPORT_OPENGL_ARB) ||
+                 !getPixelFormatAttrib(wglInfo, n, WGL_DRAW_TO_WINDOW_ARB) ) {
                 continue;
             }
 
@@ -228,10 +234,10 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
 
             u.auxBuffers = getPixelFormatAttrib(wglInfo, n, WGL_AUX_BUFFERS_ARB);
 
-            if (getPixelFormatAttrib(wglInfo, n, WGL_STEREO_ARB)) {
+            if ( getPixelFormatAttrib(wglInfo, n, WGL_STEREO_ARB) ) {
                 u.stereo = GL_TRUE;
             }
-            if (getPixelFormatAttrib(wglInfo, n, WGL_DOUBLE_BUFFER_ARB)) {
+            if ( getPixelFormatAttrib(wglInfo, n, WGL_DOUBLE_BUFFER_ARB) ) {
                 u.doublebuffer = GL_TRUE;
             }
 
@@ -240,7 +246,7 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
             }
 
             if (wglInfo->ARB_framebuffer_sRGB ||  wglInfo->EXT_framebuffer_sRGB) {
-                if (getPixelFormatAttrib(wglInfo, n, WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB)) {
+                if ( getPixelFormatAttrib(wglInfo, n, WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB) ) {
                     u.sRGB = GL_TRUE;
                 }
             }
@@ -249,15 +255,15 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
 
             // Get pixel format attributes through legacy PFDs
 
-            if (!DescribePixelFormat(_dc, n, sizeof(PIXELFORMATDESCRIPTOR), &pfd)) {
+            if ( !DescribePixelFormat(_dc, n, sizeof(PIXELFORMATDESCRIPTOR), &pfd) ) {
                 continue;
             }
 
-            if (!(pfd.dwFlags & PFD_DRAW_TO_WINDOW) || !(pfd.dwFlags & PFD_SUPPORT_OPENGL)) {
+            if ( !(pfd.dwFlags & PFD_DRAW_TO_WINDOW) || !(pfd.dwFlags & PFD_SUPPORT_OPENGL) ) {
                 continue;
             }
 
-            if (!(pfd.dwFlags & PFD_GENERIC_ACCELERATED) && (pfd.dwFlags & PFD_GENERIC_FORMAT)) {
+            if ( !(pfd.dwFlags & PFD_GENERIC_ACCELERATED) && (pfd.dwFlags & PFD_GENERIC_FORMAT) ) {
                 continue;
             }
 
@@ -280,10 +286,12 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
 
             u.auxBuffers = pfd.cAuxBuffers;
 
-            if (pfd.dwFlags & PFD_STEREO)
+            if (pfd.dwFlags & PFD_STEREO) {
                 u.stereo = GL_TRUE;
-            if (pfd.dwFlags & PFD_DOUBLEBUFFER)
+            }
+            if (pfd.dwFlags & PFD_DOUBLEBUFFER) {
                 u.doublebuffer = GL_TRUE;
+            }
         }
 
         u.handle = n;
@@ -295,15 +303,14 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
     }
     FramebufferConfig closestConfig = OSGLContext::chooseFBConfig(pixelFormatAttrs, usableConfigs, usableCount);
     int pixelFormat = closestConfig.handle;
-
     PIXELFORMATDESCRIPTOR pfd;
     HGLRC share = shareContext ? shareContext->_handle : 0;
 
-    if (!DescribePixelFormat(_dc, pixelFormat, sizeof(pfd), &pfd)) {
+    if ( !DescribePixelFormat(_dc, pixelFormat, sizeof(pfd), &pfd) ) {
         throw std::runtime_error("WGL: Failed to retrieve PFD for selected pixel format");
     }
 
-    if (!SetPixelFormat(_dc, pixelFormat, &pfd)) {
+    if ( !SetPixelFormat(_dc, pixelFormat, &pfd) ) {
         throw std::runtime_error("WGL: Failed to set selected pixel format");
     }
 
@@ -313,9 +320,7 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
             throw std::runtime_error("WGL: Failed to create OpenGL context");
         }
     } else {
-
         int attribs[40];
-
         int index = 0, mask = 0, flags = 0;
 /*
         if (ctxconfig->client == GLFW_OPENGL_API)
@@ -375,8 +380,7 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
         // NOTE: Only request an explicitly versioned context when necessary, as
         //       explicitly requesting version 1.0 does not always return the
         //       highest version supported by the driver
-        if (major != 1 || minor != 0)
-        {
+        if ( (major != 1) || (minor != 0) ) {
             setWGLattrib(WGL_CONTEXT_MAJOR_VERSION_ARB, major);
             setWGLattrib(WGL_CONTEXT_MINOR_VERSION_ARB, minor);
         }
@@ -388,14 +392,13 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
         if (mask) {
             setWGLattrib(WGL_CONTEXT_PROFILE_MASK_ARB, mask);
         }
-        
+
         setWGLattrib(0, 0);
-        
+
         _handle = wglInfo->CreateContextAttribsARB(_dc, share, attribs);
         if (!_handle) {
             throw std::runtime_error("WGL: Failed to create OpenGL context");
         }
-        
     } // wglInfo->ARB_create_context
 } // createGLContext
 
@@ -405,18 +408,19 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs, int 
 // Analyzes the specified context for possible recreation
 //
 bool
-OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, int major, int minor)
+OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs,
+                                   int major,
+                                   int minor)
 {
     bool required = false;
+    OSGLContext_wgl_data* wglInfo = const_cast<OSGLContext_wgl_data*>( appPTR->getWGLData() );
 
-    OSGLContext_wgl_data* wglInfo = const_cast<OSGLContext_wgl_data*>(appPTR->getWGLData());
     assert(wglInfo);
 
     makeContextCurrent(this);
-    if (!loadWGLExtensions(wglInfo)) {
+    if ( !loadWGLExtensions(wglInfo) ) {
         return false;
     }
-
 
 
 /*
@@ -449,38 +453,38 @@ OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, in
         if (_glfw.wgl.ARB_context_flush_control)
             required = GLFW_TRUE;
     }
-*/
+ */
 
 
-    if (major != 1 || minor != 0) {
+    if ( (major != 1) || (minor != 0) ) {
         if (wglInfo->ARB_create_context) {
             required = true;
         }
     }
 
     /*if (ctxconfig->debug)
-    {
+       {
         if (_glfw.wgl.ARB_create_context)
             required = GLFW_TRUE;
-    }*/
+       }*/
 
     if (pixelFormatAttrs.samples > 0) {
         // MSAA is not a hard constraint, so do nothing if it's not supported
-        if (wglInfo->ARB_multisample && wglInfo->ARB_pixel_format)
+        if (wglInfo->ARB_multisample && wglInfo->ARB_pixel_format) {
             required = true;
+        }
     }
 
     if (pixelFormatAttrs.sRGB) {
         // sRGB is not a hard constraint, so do nothing if it's not supported
-        if ((wglInfo->ARB_framebuffer_sRGB ||
-             wglInfo->EXT_framebuffer_sRGB) &&
-            wglInfo->ARB_pixel_format) {
+        if ( (wglInfo->ARB_framebuffer_sRGB ||
+              wglInfo->EXT_framebuffer_sRGB) &&
+             wglInfo->ARB_pixel_format ) {
             required = true;
         }
     }
 
     return required;
-
 }
 
 // Destroys the window and rendering context
@@ -505,22 +509,22 @@ OSGLContext_win::destroyContext()
     }
 }
 
-
-OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext)
-: _dc(0)
-, _handle(0)
-, _interval(0)
-, _windowHandle(0)
+OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
+                                 int major,
+                                 int minor,
+                                 const OSGLContext_win* shareContext)
+    : _dc(0)
+      , _handle(0)
+      , _interval(0)
+      , _windowHandle(0)
 {
-
-
-    if (!createWindow(&_windowHandle)) {
+    if ( !createWindow(&_windowHandle) ) {
         throw std::runtime_error("WGL: Failed to create window");
     }
 
     createGLContext(pixelFormatAttrs, major, minor, shareContext);
 
-    if (analyzeContextWGL(pixelFormatAttrs, major, minor)) {
+    if ( analyzeContextWGL(pixelFormatAttrs, major, minor) ) {
         // Some window hints require us to re-create the context using WGL
         // extensions retrieved through the current context, as we cannot
         // check for WGL extensions or retrieve WGL entry points before we
@@ -548,26 +552,23 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs, int 
         destroyWindow();
 
         // ...and then create them again, this time with better APIs
-        if (!createWindow(&_windowHandle)) {
+        if ( !createWindow(&_windowHandle) ) {
             throw std::runtime_error("WGL: Failed to create window");
         }
 
         createGLContext(pixelFormatAttrs, major, minor, shareContext);
-
     }
-
 }
-
 
 OSGLContext_win::~OSGLContext_win()
 {
-
 }
 
 bool
 OSGLContext_win::makeContextCurrent(const OSGLContext_win* context)
 {
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+
     assert(wglInfo);
     if (context) {
         return wglInfo->MakeCurrent(context->_dc, context->_handle);
@@ -585,7 +586,6 @@ OSGLContext_win::swapBuffers()
 void
 OSGLContext_win::swapInterval(int interval)
 {
-
     _interval = interval;
 
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();

@@ -788,7 +788,7 @@ RotoContext::getGlobalMotionBlurSettings(const double time,
     if (shutterType_i == 0) { // centered
         *startTime = time - shutterInterval / 2.;
         *endTime = time + shutterInterval / 2.;
-    } else if (shutterType_i == 1) {// start
+    } else if (shutterType_i == 1) { // start
         *startTime = time;
         *endTime = time + shutterInterval;
     } else if (shutterType_i == 2) { // end
@@ -2416,7 +2416,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                     dstPix[x * dstNComps + 0] = shapeColor[2] == 0 ? 0 : (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
                     dstPix[x * dstNComps + 1] = shapeColor[1] == 0 ? 0 : (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
                     dstPix[x * dstNComps + 2] = shapeColor[0] == 0 ? 0 : (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
-                    dstPix[x * dstNComps + 3] = 255;//(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                    dstPix[x * dstNComps + 3] = 255; //(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
                 } else {
                     assert(srcNComps == 1);
                     float pix = (float)srcPix[x];
@@ -2681,7 +2681,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
                                        const RectD& rotoNodeSrcRod)
 {
     NodePtr node = getContext()->getNode();
-    ImagePtr image;// = stroke->getStrokeTimePreview();
+    ImagePtr image; // = stroke->getStrokeTimePreview();
 
     ///compute an enhanced hash different from the one of the merge node of the item in order to differentiate within the cache
     ///the output image of the node and the mask image.

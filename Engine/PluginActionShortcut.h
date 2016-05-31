@@ -41,9 +41,9 @@ struct PluginActionShortcut
 
     PluginActionShortcut()
         : actionID()
-        , actionLabel()
-        , modifiers(eKeyboardModifierNone)
-        , key(Key_Unknown)
+          , actionLabel()
+          , modifiers(eKeyboardModifierNone)
+          , key(Key_Unknown)
     {
     }
 
@@ -52,9 +52,9 @@ struct PluginActionShortcut
                           Key symbol = Key_Unknown,
                           const KeyboardModifiers& mods = KeyboardModifiers(eKeyboardModifierNone) )
         : actionID(id)
-        , actionLabel(label)
-        , modifiers(mods)
-        , key(symbol)
+          , actionLabel(label)
+          , modifiers(mods)
+          , key(symbol)
     {}
 };
 

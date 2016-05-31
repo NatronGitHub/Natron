@@ -55,7 +55,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    NodeViewerContext(const NodeGuiPtr& node, ViewerTab* viewer);
+    NodeViewerContext(const NodeGuiPtr& node,
+                      ViewerTab* viewer);
 
     void createGui();
 

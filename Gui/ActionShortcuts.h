@@ -659,7 +659,7 @@ public:
 
     BoundAction()
         : editable(true)
-        , ignoreMask(Qt::NoModifier)
+          , ignoreMask(Qt::NoModifier)
     {
     }
 
@@ -772,8 +772,8 @@ public:
 
     KeyBoundAction()
         : BoundAction()
-        , currentShortcut()
-        , defaultShortcut()
+          , currentShortcut()
+          , defaultShortcut()
     {
     }
 
@@ -800,7 +800,7 @@ public:
 
     MouseAction()
         : BoundAction()
-        , button(Qt::NoButton)
+          , button(Qt::NoButton)
     {
     }
 

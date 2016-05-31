@@ -97,8 +97,8 @@ private:
 TrackerTableItemDelegate::TrackerTableItemDelegate(TableView* view,
                                                    TrackerPanel* panel)
     : QStyledItemDelegate(view)
-    , _view(view)
-    , _panel(panel)
+      , _view(view)
+      , _panel(panel)
 {
 }
 
@@ -224,7 +224,8 @@ struct TrackKeys
     std::set<double> centerKeys;
     bool visible;
 
-    TrackKeys() : userKeys(), centerKeys(), visible(false) {}
+    TrackKeys()
+        : userKeys(), centerKeys(), visible(false) {}
 };
 
 typedef std::map<boost::weak_ptr<TrackMarker>, TrackKeys  > TrackKeysMap;
@@ -266,32 +267,32 @@ public:
     TrackerPanelPrivate(TrackerPanel* publicI,
                         const NodeGuiPtr& n)
         : _publicInterface(publicI)
-        , node(n)
-        , context()
-        , items()
-        , mainLayout(0)
-        , view(0)
-        , model(0)
-        , buttonsContainer(0)
-        , buttonsLayout(0)
-        , addButton(0)
-        , removeButton(0)
-        , selectAllButton(0)
-        , resetTracksButton(0)
-        , averageTracksButton(0)
-        , selectionBlocked(0)
-        , selectionRecursion(0)
-        , keys()
-        , trackLabel(0)
-        , currentKeyframe(0)
-        , ofLabel(0)
-        , totalKeyframes(0)
-        , prevKeyframe(0)
-        , nextKeyframe(0)
-        , addKeyframe(0)
-        , removeKeyframe(0)
-        , clearAnimation(0)
-        , itemDataChangedRecursion(0)
+          , node(n)
+          , context()
+          , items()
+          , mainLayout(0)
+          , view(0)
+          , model(0)
+          , buttonsContainer(0)
+          , buttonsLayout(0)
+          , addButton(0)
+          , removeButton(0)
+          , selectAllButton(0)
+          , resetTracksButton(0)
+          , averageTracksButton(0)
+          , selectionBlocked(0)
+          , selectionRecursion(0)
+          , keys()
+          , trackLabel(0)
+          , currentKeyframe(0)
+          , ofLabel(0)
+          , totalKeyframes(0)
+          , prevKeyframe(0)
+          , nextKeyframe(0)
+          , addKeyframe(0)
+          , removeKeyframe(0)
+          , clearAnimation(0)
+          , itemDataChangedRecursion(0)
     {
         context = n->getNode()->getTrackerContext();
         assert( context.lock() );
@@ -317,7 +318,7 @@ public:
 TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
                            NodeSettingsPanel* parent)
     : QWidget(parent)
-    , _imp( new TrackerPanelPrivate(this, n) )
+      , _imp( new TrackerPanelPrivate(this, n) )
 {
     QObject::connect( parent, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
     boost::shared_ptr<TrackerContext> context = getContext();

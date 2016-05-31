@@ -56,7 +56,7 @@ KnobFile::KnobFile(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
     : AnimatingKnobStringHelper(holder, description, dimension, declaredByPlugin)
-    , _isInputImage(false)
+      , _isInputImage(false)
 {
 }
 
@@ -122,8 +122,8 @@ KnobOutputFile::KnobOutputFile(KnobHolder* holder,
                                int dimension,
                                bool declaredByPlugin)
     : Knob<std::string>(holder, description, dimension, declaredByPlugin)
-    , _isOutputImage(false)
-    , _sequenceDialog(true)
+      , _isOutputImage(false)
+      , _sequenceDialog(true)
 {
 }
 
@@ -169,8 +169,8 @@ KnobPath::KnobPath(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
     : KnobTable(holder, description, dimension, declaredByPlugin)
-    , _isMultiPath(false)
-    , _isStringList(false)
+      , _isMultiPath(false)
+      , _isStringList(false)
 {
 }
 

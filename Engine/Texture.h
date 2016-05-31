@@ -57,7 +57,6 @@ public:
             int format,
             int internalFormat,
             int glType);
-
     static void getRecommendedTexParametersForRGBAByteTexture(int* format, int* internalFormat, int* glType);
 
     U32 getTexID() const
@@ -69,7 +68,7 @@ public:
     {
         return _target;
     }
-    
+
     int w() const
     {
         return _textureRect.width();
@@ -91,16 +90,20 @@ public:
     std::size_t getDataSizeOf() const
     {
         switch (_type) {
-            case eDataTypeByte:
-                return sizeof(unsigned char);
-            case eDataTypeFloat:
-                return sizeof(float);
-            case eDataTypeHalf:
-                // Fixme when we support half
-                return sizeof(float);
-            case eDataTypeNone:
-            default:
-                return 0;
+        case eDataTypeByte:
+
+            return sizeof(unsigned char);
+        case eDataTypeFloat:
+
+            return sizeof(float);
+        case eDataTypeHalf:
+
+            // Fixme when we support half
+            return sizeof(float);
+        case eDataTypeNone:
+        default:
+
+            return 0;
         }
     }
 
@@ -128,7 +131,7 @@ public:
      * @param roi if updateOnlyRoi is true, this will be the portion of the texture to update with glTextSubImage2D
      * @param updateOnlyRoI if updateOnlyRoi is true, only the portion defined by roi will be updated on the texture
      **/
-    void fillOrAllocateTexture(const TextureRect & texRect,const RectI& roi, bool updateOnlyRoi, const unsigned char* originalRAMBuffer = 0);
+    void fillOrAllocateTexture(const TextureRect & texRect, const RectI& roi, bool updateOnlyRoi, const unsigned char* originalRAMBuffer = 0);
 
     /**
      * @brief The bounds of the texture
@@ -160,7 +163,7 @@ private:
     U32 _texID;
     U32 _target;
     int _minFilter, _magFilter, _clamp;
-    int _internalFormat,_format,_glType;
+    int _internalFormat, _format, _glType;
     TextureRect _textureRect;
     DataTypeEnum _type;
 };

@@ -82,27 +82,27 @@ createDuplicateKnob( const std::string& knobName,
 TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
                                              const boost::shared_ptr<Node> &node)
     : _publicInterface(publicInterface)
-    , node(node)
-    , perTrackKnobs()
-    , enableTrackRed()
-    , enableTrackGreen()
-    , enableTrackBlue()
-    , maxError()
-    , maxIterations()
-    , bruteForcePreTrack()
-    , useNormalizedIntensities()
-    , preBlurSigma()
-    , exportDataSep()
-    , exportButton()
-    , referenceFrame()
-    , trackerContextMutex()
-    , markers()
-    , selectedMarkers()
-    , markersToSlave()
-    , markersToUnslave()
-    , beginSelectionCounter(0)
-    , selectionRecursion(0)
-    , scheduler(_publicInterface, node)
+      , node(node)
+      , perTrackKnobs()
+      , enableTrackRed()
+      , enableTrackGreen()
+      , enableTrackBlue()
+      , maxError()
+      , maxIterations()
+      , bruteForcePreTrack()
+      , useNormalizedIntensities()
+      , preBlurSigma()
+      , exportDataSep()
+      , exportButton()
+      , referenceFrame()
+      , trackerContextMutex()
+      , markers()
+      , selectedMarkers()
+      , markersToSlave()
+      , markersToUnslave()
+      , beginSelectionCounter(0)
+      , selectionRecursion(0)
+      , scheduler(_publicInterface, node)
 {
     EffectInstPtr effect = node->getEffectInstance();
     //needs to be blocking, otherwise the progressUpdate() call could be made before startProgress
@@ -1077,10 +1077,12 @@ struct PreviouslyComputedTrackFrame
     int frame;
     bool isUserKey;
 
-    PreviouslyComputedTrackFrame() : frame(0), isUserKey(false) {}
+    PreviouslyComputedTrackFrame()
+        : frame(0), isUserKey(false) {}
 
     PreviouslyComputedTrackFrame(int f,
-                                 bool b) : frame(f), isUserKey(b) {}
+                                 bool b)
+        : frame(f), isUserKey(b) {}
 };
 
 struct PreviouslyComputedTrackFrameCompareLess

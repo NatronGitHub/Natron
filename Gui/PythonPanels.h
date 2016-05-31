@@ -58,7 +58,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    DialogParamHolder(const QString& uniqueID, const AppInstPtr& app, UserParamHolder* widget);
+    DialogParamHolder(const QString& uniqueID,
+                      const AppInstPtr& app,
+                      UserParamHolder* widget);
 
     virtual ~DialogParamHolder();
 
@@ -87,7 +89,8 @@ class PyModalDialog
 
 public:
 
-    PyModalDialog( Gui* gui, StandardButtons defaultButtons = StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
+    PyModalDialog( Gui* gui,
+                   StandardButtons defaultButtons = StandardButtons(eStandardButtonOk | eStandardButtonCancel) );
 
     virtual ~PyModalDialog();
 
@@ -117,7 +120,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    PyPanel(const QString& scriptName, const QString& label, bool useUserParameters, GuiApp* app);
+    PyPanel(const QString& scriptName,
+            const QString& label,
+            bool useUserParameters,
+            GuiApp* app);
 
     virtual ~PyPanel();
 

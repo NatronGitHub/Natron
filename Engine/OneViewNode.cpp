@@ -44,7 +44,7 @@ struct OneViewNodePrivate
 
 OneViewNode::OneViewNode(NodePtr n)
     : EffectInstance(n)
-    , _imp( new OneViewNodePrivate() )
+      , _imp( new OneViewNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (n) {

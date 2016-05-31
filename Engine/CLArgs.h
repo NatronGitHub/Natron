@@ -70,9 +70,12 @@ public:
 
     CLArgs();
 
-    CLArgs(int& argc, char* argv[], bool forceBackground);
+    CLArgs(int& argc,
+           char* argv[],
+           bool forceBackground);
 
-    CLArgs(const QStringList& arguments, bool forceBackground);
+    CLArgs(const QStringList& arguments,
+           bool forceBackground);
 
     CLArgs(const CLArgs& other); // GCC 4.2 requires the copy constructor
 

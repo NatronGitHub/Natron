@@ -585,7 +585,7 @@ private:
         PerPluginKnobs(const boost::shared_ptr<KnobBool>& enabled,
                        const boost::shared_ptr<KnobChoice>& renderScaleSupport)
             : enabled(enabled)
-            , renderScaleSupport(renderScaleSupport)
+              , renderScaleSupport(renderScaleSupport)
         {
         }
 

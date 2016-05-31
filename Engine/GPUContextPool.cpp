@@ -35,7 +35,6 @@ NATRON_NAMESPACE_ENTER;
 struct GPUContextPoolPrivate
 {
     mutable QMutex contextPoolMutex;
-
     QWaitCondition glContextPoolEmpty;
 
     // protected by contextPoolMutex
@@ -46,33 +45,32 @@ struct GPUContextPoolPrivate
 
     // protected by contextPoolMutex
     int maxContexts;
-    
+
     GPUContextPoolPrivate(int maxContexts)
-    : contextPoolMutex()
-    , glContextPoolEmpty()
-    , glContextPool()
-    , attachedGLContexts()
-    , glShareContext()
-    , maxContexts(maxContexts)
+        : contextPoolMutex()
+          , glContextPoolEmpty()
+          , glContextPool()
+          , attachedGLContexts()
+          , glShareContext()
+          , maxContexts(maxContexts)
     {
-        
     }
 };
 
 GPUContextPool::GPUContextPool(int maxContextsCount)
-: _imp(new GPUContextPoolPrivate(maxContextsCount))
+    : _imp( new GPUContextPoolPrivate(maxContextsCount) )
 {
 }
 
 GPUContextPool::~GPUContextPool()
 {
-
 }
 
 void
 GPUContextPool::setMaxContextCount(int maxContextCount)
 {
     QMutexLocker k(&_imp->contextPoolMutex);
+
     _imp->maxContexts = maxContextCount;
 }
 
@@ -80,6 +78,7 @@ int
 GPUContextPool::getNumCreatedGLContext() const
 {
     QMutexLocker k(&_imp->contextPoolMutex);
+
     return (int)_imp->glContextPool.size();
 }
 
@@ -87,6 +86,7 @@ int
 GPUContextPool::getNumAttachedGLContext() const
 {
     QMutexLocker k(&_imp->contextPoolMutex);
+
     return (int)_imp->attachedGLContexts.size();
 }
 
@@ -102,17 +102,14 @@ GPUContextPool::attachGLContextToRender()
 
     OSGLContextPtr shareContext = _imp->glShareContext.lock();
     OSGLContextPtr newContext;
-    if (_imp->glContextPool.empty()) {
-        assert((int)_imp->attachedGLContexts.size() < _imp->maxContexts);
+    if ( _imp->glContextPool.empty() ) {
+        assert( (int)_imp->attachedGLContexts.size() < _imp->maxContexts );
         //  Create a new one
-        newContext.reset(new OSGLContext(FramebufferConfig(), shareContext.get()));
-
+        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get() ) );
     } else {
-
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
         newContext = *it;
         _imp->glContextPool.erase(it);
-
     }
 
     // If this is the first context, set it as the sharing context
@@ -122,6 +119,7 @@ GPUContextPool::attachGLContextToRender()
 
     newContext->makeContextCurrent();
     _imp->attachedGLContexts.insert(newContext);
+
     return newContext;
 }
 
@@ -132,8 +130,9 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
 
     // The thread has a context on its TLS so it must be found in the attached contexts set
     std::set<OSGLContextPtr>::iterator foundAttached = _imp->attachedGLContexts.find(context);
-    assert(foundAttached != _imp->attachedGLContexts.end());
-    if (foundAttached != _imp->attachedGLContexts.end()) {
+
+    assert( foundAttached != _imp->attachedGLContexts.end() );
+    if ( foundAttached != _imp->attachedGLContexts.end() ) {
         _imp->attachedGLContexts.erase(foundAttached);
 
         // Re-insert back into the contextPool so it can be re-used
@@ -143,9 +142,6 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
         // No need to wake all threads because each thread releasing a context will wake up one thread.
         _imp->glContextPoolEmpty.wakeOne();
     }
-
 }
-
-
 
 NATRON_NAMESPACE_EXIT;

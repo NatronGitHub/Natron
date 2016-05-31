@@ -77,7 +77,7 @@ public:
 
     GlobalOFXTLS()
         : lastEffectCallingMainEntry(0)
-        , threadIndexes()
+          , threadIndexes()
     {
     }
 };
@@ -522,7 +522,6 @@ public:
                                                                     ContextEnum* ctx);
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
-
     GPUContextPool* getGPUContextPool() const;
 
 
@@ -693,7 +692,8 @@ struct PyCallback
     std::string originalExpression; //< the one input by the user
     PyObject* code;
 
-    PyCallback() : expression(), originalExpression(),  code(0) {}
+    PyCallback()
+        : expression(), originalExpression(),  code(0) {}
 };
 
 // put global functions in a namespace, see https://google.github.io/styleguide/cppguide.html#Nonmember,_Static_Member,_and_Global_Functions

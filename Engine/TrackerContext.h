@@ -67,8 +67,8 @@ public:
 
     TrackerParamsProvider()
         : _trackParamsMutex()
-        , _centerTrack(false)
-        , _updateViewer(false)
+          , _centerTrack(false)
+          , _updateViewer(false)
     {
     }
 
@@ -476,7 +476,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    TrackScheduler(TrackerParamsProvider* paramsProvider, const NodeWPtr& node);
+    TrackScheduler(TrackerParamsProvider* paramsProvider,
+                   const NodeWPtr& node);
 
     virtual ~TrackScheduler();
 

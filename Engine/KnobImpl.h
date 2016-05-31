@@ -105,20 +105,20 @@ Knob<T>::Knob(KnobHolder*  holder,
               int dimension,
               bool declaredByPlugin )
     : KnobHelper(holder, description, dimension, declaredByPlugin)
-    , _valueMutex(QMutex::Recursive)
-    , _values(dimension)
-    , _guiValues(dimension)
-    , _defaultValues(dimension)
-    , _exprRes(dimension)
-    , _minMaxMutex(QReadWriteLock::Recursive)
-    , _minimums(dimension)
-    , _maximums(dimension)
-    , _displayMins(dimension)
-    , _displayMaxs(dimension)
-    , _setValuesQueueMutex()
-    , _setValuesQueue()
-    , _setValueRecursionLevelMutex(QMutex::Recursive)
-    , _setValueRecursionLevel(0)
+      , _valueMutex(QMutex::Recursive)
+      , _values(dimension)
+      , _guiValues(dimension)
+      , _defaultValues(dimension)
+      , _exprRes(dimension)
+      , _minMaxMutex(QReadWriteLock::Recursive)
+      , _minimums(dimension)
+      , _maximums(dimension)
+      , _displayMins(dimension)
+      , _displayMaxs(dimension)
+      , _setValuesQueueMutex()
+      , _setValuesQueue()
+      , _setValueRecursionLevelMutex(QMutex::Recursive)
+      , _setValueRecursionLevel(0)
 {
     initMinMax();
 }
@@ -884,7 +884,7 @@ Knob<T>::getRawCurveValueAt(double time,
 
     if ( curve && (curve->getKeyFramesCount() > 0) ) {
         //getValueAt already clamps to the range for us
-        return curve->getValueAt(time, false);//< no clamping to range!
+        return curve->getValueAt(time, false); //< no clamping to range!
     }
     QMutexLocker l(&_valueMutex);
     T ret = _values[dimension];

@@ -82,7 +82,7 @@ NodeGraph::checkForHints(bool shiftdown,
         return;
     }
 
-    QRectF selectedNodeBbox = selectedNode->boundingRectWithEdges();//selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
+    QRectF selectedNodeBbox = selectedNode->boundingRectWithEdges(); //selectedNode->mapToParent( selectedNode->boundingRect() ).boundingRect();
     double tolerance = 10;
     selectedNodeBbox.adjust(-tolerance, -tolerance, tolerance, tolerance);
 

@@ -40,24 +40,24 @@ NATRON_NAMESPACE_ENTER;
 ClickableLabel::ClickableLabel(const QString &text,
                                QWidget *parent)
     : Label(text, parent)
-    , _toggled(false)
-    , _bold(false)
-    , _dirty(false)
-    , _readOnly(false)
-    , _animation(0)
-    , _sunkenStyle(false)
+      , _toggled(false)
+      , _bold(false)
+      , _dirty(false)
+      , _readOnly(false)
+      , _animation(0)
+      , _sunkenStyle(false)
 {
 }
 
 ClickableLabel::ClickableLabel(const QPixmap &icon,
                                QWidget *parent)
     : Label(parent)
-    , _toggled(false)
-    , _bold(false)
-    , _dirty(false)
-    , _readOnly(false)
-    , _animation(0)
-    , _sunkenStyle(false)
+      , _toggled(false)
+      , _bold(false)
+      , _dirty(false)
+      , _readOnly(false)
+      , _animation(0)
+      , _sunkenStyle(false)
 {
     setPixmap(icon);
 }
@@ -158,7 +158,7 @@ KnobClickableLabel::KnobClickableLabel(const QPixmap& icon,
                                        const KnobGuiPtr& knob,
                                        QWidget* parent )
     : ClickableLabel(icon, parent)
-    , _dnd( new KnobWidgetDnD(knob, -1, this) )
+      , _dnd( new KnobWidgetDnD(knob, -1, this) )
 {
     knob->enableRightClickMenu(this, -1);
 }
@@ -167,7 +167,7 @@ KnobClickableLabel::KnobClickableLabel(const QString& text,
                                        const KnobGuiPtr& knob,
                                        QWidget* parent)
     : ClickableLabel(text, parent)
-    , _dnd( new KnobWidgetDnD(knob, -1, this) )
+      , _dnd( new KnobWidgetDnD(knob, -1, this) )
 {
     knob->enableRightClickMenu(this, -1);
 }

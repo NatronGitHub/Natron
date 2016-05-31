@@ -89,13 +89,13 @@ public:
 
     DeleterThread(CacheAPI* cache)
         : QThread()
-        , _entriesQueueMutex()
-        , _entriesQueue()
-        , _entriesQueueNotEmptyCond()
-        , cache(cache)
-        , mustQuitMutex()
-        , mustQuitCond()
-        , mustQuit(false)
+          , _entriesQueueMutex()
+          , _entriesQueue()
+          , _entriesQueueNotEmptyCond()
+          , cache(cache)
+          , mustQuitMutex()
+          , mustQuitCond()
+          , mustQuit(false)
     {
         setObjectName( QString::fromUtf8("CacheDeleter") );
     }
@@ -216,13 +216,13 @@ public:
 
     CacheCleanerThread(CacheAPI* cache)
         : QThread()
-        , _requestQueueMutex()
-        , _requestsQueues()
-        , _requestsQueueNotEmptyCond()
-        , cache(cache)
-        , mustQuitMutex()
-        , mustQuitCond()
-        , mustQuit(false)
+          , _requestQueueMutex()
+          , _requestsQueues()
+          , _requestsQueueNotEmptyCond()
+          , cache(cache)
+          , mustQuitMutex()
+          , mustQuitCond()
+          , mustQuit(false)
     {
         setObjectName( QString::fromUtf8("CacheCleaner") );
     }
@@ -500,23 +500,23 @@ public:
           ,
           double maximumInMemoryPercentage)      //how much should live in RAM
         : CacheAPI()
-        , _maximumInMemorySize(maximumCacheSize * maximumInMemoryPercentage)
-        , _maximumCacheSize(maximumCacheSize)
-        , _memoryCacheSize(0)
-        , _diskCacheSize(0)
-        , _sizeLock()
-        , _lock()
-        , _getLock()
-        , _memoryCache()
-        , _diskCache()
-        , _cacheName(cacheName)
-        , _version(version)
-        , _signalEmitter(new CacheSignalEmitter)
-        , _maxPhysicalRAM( getSystemTotalRAM() )
-        , _tearingDown(false)
-        , _deleterThread(this)
-        , _memoryFullCondition()
-        , _cleanerThread(this)
+          , _maximumInMemorySize(maximumCacheSize * maximumInMemoryPercentage)
+          , _maximumCacheSize(maximumCacheSize)
+          , _memoryCacheSize(0)
+          , _diskCacheSize(0)
+          , _sizeLock()
+          , _lock()
+          , _getLock()
+          , _memoryCache()
+          , _diskCache()
+          , _cacheName(cacheName)
+          , _version(version)
+          , _signalEmitter(new CacheSignalEmitter)
+          , _maxPhysicalRAM( getSystemTotalRAM() )
+          , _tearingDown(false)
+          , _deleterThread(this)
+          , _memoryFullCondition()
+          , _cleanerThread(this)
     {
     }
 

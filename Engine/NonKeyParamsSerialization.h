@@ -57,7 +57,6 @@ NonKeyParams::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("Bounds", _storageInfo.bounds);
     ar & ::boost::serialization::make_nvp("StorageMode", _storageInfo.mode);
     ar & ::boost::serialization::make_nvp("TexTarget", _storageInfo.textureTarget);
-
 }
 
 NATRON_NAMESPACE_EXIT;

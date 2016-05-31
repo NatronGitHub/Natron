@@ -134,9 +134,13 @@ class KnobClickableLabel
 {
 public:
 
-    KnobClickableLabel(const QPixmap& icon, const KnobGuiPtr& knob, QWidget* parent = 0);
+    KnobClickableLabel(const QPixmap& icon,
+                       const KnobGuiPtr& knob,
+                       QWidget* parent = 0);
 
-    KnobClickableLabel(const QString& text, const KnobGuiPtr& knob, QWidget* parent = 0);
+    KnobClickableLabel(const QString& text,
+                       const KnobGuiPtr& knob,
+                       QWidget* parent = 0);
 
     virtual ~KnobClickableLabel();
 

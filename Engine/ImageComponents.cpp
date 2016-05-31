@@ -104,8 +104,8 @@ ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::st
 
 ImageComponents::ImageComponents()
     : _layerName("none")
-    , _componentNames()
-    , _globalComponentsName("none")
+      , _componentNames()
+      , _globalComponentsName("none")
 {
 }
 
@@ -113,8 +113,8 @@ ImageComponents::ImageComponents(const std::string& layerName,
                                  const std::string& globalCompName,
                                  const std::vector<std::string>& componentsName)
     : _layerName(layerName)
-    , _componentNames(componentsName)
-    , _globalComponentsName(globalCompName)
+      , _componentNames(componentsName)
+      , _globalComponentsName(globalCompName)
 {
     if ( _globalComponentsName.empty() ) {
         //Heuristic to give an appropriate name to components
@@ -129,8 +129,8 @@ ImageComponents::ImageComponents(const std::string& layerName,
                                  const char** componentsName,
                                  int count)
     : _layerName(layerName)
-    , _componentNames()
-    , _globalComponentsName(globalCompName)
+      , _componentNames()
+      , _globalComponentsName(globalCompName)
 {
     _componentNames.resize(count);
     for (int i = 0; i < count; ++i) {
@@ -144,9 +144,9 @@ ImageComponents::ImageComponents(const std::string& layerName,
                                  const char** componentsName,
                                  int count)
     : _layerName(layerName)
-    , _pairedLayer(pairedLayer)
-    , _componentNames()
-    , _globalComponentsName(globalCompName)
+      , _pairedLayer(pairedLayer)
+      , _componentNames()
+      , _globalComponentsName(globalCompName)
 {
     _componentNames.resize(count);
     for (int i = 0; i < count; ++i) {

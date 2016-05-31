@@ -149,7 +149,7 @@ ViewerInstance::BuildEffect(NodePtr n)
 
 ViewerInstance::ViewerInstance(NodePtr node)
     : OutputEffectInstance(node)
-    , _imp( new ViewerInstancePrivate(this) )
+      , _imp( new ViewerInstancePrivate(this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -368,9 +368,9 @@ public:
                                    bool draftMode,
                                    const boost::shared_ptr<RenderStats>& stats)
         : ParallelRenderArgsSetter(time, view, isRenderUserInteraction, isSequential, abortInfo, treeRoot, textureIndex, timeline, rotoPaintNode, isAnalysis, draftMode, stats)
-        , rotoNode(rotoPaintNode)
-        , viewerNode(treeRoot)
-        , viewerInputNode()
+          , rotoNode(rotoPaintNode)
+          , viewerNode(treeRoot)
+          , viewerInputNode()
     {
         ///There can be a case where the viewer input tree does not belong to the project, for example
         ///for the File Dialog preview.
@@ -1684,7 +1684,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                      inArgs.params->alphaLayer.getLayerName() + inArgs.params->alphaChannelName,
                                      inArgs.params->depth == eImageBitDepthFloat,
                                      inArgs.draftModeEnabled);
-                        boost::shared_ptr<FrameParams> cachedFrameParams(new FrameParams( bounds, key.getBitDepth(), it->rect, ImagePtr() ));
+                        boost::shared_ptr<FrameParams> cachedFrameParams( new FrameParams( bounds, key.getBitDepth(), it->rect, ImagePtr() ) );
                         bool cached = AppManager::getTextureFromCacheOrCreate(key, cachedFrameParams, &it->cachedData);
                         if (!it->cachedData) {
                             std::size_t size = cachedFrameParams->getStorageInfo().numComponents * cachedFrameParams->getStorageInfo().dataTypeSize * cachedFrameParams->getStorageInfo().bounds.area();

@@ -61,7 +61,7 @@ public:
     RightClickableWidget(DockablePanel* panel,
                          QWidget* parent)
         : QWidget(parent)
-        , panel(panel)
+          , panel(panel)
     {
         setObjectName( QString::fromUtf8("SettingsPanel") );
     }

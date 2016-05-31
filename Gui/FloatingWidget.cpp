@@ -43,11 +43,11 @@ NATRON_NAMESPACE_ENTER;
 FloatingWidget::FloatingWidget(Gui* gui,
                                QWidget* parent)
     : QWidget(parent, Qt::Tool) // use Qt::Tool instead of Qt::Window to get a minimal titlebar
-    , SerializableWindow()
-    , _embeddedWidget(0)
-    , _scrollArea(0)
-    , _layout(0)
-    , _gui(gui)
+      , SerializableWindow()
+      , _embeddedWidget(0)
+      , _scrollArea(0)
+      , _layout(0)
+      , _gui(gui)
 {
     setAttribute(Qt::WA_DeleteOnClose, true);
     if (gui) {

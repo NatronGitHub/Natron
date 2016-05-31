@@ -517,7 +517,7 @@ OfxParamToKnob::onMinMaxChanged(double min,
 OfxPushButtonInstance::OfxPushButtonInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::PushbuttonInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::PushbuttonInstance( descriptor, node->effectInstance() )
 {
     _knob = checkIfKnobExistsWithNameOrCreate<KnobButton>(descriptor.getName(), this, 1);
 }
@@ -564,7 +564,7 @@ OfxPushButtonInstance::getKnob() const
 OfxIntegerInstance::OfxIntegerInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                        OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::IntegerInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::IntegerInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     boost::shared_ptr<KnobInt> k = checkIfKnobExistsWithNameOrCreate<KnobInt>(descriptor.getName(), this, 1);
@@ -738,7 +738,7 @@ OfxIntegerInstance::setRange()
 OfxDoubleInstance::OfxDoubleInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::DoubleInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::DoubleInstance( descriptor, node->effectInstance() )
 
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -978,7 +978,7 @@ OfxDoubleInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxBooleanInstance::OfxBooleanInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                        OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::BooleanInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::BooleanInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     boost::shared_ptr<KnobBool> b = checkIfKnobExistsWithNameOrCreate<KnobBool>(descriptor.getName(), this, 1);
@@ -1116,7 +1116,7 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::ChoiceInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::ChoiceInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     boost::shared_ptr<KnobChoice> choice = checkIfKnobExistsWithNameOrCreate<KnobChoice>(descriptor.getName(), this, 1);
@@ -1347,7 +1347,7 @@ OfxChoiceInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxRGBAInstance::OfxRGBAInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                  OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::RGBAInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::RGBAInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     boost::shared_ptr<KnobColor> color = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 4);
@@ -1581,7 +1581,7 @@ OfxRGBAInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxRGBInstance::OfxRGBInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::RGBInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::RGBInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     boost::shared_ptr<KnobColor> color  = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 3);
@@ -1803,7 +1803,7 @@ OfxRGBInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxDouble2DInstance::OfxDouble2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                          OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::Double2DInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::Double2DInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     const std::string & coordSystem = getDefaultCoordinateSystem();
@@ -2121,7 +2121,7 @@ OfxDouble2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxInteger2DInstance::OfxInteger2DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                            OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::Integer2DInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::Integer2DInstance( descriptor, node->effectInstance() )
 
 {
     const OFX::Host::Property::Set &properties = getProperties();
@@ -2352,7 +2352,7 @@ OfxInteger2DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxDouble3DInstance::OfxDouble3DInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                          OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::Double3DInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::Double3DInstance( descriptor, node->effectInstance() )
 {
     const int ofxDims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
@@ -2646,7 +2646,7 @@ OfxDouble3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxInteger3DInstance::OfxInteger3DInstance(const boost::shared_ptr<OfxEffectInstance>&node,
                                            OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::Integer3DInstance( descriptor, node->effectInstance() )
+      , OFX::Host::Param::Integer3DInstance( descriptor, node->effectInstance() )
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
@@ -2854,8 +2854,8 @@ OfxInteger3DInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxGroupInstance::OfxGroupInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                    OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::GroupInstance( descriptor, node->effectInstance() )
-    , _groupKnob()
+      , OFX::Host::Param::GroupInstance( descriptor, node->effectInstance() )
+      , _groupKnob()
 {
     const OFX::Host::Property::Set &properties = getProperties();
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
@@ -2912,8 +2912,8 @@ OfxGroupInstance::setLabel()
 OfxPageInstance::OfxPageInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                  OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::PageInstance( descriptor, node->effectInstance() )
-    , _pageKnob()
+      , OFX::Host::Param::PageInstance( descriptor, node->effectInstance() )
+      , _pageKnob()
 {
     EffectInstPtr holder = getKnobHolder();
 
@@ -2963,10 +2963,10 @@ struct OfxStringInstancePrivate
 
     OfxStringInstancePrivate()
         : fileKnob()
-        , outputFileKnob()
-        , stringKnob()
-        , pathKnob()
-        , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
+          , outputFileKnob()
+          , stringKnob()
+          , pathKnob()
+          , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
     {
     }
 };
@@ -2974,8 +2974,8 @@ struct OfxStringInstancePrivate
 OfxStringInstance::OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::StringInstance( descriptor, node->effectInstance() )
-    , _imp( new OfxStringInstancePrivate() )
+      , OFX::Host::Param::StringInstance( descriptor, node->effectInstance() )
+      , _imp( new OfxStringInstancePrivate() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     std::string mode = properties.getStringProperty(kOfxParamPropStringMode);
@@ -3423,8 +3423,8 @@ struct OfxCustomInstancePrivate
 
     OfxCustomInstancePrivate()
         : knob()
-        , customParamInterpolationV1Entry(0)
-        , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
+          , customParamInterpolationV1Entry(0)
+          , tlsData( new TLSHolder<OfxParamToKnob::OfxParamTLSData>() )
     {
     }
 };
@@ -3432,8 +3432,8 @@ struct OfxCustomInstancePrivate
 OfxCustomInstance::OfxCustomInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::Param::CustomInstance( descriptor, node->effectInstance() )
-    , _imp( new OfxCustomInstancePrivate() )
+      , OFX::Host::Param::CustomInstance( descriptor, node->effectInstance() )
+      , _imp( new OfxCustomInstancePrivate() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     boost::shared_ptr<KnobString> knob = checkIfKnobExistsWithNameOrCreate<KnobString>(descriptor.getName(), this, 1);
@@ -3608,7 +3608,7 @@ OfxCustomInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectInstance>& node,
                                              OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
-    , OFX::Host::ParametricParam::ParametricInstance( descriptor, node->effectInstance() )
+      , OFX::Host::ParametricParam::ParametricInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
@@ -3633,7 +3633,6 @@ OfxParametricInstance::onCurvesDefaultInitialized()
 {
     _knob.lock()->setDefaultCurvesFromCurves();
 }
-
 
 OfxParametricInstance::~OfxParametricInstance()
 {
@@ -3819,7 +3818,6 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
         return kOfxStatFailed;
     }
 }
-
 
 OfxStatus
 OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance,

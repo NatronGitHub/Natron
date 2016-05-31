@@ -146,10 +146,10 @@ class Lut
         fromColorSpaceFunctionV1 fromFunc,
         toColorSpaceFunctionV1 toFunc)
         : _name(name)
-        , _fromFunc(fromFunc)
-        , _toFunc(toFunc)
-        , init_(false)
-        , _lock()
+          , _fromFunc(fromFunc)
+          , _toFunc(toFunc)
+          , init_(false)
+          , _lock()
     {
     }
 

@@ -198,10 +198,10 @@ public:
 
     DroppedTreeItem()
         : newParentLayer()
-        , insertIndex(-1)
-        , newParentItem(0)
-        , dropped(0)
-        , droppedRotoItem()
+          , insertIndex(-1)
+          , newParentItem(0)
+          , dropped(0)
+          , droppedRotoItem()
     {
     }
 };

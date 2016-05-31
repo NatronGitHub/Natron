@@ -149,7 +149,8 @@ public:
     /**
      * @brief An empty curve, held by owner. This is the "normal" constructor.
      **/
-    Curve(KnobI* owner, int dimensionInOwner);
+    Curve(KnobI* owner,
+          int dimensionInOwner);
 
     Curve(const Curve & other);
 

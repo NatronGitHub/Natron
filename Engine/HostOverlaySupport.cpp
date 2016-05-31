@@ -43,9 +43,9 @@ struct HostOverlayKnobDescription
                                int nDims,
                                bool optional = false)
         : enumID(enumID)
-        , typeName(t)
-        , isOptional(optional)
-        , nDims(nDims)
+          , typeName(t)
+          , isOptional(optional)
+          , nDims(nDims)
     {
     }
 };
@@ -58,8 +58,8 @@ struct HostOverlayKnobsPrivate
 
     HostOverlayKnobsPrivate()
         : knobs()
-        , knobsDescription()
-        , describeCall(false)
+          , knobsDescription()
+          , describeCall(false)
     {
     }
 };

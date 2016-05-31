@@ -309,7 +309,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    FindNodeDialog(NodeGraph* graph, QWidget* parent);
+    FindNodeDialog(NodeGraph* graph,
+                   QWidget* parent);
 
     virtual ~FindNodeDialog();
 
@@ -342,7 +343,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    EditNodeNameDialog(const NodeGuiPtr& node, QWidget* parent);
+    EditNodeNameDialog(const NodeGuiPtr& node,
+                       QWidget* parent);
 
     virtual ~EditNodeNameDialog();
 

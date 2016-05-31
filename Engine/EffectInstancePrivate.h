@@ -182,7 +182,8 @@ public:
         int refCount;
         bool renderFailed;
 
-        ImageBeingRendered() : cond(), lock(), refCount(0), renderFailed(false)
+        ImageBeingRendered()
+            : cond(), lock(), refCount(0), renderFailed(false)
         {
         }
     };
@@ -204,7 +205,6 @@ public:
 
     // set during interact actions on main-thread
     OverlaySupport* overlaysViewport;
-
     mutable QMutex attachedContextsMutex;
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext

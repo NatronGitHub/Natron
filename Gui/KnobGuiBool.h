@@ -63,7 +63,9 @@ class Bool_CheckBox
     : public AnimatedCheckBox
 {
 public:
-    Bool_CheckBox(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
+    Bool_CheckBox(const KnobGuiPtr& knob,
+                  int dimension,
+                  QWidget* parent = 0);
 
     virtual ~Bool_CheckBox();
 

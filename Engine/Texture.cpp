@@ -37,21 +37,22 @@ Texture::Texture(U32 target,
                  int internalFormat,
                  int glType)
     : _texID(0)
-    , _target(target)
-    , _minFilter(minFilter)
-    , _magFilter(magFilter)
-    , _clamp(clamp)
-    , _internalFormat(internalFormat)
-    , _format(format)
-    , _glType(glType)
-    , _type(type)
+      , _target(target)
+      , _minFilter(minFilter)
+      , _magFilter(magFilter)
+      , _clamp(clamp)
+      , _internalFormat(internalFormat)
+      , _format(format)
+      , _glType(glType)
+      , _type(type)
 {
-
     glGenTextures(1, &_texID);
 }
 
 void
-Texture::getRecommendedTexParametersForRGBAByteTexture(int* format, int* internalFormat, int* glType)
+Texture::getRecommendedTexParametersForRGBAByteTexture(int* format,
+                                                       int* internalFormat,
+                                                       int* glType)
 {
     *format = GL_BGRA;
     *internalFormat = GL_RGBA8;
@@ -121,7 +122,6 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                             _format,            // format
                             _glType,       // type
                             originalRAMBuffer);
-
 
 
             glBindTexture (_target, 0);

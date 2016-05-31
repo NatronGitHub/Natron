@@ -679,7 +679,8 @@ Image::copyUnProcessedChannels(const RectI& roi,
             processChannels[0] ? 1.f : 0.f,
             processChannels[1] ? 1.f : 0.f,
             processChannels[2] ? 1.f : 0.f,
-            processChannels[3] ? 1.f : 0.f };
+            processChannels[3] ? 1.f : 0.f
+        };
         shader->setUniform("processChannels", procChannelsV);
         glCheckError();
         glBegin(GL_POLYGON);

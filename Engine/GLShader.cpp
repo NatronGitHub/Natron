@@ -33,56 +33,57 @@ struct GLShaderPrivate
     GLuint shaderID;
     GLuint vertexID;
     GLuint fragmentID;
-    bool vertexAttached,fragmentAttached;
+    bool vertexAttached, fragmentAttached;
     bool firstTime;
 
     GLShaderPrivate()
-    : shaderID(0)
-    , vertexID(0)
-    , fragmentID(0)
-    , vertexAttached(false)
-    , fragmentAttached(false)
-    , firstTime(true)
+        : shaderID(0)
+          , vertexID(0)
+          , fragmentID(0)
+          , vertexAttached(false)
+          , fragmentAttached(false)
+          , firstTime(true)
     {
-
     }
 
-    void getShaderInfoLog(GLuint shader, std::string* error)
+    void getShaderInfoLog(GLuint shader,
+                          std::string* error)
     {
         GLint maxLength;
+
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
         char* infoLog = (char*)malloc(maxLength);
-        glGetShaderInfoLog(shader,maxLength,&maxLength,infoLog);
+        glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog);
         error->append(infoLog);
         free(infoLog);
     }
 };
 
 GLShader::GLShader()
-: _imp(new GLShaderPrivate())
+    : _imp( new GLShaderPrivate() )
 {
-
 }
-
 
 GLShader::~GLShader()
 {
     if (_imp->vertexAttached) {
-        glDetachShader(_imp->shaderID,_imp->vertexID);
+        glDetachShader(_imp->shaderID, _imp->vertexID);
         glDeleteShader(_imp->vertexID);
     }
     if (_imp->fragmentAttached) {
-        glDetachShader(_imp->shaderID,_imp->fragmentID);
+        glDetachShader(_imp->shaderID, _imp->fragmentID);
         glDeleteShader(_imp->fragmentID);
     }
 
-    if(_imp->shaderID != 0) {
+    if (_imp->shaderID != 0) {
         glDeleteProgram(_imp->shaderID);
     }
 }
 
 bool
-GLShader::addShader(GLShader::ShaderTypeEnum type, const char* src, std::string* error)
+GLShader::addShader(GLShader::ShaderTypeEnum type,
+                    const char* src,
+                    std::string* error)
 {
     if (_imp->firstTime) {
         _imp->firstTime = false;
@@ -90,7 +91,7 @@ GLShader::addShader(GLShader::ShaderTypeEnum type, const char* src, std::string*
     }
 
     GLuint shader = 0;
-    if (type == eShaderTypeVertex){
+    if (type == eShaderTypeVertex) {
         _imp->vertexID = glCreateShader(GL_VERTEX_SHADER);
         shader = _imp->vertexID;
     } else if (type == eShaderTypeFragment) {
@@ -100,23 +101,25 @@ GLShader::addShader(GLShader::ShaderTypeEnum type, const char* src, std::string*
         assert(false);
     }
 
-    glShaderSource(shader,1,(const GLchar**)&src,0);
+    glShaderSource(shader, 1, (const GLchar**)&src, 0);
     glCompileShader(shader);
     GLint isCompiled;
-    glGetShaderiv(shader,GL_COMPILE_STATUS,&isCompiled);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
     if (isCompiled == GL_FALSE) {
         if (error) {
             _imp->getShaderInfoLog(shader, error);
         }
+
         return false;
     }
-    
+
     glAttachShader(_imp->shaderID, shader);
     if (type == eShaderTypeVertex) {
         _imp->vertexAttached = true;
     } else {
         _imp->fragmentAttached = true;
     }
+
     return true;
 }
 
@@ -136,8 +139,10 @@ GLShader::link(std::string* error)
         if (error) {
             _imp->getShaderInfoLog(_imp->shaderID, error);
         }
+
         return false;
     }
+
     return true;
 }
 
@@ -154,35 +159,47 @@ GLShader::getShaderID() const
 }
 
 bool
-GLShader::setUniform(const char* name, int value)
+GLShader::setUniform(const char* name,
+                     int value)
 {
     GLint location = glGetUniformLocation(_imp->shaderID, (const GLchar*)name);
+
     if (location != -1) {
         glUniform1iv(location, 1, &value);
+
         return true;
     }
+
     return false;
 }
 
 bool
-GLShader::setUniform(const char* name, float value)
+GLShader::setUniform(const char* name,
+                     float value)
 {
     GLint location = glGetUniformLocation(_imp->shaderID, (const GLchar*)name);
+
     if (location != -1) {
         glUniform1fv(location, 1, &value);
+
         return true;
     }
+
     return false;
 }
 
 bool
-GLShader::setUniform(const char* name, const std::vector<float>& values)
+GLShader::setUniform(const char* name,
+                     const OfxRGBAColourF& values)
 {
     GLint location = glGetUniformLocation(_imp->shaderID, (const GLchar*)name);
+
     if (location != -1) {
-        glUniform1fv(location, values.size(), &values[0]);
+        glUniform4fv(location, 1, &values.r);
+
         return true;
     }
+
     return false;
 }
 

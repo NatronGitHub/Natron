@@ -140,8 +140,8 @@ generateUserFriendlyNatronVersionName()
 
 Project::Project(const AppInstPtr& appInstance)
     : KnobHolder(appInstance)
-    , NodeCollection(appInstance)
-    , _imp( new ProjectPrivate(this) )
+      , NodeCollection(appInstance)
+      , _imp( new ProjectPrivate(this) )
 {
     QObject::connect( _imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()) );
 }
@@ -1709,7 +1709,7 @@ public:
 
     ResetWatcherArgs()
         : GenericWatcherCallerArgs()
-        , aboutToQuit(false)
+          , aboutToQuit(false)
     {
     }
 

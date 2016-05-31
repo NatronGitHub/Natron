@@ -244,7 +244,7 @@ public:
 
         RenderActionData()
             : imagesBeingRendered()
-            , clipComponents()
+              , clipComponents()
         {
         }
     };
@@ -277,18 +277,18 @@ public:
 
         ClipTLSData()
             : view()
-            , mipMapLevel()
-            , componentsPresent()
-            , unmappedComponents()
+              , mipMapLevel()
+              , componentsPresent()
+              , unmappedComponents()
         {
         }
 
         ClipTLSData(const ClipTLSData& other)
             : view(other.view)
-            , mipMapLevel(other.mipMapLevel)
-            , renderData()
-            , componentsPresent(other.componentsPresent)
-            , unmappedComponents(other.unmappedComponents)
+              , mipMapLevel(other.mipMapLevel)
+              , renderData()
+              , componentsPresent(other.componentsPresent)
+              , unmappedComponents(other.unmappedComponents)
         {
             for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
                  it != other.renderData.end(); ++it) {
@@ -328,54 +328,49 @@ public:
                             int nComps);
 
     virtual ~OfxImageCommon();
-    
+
     const std::string& getComponentsString() const;
     boost::shared_ptr<NATRON_NAMESPACE::Image> getInternalImage() const;
 
 private:
 
     boost::scoped_ptr<OfxImageCommonPrivate> _imp;
-
 };
 
 class OfxImage
     : public OFX::Host::ImageEffect::Image
-    , public OfxImageCommon
+      , public OfxImageCommon
 {
 public:
     explicit OfxImage( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                      const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                      bool isSrcImage,
-                      const RectI& renderWindow,
-                      const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                      const std::string& components,
-                      int nComps)
-    : OFX::Host::ImageEffect::Image()
-    , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+                       const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                       bool isSrcImage,
+                       const RectI& renderWindow,
+                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                       const std::string& components,
+                       int nComps)
+        : OFX::Host::ImageEffect::Image()
+          , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
     {
-
     }
-
 };
 
 class OfxTexture
-: public OFX::Host::ImageEffect::Texture
-, public OfxImageCommon
+    : public OFX::Host::ImageEffect::Texture
+      , public OfxImageCommon
 {
 public:
     explicit OfxTexture( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                      const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                      bool isSrcImage,
-                      const RectI& renderWindow,
-                      const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                      const std::string& components,
-                      int nComps)
-    : OFX::Host::ImageEffect::Texture()
-    , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+                         const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+                         bool isSrcImage,
+                         const RectI& renderWindow,
+                         const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                         const std::string& components,
+                         int nComps)
+        : OFX::Host::ImageEffect::Texture()
+          , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
     {
-
     }
-
 };
 
 NATRON_NAMESPACE_EXIT;

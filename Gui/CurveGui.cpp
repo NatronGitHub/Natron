@@ -51,12 +51,12 @@ CurveGui::CurveGui(CurveWidget *curveWidget,
                    const QColor & color,
                    int thickness)
     : _internalCurve(curve)
-    , _curveWidget(curveWidget)
-    , _name(name)
-    , _color(color)
-    , _thickness(thickness)
-    , _visible(false)
-    , _selected(false)
+      , _curveWidget(curveWidget)
+      , _name(name)
+      , _color(color)
+      , _thickness(thickness)
+      , _visible(false)
+      , _selected(false)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -585,9 +585,9 @@ KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
                            const QColor & color,
                            int thickness)
     : CurveGui(curveWidget, curve, name, color, thickness)
-    , _internalKnob()
-    , _knob(knob)
-    , _dimension(dimension)
+      , _internalKnob()
+      , _knob(knob)
+      , _dimension(dimension)
 {
     // even when there is only one keyframe, there may be tangents!
     if (curve->getKeyFramesCount() > 0) {
@@ -612,10 +612,10 @@ KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
                            const QColor & color,
                            int thickness)
     : CurveGui(curveWidget, curve, name, color, thickness)
-    , _roto(roto)
-    , _internalKnob(knob)
-    , _knob()
-    , _dimension(dimension)
+      , _roto(roto)
+      , _internalKnob(knob)
+      , _knob()
+      , _dimension(dimension)
 {
     // even when there is only one keyframe, there may be tangents!
     if (curve->getKeyFramesCount() > 0) {
@@ -702,8 +702,8 @@ BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
                                    const QColor & color,
                                    int thickness)
     : CurveGui(curveWidget, boost::shared_ptr<Curve>(), name, color, thickness)
-    , _bezier(bezier)
-    , _rotoContext(roto)
+      , _bezier(bezier)
+      , _rotoContext(roto)
 {
     // even when there is only one keyframe, there may be tangents!
     if (bezier->getKeyframesCount() > 0) {

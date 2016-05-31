@@ -79,10 +79,10 @@ public:
 
     RotoStrokeItemSerialization()
         : RotoDrawableItemSerialization()
-        , _brushType()
-        , _xCurves()
-        , _yCurves()
-        , _pressureCurves()
+          , _brushType()
+          , _xCurves()
+          , _yCurves()
+          , _pressureCurves()
     {
     }
 

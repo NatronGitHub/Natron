@@ -237,7 +237,8 @@ class AddStrokeUndoCommand
 
 public:
 
-    AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto, const boost::shared_ptr<RotoStrokeItem>& item);
+    AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+                         const boost::shared_ptr<RotoStrokeItem>& item);
 
     virtual ~AddStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;
@@ -259,7 +260,8 @@ class AddMultiStrokeUndoCommand
 
 public:
 
-    AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto, const boost::shared_ptr<RotoStrokeItem>& item);
+    AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
+                              const boost::shared_ptr<RotoStrokeItem>& item);
 
     virtual ~AddMultiStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;

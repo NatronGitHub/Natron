@@ -44,7 +44,6 @@
 //========================================================================
 
 
-
 #ifndef OSGLCONTEXT_H
 #define OSGLCONTEXT_H
 
@@ -73,23 +72,22 @@ class FramebufferConfig
 public:
 
     static const int ATTR_DONT_CARE = -1;
-
-    int         redBits;
-    int         greenBits;
-    int         blueBits;
-    int         alphaBits;
-    int         depthBits;
-    int         stencilBits;
-    int         accumRedBits;
-    int         accumGreenBits;
-    int         accumBlueBits;
-    int         accumAlphaBits;
-    int         auxBuffers;
-    GLboolean         stereo;
-    int         samples;
-    GLboolean         sRGB;
-    GLboolean         doublebuffer;
-    uintptr_t   handle;
+    int redBits;
+    int greenBits;
+    int blueBits;
+    int alphaBits;
+    int depthBits;
+    int stencilBits;
+    int accumRedBits;
+    int accumGreenBits;
+    int accumBlueBits;
+    int accumAlphaBits;
+    int auxBuffers;
+    GLboolean stereo;
+    int samples;
+    GLboolean sRGB;
+    GLboolean doublebuffer;
+    uintptr_t handle;
 
     FramebufferConfig();
 };
@@ -114,7 +112,10 @@ public:
      * creation failed.
      * The context must be made current with makeContextCurrent before being ready to use.
      **/
-    OSGLContext(const FramebufferConfig& pixelFormatAttrs, const OSGLContext* shareContext, int major = GLVersion.major, int minor = GLVersion.minor);
+    OSGLContext(const FramebufferConfig& pixelFormatAttrs,
+                const OSGLContext* shareContext,
+                int major = GLVersion.major,
+                int minor = GLVersion.minor);
 
     ~OSGLContext();
 
@@ -142,9 +143,8 @@ public:
      * Note: this context must be made current before calling this function
      **/
     boost::shared_ptr<GLShader> getOrCreateDefaultShader(DefaultGLShaderEnum type);
-    
-private:
 
+private:
 
 
     friend class GPUContextPool;

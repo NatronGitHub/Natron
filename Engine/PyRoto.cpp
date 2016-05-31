@@ -134,7 +134,7 @@ ItemBase::getParam(const QString& name) const
 
 Layer::Layer(const boost::shared_ptr<RotoItem>& item)
     : ItemBase(item)
-    , _layer( boost::dynamic_pointer_cast<RotoLayer>(item) )
+      , _layer( boost::dynamic_pointer_cast<RotoLayer>(item) )
 {
 }
 
@@ -176,7 +176,7 @@ Layer::getChildren() const
 
 BezierCurve::BezierCurve(const boost::shared_ptr<RotoItem>& item)
     : ItemBase(item)
-    , _bezier( boost::dynamic_pointer_cast<Bezier>(item) )
+      , _bezier( boost::dynamic_pointer_cast<Bezier>(item) )
 {
 }
 

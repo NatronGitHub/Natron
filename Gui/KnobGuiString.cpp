@@ -90,11 +90,11 @@ AnimatingTextEdit::AnimatingTextEdit(const KnobGuiPtr& knob,
                                      int dimension,
                                      QWidget* parent)
     : QTextEdit(parent)
-    , animation(0)
-    , readOnlyNatron(false)
-    , _hasChanged(false)
-    , dirty(false)
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+      , animation(0)
+      , readOnlyNatron(false)
+      , _hasChanged(false)
+      , dirty(false)
+      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {
     setTabStopWidth(20); // a tab width of 20 is more reasonable than 80 for programming languages (e.g. Shadertoy)
 }
@@ -253,7 +253,7 @@ KnobLineEdit::KnobLineEdit(const KnobGuiPtr& knob,
                            int dimension,
                            QWidget* parent)
     : LineEdit(parent)
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {}
 
 KnobLineEdit::~KnobLineEdit()
@@ -352,21 +352,21 @@ KnobLineEdit::focusOutEvent(QFocusEvent* e)
 KnobGuiString::KnobGuiString(KnobPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _lineEdit(0)
-    , _label(0)
-    , _container(0)
-    , _mainLayout(0)
-    , _textEdit(0)
-    , _richTextOptions(0)
-    , _richTextOptionsLayout(0)
-    , _fontCombo(0)
-    , _setBoldButton(0)
-    , _setItalicButton(0)
-    , _fontSizeSpinBox(0)
-    , _fontColorButton(0)
-    , _fontSize(0)
-    , _boldActivated(false)
-    , _italicActivated(false)
+      , _lineEdit(0)
+      , _label(0)
+      , _container(0)
+      , _mainLayout(0)
+      , _textEdit(0)
+      , _richTextOptions(0)
+      , _richTextOptionsLayout(0)
+      , _fontCombo(0)
+      , _setBoldButton(0)
+      , _setItalicButton(0)
+      , _fontSizeSpinBox(0)
+      , _fontColorButton(0)
+      , _fontSize(0)
+      , _boldActivated(false)
+      , _italicActivated(false)
 {
     _knob = boost::dynamic_pointer_cast<KnobString>(knob);
 }

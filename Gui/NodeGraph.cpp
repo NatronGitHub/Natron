@@ -79,9 +79,9 @@ NodeGraph::NodeGraph(Gui* gui,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
-    , NodeGraphI()
-    , PanelWidget(this, gui)
-    , _imp( new NodeGraphPrivate(this, group) )
+      , NodeGraphI()
+      , PanelWidget(this, gui)
+      , _imp( new NodeGraphPrivate(this, group) )
 {
     group->setNodeGraphPointer(this);
 

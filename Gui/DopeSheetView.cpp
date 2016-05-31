@@ -311,28 +311,28 @@ public:
     Menu *contextMenu;
 };
 
-DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
-    q_ptr(qq),
-    model(0),
-    hierarchyView(0),
-    gui(0),
-    timeline(),
-    nodeRanges(),
-    nodeRangesBeingComputed(),
-    rangeComputationRecursion(0),
-    font( new QFont(appFont, appFontSize) ),
-    textRenderer(),
-    kfTexturesIDs(),
-    zoomContext(),
-    zoomOrPannedSinceLastFit(false),
-    selectionRect(),
-    selectedKeysBRect(),
-    lastPosOnMousePress(),
-    lastPosOnMouseMove(),
-    keyDragLastMovement(),
-    eventState(DopeSheetView::esNoEditingState),
-    currentEditedReader(),
-    contextMenu( new Menu(q_ptr) )
+DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
+    : q_ptr(qq),
+      model(0),
+      hierarchyView(0),
+      gui(0),
+      timeline(),
+      nodeRanges(),
+      nodeRangesBeingComputed(),
+      rangeComputationRecursion(0),
+      font( new QFont(appFont, appFontSize) ),
+      textRenderer(),
+      kfTexturesIDs(),
+      zoomContext(),
+      zoomOrPannedSinceLastFit(false),
+      selectionRect(),
+      selectedKeysBRect(),
+      lastPosOnMousePress(),
+      lastPosOnMouseMove(),
+      keyDragLastMovement(),
+      eventState(DopeSheetView::esNoEditingState),
+      currentEditedReader(),
+      contextMenu( new Menu(q_ptr) )
 {
 }
 
@@ -990,7 +990,7 @@ DopeSheetViewPrivate::drawRows() const
                 continue;
             }
 
-            if ( QTreeWidgetItem *parentItem = treeItem->parent() ) {
+            if ( QTreeWidgetItem * parentItem = treeItem->parent() ) {
                 if ( !parentItem->isExpanded() ) {
                     continue;
                 }
@@ -2518,9 +2518,9 @@ DopeSheetView::DopeSheetView(DopeSheet *model,
                              HierarchyView *hierarchyView,
                              Gui *gui,
                              const boost::shared_ptr<TimeLine> &timeline,
-                             QWidget *parent) :
-    QGLWidget(parent),
-    _imp( new DopeSheetViewPrivate(this) )
+                             QWidget *parent)
+    : QGLWidget(parent),
+      _imp( new DopeSheetViewPrivate(this) )
 {
     _imp->model = model;
     _imp->hierarchyView = hierarchyView;

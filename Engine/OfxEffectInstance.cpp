@@ -227,35 +227,35 @@ struct OfxEffectInstancePrivate
 
     OfxEffectInstancePrivate()
         : effect()
-        , natronPluginID()
-        , overlayInteract()
-        , preferencesLock(QReadWriteLock::Recursive)
-        , renderSafetyLock()
-        , renderSafety(eRenderSafetyUnsafe)
-        , wasRenderSafetySet(false)
-        , context(eContextNone)
-        , clipsInfos()
-        , outputClip(0)
-        , nbSourceClips(0)
-        , sequentialPref(eSequentialPreferenceNotSequential)
-        , supportsConcurrentGLRendersMutex()
-        , supportsConcurrentGLRenders(false)
-        , isOutput(false)
-        , penDown(false)
-        , created(false)
-        , initialized(false)
-        , overlaysCanHandleRenderScale(true)
-        , supportsMultipleClipsPar(false)
-        , supportsMultipleClipsBitdepth(false)
-        , doesTemporalAccess(false)
-        , multiplanar(false)
+          , natronPluginID()
+          , overlayInteract()
+          , preferencesLock(QReadWriteLock::Recursive)
+          , renderSafetyLock()
+          , renderSafety(eRenderSafetyUnsafe)
+          , wasRenderSafetySet(false)
+          , context(eContextNone)
+          , clipsInfos()
+          , outputClip(0)
+          , nbSourceClips(0)
+          , sequentialPref(eSequentialPreferenceNotSequential)
+          , supportsConcurrentGLRendersMutex()
+          , supportsConcurrentGLRenders(false)
+          , isOutput(false)
+          , penDown(false)
+          , created(false)
+          , initialized(false)
+          , overlaysCanHandleRenderScale(true)
+          , supportsMultipleClipsPar(false)
+          , supportsMultipleClipsBitdepth(false)
+          , doesTemporalAccess(false)
+          , multiplanar(false)
     {
     }
 };
 
 OfxEffectInstance::OfxEffectInstance(NodePtr node)
     : AbstractOfxEffectInstance(node)
-    , _imp( new OfxEffectInstancePrivate() )
+      , _imp( new OfxEffectInstancePrivate() )
 {
     QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
@@ -1707,7 +1707,7 @@ public:
 
     OfxGLContextEffectData()
         : EffectInstance::OpenGLContextEffectData()
-        , _dataHandle(0)
+          , _dataHandle(0)
     {
     }
 

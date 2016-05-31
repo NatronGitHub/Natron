@@ -50,7 +50,10 @@ private:
 
 public:
 
-    EditExpressionDialog(Gui* gui, int dimension, const KnobGuiPtr& knob, QWidget* parent);
+    EditExpressionDialog(Gui* gui,
+                         int dimension,
+                         const KnobGuiPtr& knob,
+                         QWidget* parent);
 
     virtual ~EditExpressionDialog()
     {

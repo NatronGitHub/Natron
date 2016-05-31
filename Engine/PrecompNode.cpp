@@ -83,23 +83,23 @@ public:
 
     PrecompNodePrivate(PrecompNode* publicInterface)
         : _publicInterface(publicInterface)
-        , app()
-        , projectFileNameKnob()
-        //, reloadProjectKnob()
-        , editProjectKnob()
-        , enablePreRenderKnob()
-        , preRenderGroupKnob()
-        , writeNodesKnob()
-        , preRenderKnob()
-        , firstFrameKnob()
-        , lastFrameKnob()
-        , outputNodeNameKnob()
-        , errorBehaviourKnbo()
-        , subLabelKnob()
-        , dataMutex()
-        , precompInputs()
-        , readNode()
-        , outputNode()
+          , app()
+          , projectFileNameKnob()
+          //, reloadProjectKnob()
+          , editProjectKnob()
+          , enablePreRenderKnob()
+          , preRenderGroupKnob()
+          , writeNodesKnob()
+          , preRenderKnob()
+          , firstFrameKnob()
+          , lastFrameKnob()
+          , outputNodeNameKnob()
+          , errorBehaviourKnbo()
+          , subLabelKnob()
+          , dataMutex()
+          , precompInputs()
+          , readNode()
+          , outputNode()
     {
     }
 
@@ -126,7 +126,7 @@ public:
 
 PrecompNode::PrecompNode(NodePtr n)
     : EffectInstance(n)
-    , _imp( new PrecompNodePrivate(this) )
+      , _imp( new PrecompNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }

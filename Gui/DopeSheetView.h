@@ -109,7 +109,8 @@ public:
         esTransformingKeyframesMiddleLeft
     };
 
-    explicit DopeSheetView(DopeSheet *model, HierarchyView *hierarchyView,
+    explicit DopeSheetView(DopeSheet *model,
+                           HierarchyView *hierarchyView,
                            Gui *gui,
                            const boost::shared_ptr<TimeLine> &timeline,
                            QWidget *parent = 0);

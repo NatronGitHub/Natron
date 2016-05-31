@@ -71,27 +71,27 @@ public:
 
     CLArgsPrivate()
         : args()
-        , filename()
-        , isPythonScript(false)
-        , defaultOnProjectLoadedScript()
-        , writers()
-        , readers()
-        , pythonCommands()
-        , isBackground(false)
-        , ipcPipe()
-        , error(0)
-        , isInterpreterMode(false)
-        , frameRanges()
-        , rangeSet(false)
-        , enableRenderStats(false)
-        , isEmpty(true)
-        , imageFilename()
-        , breakpadPipeFilePath()
-        , breakpadComPipeFilePath()
-        , breakpadPipeClientID(-1)
-        , breakpadProcessFilePath()
-        , breakpadProcessPID(-1)
-        , exportDocsPath()
+          , filename()
+          , isPythonScript(false)
+          , defaultOnProjectLoadedScript()
+          , writers()
+          , readers()
+          , pythonCommands()
+          , isBackground(false)
+          , ipcPipe()
+          , error(0)
+          , isInterpreterMode(false)
+          , frameRanges()
+          , rangeSet(false)
+          , enableRenderStats(false)
+          , isEmpty(true)
+          , imageFilename()
+          , breakpadPipeFilePath()
+          , breakpadComPipeFilePath()
+          , breakpadPipeClientID(-1)
+          , breakpadProcessFilePath()
+          , breakpadProcessPID(-1)
+          , exportDocsPath()
     {
     }
 
@@ -203,7 +203,7 @@ CLArgs::printBackGroundWelcomeMessage()
 void
 CLArgs::printUsage(const std::string& programName)
 {
-    QString msg = tr(/* Text must hold in 80 columns ************************************************/
+    QString msg = tr( /* Text must hold in 80 columns ************************************************/
         "%3 usage:\n"
         "Three distinct execution modes exist in background mode:\n"
         "- The execution of %1 projects (.%2)\n"

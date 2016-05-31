@@ -88,7 +88,7 @@ using std::make_pair;
 //=============================GROUP_KNOB_GUI===================================
 GroupBoxLabel::GroupBoxLabel(QWidget *parent)
     : Label(parent)
-    , _checked(false)
+      , _checked(false)
 
 {
     QObject::connect( this, SIGNAL(checked(bool)), this, SLOT(setChecked(bool)) );

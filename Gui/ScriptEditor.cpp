@@ -83,32 +83,32 @@ struct ScriptEditorPrivate
 
     ScriptEditorPrivate()
         : mainLayout(0)
-        , buttonsContainer(0)
-        , buttonsContainerLayout(0)
-        , undoB(0)
-        , redoB(0)
-        , clearHistoB(0)
-        , sourceScriptB(0)
-        , loadScriptB(0)
-        , saveScriptB(0)
-        , execScriptB(0)
-        , showHideOutputB(0)
-        , clearOutputB(0)
-        , showAutoDeclVarsB(0)
-        , outputEdit(0)
-        , inputEdit(0)
-        , autoSaveTimer()
-        , autoSavedScriptMutex()
-        , autoSavedScript()
-        , outputAtBottom(true)
+          , buttonsContainer(0)
+          , buttonsContainerLayout(0)
+          , undoB(0)
+          , redoB(0)
+          , clearHistoB(0)
+          , sourceScriptB(0)
+          , loadScriptB(0)
+          , saveScriptB(0)
+          , execScriptB(0)
+          , showHideOutputB(0)
+          , clearOutputB(0)
+          , showAutoDeclVarsB(0)
+          , outputEdit(0)
+          , inputEdit(0)
+          , autoSaveTimer()
+          , autoSavedScriptMutex()
+          , autoSavedScript()
+          , outputAtBottom(true)
     {
     }
 };
 
 ScriptEditor::ScriptEditor(Gui* gui)
     : QWidget(gui)
-    , PanelWidget(this, gui)
-    , _imp( new ScriptEditorPrivate() )
+      , PanelWidget(this, gui)
+      , _imp( new ScriptEditorPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->buttonsContainer = new QWidget(this);
@@ -425,7 +425,8 @@ private:
 
 public:
 
-    InputScriptCommand(ScriptEditor* editor,  const QString& script);
+    InputScriptCommand(ScriptEditor* editor,
+                       const QString& script);
 
     void redo();
 
@@ -435,9 +436,9 @@ public:
 InputScriptCommand::InputScriptCommand(ScriptEditor* editor,
                                        const QString& script)
     : QUndoCommand()
-    , _editor(editor)
-    , _script(script)
-    , _firstRedoCalled(false)
+      , _editor(editor)
+      , _script(script)
+      , _firstRedoCalled(false)
 {
 }
 

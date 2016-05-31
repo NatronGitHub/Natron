@@ -82,25 +82,25 @@ strippedText(QString s)
 
 ComboBox::ComboBox(QWidget* parent)
     : QFrame(parent)
-    , _readOnly(false)
-    , _enabled(true)
-    , _animation(0)
-    , _clicked(false)
-    , _dirty(false)
-    , _altered(false)
-    , _cascading(false)
-    , _cascadingIndex(0)
-    , _currentIndex(-1)
-    , _currentText()
-    , _separators()
-    , _rootNode( new ComboBoxMenuNode() )
-    , _sh()
-    , _msh()
-    , _sizePolicy()
-    , _validHints(false)
-    , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
-    , _currentDelta(0)
-    , ignoreWheelEvent(false)
+      , _readOnly(false)
+      , _enabled(true)
+      , _animation(0)
+      , _clicked(false)
+      , _dirty(false)
+      , _altered(false)
+      , _cascading(false)
+      , _cascadingIndex(0)
+      , _currentIndex(-1)
+      , _currentText()
+      , _separators()
+      , _rootNode( new ComboBoxMenuNode() )
+      , _sh()
+      , _msh()
+      , _sizePolicy()
+      , _validHints(false)
+      , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
+      , _currentDelta(0)
+      , ignoreWheelEvent(false)
 {
     setFrameShape(QFrame::Box);
 
@@ -818,7 +818,7 @@ ComboBox::setCurrentIndex_internal(int index)
         return false;
     }
     //Forbid programmatic setting of the "New" choice, only user can select it
-    if ( ( node->isLeaf && ( node->isLeaf->data().toString() == QString::fromUtf8("New") ) ) ) {// "New" choice
+    if ( ( node->isLeaf && ( node->isLeaf->data().toString() == QString::fromUtf8("New") ) ) ) { // "New" choice
         return false;
     }
 

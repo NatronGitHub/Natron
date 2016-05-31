@@ -136,7 +136,9 @@ private:
                                            bool isSequentialRender,
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
-                                           ViewIdx view, bool isOpenGLRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                           ViewIdx view,
+                                           bool isOpenGLRender,
+                                           const EffectInstance::OpenGLContextEffectDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum endSequenceRender(double first,
                                          double last,
                                          double step,
@@ -145,7 +147,9 @@ private:
                                          bool isSequentialRender,
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
-                                         ViewIdx view, bool isOpenGLRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         ViewIdx view,
+                                         bool isOpenGLRender,
+                                         const EffectInstance::OpenGLContextEffectDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual void getRegionsOfInterest(double time,
                                       const RenderScale & scale,

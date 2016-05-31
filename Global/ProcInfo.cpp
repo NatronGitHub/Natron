@@ -51,9 +51,11 @@ template <typename T>
 class NatronCFType
 {
 public:
-    inline NatronCFType(const T &t = 0) : type(t) {}
+    inline NatronCFType(const T &t = 0)
+        : type(t) {}
 
-    inline NatronCFType(const NatronCFType &helper) : type(helper.type)
+    inline NatronCFType(const NatronCFType &helper)
+        : type(helper.type)
     {
         if (type) {CFRetain(type); }
     }
@@ -100,11 +102,14 @@ class NatronCFString
     : public NatronCFType<CFStringRef>
 {
 public:
-    inline NatronCFString(const QString &str) : NatronCFType<CFStringRef>(0), string(str) {}
+    inline NatronCFString(const QString &str)
+        : NatronCFType<CFStringRef>(0), string(str) {}
 
-    inline NatronCFString(const CFStringRef cfstr = 0) : NatronCFType<CFStringRef>(cfstr) {}
+    inline NatronCFString(const CFStringRef cfstr = 0)
+        : NatronCFType<CFStringRef>(cfstr) {}
 
-    inline NatronCFString(const NatronCFType<CFStringRef> &other) : NatronCFType<CFStringRef>(other) {}
+    inline NatronCFString(const NatronCFType<CFStringRef> &other)
+        : NatronCFType<CFStringRef>(other) {}
 
     operator QString() const;
     operator CFStringRef() const;

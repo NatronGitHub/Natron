@@ -50,7 +50,7 @@ struct DiskCacheNodePrivate
 
 DiskCacheNode::DiskCacheNode(NodePtr node)
     : OutputEffectInstance(node)
-    , _imp( new DiskCacheNodePrivate() )
+      , _imp( new DiskCacheNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -212,7 +212,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 
     for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, false /*useOpenGL*/,0 /*textureDepth*/,  &roiPixel);
+        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, false /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
         if (!srcImg) {
             return eStatusFailed;
         }

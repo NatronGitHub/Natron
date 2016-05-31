@@ -48,7 +48,8 @@ class AddTrackCommand
 
 public:
 
-    AddTrackCommand(const TrackMarkerPtr &marker, const boost::shared_ptr<TrackerContext>& context);
+    AddTrackCommand(const TrackMarkerPtr &marker,
+                    const boost::shared_ptr<TrackerContext>& context);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;
@@ -69,7 +70,8 @@ class RemoveTracksCommand
 
 public:
 
-    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers, const boost::shared_ptr<TrackerContext>& context);
+    RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
+                        const boost::shared_ptr<TrackerContext>& context);
 
     virtual void undo() OVERRIDE FINAL;
     virtual void redo() OVERRIDE FINAL;

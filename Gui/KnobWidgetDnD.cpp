@@ -76,11 +76,11 @@ public:
                          int dimension,
                          QWidget* widget)
         : knob(knob)
-        , dimension(dimension)
-        , dragPos()
-        , dragging(false)
-        , widget(widget)
-        , userInputSinceFocusIn(false)
+          , dimension(dimension)
+          , dragPos()
+          , dragging(false)
+          , widget(widget)
+          , userInputSinceFocusIn(false)
     {
         assert(widget);
     }

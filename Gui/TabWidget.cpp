@@ -94,8 +94,8 @@ public:
     TransparentDropRect(TabWidget* pane,
                         QWidget* parent = 0)
         : QWidget(parent)
-        , _type(TabWidget::eDropRectNone)
-        , _widget(pane)
+          , _type(TabWidget::eDropRectNone)
+          , _widget(pane)
     {
         setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
         setAttribute(Qt::WA_TranslucentBackground);
@@ -220,23 +220,23 @@ struct TabWidgetPrivate
     TabWidgetPrivate(TabWidget* publicInterface,
                      Gui* gui)
         : _publicInterface(publicInterface)
-        , gui(gui)
-        , mainLayout(0)
-        , tabs()
-        , header(0)
-        , headerLayout(0)
-        , modifyingTabBar(false)
-        , tabBar(0)
-        , leftCornerButton(0)
-        , floatButton(0)
-        , closeButton(0)
-        , currentWidget(0)
-        , drawDropRect(false)
-        , fullScreen(false)
-        , isAnchor(false)
-        , tabBarVisible(true)
-        , transparentFloatingWidget(0)
-        , tabWidgetStateMutex()
+          , gui(gui)
+          , mainLayout(0)
+          , tabs()
+          , header(0)
+          , headerLayout(0)
+          , modifyingTabBar(false)
+          , tabBar(0)
+          , leftCornerButton(0)
+          , floatButton(0)
+          , closeButton(0)
+          , currentWidget(0)
+          , drawDropRect(false)
+          , fullScreen(false)
+          , isAnchor(false)
+          , tabBarVisible(true)
+          , transparentFloatingWidget(0)
+          , tabWidgetStateMutex()
     {
     }
 
@@ -247,7 +247,7 @@ struct TabWidgetPrivate
 TabWidget::TabWidget(Gui* gui,
                      QWidget* parent)
     : QFrame(parent)
-    , _imp( new TabWidgetPrivate(this, gui) )
+      , _imp( new TabWidgetPrivate(this, gui) )
 {
     setMouseTracking(true);
     setFrameShape(QFrame::NoFrame);
@@ -1358,12 +1358,12 @@ TabWidget::dropEvent(QDropEvent* e)
 TabBar::TabBar(TabWidget* tabWidget,
                QWidget* parent)
     : QTabBar(parent)
-    , _dragPos()
-    , _dragPix(0)
-    , _tabWidget(tabWidget)
-    , _processingLeaveEvent(false)
-    , mouseOverFocus(false)
-    , clickFocus(false)
+      , _dragPos()
+      , _dragPix(0)
+      , _tabWidget(tabWidget)
+      , _processingLeaveEvent(false)
+      , mouseOverFocus(false)
+      , clickFocus(false)
 {
     setTabsClosable(true);
     setMouseTracking(true);
@@ -1887,8 +1887,8 @@ TabWidget::moveTab(PanelWidget* what,
 DragPixmap::DragPixmap(const QPixmap & pixmap,
                        const QPoint & offsetFromMouse)
     : QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
-    , _pixmap(pixmap)
-    , _offset(offsetFromMouse)
+      , _pixmap(pixmap)
+      , _offset(offsetFromMouse)
 {
     setAttribute( Qt::WA_TransparentForMouseEvents );
     resize( _pixmap.width(), _pixmap.height() );

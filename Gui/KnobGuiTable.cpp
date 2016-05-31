@@ -52,14 +52,14 @@ struct KnobGuiTablePrivate
 
     KnobGuiTablePrivate()
         : mainContainer(0)
-        , table(0)
-        , model(0)
-        , addPathButton(0)
-        , removePathButton(0)
-        , editPathButton(0)
-        , isInsertingItem(false)
-        , items()
-        , dragAndDropping(false)
+          , table(0)
+          , model(0)
+          , addPathButton(0)
+          , removePathButton(0)
+          , editPathButton(0)
+          , isInsertingItem(false)
+          , items()
+          , dragAndDropping(false)
     {
     }
 };
@@ -67,7 +67,7 @@ struct KnobGuiTablePrivate
 KnobGuiTable::KnobGuiTable(KnobPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _imp( new KnobGuiTablePrivate() )
+      , _imp( new KnobGuiTablePrivate() )
 {
 }
 
@@ -99,7 +99,8 @@ class KnobTableItemDelegate
 
 public:
 
-    explicit KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob, TableView* view);
+    explicit KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob,
+                                   TableView* view);
 
 private:
 
@@ -109,8 +110,8 @@ private:
 KnobTableItemDelegate::KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob,
                                              TableView* view)
     : QStyledItemDelegate(view)
-    , _view(view)
-    , _knob(knob)
+      , _view(view)
+      , _knob(knob)
 {
 }
 

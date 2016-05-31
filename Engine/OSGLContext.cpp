@@ -40,31 +40,31 @@
 NATRON_NAMESPACE_ENTER;
 
 FramebufferConfig::FramebufferConfig()
-: redBits(8)
-, greenBits(8)
-, blueBits(8)
-, alphaBits(8)
-, depthBits(24)
-, stencilBits(8)
-, accumRedBits(0)
-, accumGreenBits(0)
-, accumBlueBits(0)
-, accumAlphaBits(0)
-, auxBuffers(0)
-, stereo(GL_FALSE)
-, samples(0)
-, sRGB(GL_FALSE)
-, doublebuffer(GL_FALSE)
-, handle(0)
+    : redBits(8)
+      , greenBits(8)
+      , blueBits(8)
+      , alphaBits(8)
+      , depthBits(24)
+      , stencilBits(8)
+      , accumRedBits(0)
+      , accumGreenBits(0)
+      , accumBlueBits(0)
+      , accumAlphaBits(0)
+      , auxBuffers(0)
+      , stereo(GL_FALSE)
+      , samples(0)
+      , sRGB(GL_FALSE)
+      , doublebuffer(GL_FALSE)
+      , handle(0)
 {
-
 }
 
 const FramebufferConfig&
-OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count)
+OSGLContext::chooseFBConfig(const FramebufferConfig& desired,
+                            const std::vector<FramebufferConfig>& alternatives,
+                            int count)
 {
-
-    if (alternatives.empty() || count > (int)alternatives.size()) {
+    if ( alternatives.empty() || ( count > (int)alternatives.size() ) ) {
         throw std::logic_error("alternatives empty");
     }
     unsigned int missing, leastMissing = UINT_MAX;
@@ -72,18 +72,15 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<
     unsigned int extraDiff, leastExtraDiff = UINT_MAX;
     int closest = -1;
 
-    for (int i = 0;  i < count;  ++i)
-    {
+    for (int i = 0; i < count; ++i) {
         const FramebufferConfig& current = alternatives[i];
 
-        if (desired.stereo > 0 && current.stereo == 0)
-        {
+        if ( (desired.stereo > 0) && (current.stereo == 0) ) {
             // Stereo is a hard constraint
             continue;
         }
 
-        if (desired.doublebuffer != current.doublebuffer)
-        {
+        if (desired.doublebuffer != current.doublebuffer) {
             // Double buffering is a hard constraint
             continue;
         }
@@ -92,23 +89,24 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<
         {
             missing = 0;
 
-            if (desired.alphaBits > 0 && current.alphaBits == 0)
+            if ( (desired.alphaBits > 0) && (current.alphaBits == 0) ) {
                 missing++;
+            }
 
-            if (desired.depthBits > 0 && current.depthBits == 0)
+            if ( (desired.depthBits > 0) && (current.depthBits == 0) ) {
                 missing++;
+            }
 
-            if (desired.stencilBits > 0 && current.stencilBits == 0)
+            if ( (desired.stencilBits > 0) && (current.stencilBits == 0) ) {
                 missing++;
+            }
 
-            if (desired.auxBuffers > 0 &&
-                current.auxBuffers < desired.auxBuffers)
-            {
+            if ( (desired.auxBuffers > 0) &&
+                 ( current.auxBuffers < desired.auxBuffers) ) {
                 missing += desired.auxBuffers - current.auxBuffers;
             }
 
-            if (desired.samples > 0 && current.samples == 0)
-            {
+            if ( (desired.samples > 0) && (current.samples == 0) ) {
                 // Technically, several multisampling buffers could be
                 // involved, but that's a lower level implementation detail and
                 // not important to us here, so we count them as one
@@ -123,22 +121,19 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<
         {
             colorDiff = 0;
 
-            if (desired.redBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.redBits != FramebufferConfig::ATTR_DONT_CARE) {
                 colorDiff += (desired.redBits - current.redBits) *
-                (desired.redBits - current.redBits);
+                             (desired.redBits - current.redBits);
             }
 
-            if (desired.greenBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.greenBits != FramebufferConfig::ATTR_DONT_CARE) {
                 colorDiff += (desired.greenBits - current.greenBits) *
-                (desired.greenBits - current.greenBits);
+                             (desired.greenBits - current.greenBits);
             }
 
-            if (desired.blueBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.blueBits != FramebufferConfig::ATTR_DONT_CARE) {
                 colorDiff += (desired.blueBits - current.blueBits) *
-                (desired.blueBits - current.blueBits);
+                             (desired.blueBits - current.blueBits);
             }
         }
 
@@ -146,56 +141,49 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<
         {
             extraDiff = 0;
 
-            if (desired.alphaBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.alphaBits != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.alphaBits - current.alphaBits) *
-                (desired.alphaBits - current.alphaBits);
+                             (desired.alphaBits - current.alphaBits);
             }
 
-            if (desired.depthBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.depthBits != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.depthBits - current.depthBits) *
-                (desired.depthBits - current.depthBits);
+                             (desired.depthBits - current.depthBits);
             }
 
-            if (desired.stencilBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.stencilBits != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.stencilBits - current.stencilBits) *
-                (desired.stencilBits - current.stencilBits);
+                             (desired.stencilBits - current.stencilBits);
             }
 
-            if (desired.accumRedBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.accumRedBits != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.accumRedBits - current.accumRedBits) *
-                (desired.accumRedBits - current.accumRedBits);
+                             (desired.accumRedBits - current.accumRedBits);
             }
 
-            if (desired.accumGreenBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.accumGreenBits != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.accumGreenBits - current.accumGreenBits) *
-                (desired.accumGreenBits - current.accumGreenBits);
+                             (desired.accumGreenBits - current.accumGreenBits);
             }
 
-            if (desired.accumBlueBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.accumBlueBits != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.accumBlueBits - current.accumBlueBits) *
-                (desired.accumBlueBits - current.accumBlueBits);
+                             (desired.accumBlueBits - current.accumBlueBits);
             }
 
-            if (desired.accumAlphaBits != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.accumAlphaBits != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.accumAlphaBits - current.accumAlphaBits) *
-                (desired.accumAlphaBits - current.accumAlphaBits);
+                             (desired.accumAlphaBits - current.accumAlphaBits);
             }
 
-            if (desired.samples != FramebufferConfig::ATTR_DONT_CARE)
-            {
+            if (desired.samples != FramebufferConfig::ATTR_DONT_CARE) {
                 extraDiff += (desired.samples - current.samples) *
-                (desired.samples - current.samples);
+                             (desired.samples - current.samples);
             }
 
-            if (desired.sRGB && !current.sRGB)
+            if (desired.sRGB && !current.sRGB) {
                 extraDiff++;
+            }
         }
 
         // Figure out if the current one is better than the best one found so far
@@ -205,12 +193,12 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<
         if (missing < leastMissing) {
             closest = i;
         } else if (missing == leastMissing) {
-            if ((colorDiff < leastColorDiff) || (colorDiff == leastColorDiff && extraDiff < leastExtraDiff)) {
+            if ( (colorDiff < leastColorDiff) || ( (colorDiff == leastColorDiff) && (extraDiff < leastExtraDiff) ) ) {
                 closest = i;
             }
         }
 
-        if ((int)i == closest) {
+        if ( (int)i == closest ) {
             leastMissing = missing;
             leastColorDiff = colorDiff;
             leastExtraDiff = extraDiff;
@@ -219,8 +207,9 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired, const std::vector<
     if (closest == -1) {
         throw std::logic_error("closest = -1");
     }
+
     return alternatives[closest];
-}
+} // chooseFBConfig
 
 struct OSGLContextPrivate
 {
@@ -237,34 +226,34 @@ struct OSGLContextPrivate
 
     // The main FBO onto which we do all renders
     GLuint fboID;
-
     boost::shared_ptr<GLShader> fillImageShader, applyMaskMixShader, copyUnprocessedChannelsShader;
 
     OSGLContextPrivate()
-    : _platformContext()
-    , pboID(0)
-    , fboID(0)
-    , fillImageShader()
-    , applyMaskMixShader()
-    , copyUnprocessedChannelsShader()
+        : _platformContext()
+          , pboID(0)
+          , fboID(0)
+          , fillImageShader()
+          , applyMaskMixShader()
+          , copyUnprocessedChannelsShader()
     {
-       
     }
 
     // Create PBO and FBO if needed
     void init();
 };
 
-OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs, const OSGLContext* shareContext, int major, int minor)
-: _imp(new OSGLContextPrivate())
+OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
+                         const OSGLContext* shareContext,
+                         int major,
+                         int minor)
+    : _imp( new OSGLContextPrivate() )
 {
-
 #ifdef __NATRON_WIN32__
-    _imp->_platformContext.reset(new OSGLContext_win(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0));
+    _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_OSX__)
-    _imp->_platformContext.reset(new OSGLContext_mac(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0));
+    _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_LINUX__)
-    _imp->_platformContext.reset(new OSGLContext_x11(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0));
+    _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #endif
 }
 
@@ -294,11 +283,11 @@ void
 OSGLContext::makeContextCurrent()
 {
 #ifdef __NATRON_WIN32__
-    OSGLContext_win::makeContextCurrent(_imp->_platformContext.get());
+    OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
 #elif defined(__NATRON_OSX__)
-    OSGLContext_mac::makeContextCurrent(_imp->_platformContext.get());
+    OSGLContext_mac::makeContextCurrent( _imp->_platformContext.get() );
 #elif defined(__NATRON_LINUX__)
-    OSGLContext_x11::makeContextCurrent(_imp->_platformContext.get());
+    OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
 #endif
 
     // The first time this context is made current, allocate the PBO and FBO
@@ -317,29 +306,30 @@ OSGLContextPrivate::init()
 }
 
 bool
-OSGLContext::stringInExtensionString(const char* string, const char* extensions)
+OSGLContext::stringInExtensionString(const char* string,
+                                     const char* extensions)
 {
     const char* start = extensions;
 
-    for (;;)
-    {
+    for (;; ) {
         const char* where;
         const char* terminator;
 
         where = strstr(start, string);
-        if (!where)
+        if (!where) {
             return false;
+        }
 
         terminator = where + strlen(string);
-        if (where == start || *(where - 1) == ' ')
-        {
-            if (*terminator == ' ' || *terminator == '\0')
+        if ( (where == start) || (*(where - 1) == ' ') ) {
+            if ( (*terminator == ' ') || (*terminator == '\0') ) {
                 break;
+            }
         }
 
         start = terminator;
     }
-    
+
     return true;
 }
 
@@ -347,82 +337,89 @@ boost::shared_ptr<GLShader>
 OSGLContext::getOrCreateDefaultShader(DefaultGLShaderEnum type)
 {
     switch (type) {
-        case eDefaultGLShaderFillConstant: {
-            if (_imp->fillImageShader) {
-                return _imp->fillImageShader;
-            }
-            _imp->fillImageShader.reset(new GLShader());
+    case eDefaultGLShaderFillConstant: {
+        if (_imp->fillImageShader) {
+            return _imp->fillImageShader;
+        }
+        _imp->fillImageShader.reset( new GLShader() );
 #ifdef DEBUG
-            std::string error;
-            bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
-            if (!ok) {
-                qDebug() << error.c_str();
-            }
+        std::string error;
+        bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
+        if (!ok) {
+            qDebug() << error.c_str();
+        }
 #else
-            bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, 0);
+        bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, 0);
 #endif
 
-            assert(ok);
+        assert(ok);
 #ifdef DEBUG
-            ok = _imp->fillImageShader->link(&error);
-            if (!ok) {
-                qDebug() << error.c_str();
-            }
+        ok = _imp->fillImageShader->link(&error);
+        if (!ok) {
+            qDebug() << error.c_str();
+        }
 #else
-            ok = _imp->fillImageShader->link();
+        ok = _imp->fillImageShader->link();
 #endif
-            return _imp->fillImageShader; }
 
-        case eDefaultGLShaderApplyMaskMix: {
-            if (_imp->applyMaskMixShader) {
-                return _imp->applyMaskMixShader;
-            }
-            _imp->applyMaskMixShader.reset(new GLShader());
-#ifdef DEBUG
-            std::string error;
-            bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, &error);
-            if (!ok) {
-                qDebug() << error.c_str();
-            }
-#else
-            bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, 0);
-#endif
-#ifdef DEBUG
-            ok = _imp->applyMaskMixShader->link(&error);
-            if (!ok) {
-                qDebug() << error.c_str();
-            }
-#else
-            ok = _imp->applyMaskMixShader->link();
-#endif
-            return _imp->applyMaskMixShader; }
-
-        case eDefaultGLShaderCopyUnprocessedChannels: {
-            if (_imp->copyUnprocessedChannelsShader) {
-                return _imp->copyUnprocessedChannelsShader;
-            }
-            _imp->copyUnprocessedChannelsShader.reset(new GLShader());
-#ifdef DEBUG
-            std::string error;
-            bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, &error);
-            if (!ok) {
-                qDebug() << error.c_str();
-            }
-#else
-            bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, 0);
-#endif
-#ifdef DEBUG
-            ok = _imp->copyUnprocessedChannelsShader->link(&error);
-            if (!ok) {
-                qDebug() << error.c_str();
-            }
-#else
-            ok = _imp->copyUnprocessedChannelsShader->link();
-#endif
-            return _imp->copyUnprocessedChannelsShader; }
+        return _imp->fillImageShader;
     }
+
+    case eDefaultGLShaderApplyMaskMix: {
+        if (_imp->applyMaskMixShader) {
+            return _imp->applyMaskMixShader;
+        }
+        _imp->applyMaskMixShader.reset( new GLShader() );
+#ifdef DEBUG
+        std::string error;
+        bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, &error);
+        if (!ok) {
+            qDebug() << error.c_str();
+        }
+#else
+        bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, 0);
+#endif
+#ifdef DEBUG
+        ok = _imp->applyMaskMixShader->link(&error);
+        if (!ok) {
+            qDebug() << error.c_str();
+        }
+#else
+        ok = _imp->applyMaskMixShader->link();
+#endif
+
+        return _imp->applyMaskMixShader;
+    }
+
+    case eDefaultGLShaderCopyUnprocessedChannels: {
+        if (_imp->copyUnprocessedChannelsShader) {
+            return _imp->copyUnprocessedChannelsShader;
+        }
+        _imp->copyUnprocessedChannelsShader.reset( new GLShader() );
+#ifdef DEBUG
+        std::string error;
+        bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, &error);
+        if (!ok) {
+            qDebug() << error.c_str();
+        }
+#else
+        bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, 0);
+#endif
+#ifdef DEBUG
+        ok = _imp->copyUnprocessedChannelsShader->link(&error);
+        if (!ok) {
+            qDebug() << error.c_str();
+        }
+#else
+        ok = _imp->copyUnprocessedChannelsShader->link();
+#endif
+
+        return _imp->copyUnprocessedChannelsShader;
+    }
+    } // switch
     assert(false);
+
     return boost::shared_ptr<GLShader>();
-}
+} // getOrCreateDefaultShader
 
 NATRON_NAMESPACE_EXIT;

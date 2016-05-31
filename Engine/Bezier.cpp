@@ -654,14 +654,14 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
                const boost::shared_ptr<RotoLayer>& parent,
                bool isOpenBezier)
     : RotoDrawableItem(ctx, name, parent, false)
-    , _imp( new BezierPrivate(isOpenBezier) )
+      , _imp( new BezierPrivate(isOpenBezier) )
 {
 }
 
 Bezier::Bezier(const Bezier & other,
                const boost::shared_ptr<RotoLayer>& parent)
     : RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
-    , _imp( new BezierPrivate(false) )
+      , _imp( new BezierPrivate(false) )
 {
     clone(&other);
     setParentLayer(parent);
@@ -2362,7 +2362,7 @@ Bezier::getMotionBlurSettings(const double time,
     if (shutterType_i == 0) { // centered
         *startTime = time - shutterInterval / 2.;
         *endTime = time + shutterInterval / 2.;
-    } else if (shutterType_i == 1) {// start
+    } else if (shutterType_i == 1) { // start
         *startTime = time;
         *endTime = time + shutterInterval;
     } else if (shutterType_i == 2) { // end

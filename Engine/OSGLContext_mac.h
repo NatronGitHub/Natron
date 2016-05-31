@@ -34,7 +34,10 @@ class OSGLContext_mac
 {
 public:
 
-    OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_mac* shareContext);
+    OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,
+                    int major,
+                    int minor,
+                    const OSGLContext_mac* shareContext);
 
     ~OSGLContext_mac();
 
@@ -48,20 +51,19 @@ private:
 
     /*void createWindow();
 
-    struct WindowNS
-    {
+       struct WindowNS
+       {
         id object;
         id delegate;
         id view;
-    };
+       };
 
-    WindowNS _nsWindow;
+       WindowNS _nsWindow;
 
-    // NSGL-specific per-context data
-    id _pixelFormat;
-    id _object;*/
+       // NSGL-specific per-context data
+       id _pixelFormat;
+       id _object;*/
     CGLContextObj _context;
-
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -187,7 +187,8 @@ class TLSHolder
 
 public:
 
-    TLSHolder() : TLSHolderBase() {}
+    TLSHolder()
+        : TLSHolderBase() {}
 
     virtual ~TLSHolder() {}
 

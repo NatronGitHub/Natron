@@ -40,8 +40,8 @@ NATRON_NAMESPACE_ENTER;
 
 ViewerToolButton::ViewerToolButton(QWidget* parent)
     : QToolButton(parent)
-    , isSelected(false)
-    , wasMouseReleased(false)
+      , isSelected(false)
+      , wasMouseReleased(false)
 {
     setFocusPolicy(Qt::ClickFocus);
 }

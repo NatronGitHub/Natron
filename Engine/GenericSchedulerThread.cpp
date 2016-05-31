@@ -90,26 +90,26 @@ struct GenericSchedulerThreadPrivate
 
     GenericSchedulerThreadPrivate(GenericSchedulerThread* p)
         : _p(p)
-        , mustQuit(false)
-        , startingThreadAllowed(true)
-        , lastQuitThreadAllowedRestart(true)
-        , mustQuitCond()
-        , mustQuitMutex()
-        , startRequests(0)
-        , startRequestsCond()
-        , startRequestsMutex()
-        , abortRequested(0)
-        , abortRequestedMutex()
-        , abortRequestedCond()
-        , threadState(GenericSchedulerThread::eThreadStateStopped)
-        , threadStateMutex()
-        , enqueuedTasks()
-        , queuedTaskWhileProcessingAbort()
-        , enqueuedTasksMutex()
-        , executingOnMainThread(false)
-        , executingOnMainThreadCond()
-        , executingOnMainThreadMutex()
-        , blockingOperationWatcher()
+          , mustQuit(false)
+          , startingThreadAllowed(true)
+          , lastQuitThreadAllowedRestart(true)
+          , mustQuitCond()
+          , mustQuitMutex()
+          , startRequests(0)
+          , startRequestsCond()
+          , startRequestsMutex()
+          , abortRequested(0)
+          , abortRequestedMutex()
+          , abortRequestedCond()
+          , threadState(GenericSchedulerThread::eThreadStateStopped)
+          , threadStateMutex()
+          , enqueuedTasks()
+          , queuedTaskWhileProcessingAbort()
+          , enqueuedTasksMutex()
+          , executingOnMainThread(false)
+          , executingOnMainThreadCond()
+          , executingOnMainThreadMutex()
+          , blockingOperationWatcher()
     {
     }
 
@@ -130,8 +130,8 @@ struct GenericSchedulerThreadPrivate
 
 GenericSchedulerThread::GenericSchedulerThread()
     : QThread()
-    , AbortableThread(this)
-    , _imp( new GenericSchedulerThreadPrivate(this) )
+      , AbortableThread(this)
+      , _imp( new GenericSchedulerThreadPrivate(this) )
 {
     QObject::connect( this, SIGNAL(executionOnMainThreadRequested(ExecOnMTArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(ExecOnMTArgsPtr)) );
 }
@@ -469,15 +469,15 @@ GenericSchedulerThread::run()
                     args = _imp->enqueuedTasks.front();
                     _imp->enqueuedTasks.pop_front();
                 }
+                break;
             }
-            break;
             case eTaskQueueBehaviorSkipToMostRecent: {
                 if ( !_imp->enqueuedTasks.empty() ) {
                     args = _imp->enqueuedTasks.back();
                     _imp->enqueuedTasks.clear();
                 }
+                break;
             }
-            break;
             }
         }
 

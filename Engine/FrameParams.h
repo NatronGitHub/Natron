@@ -46,15 +46,15 @@ public:
 
     FrameParams()
         : NonKeyParams()
-        , _image()
-        , _rod()
+          , _image()
+          , _rod()
     {
     }
 
     FrameParams(const FrameParams & other)
         : NonKeyParams(other)
-        , _image(other._image)
-        , _rod(other._rod)
+          , _image(other._image)
+          , _rod(other._rod)
     {
     }
 
@@ -63,16 +63,16 @@ public:
                 const RectI& bounds,
                 const ImagePtr& originalImage)
         : NonKeyParams()
-        , _image(originalImage)
-        , _rod(rod)
+          , _image(originalImage)
+          , _rod(rod)
     {
         CacheEntryStorageInfo& info = getStorageInfo();
+
         info.mode = eStorageModeDisk;
         info.numComponents = 4; // always RGBA
-        info.dataTypeSize = getSizeOfForBitDepth((ImageBitDepthEnum)bitDepth);
+        info.dataTypeSize = getSizeOfForBitDepth( (ImageBitDepthEnum)bitDepth );
         info.bounds = bounds;
         info.textureTarget = GL_TEXTURE_2D;
-
     }
 
     virtual ~FrameParams()

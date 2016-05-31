@@ -49,9 +49,9 @@ NATRON_NAMESPACE_ENTER;
 
 LineEdit::LineEdit(QWidget* parent)
     : QLineEdit(parent)
-    , animation(0)
-    , dirty(false)
-    , altered(false)
+      , animation(0)
+      , dirty(false)
+      , altered(false)
 {
     setAttribute(Qt::WA_MacShowFocusRect, 0);
     connect( this, SIGNAL(editingFinished()), this, SLOT(onEditingFinished()) );

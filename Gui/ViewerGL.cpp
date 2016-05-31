@@ -111,7 +111,7 @@ NATRON_NAMESPACE_ENTER;
 ViewerGL::ViewerGL(ViewerTab* parent,
                    const QGLWidget* shareWidget)
     : QGLWidget(parent, shareWidget)
-    , _imp( new Implementation(this, parent) )
+      , _imp( new Implementation(this, parent) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1189,7 +1189,7 @@ ViewerGL::drawPersistentMessage()
 
         for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
             renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, *_imp->textFont);
-            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) );/*metrics.height() * 2 * zoomScreenPixelHeight*/
+            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) ); /*metrics.height() * 2 * zoomScreenPixelHeight*/
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1592,7 +1592,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     TextureRect textureRectangle;
     if (isPartialRect) {
         // For small partial updates overlays, we make new textures
-        int format,internalFormat,glType;
+        int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
         tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
         textureRectangle = region;
@@ -1600,7 +1600,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
         if (tex->type() != dataType) {
-            int format,internalFormat,glType;
+            int format, internalFormat, glType;
             Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
             _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
         }

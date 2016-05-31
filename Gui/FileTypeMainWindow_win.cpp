@@ -55,13 +55,13 @@ NATRON_NAMESPACE_ENTER;
 
 // —— construction ——————————————————————————
 DocumentWindow::DocumentWindow(QWidget* parent,
-                               Qt::WindowFlags flags) :
-    QMainWindow(parent, flags),
-    m_registerForDDE(false),
-    m_appAtomName(),
-    m_systemTopicAtomName( QString::fromUtf8("system") ),
-    m_appAtom(0),
-    m_systemTopicAtom(0)
+                               Qt::WindowFlags flags)
+    : QMainWindow(parent, flags),
+      m_registerForDDE(false),
+      m_appAtomName(),
+      m_systemTopicAtomName( QString::fromUtf8("system") ),
+      m_appAtom(0),
+      m_systemTopicAtom(0)
 {
     QFileInfo fi( qApp->applicationFilePath() );
 
@@ -263,7 +263,7 @@ DocumentWindow::ddeExecute(MSG* message,
     //IA64: Assume DDE LPARAMs are still 32-bit
     Q_ASSERT( ::UnpackDDElParam(WM_DDE_EXECUTE, message->lParam, &unused, (UINT_PTR*)&hData) );
 
-    QString command = QString::fromWCharArray( (LPCWSTR)::GlobalLock(hData) );
+    QString command = QString::fromWCharArray( (LPCWSTR) ::GlobalLock(hData) );
     ::GlobalUnlock(hData);
 
     // acknowledge now - before attempting to execute

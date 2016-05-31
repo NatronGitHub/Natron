@@ -101,8 +101,8 @@ EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
 
 EffectInstance::EffectInstance(NodePtr node)
     : NamedKnobHolder( node ? node->getApp() : AppInstPtr() )
-    , _node(node)
-    , _imp( new Implementation(this) )
+      , _node(node)
+      , _imp( new Implementation(this) )
 {
 }
 
@@ -1368,7 +1368,7 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
 EffectInstance::NotifyInputNRenderingStarted_RAII::NotifyInputNRenderingStarted_RAII(Node* node,
                                                                                      int inputNumber)
     : _node(node)
-    , _inputNumber(inputNumber)
+      , _inputNumber(inputNumber)
 {
     _didEmit = node->notifyInputNIsRendering(inputNumber);
 }

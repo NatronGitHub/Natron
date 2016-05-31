@@ -48,7 +48,8 @@ class DockablePanelTabWidget
 
 public:
 
-    DockablePanelTabWidget(Gui* gui, QWidget* parent = 0);
+    DockablePanelTabWidget(Gui* gui,
+                           QWidget* parent = 0);
 
     virtual QSize sizeHint() const OVERRIDE FINAL;
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;

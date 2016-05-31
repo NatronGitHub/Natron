@@ -47,13 +47,13 @@ NATRON_NAMESPACE_ENTER;
 ProcessHandler::ProcessHandler(const QString & projectPath,
                                OutputEffectInstance* writer)
     : _process(new QProcess)
-    , _writer(writer)
-    , _ipcServer(0)
-    , _bgProcessOutputSocket(0)
-    , _bgProcessInputSocket(0)
-    , _earlyCancel(false)
-    , _processLog()
-    , _processArgs()
+      , _writer(writer)
+      , _ipcServer(0)
+      , _bgProcessOutputSocket(0)
+      , _bgProcessInputSocket(0)
+      , _earlyCancel(false)
+      , _processLog()
+      , _processArgs()
 {
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();
@@ -269,14 +269,14 @@ ProcessHandler::onProcessEnd(int exitCode,
 
 ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
     : QThread()
-    , _mainProcessServerName(mainProcessServerName)
-    , _backgroundOutputPipeMutex(new QMutex)
-    , _backgroundOutputPipe(0)
-    , _backgroundIPCServer(0)
-    , _backgroundInputPipe(0)
-    , _mustQuitMutex()
-    , _mustQuitCond()
-    , _mustQuit(false)
+      , _mainProcessServerName(mainProcessServerName)
+      , _backgroundOutputPipeMutex(new QMutex)
+      , _backgroundOutputPipe(0)
+      , _backgroundIPCServer(0)
+      , _backgroundInputPipe(0)
+      , _mustQuitMutex()
+      , _mustQuitCond()
+      , _mustQuit(false)
 {
     initialize();
     _backgroundIPCServer->moveToThread(this);

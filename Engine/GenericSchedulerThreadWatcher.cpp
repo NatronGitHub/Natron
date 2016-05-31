@@ -69,18 +69,18 @@ struct GenericWatcherPrivate
 
     GenericWatcherPrivate()
         : tasksMutex()
-        , tasks()
-        , mustQuit(false)
-        , mustQuitCond()
-        , mustQuitMutex()
-        , startRequests(0)
+          , tasks()
+          , mustQuit(false)
+          , mustQuitCond()
+          , mustQuitMutex()
+          , startRequests(0)
     {
     }
 };
 
 GenericWatcher::GenericWatcher()
     : QThread()
-    , _imp( new GenericWatcherPrivate() )
+      , _imp( new GenericWatcherPrivate() )
 {
 }
 

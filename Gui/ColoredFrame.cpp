@@ -28,7 +28,7 @@ NATRON_NAMESPACE_ENTER;
 
 ColoredFrame::ColoredFrame(QWidget* parent)
     : QFrame(parent)
-    , _frameColor(Qt::black)
+      , _frameColor(Qt::black)
 {
 }
 

@@ -148,7 +148,10 @@ public:
         eEditModeRightDerivative
     };
 
-    EditKeyFrameDialog(EditModeEnum mode, CurveWidget* curveWidget, const KeyPtr& key, QWidget* parent);
+    EditKeyFrameDialog(EditModeEnum mode,
+                       CurveWidget* curveWidget,
+                       const KeyPtr& key,
+                       QWidget* parent);
 
     virtual ~EditKeyFrameDialog();
 

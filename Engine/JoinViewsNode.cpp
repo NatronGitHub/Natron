@@ -46,7 +46,7 @@ struct JoinViewsNodePrivate
 
 JoinViewsNode::JoinViewsNode(NodePtr node)
     : EffectInstance(node)
-    , _imp( new JoinViewsNodePrivate() )
+      , _imp( new JoinViewsNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (node) {

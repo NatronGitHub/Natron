@@ -78,24 +78,25 @@ public:
     typedef std::list< boost::shared_ptr<KnobSerialization> > KnobValues;
 
     ///Used to serialize
-    NodeSerialization(const NodePtr & n, bool serializeInputs = true);
+    NodeSerialization(const NodePtr & n,
+                      bool serializeInputs = true);
 
     ////Used to deserialize
     NodeSerialization()
         : _isNull(true)
-        , _nbKnobs(0)
-        , _knobsValues()
-        , _knobsAge(0)
-        , _nodeLabel()
-        , _nodeScriptName()
-        , _cacheID()
-        , _pluginID()
-        , _pluginMajorVersion(-1)
-        , _pluginMinorVersion(-1)
-        , _hasRotoContext(false)
-        , _hasTrackerContext(false)
-        , _node()
-        , _pythonModuleVersion(0)
+          , _nbKnobs(0)
+          , _knobsValues()
+          , _knobsAge(0)
+          , _nodeLabel()
+          , _nodeScriptName()
+          , _cacheID()
+          , _pluginID()
+          , _pluginMajorVersion(-1)
+          , _pluginMinorVersion(-1)
+          , _hasRotoContext(false)
+          , _hasTrackerContext(false)
+          , _node()
+          , _pythonModuleVersion(0)
     {
     }
 

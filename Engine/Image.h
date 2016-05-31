@@ -68,9 +68,9 @@ class Bitmap
 public:
     Bitmap(const RectI & bounds)
         : _bounds(bounds)
-        , _map( bounds.area() )
-        , _dirtyZone()
-        , _dirtyZoneSet(false)
+          , _map( bounds.area() )
+          , _dirtyZone()
+          , _dirtyZoneSet(false)
     {
         //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
         // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
@@ -81,9 +81,9 @@ public:
 
     Bitmap()
         : _bounds()
-        , _map()
-        , _dirtyZone()
-        , _dirtyZoneSet(false)
+          , _map()
+          , _dirtyZone()
+          , _dirtyZoneSet(false)
     {
     }
 
@@ -367,7 +367,7 @@ public:
 
         ReadAccess(const Image* img)
             : GenericAccess()
-            , img(img)
+              , img(img)
         {
             if (img) {
                 img->lockForRead();
@@ -376,7 +376,7 @@ public:
 
         ReadAccess(const ReadAccess& other)
             : GenericAccess()
-            , img(other.img)
+              , img(other.img)
         {
             //This is a recursive lock so it doesn't matter if we take it twice
             if (img) {
@@ -425,14 +425,14 @@ public:
 
         WriteAccess(Image* img)
             : GenericAccess()
-            , img(img)
+              , img(img)
         {
             img->lockForWrite();
         }
 
         WriteAccess(const WriteAccess& other)
             : GenericAccess()
-            , img(other.img)
+              , img(other.img)
         {
             //This is a recursive lock so it doesn't matter if we take it twice
             img->lockForWrite();

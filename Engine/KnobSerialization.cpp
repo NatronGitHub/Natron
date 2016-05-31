@@ -45,11 +45,11 @@ ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
                                        const KnobPtr & knob,
                                        int dimension)
     : _serialization(serialization)
-    , _knob(knob)
-    , _dimension(dimension)
-    , _master()
-    , _expression()
-    , _exprHasRetVar(false)
+      , _knob(knob)
+      , _dimension(dimension)
+      , _master()
+      , _expression()
+      , _exprHasRetVar(false)
 {
 }
 
@@ -58,11 +58,11 @@ ValueSerialization::ValueSerialization(const KnobPtr & knob,
                                        bool exprHasRetVar,
                                        const std::string& expr)
     : _serialization(0)
-    , _knob(knob)
-    , _dimension(dimension)
-    , _master()
-    , _expression(expr)
-    , _exprHasRetVar(exprHasRetVar)
+      , _knob(knob)
+      , _dimension(dimension)
+      , _master()
+      , _expression(expr)
+      , _exprHasRetVar(exprHasRetVar)
 {
     std::pair< int, KnobPtr > m = knob->getMaster(dimension);
 

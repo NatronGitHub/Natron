@@ -234,7 +234,7 @@ public:
                 int &argc,
                 char** argv)                                      ///< qapplication needs to be subclasses with reference otherwise lots of crashes will happen.
         : QApplication(argc, argv)
-        , _app(app)
+          , _app(app)
     {
         //setAttribute(Qt::AA_UseHighDpiPixmaps); // Qt 5
     }

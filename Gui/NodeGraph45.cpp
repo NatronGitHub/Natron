@@ -280,16 +280,16 @@ struct FindNodeDialogPrivate
 
     FindNodeDialogPrivate(NodeGraph* graph)
         : graph(graph)
-        , currentFilter()
-        , nodeResults()
-        , currentFindIndex(-1)
-        , mainLayout(0)
-        , label(0)
-        , matchWhole(0)
-        , caseSensitivity(0)
-        , resultLabel(0)
-        , filter(0)
-        , buttons(0)
+          , currentFilter()
+          , nodeResults()
+          , currentFindIndex(-1)
+          , mainLayout(0)
+          , label(0)
+          , matchWhole(0)
+          , caseSensitivity(0)
+          , resultLabel(0)
+          , filter(0)
+          , buttons(0)
     {
     }
 };
@@ -297,7 +297,7 @@ struct FindNodeDialogPrivate
 FindNodeDialog::FindNodeDialog(NodeGraph* graph,
                                QWidget* parent)
     : QDialog(parent)
-    , _imp( new FindNodeDialogPrivate(graph) )
+      , _imp( new FindNodeDialogPrivate(graph) )
 {
     setWindowFlags(Qt::Popup);
 
@@ -474,7 +474,7 @@ struct EditNodeNameDialogPrivate
 
     EditNodeNameDialogPrivate(const NodeGuiPtr& node)
         : field(0)
-        , node(node)
+          , node(node)
     {
     }
 };
@@ -482,7 +482,7 @@ struct EditNodeNameDialogPrivate
 EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,
                                        QWidget* parent)
     : QDialog(parent)
-    , _imp( new EditNodeNameDialogPrivate(node) )
+      , _imp( new EditNodeNameDialogPrivate(node) )
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 

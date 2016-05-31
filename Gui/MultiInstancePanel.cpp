@@ -150,20 +150,20 @@ public:
     MultiInstancePanelPrivate(MultiInstancePanel* publicI,
                               const boost::shared_ptr<NodeGui> & node)
         : publicInterface(publicI)
-        , guiCreated(false)
-        , mainInstance(node)
-        , instances()
-        , view(0)
-        , model(0)
-        , buttonsContainer(0)
-        , buttonsLayout(0)
-        , addButton(0)
-        , removeButton(0)
-        , selectAll(0)
-        , resetTracksButton(0)
-        , executingKnobValueChanged(false)
-        , knobValueRecursion(0)
-        , redrawOnSelectionChanged(true)
+          , guiCreated(false)
+          , mainInstance(node)
+          , instances()
+          , view(0)
+          , model(0)
+          , buttonsContainer(0)
+          , buttonsLayout(0)
+          , addButton(0)
+          , removeButton(0)
+          , selectAll(0)
+          , resetTracksButton(0)
+          , executingKnobValueChanged(false)
+          , knobValueRecursion(0)
+          , redrawOnSelectionChanged(true)
     {
     }
 
@@ -298,7 +298,7 @@ public:
 
 MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui> & node)
     : NamedKnobHolder( node->getNode()->getApp() )
-    , _imp( new MultiInstancePanelPrivate(this, node) )
+      , _imp( new MultiInstancePanelPrivate(this, node) )
 {
 }
 
@@ -334,8 +334,8 @@ private:
 TableItemDelegate::TableItemDelegate(TableView* view,
                                      MultiInstancePanel* panel)
     : QStyledItemDelegate(view)
-    , _view(view)
-    , _panel(panel)
+      , _view(view)
+      , _panel(panel)
 {
 }
 
@@ -617,9 +617,9 @@ public:
                    const NodePtr & node,
                    QUndoCommand* parent = 0)
         : QUndoCommand(parent)
-        , _firstRedoCalled(false)
-        , _node(node)
-        , _panel(panel)
+          , _firstRedoCalled(false)
+          , _node(node)
+          , _panel(panel)
     {
     }
 
@@ -904,8 +904,8 @@ public:
                       const std::list<NodePtr > & nodes,
                       QUndoCommand* parent = 0)
         : QUndoCommand(parent)
-        , _panel(panel)
-        , _nodes(nodes)
+          , _panel(panel)
+          , _nodes(nodes)
     {
     }
 
@@ -1752,15 +1752,15 @@ public:
     TrackerPanelPrivateV1(TrackerPanelV1* publicInterface,
                           const boost::shared_ptr<NodeGui> & node)
         : publicInterface(publicInterface)
-        , averageTracksButton(0)
-        , exportLabel(0)
-        , exportContainer(0)
-        , exportLayout(0)
-        , exportChoice(0)
-        , exportButton(0)
-        , transformPage()
-        , referenceFrame()
-        , scheduler( publicInterface, node->getNode() )
+          , averageTracksButton(0)
+          , exportLabel(0)
+          , exportContainer(0)
+          , exportLayout(0)
+          , exportChoice(0)
+          , exportButton(0)
+          , transformPage()
+          , referenceFrame()
+          , scheduler( publicInterface, node->getNode() )
     {
     }
 
@@ -1773,7 +1773,7 @@ public:
 
 TrackerPanelV1::TrackerPanelV1(const boost::shared_ptr<NodeGui> & node)
     : MultiInstancePanel(node)
-    , _imp( new TrackerPanelPrivateV1(this, node) )
+      , _imp( new TrackerPanelPrivateV1(this, node) )
 {
     QObject::connect( &_imp->scheduler, SIGNAL(trackingStarted(int)), this, SLOT(onTrackingStarted(int)) );
     QObject::connect( &_imp->scheduler, SIGNAL(trackingFinished()), this, SLOT(onTrackingFinished()) );

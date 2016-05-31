@@ -145,25 +145,25 @@ public:
 
     ShortCutEditorPrivate()
         : mainLayout(0)
-        , tree(0)
-        , shortcutGroup(0)
-        , shortcutGroupLayout(0)
-        , shortcutLabel(0)
-        , shortcutEditor(0)
-        , altShortcutGroup(0)
-        , altShortcutGroupLayout(0)
-        , altShortcutLabel(0)
-        , altShortcutEditor(0)
-        , validateButton(0)
-        , clearButton(0)
-        , resetButton(0)
-        , buttonsContainer(0)
-        , buttonsLayout(0)
-        , restoreDefaultsButton(0)
-        , applyButton(0)
-        , cancelButton(0)
-        , okButton(0)
-        , appShortcuts()
+          , tree(0)
+          , shortcutGroup(0)
+          , shortcutGroupLayout(0)
+          , shortcutLabel(0)
+          , shortcutEditor(0)
+          , altShortcutGroup(0)
+          , altShortcutGroupLayout(0)
+          , altShortcutLabel(0)
+          , altShortcutEditor(0)
+          , validateButton(0)
+          , clearButton(0)
+          , resetButton(0)
+          , buttonsContainer(0)
+          , buttonsLayout(0)
+          , restoreDefaultsButton(0)
+          , applyButton(0)
+          , cancelButton(0)
+          , okButton(0)
+          , appShortcuts()
     {
     }
 
@@ -269,7 +269,7 @@ public:
 
     ShortcutDelegate(HackedTreeWidget* parent)
         : QStyledItemDelegate(parent)
-        , tree(parent)
+          , tree(parent)
     {
     }
 
@@ -280,7 +280,7 @@ private:
 
 ShortCutEditor::ShortCutEditor(QWidget* parent)
     : QWidget(parent)
-    , _imp( new ShortCutEditorPrivate() )
+      , _imp( new ShortCutEditorPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);

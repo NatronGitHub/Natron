@@ -40,49 +40,47 @@ inline int
 getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
 {
     switch (bitdepth) {
-        case eImageBitDepthByte: {
-            return sizeof(unsigned char);
-        }
-        case eImageBitDepthShort: {
-            return sizeof(unsigned short);
-        }
-        case eImageBitDepthHalf: {
-            return sizeof(unsigned short);
-        }
-        case eImageBitDepthFloat: {
-            return sizeof(float);
-        }
-        case eImageBitDepthNone:
-            break;
+    case eImageBitDepthByte: {
+        return sizeof(unsigned char);
     }
+    case eImageBitDepthShort: {
+        return sizeof(unsigned short);
+    }
+    case eImageBitDepthHalf: {
+        return sizeof(unsigned short);
+    }
+    case eImageBitDepthFloat: {
+        return sizeof(float);
+    }
+    case eImageBitDepthNone:
+        break;
+    }
+
     return 0;
 }
-
 
 struct CacheEntryStorageInfo
 {
     RectI bounds;
     std::size_t dataTypeSize;
     std::size_t numComponents;
-
     StorageModeEnum mode;
     U32 textureTarget;
 
     CacheEntryStorageInfo()
-    : bounds()
-    , dataTypeSize(0)
-    , numComponents(0)
-    , mode(eStorageModeNone)
-    , textureTarget(0)
+        : bounds()
+          , dataTypeSize(0)
+          , numComponents(0)
+          , mode(eStorageModeNone)
+          , textureTarget(0)
     {
-
     }
 
     bool operator==(const CacheEntryStorageInfo& other) const
     {
         return dataTypeSize == other.dataTypeSize &&
-        mode == other.mode &&
-        textureTarget == other.textureTarget ;
+               mode == other.mode &&
+               textureTarget == other.textureTarget;
     }
 };
 
@@ -101,7 +99,6 @@ public:
     NonKeyParams(const NonKeyParams & other);
 
     const CacheEntryStorageInfo& getStorageInfo() const;
-
     CacheEntryStorageInfo& getStorageInfo();
 
     template<class Archive>

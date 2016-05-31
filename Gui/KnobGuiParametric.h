@@ -79,7 +79,6 @@ public:
     virtual ~KnobGuiParametric() OVERRIDE;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual void getSelectedCurves(std::vector<boost::shared_ptr<CurveGui> >* selection) OVERRIDE FINAL;
-
     virtual void swapOpenGLBuffers() OVERRIDE FINAL;
     virtual void redraw() OVERRIDE FINAL;
     virtual void getViewportSize(double &width, double &height) const OVERRIDE FINAL;

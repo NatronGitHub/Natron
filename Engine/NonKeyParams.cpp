@@ -44,7 +44,6 @@ NonKeyParams::NonKeyParams(const NonKeyParams & other)
 {
 }
 
-
 CacheEntryStorageInfo&
 NonKeyParams::getStorageInfo()
 {

@@ -47,43 +47,43 @@ NATRON_NAMESPACE_ENTER;
 RotoPaintPrivate::RotoPaintPrivate(RotoPaint* publicInterface,
                                    bool isPaintByDefault)
     : publicInterface(publicInterface)
-    , isPaintByDefault(isPaintByDefault)
-    , premultKnob()
-    , enabledKnobs()
-    , ui( new RotoPaintInteract(this) )
+      , isPaintByDefault(isPaintByDefault)
+      , premultKnob()
+      , enabledKnobs()
+      , ui( new RotoPaintInteract(this) )
 {
 }
 
 RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
     : p(p)
-    , selectedItems()
-    , selectedCps()
-    , selectedCpsBbox()
-    , showCpsBbox(false)
-    , transformMode()
-    , builtBezier()
-    , bezierBeingDragged()
-    , cpBeingDragged()
-    , tangentBeingDragged()
-    , featherBarBeingDragged()
-    , featherBarBeingHovered()
-    , strokeBeingPaint()
-    , cloneOffset()
-    , click()
-    , selectedTool(eRotoToolSelectAll)
-    , selectedRole(eRotoRoleSelection)
-    , state(eEventStateNone)
-    , hoverState(eHoverStateNothing)
-    , lastClickPos()
-    , lastMousePos()
-    , evaluateOnPenUp(false)
-    , evaluateOnKeyUp(false)
-    , iSelectingwithCtrlA(false)
-    , shiftDown(0)
-    , ctrlDown(0)
-    , altDown(0)
-    , lastTabletDownTriggeredEraser(false)
-    , mouseCenterOnSizeChange()
+      , selectedItems()
+      , selectedCps()
+      , selectedCpsBbox()
+      , showCpsBbox(false)
+      , transformMode()
+      , builtBezier()
+      , bezierBeingDragged()
+      , cpBeingDragged()
+      , tangentBeingDragged()
+      , featherBarBeingDragged()
+      , featherBarBeingHovered()
+      , strokeBeingPaint()
+      , cloneOffset()
+      , click()
+      , selectedTool(eRotoToolSelectAll)
+      , selectedRole(eRotoRoleSelection)
+      , state(eEventStateNone)
+      , hoverState(eHoverStateNothing)
+      , lastClickPos()
+      , lastMousePos()
+      , evaluateOnPenUp(false)
+      , evaluateOnKeyUp(false)
+      , iSelectingwithCtrlA(false)
+      , shiftDown(0)
+      , ctrlDown(0)
+      , altDown(0)
+      , lastTabletDownTriggeredEraser(false)
+      , mouseCenterOnSizeChange()
 {
     cloneOffset.first = cloneOffset.second = 0.;
 }
@@ -1174,8 +1174,8 @@ RotoPaintInteract::isWithinSelectedCpsBBox(const QPointF& pos) const
     double r = selectedCpsBbox.bottomRight().x();
     double b = selectedCpsBbox.bottomRight().y();
     double t = selectedCpsBbox.topLeft().y();
-    double toleranceX = 0;//kXHairSelectedCpsTolerance * pixelScale.first;
-    double toleranceY = 0;//kXHairSelectedCpsTolerance * pixelScale.second;
+    double toleranceX = 0; //kXHairSelectedCpsTolerance * pixelScale.first;
+    double toleranceY = 0; //kXHairSelectedCpsTolerance * pixelScale.second;
 
     return pos.x() > (l - toleranceX) && pos.x() < (r + toleranceX) &&
            pos.y() > (b - toleranceY) && pos.y() < (t + toleranceY);
