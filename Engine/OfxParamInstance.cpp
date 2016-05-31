@@ -3609,7 +3609,6 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
                                              OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
     , OFX::Host::ParametricParam::ParametricInstance( descriptor, node->effectInstance() )
-    , _overlayInteract(NULL)
 {
     const OFX::Host::Property::Set &properties = getProperties();
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
@@ -3626,7 +3625,6 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
         knob->setCurveColor(i, color[i * 3], color[i * 3 + 1], color[i * 3 + 2]);
     }
 
-    QObject::connect( knob.get(), SIGNAL(mustInitializeOverlayInteract(OverlaySupport*)), this, SLOT(initializeInteract(OverlaySupport*)) );
     setDisplayRange();
 }
 
@@ -3636,32 +3634,9 @@ OfxParametricInstance::onCurvesDefaultInitialized()
     _knob.lock()->setDefaultCurvesFromCurves();
 }
 
-void
-OfxParametricInstance::initializeInteract(OverlaySupport* widget)
-{
-    OfxPluginEntryPoint* interactEntryPoint = (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
-
-    if (interactEntryPoint) {
-        boost::shared_ptr<KnobParametric> knob = _knob.lock();
-        assert(knob);
-        if (!knob) {
-            throw std::logic_error("OfxParametricInstance::initializeInteract");
-        }
-        OfxEffectInstance* effect = dynamic_cast<OfxEffectInstance*>( knob->getHolder() );
-        assert(effect);
-        if (!effect) {
-            throw std::logic_error("OfxParametricInstance::initializeInteract");
-        }
-        _overlayInteract = new OfxOverlayInteract( ( *effect->effectInstance() ), 8, true );
-        _overlayInteract->setCallingViewport(widget);
-        _overlayInteract->createInstanceAction();
-        QObject::connect( _knob.lock().get(), SIGNAL(customBackgroundRequested()), this, SLOT(onCustomBackgroundDrawingRequested()) );
-    }
-}
 
 OfxParametricInstance::~OfxParametricInstance()
 {
-    delete _overlayInteract;
 }
 
 KnobPtr
@@ -3845,19 +3820,6 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
     }
 }
 
-void
-OfxParametricInstance::onCustomBackgroundDrawingRequested()
-{
-    if (_overlayInteract) {
-        double sx, sy;
-        _overlayInteract->getPixelScale(sx, sy);
-        EffectInstance* effect = dynamic_cast<EffectInstance*>( getKnob()->getHolder() );
-        assert(effect);
-        if (effect) {
-            _overlayInteract->drawAction(effect->getApp()->getTimeLine()->currentFrame(), RenderScale(sx, sy), /*view=*/ 0);
-        }
-    }
-}
 
 OfxStatus
 OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance,
