@@ -720,7 +720,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     StorageModeEnum storage = eStorageModeRAM;
     if (dynamic_cast<DiskCacheNode*>(this)) {
         storage = eStorageModeDisk;
-    } else if (openGLSupport != ePluginOpenGLRenderSupportNone) {
+    } else if (openGLSupport != ePluginOpenGLRenderSupportNone && args.allowGPURendering) {
         /*
          We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
          since we do not use the cache for textures)
@@ -1525,6 +1525,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                }*/
 # endif
+
+            if (storage == eStorageModeGLTex) {
+                assert(glContext);
+                attachOpenGLContext_public(glContext);
+            }
+
             renderRetCode = renderRoIInternal(args.time,
                                               frameArgs,
                                               safety,
@@ -1542,6 +1548,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                               outputClipPrefComps,
                                               neededComps,
                                               processChannels);
+
+            if (storage == eStorageModeGLTex) {
+                // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
+                // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
+                if (!supportsConcurrentOpenGLRenders()) {
+                    dettachOpenGLContext_public(glContext);
+                }
+            }
         } // if (hasSomethingToRender) {
 
         renderAborted = aborted();
@@ -1588,6 +1602,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///This is slightly clumsy since we already have a render rect code indicating it, we should
         ///use the ret code instead.
         throw std::runtime_error("Rendering Failed");
+    } else if (renderRetCode == eRenderRoIStatusRenderOutOfGPUMemory) {
+        /// Recall renderRoI on this node, but don't use GPU this time if possible
+        if (openGLSupport != ePluginOpenGLRenderSupportYes) {
+            // The plug-in can only use GPU or doesn't support GPU
+            throw std::runtime_error("Rendering Failed");
+        }
+        boost::scoped_ptr<RenderRoIArgs> newArgs(new RenderRoIArgs(args));
+        newArgs->allowGPURendering = false;
+        return renderRoI(*newArgs, outputPlanes);
     }
 
 
@@ -1914,13 +1937,16 @@ EffectInstance::renderRoIInternal(double time,
                 else if ( (*it2) == EffectInstance::eRenderingFunctorRetAborted ) {
                     renderStatus = eRenderingFunctorRetFailed;
                     break;
+                } else if ( (*it2) == EffectInstance::eRenderingFunctorRetOutOfGPUMemory ) {
+                    renderStatus = eRenderingFunctorRetOutOfGPUMemory;
+                    break;
                 }
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
                 RenderingFunctorRetEnum functorRet = _imp->tiledRenderingFunctor(*it,  renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
-                if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) ) {
+                if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) || (functorRet == eRenderingFunctorRetOutOfGPUMemory) ) {
                     renderStatus = functorRet;
                     break;
                 }
@@ -1948,7 +1974,11 @@ EffectInstance::renderRoIInternal(double time,
     }
 
     if (renderStatus != eRenderingFunctorRetOK) {
-        retCode = eRenderRoIStatusRenderFailed;
+        if (renderStatus == eRenderingFunctorRetOutOfGPUMemory) {
+            retCode = eRenderRoIStatusRenderOutOfGPUMemory;
+        } else {
+            retCode = eRenderRoIStatusRenderFailed;
+        }
     }
 
     return retCode;

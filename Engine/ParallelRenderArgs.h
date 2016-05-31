@@ -236,6 +236,9 @@ class ParallelRenderArgsSetter
 {
     boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > argsMap;
     NodesList nodes;
+
+protected:
+    
     boost::weak_ptr<OSGLContext> _openGLContext;
 
 public:

@@ -152,6 +152,9 @@ public:
         // True if we need to return an OpenGL texture. If false we must return a RAM image
         bool mustReturnOpenGLTexture;
 
+        // Set to false if you don't want the node to render using the GPU at all
+        bool allowGPURendering;
+
         // the time that was passed to the original renderRoI call of the caller node
         double callerRenderTime;
 
@@ -169,6 +172,7 @@ public:
             , byPassCache(false)
             , calledFromGetImage(false)
             , mustReturnOpenGLTexture(false)
+            , allowGPURendering(true)
             , callerRenderTime(0.)
         {
         }
@@ -200,6 +204,7 @@ public:
             , byPassCache(byPassCache_)
             , calledFromGetImage(calledFromGetImage)
             , mustReturnOpenGLTexture(renderOpenGLTexture)
+            , allowGPURendering(true)
             , callerRenderTime(callerRenderTime)
         {
         }
@@ -1644,6 +1649,8 @@ public:
     class OpenGLContextEffectData
     {
 
+    public:
+        
         OpenGLContextEffectData()
         {
 
@@ -1661,12 +1668,17 @@ public:
     /**
      * @brief This function calls the impementation specific attachOpenGLContext()
      **/
-    OpenGLContextEffectDataPtr attachOpenGLContext_public();
+    StatusEnum attachOpenGLContext_public(const OSGLContextPtr& glContext);
 
     /**
     * @brief This function calls the impementation specific dettachOpenGLContext()
     **/
-    void dettachOpenGLContext_public(const OpenGLContextEffectDataPtr& data);
+    StatusEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext);
+
+    /**
+     * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
+     **/
+    void dettachAllOpenGLContexts();
 
     /**
      * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
@@ -1683,13 +1695,24 @@ private:
      *
      * If the function supportsConcurrentOpenGLRenders() returns false, each call to attachOpenGLContext must be followed by
      * a call to dettachOpenGLContext before attaching a DIFFERENT context, meaning the plug-in thread-safety is instance safe at most.
+     *
+     * Possible return status code:
+     * eStatusOK , the action was trapped and all was well
+     * eStatusReplyDefault , the action was ignored, but all was well anyway
+     * eStatusOutOfMemory , in which case this may be called again after a memory purge
+     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    virtual OpenGLContextEffectDataPtr attachOpenGLContext() { return OpenGLContextEffectDataPtr(); }
+    virtual StatusEnum attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPtr* /*data*/) { return eStatusReplyDefault; }
 
     /**
-    * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
+     * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
+     * Possible return status code:
+     * eStatusOK , the action was trapped and all was well
+     * eStatusReplyDefault , the action was ignored, but all was well anyway
+     * eStatusOutOfMemory , in which case this may be called again after a memory purge
+     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
     **/
-    virtual void dettachOpenGLContext(const OpenGLContextEffectDataPtr& /*data*/) {}
+    virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& /*data*/) { return eStatusReplyDefault; }
 
 
     /**
@@ -1992,7 +2015,8 @@ private:
     {
         eRenderRoIStatusImageAlreadyRendered = 0, // there was nothing left to render
         eRenderRoIStatusImageRendered, // we rendered what was missing
-        eRenderRoIStatusRenderFailed // render failed
+        eRenderRoIStatusRenderFailed, // render failed
+        eRenderRoIStatusRenderOutOfGPUMemory, // The render failed because the GPU did not have enough memory
     };
 
 
@@ -2113,7 +2137,8 @@ private:
         eRenderingFunctorRetFailed, //< must stop rendering
         eRenderingFunctorRetOK, //< ok, move on
         eRenderingFunctorRetTakeImageLock, //< take the image lock because another thread is rendering part of something we need
-        eRenderingFunctorRetAborted // we were aborted
+        eRenderingFunctorRetAborted, // we were aborted
+        eRenderingFunctorRetOutOfGPUMemory
     };
 
 

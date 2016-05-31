@@ -343,6 +343,8 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , metadatas()
     , runningClipPreferences(false)
     , overlaysViewport(0)
+    , attachedContextsMutex(QMutex::Recursive)
+    , attachedContexts()
 {
 }
 

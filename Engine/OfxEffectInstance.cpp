@@ -2776,19 +2776,52 @@ OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
 bool
 OfxEffectInstance::supportsConcurrentOpenGLRenders() const
 {
-#pragma message WARN("TODO")
+    // By default OpenFX OpenGL render suite does not support concurrent OpenGL renders.
+    return false;
 }
 
-EffectInstance::OpenGLContextEffectDataPtr
-OfxEffectInstance::attachOpenGLContext()
+class OfxGLContextEffectData : public EffectInstance::OpenGLContextEffectData
 {
-#pragma message WARN("TODO")
+public:
+
+    OfxGLContextEffectData()
+    : EffectInstance::OpenGLContextEffectData()
+    {
+
+    }
+
+    virtual ~OfxGLContextEffectData() {}
+};
+
+StatusEnum
+OfxEffectInstance::attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPtr* data)
+{
+    data->reset(new OfxGLContextEffectData());
+    OfxStatus stat = effectInstance()->contextAttachedAction();
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
+    } else if (stat == kOfxStatErrMemory) {
+        return eStatusOutOfMemory;
+    } else if (stat == kOfxStatReplyDefault) {
+        return eStatusReplyDefault;
+    } else {
+        return eStatusOK;
+    }
 }
 
-void
-OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffectDataPtr& data)
+StatusEnum
+OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffectDataPtr& /*data*/)
 {
-#pragma message WARN("TODO")
+    OfxStatus stat = effectInstance()->contextDetachedAction();
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
+    } else if (stat == kOfxStatErrMemory) {
+        return eStatusOutOfMemory;
+    } else if (stat == kOfxStatReplyDefault) {
+        return eStatusReplyDefault;
+    } else {
+        return eStatusOK;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

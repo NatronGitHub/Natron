@@ -715,7 +715,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     assert(treeRoot);
 
     // Ensure this thread gets an OpenGL context for the render of the frame
-    OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToThread();
+    OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
     assert(glContext);
     _openGLContext = glContext;
 

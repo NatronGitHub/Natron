@@ -2622,8 +2622,15 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                 }
             }
 #endif
-
-            return st != eStatusOK ? eRenderingFunctorRetFailed : eRenderingFunctorRetAborted;
+            switch (st) {
+                case eStatusFailed:
+                    return eRenderingFunctorRetFailed;
+                case eStatusOutOfMemory:
+                    return eRenderingFunctorRetOutOfGPUMemory;
+                case eStatusOK:
+                default:
+                    return eRenderingFunctorRetAborted;
+            }
         } // if (st != eStatusOK || renderAborted) {
     } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
 
@@ -3828,21 +3835,82 @@ EffectInstance::endSequenceRender_public(double first,
 /**
  * @brief This function calls the impementation specific attachOpenGLContext()
  **/
-EffectInstance::OpenGLContextEffectDataPtr
-EffectInstance::attachOpenGLContext_public()
+StatusEnum
+EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext)
 {
     NON_RECURSIVE_ACTION();
-    return attachOpenGLContext();
+    bool concurrentGLRender = supportsConcurrentOpenGLRenders();
+    boost::scoped_ptr<QMutexLocker> locker;
+    if (concurrentGLRender) {
+        locker.reset(new QMutexLocker(&_imp->attachedContextsMutex));
+    } else {
+        _imp->attachedContextsMutex.lock();
+    }
+
+    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    if (found != _imp->attachedContexts.end()) {
+        // The context is already attached
+        glContext->makeContextCurrent();
+        return eStatusOK;
+    }
+
+
+
+    glContext->makeContextCurrent();
+    EffectInstance::OpenGLContextEffectDataPtr data;
+    StatusEnum ret = attachOpenGLContext(&data);
+    if (ret == eStatusOK || ret == eStatusReplyDefault) {
+        _imp->attachedContexts.insert(std::make_pair(glContext, data));
+    }
+    // Take the lock until dettach is called for plug-ins that do not support concurrent GL renders
+    return ret;
+}
+
+void
+EffectInstance::dettachAllOpenGLContexts()
+{
+    QMutexLocker locker(&_imp->attachedContextsMutex);
+    for (std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it!=_imp->attachedContexts.end(); ++it) {
+        OSGLContextPtr context = it->first.lock();
+        if (!context) {
+            continue;
+        }
+        context->makeContextCurrent();
+        dettachOpenGLContext(it->second);
+    }
 }
 
 /**
  * @brief This function calls the impementation specific dettachOpenGLContext()
  **/
-void
-EffectInstance::dettachOpenGLContext_public(const OpenGLContextEffectDataPtr& data)
+StatusEnum
+EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext)
 {
     NON_RECURSIVE_ACTION();
-    dettachOpenGLContext(data);
+    bool concurrentGLRender = supportsConcurrentOpenGLRenders();
+    boost::scoped_ptr<QMutexLocker> locker;
+    if (concurrentGLRender) {
+        locker.reset(new QMutexLocker(&_imp->attachedContextsMutex));
+    }
+
+    EffectInstance::OpenGLContextEffectDataPtr data;
+    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
+    if (found != _imp->attachedContexts.end()) {
+        data = found->second;
+        _imp->attachedContexts.erase(found);
+        return eStatusOK;
+    } else {
+        if (!concurrentGLRender) {
+            _imp->attachedContextsMutex.unlock();
+        }
+        return eStatusOK;
+    }
+
+    StatusEnum ret = dettachOpenGLContext(data);
+    if (!concurrentGLRender) {
+        _imp->attachedContextsMutex.unlock();
+    }
+    return ret;
 }
 
 bool

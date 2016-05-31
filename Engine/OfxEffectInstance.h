@@ -263,8 +263,8 @@ public:
     virtual EffectInstance::ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool supportsConcurrentOpenGLRenders() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual OpenGLContextEffectDataPtr attachOpenGLContext() OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void dettachOpenGLContext(const OpenGLContextEffectDataPtr& data) OVERRIDE FINAL;
+    virtual StatusEnum attachOpenGLContext(OpenGLContextEffectDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& data) OVERRIDE FINAL;
 
 
 public:

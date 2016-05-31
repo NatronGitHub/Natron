@@ -5795,6 +5795,10 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         QMutexLocker k(&_imp->isBeingDestroyedMutex);
         beingDestroyed = _imp->isBeingDestroyed;
     }
+
+    // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
+    _imp->effect->dettachAllOpenGLContexts();
+
     ///kill any thread it could have started
     ///Commented-out: If we were to undo the deactivate we don't want all threads to be
     ///exited, just exit them when the effect is really deleted instead

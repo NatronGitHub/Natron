@@ -61,6 +61,7 @@ enum StatusEnum
 {
     eStatusOK = 0,
     eStatusFailed = 1,
+    eStatusOutOfMemory = 2,
     eStatusReplyDefault = 14
 };
 
