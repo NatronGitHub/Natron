@@ -40,6 +40,7 @@
 #include "Gui/TextRenderer.h"
 #include "Gui/ZoomContext.h"
 #include "Gui/GuiFwd.h"
+#include "Engine/OfxOverlayInteract.h"
 
 
 // warning: 'gluErrorString' is deprecated: first deprecated in OS X 10.9 [-Wdeprecated-declarations]
@@ -154,6 +155,7 @@ private:
 
 public:
 
+    boost::weak_ptr<OfxParamOverlayInteract> _customInteract;
     QPoint _lastMousePos; /// the last click pressed, in widget coordinates [ (0,0) == top left corner ]
     ZoomContext zoomCtx;
     EventStateEnum _state;

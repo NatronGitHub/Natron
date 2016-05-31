@@ -107,6 +107,11 @@ public:
     {
     }
 
+    virtual OfxPluginEntryPoint* getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance* param) const
+    {
+        return (OfxPluginEntryPoint*)param->getProperties().getPointerProperty(kOfxParamPropInteractV1);
+    }
+
     virtual KnobPtr getKnob() const = 0;
     virtual OFX::Host::Param::Instance* getOfxParam() = 0;
     OFX::Host::Interact::Descriptor & getInteractDesc()
@@ -825,6 +830,11 @@ public:
 
     virtual ~OfxParametricInstance();
 
+    virtual OfxPluginEntryPoint* getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance * /*instance*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
+    }
+
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
 
@@ -868,15 +878,7 @@ public:
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-public Q_SLOTS:
 
-    void onCustomBackgroundDrawingRequested();
-
-    void initializeInteract(OverlaySupport* widget);
-
-private:
-
-    OfxOverlayInteract* _overlayInteract;
     boost::weak_ptr<KnobParametric> _knob;
 };
 

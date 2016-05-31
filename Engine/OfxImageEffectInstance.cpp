@@ -394,15 +394,22 @@ OfxImageEffectInstance::getViewName(int viewIndex,
     return kOfxStatErrBadIndex;
 }
 
-///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor
-///expects those properties to exist, so we add them to the INTERACT descriptor.
-static const OFX::Host::Property::PropSpec interactDescProps[] = {
-    { kOfxParamPropInteractSize,        OFX::Host::Property::eInt,  2, true, "0" },
-    { kOfxParamPropInteractSizeAspect,  OFX::Host::Property::eDouble,  1, false, "1" },
-    { kOfxParamPropInteractMinimumSize, OFX::Host::Property::eDouble,  2, false, "10" },
-    { kOfxParamPropInteractPreferedSize, OFX::Host::Property::eInt,     2, false, "10" },
-    OFX::Host::Property::propSpecEnd
-};
+const OFX::Host::Property::PropSpec*
+OfxImageEffectInstance::getOfxParamOverlayInteractDescProps()
+{
+    ///These props are properties of the PARAMETER descriptor but the describe function of the INTERACT descriptor
+    ///expects those properties to exist, so we add them to the INTERACT descriptor.
+    static const OFX::Host::Property::PropSpec interactDescProps[] = {
+        { kOfxParamPropInteractSize,        OFX::Host::Property::eInt,  2, true, "0" },
+        { kOfxParamPropInteractSizeAspect,  OFX::Host::Property::eDouble,  1, false, "1" },
+        { kOfxParamPropInteractMinimumSize, OFX::Host::Property::eDouble,  2, false, "10" },
+        { kOfxParamPropInteractPreferedSize, OFX::Host::Property::eInt,     2, false, "10" },
+        OFX::Host::Property::propSpecEnd
+    };
+    return interactDescProps;
+}
+
+
 
 // make a parameter instance
 OFX::Host::Param::Instance *
@@ -583,15 +590,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     }
 
     ptk->connectDynamicProperties();
-
-    OfxPluginEntryPoint* interact =
-        (OfxPluginEntryPoint*)descriptor.getProperties().getPointerProperty(kOfxParamPropInteractV1);
-    if (interact) {
-        OFX::Host::Interact::Descriptor & interactDesc = ptk->getInteractDesc();
-        interactDesc.getProperties().addProperties(interactDescProps);
-        interactDesc.setEntryPoint(interact);
-        interactDesc.describe(8, false);
-    }
 
     return instance;
 } // newParam

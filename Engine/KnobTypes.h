@@ -992,18 +992,6 @@ public:
 
     void loadParametricCurves(const std::list< Curve > & curves);
 
-public Q_SLOTS:
-
-    virtual void drawCustomBackground()
-    {
-        Q_EMIT customBackgroundRequested();
-    }
-
-    virtual void initializeOverlayInteract(OverlaySupport* widget)
-    {
-        Q_EMIT mustInitializeOverlayInteract(widget);
-    }
-
 Q_SIGNALS:
 
     //emitted by drawCustomBackground()

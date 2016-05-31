@@ -614,20 +614,22 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         if (!paramToKnob) {
             continue;
         }
-        OFX::Host::Interact::Descriptor & interactDesc = paramToKnob->getInteractDesc();
-        if (interactDesc.getState() == OFX::Host::Interact::eDescribed) {
-            KnobPtr knob = paramToKnob->getKnob();
-            boost::shared_ptr<OfxParamOverlayInteract> overlay( new OfxParamOverlayInteract( knob.get(), interactDesc,
-                                                                                             effectInstance()->getHandle() ) );
 
-            {
-                SET_CAN_SET_VALUE(true);
-                ///Take the preferences lock so that it cannot be modified throughout the action.
-                QReadLocker preferencesLocker(&_imp->preferencesLock);
-                overlay->createInstanceAction();
-            }
-            knob->setCustomInteract(overlay);
+        OfxPluginEntryPoint* interactEntryPoint = paramToKnob->getCustomOverlayInteractEntryPoint(*it);
+        if (!interactEntryPoint) {
+            continue;
         }
+        KnobPtr knob = paramToKnob->getKnob();
+
+
+        const OFX::Host::Property::PropSpec* interactDescProps = OfxImageEffectInstance::getOfxParamOverlayInteractDescProps();
+        OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
+        interactDesc.getProperties().addProperties(interactDescProps);
+        interactDesc.setEntryPoint(interactEntryPoint);
+        interactDesc.describe(8, false);
+        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract(new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle() ));
+        knob->setCustomInteract(overlayInteract);
+        overlayInteract->createInstanceAction();
     }
 } // OfxEffectInstance::tryInitializeOverlayInteracts
 
