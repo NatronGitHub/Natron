@@ -193,7 +193,6 @@ Image::applyMaskMix(const RectI& roi,
                     float mix,
                     const OSGLContextPtr& glContext)
 {
-
     ///!masked && mix == 1 has nothing to do
     if ( !masked && (mix == 1) ) {
         return;
@@ -225,23 +224,21 @@ Image::applyMaskMix(const RectI& roi,
         int target = getGLTextureTarget();
         glEnable(target);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, getGLTextureID());
+        glBindTexture( target, getGLTextureID() );
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
 
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(target, originalImg->getGLTextureID());
+        glBindTexture( target, originalImg->getGLTextureID() );
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(target, maskImg ? maskImg->getGLTextureID() : 0);
 
 
-
-
-        glViewport(0, 0, realRoI.width(), realRoI.height());
+        glViewport( 0, 0, realRoI.width(), realRoI.height() );
         glMatrixMode(GL_MODELVIEW);
-        glOrtho(_bounds.x1, _bounds.x2,
-                _bounds.y1, _bounds.y2,
-                -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
+        glOrtho( _bounds.x1, _bounds.x2,
+                 _bounds.y1, _bounds.y2,
+                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
@@ -289,7 +286,8 @@ Image::applyMaskMix(const RectI& roi,
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(target, 0);
         glCheckError();
-        return ;
+
+        return;
     }
 
     int srcNComps = originalImg ? (int)originalImg->getComponentsCount() : 0;
@@ -313,6 +311,6 @@ Image::applyMaskMix(const RectI& roi,
     default:
         break;
     }
-}
+} // applyMaskMix
 
 NATRON_NAMESPACE_EXIT;

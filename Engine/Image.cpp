@@ -1425,11 +1425,7 @@ Image::fill(const RectI & roi,
         srcTexCoords[3].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
 
         shader->bind();
-        std::vector<float> fillColor(4);
-        fillColor[0] = r;
-        fillColor[1] = g;
-        fillColor[2] = b;
-        fillColor[3] = a;
+        OfxRGBAColourF fillColor = {r, g, b, a};
         shader->setUniform("fillColor", fillColor);
 
         glBegin(GL_POLYGON);

@@ -634,18 +634,20 @@ Image::copyUnProcessedChannels(const RectI& roi,
         glBindTexture( target, getGLTextureID() );
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
-
+        glCheckError();
         glActiveTexture(GL_TEXTURE1);
         glBindTexture( target, originalImage->getGLTextureID() );
 
 
         glViewport( 0, 0, intersected.width(), intersected.height() );
+        glCheckError();
         glMatrixMode(GL_MODELVIEW);
         glOrtho( _bounds.x1, _bounds.x2,
                  _bounds.y1, _bounds.y2,
                  -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+        glCheckError();
 
         // Compute the texture coordinates to match the srcRoi
         Point srcTexCoords[4], vertexCoords[4];
@@ -670,14 +672,16 @@ Image::copyUnProcessedChannels(const RectI& roi,
         srcTexCoords[3].y = (intersected.y2 - _bounds.y1) / (double)_bounds.height();
 
         shader->bind();
+        glCheckError();
         shader->setUniform("originalImageTex", 1);
         shader->setUniform("outputImageTex", 0);
-        std::vector<float> procChannelsV(4);
-        procChannelsV[0] = processChannels[0] ? 1.f : 0.f;
-        procChannelsV[1] = processChannels[1] ? 1.f : 0.f;
-        procChannelsV[2] = processChannels[2] ? 1.f : 0.f;
-        procChannelsV[3] = processChannels[3] ? 1.f : 0.f;
+        OfxRGBAColourF procChannelsV = {
+            processChannels[0] ? 1.f : 0.f,
+            processChannels[1] ? 1.f : 0.f,
+            processChannels[2] ? 1.f : 0.f,
+            processChannels[3] ? 1.f : 0.f };
         shader->setUniform("processChannels", procChannelsV);
+        glCheckError();
         glBegin(GL_POLYGON);
         for (int i = 0; i < 4; ++i) {
             glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
@@ -685,7 +689,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
         }
         glEnd();
         shader->unbind();
-
+        glCheckError();
 
         glBindTexture(target, 0);
         glActiveTexture(GL_TEXTURE0);
