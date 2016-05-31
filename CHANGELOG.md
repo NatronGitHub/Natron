@@ -1,5 +1,10 @@
 # History
 
+## Version 2.0.4
+
+- Viewer: The number keys now always switch input A when not shifted, and B when shifted, even on keyboards where numbers should be shifted (such as French AZERTY).
+- Viewer: Reworked the wipe modes. added Onion Skin and stack modes.
+
 ## Version 2.0.3
 
 - Fixed a bug where some image sequences would fail to read when a first frame would be missing
