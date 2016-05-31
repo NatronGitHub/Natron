@@ -1,5 +1,7 @@
 # History
 
+## Version 2.1.0
+
 ## Version 2.0.4
 
 - Viewer: The number keys now always switch input A when not shifted, and B when shifted, even on keyboards where numbers should be shifted (such as French AZERTY).
