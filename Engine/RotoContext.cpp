@@ -2705,7 +2705,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
 
     {
         QReadLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
 
     if (image) {

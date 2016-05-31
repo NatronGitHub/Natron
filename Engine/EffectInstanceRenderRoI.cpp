@@ -850,7 +850,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 for (int n = 0; n < nLookups; ++n) {
                     getImageFromCacheAndConvertIfNeeded(createInCache, storage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
                                                         renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
-                                                        &rod,
+                                                        &rod, roi,
                                                         args.bitdepth, *it,
                                                         outputDepth,
                                                         *components,
@@ -1036,7 +1036,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
 
-        if (!rectsLeftToRender.empty() && cacheAlmostFull) {
+        // If doing opengl renders, we don't allow retrieving partial images from the cache
+        if (!rectsLeftToRender.empty() && (planesToRender->useOpenGL || cacheAlmostFull)) {
             ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
             ///we might recursively end-up in this same situation at each level of the render tree, ending with all images of each level
             ///being held in memory.
@@ -1054,7 +1055,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 it2->second.downscaleImage.reset();
             }
             isPlaneCached.reset();
-            redoCacheLookup = true;
+            if (cacheAlmostFull) {
+                redoCacheLookup = true;
+            }
         }
 
 
@@ -1243,7 +1246,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
             getImageFromCacheAndConvertIfNeeded(createInCache, storage, *key, renderMappedMipMapLevel,
                                                 renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
-                                                &rod,
+                                                &rod, roi,
                                                 args.bitdepth, it->first,
                                                 outputDepth, *components,
                                                 args.inputImagesList, frameArgs->stats, &it->second.fullscaleImage);
@@ -1730,6 +1733,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             outputPlanes->insert( std::make_pair(*comp, it->second.downscaleImage) );
         }
+
+#ifdef DEBUG
+        if (!it->second.downscaleImage->getBounds().contains(args.roi)) {
+            qDebug() << "[WARNING]:" << getScriptName_mt_safe().c_str() << "rendered an image with an RoI that fell outside its bounds.";
+        }
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

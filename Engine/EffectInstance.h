@@ -563,6 +563,7 @@ public:
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
                                              const RectD* rodParam,
+                                             const RectI& roi,
                                              ImageBitDepthEnum bitdepth,
                                              const ImageComponents & components,
                                              ImageBitDepthEnum nodeBitDepthPref,

@@ -1389,6 +1389,9 @@ getOrCreateFromCacheInternal(const ImageKey & key,
     if (!useCache) {
         image->reset( new Image(key, params) );
     } else {
+
+        assert(params->getStorageInfo().mode != eStorageModeGLTex);
+
         if (params->getStorageInfo().mode == eStorageModeRAM) {
             AppManager::getImageFromCacheOrCreate(key, params, image);
         } else if (params->getStorageInfo().mode == eStorageModeDisk) {
@@ -1513,6 +1516,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     unsigned int mipMapLevel,
                                                     const RectI* boundsParam,
                                                     const RectD* rodParam,
+                                                    const RectI& roi,
                                                     ImageBitDepthEnum bitdepth,
                                                     const ImageComponents & components,
                                                     ImageBitDepthEnum nodePrefDepth,
@@ -1687,7 +1691,14 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
 
             if (storage == eStorageModeGLTex) {
-                *image = convertRAMImageToOpenGLTexture(imageToConvert);
+                // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
+                // needed then reading it back to put it in the CPU image would take much more effort than just computing
+                // the GPU image.
+                std::list<RectI> restToRender;
+                imageToConvert->getRestToRender(roi, restToRender);
+                if (restToRender.empty()) {
+                    *image = convertRAMImageToOpenGLTexture(imageToConvert);
+                }
             } else {
                 *image = imageToConvert;
             }
@@ -1697,10 +1708,17 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
         } else if (*image) { //  else if (imageToConvert && !*image)
             ///Ensure the image is allocated
-            (*image)->allocateMemory();
+            if ((*image)->getStorageMode() != eStorageModeGLTex) {
+                (*image)->allocateMemory();
 
-            if (storage == eStorageModeGLTex) {
-                *image = convertRAMImageToOpenGLTexture(*image);
+                // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
+                // needed then reading it back to put it in the CPU image would take much more effort than just computing
+                // the GPU image.
+                std::list<RectI> restToRender;
+                (*image)->getRestToRender(roi, restToRender);
+                if (restToRender.empty()) {
+                    *image = convertRAMImageToOpenGLTexture(*image);
+                }
             }
 
             if ( stats && stats->isInDepthProfilingEnabled() ) {
