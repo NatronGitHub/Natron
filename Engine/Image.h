@@ -201,7 +201,8 @@ public:
 
     bool usesBitMap() const { return _useBitmap; }
 
-    StorageModeEnum getStorageMode() const {
+    StorageModeEnum getStorageMode() const
+    {
         return _params->getStorageInfo().mode;
     }
 
@@ -712,20 +713,20 @@ public:
      * For example if the image comps is eImageComponentAlpha, then only the alpha value 'a' will
      * be used.
      **/
-    void fill(const RectI & roi, float r, float g, float b, float a, const OSGLContextPtr& glContext = OSGLContextPtr());
+    void fill( const RectI & roi, float r, float g, float b, float a, const OSGLContextPtr& glContext = OSGLContextPtr() );
 
-    void fillZero(const RectI& roi, const OSGLContextPtr& glContext = OSGLContextPtr());
+    void fillZero( const RectI& roi, const OSGLContextPtr& glContext = OSGLContextPtr() );
 
-    void fillBoundsZero(const OSGLContextPtr& glContext = OSGLContextPtr());
+    void fillBoundsZero( const OSGLContextPtr& glContext = OSGLContextPtr() );
 
     /**
      * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B
      * components with the same value.
      **/
-    void fill(const RectI & rect,
-              float colorValue = 0.f,
-              float alphaValue = 1.f,
-              const OSGLContextPtr& glContext = OSGLContextPtr())
+    void fill( const RectI & rect,
+               float colorValue = 0.f,
+               float alphaValue = 1.f,
+               const OSGLContextPtr& glContext = OSGLContextPtr() )
     {
         fill(rect, colorValue, colorValue, colorValue, alphaValue, glContext);
     }
@@ -734,7 +735,7 @@ public:
      * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
      * The internal bitmap will be copied aswell
      **/
-    void pasteFrom(const Image & src, const RectI & srcRoi, bool copyBitmap = true, const OSGLContextPtr& glContext = OSGLContextPtr());
+    void pasteFrom( const Image & src, const RectI & srcRoi, bool copyBitmap = true, const OSGLContextPtr& glContext = OSGLContextPtr() );
 
     /**
      * @brief Downscales a portion of this image into output.
@@ -842,24 +843,24 @@ public:
      * @brief Given the channels to process, this function copies from the originalImage the channels
      * that are not marked to true in processChannels.
      **/
-    void copyUnProcessedChannels(const RectI& roi,
-                                 ImagePremultiplicationEnum outputPremult,
-                                 ImagePremultiplicationEnum originalImagePremult,
-                                 std::bitset<4> processChannels,
-                                 const boost::shared_ptr<Image>& originalImage,
-                                 bool ignorePremult,
-                                 const OSGLContextPtr& glContext = OSGLContextPtr());
+    void copyUnProcessedChannels( const RectI& roi,
+                                  ImagePremultiplicationEnum outputPremult,
+                                  ImagePremultiplicationEnum originalImagePremult,
+                                  std::bitset<4> processChannels,
+                                  const boost::shared_ptr<Image>& originalImage,
+                                  bool ignorePremult,
+                                  const OSGLContextPtr& glContext = OSGLContextPtr() );
 
     /**
      * @brief Mask the image by the given mask and also disolves it to the originalImg with the given mix.
      **/
-    void applyMaskMix(const RectI& roi,
-                      const Image* maskImg,
-                      const Image* originalImg,
-                      bool masked,
-                      bool maskInvert,
-                      float mix,
-                      const OSGLContextPtr& glContext = OSGLContextPtr());
+    void applyMaskMix( const RectI& roi,
+                       const Image* maskImg,
+                       const Image* originalImg,
+                       bool masked,
+                       bool maskInvert,
+                       float mix,
+                       const OSGLContextPtr& glContext = OSGLContextPtr() );
 
     /**
      * @brief Eeturns true if image contains NaNs or infinite values, and fix them.

@@ -85,6 +85,7 @@ public:
     boost::shared_ptr<KnobChoice> colorSpace16u;
     boost::shared_ptr<KnobChoice> colorSpace32f;
     boost::shared_ptr<KnobDouble> frameRate;
+    boost::shared_ptr<KnobChoice> gpuSupport;
     boost::shared_ptr<KnobInt> frameRange;
     boost::shared_ptr<KnobBool> lockFrameRange;
     boost::shared_ptr<KnobString> natronVersion;

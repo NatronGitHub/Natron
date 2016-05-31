@@ -571,7 +571,7 @@ Bitmap::swap(Bitmap& other)
 {
     _map.swap(other._map);
     _bounds = other._bounds;
-    _dirtyZone.clear();//merge(other._dirtyZone);
+    _dirtyZone.clear(); //merge(other._dirtyZone);
     _dirtyZoneSet = false;
 }
 
@@ -660,7 +660,8 @@ Image::printUnrenderedPixels(const RectI& roi) const
     }
 } // Image::printUnrenderedPixels
 
-#endif // ifdef DEBUG
+#endif \
+    // ifdef DEBUG
 
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<ImageParams>& params,
@@ -712,7 +713,6 @@ Image::Image(const ImageComponents& components,
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
     , _useBitmap(useBitmap)
 {
-
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
                   boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,
                                                                   par,
@@ -887,7 +887,7 @@ Image::pasteFromForDepth(const Image & srcImg,
 
     assert( getComponents() == srcImg.getComponents() );
 
-    if (copyBitmap) {
+    if (copyBitmap && _useBitmap) {
         copyBitmapPortion(roi, srcImg);
     }
     // now we're safe: both images contain the area in roi
@@ -939,7 +939,7 @@ Image::resizeInternal(const Image* srcImg,
     } else {
         boost::shared_ptr<ImageParams> params( new ImageParams( *srcImg->getParams() ) );
         params->setBounds(merge);
-        outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI()) );
+        outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI() ) );
         (*outputImage)->allocateMemory();
     }
     ImageBitDepthEnum depth = srcImg->getBitDepth();
@@ -1087,8 +1087,6 @@ Image::ensureBounds(const RectI& newBounds,
                     bool fillWithBlackAndTransparent,
                     bool setBitmapTo1)
 {
-
-
     // OpenGL textures are not resizable yet
     assert(_params->getStorageInfo().mode != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
@@ -1096,7 +1094,6 @@ Image::ensureBounds(const RectI& newBounds,
     }
 
     QWriteLocker k(&_entryLock);
-
     RectI merge = newBounds;
     merge.merge(_bounds);
 
@@ -1125,29 +1122,28 @@ Image::pasteFrom(const Image & src,
 {
     StorageModeEnum thisStorage = getStorageMode();
     StorageModeEnum otherStorage = src.getStorageMode();
-    if (thisStorage == eStorageModeGLTex  && otherStorage == eStorageModeGLTex) {
 
+    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to OpenGL texture
         assert(_params->getStorageInfo().textureTarget == src.getParams()->getStorageInfo().textureTarget);
 
         RectI dstBounds = getBounds();
         RectI srcBounds = src.getBounds();
-
         GLuint fboID = glContext->getFBOId();
 
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         int target = getGLTextureTarget();
         glEnable(target);
-        glBindTexture(target, src.getGLTextureID());
+        glBindTexture( target, src.getGLTextureID() );
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
-        glBindTexture(target, getGLTextureID());
+        glBindTexture( target, getGLTextureID() );
 
-        glViewport(0, 0, srcRoi.width(), srcRoi.height());
+        glViewport( 0, 0, srcRoi.width(), srcRoi.height() );
         glMatrixMode(GL_MODELVIEW);
-        glOrtho(dstBounds.x1, dstBounds.x2,
-                dstBounds.y1, dstBounds.y2,
-                -10.0 * (dstBounds.y2 - dstBounds.y1), 10.0 * (dstBounds.y2 - dstBounds.y1) );
+        glOrtho( dstBounds.x1, dstBounds.x2,
+                 dstBounds.y1, dstBounds.y2,
+                 -10.0 * (dstBounds.y2 - dstBounds.y1), 10.0 * (dstBounds.y2 - dstBounds.y1) );
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
@@ -1181,10 +1177,7 @@ Image::pasteFrom(const Image & src,
 
         glBindTexture(target, 0);
         glCheckError();
-
-    } else if (thisStorage == eStorageModeGLTex && otherStorage != eStorageModeGLTex) {
-
-
+    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
         // RAM image to OpenGL texture
         RectI dstBounds = getBounds();
         RectI srcBounds = src.getBounds();
@@ -1202,7 +1195,6 @@ Image::pasteFrom(const Image & src,
             return;
         }
         GLuint pboID = glContext->getPBOId();
-
         int target = getGLTextureTarget();
         glEnable(target);
 
@@ -1212,7 +1204,6 @@ Image::pasteFrom(const Image & src,
         glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
 
         void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-
         ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
         tmpImg->pasteFrom(src, roi);
 
@@ -1224,7 +1215,7 @@ Image::pasteFrom(const Image & src,
 
         glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
 
-        glBindTexture(target, getGLTextureID());
+        glBindTexture( target, getGLTextureID() );
         glTexSubImage2D(target,
                         0,              // level
                         roi.x1, roi.y1,               // xoffset, yoffset
@@ -1236,10 +1227,7 @@ Image::pasteFrom(const Image & src,
         glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
         glBindTexture(target, 0);
         glCheckError();
-
-
-    } else if (thisStorage != eStorageModeGLTex && otherStorage == eStorageModeGLTex) {
-
+    } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to RAM image
 
         RectI dstBounds = getBounds();
@@ -1261,13 +1249,11 @@ Image::pasteFrom(const Image & src,
         GLuint fboID = glContext->getFBOId();
 
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        glCheckError();
         int target = src.getGLTextureTarget();
         glEnable(target);
-        glBindTexture(target, src.getGLTextureID());
-        glCheckError();
+        glBindTexture( target, src.getGLTextureID() );
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
-        glCheckError();
+        glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
         glCheckFramebufferError();
         glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
@@ -1278,39 +1264,38 @@ Image::pasteFrom(const Image & src,
             unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
 
             glReadPixels(roi.x1, roi.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
-            glCheckError();
             glBindTexture(target, 0);
         }
         glCheckError();
 
         // Ok now convert from RGBA to this image format if needed
-        if (tmpImg) {
+        if ( tmpImg->getComponentsCount() != getComponentsCount() ) {
             tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, this);
+        } else {
+            pasteFrom(*tmpImg, roi, false);
         }
-
-
     } else {
         assert(getStorageMode() != eStorageModeGLTex && src.getStorageMode() != eStorageModeGLTex);
         ImageBitDepthEnum depth = getBitDepth();
 
         switch (depth) {
-            case eImageBitDepthByte:
-                pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap, true);
-                break;
-            case eImageBitDepthShort:
-                pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap, true);
-                break;
-            case eImageBitDepthHalf:
-                assert(false);
-                break;
-            case eImageBitDepthFloat:
-                pasteFromForDepth<float>(src, srcRoi, copyBitmap, true);
-                break;
-            case eImageBitDepthNone:
-                break;
+        case eImageBitDepthByte:
+            pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap, true);
+            break;
+        case eImageBitDepthShort:
+            pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap, true);
+            break;
+        case eImageBitDepthHalf:
+            assert(false);
+            break;
+        case eImageBitDepthFloat:
+            pasteFromForDepth<float>(src, srcRoi, copyBitmap, true);
+            break;
+        case eImageBitDepthNone:
+            break;
         }
     }
-}
+} // pasteFrom
 
 template <typename PIX, int maxValue, int nComps>
 void
@@ -1405,15 +1390,15 @@ Image::fill(const RectI & roi,
         int target = getGLTextureTarget();
         glEnable(target);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, getGLTextureID());
+        glBindTexture( target, getGLTextureID() );
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
 
-        glViewport(0, 0, realRoI.width(), realRoI.height());
+        glViewport( 0, 0, realRoI.width(), realRoI.height() );
         glMatrixMode(GL_MODELVIEW);
-        glOrtho(_bounds.x1, _bounds.x2,
-                _bounds.y1, _bounds.y2,
-                -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
+        glOrtho( _bounds.x1, _bounds.x2,
+                 _bounds.y1, _bounds.y2,
+                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
@@ -1458,7 +1443,8 @@ Image::fill(const RectI & roi,
 
         glBindTexture(target, 0);
         glCheckError();
-        return ;
+
+        return;
     }
 
     switch ( getBitDepth() ) {
@@ -1477,14 +1463,15 @@ Image::fill(const RectI & roi,
     case eImageBitDepthNone:
         break;
     }
-}
+} // fill
 
 void
-Image::fillZero(const RectI& roi, const OSGLContextPtr& glContext)
+Image::fillZero(const RectI& roi,
+                const OSGLContextPtr& glContext)
 {
-
     if (getStorageMode() == eStorageModeGLTex) {
         fill(roi, 0., 0., 0., 0., glContext);
+
         return;
     }
 
@@ -1494,7 +1481,6 @@ Image::fillZero(const RectI& roi, const OSGLContextPtr& glContext)
     if ( !roi.intersect(_bounds, &intersection) ) {
         return;
     }
-
 
 
     std::size_t rowSize =  (std::size_t)_nbComponents;
@@ -1529,9 +1515,9 @@ Image::fillZero(const RectI& roi, const OSGLContextPtr& glContext)
 void
 Image::fillBoundsZero(const OSGLContextPtr& glContext)
 {
-
     if (getStorageMode() == eStorageModeGLTex) {
         fill(getBounds(), 0., 0., 0., 0., glContext);
+
         return;
     }
 
@@ -1845,7 +1831,7 @@ Image::halveRoIForDepth(const RectI & roi,
             const int sum = sumW * sumH;
             assert(0 < sum && sum <= 4);
 
-            if (sum == 0) {// never happens
+            if (sum == 0) { // never happens
                 for (int k = 0; k < _nbComponents; ++k) {
                     dstPixStart[k] = 0;
                 }
@@ -2015,7 +2001,6 @@ Image::downscaleMipMap(const RectD& dstRod,
                        bool copyBitMap,
                        Image* output) const
 {
-
     assert(getStorageMode() != eStorageModeGLTex);
 
     ///You should not call this function with a level equal to 0.
@@ -2085,7 +2070,6 @@ Image::upscaleMipMapForDepth(const RectI & roi,
                              unsigned int toLevel,
                              Image* output) const
 {
-
     assert( getBitDepth() == output->getBitDepth() );
     assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
 
@@ -2185,8 +2169,6 @@ Image::upscaleMipMap(const RectI & roi,
         break;
     }
 }
-
-
 
 // code proofread and fixed by @devernay on 8/8/2014
 void
@@ -2332,8 +2314,6 @@ template <typename PIX, bool doPremult>
 void
 Image::premultInternal(const RectI& roi)
 {
-
-
     WriteAccess acc(this);
     RectI renderWindow;
 

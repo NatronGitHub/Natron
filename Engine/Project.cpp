@@ -814,6 +814,23 @@ Project::initializeKnobs()
     _imp->frameRate->setDisplayMaximum(50.);
     page->addKnob(_imp->frameRate);
 
+    _imp->gpuSupport = AppManager::createKnob<KnobChoice>( this, tr("GPU Rendering") );
+    _imp->gpuSupport->setName("gpuRendering");
+    {
+        std::vector<std::string> entries;
+        std::vector<std::string> helps;
+        entries.push_back("Enabled");
+        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        entries.push_back("Disabled");
+        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back("Disabled if background");
+        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+        _imp->gpuSupport->populateChoices(entries, helps);
+    }
+    _imp->gpuSupport->setAnimationEnabled(false);
+    _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins") );
+    _imp->gpuSupport->setEvaluateOnChange(false);
+    page->addKnob(_imp->gpuSupport);
 
     boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
 
@@ -1144,6 +1161,23 @@ Project::getProjectViewsCount() const
     _imp->viewsList->getTable(&pairs);
 
     return (int)pairs.size();
+}
+
+bool
+Project::isGPURenderingEnabledInProject() const
+{
+    int index = _imp->gpuSupport->getValue();
+
+    if (index == 0) {
+        return true;
+    } else if (index == 1) {
+        return false;
+    } else if (index == 2) {
+        return !getApp()->isBackground();
+    }
+    assert(false);
+
+    return false;
 }
 
 std::vector<ImageComponents>

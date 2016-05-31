@@ -115,8 +115,8 @@ NATRON_NAMESPACE_ENTER;
  **/
 class EffectInstance
     : public NamedKnobHolder
-      , public LockManagerI<Image>
-      , public boost::enable_shared_from_this<EffectInstance>
+    , public LockManagerI<Image>
+    , public boost::enable_shared_from_this<EffectInstance>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -578,11 +578,11 @@ public:
      **/
     ImagePtr convertOpenGLTextureToCachedRAMImage(const ImagePtr& image);
 
-   /**
-    * @brief Converts the given RAM-stored image to an OpenGL texture.
-    * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
-    * The OpenGL context should have been made current prior to calling this function.
-    **/
+    /**
+     * @brief Converts the given RAM-stored image to an OpenGL texture.
+     * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
+     * The OpenGL context should have been made current prior to calling this function.
+     **/
     ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);
 
 
@@ -614,7 +614,8 @@ public:
 
 public:
 
-        NotifyInputNRenderingStarted_RAII(Node* node, int inputNumber);
+        NotifyInputNRenderingStarted_RAII(Node* node,
+                                          int inputNumber);
 
         ~NotifyInputNRenderingStarted_RAII();
     };
@@ -884,6 +885,36 @@ public:
         return eViewInvarianceAllViewsVariant;
     }
 
+    class OpenGLContextEffectData
+    {
+        // True if we did not unlock the context mutex in attachOpenGLContext()
+        bool hasTakenLock;
+
+public:
+
+        OpenGLContextEffectData()
+            : hasTakenLock(false)
+        {
+        }
+
+        void setHasTakenLock(bool b)
+        {
+            hasTakenLock = b;
+        }
+
+        bool getHasTakenLock() const
+        {
+            return hasTakenLock;
+        }
+
+        virtual ~OpenGLContextEffectData()
+        {
+        }
+    };
+
+    typedef boost::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
+
+
     struct RenderActionArgs
     {
         double time;
@@ -898,6 +929,7 @@ public:
         bool byPassCache;
         bool draftMode;
         bool useOpenGL;
+        EffectInstance::OpenGLContextEffectDataPtr glContextData;
         std::bitset<4> processChannels;
     };
 
@@ -1356,6 +1388,7 @@ public:
         ImagePremultiplicationEnum outputPremult;
         bool isBeingRenderedElsewhere;
         bool useOpenGL;
+        EffectInstance::OpenGLContextEffectDataPtr glContextData;
 
         ImagePlanesToRender()
             : rectsToRender()
@@ -1364,6 +1397,7 @@ public:
             , outputPremult(eImagePremultiplicationPremultiplied)
             , isBeingRenderedElsewhere(false)
             , useOpenGL(false)
+            , glContextData()
         {
         }
     };
@@ -1477,7 +1511,8 @@ public:
                                            bool /*isRenderResponseToUserInteraction*/,
                                            bool /*draftMode*/,
                                            ViewIdx /*view*/,
-                                           bool /*isOpenGLRender*/)
+                                           bool /*isOpenGLRender*/,
+                                           const EffectInstance::OpenGLContextEffectDataPtr& /*glContextData*/)
     {
         return eStatusOK;
     }
@@ -1491,7 +1526,8 @@ public:
                                          bool /*isRenderResponseToUserInteraction*/,
                                          bool /*draftMode*/,
                                          ViewIdx /*view*/,
-                                         bool /*isOpenGLRender*/)
+                                         bool /*isOpenGLRender*/,
+                                         const EffectInstance::OpenGLContextEffectDataPtr& /*glContextData*/)
     {
         return eStatusOK;
     }
@@ -1528,13 +1564,15 @@ public:
                                           bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                           bool draftMode,
                                           ViewIdx view,
-                                          bool isOpenGLRender);
+                                          bool isOpenGLRender,
+                                          const EffectInstance::OpenGLContextEffectDataPtr& glContextData);
     StatusEnum endSequenceRender_public(double first, double last,
                                         double step, bool interactive, const RenderScale & scale,
                                         bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                         bool draftMode,
                                         ViewIdx view,
-                                        bool isOpenGLRender);
+                                        bool isOpenGLRender,
+                                        const EffectInstance::OpenGLContextEffectDataPtr& glContextData);
 
     virtual bool canHandleRenderScaleForOverlays() const { return true; }
 
@@ -1646,33 +1684,14 @@ public:
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 
-    class OpenGLContextEffectData
-    {
-
-    public:
-        
-        OpenGLContextEffectData()
-        {
-
-        }
-
-        virtual ~OpenGLContextEffectData()
-        {
-
-        }
-
-    };
-
-    typedef boost::shared_ptr<OpenGLContextEffectData> OpenGLContextEffectDataPtr;
-
     /**
      * @brief This function calls the impementation specific attachOpenGLContext()
      **/
-    StatusEnum attachOpenGLContext_public(const OSGLContextPtr& glContext);
+    StatusEnum attachOpenGLContext_public(const OSGLContextPtr& glContext, EffectInstance::OpenGLContextEffectDataPtr* data);
 
     /**
-    * @brief This function calls the impementation specific dettachOpenGLContext()
-    **/
+     * @brief This function calls the impementation specific dettachOpenGLContext()
+     **/
     StatusEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext);
 
     /**
@@ -1690,7 +1709,7 @@ private:
 
     /**
      * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
-     * This function will be called once per context. The function dettachOpenGLContext() will be called 
+     * This function will be called once per context. The function dettachOpenGLContext() will be called
      * on the value returned by this function to deinitialize all context related data.
      *
      * If the function supportsConcurrentOpenGLRenders() returns false, each call to attachOpenGLContext must be followed by
@@ -1711,7 +1730,7 @@ private:
      * eStatusReplyDefault , the action was ignored, but all was well anyway
      * eStatusOutOfMemory , in which case this may be called again after a memory purge
      * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
-    **/
+     **/
     virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& /*data*/) { return eStatusReplyDefault; }
 
 
@@ -1778,7 +1797,6 @@ public:
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
         double firstFrame, lastFrame;
         boost::shared_ptr<InputMatrixMap> transformRedirections;
-
         bool isDoingOpenGLRender;
 
         RenderArgs();

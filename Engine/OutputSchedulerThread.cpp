@@ -1080,7 +1080,8 @@ OutputSchedulerThread::startRender()
                                                 true,
                                                 false,
                                                 ViewIdx(0),
-                                                false /*useOpenGL*/) == eStatusFailed) {
+                                                false /*useOpenGL*/,
+                                                EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
             l.unlock();
 
 
@@ -1170,7 +1171,8 @@ OutputSchedulerThread::stopRender()
                                                          !appPTR->isBackground(),
                                                          false,
                                                          ViewIdx(0),
-                                                         false /*use OpenGL render*/) );
+                                                         false /*use OpenGL render*/,
+                                                         EffectInstance::OpenGLContextEffectDataPtr() ) );
     }
 
 

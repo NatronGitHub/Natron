@@ -645,9 +645,10 @@ EffectInstance::getThreadLocalOpenGLContext() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
 
-    if (!tls || tls->frameArgs.empty()) {
+    if ( !tls || tls->frameArgs.empty() ) {
         return OSGLContextPtr();
     }
+
     return tls->frameArgs.back()->openGLContext.lock();
 }
 
@@ -833,6 +834,7 @@ EffectInstance::getImage(int inputNb,
 
     if (!glContext && returnOpenGLTexture) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";
+
         return ImagePtr();
     }
 
@@ -986,9 +988,10 @@ EffectInstance::getImage(int inputNb,
             tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
         }
 
-        if (returnOpenGLTexture && inputImg->getStorageMode() != eStorageModeGLTex) {
+        if ( returnOpenGLTexture && (inputImg->getStorageMode() != eStorageModeGLTex) ) {
             inputImg = convertRAMImageToOpenGLTexture(inputImg);
         }
+
         return inputImg;
     }
 
@@ -999,7 +1002,6 @@ EffectInstance::getImage(int inputNb,
     std::list<ImageComponents> requestedComps;
     requestedComps.push_back(isMask ? maskComps : components);
     std::map<ImageComponents, ImagePtr> inputImages;
-
     RenderRoIRetCode retCode = inputEffect->renderRoI(RenderRoIArgs(time,
                                                                     scale,
                                                                     renderMappedMipMapLevel,
@@ -1046,7 +1048,7 @@ EffectInstance::getImage(int inputNb,
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
     ///Note that we do NOT cache it because it is really low def!
     ///For OpenGL textures, we do not do it because GL_TEXTURE_2D uses normalized texture coordinates anyway, so any OpenGL plug-in should support render scale.
-    if ( !dontUpscale  && renderFullScaleThenDownscale && (inputImgMipMapLevel != 0) && !returnOpenGLTexture ) {
+    if (!dontUpscale  && renderFullScaleThenDownscale && (inputImgMipMapLevel != 0) && !returnOpenGLTexture) {
         assert(inputImgMipMapLevel != 0);
         ///Resize the image according to the requested scale
         ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
@@ -1426,7 +1428,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
 {
     assert(image->getStorageMode() == eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params(new ImageParams(*image->getParams()));
+    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeRAM;
 
@@ -1452,14 +1454,12 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 {
     assert(image->getStorageMode() != eStorageModeGLTex);
 
-    boost::shared_ptr<ImageParams> params(new ImageParams(*image->getParams()));
+    boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeGLTex;
     info.textureTarget = GL_TEXTURE_2D;
 
     RectI bounds = image->getBounds();
-
-
     OSGLContextPtr context = getThreadLocalOpenGLContext();
     assert(context);
     if (!context) {
@@ -1467,7 +1467,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     }
 
     GLuint pboID = context->getPBOId();
-    
+
     glEnable(GL_TEXTURE_2D);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
@@ -1475,7 +1475,6 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW);
 
     void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
     if (useTmpImage) {
@@ -1483,7 +1482,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
         tmpImg->pasteFrom(*image, bounds);
     }
 
-    Image::ReadAccess racc(tmpImg ? tmpImg.get() : image.get());
+    Image::ReadAccess racc( tmpImg ? tmpImg.get() : image.get() );
     const unsigned char* srcdata = racc.pixelAt(bounds.x1, bounds.y1);
     assert(srcdata);
 
@@ -1505,7 +1504,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 
 
     return gpuImage;
-}
+} // convertRAMImageToOpenGLTexture
 
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
@@ -1543,7 +1542,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
     if (!isCached) {
         // For textures, we lookup for a RAM image, if found we convert it to a texture
-        if (storage == eStorageModeRAM || storage == eStorageModeGLTex) {
+        if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {
             isCached = AppManager::getImageFromCache(key, &cachedImages);
         } else if (storage == eStorageModeDisk) {
             isCached = AppManager::getImageFromDiskCache(key, &cachedImages);
@@ -1842,7 +1841,6 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    boost::shared_ptr<Image>* fullScaleImage,
                                    boost::shared_ptr<Image>* downscaleImage)
 {
-
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
     if (renderFullScaleThenDownscale) {
@@ -2098,7 +2096,6 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
     if (frameArgs->tilesSupported) {
         if (renderFullScaleThenDownscale) {
-
             // We cannot be rendering using OpenGL in this case
             assert(!planes->useOpenGL);
 
@@ -2350,7 +2347,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
     OSGLContextPtr glContext;
     if (planes.useOpenGL) {
         // Setup the viewport and the framebuffer
-        OSGLContextPtr glContext = frameArgs->openGLContext.lock();
+        glContext = frameArgs->openGLContext.lock();
         assert(glContext);
 
         // Ensure the context is current
@@ -2359,7 +2356,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         GLuint fboID = glContext->getFBOId();
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         glCheckError();
-        
     }
 
 
@@ -2425,10 +2421,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                 std::map<ImageComponents, ImagePtr>::iterator idIt = identityPlanes.begin();
                 for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it, ++idIt) {
                     if ( renderFullScaleThenDownscale && ( idIt->second->getMipMapLevel() > it->second.fullscaleImage->getMipMapLevel() ) ) {
-
                         // We cannot be rendering using OpenGL in this case
                         assert(!planes.useOpenGL);
-                        
 
 
                         if ( !idIt->second->getBounds().contains(renderMappedRectToRender) ) {
@@ -2517,7 +2511,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
                ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() ) {
-
             // OpenGL render never use the cache and bitmaps, all images are local to a render.
             assert(!planes.useOpenGL);
 
@@ -2577,7 +2570,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         int textureTarget = 0;
         if (planes.useOpenGL) {
-
             // Effects that render multiple planes at once are NOT supported by the OpenGL render suite
             // We only bind to the framebuffer color attachment 0 the "main" output image plane
             assert(actionArgs.outputPlanes.size() == 1);
@@ -2586,14 +2578,14 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             textureTarget = mainImagePlane->getGLTextureTarget();
             glEnable(textureTarget);
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(textureTarget, mainImagePlane->getGLTextureID());
+            glBindTexture( textureTarget, mainImagePlane->getGLTextureID() );
             glCheckError();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, mainImagePlane->getGLTextureID(), 0 /*LoD*/);
             glCheckError();
             glCheckFramebufferError();
 
             // setup the output viewport
-            glViewport(0, 0, actionArgs.roi.width(), actionArgs.roi.height());
+            glViewport( 0, 0, actionArgs.roi.width(), actionArgs.roi.height() );
             glCheckError();
 
             // Enable scissor to make the plug-in doesn't render outside of the viewport...
@@ -2637,13 +2629,16 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             }
 #endif
             switch (st) {
-                case eStatusFailed:
-                    return eRenderingFunctorRetFailed;
-                case eStatusOutOfMemory:
-                    return eRenderingFunctorRetOutOfGPUMemory;
-                case eStatusOK:
-                default:
-                    return eRenderingFunctorRetAborted;
+            case eStatusFailed:
+
+                return eRenderingFunctorRetFailed;
+            case eStatusOutOfMemory:
+
+                return eRenderingFunctorRetOutOfGPUMemory;
+            case eStatusOK:
+            default:
+
+                return eRenderingFunctorRetAborted;
             }
         } // if (st != eStatusOK || renderAborted) {
     } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
@@ -2677,7 +2672,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         if (it->second.isAllocatedOnTheFly) {
             ///Plane allocated on the fly only have a temp image if using the cache and it is defined over the render window only
             if (it->second.tmpImage != it->second.renderMappedImage) {
-
                 // We cannot be rendering using OpenGL in this case
                 assert(!planes.useOpenGL);
 
@@ -2696,7 +2690,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             it->second.renderMappedImage->markForRendered(actionArgs.roi);
         } else {
             if (renderFullScaleThenDownscale) {
-
                 // We cannot be rendering using OpenGL in this case
                 assert(!planes.useOpenGL);
 
@@ -2770,7 +2763,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             } else { // if (renderFullScaleThenDownscale) {
                 ///Copy the rectangle rendered in the downscaled image
                 if (it->second.tmpImage != it->second.downscaleImage) {
-
                     // We cannot be rendering using OpenGL in this case
                     assert(!planes.useOpenGL);
 
@@ -3812,7 +3804,8 @@ EffectInstance::beginSequenceRender_public(double first,
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
                                            ViewIdx view,
-                                           bool isOpenGLRender)
+                                           bool isOpenGLRender,
+                                           const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     NON_RECURSIVE_ACTION();
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
@@ -3821,7 +3814,7 @@ EffectInstance::beginSequenceRender_public(double first,
     ++tls->beginEndRenderCount;
 
     return beginSequenceRender(first, last, step, interactive, scale,
-                               isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender);
+                               isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
 }
 
 StatusEnum
@@ -3834,7 +3827,8 @@ EffectInstance::endSequenceRender_public(double first,
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
                                          ViewIdx view,
-                                         bool isOpenGLRender)
+                                         bool isOpenGLRender,
+                                         const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     NON_RECURSIVE_ACTION();
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
@@ -3843,39 +3837,47 @@ EffectInstance::endSequenceRender_public(double first,
     --tls->beginEndRenderCount;
     assert(tls->beginEndRenderCount >= 0);
 
-    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender);
+    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
 }
 
 /**
  * @brief This function calls the impementation specific attachOpenGLContext()
  **/
 StatusEnum
-EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext)
+EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
+                                           EffectInstance::OpenGLContextEffectDataPtr* data)
 {
     NON_RECURSIVE_ACTION();
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
     if (concurrentGLRender) {
-        locker.reset(new QMutexLocker(&_imp->attachedContextsMutex));
+        locker.reset( new QMutexLocker(&_imp->attachedContextsMutex) );
     } else {
         _imp->attachedContextsMutex.lock();
     }
 
     std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
-    if (found != _imp->attachedContexts.end()) {
+    if ( found != _imp->attachedContexts.end() ) {
         // The context is already attached
         glContext->makeContextCurrent();
+        *data = found->second;
+
         return eStatusOK;
     }
 
 
-
     glContext->makeContextCurrent();
-    EffectInstance::OpenGLContextEffectDataPtr data;
-    StatusEnum ret = attachOpenGLContext(&data);
-    if (ret == eStatusOK || ret == eStatusReplyDefault) {
-        _imp->attachedContexts.insert(std::make_pair(glContext, data));
+    StatusEnum ret = attachOpenGLContext(data);
+
+    if ( (ret == eStatusOK) || (ret == eStatusReplyDefault) ) {
+        if (!concurrentGLRender) {
+            (*data)->setHasTakenLock(true);
+        }
+        _imp->attachedContexts.insert( std::make_pair(glContext, *data) );
+    } else {
+        _imp->attachedContextsMutex.unlock();
     }
+
     // Take the lock until dettach is called for plug-ins that do not support concurrent GL renders
     return ret;
 }
@@ -3884,7 +3886,8 @@ void
 EffectInstance::dettachAllOpenGLContexts()
 {
     QMutexLocker locker(&_imp->attachedContextsMutex);
-    for (std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it!=_imp->attachedContexts.end(); ++it) {
+
+    for (std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
         OSGLContextPtr context = it->first.lock();
         if (!context) {
             continue;
@@ -3904,25 +3907,29 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext)
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
     if (concurrentGLRender) {
-        locker.reset(new QMutexLocker(&_imp->attachedContextsMutex));
+        locker.reset( new QMutexLocker(&_imp->attachedContextsMutex) );
     }
 
+    bool mustUnlock = false;
     EffectInstance::OpenGLContextEffectDataPtr data;
     std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
-    if (found != _imp->attachedContexts.end()) {
+    if ( found != _imp->attachedContexts.end() ) {
         data = found->second;
+        mustUnlock = data->getHasTakenLock();
         _imp->attachedContexts.erase(found);
     } else {
         if (!concurrentGLRender) {
             _imp->attachedContextsMutex.unlock();
         }
+
         return eStatusOK;
     }
 
     StatusEnum ret = dettachOpenGLContext(data);
-    if (!concurrentGLRender) {
+    if (!concurrentGLRender && mustUnlock) {
         _imp->attachedContextsMutex.unlock();
     }
+
     return ret;
 }
 

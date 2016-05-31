@@ -180,7 +180,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
             while ( x != end && x >= 0 && x < intersection.width() ) {
                 for (int k = 0; k < nComp; ++k) {
 #                 ifdef DEBUG
-                   // assert(srcPixels[k] == srcPixels[k]); // check for NaN
+                    assert(srcPixels[k] == srcPixels[k]); // check for NaN
 #                 endif
                     DSTPIX pix;
                     if ( (k == 3) || (!srcLut && !dstLut) ) {
@@ -217,7 +217,7 @@ Image::convertToFormatInternal_sameComps(const RectI & renderWindow,
                     }
                     dstPixels[k] =  pix;
 #                 ifdef DEBUG
-                    //assert(dstPixels[k] == dstPixels[k]); // check for NaN
+                    assert(dstPixels[k] == dstPixels[k]); // check for NaN
 #                 endif
                 }
 
@@ -369,8 +369,8 @@ Image::convertToFormatInternalForColorSpace(const RectI & renderWindow,
                         ///In this case we've XY, RGB or RGBA input and outputs
                         assert(srcNComps != dstNComps);
 
-                        const bool unpremultChannel = (//srcNComps == 4 && // test already done in convertToFormatInternalForDepth
-                                                       //dstNComps == 3 && // test already done in convertToFormatInternalForDepth
+                        const bool unpremultChannel = ( //srcNComps == 4 && // test already done in convertToFormatInternalForDepth
+                                                        //dstNComps == 3 && // test already done in convertToFormatInternalForDepth
                             requiresUnpremult);
 
                         ///This is only set if unpremultChannel is true

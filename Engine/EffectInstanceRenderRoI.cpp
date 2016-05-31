@@ -718,22 +718,21 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = getNode()->getCurrentOpenGLRenderSupport();
     StorageModeEnum storage = eStorageModeRAM;
-    if (dynamic_cast<DiskCacheNode*>(this)) {
+    if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
-    } else if (openGLSupport != ePluginOpenGLRenderSupportNone && args.allowGPURendering && glContext) {
+    } else if ( (openGLSupport != ePluginOpenGLRenderSupportNone) && args.allowGPURendering && glContext && getApp()->getProject()->isGPURenderingEnabledInProject() ) {
         /*
-         We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
-         since we do not use the cache for textures)
+           We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
+           since we do not use the cache for textures)
          */
         storage = eStorageModeGLTex;
         if (openGLSupport == ePluginOpenGLRenderSupportYes) {
-
             // If a node has multiple outputs, do not render it on OpenGL since we do not use the cache. We could end-up with this render being executed multiple times.
             // Also, if the render time is different from the caller render time, don't render using OpenGL otherwise we could computed this render multiple times.
             NodesWList outputNodes;
             getNode()->getOutputs_mt_safe(outputNodes);
-            if (outputNodes.size() > 1 ||
-                args.time != args.callerRenderTime) {
+            if ( (outputNodes.size() > 1) ||
+                 ( args.time != args.callerRenderTime) ) {
                 storage = eStorageModeRAM;
             }
 
@@ -741,13 +740,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (storage == eStorageModeGLTex) {
                 int maxSize;
                 glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
-                if (roi.width() >= maxSize ||
-                    roi.height() >= maxSize) {
+                if ( (roi.width() >= maxSize) ||
+                     ( roi.height() >= maxSize) ) {
                     // Fallback on CPU rendering since the image is larger than the maximum allowed OpenGL texture size
                     storage = eStorageModeRAM;
                 }
             }
-
         }
         if (storage == eStorageModeGLTex) {
             // OpenGL renders always support render scale...
@@ -768,8 +766,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
-
-
     bool createInCache;
     // Do not use the cache for OpenGL rendering
     if (storage == eStorageModeGLTex) {
@@ -804,9 +800,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                           1.,
                                                           false,
                                                           renderMappedMipMapLevel == 0 && args.mipMapLevel != 0 && !renderScaleOneUpstreamIfRenderScaleSupportDisabled) );
-
-
-
 
 
     /*
@@ -1080,7 +1073,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      */
     bool tryIdentityOptim = false;
     RectI inputsRoDIntersectionPixel;
-    if ( frameArgs->tilesSupported && !rectsLeftToRender.empty() && isDuringPaintStroke ) {
+    if (frameArgs->tilesSupported && !rectsLeftToRender.empty() && isDuringPaintStroke) {
         RectD inputsIntersection;
         bool inputsIntersectionSet = false;
         bool hasDifferentRods = false;
@@ -1526,34 +1519,43 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                }*/
 # endif
 
+
+            bool attachGLOK = true;
             if (storage == eStorageModeGLTex) {
                 assert(glContext);
-                attachOpenGLContext_public(glContext);
+                Natron::StatusEnum stat = attachOpenGLContext_public(glContext, &planesToRender->glContextData);
+                if (stat == eStatusOutOfMemory) {
+                    renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
+                    attachGLOK = false;
+                } else if (stat == eStatusFailed) {
+                    renderRetCode = eRenderRoIStatusRenderFailed;
+                    attachGLOK = false;
+                }
             }
-
-            renderRetCode = renderRoIInternal(args.time,
-                                              frameArgs,
-                                              safety,
-                                              args.mipMapLevel,
-                                              args.view,
-                                              rod,
-                                              par,
-                                              planesToRender,
-                                              frameArgs->isSequentialRender,
-                                              frameArgs->isRenderResponseToUserInteraction,
-                                              nodeHash,
-                                              renderFullScaleThenDownscale,
-                                              byPassCache,
-                                              outputDepth,
-                                              outputClipPrefComps,
-                                              neededComps,
-                                              processChannels);
-
-            if (storage == eStorageModeGLTex) {
-                // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
-                // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
-                if (!supportsConcurrentOpenGLRenders()) {
-                    dettachOpenGLContext_public(glContext);
+            if (attachGLOK) {
+                renderRetCode = renderRoIInternal(args.time,
+                                                  frameArgs,
+                                                  safety,
+                                                  args.mipMapLevel,
+                                                  args.view,
+                                                  rod,
+                                                  par,
+                                                  planesToRender,
+                                                  frameArgs->isSequentialRender,
+                                                  frameArgs->isRenderResponseToUserInteraction,
+                                                  nodeHash,
+                                                  renderFullScaleThenDownscale,
+                                                  byPassCache,
+                                                  outputDepth,
+                                                  outputClipPrefComps,
+                                                  neededComps,
+                                                  processChannels);
+                if (storage == eStorageModeGLTex) {
+                    // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
+                    // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
+                    if ( !supportsConcurrentOpenGLRenders() ) {
+                        dettachOpenGLContext_public(glContext);
+                    }
                 }
             }
         } // if (hasSomethingToRender) {
@@ -1608,8 +1610,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             // The plug-in can only use GPU or doesn't support GPU
             throw std::runtime_error("Rendering Failed");
         }
-        boost::scoped_ptr<RenderRoIArgs> newArgs(new RenderRoIArgs(args));
+        boost::scoped_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
         newArgs->allowGPURendering = false;
+
         return renderRoI(*newArgs, outputPlanes);
     }
 
@@ -1719,9 +1722,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
 
             StorageModeEnum storage = it->second.downscaleImage->getStorageMode();
-            if (args.mustReturnOpenGLTexture &&  storage != eStorageModeGLTex) {
+            if ( args.mustReturnOpenGLTexture && (storage != eStorageModeGLTex) ) {
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
-            } else if (!args.mustReturnOpenGLTexture && storage == eStorageModeGLTex) {
+            } else if ( !args.mustReturnOpenGLTexture && (storage == eStorageModeGLTex) ) {
                 it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage);
             }
 
@@ -1863,7 +1866,7 @@ EffectInstance::renderRoIInternal(double time,
     if (callBegin) {
         assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
         if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
-                                       isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL) == eStatusFailed) {
+                                       isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
     }
@@ -1968,7 +1971,7 @@ EffectInstance::renderRoIInternal(double time,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
                                      frameArgs->draftMode,
-                                     view, planesToRender->useOpenGL) == eStatusFailed) {
+                                     view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
     }

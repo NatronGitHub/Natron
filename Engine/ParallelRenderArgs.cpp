@@ -273,18 +273,18 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 {
                                     boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                                     renderArgs.reset( new EffectInstance::RenderRoIArgs( f, //< time
-                                                                                        upstreamScale, //< scale
-                                                                                        upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
-                                                                                        viewIt->first, //< view
-                                                                                        byPassCache,
-                                                                                        inputRoIPixelCoords, //< roi in pixel coordinates
-                                                                                        RectD(), // < did we precompute any RoD to speed-up the call ?
-                                                                                        componentsToRender, //< requested comps
-                                                                                        inputPrefDepth,
-                                                                                        false,
-                                                                                        effect.get(),
-                                                                                        renderIsOpenGL /*returnOpenGLTex*/,
-                                                                                        time /*callerRenderTime*/) );
+                                                                                         upstreamScale, //< scale
+                                                                                         upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                                         viewIt->first, //< view
+                                                                                         byPassCache,
+                                                                                         inputRoIPixelCoords, //< roi in pixel coordinates
+                                                                                         RectD(), // < did we precompute any RoD to speed-up the call ?
+                                                                                         componentsToRender, //< requested comps
+                                                                                         inputPrefDepth,
+                                                                                         false,
+                                                                                         effect.get(),
+                                                                                         renderIsOpenGL /*returnOpenGLTex*/,
+                                                                                         time /*callerRenderTime*/) );
 
                                     EffectInstance::RenderRoIRetCode ret;
                                     ret = inputEffect->renderRoI(*renderArgs, &inputImgs); //< requested bitdepth
@@ -404,8 +404,8 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
            Do NOT call getRegionOfDefinition on the identity time, if the plug-in returns an identity time different from
            this time, we expect that it handles getRegionOfDefinition itself correctly.
          */
-        double rodTime = time;//fvRequest->globalData.isIdentity ? fvRequest->globalData.inputIdentityTime : time;
-        ViewIdx rodView = view;//fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
+        double rodTime = time; //fvRequest->globalData.isIdentity ? fvRequest->globalData.inputIdentityTime : time;
+        ViewIdx rodView = view; //fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
 
         ///Get the RoD
         StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
@@ -611,7 +611,8 @@ struct FindDependenciesNode
     NodePtr node;
     bool recursed;
 
-    FindDependenciesNode() : node(), recursed(false) {}
+    FindDependenciesNode()
+        : node(), recursed(false) {}
 };
 
 struct FindDependenciesNode_compare
@@ -721,9 +722,8 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
     } catch (const std::exception& e) {
         qDebug() << e.what();
     }
+
     _openGLContext = glContext;
-
-
 
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
@@ -821,9 +821,9 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args)
     : argsMap(args)
 {
-
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+
     assert(glContext);
     _openGLContext = glContext;
     if (args) {

@@ -591,8 +591,6 @@ Image::copyUnProcessedChannels(const RectI& roi,
                                bool ignorePremult,
                                const OSGLContextPtr& glContext)
 {
-
-
     int numComp = getComponents().getNumComponents();
 
     if (numComp == 0) {
@@ -633,19 +631,19 @@ Image::copyUnProcessedChannels(const RectI& roi,
         int target = getGLTextureTarget();
         glEnable(target);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, getGLTextureID());
+        glBindTexture( target, getGLTextureID() );
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
 
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(target, originalImage->getGLTextureID());
+        glBindTexture( target, originalImage->getGLTextureID() );
 
 
-        glViewport(0, 0, intersected.width(), intersected.height());
+        glViewport( 0, 0, intersected.width(), intersected.height() );
         glMatrixMode(GL_MODELVIEW);
-        glOrtho(_bounds.x1, _bounds.x2,
-                _bounds.y1, _bounds.y2,
-                -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
+        glOrtho( _bounds.x1, _bounds.x2,
+                 _bounds.y1, _bounds.y2,
+                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
 
@@ -693,9 +691,9 @@ Image::copyUnProcessedChannels(const RectI& roi,
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(target, 0);
         glCheckError();
-        return ;
-    }
 
+        return;
+    }
 
 
     bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
@@ -714,6 +712,6 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
         return;
     }
-}
+} // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;
