@@ -252,7 +252,9 @@ AbortableRenderInfo::onAbortTimerTimeout()
     }
     ss << std::endl;
 
-    if (hasAtLeastOneThreadInNodeAction) {
+    if (!hasAtLeastOneThreadInNodeAction) {
+        return;
+    } else {
         ss << ssThreads.str();
     }
 
