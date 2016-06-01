@@ -97,14 +97,14 @@ struct KnobGuiValuePrivate
 
     KnobGuiValuePrivate(KnobPtr knob)
         : knob(knob)
-        , intKnob( boost::dynamic_pointer_cast<Knob<int> >(knob) )
-        , doubleKnob( boost::dynamic_pointer_cast<Knob<double> >(knob) )
-        , spinBoxes()
-        , container(0)
-        , slider(0)
-        , rectangleFormatButton(0)
-        , dimensionSwitchButton(0)
-        , rectangleFormatIsWidthHeight(true)
+          , intKnob( boost::dynamic_pointer_cast<Knob<int> >(knob) )
+          , doubleKnob( boost::dynamic_pointer_cast<Knob<double> >(knob) )
+          , spinBoxes()
+          , container(0)
+          , slider(0)
+          , rectangleFormatButton(0)
+          , dimensionSwitchButton(0)
+          , rectangleFormatIsWidthHeight(true)
     {
     }
 
@@ -192,7 +192,7 @@ KnobGuiValue::shouldAddStretch() const
 KnobGuiValue::KnobGuiValue(KnobPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _imp( new KnobGuiValuePrivate(knob) )
+      , _imp( new KnobGuiValuePrivate(knob) )
 {
     boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
 
@@ -1173,7 +1173,7 @@ KnobGuiValue::refreshDimensionName(int dim)
 KnobGuiDouble::KnobGuiDouble(KnobPtr knob,
                              KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
-    , _knob( boost::dynamic_pointer_cast<KnobDouble>(knob) )
+      , _knob( boost::dynamic_pointer_cast<KnobDouble>(knob) )
 {
 }
 
@@ -1246,7 +1246,7 @@ KnobGuiDouble::getDecimals(std::vector<int>* decimals) const
 KnobGuiInt::KnobGuiInt(KnobPtr knob,
                        KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
-    , _knob( boost::dynamic_pointer_cast<KnobInt>(knob) )
+      , _knob( boost::dynamic_pointer_cast<KnobInt>(knob) )
 {
 }
 

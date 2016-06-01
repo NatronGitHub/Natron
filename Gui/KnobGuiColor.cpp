@@ -88,8 +88,8 @@ NATRON_NAMESPACE_ENTER;
 ColorPickerLabel::ColorPickerLabel(KnobGuiColor* knob,
                                    QWidget* parent)
     : Label(parent)
-    , _pickingEnabled(false)
-    , _knob(knob)
+      , _pickingEnabled(false)
+      , _knob(knob)
 {
     setMouseTracking(true);
 }
@@ -205,11 +205,11 @@ ColorPickerLabel::setColor(const QColor & color)
 KnobGuiColor::KnobGuiColor(KnobPtr knob,
                            KnobGuiContainerI *container)
     : KnobGuiValue(knob, container)
-    , _knob( boost::dynamic_pointer_cast<KnobColor>(knob) )
-    , _colorLabel(0)
-    , _colorDialogButton(0)
-    , _lastColor( knob->getDimension() )
-    , _useSimplifiedUI( isViewerUIKnob() || _knob.lock()->isSimplified() )
+      , _knob( boost::dynamic_pointer_cast<KnobColor>(knob) )
+      , _colorLabel(0)
+      , _colorDialogButton(0)
+      , _lastColor( knob->getDimension() )
+      , _useSimplifiedUI( isViewerUIKnob() || _knob.lock()->isSimplified() )
 {
 }
 

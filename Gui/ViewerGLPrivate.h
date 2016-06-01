@@ -112,7 +112,8 @@ struct TextureInfo
 
 struct ViewerGL::Implementation
 {
-    Implementation(ViewerGL* this_, ViewerTab* parent);
+    Implementation(ViewerGL* this_,
+                   ViewerTab* parent);
 
     ~Implementation();
 

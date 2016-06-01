@@ -77,10 +77,10 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     false,
                     QString::fromUtf8("Settings"),
                     parent)
-    , _nodeGUI(NodeUi)
-    , _selected(false)
-    , _settingsButton(0)
-    , _multiPanel(multiPanel)
+      , _nodeGUI(NodeUi)
+      , _selected(false)
+      , _settingsButton(0)
+      , _multiPanel(multiPanel)
 {
     if (multiPanel) {
         multiPanel->initializeKnobsPublic();

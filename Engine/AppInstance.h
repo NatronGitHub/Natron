@@ -92,19 +92,19 @@ struct CreateNodeArgs
                             CreateNodeReason reason,
                             const boost::shared_ptr<NodeCollection>& group)
         : pluginID(pluginID)
-        , majorV(-1)
-        , minorV(-1)
-        , multiInstanceParentName()
-        , xPosHint(INT_MIN)
-        , yPosHint(INT_MIN)
-        , fixedName()
-        , paramValues()
-        , group(group)
-        , reason(reason)
-        , createGui(true)
-        , addToProject(true)
-        , serialization()
-        , ioContainer()
+          , majorV(-1)
+          , minorV(-1)
+          , multiInstanceParentName()
+          , xPosHint(INT_MIN)
+          , yPosHint(INT_MIN)
+          , fixedName()
+          , paramValues()
+          , group(group)
+          , reason(reason)
+          , createGui(true)
+          , addToProject(true)
+          , serialization()
+          , ioContainer()
     {
     }
 };
@@ -117,9 +117,12 @@ class FlagSetter
 
 public:
 
-    FlagSetter(bool initialValue, bool* p);
+    FlagSetter(bool initialValue,
+               bool* p);
 
-    FlagSetter(bool initialValue, bool* p, QMutex* mutex);
+    FlagSetter(bool initialValue,
+               bool* p,
+               QMutex* mutex);
 
     ~FlagSetter();
 };
@@ -133,7 +136,8 @@ public:
 
     FlagIncrementer(int* p);
 
-    FlagIncrementer(int* p, QMutex* mutex);
+    FlagIncrementer(int* p,
+                    QMutex* mutex);
 
     ~FlagIncrementer();
 };
@@ -168,11 +172,11 @@ public:
 
         RenderWork()
             : writer(0)
-            , firstFrame(0)
-            , lastFrame(0)
-            , frameStep(0)
-            , useRenderStats(false)
-            , isRestart(false)
+              , firstFrame(0)
+              , lastFrame(0)
+              , frameStep(0)
+              , useRenderStats(false)
+              , isRestart(false)
         {
         }
 
@@ -182,11 +186,11 @@ public:
                    int frameStep,
                    bool useRenderStats)
             : writer(writer)
-            , firstFrame(firstFrame)
-            , lastFrame(lastFrame)
-            , frameStep(frameStep)
-            , useRenderStats(useRenderStats)
-            , isRestart(false)
+              , firstFrame(firstFrame)
+              , lastFrame(lastFrame)
+              , frameStep(frameStep)
+              , useRenderStats(useRenderStats)
+              , isRestart(false)
         {
         }
     };

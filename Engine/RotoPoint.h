@@ -50,7 +50,8 @@ class RotoPoint
     double _timestamp;
 
 public:
-    RotoPoint() : _pos(), _pressure(0), _timestamp(0) {}
+    RotoPoint()
+        : _pos(), _pressure(0), _timestamp(0) {}
 
     RotoPoint(const Point &pos_,
               double pressure_,

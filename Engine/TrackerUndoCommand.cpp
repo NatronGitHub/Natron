@@ -34,8 +34,8 @@ NATRON_NAMESPACE_ENTER;
 AddTrackCommand::AddTrackCommand(const TrackMarkerPtr &marker,
                                  const boost::shared_ptr<TrackerContext>& context)
     : UndoCommand()
-    , _markers()
-    , _context(context)
+      , _markers()
+      , _context(context)
 {
     _markers.push_back(marker);
     setText( tr("Add Track(s)").toStdString() );
@@ -79,8 +79,8 @@ AddTrackCommand::redo()
 RemoveTracksCommand::RemoveTracksCommand(const std::list<TrackMarkerPtr > &markers,
                                          const boost::shared_ptr<TrackerContext>& context)
     : UndoCommand()
-    , _markers()
-    , _context(context)
+      , _markers()
+      , _context(context)
 {
     assert( !markers.empty() );
     for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it) {

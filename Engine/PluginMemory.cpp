@@ -41,9 +41,9 @@ struct PluginMemory::Implementation
 {
     Implementation(const EffectInstPtr& effect_)
         : data()
-        , locked(0)
-        , mutex()
-        , effect(effect_)
+          , locked(0)
+          , mutex()
+          , effect(effect_)
     {
     }
 

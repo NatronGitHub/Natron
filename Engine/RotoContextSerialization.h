@@ -64,10 +64,10 @@ public:
 
     RotoContextSerialization()
         : _baseLayer()
-        , _selectedItems()
-        , _autoKeying(false)
-        , _rippleEdit(false)
-        , _featherLink(false)
+          , _selectedItems()
+          , _autoKeying(false)
+          , _rippleEdit(false)
+          , _featherLink(false)
     {
     }
 

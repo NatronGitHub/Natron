@@ -788,7 +788,7 @@ RotoContext::getGlobalMotionBlurSettings(const double time,
     if (shutterType_i == 0) { // centered
         *startTime = time - shutterInterval / 2.;
         *endTime = time + shutterInterval / 2.;
-    } else if (shutterType_i == 1) {// start
+    } else if (shutterType_i == 1) { // start
         *startTime = time;
         *endTime = time + shutterInterval;
     } else if (shutterType_i == 2) { // end
@@ -2416,7 +2416,7 @@ convertNatronImageToCairoImageForComponents(unsigned char* cairoImg,
                     dstPix[x * dstNComps + 0] = shapeColor[2] == 0 ? 0 : (float)(srcPix[x * srcNComps + 2] / maxValue) / shapeColor[2] * 255.f;
                     dstPix[x * dstNComps + 1] = shapeColor[1] == 0 ? 0 : (float)(srcPix[x * srcNComps + 1] / maxValue) / shapeColor[1] * 255.f;
                     dstPix[x * dstNComps + 2] = shapeColor[0] == 0 ? 0 : (float)(srcPix[x * srcNComps + 0] / maxValue) / shapeColor[0] * 255.f;
-                    dstPix[x * dstNComps + 3] = 255;//(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
+                    dstPix[x * dstNComps + 3] = 255; //(float)srcPix[x * srcNComps + 3] / maxValue * 255.f;
                 } else {
                     assert(srcNComps == 1);
                     float pix = (float)srcPix[x];
@@ -2681,7 +2681,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
                                        const RectD& rotoNodeSrcRod)
 {
     NodePtr node = getContext()->getNode();
-    ImagePtr image;// = stroke->getStrokeTimePreview();
+    ImagePtr image; // = stroke->getStrokeTimePreview();
 
     ///compute an enhanced hash different from the one of the merge node of the item in order to differentiate within the cache
     ///the output image of the node and the mask image.
@@ -2705,7 +2705,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
 
     {
         QReadLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, false, *key, mipmapLevel, NULL, NULL, depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
     }
 
     if (image) {
@@ -2771,8 +2771,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
     rotoBbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
 
 
-    boost::shared_ptr<ImageParams> params = Image::makeParams( 0,
-                                                               rotoBbox,
+    boost::shared_ptr<ImageParams> params = Image::makeParams( rotoBbox,
                                                                pixelRod,
                                                                1., // par
                                                                mipmapLevel,
@@ -2792,7 +2791,8 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
-        ss << printAsRAM( params->getElementsCount() * sizeof(Image::data_t) ).toStdString();
+        std::size_t size = params->getStorageInfo().bounds.area() * params->getStorageInfo().numComponents * params->getStorageInfo().dataTypeSize;
+        ss << printAsRAM( size ).toStdString();
         Dialogs::errorDialog( tr("Out of memory").toStdString(), ss.str() );
 
         return image;

@@ -63,7 +63,7 @@ public:
 
     PlaceHolderTextEdit(QWidget* parent)
         : QTextEdit(parent)
-        , placeHolder()
+          , placeHolder()
     {
     }
 
@@ -131,22 +131,22 @@ struct ExportGroupTemplateDialogPrivate
     ExportGroupTemplateDialogPrivate(NodeCollection* group,
                                      Gui* gui)
         : gui(gui)
-        , group(group)
-        , mainLayout(0)
-        , labelLabel(0)
-        , labelEdit(0)
-        , idLabel(0)
-        , idEdit(0)
-        , groupingLabel(0)
-        , groupingEdit(0)
-        , fileLabel(0)
-        , fileEdit(0)
-        , openButton(0)
-        , iconPathLabel(0)
-        , iconPath(0)
-        , descriptionLabel(0)
-        , descriptionEdit(0)
-        , buttons(0)
+          , group(group)
+          , mainLayout(0)
+          , labelLabel(0)
+          , labelEdit(0)
+          , idLabel(0)
+          , idEdit(0)
+          , groupingLabel(0)
+          , groupingEdit(0)
+          , fileLabel(0)
+          , fileEdit(0)
+          , openButton(0)
+          , iconPathLabel(0)
+          , iconPath(0)
+          , descriptionLabel(0)
+          , descriptionEdit(0)
+          , buttons(0)
     {
     }
 };
@@ -155,7 +155,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
                                                      Gui* gui,
                                                      QWidget* parent)
     : QDialog(parent)
-    , _imp( new ExportGroupTemplateDialogPrivate(group, gui) )
+      , _imp( new ExportGroupTemplateDialogPrivate(group, gui) )
 {
     _imp->mainLayout = new QGridLayout(this);
 

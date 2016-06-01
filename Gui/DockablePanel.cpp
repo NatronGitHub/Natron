@@ -102,9 +102,9 @@ DockablePanel::DockablePanel(Gui* gui,
                              const QString & defaultPageName,
                              QWidget *parent)
     : QFrame(parent)
-    , DockablePanelI()
-    , KnobGuiContainerI(this)
-    , _imp( new DockablePanelPrivate(this, gui, holder, container, headerMode, useScrollAreasForTabs, defaultPageName, helpToolTip, stack) )
+      , DockablePanelI()
+      , KnobGuiContainerI(this)
+      , _imp( new DockablePanelPrivate(this, gui, holder, container, headerMode, useScrollAreasForTabs, defaultPageName, helpToolTip, stack) )
 {
     QObject::connect(this, SIGNAL(deleteCurCmdLater()), this, SLOT(onDeleteCurCmdLater()), Qt::QueuedConnection);
 
@@ -1825,18 +1825,18 @@ struct ManageUserParamsDialogPrivate
 
     ManageUserParamsDialogPrivate(DockablePanel* panel)
         : panel(panel)
-        , mainLayout(0)
-        , tree(0)
-        , items()
-        , buttonsContainer(0)
-        , buttonsLayout(0)
-        , addButton(0)
-        , pickButton(0)
-        , editButton(0)
-        , removeButton(0)
-        , upButton(0)
-        , downButton(0)
-        , closeButton(0)
+          , mainLayout(0)
+          , tree(0)
+          , items()
+          , buttonsContainer(0)
+          , buttonsLayout(0)
+          , addButton(0)
+          , pickButton(0)
+          , editButton(0)
+          , removeButton(0)
+          , upButton(0)
+          , downButton(0)
+          , closeButton(0)
     {
     }
 

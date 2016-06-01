@@ -81,6 +81,7 @@ SOURCES += \
     CoonsRegularization.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
+    DefaultShaders.cpp \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
@@ -96,6 +97,8 @@ SOURCES += \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
+    GPUContextPool.cpp \
+    GLShader.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \
@@ -128,6 +131,9 @@ SOURCES += \
     NodeSerialization.cpp \
     NodeGroupSerialization.cpp \
     NoOpBase.cpp \
+    OSGLContext.cpp \
+    OSGLContext_win.cpp \
+    OSGLContext_x11.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -233,6 +239,7 @@ SOURCES += \
     NatronEngine/recti_wrapper.cpp \
     NatronEngine/separatorparam_wrapper.cpp
 
+
 HEADERS += \
     AbortableRenderInfo.h \
     AfterQuitProcessingI.h \
@@ -256,6 +263,7 @@ HEADERS += \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
+    DefaultShaders.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
@@ -278,6 +286,8 @@ HEADERS += \
     fstream_mingw.h \
     GenericSchedulerThread.h \
     GenericSchedulerThreadWatcher.h \
+    GLShader.h \
+    GPUContextPool.h \
     GroupInput.h \
     GroupOutput.h \
     Hash64.h \
@@ -317,6 +327,10 @@ HEADERS += \
     NonKeyParamsSerialization.h \
     NodeSerialization.h \
     NoOpBase.h \
+    OSGLContext.h \
+    OSGLContext_mac.h \
+    OSGLContext_win.h \
+    OSGLContext_x11.h \
     OfxClipInstance.h \
     OfxEffectInstance.h \
     OfxHost.h \
@@ -477,6 +491,7 @@ HEADERS += \
     NatronEngine/separatorparam_wrapper.h
 
 
+
 OTHER_FILES += \
     typesystem_engine.xml
 
@@ -538,5 +553,6 @@ OTHER_FILES += \
 
 macx {
 OBJECTIVE_SOURCES += \
-    QUrlFix.mm
+    QUrlFix.mm \
+    OSGLContext_mac.mm
 }

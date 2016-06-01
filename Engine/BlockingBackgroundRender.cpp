@@ -42,7 +42,7 @@ NATRON_NAMESPACE_ENTER;
 
 BlockingBackgroundRender::BlockingBackgroundRender(OutputEffectInstance* writer)
     : _running(false)
-    , _writer(writer)
+      , _writer(writer)
 {
 }
 

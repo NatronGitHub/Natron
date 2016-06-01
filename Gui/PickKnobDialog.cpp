@@ -75,22 +75,22 @@ struct PickKnobDialogPrivate
 
     PickKnobDialogPrivate(DockablePanel* panel)
         : panel(panel)
-        , mainLayout(0)
-        , selectNodeLabel(0)
-        , nodeSelectionCombo(0)
-        , knobSelectionCombo(0)
-        , useAliasLabel(0)
-        , useAliasCheckBox(0)
-        , destPageLabel(0)
-        , destPageCombo(0)
-        , groupLabel(0)
-        , groupCombo(0)
-        , pages()
-        , groups()
-        , buttons(0)
-        , allNodes()
-        , allKnobs()
-        , selectedKnob()
+          , mainLayout(0)
+          , selectNodeLabel(0)
+          , nodeSelectionCombo(0)
+          , knobSelectionCombo(0)
+          , useAliasLabel(0)
+          , useAliasCheckBox(0)
+          , destPageLabel(0)
+          , destPageCombo(0)
+          , groupLabel(0)
+          , groupCombo(0)
+          , pages()
+          , groups()
+          , buttons(0)
+          , allNodes()
+          , allKnobs()
+          , selectedKnob()
     {
     }
 
@@ -131,7 +131,7 @@ PickKnobDialogPrivate::getSelectedGroup() const
 PickKnobDialog::PickKnobDialog(DockablePanel* panel,
                                QWidget* parent)
     : QDialog(parent)
-    , _imp( new PickKnobDialogPrivate(panel) )
+      , _imp( new PickKnobDialogPrivate(panel) )
 {
     NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(panel);
 

@@ -291,11 +291,11 @@ struct PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE
 
     PaneLayoutCompat_PANE_SERIALIZATION_INTRODUCES_SIZE()
         : floating(false)
-        , posx(0), posy(0), width(0), height(0)
-        , parentingCreated(false)
-        , splits()
-        , parentName()
-        , splitsNames()
+          , posx(0), posy(0), width(0), height(0)
+          , parentingCreated(false)
+          , splits()
+          , parentName()
+          , splitsNames()
     {
     }
 
@@ -318,9 +318,9 @@ struct PaneLayout
 
     PaneLayout()
         : tabs()
-        , currentIndex(-1)
-        , isAnchor(false)
-        , name()
+          , currentIndex(-1)
+          , isAnchor(false)
+          , name()
     {
     }
 
@@ -411,8 +411,8 @@ struct SplitterSerialization
 
     SplitterSerialization()
         : sizes()
-        , orientation(0)
-        , children()
+          , orientation(0)
+          , children()
     {
     }
 
@@ -492,12 +492,12 @@ struct ApplicationWindowSerialization
 
     ApplicationWindowSerialization()
         : child_asSplitter(0)
-        , child_asPane(0)
-        , isMainWindow(false)
-        , x(0)
-        , y(0)
-        , w(0)
-        , h(0)
+          , child_asPane(0)
+          , isMainWindow(false)
+          , x(0)
+          , y(0)
+          , w(0)
+          , h(0)
     {
     }
 
@@ -720,12 +720,12 @@ public:
 
     ProjectGuiSerialization()
         : _serializedNodes()
-        , _layoutSerialization()
-        , _viewersData()
-        , _histograms()
-        , _backdrops()
-        , _openedPanelsOrdered()
-        , _version(0)
+          , _layoutSerialization()
+          , _viewersData()
+          , _histograms()
+          , _backdrops()
+          , _openedPanelsOrdered()
+          , _version(0)
     {
     }
 

@@ -391,7 +391,8 @@ public:
         bool isExpr;
         bool isListening;
         int targetDim;
-        ListenerDim() : isExpr(false), isListening(false), targetDim(-1) {}
+        ListenerDim()
+            : isExpr(false), isListening(false), targetDim(-1) {}
     };
 
     typedef std::map<boost::weak_ptr<KnobI>, std::vector<ListenerDim> > ListenerDimsMap;
@@ -2096,7 +2097,13 @@ private:
     class QueuedSetValue
     {
 public:
-        QueuedSetValue(ViewSpec view, int dimension, const T& value, const KeyFrame& key, bool useKey, ValueChangedReasonEnum reason, bool valueChangesBlocked);
+        QueuedSetValue(ViewSpec view,
+                       int dimension,
+                       const T& value,
+                       const KeyFrame& key,
+                       bool useKey,
+                       ValueChangedReasonEnum reason,
+                       bool valueChangesBlocked);
 
         virtual bool isSetValueAtTime() const { return false; }
 
@@ -2131,7 +2138,7 @@ public:
                              ValueChangedReasonEnum reason,
                              bool valueChangesBlocked)
             : QueuedSetValue(view, dimension, value, key, true, reason, valueChangesBlocked)
-            , _time(time)
+              , _time(time)
         {
         }
 

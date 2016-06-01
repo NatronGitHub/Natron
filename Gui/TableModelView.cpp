@@ -65,9 +65,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 static MetaTypesRegistration registration;
 TableItem::TableItem(const TableItem & other)
     : values(other.values)
-    , view(0)
-    , id(-1)
-    , itemFlags(other.itemFlags)
+      , view(0)
+      , id(-1)
+      , itemFlags(other.itemFlags)
 {
 }
 
@@ -178,8 +178,8 @@ struct TableModelPrivate
     TableModelPrivate(int rows,
                       int columns)
         : tableItems(rows * columns, (TableItem*)0)
-        , horizontalHeaderItems(columns, (TableItem*)0)
-        , rowCount(rows)
+          , horizontalHeaderItems(columns, (TableItem*)0)
+          , rowCount(rows)
     {
     }
 
@@ -210,7 +210,7 @@ TableModel::TableModel(int rows,
                        int columns,
                        TableView* view)
     : QAbstractTableModel(view)
-    , _imp( new TableModelPrivate(rows, columns) )
+      , _imp( new TableModelPrivate(rows, columns) )
 {
     QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex)) );
 }
@@ -884,7 +884,7 @@ struct TableViewPrivate
 
     TableViewPrivate()
         : model(0)
-        , draggedItems()
+          , draggedItems()
     {
     }
 };
@@ -938,7 +938,7 @@ ExpandingLineEdit::resizeToContents()
     if (originalWidth == -1) {
         originalWidth = oldWidth;
     }
-    if ( QWidget *parent = parentWidget() ) {
+    if ( QWidget * parent = parentWidget() ) {
         QPoint position = pos();
         int hintWidth = minimumWidth() + fontMetrics().width( displayText() );
         int parentWidth = parent->width();
@@ -1021,7 +1021,7 @@ TableItemEditorFactory::valuePropertyName(QVariant::Type type) const
 /////////////// TableView
 TableView::TableView(QWidget* parent)
     : QTreeView(parent)
-    , _imp( new TableViewPrivate() )
+      , _imp( new TableViewPrivate() )
 {
     setSelectionBehavior(QAbstractItemView::SelectRows);
     setRootIsDecorated(false);

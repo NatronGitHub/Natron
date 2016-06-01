@@ -165,11 +165,11 @@ backTraceSigSegvHandler(int sig,
         }
         std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
              #ifndef __x86_64__
-        (void*)uc->uc_mcontext.gregs[REG_EIP]
+            (void*)uc->uc_mcontext.gregs[REG_EIP]
              #else
             (void*) uc->uc_mcontext.gregs[REG_RIP]
              #endif
-            << " from " << info->si_addr << std::endl;
+                  << " from " << info->si_addr << std::endl;
     } else {
         printf("Got signal %d#92;n", sig);
     }
@@ -226,7 +226,7 @@ AppManager::getHardwareIdealThreadCount()
 
 AppManager::AppManager()
     : QObject()
-    , _imp( new AppManagerPrivate() )
+      , _imp( new AppManagerPrivate() )
 {
     assert(!_instance);
     _instance = this;
@@ -294,6 +294,10 @@ AppManager::load(int &argc,
     }
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+
+    _imp->initGLAPISpecific();
+    _imp->renderingContextPool.reset( new GPUContextPool(_imp->idealThreadCount) );
+
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
 
@@ -367,6 +371,7 @@ AppManager::~AppManager()
     _imp->_diskCache.reset();
 
     tearDownPython();
+    _imp->tearDownGL();
 
     _instance = 0;
 
@@ -383,7 +388,7 @@ public:
 
     QuitInstanceArgs()
         : GenericWatcherCallerArgs()
-        , instance()
+          , instance()
     {
     }
 
@@ -619,7 +624,7 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
     return _imp->pluginsUseInputImageCopyToRender;
 }
 
-void
+bool
 AppManager::initializeOpenGLFunctionsOnce()
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
@@ -627,8 +632,30 @@ AppManager::initializeOpenGLFunctionsOnce()
     if (!_imp->hasInitializedOpenGLFunctions) {
         _imp->initGl();
         updateAboutWindowLibrariesVersion();
+
+        return true;
     }
+
+    return false;
 }
+
+#ifdef __NATRON_WIN32__
+const OSGLContext_wgl_data*
+AppManager::getWGLData() const
+{
+    return _imp->wglInfo.get();
+}
+
+#endif
+#ifdef __NATRON_LINUX__
+const OSGLContext_glx_data*
+AppManager::getGLXData() const
+{
+    return _imp->glxInfo.get();
+}
+
+#endif
+
 
 bool
 AppManager::initGui(const CLArgs& cl)
@@ -3082,6 +3109,12 @@ const NATRON_NAMESPACE::OfxHost*
 AppManager::getOFXHost() const
 {
     return _imp->ofxHost.get();
+}
+
+GPUContextPool*
+AppManager::getGPUContextPool() const
+{
+    return _imp->renderingContextPool.get();
 }
 
 void

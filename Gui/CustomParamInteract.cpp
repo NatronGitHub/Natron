@@ -56,11 +56,11 @@ struct CustomParamInteractPrivate
                                void* ofxParamHandle,
                                const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint)
         : knob(knob)
-        , ofxParam(0)
-        , entryPoint(entryPoint)
-        , preferredSize()
-        , par(0)
-        , savedTexture(0)
+          , ofxParam(0)
+          , entryPoint(entryPoint)
+          , preferredSize()
+          , par(0)
+          , savedTexture(0)
     {
         assert(entryPoint && ofxParamHandle);
         ofxParam = reinterpret_cast<OFX::Host::Param::Instance*>(ofxParamHandle);
@@ -79,7 +79,7 @@ CustomParamInteract::CustomParamInteract(const KnobGuiPtr& knob,
                                          const boost::shared_ptr<OfxParamOverlayInteract> & entryPoint,
                                          QWidget* parent)
     : QGLWidget(parent)
-    , _imp( new CustomParamInteractPrivate(knob, ofxParamHandle, entryPoint) )
+      , _imp( new CustomParamInteractPrivate(knob, ofxParamHandle, entryPoint) )
 {
     double minW, minH;
 

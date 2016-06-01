@@ -88,7 +88,9 @@ class DopeSheetEditor
     : public QWidget, public PanelWidget
 {
 public:
-    DopeSheetEditor(Gui *gui, boost::shared_ptr<TimeLine> timeline, QWidget *parent = 0);
+    DopeSheetEditor(Gui *gui,
+                    boost::shared_ptr<TimeLine> timeline,
+                    QWidget *parent = 0);
     ~DopeSheetEditor();
 
     /**

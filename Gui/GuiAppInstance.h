@@ -61,12 +61,12 @@ public:
 
     FileDialogPreviewProvider()
         : viewerUI(0)
-        , viewerNodeInternal()
-        , viewerNode()
+          , viewerNodeInternal()
+          , viewerNode()
 #ifndef NATRON_ENABLE_IO_META_NODES
-        , readerNodes()
+          , readerNodes()
 #else
-        , readerNode()
+          , readerNode()
 #endif
     {}
 };

@@ -64,7 +64,7 @@ public:
 
     LibraryBinary(LibraryBinary::LibraryTypeEnum type);
 
-    LibraryBinary(const std::map<std::string, void(*)()> & functions);
+    LibraryBinary(const std::map<std::string, void(*) ()> & functions);
 
     LibraryBinary(const std::string & binaryPath);
 

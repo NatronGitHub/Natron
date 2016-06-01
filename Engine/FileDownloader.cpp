@@ -41,10 +41,10 @@ FileDownloader::FileDownloader(const QUrl& imageUrl,
                                bool useNetworkCache,
                                QObject *parent)
     : QObject(parent)
-    , m_reply(0)
-    , m_WebCtrl(new QNetworkAccessManager)
-    , m_DownloadedData(new QByteArray)
-    , m_timer( new QTimer() )
+      , m_reply(0)
+      , m_WebCtrl(new QNetworkAccessManager)
+      , m_DownloadedData(new QByteArray)
+      , m_timer( new QTimer() )
 {
     m_timer->setInterval(NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS);
     QObject::connect( m_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerTimeout()) );

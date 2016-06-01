@@ -35,13 +35,13 @@ class ImageInfo
 public:
     ImageInfo(Format displayWindow)
         : _rod()
-        , _displayWindow(displayWindow)
+          , _displayWindow(displayWindow)
     {
     }
 
     ImageInfo()
         : _rod()
-        , _displayWindow()
+          , _displayWindow()
     {
     }
 

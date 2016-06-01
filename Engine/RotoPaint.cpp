@@ -69,7 +69,7 @@ RotoPaint::getPluginDescription() const
 RotoPaint::RotoPaint(NodePtr node,
                      bool isPaintByDefault)
     : EffectInstance(node)
-    , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
+      , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -1433,7 +1433,7 @@ RotoPaint::render(const RenderActionArgs& args)
 
     if ( items.empty() ) {
         RectI bgImgRoI;
-        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
+        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, false /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
 
         for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
@@ -1481,7 +1481,9 @@ RotoPaint::render(const RenderActionArgs& args)
                                     neededComps,
                                     bgDepth,
                                     false,
-                                    this);
+                                    this,
+                                    false /*returnOpenGLtex*/,
+                                    args.time);
         std::map<ImageComponents, ImagePtr> rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getEffectInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {
@@ -1512,7 +1514,7 @@ RotoPaint::render(const RenderActionArgs& args)
             }
             if (!bgImg) {
                 if (!triedGetImage) {
-                    bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false, false, &bgImgRoI);
+                    bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, false /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
                     triedGetImage = true;
                 }
             }

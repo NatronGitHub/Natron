@@ -193,19 +193,19 @@ public:
 
     WriteNodePrivate(WriteNode* publicInterface)
         : _publicInterface(publicInterface)
-        , embeddedPlugin()
-        , readBackNode()
-        , inputNode()
-        , outputNode()
-        , genericKnobsSerialization()
-        , outputFileKnob()
-        , frameIncrKnob()
-        , pluginSelectorKnob()
-        , pluginIDStringKnob()
-        , separatorKnob()
-        , renderButtonKnob()
-        , writeNodeKnobs()
-        , creatingWriteNode(0)
+          , embeddedPlugin()
+          , readBackNode()
+          , inputNode()
+          , outputNode()
+          , genericKnobsSerialization()
+          , outputFileKnob()
+          , frameIncrKnob()
+          , pluginSelectorKnob()
+          , pluginIDStringKnob()
+          , separatorKnob()
+          , renderButtonKnob()
+          , writeNodeKnobs()
+          , creatingWriteNode(0)
     {
     }
 
@@ -250,7 +250,7 @@ public:
 
 WriteNode::WriteNode(NodePtr n)
     : NodeGroup(n)
-    , _imp( new WriteNodePrivate(this) )
+      , _imp( new WriteNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }

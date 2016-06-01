@@ -58,7 +58,8 @@ struct ComboBoxMenuNode
     std::vector<boost::shared_ptr<ComboBoxMenuNode> > children;
     ComboBoxMenuNode* parent;
 
-    ComboBoxMenuNode() : isMenu(0), isLeaf(0), text(), children(), parent(0) {}
+    ComboBoxMenuNode()
+        : isMenu(0), isLeaf(0), text(), children(), parent(0) {}
 };
 
 class ComboBox

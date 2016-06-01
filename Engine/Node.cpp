@@ -129,9 +129,9 @@ public:
 
     ChannelSelector()
         : layer()
-        , hasAllChoice(false)
-        , compsMutex()
-        , compsAvailable()
+          , hasAllChoice(false)
+          , compsMutex()
+          , compsAvailable()
     {
     }
 
@@ -161,9 +161,9 @@ public:
 
     MaskSelector()
         : enabled()
-        , channel()
-        , compsMutex()
-        , compsAvailable()
+          , channel()
+          , compsMutex()
+          , compsAvailable()
     {
     }
 
@@ -202,124 +202,124 @@ public:
                    const boost::shared_ptr<NodeCollection>& collection,
                    Plugin* plugin_)
         : _publicInterface(publicInterface)
-        , group(collection)
-        , precomp()
-        , app(app_)
-        , isPartOfProject(true)
-        , knobsInitialized(false)
-        , inputsInitialized(false)
-        , outputsMutex()
-        , outputs()
-        , guiOutputs()
-        , inputsMutex()
-        , inputs()
-        , guiInputs()
-        , effect()
-        , inputsComponents()
-        , outputComponents()
-        , inputsLabelsMutex()
-        , inputLabels()
-        , scriptName()
-        , label()
-        , cacheID()
-        , deactivatedState()
-        , activatedMutex()
-        , activated(true)
-        , plugin(plugin_)
-        , pluginPythonModuleMutex()
-        , pluginPythonModule()
-        , pyplugChangedSinceScript(false)
-        , pyPlugID()
-        , pyPlugLabel()
-        , pyPlugDesc()
-        , pyPlugGrouping()
-        , pyPlugVersion(0)
-        , computingPreview(false)
-        , previewThreadQuit(false)
-        , computingPreviewMutex()
-        , pluginInstanceMemoryUsed(0)
-        , memoryUsedMutex()
-        , mustQuitPreview(0)
-        , mustQuitPreviewMutex()
-        , mustQuitPreviewCond()
-        , renderInstancesSharedMutex(QMutex::Recursive)
-        , knobsAge(0)
-        , knobsAgeMutex()
-        , masterNodeMutex()
-        , masterNode()
-        , nodeLinks()
+          , group(collection)
+          , precomp()
+          , app(app_)
+          , isPartOfProject(true)
+          , knobsInitialized(false)
+          , inputsInitialized(false)
+          , outputsMutex()
+          , outputs()
+          , guiOutputs()
+          , inputsMutex()
+          , inputs()
+          , guiInputs()
+          , effect()
+          , inputsComponents()
+          , outputComponents()
+          , inputsLabelsMutex()
+          , inputLabels()
+          , scriptName()
+          , label()
+          , cacheID()
+          , deactivatedState()
+          , activatedMutex()
+          , activated(true)
+          , plugin(plugin_)
+          , pluginPythonModuleMutex()
+          , pluginPythonModule()
+          , pyplugChangedSinceScript(false)
+          , pyPlugID()
+          , pyPlugLabel()
+          , pyPlugDesc()
+          , pyPlugGrouping()
+          , pyPlugVersion(0)
+          , computingPreview(false)
+          , previewThreadQuit(false)
+          , computingPreviewMutex()
+          , pluginInstanceMemoryUsed(0)
+          , memoryUsedMutex()
+          , mustQuitPreview(0)
+          , mustQuitPreviewMutex()
+          , mustQuitPreviewCond()
+          , renderInstancesSharedMutex(QMutex::Recursive)
+          , knobsAge(0)
+          , knobsAgeMutex()
+          , masterNodeMutex()
+          , masterNode()
+          , nodeLinks()
 #ifdef NATRON_ENABLE_IO_META_NODES
-        , ioContainer()
+          , ioContainer()
 #endif
-        , frameIncrKnob()
-        , nodeSettingsPage()
-        , nodeLabelKnob()
-        , previewEnabledKnob()
-        , disableNodeKnob()
-        , infoPage()
-        , nodeInfos()
-        , refreshInfoButton()
-        , useFullScaleImagesWhenRenderScaleUnsupported()
-        , forceCaching()
-        , hideInputs()
-        , beforeFrameRender()
-        , beforeRender()
-        , afterFrameRender()
-        , afterRender()
-        , enabledChan()
-        , channelsSelectors()
-        , maskSelectors()
-        , rotoContext()
-        , trackContext()
-        , imagesBeingRenderedMutex()
-        , imageBeingRenderedCond()
-        , imagesBeingRendered()
-        , supportedDepths()
-        , isMultiInstance(false)
-        , multiInstanceParent()
-        , childrenMutex()
-        , children()
-        , multiInstanceParentName()
-        , keyframesDisplayedOnTimeline(false)
-        , lastRenderStartedMutex()
-        , lastRenderStartedSlotCallTime()
-        , renderStartedCounter(0)
-        , inputIsRenderingCounter(0)
-        , lastInputNRenderStartedSlotCallTime()
-        , nodeIsDequeuing(false)
-        , nodeIsDequeuingMutex()
-        , nodeIsDequeuingCond()
-        , nodeIsRendering(0)
-        , nodeIsRenderingMutex()
-        , persistentMessage()
-        , persistentMessageType(0)
-        , persistentMessageMutex()
-        , guiPointer()
-        , nativeOverlays()
-        , nodeCreated(false)
-        , createdComponentsMutex()
-        , createdComponents()
-        , paintStroke()
-        , pluginsPropMutex()
-        , pluginSafety(eRenderSafetyInstanceSafe)
-        , currentThreadSafety(eRenderSafetyInstanceSafe)
-        , currentSupportTiles(false)
-        , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
-        , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
-        , currentCanTransform(false)
-        , draftModeUsed(false)
-        , mustComputeInputRelatedData(true)
-        , duringPaintStrokeCreation(false)
-        , lastStrokeMovementMutex()
-        , strokeBitmapCleared(false)
-        , useAlpha0ToConvertFromRGBToRGBA(false)
-        , isBeingDestroyedMutex()
-        , isBeingDestroyed(false)
-        , inputModifiedRecursion(0)
-        , inputsModified()
-        , refreshIdentityStateRequestsCount(0)
-        , isRefreshingInputRelatedData(false)
-        , streamWarnings()
+          , frameIncrKnob()
+          , nodeSettingsPage()
+          , nodeLabelKnob()
+          , previewEnabledKnob()
+          , disableNodeKnob()
+          , infoPage()
+          , nodeInfos()
+          , refreshInfoButton()
+          , useFullScaleImagesWhenRenderScaleUnsupported()
+          , forceCaching()
+          , hideInputs()
+          , beforeFrameRender()
+          , beforeRender()
+          , afterFrameRender()
+          , afterRender()
+          , enabledChan()
+          , channelsSelectors()
+          , maskSelectors()
+          , rotoContext()
+          , trackContext()
+          , imagesBeingRenderedMutex()
+          , imageBeingRenderedCond()
+          , imagesBeingRendered()
+          , supportedDepths()
+          , isMultiInstance(false)
+          , multiInstanceParent()
+          , childrenMutex()
+          , children()
+          , multiInstanceParentName()
+          , keyframesDisplayedOnTimeline(false)
+          , lastRenderStartedMutex()
+          , lastRenderStartedSlotCallTime()
+          , renderStartedCounter(0)
+          , inputIsRenderingCounter(0)
+          , lastInputNRenderStartedSlotCallTime()
+          , nodeIsDequeuing(false)
+          , nodeIsDequeuingMutex()
+          , nodeIsDequeuingCond()
+          , nodeIsRendering(0)
+          , nodeIsRenderingMutex()
+          , persistentMessage()
+          , persistentMessageType(0)
+          , persistentMessageMutex()
+          , guiPointer()
+          , nativeOverlays()
+          , nodeCreated(false)
+          , createdComponentsMutex()
+          , createdComponents()
+          , paintStroke()
+          , pluginsPropMutex()
+          , pluginSafety(eRenderSafetyInstanceSafe)
+          , currentThreadSafety(eRenderSafetyInstanceSafe)
+          , currentSupportTiles(false)
+          , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
+          , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
+          , currentCanTransform(false)
+          , draftModeUsed(false)
+          , mustComputeInputRelatedData(true)
+          , duringPaintStrokeCreation(false)
+          , lastStrokeMovementMutex()
+          , strokeBitmapCleared(false)
+          , useAlpha0ToConvertFromRGBToRGBA(false)
+          , isBeingDestroyedMutex()
+          , isBeingDestroyed(false)
+          , inputModifiedRecursion(0)
+          , inputsModified()
+          , refreshIdentityStateRequestsCount(0)
+          , isRefreshingInputRelatedData(false)
+          , streamWarnings()
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -582,7 +582,7 @@ Node::Node(const AppInstPtr& app,
            const boost::shared_ptr<NodeCollection>& group,
            Plugin* plugin)
     : QObject()
-    , _imp( new Implementation(this, app, group, plugin) )
+      , _imp( new Implementation(this, app, group, plugin) )
 {
     QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
     QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
@@ -5795,6 +5795,10 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
         QMutexLocker k(&_imp->isBeingDestroyedMutex);
         beingDestroyed = _imp->isBeingDestroyed;
     }
+
+    // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
+    _imp->effect->dettachAllOpenGLContexts();
+
     ///kill any thread it could have started
     ///Commented-out: If we were to undo the deactivate we don't want all threads to be
     ///exited, just exit them when the effect is really deleted instead
@@ -5950,7 +5954,7 @@ public:
 
     NodeDestroyNodeInternalArgs()
         : GenericWatcherCallerArgs()
-        , autoReconnect(false)
+          , autoReconnect(false)
     {}
 
     virtual ~NodeDestroyNodeInternalArgs() {}
@@ -6301,7 +6305,6 @@ Node::makePreviewImage(SequenceTime time,
                                                   NodePtr(), //rotoPaint node
                                                   false, // isAnalysis
                                                   true, // isDraft
-                                                  false, // enableProgress
                                                   boost::shared_ptr<RenderStats>() );
         FrameRequestMap request;
         stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
@@ -6328,7 +6331,11 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            renderWindow,
                                                                                                            rod,
                                                                                                            requestedComps, //< preview is always rgb...
-                                                                                                           depth, false, effect) );
+                                                                                                           depth,
+                                                                                                           false,
+                                                                                                           effect,
+                                                                                                           false /*returnOpenGLTex*/,
+                                                                                                           time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);
             if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
@@ -7382,7 +7389,6 @@ Node::onInputChanged(int inputNb,
                                                   0, //texture index
                                                   getApp()->getTimeLine().get(),
                                                   NodePtr(),
-                                                  false,
                                                   false,
                                                   false,
                                                   boost::shared_ptr<RenderStats>() );
@@ -9082,7 +9088,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 
 RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
     : node(n)
-    , nodes()
+      , nodes()
 {
     n->setNodeIsRendering(nodes);
 }
@@ -10531,8 +10537,8 @@ public:
 
     MergeMaskChannelData()
         : KnobChoiceMergeEntriesData()
-        , isColor(false)
-        , dataSet(false)
+          , isColor(false)
+          , dataSet(false)
     {
     }
 
@@ -10606,8 +10612,8 @@ public:
 
     MergeLayerData()
         : KnobChoiceMergeEntriesData()
-        , isColor(false)
-        , dataSet(false)
+          , isColor(false)
+          , dataSet(false)
     {
     }
 

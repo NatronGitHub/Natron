@@ -67,10 +67,12 @@ class ImageLockerHelper
 public:
 
 
-    ImageLockerHelper(LockManagerI<EntryType>* manager) : _manager(manager), _entries() {}
+    ImageLockerHelper(LockManagerI<EntryType>* manager)
+        : _manager(manager), _entries() {}
 
     ImageLockerHelper(LockManagerI<EntryType>* manager,
-                      const boost::shared_ptr<EntryType>& entry) : _manager(manager), _entries()
+                      const boost::shared_ptr<EntryType>& entry)
+        : _manager(manager), _entries()
     {
         if (entry && _manager) {
             _entries.push_back(entry);

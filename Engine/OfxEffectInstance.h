@@ -237,7 +237,9 @@ public:
                                            bool isSequentialRender,
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
-                                           ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                           ViewIdx view,
+                                           bool isOpenGLRender,
+                                           const EffectInstance::OpenGLContextEffectDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum endSequenceRender(double first,
                                          double last,
                                          double step,
@@ -246,7 +248,9 @@ public:
                                          bool isSequentialRender,
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
-                                         ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         ViewIdx view,
+                                         bool isOpenGLRender,
+                                         const EffectInstance::OpenGLContextEffectDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -261,6 +265,9 @@ public:
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool supportsConcurrentOpenGLRenders() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum attachOpenGLContext(OpenGLContextEffectDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& data) OVERRIDE FINAL;
 
 public:
 

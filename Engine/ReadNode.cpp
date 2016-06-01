@@ -208,15 +208,15 @@ public:
 
     ReadNodePrivate(ReadNode* publicInterface)
         : _publicInterface(publicInterface)
-        , embeddedPlugin()
-        , genericKnobsSerialization()
-        , inputFileKnob()
-        , pluginSelectorKnob()
-        , pluginIDStringKnob()
-        , separatorKnob()
-        , fileInfosKnob()
-        , readNodeKnobs()
-        , creatingReadNode(0)
+          , embeddedPlugin()
+          , genericKnobsSerialization()
+          , inputFileKnob()
+          , pluginSelectorKnob()
+          , pluginIDStringKnob()
+          , separatorKnob()
+          , fileInfosKnob()
+          , readNodeKnobs()
+          , creatingReadNode(0)
     {
     }
 
@@ -272,7 +272,7 @@ public:
 
 ReadNode::ReadNode(NodePtr n)
     : EffectInstance(n)
-    , _imp( new ReadNodePrivate(this) )
+      , _imp( new ReadNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -1076,10 +1076,12 @@ ReadNode::beginSequenceRender(double first,
                               bool isSequentialRender,
                               bool isRenderResponseToUserInteraction,
                               bool draftMode,
-                              ViewIdx view)
+                              ViewIdx view,
+                              bool isOpenGLRender,
+                              const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        return _imp->embeddedPlugin->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
     } else {
         return eStatusFailed;
     }
@@ -1094,10 +1096,12 @@ ReadNode::endSequenceRender(double first,
                             bool isSequentialRender,
                             bool isRenderResponseToUserInteraction,
                             bool draftMode,
-                            ViewIdx view)
+                            ViewIdx view,
+                            bool isOpenGLRender,
+                            const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        return _imp->embeddedPlugin->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
     } else {
         return eStatusFailed;
     }

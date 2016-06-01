@@ -36,7 +36,7 @@ NATRON_NAMESPACE_ENTER;
 
 PropertiesBinWrapper::PropertiesBinWrapper(Gui* parent)
     : QWidget(parent)
-    , PanelWidget(this, parent)
+      , PanelWidget(this, parent)
 {
 }
 

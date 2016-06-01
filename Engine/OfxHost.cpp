@@ -156,14 +156,14 @@ struct OfxHostPrivate
 
     OfxHostPrivate()
         : imageEffectPluginCache()
-        , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
+          , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        , pluginsMutexes()
-        , pluginsMutexesLock(0)
+          , pluginsMutexes()
+          , pluginsMutexesLock(0)
 #endif
-        , loadingPluginID()
-        , loadingPluginVersionMajor(0)
-        , loadingPluginVersionMinor(0)
+          , loadingPluginID()
+          , loadingPluginVersionMajor(0)
+          , loadingPluginVersionMinor(0)
     {
     }
 };
@@ -295,7 +295,7 @@ OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2); // OFX 1.2
 #ifdef OFX_SUPPORTS_OPENGLRENDER
-    _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false"); // OFX 1.3
+    _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true"); // OFX 1.3
 #endif
     _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 1); // OFX 1.4
     _properties.setStringProperty(kOfxImageEffectHostPropNativeOrigin, kOfxHostNativeOriginBottomLeft); // OFX 1.4
@@ -1114,13 +1114,13 @@ public:
               void *customArg,
               OfxStatus *stat)
         : QThread()
-        , AbortableThread(this)
-        , _func(func)
-        , _threadIndex(threadIndex)
-        , _threadMax(threadMax)
-        , _spawnerThread(spawnerThread)
-        , _customArg(customArg)
-        , _stat(stat)
+          , AbortableThread(this)
+          , _func(func)
+          , _threadIndex(threadIndex)
+          , _threadMax(threadMax)
+          , _spawnerThread(spawnerThread)
+          , _customArg(customArg)
+          , _stat(stat)
     {
         setThreadName("Multi-thread suite");
     }

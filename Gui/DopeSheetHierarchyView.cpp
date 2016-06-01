@@ -58,8 +58,8 @@ HierarchyViewSelectionModel::HierarchyViewSelectionModel(DopeSheet* dopesheetMod
                                                          QAbstractItemModel *model,
                                                          QObject *parent)
     : QItemSelectionModel(model, parent)
-    , _dopesheetModel(dopesheetModel)
-    , _view(view)
+      , _dopesheetModel(dopesheetModel)
+      , _view(view)
 {
     connect( model, SIGNAL(destroyed()),
              this, SLOT(deleteLater()) );
@@ -218,8 +218,8 @@ HierarchyViewSelectionModel::checkParentsSelectedStates(const QModelIndex &index
  *
  *
  */
-HierarchyViewItemDelegate::HierarchyViewItemDelegate(QObject *parent) :
-    QStyledItemDelegate(parent)
+HierarchyViewItemDelegate::HierarchyViewItemDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
 {}
 
 /**
@@ -314,11 +314,11 @@ public:
     bool _canResizeOtherWidget;
 };
 
-HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq) :
-    q_ptr(qq),
-    dopeSheetModel(0),
-    gui(0),
-    _canResizeOtherWidget(true)
+HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq)
+    : q_ptr(qq),
+      dopeSheetModel(0),
+      gui(0),
+      _canResizeOtherWidget(true)
 {}
 
 HierarchyViewPrivate::~HierarchyViewPrivate()
@@ -650,9 +650,9 @@ HierarchyViewPrivate::selectKeyframes(const QList<QTreeWidgetItem *> &items)
 
 HierarchyView::HierarchyView(DopeSheet *dopeSheetModel,
                              Gui *gui,
-                             QWidget *parent) :
-    QTreeWidget(parent),
-    _imp( new HierarchyViewPrivate(this) )
+                             QWidget *parent)
+    : QTreeWidget(parent),
+      _imp( new HierarchyViewPrivate(this) )
 {
     _imp->dopeSheetModel = dopeSheetModel;
     _imp->gui = gui;

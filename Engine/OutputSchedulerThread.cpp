@@ -239,36 +239,36 @@ struct OutputSchedulerThreadPrivate
                                  const boost::shared_ptr<OutputEffectInstance>& effect,
                                  OutputSchedulerThread::ProcessFrameModeEnum mode)
         : buf()
-        , bufEmptyCondition()
-        , bufMutex()
-        , mode(mode)
-        , timer(new Timer)
-        , renderTimer()
-        , renderFinishedMutex()
-        , nFramesRendered(0)
-        , renderFinished(false)
-        , renderThreadsMutex()
-        , renderThreads()
-        , allRenderThreadsInactiveCond()
+          , bufEmptyCondition()
+          , bufMutex()
+          , mode(mode)
+          , timer(new Timer)
+          , renderTimer()
+          , renderFinishedMutex()
+          , nFramesRendered(0)
+          , renderFinished(false)
+          , renderThreadsMutex()
+          , renderThreads()
+          , allRenderThreadsInactiveCond()
 #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
-        , threadPool( QThreadPool::globalInstance() )
+          , threadPool( QThreadPool::globalInstance() )
 #else
-        , allRenderThreadsQuitCond()
-        , framesToRender()
-        , framesToRenderNotEmptyCond()
+          , allRenderThreadsQuitCond()
+          , framesToRender()
+          , framesToRenderNotEmptyCond()
 #endif
-        , framesToRenderMutex()
-        , lastFramePushedIndex(0)
-        , expectFrameToRender(0)
-        , outputEffect(effect)
-        , engine(engine)
+          , framesToRenderMutex()
+          , lastFramePushedIndex(0)
+          , expectFrameToRender(0)
+          , outputEffect(effect)
+          , engine(engine)
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
-        , threadSpawnsTimer()
-        , lastRecordedFPSMutex()
-        , lastRecordedFPS(0.)
+          , threadSpawnsTimer()
+          , lastRecordedFPSMutex()
+          , lastRecordedFPS(0.)
 #endif
-        , bufferedOutputMutex()
-        , lastBufferedOutputSize(0)
+          , bufferedOutputMutex()
+          , lastBufferedOutputSize(0)
     {
     }
 
@@ -529,7 +529,7 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
                                              const boost::shared_ptr<OutputEffectInstance>& effect,
                                              ProcessFrameModeEnum mode)
     : GenericSchedulerThread()
-    , _imp( new OutputSchedulerThreadPrivate(engine, effect, mode) )
+      , _imp( new OutputSchedulerThreadPrivate(engine, effect, mode) )
 {
     QObject::connect( _imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)) );
 
@@ -1079,7 +1079,9 @@ OutputSchedulerThread::startRender()
                                                 scaleOne, true,
                                                 true,
                                                 false,
-                                                ViewIdx(0) ) == eStatusFailed) {
+                                                ViewIdx(0),
+                                                false /*useOpenGL*/,
+                                                EffectInstance::OpenGLContextEffectDataPtr() ) == eStatusFailed) {
             l.unlock();
 
 
@@ -1168,7 +1170,9 @@ OutputSchedulerThread::stopRender()
                                                          scaleOne, true,
                                                          !appPTR->isBackground(),
                                                          false,
-                                                         ViewIdx(0) ) );
+                                                         ViewIdx(0),
+                                                         false /*use OpenGL render*/,
+                                                         EffectInstance::OpenGLContextEffectDataPtr() ) );
     }
 
 
@@ -1960,17 +1964,17 @@ struct RenderThreadTaskPrivate
                             #endif
                             )
         : scheduler(scheduler)
-        , output(output)
+          , output(output)
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-        , mustQuitMutex()
-        , mustQuit(false)
-        , hasQuit(false)
-        , runningMutex()
-        , running(false)
+          , mustQuitMutex()
+          , mustQuit(false)
+          , hasQuit(false)
+          , runningMutex()
+          , running(false)
 #else
-        , time(time)
-        , useRenderStats(useRenderStats)
-        , viewsToRender(viewsToRender)
+          , time(time)
+          , useRenderStats(useRenderStats)
+          , viewsToRender(viewsToRender)
 #endif
     {
     }
@@ -1981,8 +1985,8 @@ struct RenderThreadTaskPrivate
 RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>& output,
                                    OutputSchedulerThread* scheduler)
     : QThread()
-    , AbortableThread(this)
-    , _imp( new RenderThreadTaskPrivate(output, scheduler) )
+      , AbortableThread(this)
+      , _imp( new RenderThreadTaskPrivate(output, scheduler) )
 {
     setThreadName("Parallel render thread");
 }
@@ -1994,7 +1998,7 @@ RenderThreadTask::RenderThreadTask(const boost::shared_ptr<OutputEffectInstance>
                                    const bool useRenderStats,
                                    const std::vector<int>& viewsToRender)
     : QRunnable()
-    , _imp( new RenderThreadTaskPrivate(output, scheduler, time, useRenderStats, viewsToRender) )
+      , _imp( new RenderThreadTaskPrivate(output, scheduler, time, useRenderStats, viewsToRender) )
 {
 }
 
@@ -2092,9 +2096,9 @@ RenderThreadTask::notifyIsRunning(bool running)
 DefaultScheduler::DefaultScheduler(RenderEngine* engine,
                                    const boost::shared_ptr<OutputEffectInstance>& effect)
     : OutputSchedulerThread(engine, effect, eProcessFrameBySchedulerThread)
-    , _effect(effect)
-    , _currentTimeMutex()
-    , _currentTime(0)
+      , _effect(effect)
+      , _currentTimeMutex()
+      , _currentTime(0)
 {
     engine->setPlaybackMode(ePlaybackModeOnce);
 }
@@ -2279,7 +2283,6 @@ private:
                                                          NodePtr(),
                                                          false,
                                                          false,
-                                                         false,
                                                          stats);
 
                 {
@@ -2294,17 +2297,19 @@ private:
                 }
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
                 std::map<ImageComponents, ImagePtr> planes;
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs( time, //< the time at which to render
-                                                                                                                scale, //< the scale at which to render
-                                                                                                                mipMapLevel, //< the mipmap level (redundant with the scale)
-                                                                                                                viewsToRender[view], //< the view to render
-                                                                                                                false,
-                                                                                                                renderWindow, //< the region of interest (in pixel coordinates)
-                                                                                                                rod, // < any precomputed rod ? in canonical coordinates
-                                                                                                                components,
-                                                                                                                imageDepth,
-                                                                                                                false,
-                                                                                                                activeInputToRender.get() ) );
+                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
+                                                                                                               scale, //< the scale at which to render
+                                                                                                               mipMapLevel, //< the mipmap level (redundant with the scale)
+                                                                                                               viewsToRender[view], //< the view to render
+                                                                                                               false,
+                                                                                                               renderWindow, //< the region of interest (in pixel coordinates)
+                                                                                                               rod, // < any precomputed rod ? in canonical coordinates
+                                                                                                               components,
+                                                                                                               imageDepth,
+                                                                                                               false,
+                                                                                                               activeInputToRender.get(),
+                                                                                                               false,
+                                                                                                               time) );
                 EffectInstance::RenderRoIRetCode retCode;
                 retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
                 if (retCode != EffectInstance::eRenderRoIRetCodeOk) {
@@ -2395,7 +2400,6 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                  NodePtr(),
                                                  false,
                                                  false,
-                                                 false,
                                                  it->stats);
 
         ignore_result( effect->getRegionOfDefinition_public(hash, it->time, scale, it->view, &rod, &isProjectFormat) );
@@ -2418,6 +2422,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                                                                        imageDepth,
                                                                                                        false,
                                                                                                        effect.get(),
+                                                                                                       false,
+                                                                                                       frame.time,
                                                                                                        inputImages) );
         try {
             std::map<ImageComponents, ImagePtr> planes;
@@ -2651,7 +2657,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
 ViewerDisplayScheduler::ViewerDisplayScheduler(RenderEngine* engine,
                                                const boost::shared_ptr<ViewerInstance>& viewer)
     : OutputSchedulerThread(engine, viewer, eProcessFrameByMainThread) //< OpenGL rendering is done on the main-thread
-    , _viewer(viewer)
+      , _viewer(viewer)
 {
 }
 
@@ -2735,7 +2741,7 @@ public:
     ViewerRenderFrameRunnable(const boost::shared_ptr<ViewerInstance>& viewer,
                               OutputSchedulerThread* scheduler)
         : RenderThreadTask(viewer, scheduler)
-        , _viewer(viewer)
+          , _viewer(viewer)
     {
     }
 
@@ -2746,7 +2752,7 @@ public:
                               const bool useRenderStarts,
                               const std::vector<int>& viewsToRender)
         : RenderThreadTask(viewer, scheduler, frame, useRenderStarts, viewsToRender)
-        , _viewer(viewer)
+          , _viewer(viewer)
     {
     }
 
@@ -2923,14 +2929,14 @@ struct RenderEnginePrivate
 
     RenderEnginePrivate(const boost::shared_ptr<OutputEffectInstance>& output)
         : schedulerCreationLock()
-        , scheduler(0)
-        , canAutoRestartPlayback(false)
-        , canAutoRestartPlaybackMutex()
-        , output(output)
-        , pbModeMutex()
-        , pbMode(ePlaybackModeLoop)
-        , currentFrameScheduler(0)
-        , refreshQueue()
+          , scheduler(0)
+          , canAutoRestartPlayback(false)
+          , canAutoRestartPlaybackMutex()
+          , output(output)
+          , pbModeMutex()
+          , pbMode(ePlaybackModeLoop)
+          , currentFrameScheduler(0)
+          , refreshQueue()
     {
     }
 };
@@ -3349,18 +3355,18 @@ public:
 
     CurrentFrameFunctorArgs()
         : GenericThreadStartArgs()
-        , view(0)
-        , time(0)
-        , stats()
-        , viewer(0)
-        , viewerHash(0)
-        , request()
-        , scheduler(0)
-        , canAbort(true)
-        , isRotoPaintRequest()
-        , strokeItem()
-        , args()
-        , isRotoNeatRender(false)
+          , view(0)
+          , time(0)
+          , stats()
+          , viewer(0)
+          , viewerHash(0)
+          , request()
+          , scheduler(0)
+          , canAbort(true)
+          , isRotoPaintRequest()
+          , strokeItem()
+          , args()
+          , isRotoNeatRender(false)
     {
     }
 
@@ -3375,18 +3381,18 @@ public:
                             const boost::shared_ptr<RotoStrokeItem>& strokeItem,
                             bool isRotoNeatRender)
         : GenericThreadStartArgs()
-        , view(view)
-        , time(time)
-        , stats(stats)
-        , viewer(viewer)
-        , viewerHash(viewerHash)
-        , request()
-        , scheduler(scheduler)
-        , canAbort(canAbort)
-        , isRotoPaintRequest(isRotoPaintRequest)
-        , strokeItem(strokeItem)
-        , args()
-        , isRotoNeatRender(isRotoNeatRender)
+          , view(view)
+          , time(time)
+          , stats(stats)
+          , viewer(viewer)
+          , viewerHash(viewerHash)
+          , request()
+          , scheduler(scheduler)
+          , canAbort(canAbort)
+          , isRotoPaintRequest(isRotoPaintRequest)
+          , strokeItem(strokeItem)
+          , args()
+          , isRotoNeatRender(isRotoNeatRender)
     {
         if (isRotoPaintRequest && isRotoNeatRender) {
             isRotoPaintRequest->getRotoContext()->setIsDoingNeatRender(true);
@@ -3425,14 +3431,14 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 
     ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
         : viewer(viewer)
-        , threadPool( QThreadPool::globalInstance() )
-        , producedFramesMutex()
-        , producedFrames()
-        , producedFramesNotEmpty()
-        , backupThread()
-        , currentFrameRenderTasksCond()
-        , currentFrameRenderTasks()
-        , ageCounter(0)
+          , threadPool( QThreadPool::globalInstance() )
+          , producedFramesMutex()
+          , producedFrames()
+          , producedFramesNotEmpty()
+          , backupThread()
+          , currentFrameRenderTasksCond()
+          , currentFrameRenderTasks()
+          , ageCounter(0)
     {
     }
 
@@ -3581,7 +3587,7 @@ public:
 
 ViewerCurrentFrameRequestScheduler::ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer)
     : GenericSchedulerThread()
-    , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
+      , _imp( new ViewerCurrentFrameRequestSchedulerPrivate(viewer) )
 {
     setThreadName("ViewerCurrentFrameRequestScheduler");
 }

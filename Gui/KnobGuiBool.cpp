@@ -89,9 +89,9 @@ Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob,
                              int dimension,
                              QWidget* parent)
     : AnimatedCheckBox(parent)
-    , useCustomColor(false)
-    , customColor()
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+      , useCustomColor(false)
+      , customColor()
+      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {
 }
 
@@ -205,7 +205,7 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
 KnobGuiBool::KnobGuiBool(KnobPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _checkBox(0)
+      , _checkBox(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobBool>(knob);
 }

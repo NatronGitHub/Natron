@@ -111,7 +111,7 @@ NATRON_NAMESPACE_ENTER;
 ViewerGL::ViewerGL(ViewerTab* parent,
                    const QGLWidget* shareWidget)
     : QGLWidget(parent, shareWidget)
-    , _imp( new Implementation(this, parent) )
+      , _imp( new Implementation(this, parent) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1189,7 +1189,7 @@ ViewerGL::drawPersistentMessage()
 
         for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
             renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, *_imp->textFont);
-            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) );/*metrics.height() * 2 * zoomScreenPixelHeight*/
+            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) ); /*metrics.height() * 2 * zoomScreenPixelHeight*/
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1592,15 +1592,22 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     TextureRect textureRectangle;
     if (isPartialRect) {
         // For small partial updates overlays, we make new textures
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+        int format, internalFormat, glType;
+        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
         textureRectangle = region;
     } else {
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
+        if (tex->type() != dataType) {
+            int format, internalFormat, glType;
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+        }
         textureRectangle = roiRoundedToTileSize;
         textureRectangle.par = region.par;
         if (isFirstTile) {
-            tex->ensureTextureHasSize(textureRectangle, dataType);
+            tex->ensureTextureHasSize(textureRectangle);
         }
     }
 
@@ -1615,7 +1622,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    tex->fillOrAllocateTexture(textureRectangle, dataType, region, true);
+    tex->fillOrAllocateTexture(textureRectangle, region, true);
 
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?

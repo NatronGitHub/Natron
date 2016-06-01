@@ -50,10 +50,10 @@ NATRON_NAMESPACE_ENTER;
 PreferencesPanel::PreferencesPanel(boost::shared_ptr<Settings> settings,
                                    Gui *parent)
     : QWidget(parent)
-    , _gui(parent)
-    , _settings(settings)
-    , _changedKnobs()
-    , _closeIsOK(false)
+      , _gui(parent)
+      , _settings(settings)
+      , _changedKnobs()
+      , _closeIsOK(false)
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 

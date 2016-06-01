@@ -65,7 +65,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ColorPickerLabel(KnobGuiColor* knob, QWidget* parent = NULL);
+    ColorPickerLabel(KnobGuiColor* knob,
+                     QWidget* parent = NULL);
 
     virtual ~ColorPickerLabel() OVERRIDE
     {

@@ -50,10 +50,19 @@
 #endif
 #endif
 
+#ifdef Q_OS_LINUX
+#include "Engine/OSGLContext_x11.h"
+#elif defined(Q_OS_WIN32)
+#include "Engine/OSGLContext_win.h"
+#elif defined(Q_OS_MAC)
+#include "Engine/OSGLContext_mac.h"
+#endif
+
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
+#include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
@@ -148,6 +157,15 @@ public:
     QString missingOpenglError;
     bool hasInitializedOpenGLFunctions;
     mutable QMutex openGLFunctionsMutex;
+
+#ifdef Q_OS_WIN32
+    boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;
+#endif
+#ifdef Q_OS_LINUX
+    boost::scoped_ptr<OSGLContext_glx_data> glxInfo;
+#endif
+
+    boost::scoped_ptr<GPUContextPool> renderingContextPool;
     boost::scoped_ptr<QCoreApplication> _qApp;
 
 public:
@@ -183,6 +201,10 @@ public:
 #endif
 
     void initGl();
+
+    void initGLAPISpecific();
+
+    void tearDownGL();
 };
 
 NATRON_NAMESPACE_EXIT;

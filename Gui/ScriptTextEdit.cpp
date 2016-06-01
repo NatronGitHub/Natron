@@ -81,13 +81,13 @@ struct PySyntaxHighlighterPrivate
 
     PySyntaxHighlighterPrivate(PySyntaxHighlighter* publicInterface)
         : publicInterface(publicInterface)
-        , keywords()
-        , operators()
-        , braces()
-        , basicStyles()
-        , rules()
-        , triSingleQuote()
-        , triDoubleQuote()
+          , keywords()
+          , operators()
+          , braces()
+          , basicStyles()
+          , rules()
+          , triSingleQuote()
+          , triDoubleQuote()
     {
         keywords = QStringList() << QString::fromUtf8("and") << QString::fromUtf8("assert") << QString::fromUtf8("break") << QString::fromUtf8("class") << QString::fromUtf8("continue") << QString::fromUtf8("def") <<
                    QString::fromUtf8("del") << QString::fromUtf8("elif") << QString::fromUtf8("else") << QString::fromUtf8("except") << QString::fromUtf8("exec") << QString::fromUtf8("finally") <<
@@ -253,7 +253,7 @@ PySyntaxHighlighterPrivate::getTextCharFormat(double r,
 
 PySyntaxHighlighter::PySyntaxHighlighter(QTextDocument *parent)
     : QSyntaxHighlighter(parent)
-    , _imp( new PySyntaxHighlighterPrivate(this) )
+      , _imp( new PySyntaxHighlighterPrivate(this) )
 {
 }
 
@@ -305,8 +305,8 @@ PySyntaxHighlighterPrivate::reload()
 InputScriptTextEdit::InputScriptTextEdit(Gui* gui,
                                          QWidget* parent)
     : QPlainTextEdit(parent)
-    , _lineNumber( new LineNumberWidget(this) )
-    , _gui(gui)
+      , _lineNumber( new LineNumberWidget(this) )
+      , _gui(gui)
 {
     QObject::connect( this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)) );
     QObject::connect( this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)) );

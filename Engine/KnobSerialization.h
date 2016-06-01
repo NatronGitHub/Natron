@@ -91,9 +91,9 @@ struct MasterSerialization
 
     MasterSerialization()
         : masterDimension(-1)
-        , masterNodeName()
-        , masterTrackName()
-        , masterKnobName()
+          , masterNodeName()
+          , masterTrackName()
+          , masterKnobName()
     {
     }
 
@@ -138,7 +138,8 @@ class ChoiceExtraData
 public:
 
 
-    ChoiceExtraData() : TypeExtraData(), _choiceString(), _entries(), _helpStrings() {}
+    ChoiceExtraData()
+        : TypeExtraData(), _choiceString(), _entries(), _helpStrings() {}
 
     virtual ~ChoiceExtraData() {}
 
@@ -151,7 +152,8 @@ class FileExtraData
     : public TypeExtraData
 {
 public:
-    FileExtraData() : TypeExtraData(), useSequences(false) {}
+    FileExtraData()
+        : TypeExtraData(), useSequences(false) {}
 
     bool useSequences;
 };
@@ -160,7 +162,8 @@ class PathExtraData
     : public TypeExtraData
 {
 public:
-    PathExtraData() : TypeExtraData(), multiPath(false) {}
+    PathExtraData()
+        : TypeExtraData(), multiPath(false) {}
 
     bool multiPath;
 };
@@ -169,7 +172,8 @@ class TextExtraData
     : public TypeExtraData
 {
 public:
-    TextExtraData() : TypeExtraData(), label(false),  multiLine(false), richText(false) {}
+    TextExtraData()
+        : TypeExtraData(), label(false),  multiLine(false), richText(false) {}
 
     bool label;
     bool multiLine;
@@ -182,10 +186,10 @@ class ValueExtraData
 public:
     ValueExtraData()
         : TypeExtraData()
-        , min(0.)
-        , max(0.)
-        , dmin(0.)
-        , dmax(0.)
+          , min(0.)
+          , max(0.)
+          , dmin(0.)
+          , dmax(0.)
     {
     }
 
@@ -710,17 +714,17 @@ public:
     ///Constructor used to serialize
     explicit KnobSerialization(const KnobPtr & knob)
         : _knob()
-        , _dimension(0)
-        , _masterIsAlias(false)
-        , _extraData(NULL)
-        , _isUserKnob(false)
-        , _label()
-        , _triggerNewLine(false)
-        , _evaluatesOnChange(false)
-        , _isPersistent(false)
-        , _animationEnabled(false)
-        , _tooltip()
-        , _useHostOverlay(false)
+          , _dimension(0)
+          , _masterIsAlias(false)
+          , _extraData(NULL)
+          , _isUserKnob(false)
+          , _label()
+          , _triggerNewLine(false)
+          , _evaluatesOnChange(false)
+          , _isPersistent(false)
+          , _animationEnabled(false)
+          , _tooltip()
+          , _useHostOverlay(false)
     {
         initialize(knob);
     }
@@ -814,18 +818,18 @@ public:
     ///this the deserialization will not succeed.
     KnobSerialization()
         : _knob()
-        , _dimension(0)
-        , _masters()
-        , _masterIsAlias(false)
-        , _extraData(NULL)
-        , _isUserKnob(false)
-        , _label()
-        , _triggerNewLine(false)
-        , _evaluatesOnChange(false)
-        , _isPersistent(false)
-        , _animationEnabled(false)
-        , _tooltip()
-        , _useHostOverlay(false)
+          , _dimension(0)
+          , _masters()
+          , _masterIsAlias(false)
+          , _extraData(NULL)
+          , _isUserKnob(false)
+          , _label()
+          , _triggerNewLine(false)
+          , _evaluatesOnChange(false)
+          , _isPersistent(false)
+          , _animationEnabled(false)
+          , _tooltip()
+          , _useHostOverlay(false)
     {
     }
 
@@ -947,12 +951,12 @@ public:
 
     GroupKnobSerialization(const KnobPtr& knob)
         : _knob(knob)
-        , _children()
-        , _name()
-        , _label()
-        , _secret(false)
-        , _isSetAsTab(false)
-        , _isOpened(false)
+          , _children()
+          , _name()
+          , _label()
+          , _secret(false)
+          , _isSetAsTab(false)
+          , _isOpened(false)
     {
         KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
@@ -999,12 +1003,12 @@ public:
 
     GroupKnobSerialization()
         : _knob()
-        , _children()
-        , _name()
-        , _label()
-        , _secret(false)
-        , _isSetAsTab(false)
-        , _isOpened(false)
+          , _children()
+          , _name()
+          , _label()
+          , _secret(false)
+          , _isSetAsTab(false)
+          , _isOpened(false)
     {
     }
 

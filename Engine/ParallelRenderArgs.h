@@ -108,6 +108,9 @@ struct ParallelRenderArgs
     ///Various stats local to the render of a frame
     boost::shared_ptr<RenderStats> stats;
 
+    ///The OpenGL context to use for the render of this frame
+    boost::weak_ptr<OSGLContext> openGLContext;
+
     ///The texture index of the viewer being rendered, only useful for abortable renders
     int textureIndex;
 
@@ -136,10 +139,6 @@ struct ParallelRenderArgs
 
     ///The support for tiles is local to a render and may change depending on GPU usage or other parameters
     bool tilesSupported : 1;
-
-    ///True when the preference in Natron is set and the renderRequester is a Viewer
-    bool viewerProgressReportEnabled : 1;
-
 
     ParallelRenderArgs();
 
@@ -238,6 +237,10 @@ class ParallelRenderArgsSetter
     boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > argsMap;
     NodesList nodes;
 
+protected:
+
+    boost::weak_ptr<OSGLContext> _openGLContext;
+
 public:
 
     /**
@@ -258,7 +261,6 @@ public:
                              const NodePtr& activeRotoPaintNode,
                              bool isAnalysis,
                              bool draftMode,
-                             bool viewerProgressReportEnabled,
                              const boost::shared_ptr<RenderStats>& stats);
 
     ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args);

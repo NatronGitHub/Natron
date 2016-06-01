@@ -31,22 +31,39 @@ NATRON_NAMESPACE_ENTER;
 Texture::Texture(U32 target,
                  int minFilter,
                  int magFilter,
-                 int clamp)
+                 int clamp,
+                 DataTypeEnum type,
+                 int format,
+                 int internalFormat,
+                 int glType)
     : _texID(0)
-    , _target(target)
-    , _minFilter(minFilter)
-    , _magFilter(magFilter)
-    , _clamp(clamp)
-    , _type(eDataTypeNone)
+      , _target(target)
+      , _minFilter(minFilter)
+      , _magFilter(magFilter)
+      , _clamp(clamp)
+      , _internalFormat(internalFormat)
+      , _format(format)
+      , _glType(glType)
+      , _type(type)
 {
     glGenTextures(1, &_texID);
 }
 
+void
+Texture::getRecommendedTexParametersForRGBAByteTexture(int* format,
+                                                       int* internalFormat,
+                                                       int* glType)
+{
+    *format = GL_BGRA;
+    *internalFormat = GL_RGBA8;
+    *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
+}
+
 bool
 Texture::ensureTextureHasSize(const TextureRect& texRect,
-                              DataTypeEnum type)
+                              const unsigned char* originalRAMBuffer)
 {
-    if ( (texRect == _textureRect) && (_type == type) ) {
+    if (texRect == _textureRect) {
         return false;
     }
 
@@ -54,7 +71,6 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
     glEnable(_target);
     glBindTexture (_target, _texID);
     _textureRect = texRect;
-    _type = type;
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
     glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
@@ -62,25 +78,17 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
 
     glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
     glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
-    if (type == eDataTypeByte) {
-        glTexImage2D(_target,
-                     0,         // level
-                     GL_RGBA8, //internalFormat
-                     w(), h(),
-                     0,         // border
-                     GL_BGRA,       // format
-                     GL_UNSIGNED_INT_8_8_8_8_REV,   // type
-                     0);            // pixels
-    } else if (type == eDataTypeFloat) {
-        glTexImage2D (_target,
-                      0,            // level
-                      GL_RGBA32F_ARB, //internalFormat
-                      w(), h(),
-                      0,            // border
-                      GL_RGBA,      // format
-                      GL_FLOAT, // type
-                      0);           // pixels
-    }
+
+    glTexImage2D (_target,
+                  0,            // level
+                  _internalFormat, //internalFormat
+                  w(), h(),
+                  0,            // border
+                  _format,      // format
+                  _glType, // type
+                  originalRAMBuffer);           // pixels
+
+
     glBindTexture(_target, 0);
     glCheckError();
 
@@ -89,9 +97,9 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
 
 void
 Texture::fillOrAllocateTexture(const TextureRect & texRect,
-                               DataTypeEnum type,
                                const RectI& roi,
-                               bool updateOnlyRoi)
+                               bool updateOnlyRoi,
+                               const unsigned char* originalRAMBuffer)
 {
     //GLuint savedTexture;
     //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
@@ -102,26 +110,20 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
         int x1 = updateOnlyRoi ? roi.x1 - texRect.x1 : 0;
         int y1 = updateOnlyRoi ? roi.y1 - texRect.y1 : 0;
 
-        if ( !ensureTextureHasSize(texRect, type) ) {
+        if ( !ensureTextureHasSize(texRect, originalRAMBuffer) ) {
             glEnable(_target);
             glBindTexture (_target, _texID);
-            if (_type == Texture::eDataTypeByte) {
-                glTexSubImage2D(_target,
-                                0,              // level
-                                x1, y1,               // xoffset, yoffset
-                                width, height,
-                                GL_BGRA,            // format
-                                GL_UNSIGNED_INT_8_8_8_8_REV,        // type
-                                0);
-            } else if (_type == Texture::eDataTypeFloat) {
-                glTexSubImage2D(_target,
-                                0,              // level
-                                x1, y1,               // xoffset, yoffset
-                                width, height,
-                                GL_RGBA,            // format
-                                GL_FLOAT,       // type
-                                0);
-            }
+
+
+            glTexSubImage2D(_target,
+                            0,              // level
+                            x1, y1,               // xoffset, yoffset
+                            width, height,
+                            _format,            // format
+                            _glType,       // type
+                            originalRAMBuffer);
+
+
             glBindTexture (_target, 0);
             glCheckError();
         }

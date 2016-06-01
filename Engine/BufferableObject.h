@@ -45,7 +45,8 @@ public:
         return uniqueID;
     }
 
-    BufferableObject() : uniqueID(0) {}
+    BufferableObject()
+        : uniqueID(0) {}
 
     virtual ~BufferableObject() {}
 

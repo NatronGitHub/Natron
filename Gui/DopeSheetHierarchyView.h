@@ -142,7 +142,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    explicit HierarchyView(DopeSheet *dopeSheetModel, Gui *gui, QWidget *parent = 0);
+    explicit HierarchyView(DopeSheet *dopeSheetModel,
+                           Gui *gui,
+                           QWidget *parent = 0);
     ~HierarchyView();
 
     /**

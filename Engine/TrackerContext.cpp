@@ -79,7 +79,7 @@ TrackerContext::getMotionModelsAndHelps(bool addPerspective,
 
 TrackerContext::TrackerContext(const boost::shared_ptr<Node> &node)
     : boost::enable_shared_from_this<TrackerContext>()
-    , _imp( new TrackerContextPrivate(this, node) )
+      , _imp( new TrackerContextPrivate(this, node) )
 {
 }
 
@@ -1491,15 +1491,15 @@ struct TrackArgsPrivate
 
     TrackArgsPrivate()
         : start(0)
-        , end(0)
-        , step(1)
-        , timeline()
-        , viewer(0)
-        , libmvAutotrack()
-        , fa()
-        , tracks()
-        , formatWidth(0)
-        , formatHeight(0)
+          , end(0)
+          , step(1)
+          , timeline()
+          , viewer(0)
+          , libmvAutotrack()
+          , fa()
+          , tracks()
+          , formatWidth(0)
+          , formatHeight(0)
     {
     }
 };
@@ -1520,7 +1520,7 @@ TrackArgs::TrackArgs(int start,
                      double formatWidth,
                      double formatHeight)
     : GenericThreadStartArgs()
-    , _imp( new TrackArgsPrivate() )
+      , _imp( new TrackArgsPrivate() )
 {
     _imp->start = start;
     _imp->end = end;
@@ -1540,7 +1540,7 @@ TrackArgs::~TrackArgs()
 
 TrackArgs::TrackArgs(const TrackArgs& other)
     : GenericThreadStartArgs()
-    , _imp( new TrackArgsPrivate() )
+      , _imp( new TrackArgsPrivate() )
 {
     *this = other;
 }
@@ -1676,7 +1676,7 @@ struct TrackSchedulerPrivate
     TrackSchedulerPrivate(TrackerParamsProvider* paramsProvider,
                           const NodeWPtr& node)
         : paramsProvider(paramsProvider)
-        , node(node)
+          , node(node)
     {
     }
 
@@ -1696,7 +1696,7 @@ struct TrackSchedulerPrivate
 TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
                                const NodeWPtr& node)
     : GenericSchedulerThread()
-    , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
+      , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
 {
     QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
 
@@ -1760,10 +1760,10 @@ public:
                               ViewerInstance* viewer,
                               bool doPartialUpdates)
         : _v(viewer)
-        , _effect(effect)
-        , _base(base)
-        , _reportProgress(reportProgress)
-        , _doPartialUpdates(doPartialUpdates)
+          , _effect(effect)
+          , _base(base)
+          , _reportProgress(reportProgress)
+          , _doPartialUpdates(doPartialUpdates)
     {
         if (_effect && _reportProgress) {
             _base->emit_trackingStarted(step);

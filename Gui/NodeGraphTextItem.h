@@ -45,7 +45,9 @@ class NodeGraphTextItem
 
 public:
 
-    NodeGraphTextItem(NodeGraph* graph, QGraphicsItem *parent, bool alwaysDrawText);
+    NodeGraphTextItem(NodeGraph* graph,
+                      QGraphicsItem *parent,
+                      bool alwaysDrawText);
 
     virtual ~NodeGraphTextItem();
 
@@ -60,7 +62,9 @@ class NodeGraphSimpleTextItem
 
 public:
 
-    NodeGraphSimpleTextItem(NodeGraph* graph, QGraphicsItem *parent, bool alwaysDrawText);
+    NodeGraphSimpleTextItem(NodeGraph* graph,
+                            QGraphicsItem *parent,
+                            bool alwaysDrawText);
 
     virtual ~NodeGraphSimpleTextItem();
 
@@ -73,7 +77,8 @@ class NodeGraphPixmapItem
     NodeGraph* _graph;
 
 public:
-    NodeGraphPixmapItem(NodeGraph* graph, QGraphicsItem *parent);
+    NodeGraphPixmapItem(NodeGraph* graph,
+                        QGraphicsItem *parent);
 
     virtual ~NodeGraphPixmapItem();
 

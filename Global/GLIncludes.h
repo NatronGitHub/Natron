@@ -32,6 +32,8 @@
 
 #include "Global/Macros.h"
 
+#include <cassert>
+
 #ifdef DEBUG
 #ifdef __cplusplus
 #include <iostream>
@@ -288,7 +290,8 @@ private:
 class GLProtectMatrix
 {
 public:
-    GLProtectMatrix(GLenum mode) : _mode(mode)
+    GLProtectMatrix(GLenum mode)
+        : _mode(mode)
     {
 #ifdef DEBUG
         GLint d = -1, m0 = -1, m = -1;

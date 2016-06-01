@@ -87,7 +87,7 @@ using std::make_pair;
 KnobGuiButton::KnobGuiButton(KnobPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _button(0)
+      , _button(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobButton>(knob);
 }

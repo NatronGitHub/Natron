@@ -47,12 +47,12 @@ struct HistogramRequest
 
     HistogramRequest()
         : binsCount(0)
-        , mode(0)
-        , image()
-        , rect()
-        , vmin(0)
-        , vmax(0)
-        , smoothingKernelSize(0)
+          , mode(0)
+          , image()
+          , rect()
+          , vmin(0)
+          , vmax(0)
+          , smoothingKernelSize(0)
     {
     }
 
@@ -64,12 +64,12 @@ struct HistogramRequest
                      double vmax,
                      int smoothingKernelSize)
         : binsCount(binsCount)
-        , mode(mode)
-        , image(image)
-        , rect(rect)
-        , vmin(vmin)
-        , vmax(vmax)
-        , smoothingKernelSize(smoothingKernelSize)
+          , mode(mode)
+          , image(image)
+          , rect(rect)
+          , vmin(vmin)
+          , vmax(vmax)
+          , smoothingKernelSize(smoothingKernelSize)
     {
     }
 };
@@ -87,14 +87,14 @@ struct FinishedHistogram
 
     FinishedHistogram()
         : histogram1()
-        , histogram2()
-        , histogram3()
-        , mode(0)
-        , binsCount(0)
-        , pixelsCount(0)
-        , vmin(0)
-        , vmax(0)
-        , mipMapLevel(0)
+          , histogram2()
+          , histogram3()
+          , mode(0)
+          , binsCount(0)
+          , pixelsCount(0)
+          , vmin(0)
+          , vmax(0)
+          , mipMapLevel(0)
     {
     }
 };
@@ -112,20 +112,20 @@ struct HistogramCPUPrivate
 
     HistogramCPUPrivate()
         : requestCond()
-        , requestMutex()
-        , requests()
-        , producedMutex()
-        , produced()
-        , mustQuitCond()
-        , mustQuitMutex()
-        , mustQuit(false)
+          , requestMutex()
+          , requests()
+          , producedMutex()
+          , produced()
+          , mustQuitCond()
+          , mustQuitMutex()
+          , mustQuit(false)
     {
     }
 };
 
 HistogramCPU::HistogramCPU()
     : QThread()
-    , _imp( new HistogramCPUPrivate() )
+      , _imp( new HistogramCPUPrivate() )
 {
 }
 

@@ -49,8 +49,8 @@ public:
 
     TextureRect()
         : RectI()
-        , par(1.)
-        , closestPo2(1)
+          , par(1.)
+          , closestPo2(1)
     {
     }
 
@@ -61,8 +61,8 @@ public:
                 int closestPo2_,
                 double par_)
         : RectI(x1_, y1_, x2_, y2_)
-        , par(par_)
-        , closestPo2(closestPo2_)
+          , par(par_)
+          , closestPo2(closestPo2_)
     {
     }
 

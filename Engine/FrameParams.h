@@ -35,6 +35,7 @@
 #include "Engine/RectI.h"
 #include "Engine/NonKeyParams.h"
 #include "Engine/EngineFwd.h"
+#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -45,27 +46,33 @@ public:
 
     FrameParams()
         : NonKeyParams()
-        , _image()
-        , _rod()
+          , _image()
+          , _rod()
     {
     }
 
     FrameParams(const FrameParams & other)
         : NonKeyParams(other)
-        , _image(other._image)
-        , _rod(other._rod)
+          , _image(other._image)
+          , _rod(other._rod)
     {
     }
 
     FrameParams(const RectI & rod,
                 int bitDepth,
-                int texW,
-                int texH,
+                const RectI& bounds,
                 const ImagePtr& originalImage)
-        : NonKeyParams(1, bitDepth != 0 ? texW * texH * 16 : texW * texH * 4)
-        , _image(originalImage)
-        , _rod(rod)
+        : NonKeyParams()
+          , _image(originalImage)
+          , _rod(rod)
     {
+        CacheEntryStorageInfo& info = getStorageInfo();
+
+        info.mode = eStorageModeDisk;
+        info.numComponents = 4; // always RGBA
+        info.dataTypeSize = getSizeOfForBitDepth( (ImageBitDepthEnum)bitDepth );
+        info.bounds = bounds;
+        info.textureTarget = GL_TEXTURE_2D;
     }
 
     virtual ~FrameParams()

@@ -46,8 +46,11 @@ class ResizableMessageBox
 public:
     explicit ResizableMessageBox(QWidget *parent = 0);
 
-    ResizableMessageBox(Icon icon, const QString &title, const QString &text,
-                        StandardButtons buttons = NoButton, QWidget *parent = 0,
+    ResizableMessageBox(Icon icon,
+                        const QString &title,
+                        const QString &text,
+                        StandardButtons buttons = NoButton,
+                        QWidget *parent = 0,
                         Qt::WindowFlags flags = Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
 
 private:

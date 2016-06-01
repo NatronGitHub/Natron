@@ -58,6 +58,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/FrameEntry.h"
 #include "Engine/Image.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/RectDSerialization.h"
 #include "Engine/RectISerialization.h"
@@ -70,52 +71,53 @@ BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 NATRON_NAMESPACE_ENTER;
 AppManagerPrivate::AppManagerPrivate()
     : globalTLS()
-    , _appType(AppManager::eAppTypeBackground)
-    , _appInstancesMutex()
-    , _appInstances()
-    , _availableID(0)
-    , _topLevelInstanceID(0)
-    , _settings()
-    , _formats()
-    , _plugins()
-    , ofxHost( new OfxHost() )
-    , _knobFactory( new KnobFactory() )
-    , _nodeCache()
-    , _diskCache()
-    , _viewerCache()
-    , diskCachesLocationMutex()
-    , diskCachesLocation()
-    , _backgroundIPC()
-    , _loaded(false)
-    , _binaryPath()
-    , _nodesGlobalMemoryUse(0)
-    , errorLogMutex()
-    , errorLog()
-    , maxCacheFiles(0)
-    , currentCacheFilesCount(0)
-    , currentCacheFilesCountMutex()
-    , idealThreadCount(0)
-    , nThreadsToRender(0)
-    , nThreadsPerEffect(0)
-    , useThreadPool(true)
-    , nThreadsMutex()
-    , runningThreadsCount()
-    , lastProjectLoadedCreatedDuringRC2Or3(false)
-    , args()
-    , mainModule(0)
-    , mainThreadState(0)
+      , _appType(AppManager::eAppTypeBackground)
+      , _appInstancesMutex()
+      , _appInstances()
+      , _availableID(0)
+      , _topLevelInstanceID(0)
+      , _settings()
+      , _formats()
+      , _plugins()
+      , ofxHost( new OfxHost() )
+      , _knobFactory( new KnobFactory() )
+      , _nodeCache()
+      , _diskCache()
+      , _viewerCache()
+      , diskCachesLocationMutex()
+      , diskCachesLocation()
+      , _backgroundIPC()
+      , _loaded(false)
+      , _binaryPath()
+      , _nodesGlobalMemoryUse(0)
+      , errorLogMutex()
+      , errorLog()
+      , maxCacheFiles(0)
+      , currentCacheFilesCount(0)
+      , currentCacheFilesCountMutex()
+      , idealThreadCount(0)
+      , nThreadsToRender(0)
+      , nThreadsPerEffect(0)
+      , useThreadPool(true)
+      , nThreadsMutex()
+      , runningThreadsCount()
+      , lastProjectLoadedCreatedDuringRC2Or3(false)
+      , args()
+      , mainModule(0)
+      , mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
-    , breakpadProcessExecutableFilePath()
-    , breakpadProcessPID(0)
-    , breakpadHandler()
-    , breakpadAliveThread()
+      , breakpadProcessExecutableFilePath()
+      , breakpadProcessPID(0)
+      , breakpadHandler()
+      , breakpadAliveThread()
 #endif
-    , natronPythonGIL(QMutex::Recursive)
-    , pluginsUseInputImageCopyToRender(false)
-    , hasRequiredOpenGLVersionAndExtensions(true)
-    , missingOpenglError()
-    , hasInitializedOpenGLFunctions(false)
-    , openGLFunctionsMutex()
+      , natronPythonGIL(QMutex::Recursive)
+      , pluginsUseInputImageCopyToRender(false)
+      , hasRequiredOpenGLVersionAndExtensions(true)
+      , missingOpenglError()
+      , hasInitializedOpenGLFunctions(false)
+      , openGLFunctionsMutex()
+      , renderingContextPool()
 {
     setMaxCacheFiles();
 
@@ -266,7 +268,7 @@ AppManagerPrivate::declareSettingsToPython()
     const KnobsVec& knobs = _settings->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings." <<
-        (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
+            (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
     }
 }
 
@@ -555,6 +557,19 @@ post_gl_call(const char */*name*/,
 #endif // debug
 
 void
+AppManagerPrivate::initGLAPISpecific()
+{
+#ifdef Q_OS_WIN32
+    wglInfo.reset(new OSGLContext_wgl_data);
+    OSGLContext_win::initWGLData( wglInfo.get() );
+#elif defined(Q_OS_LINUX)
+    glxInfo.reset(new OSGLContext_glx_data);
+    OSGLContext_x11::initGLXData( glxInfo.get() );
+
+#endif // Q_OS_WIN32
+}
+
+void
 AppManagerPrivate::initGl()
 {
     // Private should not lock
@@ -583,7 +598,25 @@ AppManagerPrivate::initGl()
         return;
     }
 
+
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
+}
+
+void
+AppManagerPrivate::tearDownGL()
+{
+    // Kill all rendering context
+    renderingContextPool.reset();
+
+#ifdef Q_OS_WIN32
+    if (wglInfo) {
+        OSGLContext_win::destroyWGLData( wglInfo.get() );
+    }
+#elif defined(Q_OS_LINUX)
+    if (glxInfo) {
+        OSGLContext_x11::destroyGLXData( glxInfo.get() );
+    }
+#endif
 }
 
 NATRON_NAMESPACE_EXIT;

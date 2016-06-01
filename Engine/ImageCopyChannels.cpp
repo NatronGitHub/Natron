@@ -30,6 +30,8 @@
 #include <stdexcept>
 
 #include <QtCore/QDebug>
+#include "Engine/OSGLContext.h"
+#include "Engine/GLShader.h"
 
 
 // disable some warnings due to unused parameters
@@ -586,7 +588,8 @@ Image::copyUnProcessedChannels(const RectI& roi,
                                const ImagePremultiplicationEnum originalImagePremult,
                                const std::bitset<4> processChannels,
                                const ImagePtr& originalImage,
-                               bool ignorePremult)
+                               bool ignorePremult,
+                               const OSGLContextPtr& glContext)
 {
     int numComp = getComponents().getNumComponents();
 
@@ -617,6 +620,87 @@ Image::copyUnProcessedChannels(const RectI& roi,
     RectI intersected;
     roi.intersect(_bounds, &intersected);
 
+    if (getStorageMode() == eStorageModeGLTex) {
+        assert(glContext);
+        assert(originalImage->getStorageMode() == eStorageModeGLTex);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateDefaultShader(OSGLContext::eDefaultGLShaderCopyUnprocessedChannels);
+        assert(shader);
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = getGLTextureTarget();
+        glEnable(target);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture( target, getGLTextureID() );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+        glCheckError();
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture( target, originalImage->getGLTextureID() );
+
+
+        glViewport( 0, 0, intersected.width(), intersected.height() );
+        glCheckError();
+        glMatrixMode(GL_MODELVIEW);
+        glOrtho( _bounds.x1, _bounds.x2,
+                 _bounds.y1, _bounds.y2,
+                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glCheckError();
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = intersected.x1;
+        vertexCoords[0].y = intersected.y1;
+        srcTexCoords[0].x = (intersected.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[0].y = (intersected.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[1].x = intersected.x2;
+        vertexCoords[1].y = intersected.y1;
+        srcTexCoords[1].x = (intersected.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[1].y = (intersected.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[2].x = intersected.x2;
+        vertexCoords[2].y = intersected.y2;
+        srcTexCoords[2].x = (intersected.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[2].y = (intersected.y2 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[3].x = intersected.x1;
+        vertexCoords[3].y = intersected.y2;
+        srcTexCoords[3].x = (intersected.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[3].y = (intersected.y2 - _bounds.y1) / (double)_bounds.height();
+
+        shader->bind();
+        glCheckError();
+        shader->setUniform("originalImageTex", 1);
+        shader->setUniform("outputImageTex", 0);
+        OfxRGBAColourF procChannelsV = {
+            processChannels[0] ? 1.f : 0.f,
+            processChannels[1] ? 1.f : 0.f,
+            processChannels[2] ? 1.f : 0.f,
+            processChannels[3] ? 1.f : 0.f
+        };
+        shader->setUniform("processChannels", procChannelsV);
+        glCheckError();
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        glEnd();
+        shader->unbind();
+        glCheckError();
+
+        glBindTexture(target, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(target, 0);
+        glCheckError();
+
+        return;
+    }
+
+
     bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
     bool originalPremult = (originalImagePremult == eImagePremultiplicationPremultiplied);
     switch ( getBitDepth() ) {
@@ -633,6 +717,6 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
         return;
     }
-}
+} // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;

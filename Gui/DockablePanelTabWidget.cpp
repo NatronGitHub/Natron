@@ -50,7 +50,8 @@ class NoWheelTabBar
 {
 public:
 
-    NoWheelTabBar(QWidget* parent) : QTabBar(parent) {}
+    NoWheelTabBar(QWidget* parent)
+        : QTabBar(parent) {}
 
 private:
 
@@ -67,7 +68,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 DockablePanelTabWidget::DockablePanelTabWidget(Gui* gui,
                                                QWidget* parent)
     : QTabWidget(parent)
-    , _gui(gui)
+      , _gui(gui)
 {
     setFocusPolicy(Qt::ClickFocus);
     QTabBar* tabbar = new NoWheelTabBar(this);

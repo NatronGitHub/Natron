@@ -79,7 +79,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    InputScriptTextEdit(Gui* gui, QWidget* parent);
+    InputScriptTextEdit(Gui* gui,
+                        QWidget* parent);
 
     virtual ~InputScriptTextEdit();
 
@@ -118,7 +119,7 @@ public:
 
     LineNumberWidget(InputScriptTextEdit *editor)
         : QWidget(editor)
-        , codeEditor(editor)
+          , codeEditor(editor)
     {
         codeEditor = editor;
     }

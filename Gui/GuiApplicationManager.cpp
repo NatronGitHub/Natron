@@ -64,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 
 GuiApplicationManager::GuiApplicationManager()
     : AppManager()
-    , _imp( new GuiApplicationManagerPrivate(this) )
+      , _imp( new GuiApplicationManagerPrivate(this) )
 {
 }
 

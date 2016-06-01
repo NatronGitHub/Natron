@@ -91,7 +91,7 @@ KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,
                            int dimension,
                            QWidget* parent)
     : ComboBox(parent)
-    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {
 }
 
@@ -206,7 +206,7 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
 KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _comboBox(0)
+      , _comboBox(0)
 {
     boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );

@@ -37,11 +37,11 @@ NATRON_NAMESPACE_ENTER;
 
 ActionsCache::ActionsCacheInstance::ActionsCacheInstance()
     : _hash(0)
-    , _timeDomain()
-    , _timeDomainSet(false)
-    , _identityCache()
-    , _rodCache()
-    , _framesNeededCache()
+      , _timeDomain()
+      , _timeDomainSet(false)
+      , _identityCache()
+      , _rodCache()
+      , _framesNeededCache()
 {
 }
 
@@ -78,8 +78,8 @@ ActionsCache::getOrCreateActionCache(U64 newHash)
 
 ActionsCache::ActionsCache(int maxAvailableHashes)
     : _cacheMutex()
-    , _instances()
-    , _maxInstances( (std::size_t)maxAvailableHashes )
+      , _instances()
+      , _maxInstances( (std::size_t)maxAvailableHashes )
 {
 }
 
@@ -284,63 +284,67 @@ ActionsCache::setTimeDomainResult(U64 hash,
 
 EffectInstance::RenderArgs::RenderArgs()
     : rod()
-    , regionOfInterestResults()
-    , renderWindowPixel()
-    , time(0)
-    , view(0)
-    , validArgs(false)
-    , isIdentity(false)
-    , identityTime(0)
-    , identityInput()
-    , inputImages()
-    , outputPlanes()
-    , outputPlaneBeingRendered()
-    , firstFrame(0)
-    , lastFrame(0)
-    , transformRedirections()
+      , regionOfInterestResults()
+      , renderWindowPixel()
+      , time(0)
+      , view(0)
+      , validArgs(false)
+      , isIdentity(false)
+      , identityTime(0)
+      , identityInput()
+      , inputImages()
+      , outputPlanes()
+      , outputPlaneBeingRendered()
+      , firstFrame(0)
+      , lastFrame(0)
+      , transformRedirections()
+      , isDoingOpenGLRender(false)
 {
 }
 
 EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
     : rod(o.rod)
-    , regionOfInterestResults(o.regionOfInterestResults)
-    , renderWindowPixel(o.renderWindowPixel)
-    , time(o.time)
-    , view(o.view)
-    , validArgs(o.validArgs)
-    , isIdentity(o.isIdentity)
-    , identityTime(o.identityTime)
-    , identityInput(o.identityInput)
-    , inputImages(o.inputImages)
-    , outputPlanes(o.outputPlanes)
-    , outputPlaneBeingRendered(o.outputPlaneBeingRendered)
-    , firstFrame(o.firstFrame)
-    , lastFrame(o.lastFrame)
-    , transformRedirections(o.transformRedirections)
+      , regionOfInterestResults(o.regionOfInterestResults)
+      , renderWindowPixel(o.renderWindowPixel)
+      , time(o.time)
+      , view(o.view)
+      , validArgs(o.validArgs)
+      , isIdentity(o.isIdentity)
+      , identityTime(o.identityTime)
+      , identityInput(o.identityInput)
+      , inputImages(o.inputImages)
+      , outputPlanes(o.outputPlanes)
+      , outputPlaneBeingRendered(o.outputPlaneBeingRendered)
+      , firstFrame(o.firstFrame)
+      , lastFrame(o.lastFrame)
+      , transformRedirections(o.transformRedirections)
+      , isDoingOpenGLRender(o.isDoingOpenGLRender)
 {
 }
 
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
-    , tlsData( new TLSHolder<EffectTLSData>() )
-    , duringInteractActionMutex()
-    , duringInteractAction(false)
-    , pluginMemoryChunksMutex()
-    , pluginMemoryChunks()
-    , supportsRenderScale(eSupportsMaybe)
-    , actionsCache(appPTR->getHardwareIdealThreadCount() * 2)
+      , tlsData( new TLSHolder<EffectTLSData>() )
+      , duringInteractActionMutex()
+      , duringInteractAction(false)
+      , pluginMemoryChunksMutex()
+      , pluginMemoryChunks()
+      , supportsRenderScale(eSupportsMaybe)
+      , actionsCache(appPTR->getHardwareIdealThreadCount() * 2)
 #if NATRON_ENABLE_TRIMAP
-    , imagesBeingRenderedMutex()
-    , imagesBeingRendered()
+      , imagesBeingRenderedMutex()
+      , imagesBeingRendered()
 #endif
-    , componentsAvailableMutex()
-    , componentsAvailableDirty(true)
-    , outputComponentsAvailable()
-    , overlaySlaves()
-    , metadatasMutex()
-    , metadatas()
-    , runningClipPreferences(false)
-    , overlaysViewport(0)
+      , componentsAvailableMutex()
+      , componentsAvailableDirty(true)
+      , outputComponentsAvailable()
+      , overlaySlaves()
+      , metadatasMutex()
+      , metadatas()
+      , runningClipPreferences(false)
+      , overlaysViewport(0)
+      , attachedContextsMutex(QMutex::Recursive)
+      , attachedContexts()
 {
 }
 
@@ -530,7 +534,8 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const boost::shared_p
     }
 }
 
-#endif // if NATRON_ENABLE_TRIMAP
+#endif \
+    // if NATRON_ENABLE_TRIMAP
 
 
 EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
@@ -545,7 +550,8 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,
                                                                    int firstFrame,
-                                                                   int lastFrame)
+                                                                   int lastFrame,
+                                                                   bool isDoingOpenGLRender)
     : tlsData(tlsData)
 {
     tlsData->currentRenderArgs.rod = rod;
@@ -560,6 +566,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
     tlsData->currentRenderArgs.regionOfInterestResults = roiMap;
     tlsData->currentRenderArgs.firstFrame = firstFrame;
     tlsData->currentRenderArgs.lastFrame = lastFrame;
+    tlsData->currentRenderArgs.isDoingOpenGLRender = isDoingOpenGLRender;
 
     tlsData->currentRenderArgs.validArgs = true;
 }

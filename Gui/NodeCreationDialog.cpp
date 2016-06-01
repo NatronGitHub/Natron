@@ -69,10 +69,10 @@ struct CompleterLineEditPrivate
                              bool quickExit,
                              QDialog* parent)
         : dialog(parent)
-        , listView(NULL)
-        , model(NULL)
-        , names(plugins)
-        , quickExitEnabled(quickExit)
+          , listView(NULL)
+          , model(NULL)
+          , names(plugins)
+          , quickExitEnabled(quickExit)
     {
     }
 
@@ -81,9 +81,9 @@ struct CompleterLineEditPrivate
                              bool quickExit,
                              QDialog* parent)
         : dialog(parent)
-        , listView(NULL)
-        , model(NULL)
-        , quickExitEnabled(quickExit)
+          , listView(NULL)
+          , model(NULL)
+          , quickExitEnabled(quickExit)
     {
         assert( displayWords.size() == internalIds.size() );
 
@@ -97,7 +97,7 @@ CompleterLineEdit::CompleterLineEdit(const PluginsNamesMap& plugins,
                                      bool quickExit,
                                      QDialog* parent)
     : LineEdit(parent)
-    , _imp( new CompleterLineEditPrivate(plugins, quickExit, parent) )
+      , _imp( new CompleterLineEditPrivate(plugins, quickExit, parent) )
 {
     _imp->listView = new QListView(parent);
     _imp->model = new QStringListModel(this);
@@ -113,7 +113,7 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
                                      bool quickExit,
                                      QDialog* parent)
     : LineEdit(parent)
-    , _imp( new CompleterLineEditPrivate(displayWords, internalIds, quickExit, parent) )
+      , _imp( new CompleterLineEditPrivate(displayWords, internalIds, quickExit, parent) )
 {
     _imp->listView = new QListView(parent);
     _imp->model = new QStringListModel(this);
@@ -304,8 +304,8 @@ struct NodeCreationDialogPrivate
 
     NodeCreationDialogPrivate()
         : layout(NULL)
-        , textEdit(NULL)
-        , items( appPTR->getPluginsList() )
+          , textEdit(NULL)
+          , items( appPTR->getPluginsList() )
     {
     }
 };
@@ -336,7 +336,7 @@ incrementPluginWeight(const QString& pluginID,
 NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
                                        QWidget* parent)
     : QDialog(parent)
-    , _imp( new NodeCreationDialogPrivate() )
+      , _imp( new NodeCreationDialogPrivate() )
 {
     setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);

@@ -123,8 +123,11 @@ class EffectInstance;
 class ExistenceCheckerThread;
 class Format;
 class FrameEntry;
+class FramebufferConfig;
 class FrameKey;
 class FrameParams;
+class GPUContextPool;
+class GLShader;
 class GenericAccess;
 class GenericSchedulerThread;
 class GenericSchedulerThreadWatcher;
@@ -165,6 +168,7 @@ class NodeGuiI;
 class NodeMetadata;
 class NodeSerialization;
 class NodeSettingsPanel;
+class OSGLContext;
 class OfxClipInstance;
 class OfxEffectInstance;
 class OfxHost;
@@ -223,6 +227,13 @@ namespace Transform {
 struct Matrix3x3;
 }
 
+#ifdef __NATRON_WIN32__
+struct OSGLContext_wgl_data;
+#endif
+#ifdef __NATRON_LINUX__
+struct OSGLContext_glx_data;
+#endif
+
 NATRON_PYTHON_NAMESPACE_ENTER;
 class App;
 class AppSettings;
@@ -258,6 +269,7 @@ class UserParamHolder;
 
 NATRON_PYTHON_NAMESPACE_EXIT;
 
+typedef boost::shared_ptr<OSGLContext> OSGLContextPtr;
 typedef boost::shared_ptr<PluginMemory> PluginMemoryPtr;
 typedef boost::weak_ptr<AppInstance> AppInstWPtr;
 typedef boost::shared_ptr<AppInstance> AppInstPtr;

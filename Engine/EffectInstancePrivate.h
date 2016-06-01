@@ -42,6 +42,7 @@
 #include "Engine/Image.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/NodeMetadata.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -181,7 +182,8 @@ public:
         int refCount;
         bool renderFailed;
 
-        ImageBeingRendered() : cond(), lock(), refCount(0), renderFailed(false)
+        ImageBeingRendered()
+            : cond(), lock(), refCount(0), renderFailed(false)
         {
         }
     };
@@ -203,6 +205,11 @@ public:
 
     // set during interact actions on main-thread
     OverlaySupport* overlaysViewport;
+    mutable QMutex attachedContextsMutex;
+    // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
+    // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
+    // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
+    std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
 
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
 
@@ -265,7 +272,8 @@ public:
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
                          int firstFrame,
-                         int lastFrame);
+                         int lastFrame,
+                         bool isDoingOpenGLRender);
 
         ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
                          const EffectDataTLSPtr& otherThreadData);

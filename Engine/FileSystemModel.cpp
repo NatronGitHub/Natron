@@ -123,23 +123,23 @@ struct FileSystemModelPrivate
 
     FileSystemModelPrivate(FileSystemModel* model)
         : _publicInterface(model)
-        , view(0)
-        , gatherer()
-        , watcher()
-        , rootItem()
-        , currentRootPath()
-        , headers()
-        , filters(QDir::AllEntries | QDir::NoDotAndDotDot)
-        , encodedRegexps()
-        , regexps()
-        , filtersMutex()
-        , sequenceModeEnabledMutex()
-        , sequenceModeEnabled(false)
-        , ordering(Qt::AscendingOrder)
-        , sortSection(0)
-        , sortMutex()
-        , mappingMutex()
-        , itemsMap()
+          , view(0)
+          , gatherer()
+          , watcher()
+          , rootItem()
+          , currentRootPath()
+          , headers()
+          , filters(QDir::AllEntries | QDir::NoDotAndDotDot)
+          , encodedRegexps()
+          , regexps()
+          , filtersMutex()
+          , sequenceModeEnabledMutex()
+          , sequenceModeEnabled(false)
+          , ordering(Qt::AscendingOrder)
+          , sortSection(0)
+          , sortMutex()
+          , mappingMutex()
+          , itemsMap()
     {
     }
 
@@ -193,17 +193,17 @@ struct FileSystemItemPrivate
                           quint64 size,
                           const boost::shared_ptr<FileSystemItem> &parent)
         : model(model)
-        , parent(parent)
-        , children()
-        , childrenMutex()
-        , isDir(isDir)
-        , filename(filename)
-        , userFriendlySequenceName(userFriendlySequenceName)
-        , sequence(sequence)
-        , dateModified(dateModified)
-        , size(size)
-        , fileExtension()
-        , absoluteFilePath()
+          , parent(parent)
+          , children()
+          , childrenMutex()
+          , isDir(isDir)
+          , filename(filename)
+          , userFriendlySequenceName(userFriendlySequenceName)
+          , sequence(sequence)
+          , dateModified(dateModified)
+          , size(size)
+          , fileExtension()
+          , absoluteFilePath()
     {
         if (!isDir) {
             int lastDotPos = filename.lastIndexOf( QChar::fromLatin1('.') );
@@ -449,7 +449,7 @@ FileSystemItem::matchPath(const QStringList& path,
 
 FileSystemModel::FileSystemModel()
     : QAbstractItemModel()
-    , _imp( new FileSystemModelPrivate(this) )
+      , _imp( new FileSystemModelPrivate(this) )
 {
 }
 
@@ -541,7 +541,8 @@ FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(const QString&
     return ret;
 }
 
-#endif // ifdef __NATRON_WIN32__
+#endif \
+    // ifdef __NATRON_WIN32__
 
 FileSystemModel::~FileSystemModel()
 {
@@ -1351,20 +1352,20 @@ struct FileGathererThreadPrivate
 
     FileGathererThreadPrivate(const boost::shared_ptr<FileSystemModel>& model)
         : model(model)
-        , mustQuit(false)
-        , mustQuitMutex()
-        , mustQuitCond()
-        , working(false)
-        , workingMutex()
-        , abortRequests(0)
-        , abortRequestsMutex()
-        , abortRequestsCond()
-        , startCount(0)
-        , startCountMutex()
-        , startCountCond()
-        , requestedItem()
-        , itemBeingFetched()
-        , requestedDirMutex()
+          , mustQuit(false)
+          , mustQuitMutex()
+          , mustQuitCond()
+          , working(false)
+          , workingMutex()
+          , abortRequests(0)
+          , abortRequestsMutex()
+          , abortRequestsCond()
+          , startCount(0)
+          , startCountMutex()
+          , startCountCond()
+          , requestedItem()
+          , itemBeingFetched()
+          , requestedDirMutex()
     {
     }
 
@@ -1404,7 +1405,7 @@ struct FileGathererThreadPrivate
 
 FileGathererThread::FileGathererThread(const boost::shared_ptr<FileSystemModel>& model)
     : QThread()
-    , _imp( new FileGathererThreadPrivate(model) )
+      , _imp( new FileGathererThreadPrivate(model) )
 {
 }
 

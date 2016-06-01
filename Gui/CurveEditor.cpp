@@ -89,8 +89,8 @@ public:
     CurveEditorTreeWidget(Gui* gui,
                           QWidget* parent)
         : QTreeWidget(parent)
-        , _gui(gui)
-        , _canResizeOtherWidget(true)
+          , _gui(gui)
+          , _canResizeOtherWidget(true)
     {
     }
 
@@ -138,26 +138,26 @@ struct CurveEditorPrivate
 
     CurveEditorPrivate()
         : nodes()
-        , rotos()
-        , mainLayout(0)
-        , splitter(0)
-        , curveWidget(0)
-        , tree(0)
-        , filterContainer(0)
-        , filterLayout(0)
-        , filterLabel(0)
-        , filterEdit(0)
-        , leftPaneContainer(0)
-        , leftPaneLayout(0)
-        , undoStack(new QUndoStack)
-        , undoAction(0)
-        , redoAction(0)
-        , expressionContainer(0)
-        , expressionLayout(0)
-        , knobLabel(0)
-        , knobLineEdit(0)
-        , resultLabel(0)
-        , selectedKnobCurve()
+          , rotos()
+          , mainLayout(0)
+          , splitter(0)
+          , curveWidget(0)
+          , tree(0)
+          , filterContainer(0)
+          , filterLayout(0)
+          , filterLabel(0)
+          , filterEdit(0)
+          , leftPaneContainer(0)
+          , leftPaneLayout(0)
+          , undoStack(new QUndoStack)
+          , undoAction(0)
+          , redoAction(0)
+          , expressionContainer(0)
+          , expressionLayout(0)
+          , knobLabel(0)
+          , knobLineEdit(0)
+          , resultLabel(0)
+          , selectedKnobCurve()
     {
     }
 };
@@ -166,9 +166,9 @@ CurveEditor::CurveEditor(Gui* gui,
                          boost::shared_ptr<TimeLine> timeline,
                          QWidget *parent)
     : QWidget(parent)
-    , CurveSelection()
-    , PanelWidget(this, gui)
-    , _imp( new CurveEditorPrivate() )
+      , CurveSelection()
+      , PanelWidget(this, gui)
+      , _imp( new CurveEditorPrivate() )
 {
     setObjectName( QString::fromUtf8("CurveEditor") );
     _imp->undoAction = _imp->undoStack->createUndoAction( this, tr("&Undo") );
@@ -498,8 +498,8 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
                                                CurveEditor* curveWidget,
                                                const NodeGuiPtr &node)
     : _node(node)
-    , _nodeElements()
-    , _nameItem(0)
+      , _nodeElements()
+      , _nameItem(0)
 {
     QTreeWidgetItem* nameItem = new QTreeWidgetItem(tree);
 
@@ -705,13 +705,13 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
                                                QTreeWidgetItem* item,
                                                const boost::shared_ptr<CurveGui>& curve)
     : _treeItem(item)
-    , _curve(curve)
-    , _curveDisplayed(false)
-    , _curveWidget(curveWidget)
-    , _treeWidget(tree)
-    , _knob(knob)
-    , _internalKnob()
-    , _dimension(dimension)
+      , _curve(curve)
+      , _curveDisplayed(false)
+      , _curveWidget(curveWidget)
+      , _treeWidget(tree)
+      , _knob(knob)
+      , _internalKnob()
+      , _dimension(dimension)
 {
     if (knob) {
         QObject::connect( knob.get(), SIGNAL(keyFrameSet()), this, SLOT(checkVisibleState()) );
@@ -735,13 +735,13 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
                                                QTreeWidgetItem* item,
                                                const boost::shared_ptr<CurveGui>& curve)
     : _treeItem(item)
-    , _curve(curve)
-    , _curveDisplayed(false)
-    , _curveWidget(curveWidget)
-    , _treeWidget(tree)
-    , _knob()
-    , _internalKnob(internalKnob)
-    , _dimension(dimension)
+      , _curve(curve)
+      , _curveDisplayed(false)
+      , _curveWidget(curveWidget)
+      , _treeWidget(tree)
+      , _knob()
+      , _internalKnob(internalKnob)
+      , _dimension(dimension)
 {
     if (internalKnob) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = internalKnob->getSignalSlotHandler();
@@ -1082,11 +1082,11 @@ struct RotoItemEditorContextPrivate
                                  const boost::shared_ptr<RotoDrawableItem>& curve,
                                  RotoCurveEditorContext* context)
         : widget(widget)
-        , context(context)
-        , curve(curve)
-        , nameItem(0)
-        , knobs()
-        , doDeleteItem(true)
+          , context(context)
+          , curve(curve)
+          , nameItem(0)
+          , knobs()
+          , doDeleteItem(true)
     {
     }
 };
@@ -1256,7 +1256,7 @@ struct BezierEditorContextPrivate
 
     BezierEditorContextPrivate()
         : curveItem(0)
-        , animCurve()
+          , animCurve()
     {
     }
 };
@@ -1266,7 +1266,7 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
                                          const boost::shared_ptr<Bezier>& curve,
                                          RotoCurveEditorContext* context)
     : RotoItemEditorContext(tree, widget, boost::dynamic_pointer_cast<RotoDrawableItem>(curve), context)
-    , _imp( new BezierEditorContextPrivate() )
+      , _imp( new BezierEditorContextPrivate() )
 {
     _imp->curveItem = new QTreeWidgetItem( getItem() );
     _imp->curveItem->setExpanded(true);
@@ -1310,11 +1310,11 @@ struct StrokeEditorContextPrivate
                                const boost::shared_ptr<RotoStrokeItem>& curve,
                                RotoCurveEditorContext* context)
         : widget(widget)
-        , context(context)
-        , curve(curve)
-        , nameItem(0)
-        , knobs()
-        , doDeleteItem(true)
+          , context(context)
+          , curve(curve)
+          , nameItem(0)
+          , knobs()
+          , doDeleteItem(true)
     {
     }
 };
@@ -1332,10 +1332,10 @@ struct RotoCurveEditorContextPrivate
                                   QTreeWidget *tree,
                                   const NodeGuiPtr& node)
         : widget(widget)
-        , tree(tree)
-        , node(node)
-        , nameItem(0)
-        , curves()
+          , tree(tree)
+          , node(node)
+          , nameItem(0)
+          , curves()
     {
     }
 };

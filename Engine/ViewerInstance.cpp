@@ -149,7 +149,7 @@ ViewerInstance::BuildEffect(NodePtr n)
 
 ViewerInstance::ViewerInstance(NodePtr node)
     : OutputEffectInstance(node)
-    , _imp( new ViewerInstancePrivate(this) )
+      , _imp( new ViewerInstancePrivate(this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -366,12 +366,11 @@ public:
                                    const NodePtr& rotoPaintNode,
                                    const NodePtr& viewerInput,
                                    bool draftMode,
-                                   bool viewerProgressReportEnabled,
                                    const boost::shared_ptr<RenderStats>& stats)
-        : ParallelRenderArgsSetter(time, view, isRenderUserInteraction, isSequential, abortInfo, treeRoot, textureIndex, timeline, rotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled, stats)
-        , rotoNode(rotoPaintNode)
-        , viewerNode(treeRoot)
-        , viewerInputNode()
+        : ParallelRenderArgsSetter(time, view, isRenderUserInteraction, isSequential, abortInfo, treeRoot, textureIndex, timeline, rotoPaintNode, isAnalysis, draftMode, stats)
+          , rotoNode(rotoPaintNode)
+          , viewerNode(treeRoot)
+          , viewerInputNode()
     {
         ///There can be a case where the viewer input tree does not belong to the project, for example
         ///for the File Dialog preview.
@@ -381,7 +380,7 @@ public:
             U64 nodeHash = viewerInput->getHashValue();
 
 
-            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,  abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+            viewerInput->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,  abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), _openGLContext.lock(), textureIndex, timeline, isAnalysis, false, NodesList(), viewerInput->getCurrentRenderThreadSafety(), doNanHandling, draftMode, stats);
         }
     }
 
@@ -452,7 +451,6 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                            false,
                                            rotoPaintNode,
                                            NodePtr(),
-                                           false,
                                            false,
                                            stats);
         NodesList rotoPaintNodes;
@@ -1252,7 +1250,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                             rotoPaintNode,
                                                             inArgs.activeInputToRender->getNode(),
                                                             inArgs.draftModeEnabled,
-                                                            false,
                                                             stats) );
     }
 
@@ -1432,6 +1429,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipMapLevel);
     }
 
+#pragma message WARN("Implement Viewer so it accepts OpenGL Textures in input")
     BufferableObjectList partialUpdateObjects;
     for (std::size_t rectIndex = 0; rectIndex < splitRoi.size(); ++rectIndex) {
         //AlphaImage will only be set when displaying the Matte overlay
@@ -1454,7 +1452,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                                     splitRoi[rectIndex],
                                                                     inArgs.params->rod,
                                                                     requestedComponents,
-                                                                    imageDepth, false, this) );
+                                                                    imageDepth,
+                                                                    false /*calledFromGetImage*/,
+                                                                    this,
+                                                                    false /*renderOpenGL*/,
+                                                                    inArgs.params->time) );
                 retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);
             }
             //Either rendering failed or we have 2 planes (alpha mask and color image) or we have a single plane (color image)
@@ -1682,10 +1684,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                      inArgs.params->alphaLayer.getLayerName() + inArgs.params->alphaChannelName,
                                      inArgs.params->depth == eImageBitDepthFloat,
                                      inArgs.draftModeEnabled);
-                        boost::shared_ptr<FrameParams> cachedFrameParams = FrameEntry::makeParams( bounds, key.getBitDepth(), it->rect.width(), it->rect.height(), ImagePtr() );
+                        boost::shared_ptr<FrameParams> cachedFrameParams( new FrameParams( bounds, key.getBitDepth(), it->rect, ImagePtr() ) );
                         bool cached = AppManager::getTextureFromCacheOrCreate(key, cachedFrameParams, &it->cachedData);
                         if (!it->cachedData) {
-                            QString s = tr("Failed to allocate a texture of %1.").arg( printAsRAM( cachedFrameParams->getElementsCount() * sizeof(FrameEntry::data_t) ) );
+                            std::size_t size = cachedFrameParams->getStorageInfo().numComponents * cachedFrameParams->getStorageInfo().dataTypeSize * cachedFrameParams->getStorageInfo().bounds.area();
+                            QString s = tr("Failed to allocate a texture of %1.").arg( printAsRAM(size) );
                             Dialogs::errorDialog( tr("Out of memory").toStdString(), s.toStdString() );
 
                             return eViewerRenderRetCodeFail;
