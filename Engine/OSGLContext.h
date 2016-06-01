@@ -142,7 +142,9 @@ public:
      *
      *  @thread_safety This function may be called from any thread.
      */
-    void makeContextCurrent();
+    void setContextCurrent();
+
+    static void unsetCurrentContext();
 
     /**
      * @brief Returns one of the built-in shaders, used in the Image class.

@@ -1134,40 +1134,42 @@ Image::pasteFrom(const Image & src,
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
         int target = getGLTextureTarget();
         glEnable(target);
-        glBindTexture( target, src.getGLTextureID() );
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
         glBindTexture( target, getGLTextureID() );
-
-        glViewport( 0, 0, srcRoi.width(), srcRoi.height() );
-        glMatrixMode(GL_MODELVIEW);
-        glOrtho( dstBounds.x1, dstBounds.x2,
-                 dstBounds.y1, dstBounds.y2,
-                 -10.0 * (dstBounds.y2 - dstBounds.y1), 10.0 * (dstBounds.y2 - dstBounds.y1) );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+        glBindTexture( target, src.getGLTextureID() );
+        glViewport( srcRoi.x1 - dstBounds.x1, srcRoi.y1 - dstBounds.y1, srcRoi.width(), srcRoi.height() );
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+        glOrtho( srcRoi.x1, srcRoi.x2,
+                srcRoi.y1, srcRoi.y2,
+                -10.0 * (srcRoi.y2 - srcRoi.y1), 10.0 * (srcRoi.y2 - srcRoi.y1) );
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+
 
         // Compute the texture coordinates to match the srcRoi
         Point srcTexCoords[4], vertexCoords[4];
         vertexCoords[0].x = srcRoi.x1;
         vertexCoords[0].y = srcRoi.y1;
-        srcTexCoords[0].x = (srcRoi.x1 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[0].y = (srcRoi.y1 - srcBounds.y1) / (double)srcBounds.height();
+        srcTexCoords[0].x = (srcRoi.x1 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[0].y = (srcRoi.y1 - dstBounds.y1) / (double)dstBounds.height();
 
         vertexCoords[1].x = srcRoi.x2;
         vertexCoords[1].y = srcRoi.y1;
-        srcTexCoords[1].x = (srcRoi.x2 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[1].y = (srcRoi.y1 - srcBounds.y1) / (double)srcBounds.height();
+        srcTexCoords[1].x = (srcRoi.x2 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[1].y = (srcRoi.y1 - dstBounds.y1) / (double)dstBounds.height();
 
         vertexCoords[2].x = srcRoi.x2;
         vertexCoords[2].y = srcRoi.y2;
-        srcTexCoords[2].x = (srcRoi.x2 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[2].y = (srcRoi.y2 - srcBounds.y1) / (double)srcBounds.height();
+        srcTexCoords[2].x = (srcRoi.x2 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[2].y = (srcRoi.y2 - dstBounds.y1) / (double)dstBounds.height();
 
         vertexCoords[3].x = srcRoi.x1;
         vertexCoords[3].y = srcRoi.y2;
-        srcTexCoords[3].x = (srcRoi.x1 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[3].y = (srcRoi.y2 - srcBounds.y1) / (double)srcBounds.height();
+        srcTexCoords[3].x = (srcRoi.x1 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[3].y = (srcRoi.y2 - dstBounds.y1) / (double)dstBounds.height();
         glBegin(GL_POLYGON);
         for (int i = 0; i < 4; ++i) {
             glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
@@ -1253,7 +1255,8 @@ Image::pasteFrom(const Image & src,
         glEnable(target);
         glBindTexture( target, src.getGLTextureID() );
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
-        glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
+        //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
+        glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
         glCheckFramebufferError();
         glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
@@ -1263,7 +1266,7 @@ Image::pasteFrom(const Image & src,
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
             unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
 
-            glReadPixels(roi.x1, roi.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
+            glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
             glBindTexture(target, 0);
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);

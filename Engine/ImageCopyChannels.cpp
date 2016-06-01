@@ -617,8 +617,8 @@ Image::copyUnProcessedChannels(const RectI& roi,
     assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
 
 
-    RectI intersected;
-    roi.intersect(_bounds, &intersected);
+    RectI srcRoi;
+    roi.intersect(_bounds, &srcRoi);
 
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
@@ -639,37 +639,37 @@ Image::copyUnProcessedChannels(const RectI& roi,
         glBindTexture( target, originalImage->getGLTextureID() );
 
 
-        glViewport( 0, 0, intersected.width(), intersected.height() );
-        glCheckError();
-        glMatrixMode(GL_MODELVIEW);
-        glOrtho( _bounds.x1, _bounds.x2,
-                 _bounds.y1, _bounds.y2,
-                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
+        glViewport( srcRoi.x1 - _bounds.x1, srcRoi.y1 - _bounds.y1, srcRoi.width(), srcRoi.height() );
         glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho( srcRoi.x1, srcRoi.x2,
+                srcRoi.y1, srcRoi.y2,
+                -10.0 * (srcRoi.y2 - srcRoi.y1), 10.0 * (srcRoi.y2 - srcRoi.y1) );
+        glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
         glCheckError();
 
         // Compute the texture coordinates to match the srcRoi
         Point srcTexCoords[4], vertexCoords[4];
-        vertexCoords[0].x = intersected.x1;
-        vertexCoords[0].y = intersected.y1;
-        srcTexCoords[0].x = (intersected.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[0].y = (intersected.y1 - _bounds.y1) / (double)_bounds.height();
+        vertexCoords[0].x = srcRoi.x1;
+        vertexCoords[0].y = srcRoi.y1;
+        srcTexCoords[0].x = (srcRoi.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[0].y = (srcRoi.y1 - _bounds.y1) / (double)_bounds.height();
 
-        vertexCoords[1].x = intersected.x2;
-        vertexCoords[1].y = intersected.y1;
-        srcTexCoords[1].x = (intersected.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[1].y = (intersected.y1 - _bounds.y1) / (double)_bounds.height();
+        vertexCoords[1].x = srcRoi.x2;
+        vertexCoords[1].y = srcRoi.y1;
+        srcTexCoords[1].x = (srcRoi.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[1].y = (srcRoi.y1 - _bounds.y1) / (double)_bounds.height();
 
-        vertexCoords[2].x = intersected.x2;
-        vertexCoords[2].y = intersected.y2;
-        srcTexCoords[2].x = (intersected.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[2].y = (intersected.y2 - _bounds.y1) / (double)_bounds.height();
+        vertexCoords[2].x = srcRoi.x2;
+        vertexCoords[2].y = srcRoi.y2;
+        srcTexCoords[2].x = (srcRoi.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[2].y = (srcRoi.y2 - _bounds.y1) / (double)_bounds.height();
 
-        vertexCoords[3].x = intersected.x1;
-        vertexCoords[3].y = intersected.y2;
-        srcTexCoords[3].x = (intersected.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[3].y = (intersected.y2 - _bounds.y1) / (double)_bounds.height();
+        vertexCoords[3].x = srcRoi.x1;
+        vertexCoords[3].y = srcRoi.y2;
+        srcTexCoords[3].x = (srcRoi.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[3].y = (srcRoi.y2 - _bounds.y1) / (double)_bounds.height();
 
         shader->bind();
         glCheckError();

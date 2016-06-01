@@ -839,7 +839,7 @@ EffectInstance::getImage(int inputNb,
     }
 
     if (glContext && returnOpenGLTexture) {
-        glContext->makeContextCurrent();
+        glContext->setContextCurrent();
     }
 
     RectD inputRoD;
@@ -2371,7 +2371,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         assert(glContext);
 
         // Ensure the context is current
-        glContext->makeContextCurrent();
+        glContext->setContextCurrent();
 
         GLuint fboID = glContext->getFBOId();
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -2605,25 +2605,27 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             glCheckFramebufferError();
 
             // setup the output viewport
-            glViewport( 0, 0, actionArgs.roi.width(), actionArgs.roi.height() );
+            RectI imageBounds = mainImagePlane->getBounds();
+            glViewport(actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
+            glOrtho(actionArgs.roi.x1, actionArgs.roi.x2, actionArgs.roi.y1, actionArgs.roi.y2, -1, 1);
             glMatrixMode(GL_MODELVIEW);
             glLoadIdentity();
-            glOrtho(actionArgs.roi.x1, actionArgs.roi.x2, actionArgs.roi.y1, actionArgs.roi.y2, -1, 1);
+
 
             glCheckError();
 
             // Enable scissor to make the plug-in doesn't render outside of the viewport...
-            //glEnable(GL_SCISSOR_TEST);
-            //glScissor(0, 0, actionArgs.roi.width(), actionArgs.roi.height());
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
         }
 
         StatusEnum st = _publicInterface->render_public(actionArgs);
 
         if (planes.useOpenGL) {
-            //glDisable(GL_SCISSOR_TEST);
+            glDisable(GL_SCISSOR_TEST);
             glCheckError();
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(textureTarget, 0);
@@ -3886,14 +3888,14 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
     std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         // The context is already attached
-        glContext->makeContextCurrent();
+        glContext->setContextCurrent();
         *data = found->second;
 
         return eStatusOK;
     }
 
 
-    glContext->makeContextCurrent();
+    glContext->setContextCurrent();
     StatusEnum ret = attachOpenGLContext(data);
 
     if ( (ret == eStatusOK) || (ret == eStatusReplyDefault) ) {
@@ -3919,7 +3921,7 @@ EffectInstance::dettachAllOpenGLContexts()
         if (!context) {
             continue;
         }
-        context->makeContextCurrent();
+        context->setContextCurrent();
         dettachOpenGLContext(it->second);
     }
 }
@@ -3953,7 +3955,7 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext)
     }
 
     StatusEnum ret = dettachOpenGLContext(data);
-    if (!concurrentGLRender && mustUnlock) {
+    if (mustUnlock) {
         _imp->attachedContextsMutex.unlock();
     }
 

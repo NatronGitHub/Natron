@@ -257,7 +257,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     if (glContext) {
         // Make the OpenGL context current to this thread
-        glContext->makeContextCurrent();
+        glContext->setContextCurrent();
     }
 
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
@@ -1556,7 +1556,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (storage == eStorageModeGLTex) {
                     // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
                     // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
-                    if ( !supportsConcurrentOpenGLRenders() ) {
+                    if ( planesToRender->glContextData->getHasTakenLock() || !supportsConcurrentOpenGLRenders() ) {
                         dettachOpenGLContext_public(glContext);
                     }
                 }
@@ -1744,6 +1744,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
 #endif
     }
+
+    if (planesToRender && planesToRender->useOpenGL) {
+        // Unset the current context to the thread, making sure it flushes all drawing commands.
+        OSGLContext::unsetCurrentContext();
+    }
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////// End requested format convertion ////////////////////////////////////////////////////////////////////

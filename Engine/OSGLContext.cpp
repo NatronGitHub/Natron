@@ -281,7 +281,7 @@ OSGLContext::getFBOId() const
 }
 
 void
-OSGLContext::makeContextCurrent()
+OSGLContext::setContextCurrent()
 {
     assert(_imp && _imp->_platformContext);
 #ifdef __NATRON_WIN32__
@@ -298,6 +298,18 @@ OSGLContext::makeContextCurrent()
     if (!_imp->pboID) {
         _imp->init();
     }
+}
+
+void
+OSGLContext::unsetCurrentContext()
+{
+#ifdef __NATRON_WIN32__
+    OSGLContext_win::makeContextCurrent( 0 );
+#elif defined(__NATRON_OSX__)
+    OSGLContext_mac::makeContextCurrent( 0 );
+#elif defined(__NATRON_LINUX__)
+    OSGLContext_x11::makeContextCurrent( 0 );
+#endif
 }
 
 void

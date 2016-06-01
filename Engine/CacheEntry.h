@@ -247,7 +247,8 @@ public:
                                       type,
                                       format,
                                       internalFormat,
-                                      glType) );
+                                      glType,
+                                      true /*allowMipMaps*/) );
 
 
         TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);

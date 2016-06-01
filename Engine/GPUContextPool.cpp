@@ -119,7 +119,7 @@ GPUContextPool::attachGLContextToRender()
         _imp->glShareContext = newContext;
     }
 
-    newContext->makeContextCurrent();
+    newContext->setContextCurrent();
     _imp->attachedGLContexts.insert(newContext);
 
     return newContext;
@@ -135,6 +135,7 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
 
     assert( foundAttached != _imp->attachedGLContexts.end() );
     if ( foundAttached != _imp->attachedGLContexts.end() ) {
+        OSGLContext::unsetCurrentContext();
         // Re-insert back into the contextPool so it can be re-used
         _imp->glContextPool.insert(*foundAttached);
         _imp->attachedGLContexts.erase(foundAttached);

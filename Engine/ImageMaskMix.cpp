@@ -233,14 +233,15 @@ Image::applyMaskMix(const RectI& roi,
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(target, maskImg ? maskImg->getGLTextureID() : 0);
 
-
-        glViewport( 0, 0, realRoI.width(), realRoI.height() );
-        glMatrixMode(GL_MODELVIEW);
-        glOrtho( _bounds.x1, _bounds.x2,
-                 _bounds.y1, _bounds.y2,
-                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
+        glViewport( realRoI.x1 - _bounds.x1, realRoI.y1 - _bounds.y1, realRoI.width(), realRoI.height() );
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
+        glOrtho( realRoI.x1, realRoI.x2,
+                realRoI.y1, realRoI.y2,
+                -10.0 * (realRoI.y2 - realRoI.y1), 10.0 * (realRoI.y2 - realRoI.y1) );
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glCheckError();
 
         // Compute the texture coordinates to match the srcRoi
         Point srcTexCoords[4], vertexCoords[4];

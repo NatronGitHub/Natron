@@ -1594,7 +1594,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         // For small partial updates overlays, we make new textures
         int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, false) );
         textureRectangle = region;
     } else {
         // re-use the existing texture if possible
@@ -1602,7 +1602,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         if (tex->type() != dataType) {
             int format, internalFormat, glType;
             Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, false) );
         }
         textureRectangle = roiRoundedToTileSize;
         textureRectangle.par = region.par;

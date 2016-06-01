@@ -56,7 +56,8 @@ public:
             DataTypeEnum type,
             int format,
             int internalFormat,
-            int glType);
+            int glType,
+            bool generateMipMaps);
     static void getRecommendedTexParametersForRGBAByteTexture(int* format, int* internalFormat, int* glType);
 
     U32 getTexID() const
@@ -127,8 +128,7 @@ public:
      * @brief Update the texture with the currently bound PBO across the given rectangle.
      * @param texRect The bounds of the texture, if the texture does not match these bounds, it will be reallocated
      * using ensureTextureHasSize(texRect,type)/
-     * @param type The bitdepth of the texture
-     * @param roi if updateOnlyRoi is true, this will be the portion of the texture to update with glTextSubImage2D
+     * @param roi if updateOnlyRoi is true, this will be the portion of the texture to update with glTexSubImage2D
      * @param updateOnlyRoI if updateOnlyRoi is true, only the portion defined by roi will be updated on the texture
      **/
     void fillOrAllocateTexture(const TextureRect & texRect, const RectI& roi, bool updateOnlyRoi, const unsigned char* originalRAMBuffer = 0);
@@ -166,6 +166,7 @@ private:
     int _internalFormat, _format, _glType;
     TextureRect _textureRect;
     DataTypeEnum _type;
+    bool _generateMipMaps;
 };
 
 NATRON_NAMESPACE_EXIT;

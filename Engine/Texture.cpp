@@ -35,7 +35,8 @@ Texture::Texture(U32 target,
                  DataTypeEnum type,
                  int format,
                  int internalFormat,
-                 int glType)
+                 int glType,
+                 bool generateMipMaps)
     : _texID(0)
       , _target(target)
       , _minFilter(minFilter)
@@ -45,6 +46,7 @@ Texture::Texture(U32 target,
       , _format(format)
       , _glType(glType)
       , _type(type)
+      , _generateMipMaps(generateMipMaps)
 {
     glGenTextures(1, &_texID);
 }
@@ -71,6 +73,14 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
     glEnable(_target);
     glBindTexture (_target, _texID);
     _textureRect = texRect;
+
+    if (_generateMipMaps) {
+        // This is deprecated in OpenGL 3.0, where we should instead be using glGenerateMipmap
+        // this must be done before glTexImage2D
+        glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+        // requires extension GL_SGIS_generate_mipmap or OpenGL 1.4.
+        glTexParameteri(_target, GL_GENERATE_MIPMAP, GL_TRUE); // Allocate the mipmaps
+    }
     glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
 
     glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
