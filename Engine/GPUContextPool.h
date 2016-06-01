@@ -30,6 +30,8 @@
 
 NATRON_NAMESPACE_ENTER;
 
+// If set, multiple frame renders may use the same GPU context instead of locking it for the whole render of a frame.
+#define NATRON_RENDER_SHARED_CONTEXT
 
 struct GPUContextPoolPrivate;
 class GPUContextPool
@@ -40,22 +42,10 @@ public:
 
     ~GPUContextPool();
 
-    /**
-     * @brief Set the maximum number of GPU context used by the pool to be this amount
-     **/
-    void setMaxContextCount(int maxContextCount);
+    static int getIdealContextCount();
+
 
     //////////////////////////////// OpenGL related /////////////////////////////////
-    /**
-     * @brief Returns the number of currently created OpenGL context
-     **/
-    int getNumCreatedGLContext() const;
-
-    /**
-     * @brief Returns the number of attached OpenGL context. An attached context is currently
-     * used by a thread
-     **/
-    int getNumAttachedGLContext() const;
 
     /**
      * @brief Attaches one of the OpenGL context in the pool to a specific frame render.
@@ -64,10 +54,12 @@ public:
      * This function is blocking and the calling thread will wait until one context is made available
      * in the pool again.
      * If a context is already attached on the thread, this function returns immediately
-     * After returning this function, the context is guarenteed to be made current and
-     * OpenGL called can be made.
+     * After returning this function, the context must be made current before
+     * OpenGL calls can be made.
      * If during the render, other threads are participating and needs to make the context current, they
      * may call makeContextCurrent with the context returned from this function.
+     *
+     * @param renderUniqueAbortInfo These are the infos that uniquely identify the render attached to the context
      **/
     OSGLContextPtr attachGLContextToRender();
 

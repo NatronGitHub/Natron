@@ -782,6 +782,7 @@ EffectInstance::getImage(int inputNb,
     ///Try to find in the input images thread local storage if we already pre-computed the image
     EffectInstance::InputImagesMap inputImagesThreadLocal;
     OSGLContextPtr glContext;
+    AbortableRenderInfoPtr renderInfo;
     if ( !tls || ( !tls->currentRenderArgs.validArgs && tls->frameArgs.empty() ) ) {
         /*
            This is either a huge bug or an unknown thread that called clipGetImage from the OpenFX plug-in.
@@ -812,6 +813,7 @@ EffectInstance::getImage(int inputNb,
             duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
             isAnalysisPass = frameRenderArgs->isAnalysis;
             glContext = frameRenderArgs->openGLContext.lock();
+            renderInfo = frameRenderArgs->abortInfo.lock();
         } else {
             //This is a bug, when entering here, frameArgs TLS should always have been set, except for unknown threads.
             nodeHash = getHash();
@@ -832,14 +834,15 @@ EffectInstance::getImage(int inputNb,
         }
     }
 
-    if (!glContext && returnOpenGLTexture) {
+    if ((!glContext || !renderInfo) && returnOpenGLTexture) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";
 
         return ImagePtr();
     }
 
-    if (glContext && returnOpenGLTexture) {
-        glContext->setContextCurrent();
+    boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
+    if (glContext && returnOpenGLTexture && renderInfo) {
+        glContextAttacher.reset(new OSGLContextAttacher(glContext, renderInfo));
     }
 
     RectD inputRoD;
@@ -2365,13 +2368,17 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
     // Setup the context when rendering using OpenGL
     OSGLContextPtr glContext;
+    boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
     if (planes.useOpenGL) {
         // Setup the viewport and the framebuffer
         glContext = frameArgs->openGLContext.lock();
+        AbortableRenderInfoPtr abortInfo = frameArgs->abortInfo.lock();
+        assert(abortInfo);
         assert(glContext);
 
         // Ensure the context is current
-        glContext->setContextCurrent();
+        glContextAttacher.reset(new OSGLContextAttacher(glContext, abortInfo));
+
 
         GLuint fboID = glContext->getFBOId();
         glBindFramebuffer(GL_FRAMEBUFFER, fboID);
@@ -3888,14 +3895,11 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
     std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
         // The context is already attached
-        glContext->setContextCurrent();
         *data = found->second;
-
         return eStatusOK;
     }
 
 
-    glContext->setContextCurrent();
     StatusEnum ret = attachOpenGLContext(data);
 
     if ( (ret == eStatusOK) || (ret == eStatusReplyDefault) ) {
@@ -3921,8 +3925,11 @@ EffectInstance::dettachAllOpenGLContexts()
         if (!context) {
             continue;
         }
-        context->setContextCurrent();
+        context->setContextCurrentNoRender();
         dettachOpenGLContext(it->second);
+    }
+    if (!_imp->attachedContexts.empty()) {
+        OSGLContext::unsetCurrentContextNoRender();
     }
 }
 

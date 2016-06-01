@@ -26,6 +26,8 @@
 
 #include <stdexcept>
 #include <QDebug>
+#include <QMutex>
+#include <QWaitCondition>
 
 #ifdef __NATRON_WIN32__
 #include "Engine/OSGLContext_win.h"
@@ -35,7 +37,9 @@
 #include "Engine/OSGLContext_x11.h"
 #endif
 
+#include "Engine/AbortableRenderInfo.h"
 #include "Engine/DefaultShaders.h"
+#include "Engine/GPUContextPool.h"
 #include "Engine/GLShader.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -222,6 +226,15 @@ struct OSGLContextPrivate
     boost::scoped_ptr<OSGLContext_x11> _platformContext;
 #endif
 
+#ifdef NATRON_RENDER_SHARED_CONTEXT
+    // When we use a single GL context, renders are all sharing the same context and lock it when trying to render
+    QMutex renderOwningContextMutex;
+    QWaitCondition renderOwningContextCond;
+    AbortableRenderInfoPtr renderOwningContext;
+    int renderOwningContextCount;
+
+#endif
+
     // This pbo is used to call glTexSubImage2D and glReadPixels asynchronously
     GLuint pboID;
 
@@ -231,6 +244,12 @@ struct OSGLContextPrivate
 
     OSGLContextPrivate()
         : _platformContext()
+#ifdef NATRON_RENDER_SHARED_CONTEXT
+          , renderOwningContextMutex()
+          , renderOwningContextCond()
+          , renderOwningContext()
+          , renderOwningContextCount(0)
+#endif
           , pboID(0)
           , fboID(0)
           , fillImageShader()
@@ -281,9 +300,8 @@ OSGLContext::getFBOId() const
 }
 
 void
-OSGLContext::setContextCurrent()
+OSGLContext::setContextCurrentNoRender()
 {
-    assert(_imp && _imp->_platformContext);
 #ifdef __NATRON_WIN32__
     OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
 #elif defined(__NATRON_OSX__)
@@ -291,17 +309,33 @@ OSGLContext::setContextCurrent()
 #elif defined(__NATRON_LINUX__)
     OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
 #endif
+}
+
+void
+OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo)
+{
+    assert(_imp && _imp->_platformContext);
+
+#ifdef NATRON_RENDER_SHARED_CONTEXT
+    QMutexLocker k(&_imp->renderOwningContextMutex);
+    while (_imp->renderOwningContext && _imp->renderOwningContext != abortInfo) {
+        _imp->renderOwningContextCond.wait(&_imp->renderOwningContextMutex);
+    }
+    _imp->renderOwningContext = abortInfo;
+    ++_imp->renderOwningContextCount;
+#endif
+
+    setContextCurrentNoRender();
 
     // The first time this context is made current, allocate the PBO and FBO
-    // This is thread-safe because we actually call this under the GPUContextPool
-    // before we make this context available to all threads
+    // This is thread-safe 
     if (!_imp->pboID) {
         _imp->init();
     }
 }
 
 void
-OSGLContext::unsetCurrentContext()
+OSGLContext::unsetCurrentContextNoRender()
 {
 #ifdef __NATRON_WIN32__
     OSGLContext_win::makeContextCurrent( 0 );
@@ -310,6 +344,30 @@ OSGLContext::unsetCurrentContext()
 #elif defined(__NATRON_LINUX__)
     OSGLContext_x11::makeContextCurrent( 0 );
 #endif
+}
+
+void
+OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
+{
+
+
+#ifdef NATRON_RENDER_SHARED_CONTEXT
+    QMutexLocker k(&_imp->renderOwningContextMutex);
+    if (abortInfo != _imp->renderOwningContext) {
+        return;
+    }
+    --_imp->renderOwningContextCount;
+    if (!_imp->renderOwningContextCount) {
+        _imp->renderOwningContext.reset();
+        unsetCurrentContextNoRender();
+        //Wake-up only one thread waiting, since each thread that is waiting in setContextCurrent() will actually call this function.
+        _imp->renderOwningContextCond.wakeOne();
+
+    }
+#else
+    unsetCurrentContextNoRender();
+#endif
+
 }
 
 void

@@ -135,6 +135,21 @@ public:
     static const FramebufferConfig& chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count);
 
 
+    /**
+     * @brief Returns one of the built-in shaders, used in the Image class.
+     * Note: this context must be made current before calling this function
+     **/
+    boost::shared_ptr<GLShader> getOrCreateDefaultShader(DefaultGLShaderEnum type);
+
+    /**
+     * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!
+     **/
+    void setContextCurrentNoRender();
+    static void unsetCurrentContextNoRender();
+
+private:
+
+
     /*  @brief Makes the context current for the calling
      *  thread. A context can only be made current on
      *  a single thread at a time and each thread can have only a single current
@@ -142,19 +157,56 @@ public:
      *
      *  @thread_safety This function may be called from any thread.
      */
-    void setContextCurrent();
-
-    static void unsetCurrentContext();
+    void setContextCurrent(const AbortableRenderInfoPtr& render);
 
     /**
-     * @brief Returns one of the built-in shaders, used in the Image class.
-     * Note: this context must be made current before calling this function
+     * @brief Releases the OpenGL context from this thread.
+     * @param unlockContext If true, the context will be made available for other renders as well
      **/
-    boost::shared_ptr<GLShader> getOrCreateDefaultShader(DefaultGLShaderEnum type);
+    void unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo);
 
-private:
 
+    friend class OSGLContextAttacher;
     boost::scoped_ptr<OSGLContextPrivate> _imp;
+};
+
+
+/**
+ * @brief RAII style class to safely call setContextCurrent() and unsetCurrentContext()
+ **/
+class OSGLContextAttacher
+{
+
+    boost::weak_ptr<OSGLContext> _c;
+    AbortableRenderInfoWPtr _a;
+public:
+
+    OSGLContextAttacher()
+    : _c()
+    , _a()
+    {
+
+    }
+
+    OSGLContextAttacher(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render)
+    {
+        init(c,render);
+    }
+
+    void init(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render)
+    {
+        _c = c;
+        _a = render;
+        c->setContextCurrent(render);
+    }
+
+    ~OSGLContextAttacher()
+    {
+        OSGLContextPtr c = _c.lock();
+        if (c) {
+            c->unsetCurrentContext(_a.lock());
+        }
+    }
 };
 
 NATRON_NAMESPACE_EXIT;

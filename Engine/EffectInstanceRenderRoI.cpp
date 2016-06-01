@@ -236,6 +236,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     OSGLContextPtr glContext;
+    AbortableRenderInfoPtr abortInfo;
     boost::shared_ptr<ParallelRenderArgs>  frameArgs;
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
@@ -252,12 +253,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         //The hash must not have changed if we did a pre-pass.
         frameArgs = tls->frameArgs.back();
         glContext = frameArgs->openGLContext.lock();
+        abortInfo = frameArgs->abortInfo.lock();
+        if (!abortInfo) {
+            // If we don't have info to identify the render, we cannot manage the OpenGL context properly, so don't try to render with OpenGL.
+            glContext.reset();
+        }
         assert(!frameArgs->request || frameArgs->nodeHash == frameArgs->request->nodeHash);
-    }
-
-    if (glContext) {
-        // Make the OpenGL context current to this thread
-        glContext->setContextCurrent();
     }
 
     ///For writer we never want to cache otherwise the next time we want to render it will skip writing the image on disk!
@@ -718,6 +719,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = getNode()->getCurrentOpenGLRenderSupport();
     StorageModeEnum storage = eStorageModeRAM;
+    boost::scoped_ptr<OSGLContextAttacher> glContextLocker;
+
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
     } else if ( (openGLSupport != ePluginOpenGLRenderSupportNone) && args.allowGPURendering && glContext && getApp()->getProject()->isGPURenderingEnabledInProject() ) {
@@ -727,6 +730,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
          */
         storage = eStorageModeGLTex;
         if (openGLSupport == ePluginOpenGLRenderSupportYes) {
+
+            // Make the OpenGL context current to this thread
+            glContextLocker.reset(new OSGLContextAttacher(glContext, abortInfo));
+
+
             // If a node has multiple outputs, do not render it on OpenGL since we do not use the cache. We could end-up with this render being executed multiple times.
             // Also, if the render time is different from the caller render time, don't render using OpenGL otherwise we could computed this render multiple times.
             NodesWList outputNodes;
@@ -734,6 +742,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if ( (outputNodes.size() > 1) ||
                  ( args.time != args.callerRenderTime) ) {
                 storage = eStorageModeRAM;
+                glContextLocker.reset();
             }
 
             // Ensure that the texture will be at least smaller than the maximum OpenGL texture size
@@ -744,6 +753,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                      ( roi.height() >= maxSize) ) {
                     // Fallback on CPU rendering since the image is larger than the maximum allowed OpenGL texture size
                     storage = eStorageModeRAM;
+                    glContextLocker.reset();
                 }
             }
         }
@@ -764,6 +774,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             }
         }
     }
+
+
     const bool draftModeSupported = getNode()->isDraftModeUsed();
     const bool isFrameVaryingOrAnimated = isFrameVaryingOrAnimated_Recursive();
     bool createInCache;
@@ -1743,11 +1755,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             qDebug() << "[WARNING]:" << getScriptName_mt_safe().c_str() << "rendered an image with an RoI that fell outside its bounds.";
         }
 #endif
-    }
-
-    if (planesToRender && planesToRender->useOpenGL) {
-        // Unset the current context to the thread, making sure it flushes all drawing commands.
-        OSGLContext::unsetCurrentContext();
     }
 
 
