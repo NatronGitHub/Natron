@@ -186,6 +186,8 @@ public:
      **/
     void setTransform(double time, double tx, double ty, double sx, double sy, double centerX, double centerY, double rot, double skewX, double skewY);
 
+    void setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat);
+
     NodePtr getEffectNode() const;
     NodePtr getMergeNode() const;
     NodePtr getTimeOffsetNode() const;
