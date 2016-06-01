@@ -1403,6 +1403,13 @@ RotoDrawableItem::getTransformAtTime(double time,
     double centerY = _imp->center->getValueAtTime(time, 1);
     bool skewOrderYX = _imp->skewOrder->getValueAtTime(time) == 1;
     *matrix = Transform::matTransformCanonical(tx, ty, sx, sy, skewX, skewY, skewOrderYX, rot, centerX, centerY);
+
+    Transform::Matrix3x3 extraMat;
+    extraMat.a = _imp->extraMatrix->getValueAtTime(time, 0); extraMat.b = _imp->extraMatrix->getValueAtTime(time, 1); extraMat.c = _imp->extraMatrix->getValueAtTime(time, 2);
+    extraMat.d = _imp->extraMatrix->getValueAtTime(time, 3); extraMat.e = _imp->extraMatrix->getValueAtTime(time, 4); extraMat.f = _imp->extraMatrix->getValueAtTime(time, 5);
+    extraMat.g = _imp->extraMatrix->getValueAtTime(time, 6); extraMat.h = _imp->extraMatrix->getValueAtTime(time, 7); extraMat.i = _imp->extraMatrix->getValueAtTime(time, 8);
+    *matrix = Transform::matMul(*matrix, extraMat);
+
 }
 
 /**
@@ -1453,6 +1460,22 @@ RotoDrawableItem::setTransform(double time,
     }
 
     onTransformSet(time);
+}
+
+void
+RotoDrawableItem::setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat)
+{
+    _imp->extraMatrix->beginChanges();
+    if (setKeyframe) {
+        _imp->extraMatrix->setValueAtTime(time, mat.a, ViewSpec::all(), 0); _imp->extraMatrix->setValueAtTime(time, mat.b, ViewSpec::all(), 1); _imp->extraMatrix->setValueAtTime(time, mat.c, ViewSpec::all(), 2);
+        _imp->extraMatrix->setValueAtTime(time, mat.d, ViewSpec::all(), 3); _imp->extraMatrix->setValueAtTime(time, mat.e, ViewSpec::all(), 4); _imp->extraMatrix->setValueAtTime(time, mat.f, ViewSpec::all(), 5);
+        _imp->extraMatrix->setValueAtTime(time, mat.g, ViewSpec::all(), 6); _imp->extraMatrix->setValueAtTime(time, mat.h, ViewSpec::all(), 7); _imp->extraMatrix->setValueAtTime(time, mat.i, ViewSpec::all(), 8);
+    } else {
+        _imp->extraMatrix->setValue(mat.a, ViewSpec::all(), 0); _imp->extraMatrix->setValue(mat.b, ViewSpec::all(), 1); _imp->extraMatrix->setValue(mat.c, ViewSpec::all(), 2);
+        _imp->extraMatrix->setValue(mat.d, ViewSpec::all(), 3); _imp->extraMatrix->setValue(mat.e, ViewSpec::all(), 4); _imp->extraMatrix->setValue(mat.f, ViewSpec::all(), 5);
+        _imp->extraMatrix->setValue(mat.g, ViewSpec::all(), 6); _imp->extraMatrix->setValue(mat.h, ViewSpec::all(), 7); _imp->extraMatrix->setValue(mat.i, ViewSpec::all(), 8);
+    }
+    _imp->extraMatrix->endChanges();
 }
 
 void

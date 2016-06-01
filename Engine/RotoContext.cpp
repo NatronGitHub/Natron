@@ -1441,7 +1441,8 @@ RotoContext::resetTransformInternal(const boost::shared_ptr<KnobDouble>& transla
                                     const boost::shared_ptr<KnobDouble>& skewX,
                                     const boost::shared_ptr<KnobDouble>& skewY,
                                     const boost::shared_ptr<KnobBool>& scaleUniform,
-                                    const boost::shared_ptr<KnobChoice>& skewOrder)
+                                    const boost::shared_ptr<KnobChoice>& skewOrder,
+                                    const boost::shared_ptr<KnobDouble>& extraMatrix)
 {
     std::list<KnobI*> knobs;
 
@@ -1453,6 +1454,9 @@ RotoContext::resetTransformInternal(const boost::shared_ptr<KnobDouble>& transla
     knobs.push_back( skewY.get() );
     knobs.push_back( scaleUniform.get() );
     knobs.push_back( skewOrder.get() );
+    if (extraMatrix) {
+        knobs.push_back( extraMatrix.get() );
+    }
     bool wasEnabled = translate->isEnabled(0);
     for (std::list<KnobI*>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         for (int i = 0; i < (*it)->getDimension(); ++i) {
@@ -1473,8 +1477,9 @@ RotoContext::resetTransform()
     boost::shared_ptr<KnobDouble> skewX = _imp->skewXKnob.lock();
     boost::shared_ptr<KnobDouble> skewY = _imp->skewYKnob.lock();
     boost::shared_ptr<KnobChoice> skewOrder = _imp->skewOrderKnob.lock();
+    boost::shared_ptr<KnobDouble> extraMatrix = _imp->extraMatrixKnob.lock();
 
-    resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder);
+    resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, extraMatrix);
 }
 
 void
@@ -1489,7 +1494,7 @@ RotoContext::resetCloneTransform()
     boost::shared_ptr<KnobDouble> skewY = _imp->cloneSkewYKnob.lock();
     boost::shared_ptr<KnobChoice> skewOrder = _imp->cloneSkewOrderKnob.lock();
 
-    resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder);
+    resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, boost::shared_ptr<KnobDouble>());
 }
 
 bool

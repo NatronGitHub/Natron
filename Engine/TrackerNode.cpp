@@ -634,6 +634,8 @@ TrackerNode::knobChanged(KnobI* k,
         _imp->ui->onResetOffsetButtonClicked();
     } else if ( ( k == _imp->ui->resetTrackButton.lock().get() ) && (reason == eValueChangedReasonUserEdited) ) {
         _imp->ui->onResetTrackButtonClicked();
+    } else if ( k == _imp->ui->addTrackButton.lock().get() ) {
+        _imp->ui->clickToAddTrackEnabled = _imp->ui->addTrackButton.lock()->getValue();
     } else {
         ret = false;
     }

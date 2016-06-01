@@ -279,6 +279,10 @@ CLANG_DIAG_ON(uninitialized)
 #define kRotoDrawableItemCenterParamLabel "Center"
 #define kRotoDrawableItemCenterParamHint ""
 
+#define kRotoDrawableItemExtraMatrixParam "extraMatrix"
+#define kRotoDrawableItemExtraMatrixParamLabel "Extra Matrix"
+#define kRotoDrawableItemExtraMatrixParamHint "This matrix gets concatenated to the transform resulting from the parameter above."
+
 #define kRotoDrawableItemLifeTimeParam "lifeTime"
 #define kRotoDrawableItemLifeTimeParamLabel "Life Time"
 #define kRotoDrawableItemLifeTimeParamHint "Controls the life-time of the shape/stroke"
@@ -713,6 +717,7 @@ public:
     boost::shared_ptr<KnobDouble> skewY;
     boost::shared_ptr<KnobChoice> skewOrder;
     boost::shared_ptr<KnobDouble> center;
+    boost::shared_ptr<KnobDouble> extraMatrix;
     boost::shared_ptr<KnobDouble> brushSize;
     boost::shared_ptr<KnobDouble> brushSpacing;
     boost::shared_ptr<KnobDouble> brushHardness;
@@ -935,6 +940,16 @@ public:
         center->setHintToolTip( tr(kRotoDrawableItemCenterParamHint) );
         center->populate();
         knobs.push_back(center);
+
+        extraMatrix.reset( new KnobDouble(NULL, tr(kRotoDrawableItemExtraMatrixParamLabel), 9, false) );
+        extraMatrix->setName(kRotoDrawableItemExtraMatrixParam);
+        extraMatrix->setHintToolTip( tr(kRotoDrawableItemExtraMatrixParamHint) );
+        extraMatrix->populate();
+        extraMatrix->setDefaultValue(1, 0);
+        extraMatrix->setDefaultValue(1, 4);
+        extraMatrix->setDefaultValue(1, 8);
+        knobs.push_back(extraMatrix);
+
 
         brushSize->setName(kRotoBrushSizeParam);
         brushSize->setHintToolTip( tr(kRotoBrushSizeParamHint) );
@@ -1297,6 +1312,7 @@ public:
     boost::weak_ptr<KnobChoice> skewOrderKnob;
     boost::weak_ptr<KnobDouble> centerKnob;
     boost::weak_ptr<KnobButton> resetCenterKnob;
+    boost::weak_ptr<KnobDouble> extraMatrixKnob;
     boost::weak_ptr<KnobButton> resetTransformKnob;
     boost::weak_ptr<KnobChoice> sourceTypeKnob;
     boost::weak_ptr<KnobInt> timeOffsetKnob;
@@ -1606,6 +1622,8 @@ public:
             cloneKnobs.push_back(resetCloneCenter);
             knobs.push_back(resetCloneCenter);
             resetCloneCenterKnob = resetCloneCenter;
+
+
 
             boost::shared_ptr<KnobButton> resetCloneTransform = AppManager::createKnob<KnobButton>(effect.get(), tr(kRotoResetCloneTransformParamLabel), 1, true);
             resetCloneTransform->setName(kRotoResetCloneTransformParam);
@@ -1925,6 +1943,19 @@ public:
         transformPage->addKnob(resetCenter);
         knobs.push_back(resetCenter);
         resetCenterKnob = resetCenter;
+
+
+        boost::shared_ptr<KnobDouble> extraMatrix = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemExtraMatrixParamLabel), 9, false);
+        extraMatrix->setName(kRotoDrawableItemExtraMatrixParam);
+        extraMatrix->setHintToolTip( tr(kRotoDrawableItemExtraMatrixParamHint) );
+        extraMatrix->setDefaultAllDimensionsEnabled(false);
+        // Set to identity
+        extraMatrix->setDefaultValue(1, 0);
+        extraMatrix->setDefaultValue(1, 4);
+        extraMatrix->setDefaultValue(1, 8);
+        transformPage->addKnob(extraMatrix);
+        knobs.push_back(extraMatrix);
+        extraMatrixKnob = extraMatrix;
 
         boost::shared_ptr<KnobButton> resetTransform = AppManager::createKnob<KnobButton>(effect.get(), tr(kRotoResetTransformParamLabel), 1, true);
         resetTransform->setName(kRotoResetTransformParam);
