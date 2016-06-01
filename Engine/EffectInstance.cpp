@@ -1711,13 +1711,15 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             if ((*image)->getStorageMode() != eStorageModeGLTex) {
                 (*image)->allocateMemory();
 
-                // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
-                // needed then reading it back to put it in the CPU image would take much more effort than just computing
-                // the GPU image.
-                std::list<RectI> restToRender;
-                (*image)->getRestToRender(roi, restToRender);
-                if (restToRender.empty()) {
-                    *image = convertRAMImageToOpenGLTexture(*image);
+                if (storage == eStorageModeGLTex) {
+                    // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
+                    // needed then reading it back to put it in the CPU image would take much more effort than just computing
+                    // the GPU image.
+                    std::list<RectI> restToRender;
+                    (*image)->getRestToRender(roi, restToRender);
+                    if (restToRender.empty()) {
+                        *image = convertRAMImageToOpenGLTexture(*image);
+                    }
                 }
             }
 
