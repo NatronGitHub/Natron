@@ -24,6 +24,7 @@
 
 #include "OSGLContext.h"
 
+#include <stdexcept>
 #include <QDebug>
 
 #ifdef __NATRON_WIN32__
