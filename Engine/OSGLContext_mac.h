@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
 #include "Engine/EngineFwd.h"
 
 #ifdef __NATRON_OSX__
