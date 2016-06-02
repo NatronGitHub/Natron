@@ -25,6 +25,8 @@
 #include "GPUContextPool.h"
 
 #include <set>
+#include <stdexcept>
+
 #include <QMutex>
 #include <QWaitCondition>
 
