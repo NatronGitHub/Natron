@@ -465,7 +465,7 @@ AppManager::quitApplication()
             app = _imp->_appInstances.front();
         }
         if (app) {
-            quit(app);
+            quitNow(app);
         }
 
         {
