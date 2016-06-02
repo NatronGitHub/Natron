@@ -13,6 +13,7 @@
         <file alias="LICENSE-FreeType.txt">../tools/license/components/LICENSE-FreeType.txt</file>
         <file alias="LICENSE-GIFLIB.txt">../tools/license/components/LICENSE-GIFLIB.txt</file>
         <file alias="LICENSE-GLAD.txt">../tools/license/components/LICENSE-GLAD.txt</file>
+        <file alias="LICENSE-GLFW.txt">../tools/license/components/LICENSE-GLFW.txt</file>
         <file alias="LICENSE-GPL-2.0.txt">../tools/license/components/LICENSE-GPL-2.0.txt</file>
         <file alias="LICENSE-HDF5.txt">../tools/license/components/LICENSE-HDF5.txt</file>
         <file alias="LICENSE-HarfBuzz.txt">../tools/license/components/LICENSE-HarfBuzz.txt</file>
