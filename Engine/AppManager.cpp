@@ -296,7 +296,7 @@ AppManager::load(int &argc,
     _imp->idealThreadCount = QThread::idealThreadCount();
 
     _imp->initGLAPISpecific();
-    _imp->renderingContextPool.reset( new GPUContextPool(_imp->idealThreadCount) );
+    _imp->renderingContextPool.reset( new GPUContextPool() );
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage

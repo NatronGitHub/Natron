@@ -1258,6 +1258,9 @@ Image::pasteFrom(const Image & src,
         //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
         glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
         glCheckFramebufferError();
+        // Ensure all drawing commands are finished
+        glFlush();
+        glFinish();
         glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
         ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );

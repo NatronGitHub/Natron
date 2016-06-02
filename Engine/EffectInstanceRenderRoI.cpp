@@ -732,7 +732,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         if (openGLSupport == ePluginOpenGLRenderSupportYes) {
 
             // Make the OpenGL context current to this thread
-            glContextLocker.reset(new OSGLContextAttacher(glContext, abortInfo));
+            glContextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                          , frameArgs->time
+#endif
+                                                          ));
 
 
             // If a node has multiple outputs, do not render it on OpenGL since we do not use the cache. We could end-up with this render being executed multiple times.

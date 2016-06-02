@@ -89,6 +89,22 @@ typedef PROC (WINAPI * WGLGETPROCADDRESS_T)(LPCSTR);
 typedef BOOL (WINAPI * WGLMAKECURRENT_T)(HDC, HGLRC);
 typedef BOOL (WINAPI * WGLSHARELISTS_T)(HGLRC, HGLRC);
 
+DECLARE_HANDLE(HGPUNV);
+
+typedef struct _GPU_DEVICE {
+    DWORD  cb;
+    CHAR   DeviceName[32];
+    CHAR   DeviceString[128];
+    DWORD  Flags;
+    RECT   rcVirtualScreen;
+} GPU_DEVICE, *PGPU_DEVICE;
+
+typedef BOOL (*PFNWGLENUMGPUSNV)(UINT,HGPUNV*);
+typedef BOOL (*PFNWGLENUMGPUDEVICESNV)(HGPUNV,UINT,PGPU_DEVICE);
+typedef HDC (*PFNWGLCREATEAFFINITYDCNV)(const HGPUNV*);
+typedef BOOL (*PFNWGLENUMGPUSFROMAFFINITYDCNV)(HDC,UINT,HGPUNV*);
+typedef BOOL (*PFNWGLDELETEDCNV)(HDC);
+
 NATRON_NAMESPACE_ENTER;
 
 struct OSGLContext_wgl_data
@@ -105,6 +121,14 @@ struct OSGLContext_wgl_data
     PFNWGLGETEXTENSIONSSTRINGEXTPROC GetExtensionsStringEXT;
     PFNWGLGETEXTENSIONSSTRINGARBPROC GetExtensionsStringARB;
     PFNWGLCREATECONTEXTATTRIBSARBPROC CreateContextAttribsARB;
+
+    PFNWGLENUMGPUSNV EnumGpusNV;
+    PFNWGLENUMGPUDEVICESNV EnumGpuDevicesNV;
+    PFNWGLCREATEAFFINITYDCNV CreateAffinityDCNV;
+    PFNWGLENUMGPUSFROMAFFINITYDCNV EnumGpusFromAffinityDCNV;
+    PFNWGLDELETEDCNV DeleteDCNV;
+
+    GLboolean NV_gpu_affinity
     GLboolean EXT_swap_control;
     GLboolean ARB_multisample;
     GLboolean ARB_framebuffer_sRGB;
@@ -124,6 +148,7 @@ public:
     OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
                     int major,
                     int minor,
+                    bool coreProfile,
                     const OSGLContext_win* shareContext);
 
     ~OSGLContext_win();
@@ -137,14 +162,15 @@ public:
     static void initWGLData(OSGLContext_wgl_data* wglInfo);
     bool loadWGLExtensions(OSGLContext_wgl_data* wglInfo);
     static void destroyWGLData(OSGLContext_wgl_data* wglInfo);
+    static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
 private:
 
     int getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, int pixelFormat, int attrib);
 
-    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, const OSGLContext_win* shareContext);
+    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, bool coreProfile, const OSGLContext_win* shareContext);
 
-    bool analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, int major, int minor);
+    bool analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, int major, int minor,);
 
     void destroyWindow();
 

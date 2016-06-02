@@ -842,7 +842,11 @@ EffectInstance::getImage(int inputNb,
 
     boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
     if (glContext && returnOpenGLTexture && renderInfo) {
-        glContextAttacher.reset(new OSGLContextAttacher(glContext, renderInfo));
+        glContextAttacher.reset(new OSGLContextAttacher(glContext, renderInfo
+#ifdef DEBUG
+                                                        , time
+#endif
+                                                        ));
     }
 
     RectD inputRoD;
@@ -2377,7 +2381,11 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         assert(glContext);
 
         // Ensure the context is current
-        glContextAttacher.reset(new OSGLContextAttacher(glContext, abortInfo));
+        glContextAttacher.reset(new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                        , frameArgs->time
+#endif
+                                                        ));
 
 
         GLuint fboID = glContext->getFBOId();

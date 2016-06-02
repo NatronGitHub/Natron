@@ -45,11 +45,15 @@ public:
     OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,
                     int major,
                     int minor,
+                    bool coreProfile,
+                    int rendererID,
                     const OSGLContext_mac* shareContext);
 
     ~OSGLContext_mac();
 
     static void makeContextCurrent(const OSGLContext_mac* context);
+
+    static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
     void swapBuffers();
 

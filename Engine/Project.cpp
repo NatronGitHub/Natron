@@ -1797,8 +1797,6 @@ bool
 Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
                                       const WatcherCallerArgsPtr& args)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-
     NodesList nodesToWatch;
     getNodes_recursive(nodesToWatch, false);
     if ( nodesToWatch.empty() ) {

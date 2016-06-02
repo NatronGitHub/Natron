@@ -99,6 +99,16 @@ public:
     FramebufferConfig();
 };
 
+struct OpenGLRendererInfo
+{
+    std::size_t maxMemBytes, maxTexMemBytes;
+    std::string rendererName;
+    std::string vendorName;
+    std::string glVersionString;
+    int maxTextureSize;
+    int rendererID;
+};
+
 /**
  * @brief This class encapsulates a cross-platform OpenGL context used for offscreen rendering.
  **/
@@ -122,7 +132,9 @@ public:
     explicit OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
                          int major = GLVersion.major,
-                         int minor = GLVersion.minor);
+                         int minor = GLVersion.minor,
+                         int rendererID = -1,
+                         bool coreProfile = false);
 
     virtual ~OSGLContext();
     
@@ -148,6 +160,11 @@ public:
     void setContextCurrentNoRender();
     static void unsetCurrentContextNoRender();
 
+    /**
+     * @brief Returns all renderers capable of rendering OpenGL
+     **/
+    static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
+
 private:
 
 
@@ -158,7 +175,11 @@ private:
      *
      *  @thread_safety This function may be called from any thread.
      */
-    void setContextCurrent(const AbortableRenderInfoPtr& render);
+    void setContextCurrent(const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                           , double frameTime
+#endif
+                           );
 
     /**
      * @brief Releases the OpenGL context from this thread.
@@ -189,16 +210,32 @@ public:
 
     }
 
-    OSGLContextAttacher(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render)
+    OSGLContextAttacher(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                        , double frameTime
+#endif
+    )
     {
-        init(c,render);
+        init(c,render
+#ifdef DEBUG
+             ,frameTime
+#endif
+             );
     }
 
-    void init(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render)
+    void init(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+              , double frameTime
+#endif
+    )
     {
         _c = c;
         _a = render;
-        c->setContextCurrent(render);
+        c->setContextCurrent(render
+#ifdef DEBUG
+                            ,frameTime
+#endif
+                             );
     }
 
     ~OSGLContextAttacher()

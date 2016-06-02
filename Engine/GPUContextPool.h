@@ -38,7 +38,7 @@ class GPUContextPool
 {
 public:
 
-    GPUContextPool(const int maxContextCount);
+    GPUContextPool();
 
     ~GPUContextPool();
 

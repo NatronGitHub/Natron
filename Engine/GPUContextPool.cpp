@@ -57,7 +57,7 @@ struct GPUContextPoolPrivate
     // protected by contextPoolMutex
     int maxContexts;
 
-    GPUContextPoolPrivate(int maxContexts)
+    GPUContextPoolPrivate()
         : contextPoolMutex()
           , glContextPool()
 #ifdef NATRON_RENDER_SHARED_CONTEXT
@@ -67,14 +67,14 @@ struct GPUContextPoolPrivate
           , attachedGLContexts()
 #endif
           , glShareContext()
-          , maxContexts(maxContexts)
+          , maxContexts(GPUContextPool::getIdealContextCount())
     {
 
     }
 };
 
-GPUContextPool::GPUContextPool(int maxContextsCount)
-    : _imp( new GPUContextPoolPrivate(maxContextsCount) )
+GPUContextPool::GPUContextPool()
+    : _imp( new GPUContextPoolPrivate() )
 {
 }
 
@@ -97,6 +97,7 @@ GPUContextPool::attachGLContextToRender()
 {
     QMutexLocker k(&_imp->contextPoolMutex);
 
+//#pragma message WARN("CONTEXT SHARING EXPLICITLY DISABLED")
     OSGLContextPtr shareContext = _imp->glShareContext.lock();
     OSGLContextPtr newContext;
 

@@ -22,7 +22,7 @@
 #include <stdexcept>
 #ifdef __NATRON_OSX__
 
-
+#include <QDebug>
 #include "Engine/OSGLContext.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -70,28 +70,27 @@ OSGLContext_mac::createWindow()
 }
 #endif
 
-
-OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int /*minor*/, const OSGLContext_mac* shareContext)
-: _context(0)
+static void makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs, int major, int /*minor*/, bool coreProfile, int rendererID ,std::vector<CGLPixelFormatAttribute> &attributes)
 {
-
-
-    CGLError errorCode;
-
-
     // See https://developer.apple.com/library/mac/documentation/GraphicsImaging/Reference/CGL_OpenGL/#//apple_ref/c/tdef/CGLPixelFormatAttribute
     // for a reference to attributes
-    std::vector<CGLPixelFormatAttribute> attributes;
-
     /*
      * The program chose a config based on the fbconfigs or visuals.
      * Those are based on the attributes from CGL, so we probably
      * do want the closest match for the color, depth, and accum.
      */
+    if (rendererID != -1) {
+        attributes.push_back(kCGLPFARendererID);
+        attributes.push_back((CGLPixelFormatAttribute)rendererID);
+    }
     attributes.push_back(kCGLPFAClosestPolicy);
     attributes.push_back(kCGLPFAAccelerated);
     attributes.push_back(kCGLPFAOpenGLProfile);
-    attributes.push_back((CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy);
+    if (coreProfile) {
+        attributes.push_back((CGLPixelFormatAttribute) kCGLOGLPVersion_3_2_Core);
+    } else {
+        attributes.push_back((CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy);
+    }
     if (pixelFormatAttrs.doublebuffer) {
         attributes.push_back(kCGLPFADoubleBuffer);
     }
@@ -176,10 +175,21 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
     }
     attributes.push_back((CGLPixelFormatAttribute)0);
 
+}
+
+OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int minor,bool coreProfile, int rendererID, const OSGLContext_mac* shareContext)
+: _context(0)
+{
+
+
+
+
+    std::vector<CGLPixelFormatAttribute> attributes;
+    makeAttribsFromFBConfig(pixelFormatAttrs, major, minor, coreProfile, rendererID, attributes);
 
     CGLPixelFormatObj nativePixelFormat;
     GLint num; // stores the number of possible pixel formats
-    errorCode = CGLChoosePixelFormat( &attributes[0], &nativePixelFormat, &num );
+    CGLError errorCode = CGLChoosePixelFormat( &attributes[0], &nativePixelFormat, &num );
     if (errorCode != kCGLNoError) {
         throw std::runtime_error("CGL: Failed to choose pixel format");
     }
@@ -308,6 +318,109 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
 
     //[_object setView:window->ns.view];
 #endif
+}
+
+
+void
+OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
+{
+    CGLContextObj curr_ctx = 0;
+    curr_ctx = CGLGetCurrentContext (); // get current CGL context
+
+    CGLRendererInfoObj rend;
+    GLint nrend = 0;
+    CGLQueryRendererInfo(0xffffffff, &rend, &nrend);
+    for (GLint i = 0; i < nrend; ++i) {
+
+        OpenGLRendererInfo info;
+
+        GLint rendererID,haccelerated;
+        if (CGLDescribeRenderer(rend, i,  kCGLRPRendererID, &rendererID) != kCGLNoError) {
+            continue;
+        }
+        CGLDescribeRenderer(rend, i,  kCGLRPAccelerated, &haccelerated);
+
+        // We don't allow renderers that are not hardware accelerated
+        if (!haccelerated) {
+            continue;
+        }
+
+        info.rendererID = rendererID;
+
+#if !defined(MAC_OS_X_VERSION_10_7) || \
+MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+        GLint nBytesMem,nBytesTexMem;
+        CGLDescribeRenderer(rend, i,  kCGLRPVideoMemory, &nBytesMem);
+        CGLDescribeRenderer(rend, i,  kCGLRPTextureMemory, &nBytesTexMem);
+
+        info.maxMemBytes = (std::size_t)nBytesMem;
+        info.maxTexMemBytes = (std::size_t)nBytesTexMem;
+#else
+        //Available in OS X v10.0 and later.
+        //Deprecated in OS X v10.7.
+        GLint nMBMem,nMBTexMem;
+        CGLDescribeRenderer(rend, i,  kCGLRPVideoMemoryMegabytes, &nMBMem);
+        CGLDescribeRenderer(rend, i,  kCGLRPTextureMemoryMegabytes, &nMBTexMem);
+
+        info.maxMemBytes = (std::size_t)nMBMem * 1e6;
+        info.maxTexMemBytes = (std::size_t)nMBTexMem * 1e6;
+
+        // Available in OS X v10.9
+        //GLint maxOpenGLMajorVersion;
+        //CGLDescribeRenderer(rend, i,  kCGLRPMajorGLVersion, &maxOpenGLMajorVersion);
+
+#endif
+        /*GLint fragCapable, clCapable
+        CGLDescribeRenderer(rend, i,  kCGLRPGPUFragProcCapable, &fragCapable);
+        CGLDescribeRenderer(rend, i,  kCGLRPAcceleratedCompute, &clCapable);*/
+        //info.fragCapable = (bool)fragCapable;
+        //info.clCapable = (bool)clCapable;
+
+
+
+
+        // Create a dummy OpenGL context for that specific renderer to retrieve more infos
+        // See https://developer.apple.com/library/mac/technotes/tn2080/_index.html
+        std::vector<CGLPixelFormatAttribute> attributes;
+        makeAttribsFromFBConfig(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, rendererID, attributes);
+        CGLPixelFormatObj pixelFormat;
+        GLint numPixelFormats;
+        CGLError errorCode = CGLChoosePixelFormat(&attributes[0], &pixelFormat, &numPixelFormats);
+        if (errorCode != kCGLNoError) {
+            qDebug() << "Failed to created pixel format for renderer " << rendererID;
+            continue;
+        }
+        CGLContextObj cglContext;
+        errorCode = CGLCreateContext(pixelFormat, 0, &cglContext);
+        CGLDestroyPixelFormat (pixelFormat);
+        if (errorCode != kCGLNoError) {
+            qDebug() << "Failed to create OpenGL context for renderer " << rendererID;
+            continue;
+        }
+        errorCode = CGLSetCurrentContext (cglContext);
+        if (errorCode != kCGLNoError) {
+            qDebug() << "Failed to make OpenGL context current for renderer " << rendererID;
+            continue;
+        }
+        // get renderer strings
+        info.rendererName = std::string((char*)glGetString (GL_RENDERER));
+        info.vendorName = std::string((char*)glGetString (GL_VENDOR));
+        info.glVersionString = std::string((char*)glGetString (GL_VERSION));
+        //std::string strExt((char*)glGetString (GL_EXTENSIONS));
+
+        glGetIntegerv (GL_MAX_TEXTURE_SIZE,
+                       &info.maxTextureSize);
+
+        CGLDestroyContext (cglContext);
+
+        renderers.push_back(info);
+    }
+
+
+    CGLDestroyRendererInfo(rend);
+    if (curr_ctx) {
+        CGLSetCurrentContext (curr_ctx); // reset current CGL context
+    }
 }
 
 void

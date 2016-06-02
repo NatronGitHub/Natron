@@ -2557,7 +2557,12 @@ void
 DopeSheetView::centerOn(double xMin,
                         double xMax)
 {
-    _imp->zoomContext.fill( xMin, xMax, _imp->zoomContext.bottom(), _imp->zoomContext.top() );
+    double ymin = _imp->zoomContext.bottom();
+    double ymax = _imp->zoomContext.top();
+    if (ymin >= ymax) {
+        return;
+    }
+    _imp->zoomContext.fill( xMin, xMax, ymin, ymax );
 
     redraw();
 }

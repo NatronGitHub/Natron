@@ -232,7 +232,9 @@ struct OSGLContextPrivate
     QWaitCondition renderOwningContextCond;
     AbortableRenderInfoPtr renderOwningContext;
     int renderOwningContextCount;
-
+#ifdef DEBUG
+    double renderOwningContextFrameTime;
+#endif
 #endif
 
     // This pbo is used to call glTexSubImage2D and glReadPixels asynchronously
@@ -249,6 +251,9 @@ struct OSGLContextPrivate
           , renderOwningContextCond()
           , renderOwningContext()
           , renderOwningContextCount(0)
+#ifdef DEBUG
+          , renderOwningContextFrameTime(0)
+#endif
 #endif
           , pboID(0)
           , fboID(0)
@@ -265,15 +270,23 @@ struct OSGLContextPrivate
 OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
                          int major,
-                         int minor)
+                         int minor,
+                         int rendererID,
+                         bool coreProfile)
     : _imp( new OSGLContextPrivate() )
 {
+    if (coreProfile) {
+        // Don't bother with core profile with OpenGL < 3
+        if (major < 3) {
+            coreProfile = false;
+        }
+    }
 #ifdef __NATRON_WIN32__
-    _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+    _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_OSX__)
-    _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+    _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_LINUX__)
-    _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+    _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #endif
 }
 
@@ -312,7 +325,11 @@ OSGLContext::setContextCurrentNoRender()
 }
 
 void
-OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo)
+OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
+#ifdef DEBUG
+                               , double frameTime
+#endif
+)
 {
     assert(_imp && _imp->_platformContext);
 
@@ -322,6 +339,12 @@ OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo)
         _imp->renderOwningContextCond.wait(&_imp->renderOwningContextMutex);
     }
     _imp->renderOwningContext = abortInfo;
+#ifdef DEBUG
+    if (!_imp->renderOwningContextCount) {
+        _imp->renderOwningContextFrameTime = frameTime;
+        qDebug() << "Attaching" << this << "to render frame" << frameTime;
+    }
+#endif
     ++_imp->renderOwningContextCount;
 #endif
 
@@ -358,6 +381,9 @@ OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
     }
     --_imp->renderOwningContextCount;
     if (!_imp->renderOwningContextCount) {
+#ifdef DEBUG
+        qDebug() << "Dettaching" << this << "from frame" << _imp->renderOwningContextFrameTime;
+#endif
         _imp->renderOwningContext.reset();
         unsetCurrentContextNoRender();
         //Wake-up only one thread waiting, since each thread that is waiting in setContextCurrent() will actually call this function.
@@ -493,5 +519,17 @@ OSGLContext::getOrCreateDefaultShader(DefaultGLShaderEnum type)
 
     return boost::shared_ptr<GLShader>();
 } // getOrCreateDefaultShader
+
+void
+OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
+{
+#ifdef __NATRON_WIN32__
+    OSGLContext_win::getGPUInfos(renderers);
+#elif defined(__NATRON_OSX__)
+    OSGLContext_mac::getGPUInfos(renderers);
+#elif defined(__NATRON_LINUX__)
+    OSGLContext_x11::getGPUInfos(renderers);
+#endif
+}
 
 NATRON_NAMESPACE_EXIT;

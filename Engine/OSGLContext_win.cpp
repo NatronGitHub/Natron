@@ -103,6 +103,15 @@ OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
     wglInfo->EXT_swap_control = extensionSupported("WGL_EXT_swap_control", wglInfo);
     wglInfo->ARB_pixel_format = extensionSupported("WGL_ARB_pixel_format", wglInfo);
     wglInfo->ARB_context_flush_control = extensionSupported("WGL_ARB_context_flush_control", wglInfo);
+    wglInfo->NV_gpu_affinity = extensionSupported("WGL_NV_gpu_affinity", wglInfo);
+
+    if (wglInfo->NV_gpu_affinity) {
+        wglInfo->EnumGpusNV = (PFNWGLENUMGPUSNV)wglInfo->GetProcAddress("wglEnumGpusNV");
+        wglInfo->EnumGpuDevicesNV = (PFNWGLENUMGPUDEVICESNV)wglInfo->GetProcAddress("wglEnumGpuDevicesNV");
+        wglInfo->CreateAffinityDCNV = (PFNWGLCREATEAFFINITYDCNV)wglInfo->GetProcAddress("wglCreateAffinityDCNV");
+        wglInfo->EnumGpusFromAffinityDCNV = (PFNWGLENUMGPUSFROMAFFINITYDCNV)wglInfo->GetProcAddress("wglEnumGpusFromAffinityDCNV");
+        wglInfo->DeleteDCNV = (PFNWGLDELETEDCNV)wglInfo->GetProcAddress("wglDeleteDCNV");
+    }
 
     wglInfo->extensionsLoaded = GL_TRUE;
 
@@ -177,6 +186,7 @@ void
 OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
                                  int major,
                                  int minor,
+                                 bool coreProfile,
                                  const OSGLContext_win* shareContext)
 {
     _dc = GetDC(_windowHandle);
@@ -322,17 +332,17 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
     } else {
         int attribs[40];
         int index = 0, mask = 0, flags = 0;
+        if (coreProfile) {
+            mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
+        } else {
+            mask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
+        }
 /*
-        if (ctxconfig->client == GLFW_OPENGL_API)
-        {
+
             if (ctxconfig->forward)
                 flags |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
 
-            if (ctxconfig->profile == GLFW_OPENGL_CORE_PROFILE)
-                mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-            else if (ctxconfig->profile == GLFW_OPENGL_COMPAT_PROFILE)
-                mask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
-        }
+        
         else
             mask |= WGL_CONTEXT_ES2_PROFILE_BIT_EXT;
 
@@ -416,6 +426,7 @@ OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs,
     OSGLContext_wgl_data* wglInfo = const_cast<OSGLContext_wgl_data*>( appPTR->getWGLData() );
 
     assert(wglInfo);
+    memset(wglInfo, 0, sizeof(OSGLContext_wgl_data));
 
     makeContextCurrent(this);
     if ( !loadWGLExtensions(wglInfo) ) {
@@ -512,6 +523,7 @@ OSGLContext_win::destroyContext()
 OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
                                  int major,
                                  int minor,
+                                 bool coreProfile,
                                  const OSGLContext_win* shareContext)
     : _dc(0)
       , _handle(0)
@@ -522,7 +534,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
         throw std::runtime_error("WGL: Failed to create window");
     }
 
-    createGLContext(pixelFormatAttrs, major, minor, shareContext);
+    createGLContext(pixelFormatAttrs, major, minor, coreProfile, shareContext);
 
     if ( analyzeContextWGL(pixelFormatAttrs, major, minor) ) {
         // Some window hints require us to re-create the context using WGL
@@ -556,7 +568,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
             throw std::runtime_error("WGL: Failed to create window");
         }
 
-        createGLContext(pixelFormatAttrs, major, minor, shareContext);
+        createGLContext(pixelFormatAttrs, major, minor, coreProfile, shareContext);
     }
 }
 
@@ -593,6 +605,17 @@ OSGLContext_win::swapInterval(int interval)
     if (wglInfo->EXT_swap_control) {
         wglInfo->SwapIntervalEXT(interval);
     }
+}
+
+void
+OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
+{
+    if (!wglInfo->NV_gpu_affinity) {
+
+    } else {
+        std::vector<HGPUNV> ;
+    }
+
 }
 
 NATRON_NAMESPACE_EXIT;

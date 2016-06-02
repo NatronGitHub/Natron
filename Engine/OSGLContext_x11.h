@@ -60,6 +60,8 @@ public:
     OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs,
                     int major,
                     int minor,
+                    bool coreProfile,
+                    int rendererID,
                     const OSGLContext_x11* shareContext);
 
     ~OSGLContext_x11();
@@ -67,6 +69,8 @@ public:
     static void initGLXData(OSGLContext_glx_data* glxInfo);
     static void destroyGLXData(OSGLContext_glx_data* glxInfo);
     static bool makeContextCurrent(const OSGLContext_x11* context);
+
+    static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
     void swapBuffers();
 
