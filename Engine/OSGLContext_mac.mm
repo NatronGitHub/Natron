@@ -349,21 +349,17 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
 #if !defined(MAC_OS_X_VERSION_10_7) || \
 MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
-        GLint nBytesMem,nBytesTexMem;
+        GLint nBytesMem;
         CGLDescribeRenderer(rend, i,  kCGLRPVideoMemory, &nBytesMem);
-        CGLDescribeRenderer(rend, i,  kCGLRPTextureMemory, &nBytesTexMem);
 
         info.maxMemBytes = (std::size_t)nBytesMem;
-        info.maxTexMemBytes = (std::size_t)nBytesTexMem;
 #else
         //Available in OS X v10.0 and later.
         //Deprecated in OS X v10.7.
-        GLint nMBMem,nMBTexMem;
+        GLint nMBMem;
         CGLDescribeRenderer(rend, i,  kCGLRPVideoMemoryMegabytes, &nMBMem);
-        CGLDescribeRenderer(rend, i,  kCGLRPTextureMemoryMegabytes, &nMBTexMem);
 
         info.maxMemBytes = (std::size_t)nMBMem * 1e6;
-        info.maxTexMemBytes = (std::size_t)nMBTexMem * 1e6;
 
         // Available in OS X v10.9
         //GLint maxOpenGLMajorVersion;

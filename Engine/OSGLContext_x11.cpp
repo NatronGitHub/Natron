@@ -83,6 +83,18 @@ extern "C"
 #define GLX_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB 0
 #define GLX_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB 0x2098
 
+#define GLX_RENDERER_VENDOR_ID_MESA                      0x8183
+#define GLX_RENDERER_DEVICE_ID_MESA                      0x8184
+#define GLX_RENDERER_VERSION_MESA                        0x8185
+#define GLX_RENDERER_ACCELERATED_MESA                    0x8186
+#define GLX_RENDERER_VIDEO_MEMORY_MESA                   0x8187
+#define GLX_RENDERER_UNIFIED_MEMORY_ARCHITECTURE_MESA    0x8188
+#define GLX_RENDERER_PREFERRED_PROFILE_MESA              0x8189
+#define GLX_RENDERER_OPENGL_CORE_PROFILE_VERSION_MESA    0x818A
+#define GLX_RENDERER_OPENGL_COMPATIBILITY_PROFILE_VERSION_MESA    0x818B
+#define GLX_RENDERER_OPENGL_ES_PROFILE_VERSION_MESA      0x818C
+#define GLX_RENDERER_OPENGL_ES2_PROFILE_VERSION_MESA     0x818D
+
 
 typedef XID GLXWindow;
 typedef XID GLXDrawable;
@@ -936,7 +948,6 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = 0;
-        info.maxTexMemBytes = 0;
         info.rendererID = -1;
         renderers.push_back(info);
     } else {
@@ -964,7 +975,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
                     ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_VIDEO_MEMORY_MESA, v)
                     assert(ok);
-                    info.maxMemBytes = info.maxTexMemBytes = v[0] * 1e6;
+                    info.maxMemBytes = v[0] * 1e6;
 
                     // Now create a context with the renderer ID
                     boost::scoped_ptr<OSGLContext_x11> context;
@@ -979,11 +990,13 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
                     info.rendererID = rendererID;
                     info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
-                    info.rendererName = std::string(const char *) glGetString(GL_RENDERER));
-                    info.glVersionString = std::string(const char *) glGetString(GL_VERSION));
+                    info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
+                    info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
                     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
 
                     renderers.push_back(info);
+
+                    makeContextCurrent(0);
                 }
             }
         } while (gotRenderer);

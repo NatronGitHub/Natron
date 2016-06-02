@@ -101,7 +101,7 @@ public:
 
 struct OpenGLRendererInfo
 {
-    std::size_t maxMemBytes, maxTexMemBytes;
+    std::size_t maxMemBytes;
     std::string rendererName;
     std::string vendorName;
     std::string glVersionString;

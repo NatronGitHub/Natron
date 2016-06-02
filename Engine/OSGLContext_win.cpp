@@ -25,6 +25,24 @@
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
 
+
+#ifdef NATRON_USE_OPTIMUS_HPG
+
+// Applications exporting this symbol with this value will be automatically
+// directed to the high-performance GPU on Nvidia Optimus systems with
+// up-to-date drivers
+//
+__declspec(dllexport) DWORD NvOptimusEnablement = 1;
+
+// Applications exporting this symbol with this value will be automatically
+// directed to the high-performance GPU on AMD PowerXpress systems with
+// up-to-date drivers
+//
+__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+
+#endif // NATRON_USE_OPTIMUS_HPG
+
+
 NATRON_NAMESPACE_ENTER;
 
 bool
@@ -104,6 +122,7 @@ OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
     wglInfo->ARB_pixel_format = extensionSupported("WGL_ARB_pixel_format", wglInfo);
     wglInfo->ARB_context_flush_control = extensionSupported("WGL_ARB_context_flush_control", wglInfo);
     wglInfo->NV_gpu_affinity = extensionSupported("WGL_NV_gpu_affinity", wglInfo);
+    wglInfo->AMD_gpu_association = extensionSupported("WGL_AMD_gpu_association", wglInfo);
 
     if (wglInfo->NV_gpu_affinity) {
         wglInfo->EnumGpusNV = (PFNWGLENUMGPUSNV)wglInfo->GetProcAddress("wglEnumGpusNV");
@@ -111,6 +130,18 @@ OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
         wglInfo->CreateAffinityDCNV = (PFNWGLCREATEAFFINITYDCNV)wglInfo->GetProcAddress("wglCreateAffinityDCNV");
         wglInfo->EnumGpusFromAffinityDCNV = (PFNWGLENUMGPUSFROMAFFINITYDCNV)wglInfo->GetProcAddress("wglEnumGpusFromAffinityDCNV");
         wglInfo->DeleteDCNV = (PFNWGLDELETEDCNV)wglInfo->GetProcAddress("wglDeleteDCNV");
+    }
+
+    if (wglInfo->AMD_gpu_association) {
+        wglInfo->GetGpuIDAMD = (PFNWGLGETGPUIDSAMD)wglInfo->GetProcAddress("wglGetGPUIDsAMD");
+        wglInfo->GetGpuInfoAMD = (PFNWGLGETGPUINFOAMD)wglInfo->GetProcAddress("wglGetGPUInfoAMD");
+        wglInfo->GetContextGpuIDAMD = (PFNWGLGETCONTEXTGPUIDAMD)wglInfo->GetProcAddress("wglGetContextGPUIDAMD");
+        wglInfo->CreateAssociatedContextAMD = (PFNWGLCREATEASSOCIATEDCONTEXTAMD)wglInfo->GetProcAddress("wglCreateAssociatedContextAMD");
+        wglInfo->CreateAssociatedContextAttribsAMD = (PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD)wglInfo->GetProcAddress("wglCreateAssociatedContextAttribsAMD");
+        wglInfo->DeleteAssociatedContextAMD = (PFNWGLDELETEASSOCIATEDCONTEXTAMD)wglInfo->GetProcAddress("wglDeleteAssociatedContextAMD");
+        wglInfo->MakeAssociatedContetCurrentAMD = (PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD)wglInfo->GetProcAddress("wglMakeAssociatedContextCurrentAMD");
+        wglInfo->GetCurrentAssociatedContextAMD = (PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD)wglInfo->GetProcAddress("wglGetCurrentAssociatedContextAMD");
+        wglInfo->BlitContextFrameBufferAMD = (PFNWGLBLITCONTEXTFRAMEBUFFERAMD)wglInfo->GetProcAddress("wglBlitContextFramebufferAMD");
     }
 
     wglInfo->extensionsLoaded = GL_TRUE;
@@ -175,28 +206,59 @@ OSGLContext_win::getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo,
     return value;
 }
 
-#define setWGLattrib(attribName, attribValue) \
-    { \
-        attribs[index++] = attribName; \
-        attribs[index++] = attribValue; \
-        assert( (std::size_t) index < sizeof(attribs) / sizeof(attribs[0]) ); \
+static void setAttribs(int major, int minor, bool coreProfile, std::vector<int>& attribs)
+{
+
+    int mask = 0;
+
+    // NOTE: Only request an explicitly versioned context when necessary, as
+    //       explicitly requesting version 1.0 does not always return the
+    //       highest version supported by the driver
+    if ( (major != 1) || (minor != 0) ) {
+        attribs.push_back(WGL_CONTEXT_MAJOR_VERSION_ARB);
+        attribs.push_back(major);
+        attribs.push_back(WGL_CONTEXT_MINOR_VERSION_ARB);
+        attribs.push_back(minor);
     }
+
+    if (coreProfile) {
+        mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
+    } else {
+        mask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
+    }
+    if (mask) {
+        attribs.push_back(WGL_CONTEXT_PROFILE_MASK_ARB);
+        attribs.push_back(mask);
+    }
+    attribs.push_back(0);
+    attribs.push_back(0);
+}
 
 void
 OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
                                  int major,
                                  int minor,
                                  bool coreProfile,
+                                 int rendererID,
                                  const OSGLContext_win* shareContext)
 {
-    _dc = GetDC(_windowHandle);
-    if (!_dc) {
-        throw std::runtime_error("WGL: Failed to retrieve DC for window");
-    }
 
 
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
     assert(wglInfo);
+
+    bool useNVGPUAffinity = rendererID > 0 && wglInfo->NV_gpu_affinity;
+
+    if (useNVGPUAffinity) {
+        HGPUNV GpuMask[2] = {(HGPUNV)rendererID, NULL};
+        _dc = wglInfo->CreateAffinityDCNV(GpuMask);
+    } else {
+        _dc = GetDC(_windowHandle);
+    }
+    if (!_dc) {
+        throw std::runtime_error("WGL: Failed to retrieve DC for window");
+    }
+
 
     std::vector<FramebufferConfig> usableConfigs;
     int nativeCount = 0, usableCount = 0;
@@ -324,92 +386,24 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
         throw std::runtime_error("WGL: Failed to set selected pixel format");
     }
 
-    if (!wglInfo->ARB_create_context) {
+
+    if (useNVGPUAffinity) {
         _handle = wglInfo->CreateContext(_dc);
-        if (!_handle) {
-            throw std::runtime_error("WGL: Failed to create OpenGL context");
-        }
+    } else if (rendererID > 0 && wglInfo->AMD_gpu_association) {
+        std::vector<int> attribs;
+        setAttribs(major, minor, coreProfile, attribs);
+        _handle = wglInfo->CreateAssociatedContextAttribsAMD((UINT)rendererID, share, &attribs[0]);
+    } else if (wglInfo->ARB_create_context) {
+        std::vector<int> attribs;
+        setAttribs(major, minor, coreProfile, attribs);
+        _handle = wglInfo->CreateContextAttribsARB(_dc, share, &attribs[0]);
     } else {
-        int attribs[40];
-        int index = 0, mask = 0, flags = 0;
-        if (coreProfile) {
-            mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-        } else {
-            mask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
-        }
-/*
+        _handle = wglInfo->CreateContext(_dc);
+    }
 
-            if (ctxconfig->forward)
-                flags |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
-
-        
-        else
-            mask |= WGL_CONTEXT_ES2_PROFILE_BIT_EXT;
-
-        if (ctxconfig->debug)
-            flags |= WGL_CONTEXT_DEBUG_BIT_ARB;
-        if (ctxconfig->noerror)
-            flags |= GL_CONTEXT_FLAG_NO_ERROR_BIT_KHR;
-
-        if (ctxconfig->robustness)
-        {
-            if (_glfw.wgl.ARB_create_context_robustness)
-            {
-                if (ctxconfig->robustness == GLFW_NO_RESET_NOTIFICATION)
-                {
-                    setWGLattrib(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB,
-                                 WGL_NO_RESET_NOTIFICATION_ARB);
-                }
-                else if (ctxconfig->robustness == GLFW_LOSE_CONTEXT_ON_RESET)
-                {
-                    setWGLattrib(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB,
-                                 WGL_LOSE_CONTEXT_ON_RESET_ARB);
-                }
-
-                flags |= WGL_CONTEXT_ROBUST_ACCESS_BIT_ARB;
-            }
-        }
-
-        if (ctxconfig->release)
-        {
-            if (_glfw.wgl.ARB_context_flush_control)
-            {
-                if (ctxconfig->release == GLFW_RELEASE_BEHAVIOR_NONE)
-                {
-                    setWGLattrib(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB,
-                                 WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
-                }
-                else if (ctxconfig->release == GLFW_RELEASE_BEHAVIOR_FLUSH)
-                {
-                    setWGLattrib(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB,
-                                 WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB);
-                }
-            }
-        }*/
-
-        // NOTE: Only request an explicitly versioned context when necessary, as
-        //       explicitly requesting version 1.0 does not always return the
-        //       highest version supported by the driver
-        if ( (major != 1) || (minor != 0) ) {
-            setWGLattrib(WGL_CONTEXT_MAJOR_VERSION_ARB, major);
-            setWGLattrib(WGL_CONTEXT_MINOR_VERSION_ARB, minor);
-        }
-
-        if (flags) {
-            setWGLattrib(WGL_CONTEXT_FLAGS_ARB, flags);
-        }
-
-        if (mask) {
-            setWGLattrib(WGL_CONTEXT_PROFILE_MASK_ARB, mask);
-        }
-
-        setWGLattrib(0, 0);
-
-        _handle = wglInfo->CreateContextAttribsARB(_dc, share, attribs);
-        if (!_handle) {
-            throw std::runtime_error("WGL: Failed to create OpenGL context");
-        }
-    } // wglInfo->ARB_create_context
+    if (!_handle) {
+        throw std::runtime_error("WGL: Failed to create OpenGL context");
+    }
 } // createGLContext
 
 #undef setWGLattrib
@@ -524,6 +518,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
                                  int major,
                                  int minor,
                                  bool coreProfile,
+                                 int rendererID,
                                  const OSGLContext_win* shareContext)
     : _dc(0)
       , _handle(0)
@@ -534,7 +529,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
         throw std::runtime_error("WGL: Failed to create window");
     }
 
-    createGLContext(pixelFormatAttrs, major, minor, coreProfile, shareContext);
+    createGLContext(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext);
 
     if ( analyzeContextWGL(pixelFormatAttrs, major, minor) ) {
         // Some window hints require us to re-create the context using WGL
@@ -568,7 +563,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
             throw std::runtime_error("WGL: Failed to create window");
         }
 
-        createGLContext(pixelFormatAttrs, major, minor, coreProfile, shareContext);
+        createGLContext(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext);
     }
 }
 
@@ -607,13 +602,138 @@ OSGLContext_win::swapInterval(int interval)
     }
 }
 
+// A valid context must be bound
+// http://developer.download.nvidia.com/opengl/specs/GL_NVX_gpu_memory_info.txt
+static int nvx_get_GPU_mem_info()
+{
+    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+    assert(wglInfo);
+    if (!wglInfo->NVX_gpu_memory_info) {
+        return 0;
+    }
+
+    int v = 0;
+    // Clear error
+    GLenum _glerror_ = glGetError();
+    glGetIntegerv(GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX, &v);
+
+    // If error, return 0
+    _glerror_ = glGetError();
+    if (_glerror != GL_NO_ERROR) {
+        return 0;
+    }
+    return v * 1e3;
+}
+
 void
 OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
-    if (!wglInfo->NV_gpu_affinity) {
+    if (wglInfo->NV_gpu_affinity) {
+        // https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
+        std::vector<HGPUNV> gpuHandles;
+        int gpuIndex = 0;
+        HGPUNV gpuHandle;
+        bool gotGPU = true;
+        do
+        {
+            gotGPU = wglEnumGpusNV(gpuIndex, &gpuHandle);
+            if (gotGPU) {
+                gpuHandles.push_back(gpuHandle);
+            }
+            ++gpuIndex;
+        } while (gotGPU);
 
+        for (std::size_t i = 0; i < gpuHandles.size(); ++i) {
+
+            OpenGLRendererInfo info;
+            info.rendererID = gpuHandles[i];
+
+            boost::scoped_ptr<OSGLContext_win> context;
+            try {
+                context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, info.info.rendererID, 0));
+            } catch (const std::exception& e) {
+                continue;
+            }
+            if (!makeContextCurrent(context.get())) {
+                continue;
+            }
+
+            info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
+            info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
+            info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
+            info.maxMemBytes = nvx_get_GPU_mem_info();
+            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+            renderers.push_back(info);
+
+            makeContextCurrent(0);
+        }
+
+    } else if (wglInfo->AMD_gpu_association) {
+        //https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
+        UINT maxCount = wglGetGPUIDsAMD(0);
+        std::vector<UINT> gpuIDs(maxCount);
+
+        UINT gpuCount = wglGetGPUIDsAMD(maxCount, &gpuIDs[0]);
+
+        char tmpBuf[500];
+        for (int i = 0; i < gpuCount; ++i) {
+
+            OpenGLRendererInfo info;
+
+            INT ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_RENDERER_STRING_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
+            assert(ok);
+            info.rendererName = std::string(tmpBuf);
+            ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_VENDOR_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
+            assert(ok);
+            info.vendorName = std::string(tmpBuf);
+            ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_OPENGL_VERSION_STRING_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
+            assert(ok);
+            info.glVersionString = std::string(tmpBuf);
+
+            int ramMB;
+            ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_RAM_AMD, GL_UNSIGNED_INT, 500, &ramMB);
+            info.maxMemBytes = ramMB * 1e6;
+            info.rendererID = gpuIDs[i];
+
+            boost::scoped_ptr<OSGLContext_win> context;
+            try {
+                context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, info.rendererID, 0));
+            } catch (const std::exception& e) {
+                continue;
+            }
+            if (!makeContextCurrent(context.get())) {
+                continue;
+            }
+            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+            renderers.push_back(info);
+
+            makeContextCurrent(0);
+
+
+        }
     } else {
-        std::vector<HGPUNV> ;
+        // No extension, use default
+        boost::scoped_ptr<OSGLContext_x11> context;
+        try {
+            context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, -1, 0));
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+        }
+        if (!makeContextCurrent(context.get())) {
+            return;
+        }
+
+        OpenGLRendererInfo info;
+        info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
+        info.rendererName = std::string(const char *) glGetString(GL_RENDERER));
+        info.glVersionString = std::string(const char *) glGetString(GL_VERSION));
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+        // We don't have any way to get memory size, set it to 0
+        info.maxMemBytes = 0;
+        info.rendererID = -1;
+        renderers.push_back(info);
+
+        makeContextCurrent(0);
     }
 
 }

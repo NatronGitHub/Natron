@@ -97,8 +97,8 @@ GPUContextPool::attachGLContextToRender()
 {
     QMutexLocker k(&_imp->contextPoolMutex);
 
-//#pragma message WARN("CONTEXT SHARING EXPLICITLY DISABLED")
-    OSGLContextPtr shareContext = _imp->glShareContext.lock();
+    // Context-sharing disabled as it is not needed
+    OSGLContextPtr shareContext;// _imp->glShareContext.lock();
     OSGLContextPtr newContext;
 
 #ifndef NATRON_RENDER_SHARED_CONTEXT

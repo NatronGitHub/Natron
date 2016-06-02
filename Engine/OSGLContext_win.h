@@ -89,6 +89,8 @@ typedef PROC (WINAPI * WGLGETPROCADDRESS_T)(LPCSTR);
 typedef BOOL (WINAPI * WGLMAKECURRENT_T)(HDC, HGLRC);
 typedef BOOL (WINAPI * WGLSHARELISTS_T)(HGLRC, HGLRC);
 
+////////// https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
+
 DECLARE_HANDLE(HGPUNV);
 
 typedef struct _GPU_DEVICE {
@@ -104,6 +106,53 @@ typedef BOOL (*PFNWGLENUMGPUDEVICESNV)(HGPUNV,UINT,PGPU_DEVICE);
 typedef HDC (*PFNWGLCREATEAFFINITYDCNV)(const HGPUNV*);
 typedef BOOL (*PFNWGLENUMGPUSFROMAFFINITYDCNV)(HDC,UINT,HGPUNV*);
 typedef BOOL (*PFNWGLDELETEDCNV)(HDC);
+
+
+///////// https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
+
+#define WGL_GPU_VENDOR_AMD                 0x1F00
+#define WGL_GPU_RENDERER_STRING_AMD        0x1F01
+#define WGL_GPU_OPENGL_VERSION_STRING_AMD  0x1F02
+#define WGL_GPU_FASTEST_TARGET_GPUS_AMD    0x21A2
+#define WGL_GPU_RAM_AMD                    0x21A3
+#define WGL_GPU_CLOCK_AMD                  0x21A4
+#define WGL_GPU_NUM_PIPES_AMD              0x21A5
+#define WGL_GPU_NUM_SIMD_AMD               0x21A6
+#define WGL_GPU_NUM_RB_AMD                 0x21A7
+#define WGL_GPU_NUM_SPI_AMD                0x21A8
+
+
+typedef UINT  (*PFNWGLGETGPUIDSAMD)(UINT maxCount, UINT *ids);
+
+typedef INT   (*PFNWGLGETGPUINFOAMD)(UINT id, INT property, GLenum dataType,
+                       UINT size, void *data)
+
+typedef UINT  (*PFNWGLGETCONTEXTGPUIDAMD)(HGLRC hglrc);
+
+typedef HGLRC (*PFNWGLCREATEASSOCIATEDCONTEXTAMD)(UINT id);
+
+typedef HGLRC (*PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD)(UINT id, HGLRC hShareContext,
+                                           const int *attribList);
+
+typedef BOOL  (*PFNWGLDELETEASSOCIATEDCONTEXTAMD)(HGLRC hglrc);
+
+typedef BOOL  (*PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD)(HGLRC hglrc);
+
+typedef HGLRC (*PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD)(void);
+
+typedef VOID  (*PFNWGLBLITCONTEXTFRAMEBUFFERAMD)(HGLRC dstCtx, GLint srcX0, GLint srcY0,
+                                                 GLint srcX1, GLint srcY1, GLint dstX0,
+                                                 GLint dstY0, GLint dstX1, GLint dstY1,
+                                                 GLbitfield mask, GLenum filter);
+
+
+/////////// http://developer.download.nvidia.com/opengl/specs/GL_NVX_gpu_memory_info.txt
+
+#define GPU_MEMORY_INFO_DEDICATED_VIDMEM_NVX          0x9047
+#define GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX    0x9048
+#define GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX  0x9049
+#define GPU_MEMORY_INFO_EVICTION_COUNT_NVX            0x904A
+#define GPU_MEMORY_INFO_EVICTED_MEMORY_NVX            0x904B
 
 NATRON_NAMESPACE_ENTER;
 
@@ -128,7 +177,19 @@ struct OSGLContext_wgl_data
     PFNWGLENUMGPUSFROMAFFINITYDCNV EnumGpusFromAffinityDCNV;
     PFNWGLDELETEDCNV DeleteDCNV;
 
-    GLboolean NV_gpu_affinity
+    PFNWGLGETGPUIDSAMD GetGpuIDAMD;
+    PFNWGLGETGPUINFOAMD GetGpuInfoAMD;
+    PFNWGLGETCONTEXTGPUIDAMD GetContextGpuIDAMD;
+    PFNWGLCREATEASSOCIATEDCONTEXTAMD CreateAssociatedContextAMD;
+    PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD CreateAssociatedContextAttribsAMD;
+    PFNWGLDELETEASSOCIATEDCONTEXTAMD DeleteAssociatedContextAMD;
+    PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD MakeAssociatedContetCurrentAMD;
+    PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD GetCurrentAssociatedContextAMD;
+    PFNWGLBLITCONTEXTFRAMEBUFFERAMD BlitContextFrameBufferAMD;
+
+    GLboolean NV_gpu_affinity;
+    GLboolean AMD_gpu_association;
+    GLboolean NVX_gpu_memory_info;
     GLboolean EXT_swap_control;
     GLboolean ARB_multisample;
     GLboolean ARB_framebuffer_sRGB;
@@ -149,6 +210,7 @@ public:
                     int major,
                     int minor,
                     bool coreProfile,
+                    int rendererID,
                     const OSGLContext_win* shareContext);
 
     ~OSGLContext_win();
@@ -168,7 +230,7 @@ private:
 
     int getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, int pixelFormat, int attrib);
 
-    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, bool coreProfile, const OSGLContext_win* shareContext);
+    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, bool coreProfile, int rendererID, const OSGLContext_win* shareContext);
 
     bool analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, int major, int minor,);
 
