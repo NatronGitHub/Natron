@@ -456,7 +456,11 @@ CurveWidget::resizeGL(int width,
         height = 1;
     }
     glViewport (0, 0, width, height);
-    _imp->zoomCtx.setScreenSize(width, height);
+
+    // Width and height may be 0 when tearing off a viewer tab to another panel
+    if ( (width > 0) && (height > 0) ) {
+        _imp->zoomCtx.setScreenSize(width, height);
+    }
 
     if (height == 1) {
         //don't do the following when the height of the widget is irrelevant
