@@ -43,6 +43,9 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #endif // NATRON_USE_OPTIMUS_HPG
 
 
+#define NATRON_WNDCLASSNAME L"NATRON30"
+
+
 NATRON_NAMESPACE_ENTER;
 
 bool
@@ -75,6 +78,7 @@ OSGLContext_win::extensionSupported(const char* extension,
 void
 OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
 {
+    memset(wglInfo, 0, sizeof(OSGLContext_wgl_data));
     wglInfo->instance = LoadLibraryA("opengl32.dll");
     if (!wglInfo->instance) {
         assert(false);
@@ -86,6 +90,18 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
     wglInfo->GetProcAddress = (WGLGETPROCADDRESS_T)GetProcAddress(wglInfo->instance, "wglGetProcAddress");
     wglInfo->MakeCurrent = (WGLMAKECURRENT_T)GetProcAddress(wglInfo->instance, "wglMakeCurrent");
     wglInfo->ShareLists = (WGLSHARELISTS_T)GetProcAddress(wglInfo->instance, "wglShareLists");
+
+    WNDCLASSEXW wc;
+
+    ZeroMemory(&wc, sizeof(wc));
+    wc.cbSize        = sizeof(wc);
+    wc.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+    wc.lpfnWndProc   = (WNDPROC) DefWindowProcW;
+    wc.hInstance     = GetModuleHandleW(NULL);
+    wc.hCursor       = 0;//LoadCursorW(NULL, IDC_ARROW);
+    wc.lpszClassName = NATRON_WNDCLASSNAME;
+    bool ok = (bool)RegisterClassExW(&wc);
+    assert(ok);
 }
 
 bool
@@ -134,7 +150,7 @@ OSGLContext_win::loadWGLExtensions(OSGLContext_wgl_data* wglInfo)
 
     if (wglInfo->AMD_gpu_association) {
         wglInfo->GetGpuIDAMD = (PFNWGLGETGPUIDSAMD)wglInfo->GetProcAddress("wglGetGPUIDsAMD");
-        wglInfo->GetGpuInfoAMD = (PFNWGLGETGPUINFOAMD)wglInfo->GetProcAddress("wglGetGPUInfoAMD");
+        wglInfo->GetGPUInfoAMD = (PFNWGLGETGPUINFOAMD)wglInfo->GetProcAddress("wglGetGPUInfoAMD");
         wglInfo->GetContextGpuIDAMD = (PFNWGLGETCONTEXTGPUIDAMD)wglInfo->GetProcAddress("wglGetContextGPUIDAMD");
         wglInfo->CreateAssociatedContextAMD = (PFNWGLCREATEASSOCIATEDCONTEXTAMD)wglInfo->GetProcAddress("wglCreateAssociatedContextAMD");
         wglInfo->CreateAssociatedContextAttribsAMD = (PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD)wglInfo->GetProcAddress("wglCreateAssociatedContextAttribsAMD");
@@ -156,6 +172,7 @@ OSGLContext_win::destroyWGLData(OSGLContext_wgl_data* wglInfo)
         FreeLibrary(wglInfo->instance);
         wglInfo->instance = 0;
     }
+    UnregisterClassW(NATRON_WNDCLASSNAME, GetModuleHandleW(NULL));
 }
 
 // Creates the GLFW window and rendering context
@@ -169,15 +186,15 @@ createWindow(HWND* window)
     const int fullHeight = 32;
 
     *window = CreateWindowExW(/*exStyle*/ 0,
-                                          L"OffscreenWindow",
-                                          L"",
-                                          /*style*/ 0,
-                                          xpos, ypos,
-                                          fullWidth, fullHeight,
-                                          NULL, // No parent window
-                                          NULL, // No window menu
-                                          GetModuleHandleW(NULL),
-                                          NULL);
+                              NATRON_WNDCLASSNAME,
+                              L"",
+                              /*style*/ 0,
+                              xpos, ypos,
+                              fullWidth, fullHeight,
+                              NULL, // No parent window
+                              NULL, // No window menu
+                              GetModuleHandleW(NULL),
+                              NULL);
 
 
     if (!*window) {
@@ -239,7 +256,7 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
                                  int major,
                                  int minor,
                                  bool coreProfile,
-                                 int rendererID,
+                                 const GLRendererID &rendererID,
                                  const OSGLContext_win* shareContext)
 {
 
@@ -247,10 +264,10 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
     const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
     assert(wglInfo);
 
-    bool useNVGPUAffinity = rendererID > 0 && wglInfo->NV_gpu_affinity;
+    bool useNVGPUAffinity = rendererID.rendererHandle && wglInfo->NV_gpu_affinity;
 
     if (useNVGPUAffinity) {
-        HGPUNV GpuMask[2] = {(HGPUNV)rendererID, NULL};
+        HGPUNV GpuMask[2] = {(HGPUNV)rendererID.rendererHandle, NULL};
         _dc = wglInfo->CreateAffinityDCNV(GpuMask);
     } else {
         _dc = GetDC(_windowHandle);
@@ -389,10 +406,10 @@ OSGLContext_win::createGLContext(const FramebufferConfig& pixelFormatAttrs,
 
     if (useNVGPUAffinity) {
         _handle = wglInfo->CreateContext(_dc);
-    } else if (rendererID > 0 && wglInfo->AMD_gpu_association) {
+    } else if (rendererID.renderID > 0 && wglInfo->AMD_gpu_association) {
         std::vector<int> attribs;
         setAttribs(major, minor, coreProfile, attribs);
-        _handle = wglInfo->CreateAssociatedContextAttribsAMD((UINT)rendererID, share, &attribs[0]);
+        _handle = wglInfo->CreateAssociatedContextAttribsAMD((UINT)rendererID.renderID, share, &attribs[0]);
     } else if (wglInfo->ARB_create_context) {
         std::vector<int> attribs;
         setAttribs(major, minor, coreProfile, attribs);
@@ -420,7 +437,6 @@ OSGLContext_win::analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs,
     OSGLContext_wgl_data* wglInfo = const_cast<OSGLContext_wgl_data*>( appPTR->getWGLData() );
 
     assert(wglInfo);
-    memset(wglInfo, 0, sizeof(OSGLContext_wgl_data));
 
     makeContextCurrent(this);
     if ( !loadWGLExtensions(wglInfo) ) {
@@ -518,7 +534,7 @@ OSGLContext_win::OSGLContext_win(const FramebufferConfig& pixelFormatAttrs,
                                  int major,
                                  int minor,
                                  bool coreProfile,
-                                 int rendererID,
+                                 const GLRendererID &rendererID,
                                  const OSGLContext_win* shareContext)
     : _dc(0)
       , _handle(0)
@@ -619,7 +635,7 @@ static int nvx_get_GPU_mem_info()
 
     // If error, return 0
     _glerror_ = glGetError();
-    if (_glerror != GL_NO_ERROR) {
+    if (_glerror_ != GL_NO_ERROR) {
         return 0;
     }
     return v * 1e3;
@@ -628,6 +644,8 @@ static int nvx_get_GPU_mem_info()
 void
 OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
+    const OSGLContext_wgl_data* wglInfo = appPTR->getWGLData();
+    assert(wglInfo);
     if (wglInfo->NV_gpu_affinity) {
         // https://www.opengl.org/registry/specs/NV/gpu_affinity.txt
         std::vector<HGPUNV> gpuHandles;
@@ -636,7 +654,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         bool gotGPU = true;
         do
         {
-            gotGPU = wglEnumGpusNV(gpuIndex, &gpuHandle);
+            gotGPU = wglInfo->EnumGpusNV(gpuIndex, &gpuHandle);
             if (gotGPU) {
                 gpuHandles.push_back(gpuHandle);
             }
@@ -646,11 +664,11 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         for (std::size_t i = 0; i < gpuHandles.size(); ++i) {
 
             OpenGLRendererInfo info;
-            info.rendererID = gpuHandles[i];
+            info.rendererID.rendererHandle = (void*)gpuHandles[i];
 
             boost::scoped_ptr<OSGLContext_win> context;
             try {
-                context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, info.info.rendererID, 0));
+                context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID((void*)(info.rendererID.rendererHandle)), 0));
             } catch (const std::exception& e) {
                 continue;
             }
@@ -670,34 +688,34 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
     } else if (wglInfo->AMD_gpu_association) {
         //https://www.opengl.org/registry/specs/AMD/wgl_gpu_association.txt
-        UINT maxCount = wglGetGPUIDsAMD(0);
+        UINT maxCount = wglInfo->GetGpuIDAMD(0, 0);
         std::vector<UINT> gpuIDs(maxCount);
 
-        UINT gpuCount = wglGetGPUIDsAMD(maxCount, &gpuIDs[0]);
+        UINT gpuCount = wglInfo->GetGpuIDAMD(maxCount, &gpuIDs[0]);
 
         char tmpBuf[500];
-        for (int i = 0; i < gpuCount; ++i) {
+        for (int i = 0; i < (int)gpuCount; ++i) {
 
             OpenGLRendererInfo info;
 
-            INT ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_RENDERER_STRING_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
+            INT ok = wglInfo->GetGPUInfoAMD(gpuIDs[i],WGL_GPU_RENDERER_STRING_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
             assert(ok);
             info.rendererName = std::string(tmpBuf);
-            ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_VENDOR_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
+            ok = wglInfo->GetGPUInfoAMD(gpuIDs[i],WGL_GPU_VENDOR_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
             assert(ok);
             info.vendorName = std::string(tmpBuf);
-            ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_OPENGL_VERSION_STRING_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
+            ok = wglInfo->GetGPUInfoAMD(gpuIDs[i],WGL_GPU_OPENGL_VERSION_STRING_AMD, GL_UNSIGNED_BYTE, 500, tmpBuf);
             assert(ok);
             info.glVersionString = std::string(tmpBuf);
 
             int ramMB;
-            ok = wglGetGPUInfoAMD(gpuIDs[i],WGL_GPU_RAM_AMD, GL_UNSIGNED_INT, 500, &ramMB);
+            ok = wglInfo->GetGPUInfoAMD(gpuIDs[i],WGL_GPU_RAM_AMD, GL_UNSIGNED_INT, 500, &ramMB);
             info.maxMemBytes = ramMB * 1e6;
-            info.rendererID = gpuIDs[i];
+            info.rendererID.renderID = gpuIDs[i];
 
             boost::scoped_ptr<OSGLContext_win> context;
             try {
-                context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, info.rendererID, 0));
+                context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID((int)info.rendererID.renderID), 0));
             } catch (const std::exception& e) {
                 continue;
             }
@@ -713,9 +731,9 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         }
     } else {
         // No extension, use default
-        boost::scoped_ptr<OSGLContext_x11> context;
+        boost::scoped_ptr<OSGLContext_win> context;
         try {
-            context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, -1, 0));
+            context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0));
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
         }
@@ -725,12 +743,11 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
         OpenGLRendererInfo info;
         info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
-        info.rendererName = std::string(const char *) glGetString(GL_RENDERER));
-        info.glVersionString = std::string(const char *) glGetString(GL_VERSION));
+        info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
+        info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = 0;
-        info.rendererID = -1;
         renderers.push_back(info);
 
         makeContextCurrent(0);

@@ -125,7 +125,7 @@ typedef BOOL (*PFNWGLDELETEDCNV)(HDC);
 typedef UINT  (*PFNWGLGETGPUIDSAMD)(UINT maxCount, UINT *ids);
 
 typedef INT   (*PFNWGLGETGPUINFOAMD)(UINT id, INT property, GLenum dataType,
-                       UINT size, void *data)
+                       UINT size, void *data);
 
 typedef UINT  (*PFNWGLGETCONTEXTGPUIDAMD)(HGLRC hglrc);
 
@@ -178,7 +178,7 @@ struct OSGLContext_wgl_data
     PFNWGLDELETEDCNV DeleteDCNV;
 
     PFNWGLGETGPUIDSAMD GetGpuIDAMD;
-    PFNWGLGETGPUINFOAMD GetGpuInfoAMD;
+    PFNWGLGETGPUINFOAMD GetGPUInfoAMD;
     PFNWGLGETCONTEXTGPUIDAMD GetContextGpuIDAMD;
     PFNWGLCREATEASSOCIATEDCONTEXTAMD CreateAssociatedContextAMD;
     PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD CreateAssociatedContextAttribsAMD;
@@ -210,7 +210,7 @@ public:
                     int major,
                     int minor,
                     bool coreProfile,
-                    int rendererID,
+                    const GLRendererID &rendererID,
                     const OSGLContext_win* shareContext);
 
     ~OSGLContext_win();
@@ -230,9 +230,9 @@ private:
 
     int getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo, int pixelFormat, int attrib);
 
-    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, bool coreProfile, int rendererID, const OSGLContext_win* shareContext);
+    void createGLContext(const FramebufferConfig& pixelFormatAttrs, int major, int minor, bool coreProfile, const GLRendererID &rendererID, const OSGLContext_win* shareContext);
 
-    bool analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, int major, int minor,);
+    bool analyzeContextWGL(const FramebufferConfig& pixelFormatAttrs, int major, int minor);
 
     void destroyWindow();
 

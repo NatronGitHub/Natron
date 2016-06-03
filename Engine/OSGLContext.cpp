@@ -271,7 +271,7 @@ OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
                          int major,
                          int minor,
-                         int rendererID,
+                         const GLRendererID &rendererID,
                          bool coreProfile)
     : _imp( new OSGLContextPrivate() )
 {

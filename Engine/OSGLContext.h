@@ -99,6 +99,22 @@ public:
     FramebufferConfig();
 };
 
+struct GLRendererID
+{
+    int renderID;
+
+    // wgl NV extension use handles and not integers
+    void* rendererHandle;
+
+    GLRendererID()
+        : renderID(-1)
+        , rendererHandle(0) {}
+
+    explicit GLRendererID(int id) : renderID(id), rendererHandle(0){}
+
+    explicit GLRendererID(void* handle) : renderID(0), rendererHandle(handle) {}
+};
+
 struct OpenGLRendererInfo
 {
     std::size_t maxMemBytes;
@@ -106,7 +122,7 @@ struct OpenGLRendererInfo
     std::string vendorName;
     std::string glVersionString;
     int maxTextureSize;
-    int rendererID;
+    GLRendererID rendererID;
 };
 
 /**
@@ -133,7 +149,7 @@ public:
                          const OSGLContext* shareContext,
                          int major = GLVersion.major,
                          int minor = GLVersion.minor,
-                         int rendererID = -1,
+                         const GLRendererID& rendererID = GLRendererID(),
                          bool coreProfile = false);
 
     virtual ~OSGLContext();
