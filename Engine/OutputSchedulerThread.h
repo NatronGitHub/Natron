@@ -282,6 +282,7 @@ public:
      **/
     boost::shared_ptr<OutputSchedulerThreadStartArgs> getCurrentRunArgs() const;
 
+    void getLastRunArgs(RenderDirectionEnum* direction, std::vector<ViewIdx>* viewsToRender) const;
 
     /**
      * @brief Returns the current number of render threads
