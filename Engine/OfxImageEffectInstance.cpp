@@ -416,10 +416,9 @@ OfxImageEffectInstance::getOfxParamOverlayInteractDescProps()
         { kOfxParamPropInteractPreferedSize, OFX::Host::Property::eInt,     2, false, "10" },
         OFX::Host::Property::propSpecEnd
     };
+
     return interactDescProps;
 }
-
-
 
 // make a parameter instance
 OFX::Host::Param::Instance *

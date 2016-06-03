@@ -116,7 +116,6 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobParametric> knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
-
     boost::shared_ptr<OfxParamOverlayInteract> interact = knob->getCustomInteract();
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -331,19 +330,23 @@ KnobGuiParametric::redraw()
 }
 
 void
-KnobGuiParametric::getViewportSize(double &width, double &height) const
+KnobGuiParametric::getViewportSize(double &width,
+                                   double &height) const
 {
     _curveWidget->getViewportSize(width, height);
 }
 
 void
-KnobGuiParametric::getPixelScale(double & xScale, double & yScale) const
+KnobGuiParametric::getPixelScale(double & xScale,
+                                 double & yScale) const
 {
     _curveWidget->getPixelScale(xScale, yScale);
 }
 
 void
-KnobGuiParametric::getBackgroundColour(double &r, double &g, double &b) const
+KnobGuiParametric::getBackgroundColour(double &r,
+                                       double &g,
+                                       double &b) const
 {
     _curveWidget->getBackgroundColour(r, g, b);
 }
