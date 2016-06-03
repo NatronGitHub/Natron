@@ -723,30 +723,42 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
-    } else if ( (openGLSupport != ePluginOpenGLRenderSupportNone) && args.allowGPURendering && glContext && getApp()->getProject()->isGPURenderingEnabledInProject() ) {
+    }
+    // Enable GPU render if the plug-in cannot render another way or if all conditions are met
+    else if (glContext && (openGLSupport == ePluginOpenGLRenderSupportNeeded ||
+               (openGLSupport != ePluginOpenGLRenderSupportYes && args.allowGPURendering && getApp()->getProject()->isGPURenderingEnabledInProject())) ) {
         /*
            We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
            since we do not use the cache for textures)
          */
+        // Make the OpenGL context current to this thread
+        glContextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                      , frameArgs->time
+#endif
+                                                      ));
         storage = eStorageModeGLTex;
+
+        // If the plug-in knows how to render on CPU, check if we actually should not render on CPU instead.
         if (openGLSupport == ePluginOpenGLRenderSupportYes) {
 
-            // Make the OpenGL context current to this thread
-            glContextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                          , frameArgs->time
-#endif
-                                                          ));
-
+            // User want to force caching of this node but we cannot cache OpenGL renders, so fallback on CPU.
+            if (getNode()->isForceCachingEnabled()) {
+                storage = eStorageModeRAM;
+                glContextLocker.reset();
+            }
 
             // If a node has multiple outputs, do not render it on OpenGL since we do not use the cache. We could end-up with this render being executed multiple times.
             // Also, if the render time is different from the caller render time, don't render using OpenGL otherwise we could computed this render multiple times.
-            NodesWList outputNodes;
-            getNode()->getOutputs_mt_safe(outputNodes);
-            if ( (outputNodes.size() > 1) ||
-                 ( args.time != args.callerRenderTime) ) {
-                storage = eStorageModeRAM;
-                glContextLocker.reset();
+
+            if (storage == eStorageModeGLTex) {
+                NodesWList outputNodes;
+                getNode()->getOutputs_mt_safe(outputNodes);
+                if ( (outputNodes.size() > 1) ||
+                     ( args.time != args.callerRenderTime) ) {
+                    storage = eStorageModeRAM;
+                    glContextLocker.reset();
+                }
             }
 
             // Ensure that the texture will be at least smaller than the maximum OpenGL texture size

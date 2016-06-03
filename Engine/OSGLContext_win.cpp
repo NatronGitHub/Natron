@@ -747,7 +747,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
-        info.maxMemBytes = 0;
+        info.maxMemBytes = nvx_get_GPU_mem_info();
         renderers.push_back(info);
 
         makeContextCurrent(0);

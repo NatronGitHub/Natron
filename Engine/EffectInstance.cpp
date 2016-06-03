@@ -1477,7 +1477,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     }
 
     GLuint pboID = context->getPBOId();
-
+    assert(pboID != 0);
     glEnable(GL_TEXTURE_2D);
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
