@@ -1624,7 +1624,6 @@ public:
             resetCloneCenterKnob = resetCloneCenter;
 
 
-
             boost::shared_ptr<KnobButton> resetCloneTransform = AppManager::createKnob<KnobButton>(effect.get(), tr(kRotoResetCloneTransformParamLabel), 1, true);
             resetCloneTransform->setName(kRotoResetCloneTransformParam);
             resetCloneTransform->setHintToolTip( tr(kRotoResetCloneTransformParamHint) );

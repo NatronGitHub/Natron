@@ -195,7 +195,6 @@ struct OutputSchedulerThreadPrivate
 
     // Pointer to the args used in threadLoopOnce(), only usable from the scheduler thread
     boost::weak_ptr<OutputSchedulerThreadStartArgs> runArgs;
-
     mutable QMutex lastRunArgsMutex;
     std::vector<ViewIdx> lastPlaybackViewsToRender;
     RenderDirectionEnum lastPlaybackRenderDirection;
@@ -243,40 +242,40 @@ struct OutputSchedulerThreadPrivate
                                  const boost::shared_ptr<OutputEffectInstance>& effect,
                                  OutputSchedulerThread::ProcessFrameModeEnum mode)
         : buf()
-          , bufEmptyCondition()
-          , bufMutex()
-          , mode(mode)
-          , timer(new Timer)
-          , renderTimer()
-          , renderFinishedMutex()
-          , nFramesRendered(0)
-          , renderFinished(false)
-          , runArgs()
-          , lastRunArgsMutex()
-          , lastPlaybackViewsToRender()
-          , lastPlaybackRenderDirection(eRenderDirectionForward)
-          , renderThreadsMutex()
-          , renderThreads()
-          , allRenderThreadsInactiveCond()
+        , bufEmptyCondition()
+        , bufMutex()
+        , mode(mode)
+        , timer(new Timer)
+        , renderTimer()
+        , renderFinishedMutex()
+        , nFramesRendered(0)
+        , renderFinished(false)
+        , runArgs()
+        , lastRunArgsMutex()
+        , lastPlaybackViewsToRender()
+        , lastPlaybackRenderDirection(eRenderDirectionForward)
+        , renderThreadsMutex()
+        , renderThreads()
+        , allRenderThreadsInactiveCond()
 #ifdef NATRON_PLAYBACK_USES_THREAD_POOL
-          , threadPool( QThreadPool::globalInstance() )
+        , threadPool( QThreadPool::globalInstance() )
 #else
-          , allRenderThreadsQuitCond()
-          , framesToRender()
-          , framesToRenderNotEmptyCond()
+        , allRenderThreadsQuitCond()
+        , framesToRender()
+        , framesToRenderNotEmptyCond()
 #endif
-          , framesToRenderMutex()
-          , lastFramePushedIndex(0)
-          , expectFrameToRender(0)
-          , outputEffect(effect)
-          , engine(engine)
+        , framesToRenderMutex()
+        , lastFramePushedIndex(0)
+        , expectFrameToRender(0)
+        , outputEffect(effect)
+        , engine(engine)
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
-          , threadSpawnsTimer()
-          , lastRecordedFPSMutex()
-          , lastRecordedFPS(0.)
+        , threadSpawnsTimer()
+        , lastRecordedFPSMutex()
+        , lastRecordedFPS(0.)
 #endif
-          , bufferedOutputMutex()
-          , lastBufferedOutputSize(0)
+        , bufferedOutputMutex()
+        , lastBufferedOutputSize(0)
     {
     }
 
@@ -1794,9 +1793,11 @@ OutputSchedulerThread::getDesiredFPS() const
 }
 
 void
-OutputSchedulerThread::getLastRunArgs(RenderDirectionEnum* direction, std::vector<ViewIdx>* viewsToRender) const
+OutputSchedulerThread::getLastRunArgs(RenderDirectionEnum* direction,
+                                      std::vector<ViewIdx>* viewsToRender) const
 {
     QMutexLocker k(&_imp->lastRunArgsMutex);
+
     *direction = _imp->lastPlaybackRenderDirection;
     *viewsToRender = _imp->lastPlaybackViewsToRender;
 }
@@ -1843,7 +1844,7 @@ OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
         _imp->lastPlaybackViewsToRender = viewsToRender;
     }
     int firstFrame, lastFrame;
-    
+
     getFrameRangeToRender(firstFrame, lastFrame);
 
     ///Make sure current frame is in the frame range
@@ -3075,7 +3076,7 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
         if (working) {
             _imp->scheduler->abortThreadedTask();
         }
-        if (working || isPlaybackAutoRestartEnabled()) {
+        if ( working || isPlaybackAutoRestartEnabled() ) {
             RenderDirectionEnum lastDirection;
             std::vector<ViewIdx> lastViews;
             _imp->scheduler->getLastRunArgs(&lastDirection, &lastViews);
