@@ -2830,12 +2830,12 @@ OfxEffectInstance::attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPt
     // If the plug-in use the Natron property kNatronOfxImageEffectPropOpenGLContextData, that means it can handle
     // concurrent OpenGL renders.
     if (ofxGLData) {
+        ofxData->setDataHandle(ofxGLData);
         QMutexLocker k(&_imp->supportsConcurrentGLRendersMutex);
         if (!_imp->supportsConcurrentGLRenders) {
             _imp->supportsConcurrentGLRenders = true;
         }
     }
-    ofxData->setDataHandle(ofxGLData);
     if (stat == kOfxStatFailed) {
         return eStatusFailed;
     } else if (stat == kOfxStatErrMemory) {
@@ -2853,7 +2853,10 @@ OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffec
     OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );
     void* ofxGLData = isOfxData ? isOfxData->getDataHandle() : 0;
     OfxStatus stat = effectInstance()->contextDetachedAction(ofxGLData);
-
+    if (isOfxData) {
+        // the context data can not be used anymore, reset it.
+        isOfxData->setDataHandle(NULL);
+    }
     if (stat == kOfxStatFailed) {
         return eStatusFailed;
     } else if (stat == kOfxStatErrMemory) {
