@@ -1890,6 +1890,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     _curves[dimension]->addKeyFrame(k);
     Q_EMIT curveChanged(dimension);
     evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
+
     return eStatusOK;
 }
 
@@ -1988,6 +1989,7 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
 
     Q_EMIT curveChanged(dimension);
     evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
+
     return eStatusOK;
 }
 
@@ -2010,6 +2012,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
 
     Q_EMIT curveChanged(dimension);
     evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
+
     return eStatusOK;
 }
 
@@ -2036,6 +2039,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
     _curves[dimension]->setKeyFrameDerivatives(leftDerivative, rightDerivative, newIdx);
     Q_EMIT curveChanged(dimension);
     evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
+
     return eStatusOK;
 }
 
@@ -2052,6 +2056,7 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
     _curves[dimension]->removeKeyFrameWithIndex(nthCtl);
     Q_EMIT curveChanged(dimension);
     evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
+
     return eStatusOK;
 }
 
@@ -2066,6 +2071,7 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
     _curves[dimension]->clearKeyFrames();
     Q_EMIT curveChanged(dimension);
     evaluateValueChange(0, getCurrentTime(), ViewSpec::all(), reason);
+
     return eStatusOK;
 }
 

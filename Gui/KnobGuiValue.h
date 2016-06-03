@@ -145,7 +145,7 @@ private:
      * @param dimension Must be either 0 and 1
      * @note If the dimension of the knob is not 1 or 2 this function does nothing.
      **/
-    double valueAccordingToType(bool normalize, int dimension, double value);
+    double valueAccordingToType(bool normalize, int dimension, double value) WARN_UNUSED_RETURN;
 
 
     void expandAllDimensions();
