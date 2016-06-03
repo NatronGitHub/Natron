@@ -536,7 +536,10 @@ GenericSchedulerThread::run()
 #ifdef TRACE_GENERIC_SCHEDULER_THREAD
                 qDebug() << getThreadName().c_str() << ": Thread going idle after being aborted. " << _imp->queuedTaskWhileProcessingAbort.size() << "tasks were pushed while abort being processed.";
 #endif
-                //_imp->enqueuedTasks.clear();
+                if (behavior == eTaskQueueBehaviorProcessInOrder) {
+                    _imp->enqueuedTasks.clear();
+                }
+
                 _imp->enqueuedTasks.insert( _imp->enqueuedTasks.end(), _imp->queuedTaskWhileProcessingAbort.begin(), _imp->queuedTaskWhileProcessingAbort.end() );
                 _imp->queuedTaskWhileProcessingAbort.clear();
             } else {

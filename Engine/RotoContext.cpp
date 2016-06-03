@@ -3923,6 +3923,9 @@ void
 RotoContext::changeItemScriptName(const std::string& oldFullyQualifiedName,
                                   const std::string& newFullyQUalifiedName)
 {
+    if  (oldFullyQualifiedName == newFullyQUalifiedName) {
+        return;
+    }
     std::string appID = getNode()->getApp()->getAppIDString();
     std::string nodeName = getNode()->getFullyQualifiedName();
     std::string nodeFullName = appID + "." + nodeName;
