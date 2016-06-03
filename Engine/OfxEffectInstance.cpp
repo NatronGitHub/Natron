@@ -620,14 +620,12 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             continue;
         }
         KnobPtr knob = paramToKnob->getKnob();
-
-
         const OFX::Host::Property::PropSpec* interactDescProps = OfxImageEffectInstance::getOfxParamOverlayInteractDescProps();
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
         interactDesc.describe(8, false);
-        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract(new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle() ));
+        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle() ) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }

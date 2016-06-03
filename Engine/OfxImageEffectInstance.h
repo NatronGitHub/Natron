@@ -240,7 +240,6 @@ public:
     bool getInputsHoldingTransform(std::list<int>* inputs) const;
 
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
-
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();
 
 private:

@@ -204,7 +204,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
     }
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>(knob.get());
+    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
     if (customInteract && !isParametric) {
         _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
@@ -228,7 +228,7 @@ KnobGui::createGUI(QGridLayout* containerLayout,
             onAnimationLevelChanged(ViewSpec::all(), i);
            }*/
     }
-}
+} // KnobGui::createGUI
 
 void
 KnobGui::updateGuiInternal(int dimension)

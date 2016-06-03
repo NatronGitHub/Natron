@@ -3488,7 +3488,6 @@ OfxParametricInstance::onCurvesDefaultInitialized()
     _knob.lock()->setDefaultCurvesFromCurves();
 }
 
-
 OfxParametricInstance::~OfxParametricInstance()
 {
 }
@@ -3673,7 +3672,6 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
         return kOfxStatFailed;
     }
 }
-
 
 OfxStatus
 OfxParametricInstance::copyFrom(const OFX::Host::Param::Instance &instance,
