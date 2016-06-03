@@ -196,6 +196,10 @@ struct OutputSchedulerThreadPrivate
     // Pointer to the args used in threadLoopOnce(), only usable from the scheduler thread
     boost::weak_ptr<OutputSchedulerThreadStartArgs> runArgs;
 
+    mutable QMutex lastRunArgsMutex;
+    std::vector<ViewIdx> lastPlaybackViewsToRender;
+    RenderDirectionEnum lastPlaybackRenderDirection;
+
     ///Worker threads
     mutable QMutex renderThreadsMutex;
     RenderThreads renderThreads;
@@ -247,6 +251,10 @@ struct OutputSchedulerThreadPrivate
           , renderFinishedMutex()
           , nFramesRendered(0)
           , renderFinished(false)
+          , runArgs()
+          , lastRunArgsMutex()
+          , lastPlaybackViewsToRender()
+          , lastPlaybackRenderDirection(eRenderDirectionForward)
           , renderThreadsMutex()
           , renderThreads()
           , allRenderThreadsInactiveCond()
@@ -1786,6 +1794,14 @@ OutputSchedulerThread::getDesiredFPS() const
 }
 
 void
+OutputSchedulerThread::getLastRunArgs(RenderDirectionEnum* direction, std::vector<ViewIdx>* viewsToRender) const
+{
+    QMutexLocker k(&_imp->lastRunArgsMutex);
+    *direction = _imp->lastPlaybackRenderDirection;
+    *viewsToRender = _imp->lastPlaybackViewsToRender;
+}
+
+void
 OutputSchedulerThread::renderFrameRange(bool isBlocking,
                                         bool enableRenderStats,
                                         int firstFrame,
@@ -1794,6 +1810,11 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
                                         const std::vector<ViewIdx>& viewsToRender,
                                         RenderDirectionEnum direction)
 {
+    {
+        QMutexLocker k(&_imp->lastRunArgsMutex);
+        _imp->lastPlaybackRenderDirection = direction;
+        _imp->lastPlaybackViewsToRender = viewsToRender;
+    }
     if (direction == eRenderDirectionForward) {
         timelineGoTo(firstFrame);
     } else {
@@ -1816,8 +1837,13 @@ OutputSchedulerThread::renderFromCurrentFrame(bool enableRenderStats,
                                               const std::vector<ViewIdx>& viewsToRender,
                                               RenderDirectionEnum timelineDirection)
 {
+    {
+        QMutexLocker k(&_imp->lastRunArgsMutex);
+        _imp->lastPlaybackRenderDirection = timelineDirection;
+        _imp->lastPlaybackViewsToRender = viewsToRender;
+    }
     int firstFrame, lastFrame;
-
+    
     getFrameRangeToRender(firstFrame, lastFrame);
 
     ///Make sure current frame is in the frame range
@@ -2976,6 +3002,8 @@ RenderEngine::renderFrameRange(bool isBlocking,
                                const std::vector<ViewIdx>& viewsToRender,
                                RenderDirectionEnum forward)
 {
+    setPlaybackAutoRestartEnabled(true);
+
     {
         QMutexLocker k(&_imp->schedulerCreationLock);
         if (!_imp->scheduler) {
@@ -2991,6 +3019,8 @@ RenderEngine::renderFromCurrentFrame(bool enableRenderStats,
                                      const std::vector<ViewIdx>& viewsToRender,
                                      RenderDirectionEnum forward)
 {
+    setPlaybackAutoRestartEnabled(true);
+
     {
         QMutexLocker k(&_imp->schedulerCreationLock);
         if (!_imp->scheduler) {
@@ -3045,9 +3075,11 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
         if (working) {
             _imp->scheduler->abortThreadedTask();
         }
-        boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->scheduler->getCurrentRunArgs();
-        if ( ( working || isPlaybackAutoRestartEnabled() ) && runArgs ) {
-            _imp->scheduler->renderFromCurrentFrame( enableRenderStats, runArgs->viewsToRender,  runArgs->pushTimelineDirection);
+        if (working || isPlaybackAutoRestartEnabled()) {
+            RenderDirectionEnum lastDirection;
+            std::vector<ViewIdx> lastViews;
+            _imp->scheduler->getLastRunArgs(&lastDirection, &lastViews);
+            _imp->scheduler->renderFromCurrentFrame( enableRenderStats, lastViews,  lastDirection);
 
             return;
         }
@@ -3175,8 +3207,6 @@ bool
 RenderEngine::abortRenderingAutoRestart()
 {
     if ( abortRenderingInternal() ) {
-        setPlaybackAutoRestartEnabled( isDoingSequentialRender() );
-
         return true;
     }
 
