@@ -700,16 +700,21 @@ KnobGuiDouble::onSpinBoxValueChanged()
 
     if ( !_dimensionSwitchButton || _dimensionSwitchButton->isChecked() ) {
         double oldValue = 0;
+        bool newValueSet = false;
         // each spinbox has a different value
         for (U32 i = 0; i < _spinBoxes.size(); ++i) {
             if (_spinBoxes[i].first == box) {
-                valueAccordingToType( true, i, _spinBoxes[i].first->value() );
+                newValue = valueAccordingToType( true, i, _spinBoxes[i].first->value() );
+                newValueSet = true;
                 oldValue = _knob.lock()->getValue(i);
                 newValue = box->value();
                 spinBoxDim = i;
             }
         }
-        pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValue, newValue, spinBoxDim, false) );
+        assert(newValueSet);
+        if (newValueSet) {
+            pushUndoCommand( new KnobUndoCommand<double>(shared_from_this(), oldValue, newValue, spinBoxDim, false) );
+        }
     } else {
         // use the value of the first dimension only, and set all spinboxes
         newValue = valueAccordingToType( true, 0, _spinBoxes[0].first->value() );
