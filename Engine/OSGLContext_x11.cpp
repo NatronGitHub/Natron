@@ -145,8 +145,7 @@ struct X11Data
     Window root;
     // Context for mapping window XIDs to _GLFWwindow pointers
     XContext context;
-    // Most recent error code received by X error handler
-    int errorCode;
+
 };
 
 struct OSGLContext_glx_dataPrivate
@@ -282,7 +281,7 @@ void
 OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
 {
     //Sets all bits to 0
-    memset(glxInfo, 0, sizeof(OSGLContext_glx_data));
+    memset(glxInfo->_imp.get(), 0, sizeof(OSGLContext_glx_dataPrivate));
 
     XInitThreads();
     glxInfo->_imp->x11.display = XOpenDisplay(NULL);
@@ -545,11 +544,15 @@ ChooseVisualGLX(OSGLContext_glx_data* glxInfo,
     XFree(result);
 }
 
+// Most recent error code received by X error handler
+// This is thread-safe as only 1 thread can create a context at once
+static int gX11ErrorCode;
+
 // X error handler
 //
 static int errorHandler(Display */*display*/, XErrorEvent* event)
 {
-   // _glfw.x11.errorCode = event->error_code;
+    gX11ErrorCode = event->error_code;
     return 0;
 }
 
@@ -557,9 +560,9 @@ static int errorHandler(Display */*display*/, XErrorEvent* event)
 // Sets the X error handler callback
 //
 static void
-GrabErrorHandlerX11(OSGLContext_glx_data* glxInfo)
+GrabErrorHandlerX11()
 {
-    glxInfo->_imp->x11.errorCode = Success;
+    gX11ErrorCode = Success;
     XSetErrorHandler(errorHandler);
 }
 
@@ -596,12 +599,12 @@ OSGLContext_x11Private::createWindow(OSGLContext_glx_data* glxInfo,
 
         wa.colormap = x11Window.colormap;
         wa.border_pixel = 0;
-        wa.event_mask = StructureNotifyMask | KeyPressMask | KeyReleaseMask |
+        wa.event_mask = 0;/*StructureNotifyMask | KeyPressMask | KeyReleaseMask |
                         PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
                         ExposureMask | FocusChangeMask | VisibilityChangeMask |
-                        EnterWindowMask | LeaveWindowMask | PropertyChangeMask;
+                        EnterWindowMask | LeaveWindowMask | PropertyChangeMask;*/
 
-        GrabErrorHandlerX11(glxInfo);
+        GrabErrorHandlerX11();
 
 
         x11Window.handle = XCreateWindow(glxInfo->_imp->x11.display,
@@ -724,7 +727,7 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
         }
        }*/
 
-    GrabErrorHandlerX11(glxInfo);
+    GrabErrorHandlerX11();
 
     if (!glxInfo->_imp->ARB_create_context) {
         glxContextHandle = createLegacyContext(glxInfo, native, share);
@@ -810,7 +813,7 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
         //       default 1.0 context creation with a GLXBadProfileARB error in
         //       violation of the extension spec
         if (!glxContextHandle) {
-            if (glxInfo->_imp->x11.errorCode == glxInfo->_imp->errorBase + GLXBadProfileARB
+            if (gX11ErrorCode == glxInfo->_imp->errorBase + GLXBadProfileARB
                 /*&& ctxconfig->client == GLFW_OPENGL_API &&
                    ctxconfig->profile == GLFW_OPENGL_ANY_PROFILE &&
                    ctxconfig->forward == GLFW_FALSE*/) {

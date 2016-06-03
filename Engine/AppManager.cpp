@@ -265,6 +265,12 @@ AppManager::load(int &argc,
         argc = 1;
         argv = &argv0;
     }
+
+    // This needs to be done BEFORE creating qApp because
+    // on Linux, X11 will create a context that would corrupt
+    // the XUniqueContext created by Qt
+    _imp->initGLAPISpecific();
+
     initializeQApp(argc, argv);
 
 #ifdef QT_CUSTOM_THREADPOOL
@@ -295,7 +301,6 @@ AppManager::load(int &argc,
 
     _imp->idealThreadCount = QThread::idealThreadCount();
 
-    _imp->initGLAPISpecific();
     _imp->renderingContextPool.reset( new GPUContextPool() );
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
@@ -376,7 +381,7 @@ AppManager::~AppManager()
     _instance = 0;
 
     // After this line, everything is cleaned-up (should be) and the process may resume in the main and could in theory be able to re-create a new AppManager
-    delete qApp;
+    _imp->_qApp.reset();
 }
 
 class QuitInstanceArgs
@@ -752,6 +757,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     hideSplashScreen();
 
     if (!mainInstance) {
+        qApp->quit();
         return false;
     } else {
         onLoadCompleted();
