@@ -85,6 +85,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
@@ -269,7 +270,8 @@ AppManager::load(int &argc,
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
-    _imp->initGLAPISpecific();
+    _imp->renderingContextPool.reset( new GPUContextPool() );
+    initializeOpenGLFunctionsOnce(true);
 
     initializeQApp(argc, argv);
 
@@ -301,7 +303,6 @@ AppManager::load(int &argc,
 
     _imp->idealThreadCount = QThread::idealThreadCount();
 
-    _imp->renderingContextPool.reset( new GPUContextPool() );
 
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
@@ -630,18 +631,41 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
 }
 
 bool
-AppManager::initializeOpenGLFunctionsOnce()
+AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
-        _imp->initGl();
-        updateAboutWindowLibrariesVersion();
+        OSGLContextPtr glContext;
+        if (createOpenGLContext) {
+            try {
+                _imp->initGLAPISpecific();
 
+                glContext = _imp->renderingContextPool->attachGLContextToRender();
+                if (!glContext) {
+                    return false;
+                }
+                glContext->setContextCurrentNoRender();
+            } catch (const std::exception& e) {
+                std::cerr << "Error while loading OpenGL: "<< e.what() << std::endl;
+                std::cerr << "OpenGL rendering is disabled. Viewer will probably not function properly." << std::endl;
+                return false;
+            }
+        }
+        // The following requires a valid OpenGL context to be created
+        _imp->initGl();
+        if (createOpenGLContext) {
+            _imp->renderingContextPool->releaseGLContextFromRender(glContext);
+            glContext->unsetCurrentContextNoRender();
+        } else {
+             updateAboutWindowLibrariesVersion();
+        }
         return true;
+
     }
 
     return false;
+
 }
 
 #ifdef __NATRON_WIN32__

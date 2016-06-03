@@ -575,8 +575,6 @@ AppManagerPrivate::initGl()
     // Private should not lock
     assert( !openGLFunctionsMutex.tryLock() );
 
-    assert( QThread::currentThread() == qApp->thread() );
-
     hasInitializedOpenGLFunctions = true;
     hasRequiredOpenGLVersionAndExtensions = true;
 
