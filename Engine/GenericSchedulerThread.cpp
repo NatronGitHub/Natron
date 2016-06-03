@@ -469,15 +469,15 @@ GenericSchedulerThread::run()
                     args = _imp->enqueuedTasks.front();
                     _imp->enqueuedTasks.pop_front();
                 }
+                break;
             }
-            break;
             case eTaskQueueBehaviorSkipToMostRecent: {
                 if ( !_imp->enqueuedTasks.empty() ) {
                     args = _imp->enqueuedTasks.back();
                     _imp->enqueuedTasks.clear();
                 }
+                break;
             }
-            break;
             }
         }
 

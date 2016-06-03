@@ -143,7 +143,7 @@ EffectInstance::clearPluginMemoryChunks()
             while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
                 _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
                 mem.reset();
-                if (!_imp->pluginMemoryChunks.empty()) {
+                if ( !_imp->pluginMemoryChunks.empty() ) {
                     mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
                 }
             }
@@ -160,7 +160,7 @@ EffectInstance::clearPluginMemoryChunks()
                 while ( !mem && !_imp->pluginMemoryChunks.empty() ) {
                     _imp->pluginMemoryChunks.erase( _imp->pluginMemoryChunks.begin() );
                     mem.reset();
-                    if (!_imp->pluginMemoryChunks.empty()) {
+                    if ( !_imp->pluginMemoryChunks.empty() ) {
                         mem = ( *_imp->pluginMemoryChunks.begin() ).lock();
                     }
                 }

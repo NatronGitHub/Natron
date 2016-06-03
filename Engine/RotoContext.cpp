@@ -1494,7 +1494,7 @@ RotoContext::resetCloneTransform()
     boost::shared_ptr<KnobDouble> skewY = _imp->cloneSkewYKnob.lock();
     boost::shared_ptr<KnobChoice> skewOrder = _imp->cloneSkewOrderKnob.lock();
 
-    resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, boost::shared_ptr<KnobDouble>());
+    resetTransformInternal( translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, boost::shared_ptr<KnobDouble>() );
 }
 
 bool

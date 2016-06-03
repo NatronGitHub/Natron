@@ -1409,7 +1409,6 @@ RotoDrawableItem::getTransformAtTime(double time,
     extraMat.d = _imp->extraMatrix->getValueAtTime(time, 3); extraMat.e = _imp->extraMatrix->getValueAtTime(time, 4); extraMat.f = _imp->extraMatrix->getValueAtTime(time, 5);
     extraMat.g = _imp->extraMatrix->getValueAtTime(time, 6); extraMat.h = _imp->extraMatrix->getValueAtTime(time, 7); extraMat.i = _imp->extraMatrix->getValueAtTime(time, 8);
     *matrix = Transform::matMul(*matrix, extraMat);
-
 }
 
 /**
@@ -1463,7 +1462,9 @@ RotoDrawableItem::setTransform(double time,
 }
 
 void
-RotoDrawableItem::setExtraMatrix(bool setKeyframe, double time, const Transform::Matrix3x3& mat)
+RotoDrawableItem::setExtraMatrix(bool setKeyframe,
+                                 double time,
+                                 const Transform::Matrix3x3& mat)
 {
     _imp->extraMatrix->beginChanges();
     if (setKeyframe) {
