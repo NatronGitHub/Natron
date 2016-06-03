@@ -327,7 +327,8 @@ private:
                                 const boost::shared_ptr<KnobDouble>& skewX,
                                 const boost::shared_ptr<KnobDouble>& skewY,
                                 const boost::shared_ptr<KnobBool>& scaleUniform,
-                                const boost::shared_ptr<KnobChoice>& skewOrder);
+                                const boost::shared_ptr<KnobChoice>& skewOrder,
+                                const boost::shared_ptr<KnobDouble>& extraMatrix);
 
 public:
 

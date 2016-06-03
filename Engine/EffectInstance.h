@@ -84,6 +84,7 @@
 #define PLUGINID_OFX_READKRITA    "fr.inria.openfx.ReadKrita"
 #define PLUGINID_OFX_READSVG      "net.fxarena.openfx.ReadSVG"
 #define PLUGINID_OFX_READORA      "fr.inria.openfx.OpenRaster"
+#define PLUGINID_OFX_READCDR      "fr.inria.openfx.ReadCDR"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
