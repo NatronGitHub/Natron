@@ -177,7 +177,7 @@ static void makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs, i
 
 }
 
-OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int minor,bool coreProfile, int rendererID, const OSGLContext_mac* shareContext)
+OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int minor,bool coreProfile, const GLRendererID& rendererID, const OSGLContext_mac* shareContext)
 : _context(0)
 {
 
@@ -185,7 +185,7 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
 
 
     std::vector<CGLPixelFormatAttribute> attributes;
-    makeAttribsFromFBConfig(pixelFormatAttrs, major, minor, coreProfile, rendererID, attributes);
+    makeAttribsFromFBConfig(pixelFormatAttrs, major, minor, coreProfile, rendererID.renderID, attributes);
 
     CGLPixelFormatObj nativePixelFormat;
     GLint num; // stores the number of possible pixel formats
@@ -345,7 +345,7 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             continue;
         }
 
-        info.rendererID = rendererID;
+        info.rendererID.renderID = rendererID;
 
 #if !defined(MAC_OS_X_VERSION_10_7) || \
 MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7

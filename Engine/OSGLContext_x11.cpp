@@ -83,6 +83,8 @@ extern "C"
 #define GLX_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB 0
 #define GLX_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB 0x2098
 
+// https://www.opengl.org/registry/specs/MESA/glx_query_renderer.txt
+#define GLX_RENDERER_ID_MESA                             0x818E
 #define GLX_RENDERER_VENDOR_ID_MESA                      0x8183
 #define GLX_RENDERER_DEVICE_ID_MESA                      0x8184
 #define GLX_RENDERER_VERSION_MESA                        0x8185
@@ -121,6 +123,8 @@ typedef GLXWindow (*PFNGLXCREATEWINDOWPROC)(Display*, GLXFBConfig, Window, const
 typedef void (*PFNGLXDESTROYWINDOWPROC)(Display*, GLXWindow);
 typedef void (*PFNGLXMAKECONTEXTCURRENTPROC)(Display*, GLXDrawable, GLXDrawable, GLXContext);
 typedef Bool (*PFNGLXISDIRECT)(Display*,GLXContext);
+
+// https://www.opengl.org/registry/specs/MESA/glx_query_renderer.txt
 typedef Bool (*PFNGLXQUERYRENDERERINTEGERMESA)(Display*,int, int, int, unsigned int*);
 typedef Bool (*PFNGLXQUERYCURRENTRENDERERINTEGERMESA)(int, unsigned int*);
 typedef Bool (*PFNGLXQUERYRENDERERSTRINGMESA)(Display*,int, int, int);
@@ -851,7 +855,7 @@ OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs,
                                  int major,
                                  int minor,
                                  bool coreProfile,
-                                 int rendererID,
+                                 const GLRendererID& rendererID,
                                  const OSGLContext_x11* shareContext)
     : _imp(new OSGLContext_x11Private())
 {
@@ -864,7 +868,7 @@ OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs,
 
     ChooseVisualGLX(glxInfo, pixelFormatAttrs, &visual, &depth);
     _imp->createWindow(glxInfo, visual, depth);
-    _imp->createContextGLX(glxInfo, pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext);
+    _imp->createContextGLX(glxInfo, pixelFormatAttrs, major, minor, coreProfile, rendererID.renderID, shareContext);
 }
 
 OSGLContext_x11::~OSGLContext_x11()
@@ -933,7 +937,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     if (!glxInfo->_imp->MESA_query_renderer) {
         boost::scoped_ptr<OSGLContext_x11> context;
         try {
-            context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, -1, 0));
+            context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0));
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
         }
@@ -980,7 +984,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     // Now create a context with the renderer ID
                     boost::scoped_ptr<OSGLContext_x11> context;
                     try {
-                        context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, rendererID, 0));
+                        context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID((int)rendererID), 0));
                     } catch (const std::exception& e) {
                         std::cerr << e.what() << std::endl;
                     }

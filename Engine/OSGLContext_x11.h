@@ -61,7 +61,7 @@ public:
                     int major,
                     int minor,
                     bool coreProfile,
-                    int rendererID,
+                    const GLRendererID& rendererID,
                     const OSGLContext_x11* shareContext);
 
     ~OSGLContext_x11();
