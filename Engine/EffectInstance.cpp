@@ -2605,6 +2605,9 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         int textureTarget = 0;
         if (planes.useOpenGL) {
+
+            actionArgs.glContextData = planes.glContextData;
+
             // Effects that render multiple planes at once are NOT supported by the OpenGL render suite
             // We only bind to the framebuffer color attachment 0 the "main" output image plane
             assert(actionArgs.outputPlanes.size() == 1);
