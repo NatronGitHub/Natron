@@ -576,7 +576,7 @@ public:
 
     QString getPySideVersion() const;
 
-    bool initializeOpenGLFunctionsOnce();
+    bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
 
     virtual void updateAboutWindowLibrariesVersion() {}
 

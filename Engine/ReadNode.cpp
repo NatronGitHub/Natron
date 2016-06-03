@@ -166,7 +166,8 @@ ReadNode::isBundledReader(const std::string& pluginID,
                boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
                boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
                boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READORA);
+               boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
+               boost::iequals(pluginID, PLUGINID_OFX_READCDR);
     }
 
     return pluginID == PLUGINID_OFX_READOIIO ||
@@ -176,7 +177,8 @@ ReadNode::isBundledReader(const std::string& pluginID,
            pluginID == PLUGINID_OFX_READKRITA ||
            pluginID == PLUGINID_OFX_READSVG ||
            pluginID == PLUGINID_OFX_READMISC ||
-           pluginID == PLUGINID_OFX_READORA;
+           pluginID == PLUGINID_OFX_READORA ||
+           pluginID == PLUGINID_OFX_READCDR;
 }
 
 bool
