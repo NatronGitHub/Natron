@@ -169,7 +169,7 @@ class NodeMetadata;
 class NodeSerialization;
 class NodeSettingsPanel;
 class OSGLContext;
-class GLRendererID;
+struct GLRendererID;
 struct OpenGLRendererInfo;
 class OfxClipInstance;
 class OfxEffectInstance;

@@ -947,12 +947,12 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
         OpenGLRendererInfo info;
         info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
-        info.rendererName = std::string(const char *) glGetString(GL_RENDERER));
-        info.glVersionString = std::string(const char *) glGetString(GL_VERSION));
+        info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
+        info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = 0;
-        info.rendererID = -1;
+        info.rendererID.renderID = -1;
         renderers.push_back(info);
     } else {
         // Just use the first screen
@@ -966,10 +966,10 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             ++renderer;
             if (gotRenderer) {
                 int rendererID = v[0];
-                if (rendererID == 0xFFFFFFFF) {
+                if ((unsigned int)rendererID == 0xFFFFFFFF) {
                     gotRenderer = false;
                 } else {
-                    bool ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_ACCELERATED_MESA, v)
+                    bool ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_ACCELERATED_MESA, v);
                     assert(ok);
                     if (!v[0]) {
                         continue;
@@ -977,7 +977,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
                     OpenGLRendererInfo info;
 
-                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_VIDEO_MEMORY_MESA, v)
+                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_VIDEO_MEMORY_MESA, v);
                     assert(ok);
                     info.maxMemBytes = v[0] * 1e6;
 
@@ -992,7 +992,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                         continue;
                     }
 
-                    info.rendererID = rendererID;
+                    info.rendererID.renderID = rendererID;
                     info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
                     info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
                     info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
