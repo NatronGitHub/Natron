@@ -295,6 +295,35 @@ BezierCurve::getNumControlPoints() const
 }
 
 void
+BezierCurve::getKeyframes(std::list<double>* keys) const
+{
+    std::set<double> keyframes;
+    _bezier->getKeyframeTimes(&keyframes);
+    for (std::set<double>::iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
+        keys->push_back(*it);
+    }
+}
+
+void
+BezierCurve::getControlPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const
+{
+    boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
+    cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
+    cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
+    cp->getRightBezierPointAtTime(true, time, ViewIdx(0), rx, ry);
+
+}
+
+void
+BezierCurve::getFeatherPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const
+{
+    boost::shared_ptr<BezierCP> cp = _bezier->getFeatherPointAtIndex(index);
+    cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
+    cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
+    cp->getRightBezierPointAtTime(true, time, ViewIdx(0), rx, ry);
+}
+
+void
 BezierCurve::setActivated(double time,
                           bool activated)
 {
@@ -400,15 +429,15 @@ BezierCurve::setColor(double time,
 }
 
 void
-BezierCurve::setCompositingOperator(BezierCurve::CairoOperatorEnum op)
+BezierCurve::setCompositingOperator(MergingFunctionEnum op)
 {
     _bezier->setCompositingOperator( (int)op );
 }
 
-BezierCurve::CairoOperatorEnum
+MergingFunctionEnum
 BezierCurve::getCompositingOperator() const
 {
-    return (BezierCurve::CairoOperatorEnum)_bezier->getCompositingOperator();
+    return (MergingFunctionEnum)_bezier->getCompositingOperator();
 }
 
 BooleanParam*

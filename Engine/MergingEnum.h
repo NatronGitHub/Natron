@@ -35,50 +35,7 @@
 NATRON_NAMESPACE_ENTER;
 
 
-///Keep this in sync with @openfx-supportext/ofxsMerging.h
-enum MergingFunctionEnum
-{
-    eMergeATop = 0,
-    eMergeAverage,
-    eMergeColor,
-    eMergeColorBurn,
-    eMergeColorDodge,
-    eMergeConjointOver,
-    eMergeCopy,
-    eMergeDifference,
-    eMergeDisjointOver,
-    eMergeDivide,
-    eMergeExclusion,
-    eMergeFreeze,
-    eMergeFrom,
-    eMergeGeometric,
-    eMergeGrainExtract,
-    eMergeGrainMerge,
-    eMergeHardLight,
-    eMergeHue,
-    eMergeHypot,
-    eMergeIn,
-    // eMergeInterpolated,
-    eMergeLuminosity,
-    eMergeMask,
-    eMergeMatte,
-    eMergeMax,
-    eMergeMin,
-    eMergeMinus,
-    eMergeMultiply,
-    eMergeOut,
-    eMergeOver,
-    eMergeOverlay,
-    eMergePinLight,
-    eMergePlus,
-    eMergeReflect,
-    eMergeSaturation,
-    eMergeScreen,
-    eMergeSoftLight,
-    eMergeStencil,
-    eMergeUnder,
-    eMergeXOR
-};
+
 
 namespace Merge {
 /**

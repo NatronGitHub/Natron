@@ -22,11 +22,14 @@ Functions
 *    def :meth:`getColorParam<NatronEngine.BezierCurve.getColorParam>` ()
 *    def :meth:`getCompositingOperator<NatronEngine.BezierCurve.getCompositingOperator>` ()
 *    def :meth:`getCompositingOperatorParam<NatronEngine.BezierCurve.getCompositingOperatorParam>` ()
+*    def :meth:`getControlPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
 *    def :meth:`getFeatherDistance<NatronEngine.BezierCurve.getFeatherDistance>` (time)
 *    def :meth:`getFeatherDistanceParam<NatronEngine.BezierCurve.getFeatherDistanceParam>` ()
 *    def :meth:`getFeatherFallOff<NatronEngine.BezierCurve.getFeatherFallOff>` (time)
 *    def :meth:`getFeatherFallOffParam<NatronEngine.BezierCurve.getFeatherFallOffParam>` ()
+*    def :meth:`getFeatherPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` (index,time)
 *    def :meth:`getIsActivated<NatronEngine.BezierCurve.getIsActivated>` (time)
+*    def :meth:`getKeyframes<NatronEngine.BezierCurve.getKeyframes>` ()
 *    def :meth:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` ()
 *    def :meth:`getOpacity<NatronEngine.BezierCurve.getOpacity>` (time)
 *    def :meth:`getOpacityParam<NatronEngine.BezierCurve.getOpacityParam>` ()
@@ -68,9 +71,18 @@ to close the shape by connecting the last control point with the first.
 Once finished, you can refine the bezier curve by adding control points with the :func:`addControlPointOnSegment(index,t)<NatronEngine.BezierCurve.addControlPointOnSegment>` function.
 You can then move and remove control points of the bezier.
 
-You can also slave a control point to a track using the :func:`slavePointToTrack(index,trackTime,trackCenter)<NatronEngine.BezierCurve.slavePointToTrac>` function.
+To get the position of the control points of the bezier as well as the position of the feather
+points, use the functions :func:`getControlPointPosition<NatronEngine.BezierCurve.getControlPointPosition>` and
+:func:`getFeatherPointPosition<NatronEngine.BezierCurve.getFeatherPointPosition>`.
+The *index* passed to the function must be between 0 and :func:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` -1.
 
-A bezier curve has several properties that the API allows you to modify:
+The *time* passed to the function corresponds to a time on the timeline's in frames.
+If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
+otherwise the position is sampled between the surrounding keyframes. 
+
+To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
+
+A bezier curve has several parameters that the API allows you to modify:
 
 	* opacity
 	* color
@@ -80,6 +92,9 @@ A bezier curve has several properties that the API allows you to modify:
 	* overlay color
 	* compositing operator
 	
+Each of them is a regular :ref:`parameter<NatronEngine.Param>` that you can access to modify
+or query its properties.
+All parameters can be retrieved with their *script-name* with the function :func:`getParam(scriptName)<NatronEngine.ItemBase.getParam>`.
 
 
 
@@ -175,7 +190,27 @@ to see the different values possible.
 
 Returns the :doc:`Param` controlling the blending mode of the bezier.
 
+.. method:: NatronEngine.BezierCurve.getControlPointPosition(index, time)
 
+	:param index: :class:`int<PySide.QtCore.int>`
+	:param time: :class:`float<PySide.QtCore.float>`
+	:rtype: :class:`PyTuple`
+	
+Returns a tuple with the position of the control point at the given *index* as well as the
+position of its left and right tangents.
+
+The tuple is encoded as such::
+
+	(x,y, leftTangentX, leftTangentY, rightTangentX, rightTangentY)
+	
+The position of the left and right tangents is absolute and not relative to (x,y).
+
+The *index* passed to the function must be between 0 and :func:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` -1.
+The *time* passed to the function corresponds to a time on the timeline's in frames.
+If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
+otherwise the position is sampled between the surrounding keyframes. 
+
+To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
 
 
 .. method:: NatronEngine.BezierCurve.getFeatherDistance(time)
@@ -220,6 +255,28 @@ Returns the feather fall-off of this shape at the given *time*.
 Returns the :doc:`Param` controlling the color of the bezier.
 
 
+.. method:: NatronEngine.BezierCurve.getFeatherPointPosition(index, time)
+
+	:param index: :class:`int<PySide.QtCore.int>`
+	:param time: :class:`float<PySide.QtCore.float>`
+	:rtype: :class:`PyTuple`
+	
+Returns a tuple with the position of the feather point at the given *index* as well as the
+position of its left and right tangents.
+
+The tuple is encoded as such::
+
+	(x,y, leftTangentX, leftTangentY, rightTangentX, rightTangentY)
+	
+The position of the left and right tangents is absolute and not relative to (x,y).
+
+The *index* passed to the function must be between 0 and :func:`getNumControlPoints<NatronEngine.BezierCurve.getNumControlPoints>` -1.
+The *time* passed to the function corresponds to a time on the timeline's in frames.
+If it lands on a keyframe of the Bezier shape, then the position at that keyframe is returned,
+otherwise the position is sampled between the surrounding keyframes. 
+
+To get a list of all keyframes time for a Bezier call the function :func:`getKeyframes()<NatronEngine.BezierCurve.getKeyframes>`.
+
 
 
 .. method:: NatronEngine.BezierCurve.getIsActivated(time)
@@ -232,6 +289,14 @@ Returns the :doc:`Param` controlling the color of the bezier.
 Returns whether the curve is enabled or not at the given *time*. When
 not activated the curve will not be rendered at all in the image.
 
+
+.. method:: NatronEngine.BezierCurve.getKeyframes()
+
+
+    :rtype: :class:`PyList`
+
+
+Returns a list of all keyframes set on the Bezier animation.
 
 
 .. method:: NatronEngine.BezierCurve.getNumControlPoints()
