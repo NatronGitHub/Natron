@@ -100,7 +100,7 @@ namespace NATRON_NAMESPACE { }
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 #define NATRON_VERSION_MAJOR 2
 #define NATRON_VERSION_MINOR 0
-#define NATRON_VERSION_REVISION 4
+#define NATRON_VERSION_REVISION 5
 
 
 #define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
