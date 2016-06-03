@@ -726,7 +726,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
     // Enable GPU render if the plug-in cannot render another way or if all conditions are met
     else if (glContext && (openGLSupport == ePluginOpenGLRenderSupportNeeded ||
-               (openGLSupport != ePluginOpenGLRenderSupportYes && args.allowGPURendering && getApp()->getProject()->isGPURenderingEnabledInProject())) ) {
+               (openGLSupport == ePluginOpenGLRenderSupportYes && args.allowGPURendering && getApp()->getProject()->isGPURenderingEnabledInProject())) ) {
         /*
            We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
            since we do not use the cache for textures)

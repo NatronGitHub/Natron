@@ -355,7 +355,6 @@ OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
     if (!_imp->pboID) {
         _imp->init();
     }
-    qDebug() << "MAKE CONTEXT CURRENT PBOID=" << _imp->pboID;
 
 }
 
