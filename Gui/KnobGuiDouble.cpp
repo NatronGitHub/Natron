@@ -707,7 +707,6 @@ KnobGuiDouble::onSpinBoxValueChanged()
                 newValue = valueAccordingToType( true, i, _spinBoxes[i].first->value() );
                 newValueSet = true;
                 oldValue = _knob.lock()->getValue(i);
-                newValue = box->value();
                 spinBoxDim = i;
             }
         }
