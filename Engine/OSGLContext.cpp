@@ -364,7 +364,7 @@ OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
 #ifdef DEBUG
     if (!_imp->renderOwningContextCount) {
         _imp->renderOwningContextFrameTime = frameTime;
-        qDebug() << "Attaching" << this << "to render frame" << frameTime;
+        //qDebug() << "Attaching" << this << "to render frame" << frameTime;
     }
 #endif
     ++_imp->renderOwningContextCount;
@@ -405,7 +405,7 @@ OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
     --_imp->renderOwningContextCount;
     if (!_imp->renderOwningContextCount) {
 #ifdef DEBUG
-        qDebug() << "Dettaching" << this << "from frame" << _imp->renderOwningContextFrameTime;
+        //qDebug() << "Dettaching" << this << "from frame" << _imp->renderOwningContextFrameTime;
 #endif
         _imp->renderOwningContext.reset();
         unsetCurrentContextNoRender();
