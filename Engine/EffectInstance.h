@@ -2146,6 +2146,7 @@ private:
                             bool renderFullScaleThenDownscale,
                             StorageModeEnum storage,
                             bool createInCache,
+                            bool generateMipMaps,
                             boost::shared_ptr<Image>* fullScaleImage,
                             boost::shared_ptr<Image>* downscaleImage);
 

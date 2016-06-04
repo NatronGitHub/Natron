@@ -1473,6 +1473,8 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     boost::shared_ptr<ImageParams> params( new ImageParams( *image->getParams() ) );
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeGLTex;
+#pragma message WARN("Plug-in should indicate whether it needs mipmaps for texturesor not")
+    info.generateMipMaps = false;
     info.textureTarget = GL_TEXTURE_2D;
 
     RectI bounds = image->getBounds();
@@ -1871,6 +1873,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    bool renderFullScaleThenDownscale,
                                    StorageModeEnum storage,
                                    bool createInCache,
+                                   bool generateMipMaps,
                                    boost::shared_ptr<Image>* fullScaleImage,
                                    boost::shared_ptr<Image>* downscaleImage)
 {
@@ -1887,7 +1890,9 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                                                                depth,
                                                                                premult,
                                                                                fielding,
-                                                                               storage);
+                                                                               storage,
+                                                                               generateMipMaps,
+                                                                               GL_TEXTURE_2D);
         //The upscaled image will be rendered with input images at full def, it is then the best possibly rendered image so cache it!
 
         fullScaleImage->reset();
@@ -1907,7 +1912,9 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                                                            depth,
                                                                            premult,
                                                                            fielding,
-                                                                           storage);
+                                                                           storage,
+                                                                           generateMipMaps,
+                                                                           GL_TEXTURE_2D);
 
         //Take the lock after getting the image from the cache or while allocating it
         ///to make sure a thread will not attempt to write to the image while its being allocated.
@@ -2900,6 +2907,7 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
                                  false,
                                  img->getParams()->getStorageInfo().mode,
                                  useCache,
+                                 false /*generateMipMaps*/,
                                  &p.fullscaleImage,
                                  &p.downscaleImage);
     if (!ok) {
