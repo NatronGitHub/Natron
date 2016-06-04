@@ -2550,10 +2550,9 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             prefComp = outputClipPrefsComps;
         }
 
+        // OpenGL render never use the cache and bitmaps, all images are local to a render.
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
-               ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() ) {
-            // OpenGL render never use the cache and bitmaps, all images are local to a render.
-            assert(!planes.useOpenGL);
+               ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() && !planes.useOpenGL ) {
 
             it->second.tmpImage.reset( new Image(prefComp,
                                                  it->second.renderMappedImage->getRoD(),
