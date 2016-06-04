@@ -81,7 +81,6 @@ OSGLContext_win::initWGLData(OSGLContext_wgl_data* wglInfo)
     memset(wglInfo, 0, sizeof(OSGLContext_wgl_data));
     wglInfo->instance = LoadLibraryA("opengl32.dll");
     if (!wglInfo->instance) {
-        assert(false);
         throw std::runtime_error("WGL: Failed to load opengl32.dll");
     }
 

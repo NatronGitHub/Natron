@@ -286,7 +286,6 @@ OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
     XInitThreads();
     glxInfo->_imp->x11.display = XOpenDisplay(NULL);
     if (!glxInfo->_imp->x11.display) {
-        assert(false);
         throw std::runtime_error("X11: Failed to open display");
     }
     glxInfo->_imp->x11.screen = DefaultScreen(glxInfo->_imp->x11.display);
@@ -313,7 +312,6 @@ OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
     }
 
     if (!glxInfo->_imp->handle) {
-        assert(false);
         throw std::runtime_error("GLX: Failed to load GLX");
     }
 
