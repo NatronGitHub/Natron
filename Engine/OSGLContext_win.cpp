@@ -223,20 +223,21 @@ OSGLContext_win::getPixelFormatAttrib(const OSGLContext_wgl_data* wglInfo,
     return value;
 }
 
-static void setAttribs(int major, int minor, bool coreProfile, std::vector<int>& attribs)
+static void setAttribs(int /*major*/, int /*minor*/, bool coreProfile, std::vector<int>& attribs)
 {
 
     int mask = 0;
 
-    // NOTE: Only request an explicitly versioned context when necessary, as
-    //       explicitly requesting version 1.0 does not always return the
-    //       highest version supported by the driver
+    // Note that we do NOT request a specific version. Sometimes a driver might report that its maximum compatibility
+    //profile is 3.0 but we ask for 2.0, hence it will fail context creation whereas it should not. Instead we check
+    //OpenGL version once context is created and check that we have at least 2.0
+    /*
     if ( (major != 1) || (minor != 0) ) {
         attribs.push_back(WGL_CONTEXT_MAJOR_VERSION_ARB);
         attribs.push_back(major);
         attribs.push_back(WGL_CONTEXT_MINOR_VERSION_ARB);
         attribs.push_back(minor);
-    }
+    }*/
 
     if (coreProfile) {
         mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
@@ -676,6 +677,14 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 continue;
             }
 
+            try {
+                OSGLContext::checkOpenGLVersion();
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+                continue;
+            }
+
+
             info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
             info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
             info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
@@ -722,6 +731,15 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             if (!makeContextCurrent(context.get())) {
                 continue;
             }
+
+            try {
+                OSGLContext::checkOpenGLVersion();
+            } catch (const std::exception& e) {
+                std::cerr << e.what() << std::endl;
+                continue;
+            }
+
+
             glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
             renderers.push_back(info);
 
@@ -736,10 +754,19 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             context.reset(new OSGLContext_win(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0));
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
+            return;
         }
         if (!makeContextCurrent(context.get())) {
             return;
         }
+
+        try {
+            OSGLContext::checkOpenGLVersion();
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            return;
+        }
+
 
         OpenGLRendererInfo info;
         info.vendorName = std::string((const char *) glGetString(GL_VENDOR));

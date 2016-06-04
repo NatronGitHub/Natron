@@ -300,6 +300,28 @@ OSGLContext::~OSGLContext()
     }
 }
 
+void
+OSGLContext::checkOpenGLVersion()
+{
+    std::string glVersionString = std::string((const char *) glGetString(GL_VERSION));
+    assert(glVersionString.size() >= 3); // Encoding is Major.Minor and then optional stuff behind
+    if (glVersionString.size() < 3) {
+        return;
+    }
+    std::string majorStr;
+    majorStr.push_back(glVersionString[0]);
+    std::string minorStr;
+    minorStr.push_back(glVersionString[3]);
+    int major = QString::fromUtf8(majorStr.c_str()).toInt();
+    int minor = QString::fromUtf8(minorStr.c_str()).toInt();
+    if (major < GLVersion.major || (major == GLVersion.major && minor < GLVersion.minor)) {
+        std::stringstream ss;
+        ss << NATRON_APPLICATION_NAME << " requires at least OpenGL " << GLVersion.major << "." << GLVersion.minor << "to perform OpenGL accelerated rendering." << std::endl;
+        ss << "Your system only has OpenGL " << major << "." << minor << "available.";
+        throw std::runtime_error(ss.str());
+    }
+}
+
 GLuint
 OSGLContext::getPBOId() const
 {

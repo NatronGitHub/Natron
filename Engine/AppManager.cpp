@@ -645,6 +645,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                 if (!glContext) {
                     return false;
                 }
+                // Make the context current and check its version
                 glContext->setContextCurrentNoRender();
             } catch (const std::exception& e) {
                 std::cerr << "Error while loading OpenGL: "<< e.what() << std::endl;
@@ -655,6 +656,14 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         // The following requires a valid OpenGL context to be created
         _imp->initGl();
         if (createOpenGLContext) {
+            try {
+                OSGLContext::checkOpenGLVersion();
+            } catch (const std::exception& e) {
+                if (!_imp->missingOpenglError.isEmpty()) {
+                    _imp->missingOpenglError = QString::fromUtf8(e.what());
+                }
+            }
+
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
             glContext->unsetCurrentContextNoRender();
         } else {
