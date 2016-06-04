@@ -518,6 +518,16 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     bool defaultFallback = false;
 
+    if (!ReadNode::isBundledReader(readerPluginID, false)) {
+        if (throwErrors) {
+            QString message = tr("%1 is not a bundled reader, please create it from the Image->Readers menu or with the tab menu in the Nodegraph")
+            .arg( QString::fromUtf8( readerPluginID.c_str() ) );
+            throw std::runtime_error( message.toStdString() );
+        }
+        defaultFallback = true;
+    }
+
+
     //Find the appropriate reader
     if (readerPluginID.empty() && !serialization) {
         //Couldn't find any reader
@@ -534,6 +544,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         if ( readerPluginID.empty() ) {
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
+
         CreateNodeArgs args( QString::fromUtf8( readerPluginID.c_str() ), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
         args.createGui = false;
         args.addToProject = false;
@@ -586,7 +597,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
 
-    KnobPtr knob = _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr knob = embeddedPlugin ? embeddedPlugin->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         inputFileKnob = boost::dynamic_pointer_cast<KnobFile>(knob);
     }
