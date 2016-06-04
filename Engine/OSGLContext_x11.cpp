@@ -966,7 +966,6 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         bool gotRenderer;
         do {
             gotRenderer = (bool)glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_DEVICE_ID_MESA, v);
-            ++renderer;
             if (gotRenderer) {
                 int rendererID = v[0];
                 if ((unsigned int)rendererID == 0xFFFFFFFF) {
@@ -975,6 +974,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     bool ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_ACCELERATED_MESA, v);
                     assert(ok);
                     if (!v[0]) {
+                        ++renderer;
                         continue;
                     }
 
@@ -990,8 +990,11 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                         context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID((int)rendererID), 0));
                     } catch (const std::exception& e) {
                         std::cerr << e.what() << std::endl;
+                        ++renderer;
+                        continue;
                     }
                     if (!makeContextCurrent(context.get())) {
+                        ++renderer;
                         continue;
                     }
 
@@ -1006,6 +1009,8 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     makeContextCurrent(0);
                 }
             }
+            ++renderer;
+
         } while (gotRenderer);
     }
 }
