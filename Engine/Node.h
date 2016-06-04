@@ -1240,7 +1240,7 @@ public:
 
     int getFrameStepKnobValue() const;
 
-    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool canChangeValues);
+    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool loadingProject);
 
     bool handleFormatKnob(KnobI* knob);
 
