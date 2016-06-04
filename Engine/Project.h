@@ -328,6 +328,8 @@ public:
         reset(aboutToQuit);
     }
 
+    void closeProject_blocking(bool aboutToQuit);
+
     bool addFormat(const std::string& formatSpec);
 
     void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);

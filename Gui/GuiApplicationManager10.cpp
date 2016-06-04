@@ -464,7 +464,7 @@ GuiApplicationManager::exitApp(bool warnUserForSave)
         GuiAppInstPtr app = guiApps.front();
         if (app) {
             triedInstances.insert(app);
-            app->getGui()->closeInstance(warnUserForSave);
+            app->getGui()->abortProject(true, warnUserForSave, true);
         }
 
         //refreshg ui instances

@@ -5232,12 +5232,14 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
         }
 
         double par;
-        if (!multipleClipsPAR && inputParSet) {
-            par = inputPar;
-        } else if (multipleClipsPAR && effect) {
-            par = effect == this ? projectPAR : effect->getAspectRatio(-1);
+        if (!multipleClipsPAR) {
+            par = inputParSet ? inputPar : projectPAR;
         } else {
-            par = projectPAR;
+            if (inputParSet) {
+                par = inputPar;
+            } else {
+                par = effect ? effect->getAspectRatio(-1) : projectPAR;
+            }
         }
         metadata.setPixelAspectRatio(i, par);
 

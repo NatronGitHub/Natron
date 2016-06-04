@@ -3145,7 +3145,7 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b>Alpha premultiplication: </b>" << premultStr << "<br />";
     }
     { // par
-        double par = input->getAspectRatio(inputNumber);
+        double par = input->getAspectRatio(-1);
         ss << "<b>Pixel aspect ratio: </b>" << par << "<br />";
     }
     { // fps
@@ -4051,7 +4051,7 @@ Node::handleFormatKnob(KnobI* knob)
 void
 Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
                                int defValue,
-                               bool canChangeValues)
+                               bool loadingProject)
 {
     boost::shared_ptr<KnobChoice> choice = _imp->pluginFormatKnobs.formatChoice.lock();
 
@@ -4062,14 +4062,17 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
     choice->populateChoices(entries);
     choice->beginChanges();
     choice->setDefaultValue(defValue);
-    if (!canChangeValues) {
+    if (!loadingProject) {
+
+        //changedKnob was not called because we are initializing knobs
+        handleFormatKnob( choice.get() );
+
+    } else {
         if ( curIndex < (int)entries.size() ) {
             choice->setValue(curIndex);
         }
-    }
 
-    //changedKnob was not called because we are initializing knobs
-    handleFormatKnob( choice.get() );
+    }
 
     choice->endChanges();
 }
