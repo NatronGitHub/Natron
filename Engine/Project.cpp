@@ -1701,6 +1701,23 @@ Project::reset(bool aboutToQuit)
 } // Project::reset
 
 void
+Project::closeProject_blocking(bool aboutToQuit)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    {
+        QMutexLocker k(&_imp->projectClosingMutex);
+        _imp->projectClosing = true;
+    }
+    NodesList nodesToWatch;
+    getNodes_recursive(nodesToWatch, false);
+    for (NodesList::iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+        (*it)->quitAnyProcessing_blocking(false);
+    }
+
+    doResetEnd(aboutToQuit);
+}
+
+void
 Project::doResetEnd(bool aboutToQuit)
 {
     _imp->runOnProjectCloseCallback();

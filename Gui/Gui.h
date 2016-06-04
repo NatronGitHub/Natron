@@ -413,9 +413,6 @@ public:
 
     void disconnectViewersFromViewerCache();
 
-    ///Close the application instance, asking questions to the user
-    bool closeInstance(bool warnUserIfSaveNeeded);
-
     void checkNumberOfNonFloatingPanes();
 
     AppInstPtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
@@ -512,7 +509,7 @@ public:
      * @brief Close project right away, without any user interaction.
      * @param quitApp If true, the application will exit, otherwise the main window will stay active.
      **/
-    bool abortProject(bool quitApp, bool warnUserIfSaveNeeded);
+    bool abortProject(bool quitApp, bool warnUserIfSaveNeeded, bool blocking);
 
     void setGuiAboutToClose(bool about);
 
@@ -578,7 +575,7 @@ public Q_SLOTS:
     void reloadStylesheet();
 
     ///Close the project instance, asking questions to the user and leaving the main window intact
-    void closeProject();
+    bool closeProject();
 
     //Same as close + open same project to discard unsaved changes
     void reloadProject();

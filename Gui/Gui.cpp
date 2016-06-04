@@ -146,21 +146,14 @@ Gui::setLeftToolBarVisible(bool visible)
 }
 
 bool
-Gui::closeInstance(bool warnUserIfSaveNeeded)
-{
-    return abortProject(true, warnUserIfSaveNeeded);
-}
-
-void
 Gui::closeProject()
 {
-    closeInstance(true);
+    bool ret = abortProject(true, true, true);
 
     ///When closing a project we can remove the ViewerCache from memory and put it on disk
     ///since we're not sure it will be used right away
     appPTR->clearPlaybackCache();
-    //_imp->_appInstance->getProject()->createViewer();
-    //_imp->_appInstance->execOnProjectCreatedCallback();
+    return ret;
 }
 
 void
@@ -179,7 +172,7 @@ Gui::reloadProject()
 
     projectPath.append(filename);
 
-    if ( !abortProject(false, true) ) {
+    if ( !abortProject(false, true, true) ) {
         return;
     }
 
@@ -206,7 +199,8 @@ Gui::notifyGuiClosing()
 
 bool
 Gui::abortProject(bool quitApp,
-                  bool warnUserIfSaveNeeded)
+                  bool warnUserIfSaveNeeded,
+                  bool blocking)
 {
     if (getApp()->getProject()->hasNodes() && warnUserIfSaveNeeded) {
         int ret = saveWarning();
@@ -231,7 +225,11 @@ Gui::abortProject(bool quitApp,
         GuiAppInstPtr app = getApp();
         if (app) {
             app->resetPreviewProvider();
-            app->getProject()->closeProject(false);
+            if (!blocking) {
+                app->getProject()->closeProject(false);
+            } else {
+                app->getProject()->closeProject_blocking(false);
+            }
         }
         centerAllNodeGraphsWithTimer();
         restoreDefaultLayout();
@@ -270,7 +268,7 @@ Gui::closeEvent(QCloseEvent* e)
     if ( app && app->isClosing() ) {
         e->ignore();
     } else {
-        if ( !closeInstance(true) ) {
+        if ( !abortProject(true, true, true) ) {
             e->ignore();
 
             return;
