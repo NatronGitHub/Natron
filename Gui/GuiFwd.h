@@ -134,6 +134,7 @@ class KnobClickableLabel;
 class KnobCurveGui;
 class KnobGui;
 class KnobGuiContainerI;
+class KnobGuiContainerHelper;
 class KnobGuiFactory;
 class KnobGuiTable;
 class KnobGuiLayers;

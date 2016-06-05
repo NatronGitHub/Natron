@@ -118,8 +118,6 @@ ProjectGui::create(boost::shared_ptr<Project> projectInternal,
                                boost::shared_ptr<QUndoStack>(),
                                tr("Project Settings"),
                                tr("The settings of the current project."),
-                               false,
-                               tr("Settings"),
                                parent);
 
 

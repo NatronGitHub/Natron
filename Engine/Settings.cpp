@@ -171,6 +171,7 @@ Settings::initializeKnobsGeneral()
     _wwwServerPort->setName("webserverPort");
     _wwwServerPort->setAnimationEnabled(false);
     _wwwServerPort->setSecret(true);
+    _generalTab->addKnob(_wwwServerPort);
 
     _autoSaveDelay = AppManager::createKnob<KnobInt>( this, tr("Auto-save trigger delay") );
     _autoSaveDelay->setName("autoSaveDelay");
@@ -587,7 +588,6 @@ Settings::initializeKnobsAppearance()
     _raisedColor->setName("raised");
     _raisedColor->setAnimationEnabled(false);
     _raisedColor->setSimplified(true);
-    _raisedColor->setAddNewLine(false);
     _guiColors->addKnob(_raisedColor);
 
     _selectionColor =  AppManager::createKnob<KnobColor>(this, tr("Selection"), 3);
@@ -629,7 +629,6 @@ Settings::initializeKnobsAppearance()
     _timelineBoundsColor->setName("timelineBound");
     _timelineBoundsColor->setAnimationEnabled(false);
     _timelineBoundsColor->setSimplified(true);
-    _timelineBoundsColor->setAddNewLine(false);
     _guiColors->addKnob(_timelineBoundsColor);
 
     _cachedFrameColor =  AppManager::createKnob<KnobColor>(this, tr("Cached frame"), 3);
@@ -643,13 +642,13 @@ Settings::initializeKnobsAppearance()
     _diskCachedFrameColor->setName("diskCachedFrame");
     _diskCachedFrameColor->setAnimationEnabled(false);
     _diskCachedFrameColor->setSimplified(true);
+    _diskCachedFrameColor->setAddNewLine(false);
     _guiColors->addKnob(_diskCachedFrameColor);
 
     _interpolatedColor =  AppManager::createKnob<KnobColor>(this, tr("Interpolated value"), 3);
     _interpolatedColor->setName("interpValue");
     _interpolatedColor->setAnimationEnabled(false);
     _interpolatedColor->setSimplified(true);
-    _interpolatedColor->setAddNewLine(false);
     _guiColors->addKnob(_interpolatedColor);
 
     _keyframeColor =  AppManager::createKnob<KnobColor>(this, tr("Keyframe"), 3);
@@ -743,7 +742,7 @@ Settings::initializeKnobsAppearance()
     _curLineColor->setName("currentLineColor");
     _curLineColor->setAnimationEnabled(false);
     _curLineColor->setSimplified(true);
-    //_numbersColor->setAddNewLine(false);
+    _curLineColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_curLineColor);
 
     _keywordColor = AppManager::createKnob<KnobColor>(this, tr("Keyword Color"), 3);
@@ -757,7 +756,6 @@ Settings::initializeKnobsAppearance()
     _operatorColor->setName("operatorColor");
     _operatorColor->setAnimationEnabled(false);
     _operatorColor->setSimplified(true);
-    _operatorColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_operatorColor);
 
     _braceColor = AppManager::createKnob<KnobColor>(this, tr("Brace Color"), 3);
@@ -771,14 +769,13 @@ Settings::initializeKnobsAppearance()
     _defClassColor->setName("classDefColor");
     _defClassColor->setAnimationEnabled(false);
     _defClassColor->setSimplified(true);
-    //_defClassColor->setAddNewLine(false);
+    _defClassColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_defClassColor);
 
     _stringsColor = AppManager::createKnob<KnobColor>(this, tr("Strings Color"), 3);
     _stringsColor->setName("stringsColor");
     _stringsColor->setAnimationEnabled(false);
     _stringsColor->setSimplified(true);
-    _stringsColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_stringsColor);
 
     _commentsColor = AppManager::createKnob<KnobColor>(this, tr("Comments Color"), 3);
@@ -799,7 +796,6 @@ Settings::initializeKnobsAppearance()
     _numbersColor->setName("numbersColor");
     _numbersColor->setAnimationEnabled(false);
     _numbersColor->setSimplified(true);
-    //_numbersColor->setAddNewLine(false);
     _scriptEditorColors->addKnob(_numbersColor);
 
 
@@ -896,7 +892,6 @@ Settings::initializeKnobsAppearance()
     _defaultReaderColor->setName("readerColor");
     _defaultReaderColor->setAnimationEnabled(false);
     _defaultReaderColor->setSimplified(true);
-    _defaultReaderColor->setAddNewLine(false);
     _defaultReaderColor->setHintToolTip( tr("The color used for newly created Reader nodes.") );
     _graphColors->addKnob(_defaultReaderColor);
 
@@ -912,6 +907,7 @@ Settings::initializeKnobsAppearance()
     _defaultGeneratorColor->setName("generatorColor");
     _defaultGeneratorColor->setAnimationEnabled(false);
     _defaultGeneratorColor->setSimplified(true);
+    _defaultGeneratorColor->setAddNewLine(false);
     _defaultGeneratorColor->setHintToolTip( tr("The color used for newly created Generator nodes.") );
     _graphColors->addKnob(_defaultGeneratorColor);
 
@@ -919,7 +915,6 @@ Settings::initializeKnobsAppearance()
     _defaultColorGroupColor->setName("colorNodesColor");
     _defaultColorGroupColor->setAnimationEnabled(false);
     _defaultColorGroupColor->setSimplified(true);
-    _defaultColorGroupColor->setAddNewLine(false);
     _defaultColorGroupColor->setHintToolTip( tr("The color used for newly created Color nodes.") );
     _graphColors->addKnob(_defaultColorGroupColor);
 
@@ -943,7 +938,6 @@ Settings::initializeKnobsAppearance()
     _defaultTimeGroupColor->setName("timeNodesColor");
     _defaultTimeGroupColor->setAnimationEnabled(false);
     _defaultTimeGroupColor->setSimplified(true);
-    _defaultTimeGroupColor->setAddNewLine(false);
     _defaultTimeGroupColor->setHintToolTip( tr("The color used for newly created Time nodes.") );
     _graphColors->addKnob(_defaultTimeGroupColor);
 
@@ -951,6 +945,7 @@ Settings::initializeKnobsAppearance()
     _defaultDrawGroupColor->setName("drawNodesColor");
     _defaultDrawGroupColor->setAnimationEnabled(false);
     _defaultDrawGroupColor->setSimplified(true);
+    _defaultDrawGroupColor->setAddNewLine(false);
     _defaultDrawGroupColor->setHintToolTip( tr("The color used for newly created Draw nodes.") );
     _graphColors->addKnob(_defaultDrawGroupColor);
 
@@ -966,7 +961,6 @@ Settings::initializeKnobsAppearance()
     _defaultChannelGroupColor->setName("channelNodesColor");
     _defaultChannelGroupColor->setAnimationEnabled(false);
     _defaultChannelGroupColor->setSimplified(true);
-    _defaultChannelGroupColor->setAddNewLine(false);
     _defaultChannelGroupColor->setHintToolTip( tr("The color used for newly created Channel nodes.") );
     _graphColors->addKnob(_defaultChannelGroupColor);
 

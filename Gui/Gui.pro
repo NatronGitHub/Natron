@@ -121,6 +121,7 @@ SOURCES += \
     Histogram.cpp \
     HostOverlay.cpp \
     InfoViewerWidget.cpp \
+    KnobGuiContainerHelper.cpp \
     KnobGui.cpp \
     KnobGui10.cpp \
     KnobGui20.cpp \
@@ -274,6 +275,7 @@ HEADERS += \
     InfoViewerWidget.h \
     KnobGui.h \
     KnobGuiContainerI.h \
+    KnobGuiContainerHelper.h \
     KnobGuiFactory.h \
     KnobGuiFile.h \
     KnobGuiButton.h \

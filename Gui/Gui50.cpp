@@ -492,7 +492,10 @@ Gui::keyPressEvent(QKeyEvent* e)
     if (key == Qt::Key_Escape) {
         RightClickableWidget* panel = RightClickableWidget::isParentSettingsPanelRecursive(w);
         if (panel) {
-            panel->getPanel()->closePanel();
+            const DockablePanel* dock = panel->getPanel();
+            if (dock) {
+                const_cast<DockablePanel*>(dock)->closePanel();
+            }
         }
     } else if ( (key == Qt::Key_V) && modCASIsControl(e) ) {
         // CTRL +V should have been caught by the Nodegraph if it contained a valid Natron graph.
