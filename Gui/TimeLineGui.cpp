@@ -245,6 +245,10 @@ void
 TimeLineGui::resizeGL(int width,
                       int height)
 {
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     if (height == 0) {
         height = 1;
     }
@@ -293,6 +297,11 @@ TimeLineGui::paintGL()
     if (!_imp->gui) {
         return;
     }
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+    
     glCheckError();
 
     SequenceTime leftBound, rightBound;

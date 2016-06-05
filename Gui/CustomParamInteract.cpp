@@ -97,6 +97,12 @@ CustomParamInteract::paintGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+    
     glCheckError();
 
     /*
@@ -137,6 +143,11 @@ CustomParamInteract::resizeGL(int w,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     if (h == 0) {
         h = 1;
     }

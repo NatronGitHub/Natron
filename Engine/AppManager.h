@@ -578,6 +578,11 @@ public:
 
     bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
 
+    /**
+     * @brief Returns true if we could correctly fetch needed OpenGL functions and extensions
+     **/
+    bool isOpenGLLoaded() const;
+
     virtual void updateAboutWindowLibrariesVersion() {}
 
 #ifdef __NATRON_WIN32__

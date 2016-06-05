@@ -631,6 +631,13 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
 }
 
 bool
+AppManager::isOpenGLLoaded() const
+{
+    QMutexLocker k(&_imp->openGLFunctionsMutex);
+    return _imp->hasInitializedOpenGLFunctions;
+}
+
+bool
 AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
