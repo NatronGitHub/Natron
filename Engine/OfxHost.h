@@ -49,6 +49,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/Plugin.h"
 
 
 //#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
@@ -157,8 +158,8 @@ public:
 
     /*Reads OFX plugin cache and scan plugins directories
        to load them all.*/
-    void loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap);
+    void loadOFXPlugins(IOPluginsMap* readersMap,
+                        IOPluginsMap* writersMap);
 
     void clearPluginsLoadedCache();
 
@@ -181,7 +182,7 @@ public:
 
         OfxHostTLSData()
             : lastEffectCallingMainEntry(0)
-            , threadIndexes()
+              , threadIndexes()
         {
         }
     };

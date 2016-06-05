@@ -33,6 +33,9 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/GPUContextPool.h"
+#include "Engine/OSGLContext.h"
+#include "Engine/GLShader.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -568,7 +571,7 @@ Bitmap::swap(Bitmap& other)
 {
     _map.swap(other._map);
     _bounds = other._bounds;
-    _dirtyZone.clear();//merge(other._dirtyZone);
+    _dirtyZone.clear(); //merge(other._dirtyZone);
     _dirtyZoneSet = false;
 }
 
@@ -657,14 +660,13 @@ Image::printUnrenderedPixels(const RectI& roi) const
     }
 } // Image::printUnrenderedPixels
 
-#endif // ifdef DEBUG
+#endif \
+    // ifdef DEBUG
 
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<ImageParams>& params,
-             const CacheAPI* cache,
-             StorageModeEnum storage,
-             const std::string & path)
-    : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache, storage, path)
+             const CacheAPI* cache)
+    : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache)
     , _useBitmap(true)
 {
     _bitDepth = params->getBitDepth();
@@ -679,7 +681,7 @@ Image::Image(const ImageKey & key,
 
 Image::Image(const ImageKey & key,
              const boost::shared_ptr<ImageParams>& params)
-    : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL, eStorageModeRAM, std::string() )
+    : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL )
     , _useBitmap(false)
 {
     _bitDepth = params->getBitDepth();
@@ -705,24 +707,27 @@ Image::Image(const ImageComponents& components,
              ImageBitDepthEnum bitdepth,
              ImagePremultiplicationEnum premult,
              ImageFieldingOrderEnum fielding,
-             bool useBitmap)
+             bool useBitmap,
+             StorageModeEnum storage,
+             bool generateMipMaps,
+             U32 textureTarget)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
     , _useBitmap(useBitmap)
 {
     setCacheEntry(makeKey(0, 0, false, 0, ViewIdx(0), false, false),
-                  boost::shared_ptr<ImageParams>( new ImageParams( mipMapLevel,
-                                                                   regionOfDefinition,
-                                                                   par,
-                                                                   mipMapLevel,
-                                                                   bounds,
-                                                                   bitdepth,
-                                                                   fielding,
-                                                                   premult,
-                                                                   false,
-                                                                   components) ),
-                  NULL,
-                  eStorageModeRAM,
-                  std::string()
+                  boost::shared_ptr<ImageParams>( new ImageParams(regionOfDefinition,
+                                                                  par,
+                                                                  mipMapLevel,
+                                                                  bounds,
+                                                                  bitdepth,
+                                                                  fielding,
+                                                                  premult,
+                                                                  false /*isRoDProjectFormat*/,
+                                                                  components,
+                                                                  storage,
+                                                                  generateMipMaps,
+                                                                  textureTarget) ),
+                  NULL /*cacheAPI*/
                   );
 
     _bitDepth = bitdepth;
@@ -782,22 +787,23 @@ Image::makeKey(const CacheEntryHolder* holder,
 }
 
 boost::shared_ptr<ImageParams>
-Image::makeParams(int cost,
-                  const RectD & rod,
+Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
                   const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
-                  ImageFieldingOrderEnum fielding)
+                  ImageFieldingOrderEnum fielding,
+                  StorageModeEnum storage,
+                  bool generateMipMaps,
+                  U32 textureTarget)
 {
     RectI bounds;
 
     rod.toPixelEnclosing(mipMapLevel, par, &bounds);
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(cost,
-                                                           rod,
+    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -805,12 +811,14 @@ Image::makeParams(int cost,
                                                            fielding,
                                                            premult,
                                                            isRoDProjectFormat,
-                                                           components) );
+                                                           components,
+                                                           storage,
+                                                           generateMipMaps,
+                                                           textureTarget) );
 }
 
 boost::shared_ptr<ImageParams>
-Image::makeParams(int cost,
-                  const RectD & rod,    // the image rod in canonical coordinates
+Image::makeParams(const RectD & rod,    // the image rod in canonical coordinates
                   const RectI& bounds,
                   const double par,
                   unsigned int mipMapLevel,
@@ -818,7 +826,10 @@ Image::makeParams(int cost,
                   const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
-                  ImageFieldingOrderEnum fielding)
+                  ImageFieldingOrderEnum fielding,
+                  StorageModeEnum storage,
+                  bool generateMipMaps,
+                  U32 textureTarget)
 {
 #ifdef DEBUG
     RectI pixelRod;
@@ -827,8 +838,7 @@ Image::makeParams(int cost,
             bounds.bottom() >= pixelRod.bottom() && bounds.top() <= pixelRod.top() );
 #endif
 
-    return boost::shared_ptr<ImageParams>( new ImageParams(cost,
-                                                           rod,
+    return boost::shared_ptr<ImageParams>( new ImageParams(rod,
                                                            par,
                                                            mipMapLevel,
                                                            bounds,
@@ -836,7 +846,10 @@ Image::makeParams(int cost,
                                                            fielding,
                                                            premult,
                                                            isRoDProjectFormat,
-                                                           components) );
+                                                           components,
+                                                           storage,
+                                                           generateMipMaps,
+                                                           textureTarget) );
 }
 
 // code proofread and fixed by @devernay on 8/8/2014
@@ -880,7 +893,7 @@ Image::pasteFromForDepth(const Image & srcImg,
 
     assert( getComponents() == srcImg.getComponents() );
 
-    if (copyBitmap) {
+    if (copyBitmap && _useBitmap) {
         copyBitmapPortion(roi, srcImg);
     }
     // now we're safe: both images contain the area in roi
@@ -932,7 +945,7 @@ Image::resizeInternal(const Image* srcImg,
     } else {
         boost::shared_ptr<ImageParams> params( new ImageParams( *srcImg->getParams() ) );
         params->setBounds(merge);
-        outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI(), eStorageModeRAM, std::string() ) );
+        outputImage->reset( new Image( srcImg->getKey(), params, srcImg->getCacheAPI() ) );
         (*outputImage)->allocateMemory();
     }
     ImageBitDepthEnum depth = srcImg->getBitDepth();
@@ -1060,6 +1073,7 @@ Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool setBitmapTo1,
                              boost::shared_ptr<Image>* output)
 {
+    assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
         return false;
     }
@@ -1079,6 +1093,8 @@ Image::ensureBounds(const RectI& newBounds,
                     bool fillWithBlackAndTransparent,
                     bool setBitmapTo1)
 {
+    // OpenGL textures are not resizable yet
+    assert(_params->getStorageInfo().mode != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {
         return false;
     }
@@ -1107,27 +1123,192 @@ Image::ensureBounds(const RectI& newBounds,
 void
 Image::pasteFrom(const Image & src,
                  const RectI & srcRoi,
-                 bool copyBitmap)
+                 bool copyBitmap,
+                 const OSGLContextPtr& glContext)
 {
-    ImageBitDepthEnum depth = getBitDepth();
+    StorageModeEnum thisStorage = getStorageMode();
+    StorageModeEnum otherStorage = src.getStorageMode();
 
-    switch (depth) {
-    case eImageBitDepthByte:
-        pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap, true);
-        break;
-    case eImageBitDepthShort:
-        pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap, true);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        pasteFromForDepth<float>(src, srcRoi, copyBitmap, true);
-        break;
-    case eImageBitDepthNone:
-        break;
+    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
+        // OpenGL texture to OpenGL texture
+        assert(_params->getStorageInfo().textureTarget == src.getParams()->getStorageInfo().textureTarget);
+
+        RectI dstBounds = getBounds();
+        RectI srcBounds = src.getBounds();
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = getGLTextureTarget();
+        glEnable(target);
+        glBindTexture( target, getGLTextureID() );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+        glBindTexture( target, src.getGLTextureID() );
+        glViewport( srcRoi.x1 - dstBounds.x1, srcRoi.y1 - dstBounds.y1, srcRoi.width(), srcRoi.height() );
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho( srcRoi.x1, srcRoi.x2,
+                srcRoi.y1, srcRoi.y2,
+                -10.0 * (srcRoi.y2 - srcRoi.y1), 10.0 * (srcRoi.y2 - srcRoi.y1) );
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = srcRoi.x1;
+        vertexCoords[0].y = srcRoi.y1;
+        srcTexCoords[0].x = (srcRoi.x1 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[0].y = (srcRoi.y1 - dstBounds.y1) / (double)dstBounds.height();
+
+        vertexCoords[1].x = srcRoi.x2;
+        vertexCoords[1].y = srcRoi.y1;
+        srcTexCoords[1].x = (srcRoi.x2 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[1].y = (srcRoi.y1 - dstBounds.y1) / (double)dstBounds.height();
+
+        vertexCoords[2].x = srcRoi.x2;
+        vertexCoords[2].y = srcRoi.y2;
+        srcTexCoords[2].x = (srcRoi.x2 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[2].y = (srcRoi.y2 - dstBounds.y1) / (double)dstBounds.height();
+
+        vertexCoords[3].x = srcRoi.x1;
+        vertexCoords[3].y = srcRoi.y2;
+        srcTexCoords[3].x = (srcRoi.x1 - dstBounds.x1) / (double)dstBounds.width();
+        srcTexCoords[3].y = (srcRoi.y2 - dstBounds.y1) / (double)dstBounds.height();
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        glEnd();
+
+        glBindTexture(target, 0);
+        glCheckError();
+    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
+        // RAM image to OpenGL texture
+        RectI dstBounds = getBounds();
+        RectI srcBounds = src.getBounds();
+
+        // only copy the intersection of roi, bounds and otherBounds
+        RectI roi = srcRoi;
+        bool doInteresect = roi.intersect(dstBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of this image
+            return;
+        }
+        doInteresect = roi.intersect(srcBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the other image
+            return;
+        }
+        GLuint pboID = glContext->getPBOId();
+        int target = getGLTextureTarget();
+        glEnable(target);
+
+        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+
+        std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
+        glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+
+        void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+        tmpImg->pasteFrom(src, roi);
+
+        Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
+        const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
+        assert(srcdata);
+
+        memcpy(gpuData, srcdata, dataSize);
+
+        glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+
+        glBindTexture( target, getGLTextureID() );
+        glTexSubImage2D(target,
+                        0,              // level
+                        roi.x1, roi.y1,               // xoffset, yoffset
+                        roi.width(), roi.height(),
+                        src.getGLTextureFormat(),            // format
+                        src.getGLTextureType(),       // type
+                        srcdata);
+
+        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        glBindTexture(target, 0);
+        glCheckError();
+    } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
+        // OpenGL texture to RAM image
+
+        RectI dstBounds = getBounds();
+        RectI srcBounds = src.getBounds();
+
+        // only copy the intersection of roi, bounds and otherBounds
+        RectI roi = srcRoi;
+        bool doInteresect = roi.intersect(dstBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of this image
+            return;
+        }
+        doInteresect = roi.intersect(srcBounds, &roi);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the other image
+            return;
+        }
+
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = src.getGLTextureTarget();
+        glEnable(target);
+        glBindTexture( target, src.getGLTextureID() );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
+        //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
+        glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
+        glCheckFramebufferError();
+        // Ensure all drawing commands are finished
+        glFlush();
+        glFinish();
+        glCheckError();
+        // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
+        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
+
+        {
+            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
+            unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
+
+            glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
+            glBindTexture(target, 0);
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glCheckError();
+
+        // Ok now convert from RGBA to this image format if needed
+        if ( tmpImg->getComponentsCount() != getComponentsCount() ) {
+            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, this);
+        } else {
+            pasteFrom(*tmpImg, roi, false);
+        }
+    } else {
+        assert(getStorageMode() != eStorageModeGLTex && src.getStorageMode() != eStorageModeGLTex);
+        ImageBitDepthEnum depth = getBitDepth();
+
+        switch (depth) {
+        case eImageBitDepthByte:
+            pasteFromForDepth<unsigned char>(src, srcRoi, copyBitmap, true);
+            break;
+        case eImageBitDepthShort:
+            pasteFromForDepth<unsigned short>(src, srcRoi, copyBitmap, true);
+            break;
+        case eImageBitDepthHalf:
+            assert(false);
+            break;
+        case eImageBitDepthFloat:
+            pasteFromForDepth<float>(src, srcRoi, copyBitmap, true);
+            break;
+        case eImageBitDepthNone:
+            break;
+        }
     }
-}
+} // pasteFrom
 
 template <typename PIX, int maxValue, int nComps>
 void
@@ -1200,9 +1381,80 @@ Image::fill(const RectI & roi,
             float r,
             float g,
             float b,
-            float a)
+            float a,
+            const OSGLContextPtr& glContext)
 {
     QWriteLocker k(&_entryLock);
+
+    if (getStorageMode() == eStorageModeGLTex) {
+        RectI realRoI = roi;
+        bool doInteresect = roi.intersect(_bounds, &realRoI);
+        if (!doInteresect) {
+            // no intersection between roi and the bounds of the image
+            return;
+        }
+
+        assert(glContext);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateDefaultShader(OSGLContext::eDefaultGLShaderCopyUnprocessedChannels);
+        assert(shader);
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = getGLTextureTarget();
+        glEnable(target);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture( target, getGLTextureID() );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+
+        glViewport( 0, 0, realRoI.width(), realRoI.height() );
+        glMatrixMode(GL_MODELVIEW);
+        glOrtho( _bounds.x1, _bounds.x2,
+                 _bounds.y1, _bounds.y2,
+                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = realRoI.x1;
+        vertexCoords[0].y = realRoI.y1;
+        srcTexCoords[0].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[0].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[1].x = realRoI.x2;
+        vertexCoords[1].y = realRoI.y1;
+        srcTexCoords[1].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[1].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[2].x = realRoI.x2;
+        vertexCoords[2].y = realRoI.y2;
+        srcTexCoords[2].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[2].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[3].x = realRoI.x1;
+        vertexCoords[3].y = realRoI.y2;
+        srcTexCoords[3].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[3].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
+
+        shader->bind();
+        OfxRGBAColourF fillColor = {r, g, b, a};
+        shader->setUniform("fillColor", fillColor);
+
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        glEnd();
+        shader->unbind();
+
+
+        glBindTexture(target, 0);
+        glCheckError();
+
+        return;
+    }
 
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -1220,17 +1472,26 @@ Image::fill(const RectI & roi,
     case eImageBitDepthNone:
         break;
     }
-}
+} // fill
 
 void
-Image::fillZero(const RectI& roi)
+Image::fillZero(const RectI& roi,
+                const OSGLContextPtr& glContext)
 {
+    if (getStorageMode() == eStorageModeGLTex) {
+        fill(roi, 0., 0., 0., 0., glContext);
+
+        return;
+    }
+
     QWriteLocker k(&_entryLock);
     RectI intersection;
 
     if ( !roi.intersect(_bounds, &intersection) ) {
         return;
     }
+
+
     std::size_t rowSize =  (std::size_t)_nbComponents;
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
@@ -1261,8 +1522,14 @@ Image::fillZero(const RectI& roi)
 }
 
 void
-Image::fillBoundsZero()
+Image::fillBoundsZero(const OSGLContextPtr& glContext)
 {
+    if (getStorageMode() == eStorageModeGLTex) {
+        fill(getBounds(), 0., 0., 0., 0., glContext);
+
+        return;
+    }
+
     QWriteLocker k(&_entryLock);
     std::size_t rowSize =  (std::size_t)_nbComponents;
 
@@ -1573,7 +1840,7 @@ Image::halveRoIForDepth(const RectI & roi,
             const int sum = sumW * sumH;
             assert(0 < sum && sum <= 4);
 
-            if (sum == 0) {// never happens
+            if (sum == 0) { // never happens
                 for (int k = 0; k < _nbComponents; ++k) {
                     dstPixStart[k] = 0;
                 }
@@ -1743,6 +2010,8 @@ Image::downscaleMipMap(const RectD& dstRod,
                        bool copyBitMap,
                        Image* output) const
 {
+    assert(getStorageMode() != eStorageModeGLTex);
+
     ///You should not call this function with a level equal to 0.
     assert(toLevel >  fromLevel);
 
@@ -1776,6 +2045,9 @@ bool
 Image::checkForNaNs(const RectI& roi)
 {
     if (getBitDepth() != eImageBitDepthFloat) {
+        return false;
+    }
+    if (getStorageMode() == eStorageModeGLTex) {
         return false;
     }
 
@@ -1887,6 +2159,8 @@ Image::upscaleMipMap(const RectI & roi,
                      unsigned int toLevel,
                      Image* output) const
 {
+    assert(getStorageMode() != eStorageModeGLTex);
+
     switch ( getBitDepth() ) {
     case eImageBitDepthByte:
         upscaleMipMapForDepth<unsigned char, 255>(roi, fromLevel, toLevel, output);
@@ -1899,258 +2173,6 @@ Image::upscaleMipMap(const RectI & roi,
         break;
     case eImageBitDepthFloat:
         upscaleMipMapForDepth<float, 1>(roi, fromLevel, toLevel, output);
-        break;
-    case eImageBitDepthNone:
-        break;
-    }
-}
-
-// FIXME: the following function has plenty of bugs.
-// - scale should be determined from the RoD, not bounds, so that tiles images can be scaled too
-// - the scaled roi may not start at dstBounds.x1, dstBounds.y1
-template<typename PIX>
-void
-Image::scaleBoxForDepth(const RectI & roi,
-                        Image* output) const
-{
-    assert( getBitDepth() == output->getBitDepth() );
-    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
-
-
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
-
-    ///The destination rectangle
-    const RectI & dstBounds = output->_bounds;
-
-    ///The source rectangle, intersected to this image region of definition in pixels
-    const RectI & srcBounds = _bounds;
-    RectI srcRoi = roi;
-    srcRoi.intersect(srcBounds, &srcRoi);
-
-    ///If the roi is exactly twice the destination rect, just halve that portion into output.
-    if ( (srcRoi.x1 == 2 * dstBounds.x1) &&
-         ( srcRoi.x2 == 2 * dstBounds.x2) &&
-         ( srcRoi.y1 == 2 * dstBounds.y1) &&
-         ( srcRoi.y2 == 2 * dstBounds.y2) ) {
-        halveRoI(srcRoi, false, output);
-
-        return;
-    }
-
-
-    // FIXME: should use the RoD instead of RoI/bounds !
-    RenderScale scale( (double) srcRoi.width() / dstBounds.width(), (double) srcRoi.height() / dstBounds.height() );
-    int convx_int = std::floor(scale.x);
-    int convy_int = std::floor(scale.y);
-    double convx_float = scale.x - convx_int;
-    double convy_float = scale.y - convy_int;
-    double area = scale.x * scale.y;
-    int lowy_int = 0;
-    double lowy_float = 0.;
-    int highy_int = convy_int;
-    double highy_float = convy_float;
-
-    // FIXME: dstBounds.(x1,y1) may not correspond to the scaled srcRoi!
-    const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
-    PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
-    assert(src && dst);
-    assert( output->getComponents() == getComponents() );
-
-    int rowSize = srcBounds.width() * _nbComponents;
-    float totals[4];
-
-    for (int y = 0; y < dstBounds.height(); ++y) {
-        /* Clamp here to be sure we don't read beyond input buffer. */
-        if ( highy_int >= srcRoi.height() ) {
-            highy_int = srcRoi.height() - 1;
-        }
-
-        int lowx_int = 0;
-        double lowx_float = 0.;
-        int highx_int = convx_int;
-        double highx_float = convx_float;
-
-        for (int x = 0; x < dstBounds.width(); ++x) {
-            if ( highx_int >= srcRoi.width() ) {
-                highx_int = srcRoi.width() - 1;
-            }
-
-            /*
-            ** Ok, now apply box filter to box that goes from (lowx, lowy)
-            ** to (highx, highy) on input data into this pixel on output
-            ** data.
-            */
-            totals[0] = totals[1] = totals[2] = totals[3] = 0.0;
-
-            /// calculate the value for pixels in the 1st row
-            int xindex = lowx_int * _nbComponents;
-            if ( (highy_int > lowy_int) && (highx_int > lowx_int) ) {
-                double y_percent = 1. - lowy_float;
-                double percent = y_percent * (1. - lowx_float);
-                const PIX* temp = src + xindex + lowy_int * rowSize;
-                const PIX* temp_index;
-                int k;
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-                const PIX* left = temp;
-                for (int l = lowx_int + 1; l < highx_int; ++l) {
-                    temp += _nbComponents;
-                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                        totals[k] += *temp_index * y_percent;
-                    }
-                    ;
-                }
-
-                temp += _nbComponents;
-                const PIX* right = temp;
-                percent = y_percent * highx_float;
-
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-
-                /// calculate the value for pixels in the last row
-                y_percent = highy_float;
-                percent = y_percent * (1. - lowx_float);
-                temp = src + xindex + highy_int * rowSize;
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-                for (int l = lowx_int + 1; l < highx_int; ++l) {
-                    temp += _nbComponents;
-                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                        totals[k] += *temp_index * y_percent;
-                    }
-                }
-                temp += _nbComponents;
-                percent = y_percent * highx_float;
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-
-                /* calculate the value for pixels in the 1st and last column */
-                for (int m = lowy_int + 1; m < highy_int; ++m) {
-                    left += rowSize;
-                    right += rowSize;
-                    for (k = 0; k < _nbComponents; ++k, ++left, ++right) {
-                        totals[k] += *left * (1 - lowx_float) + *right * highx_float;
-                    }
-                }
-            } else if (highy_int > lowy_int) {
-                double x_percent = highx_float - lowx_float;
-                double percent = (1. - lowy_float) * x_percent;
-                const PIX* temp = src + xindex + lowy_int * rowSize;
-                const PIX* temp_index;
-                int k;
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-                for (int m = lowy_int + 1; m < highy_int; ++m) {
-                    temp += rowSize;
-                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                        totals[k] += *temp_index * x_percent;
-                    }
-                }
-                percent = x_percent * highy_float;
-                temp += rowSize;
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-            } else if (highx_int > lowx_int) {
-                double y_percent = highy_float - lowy_float;
-                double percent = (1. - lowx_float) * y_percent;
-                int k;
-                const PIX* temp = src + xindex + lowy_int * rowSize;
-                const PIX* temp_index;
-
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-                for (int l = lowx_int + 1; l < highx_int; ++l) {
-                    temp += _nbComponents;
-                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                        totals[k] += *temp_index * y_percent;
-                    }
-                }
-                temp += _nbComponents;
-                percent = y_percent * highx_float;
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-            } else {
-                double percent = (highy_float - lowy_float) * (highx_float - lowx_float);
-                const PIX* temp = src + xindex + lowy_int * rowSize;
-                int k;
-                const PIX* temp_index;
-
-                for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                    totals[k] += *temp_index * percent;
-                }
-            }
-
-            /// this is for the pixels in the body
-            const PIX* temp0 = src + lowx_int + _nbComponents + (lowy_int + 1) * rowSize;
-            const PIX* temp;
-
-            for (int m = lowy_int + 1; m < highy_int; ++m) {
-                temp = temp0;
-                for (int l = lowx_int + 1; l < highx_int; ++l) {
-                    int k;
-                    const PIX *temp_index;
-
-                    for (k = 0, temp_index = temp; k < _nbComponents; ++k, ++temp_index) {
-                        totals[k] += *temp_index;
-                    }
-                    temp += _nbComponents;
-                }
-                temp0 += rowSize;
-            }
-
-            int outindex = ( x + ( y * dstBounds.width() ) ) * _nbComponents;
-            for (int k = 0; k < _nbComponents; ++k) {
-                dst[outindex + k] = PIX(totals[k] / area);
-            }
-            lowx_int = highx_int;
-            lowx_float = highx_float;
-            highx_int += convx_int;
-            highx_float += convx_float;
-            if (highx_float > 1) {
-                highx_float -= 1.0;
-                ++highx_int;
-            }
-        }
-        lowy_int = highy_int;
-        lowy_float = highy_float;
-        highy_int += convy_int;
-        highy_float += convy_float;
-        if (highy_float > 1) {
-            highy_float -= 1.0;
-            ++highy_int;
-        }
-    }
-} // scaleBoxForDepth
-
-//Image::scale should never be used: there should only be a method to *up*scale by a power of two, and the downscaling is done by
-//buildMipMapLevel
-// FIXME: this function has many bugs (see scaleBoxForDepth())
-void
-Image::scaleBox(const RectI & roi,
-                Image* output) const
-{
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        scaleBoxForDepth<unsigned char>(roi, output);
-        break;
-    case eImageBitDepthShort:
-        scaleBoxForDepth<unsigned short>(roi, output);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        scaleBoxForDepth<float>(roi, output);
         break;
     case eImageBitDepthNone:
         break;
@@ -2351,12 +2373,14 @@ Image::premultForDepth(const RectI& roi)
 void
 Image::premultImage(const RectI& roi)
 {
+    assert(getStorageMode() != eStorageModeGLTex);
     premultForDepth<true>(roi);
 }
 
 void
 Image::unpremultImage(const RectI& roi)
 {
+    assert(getStorageMode() != eStorageModeGLTex);
     premultForDepth<false>(roi);
 }
 

@@ -60,16 +60,16 @@ struct ToolButtonPrivate
                       const QIcon& toolbuttonIcon,
                       const QIcon& menuIcon)
         : _app(app)
-        , _id(pluginID)
-        , _major(major)
-        , _minor(minor)
-        , _label(label)
-        , _toolbuttonIcon(toolbuttonIcon)
-        , _menuIcon(menuIcon)
-        , _menu(NULL)
-        , _children()
-        , _action(NULL)
-        , _pluginToolButton(pluginToolButton)
+          , _id(pluginID)
+          , _major(major)
+          , _minor(minor)
+          , _label(label)
+          , _toolbuttonIcon(toolbuttonIcon)
+          , _menuIcon(menuIcon)
+          , _menu(NULL)
+          , _children()
+          , _action(NULL)
+          , _pluginToolButton(pluginToolButton)
     {
     }
 };

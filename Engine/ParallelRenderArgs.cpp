@@ -36,6 +36,8 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/GPUContextPool.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/RotoContext.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/ViewIdx.h"
@@ -49,6 +51,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const RoIMap& inputRois,
                                    const boost::shared_ptr<InputMatrixMap>& reroutesMap,
                                    bool useTransforms, // roi functor specific
+                                   bool renderIsOpenGL, // if the render of this node is in OpenGL
                                    unsigned int originalMipMapLevel, // roi functor specific
                                    double time,
                                    ViewIdx view,
@@ -279,7 +282,9 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                          componentsToRender, //< requested comps
                                                                                          inputPrefDepth,
                                                                                          false,
-                                                                                         effect.get() ) );
+                                                                                         effect.get(),
+                                                                                         renderIsOpenGL /*returnOpenGLTex*/,
+                                                                                         time /*callerRenderTime*/) );
 
                                     EffectInstance::RenderRoIRetCode ret;
                                     ret = inputEffect->renderRoI(*renderArgs, &inputImgs); //< requested bitdepth
@@ -399,8 +404,8 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
            Do NOT call getRegionOfDefinition on the identity time, if the plug-in returns an identity time different from
            this time, we expect that it handles getRegionOfDefinition itself correctly.
          */
-        double rodTime = time;//fvRequest->globalData.isIdentity ? fvRequest->globalData.inputIdentityTime : time;
-        ViewIdx rodView = view;//fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
+        double rodTime = time; //fvRequest->globalData.isIdentity ? fvRequest->globalData.inputIdentityTime : time;
+        ViewIdx rodView = view; //fvRequest->globalData.isIdentity ? fvRequest->globalData.identityView : view;
 
         ///Get the RoD
         StatusEnum stat = effect->getRegionOfDefinition_public(nodeRequest->nodeHash, rodTime, nodeRequest->mappedScale, rodView, &fvRequest->globalData.rod, &fvRequest->globalData.isProjectFormat);
@@ -508,6 +513,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                               fvPerRequestData.inputsRoi,
                                                               fvRequest->globalData.transforms,
                                                               useTransforms,
+                                                              false /*renderIsOpenGL*/,
                                                               originalMipMapLevel,
                                                               time,
                                                               view,
@@ -605,7 +611,8 @@ struct FindDependenciesNode
     NodePtr node;
     bool recursed;
 
-    FindDependenciesNode() : node(), recursed(false) {}
+    FindDependenciesNode()
+        : node(), recursed(false) {}
 };
 
 struct FindDependenciesNode_compare
@@ -703,11 +710,21 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    const NodePtr& activeRotoPaintNode,
                                                    bool isAnalysis,
                                                    bool draftMode,
-                                                   bool viewerProgressReportEnabled,
                                                    const boost::shared_ptr<RenderStats>& stats)
     :  argsMap()
 {
     assert(treeRoot);
+
+    // Ensure this thread gets an OpenGL context for the render of the frame
+    OSGLContextPtr glContext;
+    try {
+        glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+    }
+
+    _openGLContext = glContext;
+
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
@@ -729,13 +746,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         {
             U64 nodeHash = (*it)->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
-                                                   abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+                                                   abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, stats);
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             U64 nodeHash = (*it2)->getHashValue();
 
 
-            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, stats);
         }
 
         if ( (*it)->isMultiInstance() ) {
@@ -750,14 +767,14 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 EffectInstPtr childLiveInstance = (*it2)->getEffectInstance();
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, viewerProgressReportEnabled, stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, stats);
             }
         }
 
 
         /* NodeGroup* isGrp = (*it)->isEffectGroup();
            if (isGrp) {
-             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode, viewerProgressReportEnabled,stats);
+             isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode,stats);
            }*/
     }
 }
@@ -804,8 +821,14 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > >& args)
     : argsMap(args)
 {
+    // Ensure this thread gets an OpenGL context for the render of the frame
+    OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+
+    assert(glContext);
+    _openGLContext = glContext;
     if (args) {
         for (std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
+            it->second->openGLContext = glContext;
             it->first->getEffectInstance()->setParallelRenderArgsTLS(it->second);
         }
     }
@@ -840,28 +863,34 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
             it->first->getEffectInstance()->invalidateParallelRenderArgsTLS();
         }
     }
+
+    OSGLContextPtr glContext = _openGLContext.lock();
+    if (glContext) {
+        // This render is going to end, release the OpenGL context so that another frame render may use it
+        appPTR->getGPUContextPool()->releaseGLContextFromRender(glContext);
+    }
 }
 
 ParallelRenderArgs::ParallelRenderArgs()
     : time(0)
-    , timeline(0)
-    , nodeHash(0)
-    , request()
-    , view(0)
-    , abortInfo()
-    , treeRoot()
-    , rotoPaintNodes()
-    , stats()
-    , textureIndex(0)
-    , currentThreadSafety(eRenderSafetyInstanceSafe)
-    , isRenderResponseToUserInteraction(false)
-    , isSequentialRender(false)
-    , isAnalysis(false)
-    , isDuringPaintStrokeCreation(false)
-    , doNansHandling(true)
-    , draftMode(false)
-    , tilesSupported(false)
-    , viewerProgressReportEnabled(false)
+      , timeline(0)
+      , nodeHash(0)
+      , request()
+      , view(0)
+      , abortInfo()
+      , treeRoot()
+      , rotoPaintNodes()
+      , stats()
+      , openGLContext()
+      , textureIndex(0)
+      , currentThreadSafety(eRenderSafetyInstanceSafe)
+      , isRenderResponseToUserInteraction(false)
+      , isSequentialRender(false)
+      , isAnalysis(false)
+      , isDuringPaintStrokeCreation(false)
+      , doNansHandling(true)
+      , draftMode(false)
+      , tilesSupported(false)
 {
 }
 

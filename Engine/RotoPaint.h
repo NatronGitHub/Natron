@@ -52,7 +52,8 @@ public:
         return new RotoPaint(n, true);
     }
 
-    RotoPaint(NodePtr node, bool isPaintByDefault);
+    RotoPaint(NodePtr node,
+              bool isPaintByDefault);
 
     virtual ~RotoPaint();
 
@@ -198,7 +199,8 @@ public:
         return new RotoNode(n);
     }
 
-    RotoNode(NodePtr node) : RotoPaint(node, false) {}
+    RotoNode(NodePtr node)
+        : RotoPaint(node, false) {}
 
     virtual std::string getPluginID() const OVERRIDE WARN_UNUSED_RETURN;
     virtual std::string getPluginLabel() const OVERRIDE WARN_UNUSED_RETURN;

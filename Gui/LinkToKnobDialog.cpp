@@ -109,15 +109,15 @@ struct LinkToKnobDialogPrivate
 
     LinkToKnobDialogPrivate(const KnobGuiPtr& from)
         : fromKnob(from)
-        , mainLayout(0)
-        , firstLineLayout(0)
-        , firstLine(0)
-        , selectNodeLabel(0)
-        , nodeSelectionCombo(0)
-        , knobSelectionCombo(0)
-        , buttons(0)
-        , allNodes()
-        , allKnobs()
+          , mainLayout(0)
+          , firstLineLayout(0)
+          , firstLine(0)
+          , selectNodeLabel(0)
+          , nodeSelectionCombo(0)
+          , knobSelectionCombo(0)
+          , buttons(0)
+          , allNodes()
+          , allKnobs()
     {
     }
 };
@@ -125,7 +125,7 @@ struct LinkToKnobDialogPrivate
 LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
                                    QWidget* parent)
     : QDialog(parent)
-    , _imp( new LinkToKnobDialogPrivate(from) )
+      , _imp( new LinkToKnobDialogPrivate(from) )
 {
     _imp->mainLayout = new QVBoxLayout(this);
 

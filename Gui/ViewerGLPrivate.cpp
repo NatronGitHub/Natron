@@ -63,72 +63,72 @@ NATRON_NAMESPACE_ENTER;
 ViewerGL::Implementation::Implementation(ViewerGL* this_,
                                          ViewerTab* parent)
     : _this(this_)
-    , pboIds()
-    , vboVerticesId(0)
-    , vboTexturesId(0)
-    , iboTriangleStripId(0)
-    , activeTextures()
-    , displayTextures()
-    , partialUpdateTextures()
-    , shaderRGB()
-    , shaderBlack()
-    , shaderLoaded(false)
-    , infoViewer()
-    , viewerTab(parent)
-    , zoomOrPannedSinceLastFit(false)
-    , oldClick()
-    , displayingImageLut(eViewerColorSpaceSRGB)
-    , ms(eMouseStateUndefined)
-    , hs(eHoverStateNothing)
-    , textRenderingColor(200, 200, 200, 255)
-    , displayWindowOverlayColor(125, 125, 125, 255)
-    , rodOverlayColor(100, 100, 100, 255)
-    , textFont( new QFont(appFont, appFontSize) )
-    , overlay(true)
-    , updatingTexture(false)
-    , clearColor(0, 0, 0, 255)
-    , menu( new Menu(_this) )
-    , persistentMessages()
-    , persistentMessageType(0)
-    , displayPersistentMessage(false)
-    , textRenderer()
-    , lastMousePosition()
-    , lastDragStartPos()
-    , hasMovedSincePress(false)
-    , projectFormatMutex()
-    , projectFormat()
-    , currentViewerInfo_btmLeftBBOXoverlay()
-    , currentViewerInfo_topRightBBOXoverlay()
-    , currentViewerInfo_resolutionOverlay()
-    , pickerState(ePickerStateInactive)
-    , lastPickerPos()
-    , userRoIEnabled(false) // protected by mutex
-    , userRoI() // protected by mutex
-    , buildUserRoIOnNextPress(false)
-    , draggedUserRoI()
-    , zoomCtx() // protected by mutex
-    , clipToDisplayWindow(false) // protected by mutex
-    , wipeControlsMutex()
-    , mixAmount(1.) // protected by mutex
-    , wipeAngle(M_PI_2) // protected by mutex
-    , wipeCenter()
-    , wipeInitialized(false)
-    , selectionRectangle()
-    , checkerboardTextureID(0)
-    , checkerboardTileSize(0)
-    , savedTexture(0)
-    , prevBoundTexture(0)
-    , lastRenderedImageMutex()
-    , sizeH()
-    , pointerTypeOnPress(ePenTypeLMB)
-    , pressureOnPress(1.)
-    , pressureOnRelease(1.)
-    , wheelDeltaSeekFrame(0)
-    , isUpdatingTexture(false)
-    , renderOnPenUp(false)
-    , updateViewerPboIndex(0)
-    , lastTextureTransferRoI()
-    , lastTextureTransferMipMapLevel()
+      , pboIds()
+      , vboVerticesId(0)
+      , vboTexturesId(0)
+      , iboTriangleStripId(0)
+      , activeTextures()
+      , displayTextures()
+      , partialUpdateTextures()
+      , shaderRGB()
+      , shaderBlack()
+      , shaderLoaded(false)
+      , infoViewer()
+      , viewerTab(parent)
+      , zoomOrPannedSinceLastFit(false)
+      , oldClick()
+      , displayingImageLut(eViewerColorSpaceSRGB)
+      , ms(eMouseStateUndefined)
+      , hs(eHoverStateNothing)
+      , textRenderingColor(200, 200, 200, 255)
+      , displayWindowOverlayColor(125, 125, 125, 255)
+      , rodOverlayColor(100, 100, 100, 255)
+      , textFont(appFont, appFontSize)
+      , overlay(true)
+      , updatingTexture(false)
+      , clearColor(0, 0, 0, 255)
+      , menu( new Menu(_this) )
+      , persistentMessages()
+      , persistentMessageType(0)
+      , displayPersistentMessage(false)
+      , textRenderer()
+      , lastMousePosition()
+      , lastDragStartPos()
+      , hasMovedSincePress(false)
+      , projectFormatMutex()
+      , projectFormat()
+      , currentViewerInfo_btmLeftBBOXoverlay()
+      , currentViewerInfo_topRightBBOXoverlay()
+      , currentViewerInfo_resolutionOverlay()
+      , pickerState(ePickerStateInactive)
+      , lastPickerPos()
+      , userRoIEnabled(false) // protected by mutex
+      , userRoI() // protected by mutex
+      , buildUserRoIOnNextPress(false)
+      , draggedUserRoI()
+      , zoomCtx() // protected by mutex
+      , clipToDisplayWindow(false) // protected by mutex
+      , wipeControlsMutex()
+      , mixAmount(1.) // protected by mutex
+      , wipeAngle(M_PI_2) // protected by mutex
+      , wipeCenter()
+      , wipeInitialized(false)
+      , selectionRectangle()
+      , checkerboardTextureID(0)
+      , checkerboardTileSize(0)
+      , savedTexture(0)
+      , prevBoundTexture(0)
+      , lastRenderedImageMutex()
+      , sizeH()
+      , pointerTypeOnPress(ePenTypeLMB)
+      , pressureOnPress(1.)
+      , pressureOnRelease(1.)
+      , wheelDeltaSeekFrame(0)
+      , isUpdatingTexture(false)
+      , renderOnPenUp(false)
+      , updateViewerPboIndex(0)
+      , lastTextureTransferRoI()
+      , lastTextureTransferMipMapLevel()
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;
@@ -171,17 +171,19 @@ ViewerGL::Implementation::~Implementation()
         displayTextures[i].texture.reset();
     }
     partialUpdateTextures.clear();
-    glCheckError();
-    for (U32 i = 0; i < this->pboIds.size(); ++i) {
-        glDeleteBuffers(1, &this->pboIds[i]);
+
+    if (appPTR->isOpenGLLoaded()) {
+        glCheckError();
+        for (U32 i = 0; i < this->pboIds.size(); ++i) {
+            glDeleteBuffers(1, &this->pboIds[i]);
+        }
+        glCheckError();
+        glDeleteBuffers(1, &this->vboVerticesId);
+        glDeleteBuffers(1, &this->vboTexturesId);
+        glDeleteBuffers(1, &this->iboTriangleStripId);
+        glCheckError();
+        glDeleteTextures(1, &this->checkerboardTextureID);
     }
-    glCheckError();
-    glDeleteBuffers(1, &this->vboVerticesId);
-    glDeleteBuffers(1, &this->vboTexturesId);
-    glDeleteBuffers(1, &this->iboTriangleStripId);
-    glCheckError();
-    delete this->textFont;
-    glDeleteTextures(1, &this->checkerboardTextureID);
 }
 
 //static const GLfloat renderingTextureCoordinates[32] = {
@@ -435,8 +437,10 @@ ViewerGL::Implementation::initializeGL()
     _this->makeCurrent();
     initAndCheckGlExtensions();
 
-    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
-    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+    int format, internalFormat, glType;
+    Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, false) );
+    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, false) );
 
 
     // glGenVertexArrays(1, &_vaoId);

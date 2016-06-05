@@ -89,13 +89,13 @@ public:
 
     DeleterThread(CacheAPI* cache)
         : QThread()
-        , _entriesQueueMutex()
-        , _entriesQueue()
-        , _entriesQueueNotEmptyCond()
-        , cache(cache)
-        , mustQuitMutex()
-        , mustQuitCond()
-        , mustQuit(false)
+          , _entriesQueueMutex()
+          , _entriesQueue()
+          , _entriesQueueNotEmptyCond()
+          , cache(cache)
+          , mustQuitMutex()
+          , mustQuitCond()
+          , mustQuit(false)
     {
         setObjectName( QString::fromUtf8("CacheDeleter") );
     }
@@ -216,13 +216,13 @@ public:
 
     CacheCleanerThread(CacheAPI* cache)
         : QThread()
-        , _requestQueueMutex()
-        , _requestsQueues()
-        , _requestsQueueNotEmptyCond()
-        , cache(cache)
-        , mustQuitMutex()
-        , mustQuitCond()
-        , mustQuit(false)
+          , _requestQueueMutex()
+          , _requestsQueues()
+          , _requestsQueueNotEmptyCond()
+          , cache(cache)
+          , mustQuitMutex()
+          , mustQuitCond()
+          , mustQuit(false)
     {
         setObjectName( QString::fromUtf8("CacheCleaner") );
     }
@@ -500,23 +500,23 @@ public:
           ,
           double maximumInMemoryPercentage)      //how much should live in RAM
         : CacheAPI()
-        , _maximumInMemorySize(maximumCacheSize * maximumInMemoryPercentage)
-        , _maximumCacheSize(maximumCacheSize)
-        , _memoryCacheSize(0)
-        , _diskCacheSize(0)
-        , _sizeLock()
-        , _lock()
-        , _getLock()
-        , _memoryCache()
-        , _diskCache()
-        , _cacheName(cacheName)
-        , _version(version)
-        , _signalEmitter(new CacheSignalEmitter)
-        , _maxPhysicalRAM( getSystemTotalRAM() )
-        , _tearingDown(false)
-        , _deleterThread(this)
-        , _memoryFullCondition()
-        , _cleanerThread(this)
+          , _maximumInMemorySize(maximumCacheSize * maximumInMemoryPercentage)
+          , _maximumCacheSize(maximumCacheSize)
+          , _memoryCacheSize(0)
+          , _diskCacheSize(0)
+          , _sizeLock()
+          , _lock()
+          , _getLock()
+          , _memoryCache()
+          , _diskCache()
+          , _cacheName(cacheName)
+          , _version(version)
+          , _signalEmitter(new CacheSignalEmitter)
+          , _maxPhysicalRAM( getSystemTotalRAM() )
+          , _tearingDown(false)
+          , _deleterThread(this)
+          , _memoryFullCondition()
+          , _cleanerThread(this)
     {
     }
 
@@ -640,23 +640,9 @@ private:
         }
         {
             QMutexLocker locker(&_lock);
-            StorageModeEnum storage;
-            if (params->getCost() == 0) {
-                storage = eStorageModeRAM;
-            } else if (params->getCost() >= 1) {
-                storage = eStorageModeDisk;
-            } else {
-                storage = eStorageModeNone;
-            }
-
 
             try {
-                std::string filePath;
-                if (storage == eStorageModeDisk) {
-                    filePath = getCachePath().toStdString();
-                    filePath += '/';
-                }
-                returnValue->reset( new EntryType(key, params, this, storage, filePath) );
+                returnValue->reset( new EntryType(key, params, this ) );
 
                 ///Don't call allocateMemory() here because we're still under the lock and we might force tons of threads to wait unnecesserarily
             } catch (const std::bad_alloc & e) {
@@ -1121,7 +1107,7 @@ public:
     }
 
     /*Returns the name of the cache with its path preprended*/
-    QString getCachePath() const
+    QString getCachePath() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         QString cacheFolderName( appPTR->getDiskCacheLocation() );
         Global::ensureLastPathSeparator(cacheFolderName);
@@ -1578,7 +1564,7 @@ private:
 
                 //The entry is not yet deleted for real since it's done in a separate thread when this function
                 ///size() will return 0 at this point, we have to recompute it
-                std::size_t fsize = evictedFromDisk.second->getParams()->getElementsCount() * sizeof(data_t);
+                std::size_t fsize = evictedFromDisk.second->getElementsCountFromParams();
                 diskCacheSize -= fsize;
             }
 

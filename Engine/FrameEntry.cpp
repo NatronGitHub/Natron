@@ -33,16 +33,6 @@
 NATRON_NAMESPACE_ENTER;
 
 
-boost::shared_ptr<FrameParams>
-FrameEntry::makeParams(const RectI & rod,
-                       int bitDepth,
-                       int texW,
-                       int texH,
-                       const boost::shared_ptr<Image>& image)
-{
-    return boost::shared_ptr<FrameParams>( new FrameParams(rod, bitDepth, texW, texH, image) );
-}
-
 const U8*
 FrameEntry::pixelAt(int x,
                     int y ) const

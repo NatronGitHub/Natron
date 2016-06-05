@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 TrackerNodePrivate::TrackerNodePrivate(TrackerNode* publicInterface)
     : publicInterface(publicInterface)
-    , ui( new TrackerNodeInteract(this) )
+      , ui( new TrackerNodeInteract(this) )
 {
 }
 
@@ -54,47 +54,47 @@ TrackerNodePrivate::~TrackerNodePrivate()
 
 TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     : _p(p)
-    , addTrackButton()
-    , trackRangeButton()
-    , trackBwButton()
-    , trackPrevButton()
-    , trackNextButton()
-    , trackFwButton()
-    , trackAllKeyframesButton()
-    , trackCurrentKeyframeButton()
-    , clearAllAnimationButton()
-    , clearBwAnimationButton()
-    , clearFwAnimationButton()
-    , updateViewerButton()
-    , centerViewerButton()
-    , createKeyOnMoveButton()
-    , setKeyFrameButton()
-    , removeKeyFrameButton()
-    , resetOffsetButton()
-    , resetTrackButton()
-    , showCorrelationButton()
-    , clickToAddTrackEnabled(false)
-    , lastMousePos()
-    , selectionRectangle()
-    , controlDown(0)
-    , shiftDown(0)
-    , altDown(0)
-    , eventState(eMouseStateIdle)
-    , hoverState(eDrawStateInactive)
-    , interactMarker()
-    , trackTextures()
-    , trackRequestsMap()
-    , selectedMarkerTexture()
-    , selectedMarkerTextureTime(0)
-    , selectedMarkerTextureRoI()
-    , selectedMarker()
-    , pboID(0)
-    , selectedMarkerWidth(SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX)
-    , imageGetterWatcher()
-    , showMarkerTexture(false)
-    , selectedMarkerScale()
-    , selectedMarkerImg()
-    , isTracking(false)
+      , addTrackButton()
+      , trackRangeButton()
+      , trackBwButton()
+      , trackPrevButton()
+      , trackNextButton()
+      , trackFwButton()
+      , trackAllKeyframesButton()
+      , trackCurrentKeyframeButton()
+      , clearAllAnimationButton()
+      , clearBwAnimationButton()
+      , clearFwAnimationButton()
+      , updateViewerButton()
+      , centerViewerButton()
+      , createKeyOnMoveButton()
+      , setKeyFrameButton()
+      , removeKeyFrameButton()
+      , resetOffsetButton()
+      , resetTrackButton()
+      , showCorrelationButton()
+      , clickToAddTrackEnabled(false)
+      , lastMousePos()
+      , selectionRectangle()
+      , controlDown(0)
+      , shiftDown(0)
+      , altDown(0)
+      , eventState(eMouseStateIdle)
+      , hoverState(eDrawStateInactive)
+      , interactMarker()
+      , trackTextures()
+      , trackRequestsMap()
+      , selectedMarkerTexture()
+      , selectedMarkerTextureTime(0)
+      , selectedMarkerTextureRoI()
+      , selectedMarker()
+      , pboID(0)
+      , selectedMarkerWidth(SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX)
+      , imageGetterWatcher()
+      , showMarkerTexture(false)
+      , selectedMarkerScale()
+      , selectedMarkerImg()
+      , isTracking(false)
 {
     selectedMarkerScale.x = selectedMarkerScale.y = 1.;
 }
@@ -1238,7 +1238,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Ima
 
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
-    tex->fillOrAllocateTexture(region, Texture::eDataTypeByte, RectI(), false);
+    tex->fillOrAllocateTexture(region, RectI(), false);
 
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
 
@@ -1320,7 +1320,10 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
 
     showMarkerTexture = true;
     if (!selectedMarkerTexture) {
-        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+        int format, internalFormat, glType;
+        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                                 format, internalFormat, glType, false) );
     }
     selectedMarkerTextureTime = (int)ret.first->getTime();
     selectedMarkerTextureRoI = ret.second;
@@ -1358,7 +1361,10 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
                 return;
             }
             TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
-            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+            int format, internalFormat, glType;
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+                                          format, internalFormat, glType, false) );
             keyTextures[it->first.time] = tex;
             convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
 

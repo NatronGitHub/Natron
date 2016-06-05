@@ -38,8 +38,8 @@ struct PerInputData
 
     PerInputData()
         : pixelAspectRatio(1.)
-        , components()
-        , bitdepth(eImageBitDepthFloat)
+          , components()
+          , bitdepth(eImageBitDepthFloat)
     {
     }
 };
@@ -69,12 +69,12 @@ struct NodeMetadataPrivate
 
     NodeMetadataPrivate()
         : outputPremult(eImagePremultiplicationPremultiplied)
-        , outputFielding(eImageFieldingOrderNone)
-        , frameRate(24.)
-        , outputData()
-        , inputsData()
-        , canRenderAtNonframes(true)
-        , isFrameVarying(false)
+          , outputFielding(eImageFieldingOrderNone)
+          , frameRate(24.)
+          , outputData()
+          , inputsData()
+          , canRenderAtNonframes(true)
+          , isFrameVarying(false)
     {
     }
 

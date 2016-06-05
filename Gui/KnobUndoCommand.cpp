@@ -60,10 +60,10 @@ struct PasteUndoCommandPrivate
 
     PasteUndoCommandPrivate()
         : knob()
-        , type(eKnobClipBoardTypeCopyLink)
-        , fromDimension(-1)
-        , targetDimension(-1)
-        , originalSerialization(new KnobSerialization)
+          , type(eKnobClipBoardTypeCopyLink)
+          , fromDimension(-1)
+          , targetDimension(-1)
+          , originalSerialization(new KnobSerialization)
     {
     }
 };
@@ -74,7 +74,7 @@ PasteUndoCommand::PasteUndoCommand(const KnobGuiPtr& knob,
                                    int targetDimension,
                                    const KnobPtr& fromKnob)
     : QUndoCommand(0)
-    , _imp( new PasteUndoCommandPrivate() )
+      , _imp( new PasteUndoCommandPrivate() )
 {
     _imp->knob = knob;
     _imp->type = type;
@@ -230,10 +230,10 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
                                                            int dimension,
                                                            double time)
     : QUndoCommand()
-    , knobs()
-    , createNew(createNew)
-    , firstRedoCalled(false)
-    , _reason(reason)
+      , knobs()
+      , createNew(createNew)
+      , firstRedoCalled(false)
+      , _reason(reason)
 {
     assert(knob);
     std::list<ValueToSet>& vlist = knobs[knob];
@@ -514,9 +514,9 @@ RestoreDefaultsCommand::RestoreDefaultsCommand(bool isNodeReset,
                                                int targetDim,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
-    , _isNodeReset(isNodeReset)
-    , _targetDim(targetDim)
-    , _knobs()
+      , _isNodeReset(isNodeReset)
+      , _targetDim(targetDim)
+      , _knobs()
 {
     for (std::list<KnobPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         _knobs.push_front(*it);
@@ -671,12 +671,12 @@ SetExpressionCommand::SetExpressionCommand(const KnobPtr & knob,
                                            const std::string& expr,
                                            QUndoCommand *parent)
     : QUndoCommand(parent)
-    , _knob(knob)
-    , _oldExprs()
-    , _hadRetVar()
-    , _newExpr(expr)
-    , _hasRetVar(hasRetVar)
-    , _dimension(dimension)
+      , _knob(knob)
+      , _oldExprs()
+      , _hadRetVar()
+      , _newExpr(expr)
+      , _hasRetVar(hasRetVar)
+      , _dimension(dimension)
 {
     for (int i = 0; i < knob->getDimension(); ++i) {
         _oldExprs.push_back( knob->getExpression(i) );

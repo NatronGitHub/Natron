@@ -72,7 +72,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    AnimatingTextEdit(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
+    AnimatingTextEdit(const KnobGuiPtr& knob,
+                      int dimension,
+                      QWidget* parent = 0);
 
     virtual ~AnimatingTextEdit();
 
@@ -129,7 +131,9 @@ class KnobLineEdit
     : public LineEdit
 {
 public:
-    KnobLineEdit(const KnobGuiPtr& knob, int dimension, QWidget* parent = 0);
+    KnobLineEdit(const KnobGuiPtr& knob,
+                 int dimension,
+                 QWidget* parent = 0);
 
     virtual ~KnobLineEdit();
 

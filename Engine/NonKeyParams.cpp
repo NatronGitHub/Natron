@@ -30,41 +30,30 @@
 NATRON_NAMESPACE_ENTER;
 
 NonKeyParams::NonKeyParams()
-    : _elementsCount(0)
-    , _cost(0)
+    : _storageInfo()
 {
 }
 
-NonKeyParams::NonKeyParams(int cost,
-                           U64 elementsCount)
-    : _elementsCount(elementsCount)
-    , _cost(cost)
+NonKeyParams::NonKeyParams(const CacheEntryStorageInfo& info)
+    : _storageInfo(info)
 {
 }
 
 NonKeyParams::NonKeyParams(const NonKeyParams & other)
-    : _elementsCount(other._elementsCount)
-    , _cost(other._cost)
+    : _storageInfo(other._storageInfo)
 {
 }
 
-///the number of elements the associated cache entry should allocate (relative to the datatype of the entry)
-U64
-NonKeyParams::getElementsCount() const
+CacheEntryStorageInfo&
+NonKeyParams::getStorageInfo()
 {
-    return _elementsCount;
+    return _storageInfo;
 }
 
-void
-NonKeyParams::setElementsCount(U64 count)
+const CacheEntryStorageInfo&
+NonKeyParams::getStorageInfo() const
 {
-    _elementsCount = count;
-}
-
-int
-NonKeyParams::getCost() const
-{
-    return _cost;
+    return _storageInfo;
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -8,8 +8,8 @@ Natron binaries include components from the following libraries:
 * Qt (LGPL 2.1 with Qt LGPL Exception) http://doc.qt.io/qt-4.8/lgpl.html
 * Boost (Boost Software License) http://www.boost.org/users/license.html
 * Cairo (LGPL 2.1) http://cairographics.org/
-* GLAD (MIT) https://github.com/Dav1dde/glad
-* GLFW (zlib/libpng license (BSD-like)) http://www.glfw.org
+* GLAD (MIT) http://glad.dav1d.de/
+* GLFW (libpng/zlib license) http://www.glfw.org/
 * openfx (Modified BSD) https://github.com/ofxa/openfx
 * openfx-io (GPLv2) https://github.com/MrKepzie/openfx-io
 * openfx-misc (GPLv2) https://github.com/devernay/openfx-misc

@@ -210,15 +210,15 @@ public:
 
     ReadNodePrivate(ReadNode* publicInterface)
         : _publicInterface(publicInterface)
-        , embeddedPlugin()
-        , genericKnobsSerialization()
-        , inputFileKnob()
-        , pluginSelectorKnob()
-        , pluginIDStringKnob()
-        , separatorKnob()
-        , fileInfosKnob()
-        , readNodeKnobs()
-        , creatingReadNode(0)
+          , embeddedPlugin()
+          , genericKnobsSerialization()
+          , inputFileKnob()
+          , pluginSelectorKnob()
+          , pluginIDStringKnob()
+          , separatorKnob()
+          , fileInfosKnob()
+          , readNodeKnobs()
+          , creatingReadNode(0)
     {
     }
 
@@ -274,7 +274,7 @@ public:
 
 ReadNode::ReadNode(NodePtr n)
     : EffectInstance(n)
-    , _imp( new ReadNodePrivate(this) )
+      , _imp( new ReadNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -498,12 +498,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         int pluginChoice_i = pluginChoiceKnob->getValue();
         if (pluginChoice_i == 0) {
             //Use default
-            std::map<std::string, std::string> readersForFormat;
-            appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-            std::map<std::string, std::string>::iterator foundReaderForFormat = readersForFormat.find(ext);
-            if ( foundReaderForFormat != readersForFormat.end() ) {
-                readerPluginID = foundReaderForFormat->second;
-            }
+            readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
         } else {
             std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
@@ -616,13 +611,15 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::vector<std::string> readersForFormat;
     std::string pluginID;
     if ( !ext.empty() ) {
-        appPTR->getCurrentSettings()->getReadersForFormat(ext, &readersForFormat);
-        pluginID = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
-        for (std::size_t i = 0; i < readersForFormat.size(); ++i) {
-            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( readersForFormat[i].c_str() ), -1, -1, false);
+        pluginID = appPTR->getReaderPluginIDForFileType(ext);
+        IOPluginSetForFormat readersForFormat;
+        appPTR->getReadersForFormat(ext, &readersForFormat);
+
+        // Reverse it so that we sort them by decreasing score order
+        for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it!=readersForFormat.rend(); ++it) {
+            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
@@ -1089,10 +1086,12 @@ ReadNode::beginSequenceRender(double first,
                               bool isSequentialRender,
                               bool isRenderResponseToUserInteraction,
                               bool draftMode,
-                              ViewIdx view)
+                              ViewIdx view,
+                              bool isOpenGLRender,
+                              const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        return _imp->embeddedPlugin->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
     } else {
         return eStatusFailed;
     }
@@ -1107,10 +1106,12 @@ ReadNode::endSequenceRender(double first,
                             bool isSequentialRender,
                             bool isRenderResponseToUserInteraction,
                             bool draftMode,
-                            ViewIdx view)
+                            ViewIdx view,
+                            bool isOpenGLRender,
+                            const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view);
+        return _imp->embeddedPlugin->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
     } else {
         return eStatusFailed;
     }

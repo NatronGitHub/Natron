@@ -396,7 +396,8 @@ struct RotoPaintPrivate
     boost::weak_ptr<KnobBool> enabledKnobs[4];
     boost::shared_ptr<RotoPaintInteract> ui;
 
-    RotoPaintPrivate(RotoPaint* publicInterface, bool isPaintByDefault);
+    RotoPaintPrivate(RotoPaint* publicInterface,
+                     bool isPaintByDefault);
 };
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or

@@ -112,16 +112,16 @@ struct EditScriptDialogPrivate
 
     EditScriptDialogPrivate(Gui* gui)
         : gui(gui)
-        , mainLayout(0)
-        , expressionLabel(0)
-        , expressionEdit(0)
-        , midButtonsContainer(0)
-        , midButtonsLayout(0)
-        , useRetButton(0)
-        , helpButton(0)
-        , resultLabel(0)
-        , resultEdit(0)
-        , buttons(0)
+          , mainLayout(0)
+          , expressionLabel(0)
+          , expressionEdit(0)
+          , midButtonsContainer(0)
+          , midButtonsLayout(0)
+          , useRetButton(0)
+          , helpButton(0)
+          , resultLabel(0)
+          , resultEdit(0)
+          , buttons(0)
     {
     }
 };
@@ -129,7 +129,7 @@ struct EditScriptDialogPrivate
 EditScriptDialog::EditScriptDialog(Gui* gui,
                                    QWidget* parent)
     : QDialog(parent)
-    , _imp( new EditScriptDialogPrivate(gui) )
+      , _imp( new EditScriptDialogPrivate(gui) )
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 }

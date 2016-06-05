@@ -87,51 +87,51 @@ struct HistogramPrivate
 public:
     HistogramPrivate(Histogram* widget)
         : mainLayout(NULL)
-        , rightClickMenu(NULL)
-        , histogramSelectionMenu(NULL)
-        , histogramSelectionGroup(NULL)
-        , viewerCurrentInputMenu(NULL)
-        , viewerCurrentInputGroup(NULL)
-        , modeActions(0)
-        , modeMenu(NULL)
-        , fullImage(NULL)
-        , filterActions(0)
-        , filterMenu(NULL)
-        , widget(widget)
-        , mode(Histogram::eDisplayModeRGB)
-        , oldClick()
-        , zoomCtx()
-        , state(eEventStateNone)
-        , hasBeenModifiedSinceResize(false)
-        , _baseAxisColor(118, 215, 90, 255)
-        , _scaleColor(67, 123, 52, 255)
-        , _font(appFont, appFontSize)
-        , textRenderer()
-        , drawCoordinates(false)
-        , xCoordinateStr()
-        , rValueStr()
-        , gValueStr()
-        , bValueStr()
-        , filterSize(0)
+          , rightClickMenu(NULL)
+          , histogramSelectionMenu(NULL)
+          , histogramSelectionGroup(NULL)
+          , viewerCurrentInputMenu(NULL)
+          , viewerCurrentInputGroup(NULL)
+          , modeActions(0)
+          , modeMenu(NULL)
+          , fullImage(NULL)
+          , filterActions(0)
+          , filterMenu(NULL)
+          , widget(widget)
+          , mode(Histogram::eDisplayModeRGB)
+          , oldClick()
+          , zoomCtx()
+          , state(eEventStateNone)
+          , hasBeenModifiedSinceResize(false)
+          , _baseAxisColor(118, 215, 90, 255)
+          , _scaleColor(67, 123, 52, 255)
+          , _font(appFont, appFontSize)
+          , textRenderer()
+          , drawCoordinates(false)
+          , xCoordinateStr()
+          , rValueStr()
+          , gValueStr()
+          , bValueStr()
+          , filterSize(0)
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-        , histogramComputingShader()
-        , histogramMaximumShader()
-        , histogramRenderingShader()
+          , histogramComputingShader()
+          , histogramMaximumShader()
+          , histogramRenderingShader()
 #else
-        , histogramThread()
-        , histogram1()
-        , histogram2()
-        , histogram3()
-        , pixelsCount(0)
-        , vmin(0)
-        , vmax(0)
-        , binsCount(0)
-        , mipMapLevel(0)
-        , hasImage(false)
+          , histogramThread()
+          , histogram1()
+          , histogram2()
+          , histogram3()
+          , pixelsCount(0)
+          , vmin(0)
+          , vmax(0)
+          , binsCount(0)
+          , mipMapLevel(0)
+          , hasImage(false)
 #endif
-        , sizeH()
-        , showViewerPicker(false)
-        , viewerPickerColor()
+          , sizeH()
+          , showViewerPicker(false)
+          , viewerPickerColor()
     {
     }
 
@@ -278,8 +278,8 @@ public:
 Histogram::Histogram(Gui* gui,
                      const QGLWidget* shareWidget)
     : QGLWidget(gui, shareWidget)
-    , PanelWidget(this, gui)
-    , _imp( new HistogramPrivate(this) )
+      , PanelWidget(this, gui)
+      , _imp( new HistogramPrivate(this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -673,6 +673,11 @@ Histogram::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     assert( QGLContext::currentContext() == context() );
 
 
@@ -1131,6 +1136,11 @@ Histogram::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+
     glCheckError();
     double w = (double)width();
     double h = (double)height();
@@ -1198,6 +1208,11 @@ Histogram::resizeGL(int width,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
 
     if (height == 0) { // prevent division by 0
         height = 1;

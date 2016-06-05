@@ -35,7 +35,7 @@ NATRON_NAMESPACE_ENTER;
 
 VerticalColorBar::VerticalColorBar(QWidget* parent)
     : QWidget(parent)
-    , _color(Qt::black)
+      , _color(Qt::black)
 {
     setFixedWidth(NATRON_VERTICAL_BAR_WIDTH);
 }

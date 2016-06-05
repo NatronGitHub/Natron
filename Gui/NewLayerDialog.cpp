@@ -102,20 +102,20 @@ struct NewLayerDialogPrivate
 
     NewLayerDialogPrivate()
         : mainLayout(0)
-        , layerLabel(0)
-        , layerEdit(0)
-        , numCompsLabel(0)
-        , numCompsBox(0)
-        , rLabel(0)
-        , rEdit(0)
-        , gLabel(0)
-        , gEdit(0)
-        , bLabel(0)
-        , bEdit(0)
-        , aLabel(0)
-        , aEdit(0)
-        , setRgbaButton(0)
-        , buttons(0)
+          , layerLabel(0)
+          , layerEdit(0)
+          , numCompsLabel(0)
+          , numCompsBox(0)
+          , rLabel(0)
+          , rEdit(0)
+          , gLabel(0)
+          , gEdit(0)
+          , bLabel(0)
+          , bEdit(0)
+          , aLabel(0)
+          , aEdit(0)
+          , setRgbaButton(0)
+          , buttons(0)
     {
     }
 };
@@ -123,7 +123,7 @@ struct NewLayerDialogPrivate
 NewLayerDialog::NewLayerDialog(const ImageComponents& original,
                                QWidget* parent)
     : QDialog(parent)
-    , _imp( new NewLayerDialogPrivate() )
+      , _imp( new NewLayerDialogPrivate() )
 {
     _imp->mainLayout = new QGridLayout(this);
     _imp->layerLabel = new Label(tr("Layer Name"), this);

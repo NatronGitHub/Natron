@@ -1248,13 +1248,9 @@ NodePtr
 Gui::createReader()
 {
     NodePtr ret;
-    std::map<std::string, std::string> readersForFormat;
-
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
+    appPTR->getSupportedReaderFileFormats(&filters);
+
     std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true );
     if ( !pattern.empty() ) {
         NodeGraph* graph = 0;
@@ -1306,14 +1302,9 @@ NodePtr
 Gui::createWriter()
 {
     NodePtr ret;
-    std::map<std::string, std::string> writersForFormat;
 
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
-
+    appPTR->getSupportedWriterFileFormats(&filters);
 
     std::string file;
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -1368,28 +1359,18 @@ Gui::popOpenFileDialog(bool sequenceDialog,
 std::string
 Gui::openImageSequenceDialog()
 {
-    std::map<std::string, std::string> readersForFormat;
 
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
-
+    appPTR->getSupportedReaderFileFormats(&filters);
     return popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true);
 }
 
 std::string
 Gui::saveImageSequenceDialog()
 {
-    std::map<std::string, std::string> writersForFormat;
 
-    appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
     std::vector<std::string> filters;
-    for (std::map<std::string, std::string>::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it) {
-        filters.push_back(it->first);
-    }
-
+    appPTR->getSupportedWriterFileFormats(&filters);
     return popSaveFileDialog(true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true);
 }
 

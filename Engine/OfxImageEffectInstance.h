@@ -264,7 +264,8 @@ public:
 
     OfxImageEffectDescriptor(OFX::Host::Plugin *plug);
 
-    OfxImageEffectDescriptor(const std::string &bundlePath, OFX::Host::Plugin *plug);
+    OfxImageEffectDescriptor(const std::string &bundlePath,
+                             OFX::Host::Plugin *plug);
 
     OfxImageEffectDescriptor(const OFX::Host::ImageEffect::Descriptor &rootContext,
                              OFX::Host::Plugin *plugin);

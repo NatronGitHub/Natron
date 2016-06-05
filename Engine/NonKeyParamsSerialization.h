@@ -52,8 +52,11 @@ void
 NonKeyParams::serialize(Archive & ar,
                         const unsigned int /*version*/)
 {
-    ar & ::boost::serialization::make_nvp("Cost", _cost);
-    ar & ::boost::serialization::make_nvp("ElementsCount", _elementsCount);
+    ar & ::boost::serialization::make_nvp("DataTypeSize", _storageInfo.dataTypeSize);
+    ar & ::boost::serialization::make_nvp("NComps", _storageInfo.numComponents);
+    ar & ::boost::serialization::make_nvp("Bounds", _storageInfo.bounds);
+    ar & ::boost::serialization::make_nvp("StorageMode", _storageInfo.mode);
+    ar & ::boost::serialization::make_nvp("TexTarget", _storageInfo.textureTarget);
 }
 
 NATRON_NAMESPACE_EXIT;

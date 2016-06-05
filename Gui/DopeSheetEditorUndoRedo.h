@@ -333,8 +333,8 @@ struct DSKeyInterpolationChange
                              KeyframeTypeEnum newInterpType,
                              const DSKeyPtr & key)
         : _oldInterpType(oldInterpType),
-        _newInterpType(newInterpType),
-        _key(key)
+          _newInterpType(newInterpType),
+          _key(key)
     {}
 
     KeyframeTypeEnum _oldInterpType;

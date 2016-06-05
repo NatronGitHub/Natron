@@ -51,9 +51,9 @@ NATRON_NAMESPACE_ENTER;
 KnobGui::KnobGui(const KnobPtr& /*knob*/,
                  KnobGuiContainerI* container)
     : QObject()
-    , KnobGuiI()
-    , boost::enable_shared_from_this<KnobGui>()
-    , _imp( new KnobGuiPrivate(container) )
+      , KnobGuiI()
+      , boost::enable_shared_from_this<KnobGui>()
+      , _imp( new KnobGuiPrivate(container) )
 {
 }
 

@@ -86,8 +86,8 @@ public:
      **/
     KeyHelper(const KeyHelper & other)
         : _holderID( other.getCacheHolderID() )
-        , _hash( other.getHash() )
-        , _hashComputed(true)
+          , _hash( other.getHash() )
+          , _hashComputed(true)
     {
     }
 

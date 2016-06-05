@@ -37,7 +37,8 @@ class ChannelsComboBox
 {
 public:
 
-    ChannelsComboBox(QWidget* parent) : ComboBox(parent) {}
+    ChannelsComboBox(QWidget* parent)
+        : ComboBox(parent) {}
 
 private:
 

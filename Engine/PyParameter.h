@@ -420,7 +420,8 @@ class Int2DParam
 {
 public:
 
-    Int2DParam(const boost::shared_ptr<KnobInt>& knob) : IntParam(knob) {}
+    Int2DParam(const boost::shared_ptr<KnobInt>& knob)
+        : IntParam(knob) {}
 
     virtual ~Int2DParam() {}
 
@@ -435,7 +436,8 @@ class Int3DParam
 {
 public:
 
-    Int3DParam(const boost::shared_ptr<KnobInt>& knob) : Int2DParam(knob) {}
+    Int3DParam(const boost::shared_ptr<KnobInt>& knob)
+        : Int2DParam(knob) {}
 
     virtual ~Int3DParam() {}
 
@@ -566,7 +568,8 @@ class Double2DParam
 {
 public:
 
-    Double2DParam(const boost::shared_ptr<KnobDouble>& knob) : DoubleParam(knob) {}
+    Double2DParam(const boost::shared_ptr<KnobDouble>& knob)
+        : DoubleParam(knob) {}
 
     virtual ~Double2DParam() {}
 
@@ -583,7 +586,8 @@ class Double3DParam
 {
 public:
 
-    Double3DParam(const boost::shared_ptr<KnobDouble>& knob) : Double2DParam(knob) {}
+    Double3DParam(const boost::shared_ptr<KnobDouble>& knob)
+        : Double2DParam(knob) {}
 
     virtual ~Double3DParam() {}
 

@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 TrackerNode::TrackerNode(boost::shared_ptr<Natron::Node> node)
     : NodeGroup(node)
-    , _imp( new TrackerNodePrivate(this) )
+      , _imp( new TrackerNodePrivate(this) )
 {
 }
 

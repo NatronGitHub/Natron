@@ -82,19 +82,19 @@ public:
                              const NodeGuiPtr& node,
                              ViewerTab* viewer)
         : publicInterface(pi)
-        , node(node)
-        , viewer( viewer->getViewer() )
-        , viewerTab(viewer)
-        , knobsMapping()
-        , currentRole()
-        , currentTool()
-        , toolbar(0)
-        , toolButtons()
-        , mainContainer(0)
-        , mainContainerLayout(0)
-        , nodeLabel(0)
-        , widgetsContainer(0)
-        , widgetsContainerLayout(0)
+          , node(node)
+          , viewer( viewer->getViewer() )
+          , viewerTab(viewer)
+          , knobsMapping()
+          , currentRole()
+          , currentTool()
+          , toolbar(0)
+          , toolButtons()
+          , mainContainer(0)
+          , mainContainerLayout(0)
+          , nodeLabel(0)
+          , widgetsContainer(0)
+          , widgetsContainerLayout(0)
     {
     }
 
@@ -143,8 +143,8 @@ public:
 NodeViewerContext::NodeViewerContext(const NodeGuiPtr& node,
                                      ViewerTab* viewer)
     : QObject()
-    , KnobGuiContainerI()
-    , _imp( new NodeViewerContextPrivate(this, node, viewer) )
+      , KnobGuiContainerI()
+      , _imp( new NodeViewerContextPrivate(this, node, viewer) )
 {
 }
 

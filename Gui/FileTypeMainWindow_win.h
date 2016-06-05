@@ -120,7 +120,8 @@ public:
      *
      * Creates a DocumentWindow with a given @arg parent and @arg flags.
      */
-    explicit DocumentWindow(QWidget* parent = 0, Qt::WindowFlags flags = 0);
+    explicit DocumentWindow(QWidget* parent = 0,
+                            Qt::WindowFlags flags = 0);
 
     /**
      * Destructor

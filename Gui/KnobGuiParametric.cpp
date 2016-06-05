@@ -90,11 +90,11 @@ using std::make_pair;
 KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
                                      KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , treeColumn(NULL)
-    , _curveWidget(NULL)
-    , _tree(NULL)
-    , _resetButton(NULL)
-    , _curves()
+      , treeColumn(NULL)
+      , _curveWidget(NULL)
+      , _tree(NULL)
+      , _resetButton(NULL)
+      , _curves()
 {
     _knob = boost::dynamic_pointer_cast<KnobParametric>(knob);
     QObject::connect( _knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)) );

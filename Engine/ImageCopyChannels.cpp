@@ -30,6 +30,8 @@
 #include <stdexcept>
 
 #include <QtCore/QDebug>
+#include "Engine/OSGLContext.h"
+#include "Engine/GLShader.h"
 
 
 // disable some warnings due to unused parameters
@@ -586,7 +588,8 @@ Image::copyUnProcessedChannels(const RectI& roi,
                                const ImagePremultiplicationEnum originalImagePremult,
                                const std::bitset<4> processChannels,
                                const ImagePtr& originalImage,
-                               bool ignorePremult)
+                               bool ignorePremult,
+                               const OSGLContextPtr& glContext)
 {
     int numComp = getComponents().getNumComponents();
 
@@ -614,8 +617,89 @@ Image::copyUnProcessedChannels(const RectI& roi,
     assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
 
 
-    RectI intersected;
-    roi.intersect(_bounds, &intersected);
+    RectI srcRoi;
+    roi.intersect(_bounds, &srcRoi);
+
+    if (getStorageMode() == eStorageModeGLTex) {
+        assert(glContext);
+        assert(originalImage->getStorageMode() == eStorageModeGLTex);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateDefaultShader(OSGLContext::eDefaultGLShaderCopyUnprocessedChannels);
+        assert(shader);
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = getGLTextureTarget();
+        glEnable(target);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture( target, getGLTextureID() );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+        glCheckError();
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture( target, originalImage->getGLTextureID() );
+
+
+        glViewport( srcRoi.x1 - _bounds.x1, srcRoi.y1 - _bounds.y1, srcRoi.width(), srcRoi.height() );
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho( srcRoi.x1, srcRoi.x2,
+                srcRoi.y1, srcRoi.y2,
+                -10.0 * (srcRoi.y2 - srcRoi.y1), 10.0 * (srcRoi.y2 - srcRoi.y1) );
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glCheckError();
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = srcRoi.x1;
+        vertexCoords[0].y = srcRoi.y1;
+        srcTexCoords[0].x = (srcRoi.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[0].y = (srcRoi.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[1].x = srcRoi.x2;
+        vertexCoords[1].y = srcRoi.y1;
+        srcTexCoords[1].x = (srcRoi.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[1].y = (srcRoi.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[2].x = srcRoi.x2;
+        vertexCoords[2].y = srcRoi.y2;
+        srcTexCoords[2].x = (srcRoi.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[2].y = (srcRoi.y2 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[3].x = srcRoi.x1;
+        vertexCoords[3].y = srcRoi.y2;
+        srcTexCoords[3].x = (srcRoi.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[3].y = (srcRoi.y2 - _bounds.y1) / (double)_bounds.height();
+
+        shader->bind();
+        glCheckError();
+        shader->setUniform("originalImageTex", 1);
+        shader->setUniform("outputImageTex", 0);
+        OfxRGBAColourF procChannelsV = {
+            processChannels[0] ? 1.f : 0.f,
+            processChannels[1] ? 1.f : 0.f,
+            processChannels[2] ? 1.f : 0.f,
+            processChannels[3] ? 1.f : 0.f
+        };
+        shader->setUniform("processChannels", procChannelsV);
+        glCheckError();
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        glEnd();
+        shader->unbind();
+        glCheckError();
+
+        glBindTexture(target, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(target, 0);
+        glCheckError();
+
+        return;
+    }
+
 
     bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
     bool originalPremult = (originalImagePremult == eImagePremultiplicationPremultiplied);
@@ -633,6 +717,6 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
         return;
     }
-}
+} // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;

@@ -104,7 +104,7 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
                                    const boost::shared_ptr<RotoLayer>& parent,
                                    bool isStroke)
     : RotoItem(context, name, parent)
-    , _imp( new RotoDrawableItemPrivate(isStroke) )
+      , _imp( new RotoDrawableItemPrivate(isStroke) )
 {
 #ifdef NATRON_ROTO_INVERTIBLE
     QObject::connect( _imp->inverted->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(invertedStateChanged()) );

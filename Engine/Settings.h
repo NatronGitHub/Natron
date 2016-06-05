@@ -120,24 +120,9 @@ public:
 
     void setUseGlobalThreadPool(bool use);
 
-    std::string getReaderPluginIDForFileType(const std::string & extension);
-    std::string getWriterPluginIDForFileType(const std::string & extension);
-
-    void populateReaderPluginsAndFormats(const std::map<std::string, std::vector< std::pair<std::string, double> > > & rows);
-
-    void populateWriterPluginsAndFormats(const std::map<std::string, std::vector< std::pair<std::string, double> > > & rows);
-
     void populatePluginsTab();
 
     void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);
-
-    void getFileFormatsForReadingAndReader(std::map<std::string, std::string>* formats);
-
-    void getFileFormatsForWritingAndWriter(std::map<std::string, std::string>* formats);
-
-    void getReadersForFormat(const std::string& format, std::vector<std::string>* decoders);
-
-    void getWritersForFormat(const std::string& format, std::vector<std::string>* encoders);
 
     ///save the settings to the application's settings
     void saveSettings(const std::vector<KnobI*>& settings, bool doWarnings);
@@ -386,8 +371,6 @@ private:
     void initializeKnobsViewers();
     void initializeKnobsNodeGraph();
     void initializeKnobsCaching();
-    void initializeKnobsReaders();
-    void initializeKnobsWriters();
     void initializeKnobsPlugins();
     void initializeKnobsPython();
 
@@ -513,10 +496,6 @@ private:
     boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
     boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
     boost::shared_ptr<KnobInt> _defaultAppearanceVersion;
-    boost::shared_ptr<KnobPage> _readersTab;
-    std::vector< boost::shared_ptr<KnobChoice> > _readersMapping;
-    boost::shared_ptr<KnobPage> _writersTab;
-    std::vector< boost::shared_ptr<KnobChoice> >  _writersMapping;
     boost::shared_ptr<KnobPath> _extraPluginPaths;
     boost::shared_ptr<KnobPath> _templatesPluginPaths;
     boost::shared_ptr<KnobBool> _preferBundledPlugins;
@@ -585,7 +564,7 @@ private:
         PerPluginKnobs(const boost::shared_ptr<KnobBool>& enabled,
                        const boost::shared_ptr<KnobChoice>& renderScaleSupport)
             : enabled(enabled)
-            , renderScaleSupport(renderScaleSupport)
+              , renderScaleSupport(renderScaleSupport)
         {
         }
 

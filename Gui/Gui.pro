@@ -181,8 +181,6 @@ SOURCES += \
     PropertiesBinWrapper.cpp \
     PyGuiApp.cpp \
     PythonPanels.cpp \
-    QtDecoder.cpp \
-    QtEncoder.cpp \
     RenderStatsDialog.cpp \
     ResizableMessageBox.cpp \
     RightClickableWidget.cpp \
@@ -323,8 +321,6 @@ HEADERS += \
     PyGuiApp.h \
     Pyside_Gui_Python.h \
     PythonPanels.h \
-    QtDecoder.h \
-    QtEncoder.h \
     RegisteredTabs.h \
     RenderStatsDialog.h \
     ResizableMessageBox.h \

@@ -26,6 +26,8 @@
 
 #include <cassert>
 #include <stdexcept>
+#include "Engine/GLShader.h"
+#include "Engine/OSGLContext.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -188,7 +190,8 @@ Image::applyMaskMix(const RectI& roi,
                     const Image* originalImg,
                     bool masked,
                     bool maskInvert,
-                    float mix)
+                    float mix,
+                    const OSGLContextPtr& glContext)
 {
     ///!masked && mix == 1 has nothing to do
     if ( !masked && (mix == 1) ) {
@@ -209,6 +212,84 @@ Image::applyMaskMix(const RectI& roi,
 
     assert( !originalImg || getBitDepth() == originalImg->getBitDepth() );
     assert( !masked || !maskImg || maskImg->getComponents() == ImageComponents::getAlphaComponents() );
+
+    if (getStorageMode() == eStorageModeGLTex) {
+        assert(glContext);
+        assert(originalImg->getStorageMode() == eStorageModeGLTex);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateDefaultShader(OSGLContext::eDefaultGLShaderCopyUnprocessedChannels);
+        assert(shader);
+        GLuint fboID = glContext->getFBOId();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        int target = getGLTextureTarget();
+        glEnable(target);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture( target, getGLTextureID() );
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
+        glCheckFramebufferError();
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture( target, originalImg->getGLTextureID() );
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(target, maskImg ? maskImg->getGLTextureID() : 0);
+
+        glViewport( realRoI.x1 - _bounds.x1, realRoI.y1 - _bounds.y1, realRoI.width(), realRoI.height() );
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho( realRoI.x1, realRoI.x2,
+                realRoI.y1, realRoI.y2,
+                -10.0 * (realRoI.y2 - realRoI.y1), 10.0 * (realRoI.y2 - realRoI.y1) );
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glCheckError();
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = realRoI.x1;
+        vertexCoords[0].y = realRoI.y1;
+        srcTexCoords[0].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[0].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[1].x = realRoI.x2;
+        vertexCoords[1].y = realRoI.y1;
+        srcTexCoords[1].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[1].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[2].x = realRoI.x2;
+        vertexCoords[2].y = realRoI.y2;
+        srcTexCoords[2].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[2].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
+
+        vertexCoords[3].x = realRoI.x1;
+        vertexCoords[3].y = realRoI.y2;
+        srcTexCoords[3].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
+        srcTexCoords[3].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
+
+        shader->bind();
+        shader->setUniform("originalImageTex", 1);
+        shader->setUniform("maskImageTex", 2);
+        shader->setUniform("outputImageTex", 0);
+        shader->setUniform("mixValue", mix);
+        shader->setUniform("maskEnabled", maskImg ? 1 : 0);
+
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        glEnd();
+        shader->unbind();
+
+
+        glBindTexture(target, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(target, 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(target, 0);
+        glCheckError();
+
+        return;
+    }
 
     int srcNComps = originalImg ? (int)originalImg->getComponentsCount() : 0;
     //assert(0 < srcNComps && srcNComps <= 4);
@@ -231,6 +312,6 @@ Image::applyMaskMix(const RectI& roi,
     default:
         break;
     }
-}
+} // applyMaskMix
 
 NATRON_NAMESPACE_EXIT;

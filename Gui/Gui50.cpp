@@ -1131,11 +1131,11 @@ Gui::fileSequencesFromUrls(const QList<QUrl>& urls,
     QStringList supportedExtensions;
     supportedExtensions.push_back( QString::fromLatin1(NATRON_PROJECT_FILE_EXT) );
     supportedExtensions.push_back( QString::fromLatin1("py") );
-    ///get all the decoders
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    for (std::map<std::string, std::string>::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-        supportedExtensions.push_back( QString::fromUtf8( it->first.c_str() ) );
+
+    std::vector<std::string> readersFormat;
+    appPTR->getSupportedReaderFileFormats(&readersFormat);
+    for (std::vector<std::string>::const_iterator it = readersFormat.begin(); it != readersFormat.end(); ++it) {
+        supportedExtensions.push_back( QString::fromUtf8( it->c_str() ) );
     }
     *sequences = SequenceFileDialog::fileSequencesFromFilesList(filesList, supportedExtensions);
 }
@@ -1240,14 +1240,13 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
             _imp->_scriptEditor->sourceScript( QString::fromUtf8( content.begin()->second.absoluteFileName().c_str() ) );
             ensureScriptEditorVisible();
         } else {
-            std::map<std::string, std::string> readersForFormat;
-            appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-            std::map<std::string, std::string>::iterator found = readersForFormat.find(extLower);
-            if ( found == readersForFormat.end() ) {
+
+            std::string readerPluginID = appPTR->getReaderPluginIDForFileType(extLower);
+            if ( readerPluginID.empty() ) {
                 Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
             } else {
                 std::string pattern = sequence->generateValidSequencePattern();
-                CreateNodeArgs args( QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, graph->getGroup() );
+                CreateNodeArgs args( QString::fromUtf8( readerPluginID.c_str() ), eCreateNodeReasonUserCreate, graph->getGroup() );
                 args.xPosHint = graphScenePos.x();
                 args.yPosHint = graphScenePos.y();
                 args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );

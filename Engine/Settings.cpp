@@ -77,10 +77,10 @@ NATRON_NAMESPACE_ENTER;
 
 Settings::Settings()
     : KnobHolder( AppInstPtr() ) // < Settings are process wide and do not belong to a single AppInstance
-    , _restoringSettings(false)
-    , _ocioRestored(false)
-    , _settingsExisted(false)
-    , _defaultAppearanceOutdated(false)
+      , _restoringSettings(false)
+      , _ocioRestored(false)
+      , _settingsExisted(false)
+      , _defaultAppearanceOutdated(false)
 {
 }
 
@@ -114,8 +114,6 @@ Settings::initializeKnobs()
     initializeKnobsViewers();
     initializeKnobsNodeGraph();
     initializeKnobsCaching();
-    initializeKnobsReaders();
-    initializeKnobsWriters();
     initializeKnobsPlugins();
     initializeKnobsPython();
 }
@@ -1291,22 +1289,6 @@ Settings::initializeKnobsCaching()
     _cachingTab->addKnob(_wipeDiskCache);
 } // Settings::initializeKnobsCaching
 
-void
-Settings::initializeKnobsReaders()
-{
-    ///readers & writers settings are created in a postponed manner because we don't know
-    ///their dimension yet. See populateReaderPluginsAndFormats & populateWriterPluginsAndFormats
-
-    _readersTab = AppManager::createKnob<KnobPage>( this, tr(PLUGIN_GROUP_IMAGE_READERS) );
-    _readersTab->setName("readersTab");
-}
-
-void
-Settings::initializeKnobsWriters()
-{
-    _writersTab = AppManager::createKnob<KnobPage>( this, tr(PLUGIN_GROUP_IMAGE_WRITERS) );
-    _writersTab->setName("writersTab");
-}
 
 void
 Settings::initializeKnobsPlugins()
@@ -2355,101 +2337,6 @@ Settings::isAutoPreviewOnForNewProjects() const
     return _autoPreviewEnabledForNewProjects->getValue();
 }
 
-std::string
-Settings::getReaderPluginIDForFileType(const std::string & extension)
-{
-    for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        if (_readersMapping[i]->getLabel() == extension) {
-            const std::vector<std::string> entries =  _readersMapping[i]->getEntries_mt_safe();
-            int index = _readersMapping[i]->getValue();
-            assert( index < (int)entries.size() );
-
-            return entries[index];
-        }
-    }
-    throw std::invalid_argument("Unsupported file extension");
-}
-
-std::string
-Settings::getWriterPluginIDForFileType(const std::string & extension)
-{
-    for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        if (_writersMapping[i]->getLabel() == extension) {
-            const std::vector<std::string>  entries =  _writersMapping[i]->getEntries_mt_safe();
-            int index = _writersMapping[i]->getValue();
-            assert( index < (int)entries.size() );
-
-            return entries[index];
-        }
-    }
-    throw std::invalid_argument("Unsupported file extension");
-}
-
-void
-Settings::populateReaderPluginsAndFormats(const std::map<std::string, std::vector< std::pair<std::string, double> > > & rows)
-{
-    KnobsVec knobs;
-
-    for (std::map<std::string, std::vector< std::pair<std::string, double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
-        boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(this, it->first);
-        k->setName("Reader_" + it->first);
-        k->setAnimationEnabled(false);
-
-        std::vector<std::string> entries;
-        double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
-        int bestPluginIndex = -1;
-
-        for (U32 i = 0; i < it->second.size(); ++i) {
-            //qDebug() << it->first.c_str() << "candidate" << i << it->second[i].first.c_str() << it->second[i].second;
-            if (it->second[i].second > bestPluginEvaluation) {
-                bestPluginIndex = i;
-                bestPluginEvaluation = it->second[i].second;
-            }
-            entries.push_back(it->second[i].first);
-        }
-        if (bestPluginIndex > -1) {
-            k->setDefaultValue(bestPluginIndex, 0);
-        }
-        k->populateChoices(entries);
-        _readersMapping.push_back(k);
-        _readersTab->addKnob(k);
-        knobs.push_back(k);
-    }
-    restoreKnobsFromSettings(knobs);
-}
-
-void
-Settings::populateWriterPluginsAndFormats(const std::map<std::string, std::vector< std::pair<std::string, double> > > & rows)
-{
-    KnobsVec knobs;
-
-    for (std::map<std::string, std::vector< std::pair<std::string, double> > >::const_iterator it = rows.begin(); it != rows.end(); ++it) {
-        boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(this, it->first);
-        k->setName("Writer_" + it->first);
-        k->setAnimationEnabled(false);
-
-        std::vector<std::string> entries;
-        double bestPluginEvaluation = -2; //< tuttle's notation extension starts at -1
-        int bestPluginIndex = -1;
-
-        for (U32 i = 0; i < it->second.size(); ++i) {
-            //qDebug() << it->first.c_str() << "candidate" << i << it->second[i].first.c_str() << it->second[i].second;
-            if (it->second[i].second > bestPluginEvaluation) {
-                bestPluginIndex = i;
-                bestPluginEvaluation = it->second[i].second;
-            }
-            entries.push_back(it->second[i].first);
-        }
-        if (bestPluginIndex > -1) {
-            k->setDefaultValue(bestPluginIndex, 0);
-        }
-        k->populateChoices(entries);
-        _writersMapping.push_back(k);
-        _writersTab->addKnob(k);
-        knobs.push_back(k);
-    }
-    restoreKnobsFromSettings(knobs);
-}
 
 static bool
 filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
@@ -2821,75 +2708,6 @@ Settings::populateSystemFonts(const QSettings& settings,
     }
 }
 
-void
-Settings::getReadersForFormat(const std::string& format,
-                              std::vector<std::string>* decoders)
-{
-    for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        std::string name = _readersMapping[i]->getName();
-        std::size_t prefix = name.find("Reader_");
-        if (prefix != std::string::npos) {
-            name.erase(prefix, 7);
-        }
-        if (name == format) {
-            const std::vector<std::string> entries = _readersMapping[i]->getEntries_mt_safe();
-            *decoders = entries;
-            break;
-        }
-    }
-}
-
-void
-Settings::getWritersForFormat(const std::string& format,
-                              std::vector<std::string>* encoders)
-{
-    for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        std::string name = _writersMapping[i]->getName();
-        std::size_t prefix = name.find("Writer_");
-        if (prefix != std::string::npos) {
-            name.erase(prefix, 7);
-        }
-        if (name == format) {
-            const std::vector<std::string> entries = _writersMapping[i]->getEntries_mt_safe();
-            *encoders = entries;
-            break;
-        }
-    }
-}
-
-void
-Settings::getFileFormatsForReadingAndReader(std::map<std::string, std::string>* formats)
-{
-    for (U32 i = 0; i < _readersMapping.size(); ++i) {
-        const std::vector<std::string>  entries = _readersMapping[i]->getEntries_mt_safe();
-        int index = _readersMapping[i]->getValue();
-
-        assert( index < (int)entries.size() );
-        std::string name = _readersMapping[i]->getName();
-        std::size_t prefix = name.find("Reader_");
-        if (prefix != std::string::npos) {
-            name.erase(prefix, 7);
-            formats->insert( std::make_pair(name, entries[index]) );
-        }
-    }
-}
-
-void
-Settings::getFileFormatsForWritingAndWriter(std::map<std::string, std::string>* formats)
-{
-    for (U32 i = 0; i < _writersMapping.size(); ++i) {
-        const std::vector<std::string>  entries = _writersMapping[i]->getEntries_mt_safe();
-        int index = _writersMapping[i]->getValue();
-
-        assert( index < (int)entries.size() );
-        std::string name = _writersMapping[i]->getName();
-        std::size_t prefix = name.find("Writer_");
-        if (prefix != std::string::npos) {
-            name.erase(prefix, 7);
-            formats->insert( std::make_pair(name, entries[index]) );
-        }
-    }
-}
 
 void
 Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const

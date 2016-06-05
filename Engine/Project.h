@@ -155,6 +155,8 @@ public:
 
     int getProjectViewsCount() const;
 
+    bool isGPURenderingEnabledInProject() const;
+
     std::vector<std::string> getProjectDefaultLayerNames() const;
     std::vector<ImageComponents> getProjectDefaultLayers() const;
 

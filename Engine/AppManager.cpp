@@ -85,6 +85,7 @@
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
@@ -165,11 +166,11 @@ backTraceSigSegvHandler(int sig,
         }
         std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
              #ifndef __x86_64__
-        (void*)uc->uc_mcontext.gregs[REG_EIP]
+            (void*)uc->uc_mcontext.gregs[REG_EIP]
              #else
             (void*) uc->uc_mcontext.gregs[REG_RIP]
              #endif
-            << " from " << info->si_addr << std::endl;
+                  << " from " << info->si_addr << std::endl;
     } else {
         printf("Got signal %d#92;n", sig);
     }
@@ -226,7 +227,7 @@ AppManager::getHardwareIdealThreadCount()
 
 AppManager::AppManager()
     : QObject()
-    , _imp( new AppManagerPrivate() )
+      , _imp( new AppManagerPrivate() )
 {
     assert(!_instance);
     _instance = this;
@@ -265,6 +266,13 @@ AppManager::load(int &argc,
         argc = 1;
         argv = &argv0;
     }
+
+    // This needs to be done BEFORE creating qApp because
+    // on Linux, X11 will create a context that would corrupt
+    // the XUniqueContext created by Qt
+    _imp->renderingContextPool.reset( new GPUContextPool() );
+    initializeOpenGLFunctionsOnce(true);
+
     initializeQApp(argc, argv);
 
 #ifdef QT_CUSTOM_THREADPOOL
@@ -294,6 +302,8 @@ AppManager::load(int &argc,
     }
 
     _imp->idealThreadCount = QThread::idealThreadCount();
+
+
     QThreadPool::globalInstance()->setExpiryTimeout(-1); //< make threads never exit on their own
     //otherwise it might crash with thread local storage
 
@@ -367,11 +377,12 @@ AppManager::~AppManager()
     _imp->_diskCache.reset();
 
     tearDownPython();
+    _imp->tearDownGL();
 
     _instance = 0;
 
     // After this line, everything is cleaned-up (should be) and the process may resume in the main and could in theory be able to re-create a new AppManager
-    delete qApp;
+    _imp->_qApp.reset();
 }
 
 class QuitInstanceArgs
@@ -383,7 +394,7 @@ public:
 
     QuitInstanceArgs()
         : GenericWatcherCallerArgs()
-        , instance()
+          , instance()
     {
     }
 
@@ -619,16 +630,77 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
     return _imp->pluginsUseInputImageCopyToRender;
 }
 
-void
-AppManager::initializeOpenGLFunctionsOnce()
+bool
+AppManager::isOpenGLLoaded() const
+{
+    QMutexLocker k(&_imp->openGLFunctionsMutex);
+    return _imp->hasInitializedOpenGLFunctions;
+}
+
+bool
+AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
 
     if (!_imp->hasInitializedOpenGLFunctions) {
+        OSGLContextPtr glContext;
+        if (createOpenGLContext) {
+            try {
+                _imp->initGLAPISpecific();
+
+                glContext = _imp->renderingContextPool->attachGLContextToRender();
+                if (!glContext) {
+                    return false;
+                }
+                // Make the context current and check its version
+                glContext->setContextCurrentNoRender();
+            } catch (const std::exception& e) {
+                std::cerr << "Error while loading OpenGL: "<< e.what() << std::endl;
+                std::cerr << "OpenGL rendering is disabled. Viewer will probably not function properly." << std::endl;
+                return false;
+            }
+        }
+        // The following requires a valid OpenGL context to be created
         _imp->initGl();
-        updateAboutWindowLibrariesVersion();
+        if (createOpenGLContext) {
+            try {
+                OSGLContext::checkOpenGLVersion();
+            } catch (const std::exception& e) {
+                if (!_imp->missingOpenglError.isEmpty()) {
+                    _imp->missingOpenglError = QString::fromUtf8(e.what());
+                }
+            }
+
+            _imp->renderingContextPool->releaseGLContextFromRender(glContext);
+            glContext->unsetCurrentContextNoRender();
+        } else {
+             updateAboutWindowLibrariesVersion();
+        }
+        return true;
+
     }
+
+    return false;
+
 }
+
+#ifdef __NATRON_WIN32__
+const OSGLContext_wgl_data*
+AppManager::getWGLData() const
+{
+    return _imp->wglInfo.get();
+}
+
+#endif
+#ifdef __NATRON_LINUX__
+const OSGLContext_glx_data*
+AppManager::getGLXData() const
+{
+    return _imp->glxInfo.get();
+}
+
+#endif
+
 
 bool
 AppManager::initGui(const CLArgs& cl)
@@ -725,6 +797,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     hideSplashScreen();
 
     if (!mainInstance) {
+        qApp->quit();
         return false;
     } else {
         onLoadCompleted();
@@ -1064,24 +1137,16 @@ AppManager::loadAllPlugins()
     assert( _imp->_plugins.empty() );
     assert( _imp->_formats.empty() );
 
+    // Load plug-ins bundled into Natron
+    loadBuiltinNodePlugins(&_imp->readerPlugins, &_imp->writerPlugins);
 
-    std::map<std::string, std::vector< std::pair<std::string, double> > > readersMap;
-    std::map<std::string, std::vector< std::pair<std::string, double> > > writersMap;
-
-    /*loading node plugins*/
-
-    loadBuiltinNodePlugins(&readersMap, &writersMap);
-
-    /*loading ofx plugins*/
-    _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
-
-    _imp->_settings->populateReaderPluginsAndFormats(readersMap);
-    _imp->_settings->populateWriterPluginsAndFormats(writersMap);
+    // Load OpenFX plug-ins
+    _imp->ofxHost->loadOFXPlugins( &_imp->readerPlugins, &_imp->writerPlugins);
 
     _imp->declareSettingsToPython();
 
-    //Load python groups and init.py & initGui.py scripts
-    //Should be done after settings are declared
+    // Load PyPlugs and init.py & initGui.py scripts
+    // Should be done after settings are declared
     loadPythonGroups();
 
     _imp->_settings->populatePluginsTab();
@@ -1199,8 +1264,8 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
 }
 
 void
-AppManager::loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* /*readersMap*/,
-                                   std::map<std::string, std::vector< std::pair<std::string, double> > >* /*writersMap*/)
+AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
+                                   IOPluginsMap* /*writersMap*/)
 {
     registerBuiltInPlugin<Backdrop>(QString::fromUtf8(NATRON_IMAGES_PATH "backdrop_icon.png"), false, false);
     registerBuiltInPlugin<GroupOutput>(QString::fromUtf8(NATRON_IMAGES_PATH "output_icon.png"), false, false);
@@ -3012,18 +3077,87 @@ AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
 
 #endif
 
-std::string
-AppManager::isImageFileSupportedByNatron(const std::string& ext)
+const IOPluginsMap&
+AppManager::getFileFormatsForReadingAndReader() const
 {
-    std::string readId;
+    return _imp->readerPlugins;
+}
 
-    try {
-        readId = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
-    } catch (...) {
+const IOPluginsMap&
+AppManager::getFileFormatsForWritingAndWriter() const
+{
+    return _imp->writerPlugins;
+}
+
+void
+AppManager::getSupportedReaderFileFormats(std::vector<std::string>* formats) const
+{
+    const IOPluginsMap& readersForFormat = getFileFormatsForReadingAndReader();
+    formats->resize(readersForFormat.size());
+    int i = 0;
+    for (IOPluginsMap::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it, ++i) {
+        (*formats)[i] = it->first;
+    }
+}
+
+void
+AppManager::getSupportedWriterFileFormats(std::vector<std::string>* formats) const
+{
+    const IOPluginsMap& writersForFormat = getFileFormatsForWritingAndWriter();
+    formats->resize(writersForFormat.size());
+    int i = 0;
+    for (IOPluginsMap::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it, ++i) {
+        (*formats)[i] = it->first;
+    }
+}
+
+void
+AppManager::getReadersForFormat(const std::string& format, IOPluginSetForFormat* decoders) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->readerPlugins.find(format);
+    if (found == _imp->readerPlugins.end()) {
+        return;
+    }
+    *decoders = found->second;
+}
+
+void
+AppManager::getWritersForFormat(const std::string& format, IOPluginSetForFormat* encoders) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->writerPlugins.find(format);
+    if (found == _imp->writerPlugins.end()) {
+        return;
+    }
+    *encoders = found->second;
+
+}
+
+std::string
+AppManager::getReaderPluginIDForFileType(const std::string & extension) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->readerPlugins.find(extension);
+    if (found == _imp->readerPlugins.end()) {
         return std::string();
     }
+    // Return the "best" plug-in (i.e: higher score)
 
-    return readId;
+    return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
+}
+
+std::string
+AppManager::getWriterPluginIDForFileType(const std::string & extension) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->writerPlugins.find(extension);
+    if (found == _imp->writerPlugins.end()) {
+        return std::string();
+    }
+    // Return the "best" plug-in (i.e: higher score)
+
+    return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
 }
 
 AppTLS*
@@ -3082,6 +3216,12 @@ const NATRON_NAMESPACE::OfxHost*
 AppManager::getOFXHost() const
 {
     return _imp->ofxHost.get();
+}
+
+GPUContextPool*
+AppManager::getGPUContextPool() const
+{
+    return _imp->renderingContextPool.get();
 }
 
 void

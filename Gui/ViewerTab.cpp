@@ -102,8 +102,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                      ViewerInstance* node,
                      QWidget* parent)
     : QWidget(parent)
-    , PanelWidget(this, gui)
-    , _imp( new ViewerTabPrivate(this, node) )
+      , PanelWidget(this, gui)
+      , _imp( new ViewerTabPrivate(this, node) )
 {
     installEventFilter(this);
 

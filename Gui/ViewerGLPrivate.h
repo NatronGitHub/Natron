@@ -112,7 +112,8 @@ struct TextureInfo
 
 struct ViewerGL::Implementation
 {
-    Implementation(ViewerGL* this_, ViewerTab* parent);
+    Implementation(ViewerGL* this_,
+                   ViewerTab* parent);
 
     ~Implementation();
 
@@ -141,7 +142,7 @@ struct ViewerGL::Implementation
     const QColor textRenderingColor;
     const QColor displayWindowOverlayColor;
     const QColor rodOverlayColor;
-    QFont* textFont;
+    QFont textFont;
     bool overlay; /*!< True if the user enabled overlay dispay*/
     bool updatingTexture;
     QColor clearColor;

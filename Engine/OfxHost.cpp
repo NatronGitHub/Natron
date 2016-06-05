@@ -156,14 +156,14 @@ struct OfxHostPrivate
 
     OfxHostPrivate()
         : imageEffectPluginCache()
-        , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
+          , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
 #ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        , pluginsMutexes()
-        , pluginsMutexesLock(0)
+          , pluginsMutexes()
+          , pluginsMutexesLock(0)
 #endif
-        , loadingPluginID()
-        , loadingPluginVersionMajor(0)
-        , loadingPluginVersionMinor(0)
+          , loadingPluginID()
+          , loadingPluginVersionMajor(0)
+          , loadingPluginVersionMinor(0)
     {
     }
 };
@@ -295,7 +295,7 @@ OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2); // OFX 1.2
 #ifdef OFX_SUPPORTS_OPENGLRENDER
-    _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false"); // OFX 1.3
+    _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true"); // OFX 1.3
 #endif
     _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 1); // OFX 1.4
     _properties.setStringProperty(kOfxImageEffectHostPropNativeOrigin, kOfxHostNativeOriginBottomLeft); // OFX 1.4
@@ -757,8 +757,8 @@ getCacheFilePath()
 }
 
 void
-OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap)
+OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
+                        IOPluginsMap* writersMap)
 {
     assert( OFX::Host::PluginCache::getPluginCache() );
     /// set the version label in the global cache
@@ -924,31 +924,15 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
 
         if (!isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
             ///we're safe to assume that this plugin is a reader
-            for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-                it = readersMap->find(formats[k]);
-
-                if ( it != readersMap->end() ) {
-                    it->second.push_back( std::make_pair(openfxId, evaluation) );
-                } else {
-                    std::vector<std::pair<std::string, double> > newVec(1);
-                    newVec[0] = std::make_pair(openfxId, evaluation);
-                    readersMap->insert( std::make_pair(formats[k], newVec) );
-                }
+            for (std::size_t k = 0; k < formats.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*readersMap)[formats[k]];
+                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
         } else if (!isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
             ///we're safe to assume that this plugin is a writer.
-            for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-                it = writersMap->find(formats[k]);
-
-                if ( it != writersMap->end() ) {
-                    it->second.push_back( std::make_pair(openfxId, evaluation) );
-                } else {
-                    std::vector<std::pair<std::string, double> > newVec(1);
-                    newVec[0] = std::make_pair(openfxId, evaluation);
-                    writersMap->insert( std::make_pair(formats[k], newVec) );
-                }
+            for (std::size_t k = 0; k < formats.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*writersMap)[formats[k]];
+                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
         }
     }
@@ -1114,13 +1098,13 @@ public:
               void *customArg,
               OfxStatus *stat)
         : QThread()
-        , AbortableThread(this)
-        , _func(func)
-        , _threadIndex(threadIndex)
-        , _threadMax(threadMax)
-        , _spawnerThread(spawnerThread)
-        , _customArg(customArg)
-        , _stat(stat)
+          , AbortableThread(this)
+          , _func(func)
+          , _threadIndex(threadIndex)
+          , _threadMax(threadMax)
+          , _spawnerThread(spawnerThread)
+          , _customArg(customArg)
+          , _stat(stat)
     {
         setThreadName("Multi-thread suite");
     }

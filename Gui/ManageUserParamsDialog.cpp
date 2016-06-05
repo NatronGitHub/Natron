@@ -104,18 +104,18 @@ struct ManageUserParamsDialogPrivate
 
     ManageUserParamsDialogPrivate(DockablePanel* panel)
         : panel(panel)
-        , mainLayout(0)
-        , tree(0)
-        , items()
-        , buttonsContainer(0)
-        , buttonsLayout(0)
-        , addButton(0)
-        , pickButton(0)
-        , editButton(0)
-        , removeButton(0)
-        , upButton(0)
-        , downButton(0)
-        , closeButton(0)
+          , mainLayout(0)
+          , tree(0)
+          , items()
+          , buttonsContainer(0)
+          , buttonsLayout(0)
+          , addButton(0)
+          , pickButton(0)
+          , editButton(0)
+          , removeButton(0)
+          , upButton(0)
+          , downButton(0)
+          , closeButton(0)
     {
     }
 
@@ -144,7 +144,7 @@ struct ManageUserParamsDialogPrivate
 ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
                                                QWidget* parent)
     : QDialog(parent)
-    , _imp( new ManageUserParamsDialogPrivate(panel) )
+      , _imp( new ManageUserParamsDialogPrivate(panel) )
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( panel->getHolder() );
     QString title = QString::fromUtf8("User Parameters");

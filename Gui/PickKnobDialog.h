@@ -51,7 +51,8 @@ class PickKnobDialog
 
 public:
 
-    PickKnobDialog(DockablePanel* panel, QWidget* parent);
+    PickKnobDialog(DockablePanel* panel,
+                   QWidget* parent);
 
     virtual ~PickKnobDialog();
 

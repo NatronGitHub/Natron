@@ -47,9 +47,9 @@ NATRON_NAMESPACE_ENTER;
 InfoViewerWidget::InfoViewerWidget(const QString & description,
                                    QWidget* parent)
     : QWidget(parent)
-    , _comp( ImageComponents::getNoneComponents() )
-    , _colorValid(false)
-    , _colorApprox(false)
+      , _comp( ImageComponents::getNoneComponents() )
+      , _colorValid(false)
+      , _colorApprox(false)
 {
     for (int i = 0; i < 4; ++i) {
         currentColor[i] = 0;

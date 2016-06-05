@@ -33,7 +33,7 @@ NATRON_NAMESPACE_ENTER;
 AutoHideToolBar::AutoHideToolBar(Gui* gui,
                                  QWidget* parent)
     : QToolBar(parent)
-    , _gui(gui)
+      , _gui(gui)
 {
 }
 

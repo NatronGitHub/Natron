@@ -96,17 +96,17 @@ struct ProgressPanelPrivate
 
     ProgressPanelPrivate()
         : mainLayout(0)
-        , headerContainer(0)
-        , headerLayout(0)
-        , queueTasksCheckbox(0)
-        , removeTasksAfterFinishCheckbox(0)
-        , model(0)
-        , view(0)
-        , tasksMutex()
-        , tasks()
-        , tasksOrdered()
-        , lastTaskAdded()
-        , processEventsRecursionCounter(0)
+          , headerContainer(0)
+          , headerLayout(0)
+          , queueTasksCheckbox(0)
+          , removeTasksAfterFinishCheckbox(0)
+          , model(0)
+          , view(0)
+          , tasksMutex()
+          , tasks()
+          , tasksOrdered()
+          , lastTaskAdded()
+          , processEventsRecursionCounter(0)
     {
     }
 
@@ -143,8 +143,8 @@ struct ProgressPanelPrivate
 
 ProgressPanel::ProgressPanel(Gui* gui)
     : QWidget(gui)
-    , PanelWidget(this, gui)
-    , _imp( new ProgressPanelPrivate() )
+      , PanelWidget(this, gui)
+      , _imp( new ProgressPanelPrivate() )
 {
     _imp->mainLayout = new QVBoxLayout(this);
     _imp->mainLayout->setContentsMargins(0, 0, 0, 0);

@@ -66,11 +66,11 @@ NATRON_NAMESPACE_ENTER;
 KnobGuiFile::KnobGuiFile(KnobPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _lineEdit(0)
-    , _openFileButton(0)
-    , _reloadButton(0)
-    , _lastOpened()
-    , _lastModificationDates()
+      , _lineEdit(0)
+      , _openFileButton(0)
+      , _reloadButton(0)
+      , _lastOpened()
+      , _lastModificationDates()
 {
     boost::shared_ptr<KnobFile> k = boost::dynamic_pointer_cast<KnobFile>(knob);
 
@@ -164,11 +164,7 @@ KnobGuiFile::open_file()
     if ( !knob->isInputImageFile() ) {
         filters.push_back("*");
     } else {
-        std::map<std::string, std::string> readersForFormat;
-        appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-        for (std::map<std::string, std::string>::iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it) {
-            filters.push_back(it->first);
-        }
+        appPTR->getSupportedReaderFileFormats(&filters);
     }
     std::string oldPattern = knob->getValue();
     std::string currentPattern = oldPattern;
@@ -466,8 +462,8 @@ KnobGuiFile::updateToolTip()
 KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
                                      KnobGuiContainerI *container)
     : KnobGui(knob, container)
-    , _lineEdit(0)
-    , _openFileButton(0)
+      , _lineEdit(0)
+      , _openFileButton(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     assert( _knob.lock() );
@@ -533,11 +529,7 @@ KnobGuiOutputFile::open_file(bool openSequence)
     if ( !_knob.lock()->isOutputImageFile() ) {
         filters.push_back("*");
     } else {
-        std::map<std::string, std::string> formats;
-        appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&formats);
-        for (std::map<std::string, std::string>::iterator it = formats.begin(); it != formats.end(); ++it) {
-            filters.push_back(it->first);
-        }
+        appPTR->getSupportedWriterFileFormats(&filters);
     }
 
     SequenceFileDialog dialog( _lineEdit->parentWidget(), filters, openSequence, SequenceFileDialog::eFileDialogModeSave, _lastOpened.toStdString(), getGui(), true);
@@ -722,9 +714,9 @@ KnobGuiOutputFile::updateToolTip()
 KnobGuiPath::KnobGuiPath(KnobPtr knob,
                          KnobGuiContainerI *container)
     : KnobGuiTable(knob, container)
-    , _mainContainer(0)
-    , _lineEdit(0)
-    , _openFileButton(0)
+      , _mainContainer(0)
+      , _lineEdit(0)
+      , _openFileButton(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobPath>(knob);
     assert( _knob.lock() );

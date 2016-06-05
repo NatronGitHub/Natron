@@ -157,12 +157,12 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
                                                      const std::vector<boost::shared_ptr<DSNode> >& nodes,
                                                      double dt,
                                                      DopeSheetEditor *model,
-                                                     QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _keys(keys),
-    _nodes(),
-    _dt(dt),
-    _model(model)
+                                                     QUndoCommand *parent)
+    : QUndoCommand(parent),
+      _keys(keys),
+      _nodes(),
+      _dt(dt),
+      _model(model)
 {
     setText( tr("Move selected keys") );
     std::set<NodePtr > nodesSet;
@@ -329,9 +329,9 @@ DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
                                                DopeSheetEditor *model,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
-    , _firstRedoCalled(false)
-    , _transform(transform)
-    , _model(model)
+      , _firstRedoCalled(false)
+      , _transform(transform)
+      , _model(model)
 {
     for (DSKeyPtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
@@ -492,11 +492,11 @@ DSTransformKeysCommand::mergeWith(const QUndoCommand *other)
 DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode> &reader,
                                                  double oldTime,
                                                  double newTime,
-                                                 QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _readerContext(reader),
-    _oldTime(oldTime),
-    _newTime(newTime)
+                                                 QUndoCommand *parent)
+    : QUndoCommand(parent),
+      _readerContext(reader),
+      _oldTime(oldTime),
+      _newTime(newTime)
 {
     setText( tr("Trim left") );
 }
@@ -579,11 +579,11 @@ DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNod
                                                    double oldTime,
                                                    double newTime,
                                                    DopeSheetEditor * /*model*/,
-                                                   QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _readerContext(reader),
-    _oldTime(oldTime),
-    _newTime(newTime)
+                                                   QUndoCommand *parent)
+    : QUndoCommand(parent),
+      _readerContext(reader),
+      _oldTime(oldTime),
+      _newTime(newTime)
 {
     setText( tr("Trim right") );
 }
@@ -665,11 +665,11 @@ DSRightTrimReaderCommand::mergeWith(const QUndoCommand *other)
 DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNodeReader,
                                          double dt,
                                          DopeSheetEditor *model,
-                                         QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _readerContext(dsNodeReader),
-    _dt(dt),
-    _model(model)
+                                         QUndoCommand *parent)
+    : QUndoCommand(parent),
+      _readerContext(dsNodeReader),
+      _dt(dt),
+      _model(model)
 {
     setText( tr("Slip reader") );
 }
@@ -783,10 +783,10 @@ DSSlipReaderCommand::slipReader(double dt)
 
 DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
                                          DopeSheetEditor *model,
-                                         QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _keys(keys),
-    _model(model)
+                                         QUndoCommand *parent)
+    : QUndoCommand(parent),
+      _keys(keys),
+      _model(model)
 {
     setText( tr("Delete selected keyframes") );
 }
@@ -830,10 +830,10 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 
 DSSetSelectedKeysInterpolationCommand::DSSetSelectedKeysInterpolationCommand(const std::list<DSKeyInterpolationChange> &changes,
                                                                              DopeSheetEditor *model,
-                                                                             QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _changes(changes),
-    _model(model)
+                                                                             QUndoCommand *parent)
+    : QUndoCommand(parent),
+      _changes(changes),
+      _model(model)
 {
     setText( tr("Set selected keys interpolation") );
 }
@@ -875,12 +875,12 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 
 DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                                        DopeSheetEditor *model,
-                                       QUndoCommand *parent) :
-    QUndoCommand(parent),
-    _refTime(0),
-    _refKeyindex(-1),
-    _keys(),
-    _model(model)
+                                       QUndoCommand *parent)
+    : QUndoCommand(parent),
+      _refTime(0),
+      _refKeyindex(-1),
+      _keys(),
+      _model(model)
 {
     _refTime = _model->getTimelineCurrentTime();
     setText( tr("Paste keyframes") );

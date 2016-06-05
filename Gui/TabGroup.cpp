@@ -47,9 +47,9 @@ struct TabGroupTab
 
     TabGroupTab()
         : groupKnob()
-        , tab(0)
-        , layout(0)
-        , visible(false)
+          , tab(0)
+          , layout(0)
+          , visible(false)
     {
     }
 };
@@ -61,14 +61,14 @@ struct TabGroupPrivate
 
     TabGroupPrivate()
         : tabWidget(0)
-        , tabs()
+          , tabs()
     {
     }
 };
 
 TabGroup::TabGroup(QWidget* parent)
     : QFrame(parent)
-    , _imp( new TabGroupPrivate() )
+      , _imp( new TabGroupPrivate() )
 {
     setFrameShadow(QFrame::Raised);
     setFrameShape(QFrame::NoFrame);

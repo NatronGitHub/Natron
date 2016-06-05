@@ -68,10 +68,10 @@ struct StringAnimationManagerPrivate
 
     StringAnimationManagerPrivate(const KnobI* knob)
         : customInterpolation(NULL)
-        , ofxParamHandle(NULL)
-        , keyframesMutex()
-        , keyframes()
-        , knob(knob)
+          , ofxParamHandle(NULL)
+          , keyframesMutex()
+          , keyframes()
+          , knob(knob)
     {
     }
 };

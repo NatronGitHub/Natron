@@ -207,6 +207,8 @@ struct OfxEffectInstancePrivate
     OfxClipInstance* outputClip;
     int nbSourceClips;
     SequentialPreferenceEnum sequentialPref;
+    mutable QMutex supportsConcurrentGLRendersMutex;
+    bool supportsConcurrentGLRenders;
     bool isOutput; //if the OfxNode can output a file somehow
     bool penDown; // true when the overlay trapped a penDow action
     bool created; // true after the call to createInstance
@@ -225,33 +227,35 @@ struct OfxEffectInstancePrivate
 
     OfxEffectInstancePrivate()
         : effect()
-        , natronPluginID()
-        , overlayInteract()
-        , preferencesLock(QReadWriteLock::Recursive)
-        , renderSafetyLock()
-        , renderSafety(eRenderSafetyUnsafe)
-        , wasRenderSafetySet(false)
-        , context(eContextNone)
-        , clipsInfos()
-        , outputClip(0)
-        , nbSourceClips(0)
-        , sequentialPref(eSequentialPreferenceNotSequential)
-        , isOutput(false)
-        , penDown(false)
-        , created(false)
-        , initialized(false)
-        , overlaysCanHandleRenderScale(true)
-        , supportsMultipleClipsPar(false)
-        , supportsMultipleClipsBitdepth(false)
-        , doesTemporalAccess(false)
-        , multiplanar(false)
+          , natronPluginID()
+          , overlayInteract()
+          , preferencesLock(QReadWriteLock::Recursive)
+          , renderSafetyLock()
+          , renderSafety(eRenderSafetyUnsafe)
+          , wasRenderSafetySet(false)
+          , context(eContextNone)
+          , clipsInfos()
+          , outputClip(0)
+          , nbSourceClips(0)
+          , sequentialPref(eSequentialPreferenceNotSequential)
+          , supportsConcurrentGLRendersMutex()
+          , supportsConcurrentGLRenders(false)
+          , isOutput(false)
+          , penDown(false)
+          , created(false)
+          , initialized(false)
+          , overlaysCanHandleRenderScale(true)
+          , supportsMultipleClipsPar(false)
+          , supportsMultipleClipsBitdepth(false)
+          , doesTemporalAccess(false)
+          , multiplanar(false)
     {
     }
 };
 
 OfxEffectInstance::OfxEffectInstance(NodePtr node)
     : AbstractOfxEffectInstance(node)
-    , _imp( new OfxEffectInstancePrivate() )
+      , _imp( new OfxEffectInstancePrivate() )
 {
     QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
@@ -1694,6 +1698,32 @@ OfxEffectInstance::isIdentity(double time,
     //throw std::runtime_error("isIdentity failed");
 } // isIdentity
 
+class OfxGLContextEffectData
+    : public EffectInstance::OpenGLContextEffectData
+{
+    void* _dataHandle;
+
+public:
+
+    OfxGLContextEffectData()
+        : EffectInstance::OpenGLContextEffectData()
+          , _dataHandle(0)
+    {
+    }
+
+    void setDataHandle(void *dataHandle)
+    {
+        _dataHandle = dataHandle;
+    }
+
+    void* getDataHandle() const
+    {
+        return _dataHandle;
+    }
+
+    virtual ~OfxGLContextEffectData() {}
+};
+
 StatusEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
@@ -1703,7 +1733,9 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
                                        bool draftMode,
-                                       ViewIdx view)
+                                       ViewIdx view,
+                                       bool isOpenGLRender,
+                                       const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1720,13 +1752,15 @@ OfxEffectInstance::beginSequenceRender(double first,
 
         SET_CAN_SET_VALUE(false);
 
+        OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
+        void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(&_imp->preferencesLock);
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
-                                                   /*openGLRender=*/ false, /*contextData=*/ NULL, draftMode, view);
+                                                   isOpenGLRender, oglData, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1745,7 +1779,9 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      bool draftMode,
-                                     ViewIdx view)
+                                     ViewIdx view,
+                                     bool isOpenGLRender,
+                                     const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1761,13 +1797,15 @@ OfxEffectInstance::endSequenceRender(double first,
                                             mipMapLevel);
         SET_CAN_SET_VALUE(false);
 
+        OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
+        void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(&_imp->preferencesLock);
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
                                                  isSequentialRender, isRenderResponseToUserInteraction,
-                                                 /*openGLRender=*/ false, /*contextData=*/ NULL, draftMode, view);
+                                                 isOpenGLRender, oglData, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1845,7 +1883,8 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                              Image::getLevelFromScale(args.originalScale.x),
                                              firstPlane.first,
                                              args.inputImages);
-
+        OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( args.glContextData.get() );
+        void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         QReadLocker preferencesLocker(&_imp->preferencesLock);
@@ -1855,8 +1894,8 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                            args.mappedScale,
                                            args.isSequentialRender,
                                            args.isRenderResponseToUserInteraction,
-                                           /*openGLRender=*/ false,
-                                           /*contextData=*/ NULL,
+                                           args.useOpenGL,
+                                           oglData,
                                            args.draftMode,
                                            args.view,
                                            viewsCount,
@@ -2768,6 +2807,65 @@ OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);
     _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropInstanceId, scriptname);
+}
+
+bool
+OfxEffectInstance::supportsConcurrentOpenGLRenders() const
+{
+    // By default OpenFX OpenGL render suite does not support concurrent OpenGL renders.
+    QMutexLocker k(&_imp->supportsConcurrentGLRendersMutex);
+
+    return _imp->supportsConcurrentGLRenders;
+}
+
+StatusEnum
+OfxEffectInstance::attachOpenGLContext(EffectInstance::OpenGLContextEffectDataPtr* data)
+{
+    boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData() );
+
+    *data = ofxData;
+    void* ofxGLData = 0;
+    OfxStatus stat = effectInstance()->contextAttachedAction(ofxGLData);
+
+    // If the plug-in use the Natron property kNatronOfxImageEffectPropOpenGLContextData, that means it can handle
+    // concurrent OpenGL renders.
+    if (ofxGLData) {
+        ofxData->setDataHandle(ofxGLData);
+        QMutexLocker k(&_imp->supportsConcurrentGLRendersMutex);
+        if (!_imp->supportsConcurrentGLRenders) {
+            _imp->supportsConcurrentGLRenders = true;
+        }
+    }
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
+    } else if (stat == kOfxStatErrMemory) {
+        return eStatusOutOfMemory;
+    } else if (stat == kOfxStatReplyDefault) {
+        return eStatusReplyDefault;
+    } else {
+        return eStatusOK;
+    }
+}
+
+StatusEnum
+OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffectDataPtr& data)
+{
+    OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );
+    void* ofxGLData = isOfxData ? isOfxData->getDataHandle() : 0;
+    OfxStatus stat = effectInstance()->contextDetachedAction(ofxGLData);
+    if (isOfxData) {
+        // the context data can not be used anymore, reset it.
+        isOfxData->setDataHandle(NULL);
+    }
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
+    } else if (stat == kOfxStatErrMemory) {
+        return eStatusOutOfMemory;
+    } else if (stat == kOfxStatReplyDefault) {
+        return eStatusReplyDefault;
+    } else {
+        return eStatusOK;
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

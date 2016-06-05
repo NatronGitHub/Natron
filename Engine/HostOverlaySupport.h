@@ -101,7 +101,8 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    TransformOverlayKnobs() : HostOverlayKnobs() {}
+    TransformOverlayKnobs()
+        : HostOverlayKnobs() {}
 
     virtual ~TransformOverlayKnobs() {}
 
@@ -134,7 +135,8 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    CornerPinOverlayKnobs() : HostOverlayKnobs() {}
+    CornerPinOverlayKnobs()
+        : HostOverlayKnobs() {}
 
     virtual ~CornerPinOverlayKnobs() {}
 
@@ -155,7 +157,8 @@ public:
         eKnobsEnumerationInteractive
     };
 
-    PositionOverlayKnobs() : HostOverlayKnobs() {}
+    PositionOverlayKnobs()
+        : HostOverlayKnobs() {}
 
     virtual ~PositionOverlayKnobs() {}
 

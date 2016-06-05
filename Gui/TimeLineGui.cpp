@@ -76,8 +76,8 @@ struct TimeLineZoomContext
 {
     TimeLineZoomContext()
         : bottom(0.)
-        , left(0.)
-        , zoomFactor(1.)
+          , left(0.)
+          , zoomFactor(1.)
     {
     }
 
@@ -95,7 +95,7 @@ struct CachedFrame
     CachedFrame(SequenceTime t,
                 StorageModeEnum m)
         : time(t)
-        , mode(m)
+          , mode(m)
     {
     }
 };
@@ -142,26 +142,26 @@ struct TimelineGuiPrivate
                        Gui* gui,
                        ViewerTab* viewerTab)
         : parent(qq)
-        , viewer(viewer)
-        , viewerTab(viewerTab)
-        , timeline()
-        , gui(gui)
-        , alphaCursor(false)
-        , lastMouseEventWidgetCoord()
-        , state(eTimelineStateIdle)
-        , mousePressX(0)
-        , mouseMoveX(0)
-        , tlZoomCtx()
-        , textRenderer()
-        , font(appFont, appFontSize)
-        , firstPaint(true)
-        , cachedFrames()
-        , boundariesMutex()
-        , leftBoundary(0)
-        , rightBoundary(0)
-        , frameRangeEditedMutex()
-        , isFrameRangeEdited(false)
-        , seekingTimeline(false)
+          , viewer(viewer)
+          , viewerTab(viewerTab)
+          , timeline()
+          , gui(gui)
+          , alphaCursor(false)
+          , lastMouseEventWidgetCoord()
+          , state(eTimelineStateIdle)
+          , mousePressX(0)
+          , mouseMoveX(0)
+          , tlZoomCtx()
+          , textRenderer()
+          , font(appFont, appFontSize)
+          , firstPaint(true)
+          , cachedFrames()
+          , boundariesMutex()
+          , leftBoundary(0)
+          , rightBoundary(0)
+          , frameRangeEditedMutex()
+          , isFrameRangeEdited(false)
+          , seekingTimeline(false)
     {
     }
 
@@ -191,7 +191,7 @@ TimeLineGui::TimeLineGui(ViewerInstance* viewer,
                          Gui* gui,
                          ViewerTab* viewerTab)
     : QGLWidget(viewerTab)
-    , _imp( new TimelineGuiPrivate(this, viewer, gui, viewerTab) )
+      , _imp( new TimelineGuiPrivate(this, viewer, gui, viewerTab) )
 {
     setTimeline(timeline);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -245,6 +245,10 @@ void
 TimeLineGui::resizeGL(int width,
                       int height)
 {
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     if (height == 0) {
         height = 1;
     }
@@ -265,13 +269,13 @@ struct TimeLineKey
     explicit TimeLineKey(SequenceTime t,
                          bool isUserKey = false)
         : time(t)
-        , isUserKey(isUserKey)
+          , isUserKey(isUserKey)
     {
     }
 
     explicit TimeLineKey()
         : time(0)
-        , isUserKey(false)
+          , isUserKey(false)
     {
     }
 };
@@ -293,6 +297,11 @@ TimeLineGui::paintGL()
     if (!_imp->gui) {
         return;
     }
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+    
     glCheckError();
 
     SequenceTime leftBound, rightBound;
@@ -716,9 +725,9 @@ TimeLineGui::paintGL()
                               Image::clamp<qreal>(userkfG, 0., 1.),
                               Image::clamp<qreal>(userkfB, 0., 1.) );
         for (std::list<SequenceTime>::iterator it = remainingUserKeys.begin(); it != remainingUserKeys.end(); ++it) {
-            if ( /* (*it == currentTime) ||*/
-                                             ( *it == leftBound) ||
-                                             ( *it == rightBound) ) {
+            if (  /* (*it == currentTime) ||*/
+                                              ( *it == leftBound) ||
+                                              ( *it == rightBound) ) {
                 continue;
             }
             QPointF kfBtm(*it, lineYpos);

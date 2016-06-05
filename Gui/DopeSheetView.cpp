@@ -311,28 +311,28 @@ public:
     Menu *contextMenu;
 };
 
-DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq) :
-    q_ptr(qq),
-    model(0),
-    hierarchyView(0),
-    gui(0),
-    timeline(),
-    nodeRanges(),
-    nodeRangesBeingComputed(),
-    rangeComputationRecursion(0),
-    font( new QFont(appFont, appFontSize) ),
-    textRenderer(),
-    kfTexturesIDs(),
-    zoomContext(),
-    zoomOrPannedSinceLastFit(false),
-    selectionRect(),
-    selectedKeysBRect(),
-    lastPosOnMousePress(),
-    lastPosOnMouseMove(),
-    keyDragLastMovement(),
-    eventState(DopeSheetView::esNoEditingState),
-    currentEditedReader(),
-    contextMenu( new Menu(q_ptr) )
+DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
+    : q_ptr(qq),
+      model(0),
+      hierarchyView(0),
+      gui(0),
+      timeline(),
+      nodeRanges(),
+      nodeRangesBeingComputed(),
+      rangeComputationRecursion(0),
+      font( new QFont(appFont, appFontSize) ),
+      textRenderer(),
+      kfTexturesIDs(),
+      zoomContext(),
+      zoomOrPannedSinceLastFit(false),
+      selectionRect(),
+      selectedKeysBRect(),
+      lastPosOnMousePress(),
+      lastPosOnMouseMove(),
+      keyDragLastMovement(),
+      eventState(DopeSheetView::esNoEditingState),
+      currentEditedReader(),
+      contextMenu( new Menu(q_ptr) )
 {
 }
 
@@ -990,7 +990,7 @@ DopeSheetViewPrivate::drawRows() const
                 continue;
             }
 
-            if ( QTreeWidgetItem *parentItem = treeItem->parent() ) {
+            if ( QTreeWidgetItem * parentItem = treeItem->parent() ) {
                 if ( !parentItem->isExpanded() ) {
                     continue;
                 }
@@ -2518,9 +2518,9 @@ DopeSheetView::DopeSheetView(DopeSheet *model,
                              HierarchyView *hierarchyView,
                              Gui *gui,
                              const boost::shared_ptr<TimeLine> &timeline,
-                             QWidget *parent) :
-    QGLWidget(parent),
-    _imp( new DopeSheetViewPrivate(this) )
+                             QWidget *parent)
+    : QGLWidget(parent),
+      _imp( new DopeSheetViewPrivate(this) )
 {
     _imp->model = model;
     _imp->hierarchyView = hierarchyView;
@@ -2557,7 +2557,12 @@ void
 DopeSheetView::centerOn(double xMin,
                         double xMax)
 {
-    _imp->zoomContext.fill( xMin, xMax, _imp->zoomContext.bottom(), _imp->zoomContext.top() );
+    double ymin = _imp->zoomContext.bottom();
+    double ymax = _imp->zoomContext.top();
+    if (ymin >= ymax) {
+        return;
+    }
+    _imp->zoomContext.fill( xMin, xMax, ymin, ymax );
 
     redraw();
 }
@@ -3135,6 +3140,11 @@ DopeSheetView::initializeGL()
 {
     running_in_main_thread();
     appPTR->initializeOpenGLFunctionsOnce();
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     _imp->generateKeyframeTextures();
 }
 
@@ -3149,7 +3159,12 @@ DopeSheetView::resizeGL(int w,
 {
     running_in_main_thread_and_context(this);
 
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     if (h == 0) {
+        h = 1;
     }
 
     glViewport(0, 0, w, h);
@@ -3177,6 +3192,11 @@ DopeSheetView::paintGL()
 {
     running_in_main_thread_and_context(this);
 
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+    
     glCheckError();
 
     if (_imp->zoomContext.factor() <= 0) {

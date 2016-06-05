@@ -146,7 +146,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 class DopeSheetPrivate
 {
 public:
-    DopeSheetPrivate(DopeSheetEditor* editor, DopeSheet *qq);
+    DopeSheetPrivate(DopeSheetEditor* editor,
+                     DopeSheet *qq);
     ~DopeSheetPrivate();
 
     /* functions */
@@ -167,14 +168,14 @@ public:
 };
 
 DopeSheetPrivate::DopeSheetPrivate(DopeSheetEditor* editor,
-                                   DopeSheet *qq) :
-    q_ptr(qq),
-    treeItemNodeMap(),
-    selectionModel( new DopeSheetSelectionModel(qq) ),
-    undoStack( new QUndoStack(qq) ),
-    keyframesClipboard(),
-    timeline(),
-    editor(editor)
+                                   DopeSheet *qq)
+    : q_ptr(qq),
+      treeItemNodeMap(),
+      selectionModel( new DopeSheetSelectionModel(qq) ),
+      undoStack( new QUndoStack(qq) ),
+      keyframesClipboard(),
+      timeline(),
+      editor(editor)
 {
 }
 
@@ -289,8 +290,8 @@ DopeSheet::getUndoStack() const
 
 DopeSheet::DopeSheet(Gui *gui,
                      DopeSheetEditor* editor,
-                     const boost::shared_ptr<TimeLine> &timeline) :
-    _imp( new DopeSheetPrivate(editor, this) )
+                     const boost::shared_ptr<TimeLine> &timeline)
+    : _imp( new DopeSheetPrivate(editor, this) )
 {
     _imp->timeline = timeline;
 
@@ -997,11 +998,11 @@ public:
     KnobWPtr knob;
 };
 
-DSKnobPrivate::DSKnobPrivate() :
-    dimension(-2),
-    nameItem(0),
-    knobGui(),
-    knob()
+DSKnobPrivate::DSKnobPrivate()
+    : dimension(-2),
+      nameItem(0),
+      knobGui(),
+      knob()
 {}
 
 DSKnobPrivate::~DSKnobPrivate()
@@ -1030,8 +1031,8 @@ DSKnobPrivate::~DSKnobPrivate()
  */
 DSKnob::DSKnob(int dimension,
                QTreeWidgetItem *nameItem,
-               const KnobGuiPtr& knobGui) :
-    _imp(new DSKnobPrivate)
+               const KnobGuiPtr& knobGui)
+    : _imp(new DSKnobPrivate)
 {
     assert(knobGui);
 
@@ -1113,8 +1114,8 @@ class DopeSheetSelectionModelPrivate
 public:
     DopeSheetSelectionModelPrivate()
         : dopeSheet(0)
-        , selectedKeyframes()
-        , selectedRangeNodes()
+          , selectedKeyframes()
+          , selectedRangeNodes()
     {
     }
 
@@ -1124,8 +1125,8 @@ public:
     std::list<boost::weak_ptr<DSNode> > selectedRangeNodes;
 };
 
-DopeSheetSelectionModel::DopeSheetSelectionModel(DopeSheet *dopeSheet) :
-    _imp(new DopeSheetSelectionModelPrivate)
+DopeSheetSelectionModel::DopeSheetSelectionModel(DopeSheet *dopeSheet)
+    : _imp(new DopeSheetSelectionModelPrivate)
 {
     _imp->dopeSheet = dopeSheet;
 }
@@ -1412,13 +1413,13 @@ public:
     bool isSelected;
 };
 
-DSNodePrivate::DSNodePrivate() :
-    dopeSheetModel(0),
-    nodeType(),
-    nodeGui(),
-    nameItem(0),
-    itemKnobMap(),
-    isSelected(false)
+DSNodePrivate::DSNodePrivate()
+    : dopeSheetModel(0),
+      nodeType(),
+      nodeGui(),
+      nameItem(0),
+      itemKnobMap(),
+      isSelected(false)
 {}
 
 DSNodePrivate::~DSNodePrivate()
@@ -1453,8 +1454,8 @@ DSNodePrivate::initGroupNode()
 DSNode::DSNode(DopeSheet *model,
                DopeSheetItemType itemType,
                const NodeGuiPtr &nodeGui,
-               QTreeWidgetItem *nameItem) :
-    _imp(new DSNodePrivate)
+               QTreeWidgetItem *nameItem)
+    : _imp(new DSNodePrivate)
 {
     _imp->dopeSheetModel = model;
     _imp->nodeType = itemType;

@@ -83,23 +83,23 @@ public:
 
     PrecompNodePrivate(PrecompNode* publicInterface)
         : _publicInterface(publicInterface)
-        , app()
-        , projectFileNameKnob()
-        //, reloadProjectKnob()
-        , editProjectKnob()
-        , enablePreRenderKnob()
-        , preRenderGroupKnob()
-        , writeNodesKnob()
-        , preRenderKnob()
-        , firstFrameKnob()
-        , lastFrameKnob()
-        , outputNodeNameKnob()
-        , errorBehaviourKnbo()
-        , subLabelKnob()
-        , dataMutex()
-        , precompInputs()
-        , readNode()
-        , outputNode()
+          , app()
+          , projectFileNameKnob()
+          //, reloadProjectKnob()
+          , editProjectKnob()
+          , enablePreRenderKnob()
+          , preRenderGroupKnob()
+          , writeNodesKnob()
+          , preRenderKnob()
+          , firstFrameKnob()
+          , lastFrameKnob()
+          , outputNodeNameKnob()
+          , errorBehaviourKnbo()
+          , subLabelKnob()
+          , dataMutex()
+          , precompInputs()
+          , readNode()
+          , outputNode()
     {
     }
 
@@ -126,7 +126,7 @@ public:
 
 PrecompNode::PrecompNode(NodePtr n)
     : EffectInstance(n)
-    , _imp( new PrecompNodePrivate(this) )
+      , _imp( new PrecompNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -559,12 +559,10 @@ PrecompNodePrivate::createReadNode()
 
     std::string pattern = fileKnob->getValue();
     QString qpattern = QString::fromUtf8( pattern.c_str() );
-    std::map<std::string, std::string> readersForFormat;
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
 
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::map<std::string, std::string>::iterator found = readersForFormat.find(ext);
-    if ( found == readersForFormat.end() ) {
+    std::string found = appPTR->getReaderPluginIDForFileType(ext);
+    if ( found.empty() ) {
         std::stringstream ss;
         ss << tr("No plugin capable of decoding %1 was found")
             .arg( QString::fromUtf8( ext.c_str() ) ).toStdString();
@@ -573,7 +571,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    QString readPluginID = QString::fromUtf8( found->second.c_str() );
+    QString readPluginID = QString::fromUtf8( found.c_str() );
     QString fixedNamePrefix = QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() );
     fixedNamePrefix.append( QLatin1Char('_') );
     fixedNamePrefix.append( QString::fromUtf8("readNode") );

@@ -111,7 +111,7 @@ NATRON_NAMESPACE_ENTER;
 ViewerGL::ViewerGL(ViewerTab* parent,
                    const QGLWidget* shareWidget)
     : QGLWidget(parent, shareWidget)
-    , _imp( new Implementation(this, parent) )
+      , _imp( new Implementation(this, parent) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -156,7 +156,7 @@ ViewerGL::textFont() const
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return *_imp->textFont;
+    return _imp->textFont;
 }
 
 void
@@ -164,7 +164,7 @@ ViewerGL::setTextFont(const QFont & f)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    *_imp->textFont = f;
+    _imp->textFont = f;
 }
 
 /**
@@ -588,7 +588,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
     RectD projectFormatCanonical;
     _imp->getProjectFormatCanonical(projectFormatCanonical);
-    renderText(projectFormatCanonical.right(), projectFormatCanonical.bottom(), _imp->currentViewerInfo_resolutionOverlay, _imp->textRenderingColor, *_imp->textFont);
+    renderText(projectFormatCanonical.right(), projectFormatCanonical.bottom(), _imp->currentViewerInfo_resolutionOverlay, _imp->textRenderingColor, _imp->textFont);
 
 
     QPoint topRight( projectFormatCanonical.right(), projectFormatCanonical.top() );
@@ -635,9 +635,9 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
 
             if (dataW != projectFormatCanonical) {
                 renderText(dataW.right(), dataW.top(),
-                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, *_imp->textFont);
+                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
                 renderText(dataW.left(), dataW.bottom(),
-                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor, *_imp->textFont);
+                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
                 glCheckError();
 
                 QPointF topRight2( dataW.right(), dataW.top() );
@@ -1154,7 +1154,7 @@ ViewerGL::drawPersistentMessage()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    QFontMetrics metrics( *_imp->textFont );
+    QFontMetrics metrics( _imp->textFont );
     int offset =  10;
     double metricsHeightZoomCoord;
     QPointF topLeft, bottomRight, offsetZoomCoord;
@@ -1188,8 +1188,8 @@ ViewerGL::drawPersistentMessage()
 
 
         for (int j = 0; j < _imp->persistentMessages.size(); ++j) {
-            renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, *_imp->textFont);
-            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) );/*metrics.height() * 2 * zoomScreenPixelHeight*/
+            renderText(textPos.x(), textPos.y(), _imp->persistentMessages.at(j), _imp->textRenderingColor, _imp->textFont);
+            textPos.setY( textPos.y() - ( metricsHeightZoomCoord + offsetZoomCoord.y() ) ); /*metrics.height() * 2 * zoomScreenPixelHeight*/
         }
         glCheckError();
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
@@ -1202,6 +1202,9 @@ ViewerGL::initializeGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
     makeCurrent();
+    if (!appPTR->isOpenGLLoaded()) {
+        throw std::runtime_error("OpenGL was not loaded");
+    }
     _imp->initializeGL();
 }
 
@@ -1592,15 +1595,22 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     TextureRect textureRectangle;
     if (isPartialRect) {
         // For small partial updates overlays, we make new textures
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE) );
+        int format, internalFormat, glType;
+        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, false) );
         textureRectangle = region;
     } else {
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
+        if (tex->type() != dataType) {
+            int format, internalFormat, glType;
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, false) );
+        }
         textureRectangle = roiRoundedToTileSize;
         textureRectangle.par = region.par;
         if (isFirstTile) {
-            tex->ensureTextureHasSize(textureRectangle, dataType);
+            tex->ensureTextureHasSize(textureRectangle);
         }
     }
 
@@ -1615,7 +1625,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
 
-    tex->fillOrAllocateTexture(textureRectangle, dataType, region, true);
+    tex->fillOrAllocateTexture(textureRectangle, region, true);
 
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
@@ -3289,7 +3299,7 @@ ViewerGL::updatePersistentMessageToWidth(int w)
     }
     _imp->persistentMessageType = type;
 
-    QFontMetrics fm(*_imp->textFont);
+    QFontMetrics fm(_imp->textFont);
 
     for (int i = 0; i < allMessages.size(); ++i) {
         QStringList wordWrapped = wordWrap(fm, allMessages[i], w - PERSISTENT_MESSAGE_LEFT_OFFSET_PIXELS);

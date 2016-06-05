@@ -81,10 +81,10 @@ NATRON_NAMESPACE_ENTER;
 
 ProjectGui::ProjectGui(Gui* gui)
     : _gui(gui)
-    , _project()
-    , _panel(NULL)
-    , _created(false)
-    , _colorPickersEnabled()
+      , _project()
+      , _panel(NULL)
+      , _created(false)
+      , _colorPickersEnabled()
 {
 }
 
@@ -152,7 +152,7 @@ ProjectGui::createNewFormat()
 AddFormatDialog::AddFormatDialog(Project *project,
                                  Gui* gui)
     : QDialog(gui)
-    , _gui(gui)
+      , _gui(gui)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -272,8 +272,9 @@ AddFormatDialog::getFormat() const
 #endif
 template<>
 void
-ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive/*,
-                                                                                        const unsigned int version*/) const
+ProjectGui::save<boost::archive::xml_oarchive
+                 >(boost::archive::xml_oarchive & archive/*,
+                                                            const unsigned int version*/) const
 {
     ProjectGuiSerialization projectGuiSerializationObj;
 
@@ -440,8 +441,9 @@ loadNodeGuiSerialization(Gui* gui,
 
 template<>
 void
-ProjectGui::load<boost::archive::xml_iarchive>(boost::archive::xml_iarchive & archive/*,
-                                                                                        const unsigned int version*/)
+ProjectGui::load<boost::archive::xml_iarchive
+                 >(boost::archive::xml_iarchive & archive/*,
+                                                            const unsigned int version*/)
 {
     ProjectGuiSerialization obj;
 

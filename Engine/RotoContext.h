@@ -64,14 +64,14 @@ public:
 
     CairoImageWrapper()
         : cairoImg(0)
-        , ctx(0)
+          , ctx(0)
     {
     }
 
     CairoImageWrapper(cairo_surface_t* img,
                       cairo_t* context)
         : cairoImg(img)
-        , ctx(context)
+          , ctx(context)
     {
     }
 

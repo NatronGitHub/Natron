@@ -107,7 +107,7 @@ CurveWidget::CurveWidget(Gui* gui,
                          QWidget* parent,
                          const QGLWidget* shareWidget)
     : QGLWidget(parent, shareWidget)
-    , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
+      , _imp( new CurveWidgetPrivate(gui, selection, timeline, this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -471,6 +471,10 @@ CurveWidget::resizeGL(int width,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     if (height == 0) {
         height = 1;
     }
@@ -504,6 +508,12 @@ CurveWidget::paintGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+
     glCheckError();
     if (_imp->zoomCtx.factor() <= 0) {
         return;

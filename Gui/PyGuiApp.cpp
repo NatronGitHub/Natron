@@ -57,7 +57,7 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 GuiApp::GuiApp(const GuiAppInstPtr& app)
     : App(app)
-    , _app(app)
+      , _app(app)
 {
 }
 

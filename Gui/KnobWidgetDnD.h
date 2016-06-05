@@ -47,7 +47,9 @@ class KnobWidgetDnD
 
 public:
 
-    KnobWidgetDnD(const KnobGuiPtr& knob, int dimension, QWidget* widget);
+    KnobWidgetDnD(const KnobGuiPtr& knob,
+                  int dimension,
+                  QWidget* widget);
 
     ~KnobWidgetDnD();
 
