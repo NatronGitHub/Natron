@@ -27,6 +27,10 @@
 #include <cassert>
 #include <stdexcept>
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include <QtCore/QMutex>
 
 #include "Engine/AppManager.h"
@@ -298,6 +302,12 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
             return;
         }
     }
+}
+
+bool
+FormatExtensionCompareCaseInsensitive::operator() (const std::string& lhs, const std::string& rhs) const
+{
+    return boost::algorithm::lexicographical_compare(lhs, rhs, boost::algorithm::is_iless());
 }
 
 NATRON_NAMESPACE_EXIT;

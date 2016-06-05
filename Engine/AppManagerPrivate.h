@@ -84,6 +84,8 @@ public:
     boost::shared_ptr<Settings> _settings; //< app settings
     std::vector<Format> _formats; //<a list of the "base" formats available in the application
     PluginsMap _plugins; //< list of the plugins
+    IOPluginsMap readerPlugins; // for all reader plug-ins which are best suited for each format
+    IOPluginsMap writerPlugins; // for all writer plug-ins which are best suited for each format
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
     boost::shared_ptr<Cache<Image> >  _nodeCache; //< Images cache

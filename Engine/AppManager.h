@@ -514,8 +514,6 @@ public:
                                            std::size_t* ramOccupied,
                                            std::size_t* diskOccupied) const;
 
-    static std::string isImageFileSupportedByNatron(const std::string& ext);
-
     void setOFXHostHandle(void* handle);
 
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -592,6 +590,22 @@ public:
     const OSGLContext_glx_data* getGLXData() const;
 #endif
 
+    const IOPluginsMap& getFileFormatsForReadingAndReader() const;
+
+    const IOPluginsMap& getFileFormatsForWritingAndWriter() const;
+
+    void getSupportedReaderFileFormats(std::vector<std::string>* formats) const;
+
+    void getSupportedWriterFileFormats(std::vector<std::string>* formats) const;
+
+    void getReadersForFormat(const std::string& format, IOPluginSetForFormat* decoders) const;
+
+    void getWritersForFormat(const std::string& format, IOPluginSetForFormat* encoders) const;
+
+    std::string getReaderPluginIDForFileType(const std::string & extension) const;
+
+    std::string getWriterPluginIDForFileType(const std::string & extension) const;
+
 public Q_SLOTS:
 
     void exitAppWithSaveWarning()
@@ -639,8 +653,8 @@ Q_SIGNALS:
 protected:
 
     virtual bool initGui(const CLArgs& cl);
-    virtual void loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap);
+    virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
+                                        IOPluginsMap* writersMap);
 
     template <typename PLUGIN>
     void registerBuiltInPlugin(const QString& iconPath, bool isDeprecated, bool internalUseOnly);
