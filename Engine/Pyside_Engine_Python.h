@@ -42,6 +42,7 @@
 #include <Enums.h>
 
 //Engine
+#include "MergingEnum.h"
 #include "PyGlobalFunctions.h"
 #include "PyNodeGroup.h"
 #include "PyAppInstance.h"

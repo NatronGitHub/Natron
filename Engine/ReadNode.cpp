@@ -498,12 +498,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         int pluginChoice_i = pluginChoiceKnob->getValue();
         if (pluginChoice_i == 0) {
             //Use default
-            std::map<std::string, std::string> readersForFormat;
-            appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-            std::map<std::string, std::string>::iterator foundReaderForFormat = readersForFormat.find(ext);
-            if ( foundReaderForFormat != readersForFormat.end() ) {
-                readerPluginID = foundReaderForFormat->second;
-            }
+            readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
         } else {
             std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
@@ -517,6 +512,16 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     destroyReadNode();
 
     bool defaultFallback = false;
+
+    if (!ReadNode::isBundledReader(readerPluginID, false)) {
+        if (throwErrors) {
+            QString message = tr("%1 is not a bundled reader, please create it from the Image->Readers menu or with the tab menu in the Nodegraph")
+            .arg( QString::fromUtf8( readerPluginID.c_str() ) );
+            throw std::runtime_error( message.toStdString() );
+        }
+        defaultFallback = true;
+    }
+
 
     //Find the appropriate reader
     if (readerPluginID.empty() && !serialization) {
@@ -534,6 +539,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         if ( readerPluginID.empty() ) {
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
+
         CreateNodeArgs args( QString::fromUtf8( readerPluginID.c_str() ), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
         args.createGui = false;
         args.addToProject = false;
@@ -586,7 +592,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
 
-    KnobPtr knob = _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr knob = embeddedPlugin ? embeddedPlugin->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         inputFileKnob = boost::dynamic_pointer_cast<KnobFile>(knob);
     }
@@ -605,13 +611,15 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::vector<std::string> readersForFormat;
     std::string pluginID;
     if ( !ext.empty() ) {
-        appPTR->getCurrentSettings()->getReadersForFormat(ext, &readersForFormat);
-        pluginID = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
-        for (std::size_t i = 0; i < readersForFormat.size(); ++i) {
-            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( readersForFormat[i].c_str() ), -1, -1, false);
+        pluginID = appPTR->getReaderPluginIDForFileType(ext);
+        IOPluginSetForFormat readersForFormat;
+        appPTR->getReadersForFormat(ext, &readersForFormat);
+
+        // Reverse it so that we sort them by decreasing score order
+        for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it!=readersForFormat.rend(); ++it) {
+            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";

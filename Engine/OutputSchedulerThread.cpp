@@ -69,6 +69,7 @@
 
 #ifdef DEBUG
 //#define TRACE_SCHEDULER
+//#define TRACE_CURRENT_FRAME_SCHEDULER
 #endif
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
@@ -3641,6 +3642,9 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 
     assert(args);
 
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+    qDebug() << getThreadName().c_str() << "Thread loop once, waiting for" << args->age << "to be produced";
+#endif
 
     ///Wait for the work to be done
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
@@ -3671,6 +3675,11 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         }
 
         if ( found != _imp->producedFrames.end() ) {
+
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+            qDebug() << getThreadName().c_str() << "Found" << args->age << "produced";
+#endif
+
             mtArgs->frames = found->frames;
             mtArgs->stats = found->stats;
 
@@ -3683,6 +3692,10 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
             //} else {
             _imp->producedFrames.erase(found);
             //}
+        } else {
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+            qDebug() << getThreadName().c_str() << "Got aborted, skip waiting for" << args->age;
+#endif
         }
     } // QMutexLocker k(&_imp->producedQueueMutex);
 
@@ -3695,6 +3708,10 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
     }
 
     requestExecutionOnMainThread(mtArgs);
+
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+    qDebug() << getThreadName().c_str() << "Frame processed" << args->age;
+#endif
 
     return state;
 } // ViewerCurrentFrameRequestScheduler::threadLoopOnce
@@ -3744,6 +3761,9 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
 void
 ViewerCurrentFrameRequestScheduler::onAbortRequested()
 {
+#ifdef TRACE_CURRENT_FRAME_SCHEDULER
+    qDebug() << getThreadName().c_str() << "Received abort request";
+#endif
     //This will make all processing nodes that call the abort() function return true
     //This function marks all active renders of the viewer as aborted (except the oldest one)
     //and each node actually check if the render has been aborted in EffectInstance::Implementation::aborted()

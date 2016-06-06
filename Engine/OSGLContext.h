@@ -133,6 +133,7 @@ class OSGLContext : public boost::noncopyable
 {
 public:
 
+
     enum DefaultGLShaderEnum
     {
         eDefaultGLShaderFillConstant,
@@ -153,6 +154,13 @@ public:
                          bool coreProfile = false);
 
     virtual ~OSGLContext();
+
+    /**
+     * @brief This function checks that the context has at least the OpenGL version required by Natron, otherwise
+     * it fails by throwing an exception with the required version.
+     * Note: the context must be made current before calling this function
+    **/
+    static void checkOpenGLVersion();
     
     
     GLuint getPBOId() const;

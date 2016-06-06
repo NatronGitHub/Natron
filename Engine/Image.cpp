@@ -709,6 +709,7 @@ Image::Image(const ImageComponents& components,
              ImageFieldingOrderEnum fielding,
              bool useBitmap,
              StorageModeEnum storage,
+             bool generateMipMaps,
              U32 textureTarget)
     : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
     , _useBitmap(useBitmap)
@@ -724,6 +725,7 @@ Image::Image(const ImageComponents& components,
                                                                   false /*isRoDProjectFormat*/,
                                                                   components,
                                                                   storage,
+                                                                  generateMipMaps,
                                                                   textureTarget) ),
                   NULL /*cacheAPI*/
                   );
@@ -794,6 +796,7 @@ Image::makeParams(const RectD & rod,
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
                   StorageModeEnum storage,
+                  bool generateMipMaps,
                   U32 textureTarget)
 {
     RectI bounds;
@@ -810,6 +813,7 @@ Image::makeParams(const RectD & rod,
                                                            isRoDProjectFormat,
                                                            components,
                                                            storage,
+                                                           generateMipMaps,
                                                            textureTarget) );
 }
 
@@ -824,6 +828,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
                   StorageModeEnum storage,
+                  bool generateMipMaps,
                   U32 textureTarget)
 {
 #ifdef DEBUG
@@ -843,6 +848,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                                                            isRoDProjectFormat,
                                                            components,
                                                            storage,
+                                                           generateMipMaps,
                                                            textureTarget) );
 }
 

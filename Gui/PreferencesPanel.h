@@ -27,33 +27,42 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#endif
-
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWidget>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
+
+struct PreferencesPanelPrivate;
 class PreferencesPanel
     : public QWidget
+    , public KnobGuiContainerHelper
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    PreferencesPanel(boost::shared_ptr<Settings> settings,
-                     Gui* parent);
-    ~PreferencesPanel() OVERRIDE
+
+    PreferencesPanel(Gui* parent);
+
+    virtual ~PreferencesPanel();
+
+    void createGui();
+
+    virtual Gui* getGui() const OVERRIDE FINAL;
+
+    virtual bool useScrollAreaForTabs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
+        return true;
     }
+
 
 public Q_SLOTS:
 
@@ -67,24 +76,33 @@ public Q_SLOTS:
 
     void openHelp();
 
+    void onItemSelectionChanged();
+
 private:
 
     virtual void showEvent(QShowEvent* e) OVERRIDE;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 
-    // FIXME: PIMPL
-    Gui* _gui;
-    QVBoxLayout* _mainLayout;
-    DockablePanel* _panel;
-    QDialogButtonBox* _buttonBox;
-    Button* _restoreDefaultsB;
-    Button* _prefsHelp;
-    Button* _cancelB;
-    Button* _okB;
-    boost::shared_ptr<Settings> _settings;
-    std::vector<KnobI*> _changedKnobs;
-    bool _closeIsOK;
+    virtual void onPageActivated(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+
+    virtual void refreshCurrentPage() OVERRIDE FINAL;
+
+    virtual QWidget* getPagesContainer() const OVERRIDE FINAL;
+
+    virtual QWidget* createPageMainWidget(QWidget* parent) const OVERRIDE FINAL;
+
+    virtual void addPageToPagesContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+
+    virtual void removePageFromContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+
+    virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
+
+    virtual void setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex) OVERRIDE FINAL;
+
+    virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
+
+    boost::scoped_ptr<PreferencesPanelPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

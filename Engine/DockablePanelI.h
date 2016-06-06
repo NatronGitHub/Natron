@@ -31,6 +31,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
+/**
+ * @brief Interface used by the Engine Knob class to interact with the gui for dynamic parmeter creation
+ **/
 class DockablePanelI
 {
 public:
@@ -43,7 +46,15 @@ public:
      * @brief Must scan for new knobs and rebuild the panel accordingly
      **/
     virtual void recreateUserKnobs(bool restorePageIndex) = 0;
+
+    /**
+    * @brief Same as recreateUserKnobs but for all knobs
+     **/
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) = 0;
+
+    /**
+     * @brief Removes a specific knob from the gui
+     **/
     virtual void deleteKnobGui(const KnobPtr& knob) = 0;
 };
 

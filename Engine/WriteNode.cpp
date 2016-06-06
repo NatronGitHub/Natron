@@ -509,14 +509,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
     QString qpattern = QString::fromUtf8( filename.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
-    std::string readerPluginID;
-    std::map<std::string, std::string> readersForFormat;
-
-    appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
-    std::map<std::string, std::string>::iterator foundReaderForFormat = readersForFormat.find(ext);
-    if ( foundReaderForFormat != readersForFormat.end() ) {
-        readerPluginID = foundReaderForFormat->second;
-    }
+    std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
 
     NodePtr writeNode = embeddedPlugin.lock();
 
@@ -614,12 +607,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         int pluginChoice_i = pluginChoiceKnob->getValue();
         if (pluginChoice_i == 0) {
             //Use default
-            std::map<std::string, std::string> writersForFormat;
-            appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
-            std::map<std::string, std::string>::iterator foundWriterForFormat = writersForFormat.find(ext);
-            if ( foundWriterForFormat != writersForFormat.end() ) {
-                writerPluginID = foundWriterForFormat->second;
-            }
+            writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
         } else {
             std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
@@ -736,15 +724,16 @@ WriteNodePrivate::refreshPluginSelectorKnob()
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
-    std::vector<std::string> writersForFormat;
     std::string pluginID;
     if ( !ext.empty() ) {
-        appPTR->getCurrentSettings()->getWritersForFormat(ext, &writersForFormat);
 
-        pluginID = appPTR->getCurrentSettings()->getWriterPluginIDForFileType(ext);
+        pluginID = appPTR->getWriterPluginIDForFileType(ext);
+        IOPluginSetForFormat writersForFormat;
+        appPTR->getWritersForFormat(ext, &writersForFormat);
 
-        for (std::size_t i = 0; i < writersForFormat.size(); ++i) {
-            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( writersForFormat[i].c_str() ), -1, -1, false);
+        // Reverse it so that we sort them by decreasing score order
+        for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it!=writersForFormat.rend(); ++it) {
+            Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";

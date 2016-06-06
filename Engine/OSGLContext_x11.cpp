@@ -127,8 +127,8 @@ typedef Bool (*PFNGLXISDIRECT)(Display*,GLXContext);
 // https://www.opengl.org/registry/specs/MESA/glx_query_renderer.txt
 typedef Bool (*PFNGLXQUERYRENDERERINTEGERMESA)(Display*,int, int, int, unsigned int*);
 typedef Bool (*PFNGLXQUERYCURRENTRENDERERINTEGERMESA)(int, unsigned int*);
-typedef Bool (*PFNGLXQUERYRENDERERSTRINGMESA)(Display*,int, int, int);
-typedef Bool (*PFNGLXQUERYCURRENTRENDERERSTRINGMESA)(int);
+typedef const char* (*PFNGLXQUERYRENDERERSTRINGMESA)(Display*,int, int, int);
+typedef const char* (*PFNGLXQUERYCURRENTRENDERERSTRINGMESA)(int);
 
 #ifndef GLXBadProfileARB
  #define GLXBadProfileARB 13
@@ -286,7 +286,6 @@ OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
     XInitThreads();
     glxInfo->_imp->x11.display = XOpenDisplay(NULL);
     if (!glxInfo->_imp->x11.display) {
-        assert(false);
         throw std::runtime_error("X11: Failed to open display");
     }
     glxInfo->_imp->x11.screen = DefaultScreen(glxInfo->_imp->x11.display);
@@ -313,7 +312,6 @@ OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
     }
 
     if (!glxInfo->_imp->handle) {
-        assert(false);
         throw std::runtime_error("GLX: Failed to load GLX");
     }
 
@@ -664,9 +662,8 @@ OSGLContext_x11Private::createWindow(OSGLContext_glx_data* glxInfo,
 
 #define setGLXattrib(attribName, attribValue) \
     { \
-        attribs[index++] = attribName; \
-        attribs[index++] = attribValue; \
-        assert( (size_t) index < sizeof(attribs) / sizeof(attribs[0]) ); \
+        attribs.push_back(attribName); \
+        attribs.push_back(attribValue); \
     }
 
 // Create the OpenGL context using legacy API
@@ -682,57 +679,26 @@ createLegacyContext(OSGLContext_glx_data* glxInfo,
 void
 OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
                                   const FramebufferConfig& fbconfig,
-                                  int major,
-                                  int minor,
+                                  int /*major*/,
+                                  int /*minor*/,
                                   bool coreProfile,
                                   int rendererID,
                                   const OSGLContext_x11* shareContext)
 {
-    int attribs[40];
     GLXFBConfig native = NULL;
     GLXContext share = shareContext ? shareContext->_imp->glxContextHandle : 0;
 
     chooseFBConfig(glxInfo, fbconfig, &native);
-
-    /*if (ctxconfig->client == GLFW_OPENGL_ES_API)
-       {
-        if (!_glfw.glx.ARB_create_context ||
-            !_glfw.glx.ARB_create_context_profile ||
-            !_glfw.glx.EXT_create_context_es2_profile)
-        {
-            _glfwInputError(GLFW_API_UNAVAILABLE,
-                            "GLX: OpenGL ES requested but GLX_EXT_create_context_es2_profile is unavailable");
-            return GLFW_FALSE;
-        }
-       }*/
-
-    /*if (ctxconfig->forward)
-       {
-        if (!_glfw.glx.ARB_create_context)
-        {
-            _glfwInputError(GLFW_VERSION_UNAVAILABLE,
-                            "GLX: Forward compatibility requested but GLX_ARB_create_context_profile is unavailable");
-            return GLFW_FALSE;
-        }
-       }
-
-       if (ctxconfig->profile)
-       {
-        if (!_glfw.glx.ARB_create_context ||
-            !_glfw.glx.ARB_create_context_profile)
-        {
-            _glfwInputError(GLFW_VERSION_UNAVAILABLE,
-                            "GLX: An OpenGL profile requested but GLX_ARB_create_context_profile is unavailable");
-            return GLFW_FALSE;
-        }
-       }*/
 
     GrabErrorHandlerX11();
 
     if (!glxInfo->_imp->ARB_create_context) {
         glxContextHandle = createLegacyContext(glxInfo, native, share);
     } else {
-        int index = 0, mask = 0, flags = 0;
+
+        std::vector<int> attribs;
+
+        int mask = 0, flags = 0;
 
         /*if (ctxconfig->forward)
             flags |= GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;*/
@@ -743,54 +709,14 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
             mask |= GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
         }
 
-        /*if (ctxconfig->debug)
-            flags |= GLX_CONTEXT_DEBUG_BIT_ARB;
-           if (ctxconfig->noerror)
-            flags |= GL_CONTEXT_FLAG_NO_ERROR_BIT_KHR;*/
 
-        /*if (ctxconfig->robustness)
-           {
-            if (_glfw.glx.ARB_create_context_robustness)
-            {
-                if (ctxconfig->robustness == GLFW_NO_RESET_NOTIFICATION)
-                {
-                    setGLXattrib(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB,
-                                 GLX_NO_RESET_NOTIFICATION_ARB);
-                }
-                else if (ctxconfig->robustness == GLFW_LOSE_CONTEXT_ON_RESET)
-                {
-                    setGLXattrib(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB,
-                                 GLX_LOSE_CONTEXT_ON_RESET_ARB);
-                }
-
-                flags |= GLX_CONTEXT_ROBUST_ACCESS_BIT_ARB;
-            }
-           }*/
-
-        /*if (ctxconfig->release)
-           {
-            if (_glfw.glx.ARB_context_flush_control)
-            {
-                if (ctxconfig->release == GLFW_RELEASE_BEHAVIOR_NONE)
-                {
-                    setGLXattrib(GLX_CONTEXT_RELEASE_BEHAVIOR_ARB,
-                                 GLX_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
-                }
-                else if (ctxconfig->release == GLFW_RELEASE_BEHAVIOR_FLUSH)
-                {
-                    setGLXattrib(GLX_CONTEXT_RELEASE_BEHAVIOR_ARB,
-                                 GLX_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB);
-                }
-            }
-           }*/
-
-        // NOTE: Only request an explicitly versioned context when necessary, as
-        //       explicitly requesting version 1.0 does not always return the
-        //       highest version supported by the driver
-        if ( (major != 1) || (minor != 0) ) {
+        // Note that we do NOT request a specific version. Sometimes a driver might report that its maximum compatibility
+        //profile is 3.0 but we ask for 2.0, hence it will fail context creation whereas it should not. Instead we check
+        //OpenGL version once context is created and check that we have at least 2.0
+        /*if ( (major != 1) || (minor != 0) ) {
             setGLXattrib(GLX_CONTEXT_MAJOR_VERSION_ARB, major);
             setGLXattrib(GLX_CONTEXT_MINOR_VERSION_ARB, minor);
-        }
+        }*/
 
         if (mask) {
             setGLXattrib(GLX_CONTEXT_PROFILE_MASK_ARB, mask);
@@ -800,13 +726,13 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
             setGLXattrib(GLX_CONTEXT_FLAGS_ARB, flags);
         }
 
-        if (glxInfo->_imp->MESA_query_renderer && rendererID != -1) {
+        if (glxInfo->_imp->MESA_query_renderer && rendererID != -1 && rendererID != 0) {
             setGLXattrib(GLX_RENDERER_ID_MESA, rendererID);
         }
 
         setGLXattrib(None, None);
 
-        glxContextHandle = glxInfo->_imp->CreateContextAttribsARB(glxInfo->_imp->x11.display, native, share, True /*direct*/, attribs);
+        glxContextHandle = glxInfo->_imp->CreateContextAttribsARB(glxInfo->_imp->x11.display, native, share, True /*direct*/, &attribs[0]);
 
         // HACK: This is a fallback for broken versions of the Mesa
         //       implementation of GLX_ARB_create_context_profile that fail
@@ -943,10 +869,19 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0));
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
+            return;
         }
         if (!makeContextCurrent(context.get())) {
             return;
         }
+
+        try {
+            OSGLContext::checkOpenGLVersion();
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
+            return;
+        }
+
 
         OpenGLRendererInfo info;
         info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
@@ -966,7 +901,6 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         bool gotRenderer;
         do {
             gotRenderer = (bool)glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_DEVICE_ID_MESA, v);
-            ++renderer;
             if (gotRenderer) {
                 int rendererID = v[0];
                 if ((unsigned int)rendererID == 0xFFFFFFFF) {
@@ -974,9 +908,53 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 } else {
                     bool ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_ACCELERATED_MESA, v);
                     assert(ok);
-                    if (!v[0]) {
+                    if (!ok || !v[0]) {
+                        ++renderer;
                         continue;
                     }
+
+
+                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_OPENGL_COMPATIBILITY_PROFILE_VERSION_MESA , v);
+                    assert(ok);
+                    if (!ok) {
+                        ++renderer;
+                        continue;
+                    }
+
+                    int maxCompatGLVersionMajor = (int)v[0];
+                    int maxCompatGLVersionMinor = (int)v[1];
+
+                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer,  GLX_RENDERER_OPENGL_CORE_PROFILE_VERSION_MESA , v);
+                    assert(ok);
+                    if (!ok) {
+                        ++renderer;
+                        continue;
+                    }
+
+                    int maxCoreGLVersionMajor = (int)v[0];
+                    int maxCoreGLVersionMinor = (int)v[1];
+
+
+                    const char* vendorIDStr = glxInfo->_imp->QueryRendererStringMesa(glxInfo->_imp->x11.display, screen ,renderer, GLX_RENDERER_VENDOR_ID_MESA);
+                    if (!vendorIDStr) {
+                        ++renderer;
+                        continue;
+                    }
+                    const char* deviceIDStr = glxInfo->_imp->QueryRendererStringMesa(glxInfo->_imp->x11.display, screen ,renderer, GLX_RENDERER_DEVICE_ID_MESA);
+                    if (!deviceIDStr) {
+                        ++renderer;
+                        continue;
+                    }
+                    std::string vendorID(vendorIDStr);
+                    std::string deviceID(deviceIDStr);
+
+                    std::stringstream ss;
+                    ss << "Creating context for Device:" << deviceID << ", Vendor:" << vendorID << std::endl;
+                    ss << "Max Compatibility OpenGL profile version: " << maxCompatGLVersionMajor << "." << maxCompatGLVersionMinor << std::endl;
+                    ss << "Max Core OpenGL profile version: " << maxCoreGLVersionMajor << "." << maxCoreGLVersionMinor;
+#ifdef DEBUG
+                    std::cerr << ss.str() << std::endl;
+#endif
 
                     OpenGLRendererInfo info;
 
@@ -987,15 +965,32 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     // Now create a context with the renderer ID
                     boost::scoped_ptr<OSGLContext_x11> context;
                     try {
-                        context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID((int)rendererID), 0));
+                        context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID((int)renderer), 0));
                     } catch (const std::exception& e) {
+#ifndef DEBUG
+                        std::cerr << ss.str() << std::endl;
+#endif
                         std::cerr << e.what() << std::endl;
+                        ++renderer;
+                        continue;
                     }
                     if (!makeContextCurrent(context.get())) {
+                        ++renderer;
                         continue;
                     }
 
-                    info.rendererID.renderID = rendererID;
+                    try {
+                        OSGLContext::checkOpenGLVersion();
+                    } catch (const std::exception& e) {
+#ifndef DEBUG
+                        std::cerr << ss.str() << std::endl;
+#endif
+                        std::cerr << e.what() << std::endl;
+                        ++renderer;
+                        continue;
+                    }
+
+                    info.rendererID.renderID = renderer;
                     info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
                     info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
                     info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
@@ -1006,6 +1001,8 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     makeContextCurrent(0);
                 }
             }
+            ++renderer;
+
         } while (gotRenderer);
     }
 }

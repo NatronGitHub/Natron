@@ -407,7 +407,7 @@ CLArgs::getImageFilename() const
                 QString fileCopy = *it;
                 QString ext = QtCompat::removeFileExtension(fileCopy);
                 if ( !ext.isEmpty() ) {
-                    std::string readerId = appPTR->isImageFileSupportedByNatron( ext.toStdString() );
+                    std::string readerId = appPTR->getReaderPluginIDForFileType( ext.toStdString() );
                     if ( !readerId.empty() ) {
                         _imp->imageFilename = *it;
                         _imp->args.erase(it);

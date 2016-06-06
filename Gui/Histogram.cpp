@@ -673,6 +673,11 @@ Histogram::initializeGL()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     assert( QGLContext::currentContext() == context() );
 
 
@@ -1131,6 +1136,11 @@ Histogram::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+
     glCheckError();
     double w = (double)width();
     double h = (double)height();
@@ -1198,6 +1208,11 @@ Histogram::resizeGL(int width,
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
 
     if (height == 0) { // prevent division by 0
         height = 1;

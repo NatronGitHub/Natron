@@ -244,9 +244,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //into the same Write meta-node
 #define NATRON_ENABLE_IO_META_NODES 1
 
-//Uncomment to get access to ReadQt and WriteQt nodes. Note that they are no longer maintained and probably buggy.
-//#define NATRON_ENABLE_QT_IO_NODES
-
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x
 #define STRINGISE(x) STRINGISE_IMPL(x)

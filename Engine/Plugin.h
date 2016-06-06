@@ -360,6 +360,42 @@ struct Plugin_compare_major
 typedef std::set<Plugin*, Plugin_compare_major> PluginMajorsOrdered;
 typedef std::map<std::string, PluginMajorsOrdered> PluginsMap;
 
+struct IOPluginEvaluation
+{
+    std::string pluginID;
+    double evaluation;
+
+    IOPluginEvaluation()
+    : pluginID()
+    , evaluation(0)
+    {
+
+    }
+
+    IOPluginEvaluation(const std::string& p, double e)
+    : pluginID(p)
+    , evaluation(e)
+    {}
+};
+
+struct IOPluginEvaluation_CompareLess
+{
+    bool operator() (const IOPluginEvaluation& lhs, const IOPluginEvaluation& rhs) const
+    {
+        return lhs.evaluation < rhs.evaluation;
+    }
+};
+
+struct FormatExtensionCompareCaseInsensitive 
+{
+    bool operator() (const std::string& lhs, const std::string& rhs) const;
+};
+
+typedef std::set<IOPluginEvaluation, IOPluginEvaluation_CompareLess> IOPluginSetForFormat;
+// For each extension format (lower case) a set of plug-in IDs sorted by increasing evaluation order.
+// The best plug-in for a format is the set.rbegin()
+typedef std::map<std::string, IOPluginSetForFormat, FormatExtensionCompareCaseInsensitive> IOPluginsMap;
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // PLUGIN_H

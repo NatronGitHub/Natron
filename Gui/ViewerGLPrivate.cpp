@@ -83,7 +83,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
       , textRenderingColor(200, 200, 200, 255)
       , displayWindowOverlayColor(125, 125, 125, 255)
       , rodOverlayColor(100, 100, 100, 255)
-      , textFont( new QFont(appFont, appFontSize) )
+      , textFont(appFont, appFontSize)
       , overlay(true)
       , updatingTexture(false)
       , clearColor(0, 0, 0, 255)
@@ -171,17 +171,19 @@ ViewerGL::Implementation::~Implementation()
         displayTextures[i].texture.reset();
     }
     partialUpdateTextures.clear();
-    glCheckError();
-    for (U32 i = 0; i < this->pboIds.size(); ++i) {
-        glDeleteBuffers(1, &this->pboIds[i]);
+
+    if (appPTR->isOpenGLLoaded()) {
+        glCheckError();
+        for (U32 i = 0; i < this->pboIds.size(); ++i) {
+            glDeleteBuffers(1, &this->pboIds[i]);
+        }
+        glCheckError();
+        glDeleteBuffers(1, &this->vboVerticesId);
+        glDeleteBuffers(1, &this->vboTexturesId);
+        glDeleteBuffers(1, &this->iboTriangleStripId);
+        glCheckError();
+        glDeleteTextures(1, &this->checkerboardTextureID);
     }
-    glCheckError();
-    glDeleteBuffers(1, &this->vboVerticesId);
-    glDeleteBuffers(1, &this->vboTexturesId);
-    glDeleteBuffers(1, &this->iboTriangleStripId);
-    glCheckError();
-    delete this->textFont;
-    glDeleteTextures(1, &this->checkerboardTextureID);
 }
 
 //static const GLfloat renderingTextureCoordinates[32] = {

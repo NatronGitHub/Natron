@@ -2081,10 +2081,10 @@ NodeGui::getKnobs() const
 {
     assert(_settingsPanel);
     if (_mainInstancePanel) {
-        return _mainInstancePanel->getKnobs();
+        return _mainInstancePanel->getKnobsMapping();
     }
 
-    return _settingsPanel->getKnobs();
+    return _settingsPanel->getKnobsMapping();
 }
 
 void

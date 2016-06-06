@@ -757,8 +757,8 @@ getCacheFilePath()
 }
 
 void
-OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* readersMap,
-                        std::map<std::string, std::vector< std::pair<std::string, double> > >* writersMap)
+OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
+                        IOPluginsMap* writersMap)
 {
     assert( OFX::Host::PluginCache::getPluginCache() );
     /// set the version label in the global cache
@@ -924,31 +924,15 @@ OfxHost::loadOFXPlugins(std::map<std::string, std::vector< std::pair<std::string
 
         if (!isDeprecated && ( foundReader != contexts.end() ) && (formatsCount > 0) && readersMap) {
             ///we're safe to assume that this plugin is a reader
-            for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-                it = readersMap->find(formats[k]);
-
-                if ( it != readersMap->end() ) {
-                    it->second.push_back( std::make_pair(openfxId, evaluation) );
-                } else {
-                    std::vector<std::pair<std::string, double> > newVec(1);
-                    newVec[0] = std::make_pair(openfxId, evaluation);
-                    readersMap->insert( std::make_pair(formats[k], newVec) );
-                }
+            for (std::size_t k = 0; k < formats.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*readersMap)[formats[k]];
+                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
         } else if (!isDeprecated && ( foundWriter != contexts.end() ) && (formatsCount > 0) && writersMap) {
             ///we're safe to assume that this plugin is a writer.
-            for (U32 k = 0; k < formats.size(); ++k) {
-                std::map<std::string, std::vector< std::pair<std::string, double> > >::iterator it;
-                it = writersMap->find(formats[k]);
-
-                if ( it != writersMap->end() ) {
-                    it->second.push_back( std::make_pair(openfxId, evaluation) );
-                } else {
-                    std::vector<std::pair<std::string, double> > newVec(1);
-                    newVec[0] = std::make_pair(openfxId, evaluation);
-                    writersMap->insert( std::make_pair(formats[k], newVec) );
-                }
+            for (std::size_t k = 0; k < formats.size(); ++k) {
+                IOPluginSetForFormat& evalForFormat = (*writersMap)[formats[k]];
+                evalForFormat.insert( IOPluginEvaluation(openfxId, evaluation) );
             }
         }
     }

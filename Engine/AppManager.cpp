@@ -631,6 +631,13 @@ AppManager::isCopyInputImageForPluginRenderEnabled() const
 }
 
 bool
+AppManager::isOpenGLLoaded() const
+{
+    QMutexLocker k(&_imp->openGLFunctionsMutex);
+    return _imp->hasInitializedOpenGLFunctions;
+}
+
+bool
 AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
@@ -645,6 +652,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                 if (!glContext) {
                     return false;
                 }
+                // Make the context current and check its version
                 glContext->setContextCurrentNoRender();
             } catch (const std::exception& e) {
                 std::cerr << "Error while loading OpenGL: "<< e.what() << std::endl;
@@ -655,6 +663,14 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         // The following requires a valid OpenGL context to be created
         _imp->initGl();
         if (createOpenGLContext) {
+            try {
+                OSGLContext::checkOpenGLVersion();
+            } catch (const std::exception& e) {
+                if (!_imp->missingOpenglError.isEmpty()) {
+                    _imp->missingOpenglError = QString::fromUtf8(e.what());
+                }
+            }
+
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
             glContext->unsetCurrentContextNoRender();
         } else {
@@ -1121,24 +1137,16 @@ AppManager::loadAllPlugins()
     assert( _imp->_plugins.empty() );
     assert( _imp->_formats.empty() );
 
+    // Load plug-ins bundled into Natron
+    loadBuiltinNodePlugins(&_imp->readerPlugins, &_imp->writerPlugins);
 
-    std::map<std::string, std::vector< std::pair<std::string, double> > > readersMap;
-    std::map<std::string, std::vector< std::pair<std::string, double> > > writersMap;
-
-    /*loading node plugins*/
-
-    loadBuiltinNodePlugins(&readersMap, &writersMap);
-
-    /*loading ofx plugins*/
-    _imp->ofxHost->loadOFXPlugins( &readersMap, &writersMap);
-
-    _imp->_settings->populateReaderPluginsAndFormats(readersMap);
-    _imp->_settings->populateWriterPluginsAndFormats(writersMap);
+    // Load OpenFX plug-ins
+    _imp->ofxHost->loadOFXPlugins( &_imp->readerPlugins, &_imp->writerPlugins);
 
     _imp->declareSettingsToPython();
 
-    //Load python groups and init.py & initGui.py scripts
-    //Should be done after settings are declared
+    // Load PyPlugs and init.py & initGui.py scripts
+    // Should be done after settings are declared
     loadPythonGroups();
 
     _imp->_settings->populatePluginsTab();
@@ -1256,8 +1264,8 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
 }
 
 void
-AppManager::loadBuiltinNodePlugins(std::map<std::string, std::vector< std::pair<std::string, double> > >* /*readersMap*/,
-                                   std::map<std::string, std::vector< std::pair<std::string, double> > >* /*writersMap*/)
+AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
+                                   IOPluginsMap* /*writersMap*/)
 {
     registerBuiltInPlugin<Backdrop>(QString::fromUtf8(NATRON_IMAGES_PATH "backdrop_icon.png"), false, false);
     registerBuiltInPlugin<GroupOutput>(QString::fromUtf8(NATRON_IMAGES_PATH "output_icon.png"), false, false);
@@ -3069,18 +3077,87 @@ AppManager::mapUNCPathToPathWithDriveLetter(const QString& uncPath) const
 
 #endif
 
-std::string
-AppManager::isImageFileSupportedByNatron(const std::string& ext)
+const IOPluginsMap&
+AppManager::getFileFormatsForReadingAndReader() const
 {
-    std::string readId;
+    return _imp->readerPlugins;
+}
 
-    try {
-        readId = appPTR->getCurrentSettings()->getReaderPluginIDForFileType(ext);
-    } catch (...) {
+const IOPluginsMap&
+AppManager::getFileFormatsForWritingAndWriter() const
+{
+    return _imp->writerPlugins;
+}
+
+void
+AppManager::getSupportedReaderFileFormats(std::vector<std::string>* formats) const
+{
+    const IOPluginsMap& readersForFormat = getFileFormatsForReadingAndReader();
+    formats->resize(readersForFormat.size());
+    int i = 0;
+    for (IOPluginsMap::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it, ++i) {
+        (*formats)[i] = it->first;
+    }
+}
+
+void
+AppManager::getSupportedWriterFileFormats(std::vector<std::string>* formats) const
+{
+    const IOPluginsMap& writersForFormat = getFileFormatsForWritingAndWriter();
+    formats->resize(writersForFormat.size());
+    int i = 0;
+    for (IOPluginsMap::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it, ++i) {
+        (*formats)[i] = it->first;
+    }
+}
+
+void
+AppManager::getReadersForFormat(const std::string& format, IOPluginSetForFormat* decoders) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->readerPlugins.find(format);
+    if (found == _imp->readerPlugins.end()) {
+        return;
+    }
+    *decoders = found->second;
+}
+
+void
+AppManager::getWritersForFormat(const std::string& format, IOPluginSetForFormat* encoders) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->writerPlugins.find(format);
+    if (found == _imp->writerPlugins.end()) {
+        return;
+    }
+    *encoders = found->second;
+
+}
+
+std::string
+AppManager::getReaderPluginIDForFileType(const std::string & extension) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->readerPlugins.find(extension);
+    if (found == _imp->readerPlugins.end()) {
         return std::string();
     }
+    // Return the "best" plug-in (i.e: higher score)
 
-    return readId;
+    return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
+}
+
+std::string
+AppManager::getWriterPluginIDForFileType(const std::string & extension) const
+{
+    // This will perform a case insensitive find
+    IOPluginsMap::const_iterator found = _imp->writerPlugins.find(extension);
+    if (found == _imp->writerPlugins.end()) {
+        return std::string();
+    }
+    // Return the "best" plug-in (i.e: higher score)
+
+    return found->second.empty() ? std::string() : found->second.rbegin()->pluginID;
 }
 
 AppTLS*

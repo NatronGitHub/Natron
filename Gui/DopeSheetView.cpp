@@ -3140,6 +3140,11 @@ DopeSheetView::initializeGL()
 {
     running_in_main_thread();
     appPTR->initializeOpenGLFunctionsOnce();
+
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     _imp->generateKeyframeTextures();
 }
 
@@ -3154,7 +3159,12 @@ DopeSheetView::resizeGL(int w,
 {
     running_in_main_thread_and_context(this);
 
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
     if (h == 0) {
+        h = 1;
     }
 
     glViewport(0, 0, w, h);
@@ -3182,6 +3192,11 @@ DopeSheetView::paintGL()
 {
     running_in_main_thread_and_context(this);
 
+    if (!appPTR->isOpenGLLoaded()) {
+        return;
+    }
+
+    
     glCheckError();
 
     if (_imp->zoomContext.factor() <= 0) {
