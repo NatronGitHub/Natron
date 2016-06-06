@@ -1323,7 +1323,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
         int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
         selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
-                                                 format, internalFormat, glType, false) );
+                                                 format, internalFormat, glType) );
     }
     selectedMarkerTextureTime = (int)ret.first->getTime();
     selectedMarkerTextureRoI = ret.second;
@@ -1364,7 +1364,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
             int format, internalFormat, glType;
             Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
             GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
-                                          format, internalFormat, glType, false) );
+                                          format, internalFormat, glType) );
             keyTextures[it->first.time] = tex;
             convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
 

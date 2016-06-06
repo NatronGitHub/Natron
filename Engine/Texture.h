@@ -56,8 +56,7 @@ public:
             DataTypeEnum type,
             int format,
             int internalFormat,
-            int glType,
-            bool generateMipMaps);
+            int glType);
     static void getRecommendedTexParametersForRGBAByteTexture(int* format, int* internalFormat, int* glType);
 
     U32 getTexID() const
@@ -166,7 +165,6 @@ private:
     int _internalFormat, _format, _glType;
     TextureRect _textureRect;
     DataTypeEnum _type;
-    bool _generateMipMaps;
 };
 
 NATRON_NAMESPACE_EXIT;
