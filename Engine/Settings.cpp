@@ -515,6 +515,7 @@ void
 Settings::initializeKnobsUserInterface()
 {
     _uiPage = AppManager::createKnob<KnobPage>( this, tr("User Interface") );
+    _uiPage->setName("userInterfacePage");
 
     _notifyOnFileChange = AppManager::createKnob<KnobBool>( this, tr("Warn when a file changes externally") );
     _notifyOnFileChange->setName("warnOnExternalChange");

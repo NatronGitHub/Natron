@@ -269,7 +269,7 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,
     }
 
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
+    if ( app ) {
         app->getGui()->addShortcut(kA);
     }
 }
@@ -382,7 +382,7 @@ GuiApplicationManagerPrivate::addMouseShortcut(const std::string & grouping,
     }
 
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
+    if ( app ) {
         app->getGui()->addShortcut(mA);
     }
 }
@@ -432,7 +432,7 @@ GuiApplicationManagerPrivate::addStandardKeybind(const std::string & grouping,
     }
 
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if ( app && app->getGui()->hasShortcutEditorAlreadyBeenBuilt() ) {
+    if ( app ) {
         app->getGui()->addShortcut(kA);
     }
 }

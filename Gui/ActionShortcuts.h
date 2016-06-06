@@ -95,9 +95,6 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionShowErrorLog "showErrorLog"
 #define kShortcutDescActionShowErrorLog "Show Project Errors Log..."
 
-#define kShortcutIDActionShowShortcutEditor "showShortcutEditor"
-#define kShortcutDescActionShowShortcutEditor "Show Shortcuts Editor..."
-
 #define kShortcutIDActionNewViewer "newViewer"
 #define kShortcutDescActionNewViewer "New Viewer"
 

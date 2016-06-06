@@ -173,7 +173,6 @@ class ScriptEditor;
 class ScriptObject;
 class SequenceFileDialog;
 class SequenceItemDelegate;
-class ShortCutEditor;
 class SpinBox;
 class SpinBoxValidator;
 class SplashScreen;

@@ -53,7 +53,6 @@
 #include "Gui/NodeGraph.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/ProjectGui.h"
-#include "Gui/ShortCutEditor.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
@@ -136,9 +135,6 @@ Gui::setupUi()
 
     _imp->_aboutWindow = new AboutWindow(this);
     _imp->_aboutWindow->hide();
-
-    _imp->shortcutEditor = new ShortCutEditor(this);
-    _imp->shortcutEditor->hide();
 
 
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end

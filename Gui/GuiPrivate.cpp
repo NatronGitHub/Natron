@@ -118,7 +118,6 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/RightClickableWidget.h"
 #include "Gui/ScriptEditor.h"
 #include "Gui/SequenceFileDialog.h"
-#include "Gui/ShortCutEditor.h"
 #include "Gui/SpinBox.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
@@ -165,7 +164,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
       , actionExit(0)
       , actionProject_settings(0)
       , actionShowErrorLog(0)
-      , actionShortcutEditor(0)
       , actionNewViewer(0)
       , actionFullScreen(0)
 #ifdef __NATRON_WIN32__
@@ -251,7 +249,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
       , _toolButtonMenuOpened(NULL)
       , aboutToCloseMutex()
       , _aboutToClose(false)
-      , shortcutEditor(0)
       , leftToolBarDisplayedOnHoverOnly(false)
       , _scriptEditor(0)
       , _lastEnteredTabWidget(0)

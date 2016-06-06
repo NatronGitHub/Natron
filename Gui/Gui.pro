@@ -192,7 +192,6 @@ SOURCES += \
     SequenceFileDialog.cpp \
     Shaders.cpp \
     SerializableWindow.cpp \
-    ShortCutEditor.cpp \
     SpinBox.cpp \
     SpinBoxValidator.cpp \
     SplashScreen.cpp \
@@ -334,7 +333,6 @@ HEADERS += \
     SequenceFileDialog.h \
     Shaders.h \
     SerializableWindow.h \
-    ShortCutEditor.h \
     SpinBox.h \
     SpinBoxValidator.h \
     SplashScreen.h \

@@ -419,11 +419,6 @@ public:
 
     bool isGUIFrozen() const;
 
-    /**
-     * @brief If returns true then you must add shorcuts to the shortcut editor using the addShortcut function
-     **/
-    bool hasShortcutEditorAlreadyBeenBuilt() const;
-
     void addShortcut(BoundAction* action);
 
     const QString& getLastLoadProjectDirectory() const;
@@ -635,9 +630,7 @@ public Q_SLOTS:
     void showSettings();
 
     void showAbout();
-
-    void showShortcutEditor();
-
+    
     void showErrorLog();
 
     void openRecentFile();

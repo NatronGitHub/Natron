@@ -34,6 +34,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/KnobGuiContainerHelper.h"
+#include "Gui/LineEdit.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -64,6 +65,9 @@ public:
     }
 
 
+    void addShortcut(BoundAction* action);
+
+
 public Q_SLOTS:
 
     void restoreDefaults();
@@ -83,7 +87,23 @@ public Q_SLOTS:
     void onMTEnabledCheckBoxChecked(bool);
 
     void filterPlugins(const QString & txt);
+
+
+    void onShortcutsSelectionChanged();
+
+    void onValidateShortcutButtonClicked();
+
+    void onClearShortcutButtonClicked();
+
+    void onResetShortcutButtonClicked();
+
+    void onRestoreDefaultShortcutsButtonClicked();
+
 private:
+
+    void createPluginsView(QGridLayout* pluginsFrameLayout);
+
+    void createShortcutEditor(QTreeWidgetItem* uiPageTreeItem);
 
     virtual void showEvent(QShowEvent* e) OVERRIDE;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
@@ -108,6 +128,21 @@ private:
     virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
 
     boost::scoped_ptr<PreferencesPanelPrivate> _imp;
+};
+
+
+class KeybindRecorder
+: public LineEdit
+{
+public:
+
+    KeybindRecorder(QWidget* parent);
+
+    virtual ~KeybindRecorder();
+
+private:
+
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -94,9 +94,9 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/ProgressPanel.h"
 #include "Gui/RightClickableWidget.h"
 #include "Gui/ScriptEditor.h"
-#include "Gui/ShortCutEditor.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TabWidget.h"
+#include "Gui/PreferencesPanel.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/SequenceFileDialog.h"
@@ -759,17 +759,13 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     }
 }
 
-bool
-Gui::hasShortcutEditorAlreadyBeenBuilt() const
-{
-    return _imp->shortcutEditor != NULL;
-}
 
 void
 Gui::addShortcut(BoundAction* action)
 {
-    assert(_imp->shortcutEditor);
-    _imp->shortcutEditor->addShortcut(action);
+    if (_imp->_settingsGui) {
+        _imp->_settingsGui->addShortcut(action);
+    }
 }
 
 void

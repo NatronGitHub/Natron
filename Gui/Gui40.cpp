@@ -63,7 +63,6 @@
 #include "Gui/NodeGui.h"
 #include "Gui/ProjectGui.h"
 #include "Gui/RenderStatsDialog.h"
-#include "Gui/ShortCutEditor.h"
 #include "Gui/ProgressPanel.h"
 #include "Gui/Splitter.h"
 #include "Gui/TabWidget.h"
@@ -118,13 +117,6 @@ Gui::showAbout()
     ignore_result( _imp->_aboutWindow->exec() );
 }
 
-void
-Gui::showShortcutEditor()
-{
-    _imp->shortcutEditor->show();
-    _imp->shortcutEditor->raise();
-    _imp->shortcutEditor->activateWindow();
-}
 
 void
 Gui::openRecentFile()

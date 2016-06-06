@@ -467,9 +467,6 @@ Gui::createMenuActions()
     _imp->actionShowErrorLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowErrorLog, kShortcutDescActionShowErrorLog, this);
     QObject::connect( _imp->actionShowErrorLog, SIGNAL(triggered()), this, SLOT(showErrorLog()) );
 
-    _imp->actionShortcutEditor = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionShowShortcutEditor, kShortcutDescActionShowShortcutEditor, this);
-    QObject::connect( _imp->actionShortcutEditor, SIGNAL(triggered()), this, SLOT(showShortcutEditor()) );
-
     _imp->actionNewViewer = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutIDActionNewViewer, kShortcutDescActionNewViewer, this);
     QObject::connect( _imp->actionNewViewer, SIGNAL(triggered()), this, SLOT(createNewViewer()) );
 
@@ -649,7 +646,6 @@ Gui::createMenuActions()
 
     _imp->menuDisplay->addAction(_imp->actionProject_settings);
     _imp->menuDisplay->addAction(_imp->actionShowErrorLog);
-    _imp->menuDisplay->addAction(_imp->actionShortcutEditor);
 #ifdef __NATRON_WIN32__
     _imp->menuDisplay->addAction(_imp->actionShowWindowsConsole);
 #endif

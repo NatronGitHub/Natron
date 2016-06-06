@@ -55,7 +55,6 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
     (void)QT_TR_NOOP(kShortcutDescActionQuit);
     (void)QT_TR_NOOP(kShortcutDescActionProjectSettings);
     (void)QT_TR_NOOP(kShortcutDescActionShowErrorLog);
-    (void)QT_TR_NOOP(kShortcutDescActionShowShortcutEditor);
     (void)QT_TR_NOOP(kShortcutDescActionNewViewer);
     (void)QT_TR_NOOP(kShortcutDescActionFullscreen);
     (void)QT_TR_NOOP(kShortcutDescActionShowWindowsConsole);

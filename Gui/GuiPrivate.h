@@ -101,7 +101,6 @@ public:
     ActionWithShortcut *actionExit;
     ActionWithShortcut *actionProject_settings;
     ActionWithShortcut *actionShowErrorLog;
-    ActionWithShortcut *actionShortcutEditor;
     ActionWithShortcut *actionNewViewer;
     ActionWithShortcut *actionFullScreen;
 #ifdef __NATRON_WIN32__
@@ -237,7 +236,6 @@ public:
     QToolButton* _toolButtonMenuOpened;
     QMutex aboutToCloseMutex;
     bool _aboutToClose;
-    ShortCutEditor* shortcutEditor;
     bool leftToolBarDisplayedOnHoverOnly;
     ScriptEditor* _scriptEditor;
     TabWidget* _lastEnteredTabWidget;
