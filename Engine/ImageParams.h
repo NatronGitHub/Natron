@@ -137,7 +137,6 @@ public:
                 bool isRoDProjectFormat,
                 const ImageComponents& components,
                 StorageModeEnum storageMode,
-                bool generateMipMaps,
                 U32 textureTarget)
         : NonKeyParams()
           , _rod(rod)
@@ -155,7 +154,6 @@ public:
         info.bounds = bounds;
         info.dataTypeSize = getSizeOfForBitDepth(bitdepth);
         info.numComponents = (std::size_t)components.getNumComponents();
-        info.generateMipMaps = generateMipMaps;
         info.textureTarget = textureTarget;
     }
 

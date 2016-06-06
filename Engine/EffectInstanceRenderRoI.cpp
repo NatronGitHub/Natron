@@ -1366,9 +1366,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ///For all planes, if needed allocate the associated image
     if (hasSomethingToRender) {
-#pragma message WARN("Plugin should specify if it needs mipmaps for textures")
-        bool generateMipMaps = false;
-
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin();
              it != planesToRender->planes.end(); ++it) {
             const ImageComponents *components = 0;
@@ -1406,7 +1403,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                    renderFullScaleThenDownscale,
                                    storage,
                                    createInCache,
-                                   generateMipMaps,
                                    &it->second.fullscaleImage,
                                    &it->second.downscaleImage);
             } else {
