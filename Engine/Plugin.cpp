@@ -264,10 +264,6 @@ Plugin::getOfxDesc(ContextEnum* ctx) const
 bool
 Plugin::getIsUserCreatable() const
 {
-    if (!_activatedSet) {
-        _activated = !appPTR->getCurrentSettings()->isPluginDeactivated(this);
-        _activatedSet = true;
-    }
 
     return !_isInternalOnly && _activated;
 }
@@ -279,6 +275,42 @@ Plugin::setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc,
     assert(ctx != eContextNone);
     _ofxDescriptor = desc;
     _ofxContext = ctx;
+}
+
+bool
+Plugin::isRenderScaleEnabled() const
+{
+    return _renderScaleEnabled;
+}
+
+void
+Plugin::setRenderScaleEnabled(bool b)
+{
+    _renderScaleEnabled = b;
+}
+
+bool
+Plugin::isMultiThreadingEnabled() const
+{
+    return _multiThreadingEnabled;
+}
+
+void
+Plugin::setMultiThreadingEnabled(bool b)
+{
+    _multiThreadingEnabled = b;
+}
+
+bool
+Plugin::isActivated() const
+{
+    return _activated;
+}
+
+void
+Plugin::setActivated(bool b)
+{
+    _activated = b;
 }
 
 void

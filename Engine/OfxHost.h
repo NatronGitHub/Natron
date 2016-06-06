@@ -147,8 +147,7 @@ public:
     virtual OFX::Host::Memory::Instance* newMemoryInstance(size_t nBytes) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::shared_ptr<AbstractOfxEffectInstance> createOfxEffect(NodePtr node,
                                                                  const NodeSerialization* serialization,
-                                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                                                 bool disableRenderScaleSupport
+                                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                                                                  , bool allowFileDialogs,
                                                                  bool *hasUsedFileDialog

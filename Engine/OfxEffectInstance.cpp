@@ -289,11 +289,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                 OFX::Host::ImageEffect::Descriptor* desc,
                                                 ContextEnum context,
                                                 const NodeSerialization* serialization,
-                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                                bool disableRenderScaleSupport
+                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
-                                                ,
-                                                bool allowFileDialogs,
+                                                ,bool allowFileDialogs,
                                                 bool *hasUsedFileDialog
 #endif
                                                 )
@@ -317,7 +315,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
     if (context == eContextWriter) {
         _imp->isOutput = true;
     }
-    if ( disableRenderScaleSupport || (context == eContextWriter) ) {
+    if (context == eContextWriter) {
         // Writers don't support render scale (full-resolution images are written to disk)
         setSupportsRenderScaleMaybe(eSupportsNo);
     }
@@ -417,7 +415,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->createRotoContextConditionnally();
 
             getNode()->initializeInputs();
-            getNode()->initializeKnobs(disableRenderScaleSupport ? 1 : 0, serialization != 0);
+            getNode()->initializeKnobs(serialization != 0);
 
 
             ///before calling the createInstanceAction, load values

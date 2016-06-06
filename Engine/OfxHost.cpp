@@ -691,8 +691,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(NodePtr node,
                          const NodeSerialization* serialization,
-                         const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                         bool disableRenderScaleSupport
+                         const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                          ,
                          bool allowFileDialogs,
@@ -714,7 +713,7 @@ OfxHost::createOfxEffect(NodePtr node,
         node->setEffect(hostSideEffect);
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization, paramValues, disableRenderScaleSupport
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization, paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                                                  , allowFileDialogs,
                                                  hasUsedFileDialog

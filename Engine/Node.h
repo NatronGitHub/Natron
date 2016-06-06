@@ -435,6 +435,10 @@ public:
 
     void refreshDynamicProperties();
 
+    bool isRenderScaleSupportEnabledForPlugin() const;
+
+    bool isMultiThreadingSupportEnabledForPlugin() const;
+
     /////////////////////ROTO-PAINT related functionnalities//////////////////////
     //////////////////////////////////////////////////////////////////////////////
 
@@ -947,7 +951,7 @@ public:
     /**
      * @brief Forwarded to the live effect instance
      **/
-    void initializeKnobs(int renderScaleSupportPref, bool loadingSerialization);
+    void initializeKnobs(bool loadingSerialization);
 
     void checkForPremultWarningAndCheckboxes();
 
@@ -955,13 +959,13 @@ public:
 
 private:
 
-    void initializeDefaultKnobs(int renderScaleSupportPref, bool loadingSerialization);
+    void initializeDefaultKnobs(bool loadingSerialization);
 
     void findPluginFormatKnobs(const KnobsVec & knobs, bool loadingSerialization);
 
     void findRightClickMenuKnob(const KnobsVec& knobs);
 
-    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage, int renderScaleSupportPref);
+    void createNodePage(const boost::shared_ptr<KnobPage>& settingsPage);
 
     void createInfoPage();
 

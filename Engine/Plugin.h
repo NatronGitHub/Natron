@@ -183,13 +183,15 @@ class Plugin
 
     //When the plug-in is a PyPlug, if this is set to true, the script will not be embedded into a group
     bool _toolSetScript;
-    mutable bool _activatedSet;
     mutable bool _activated;
 
     /*
        These are shortcuts that the plug-in registered
      */
     std::list<PluginActionShortcut> _shortcuts;
+
+    bool _renderScaleEnabled;
+    bool _multiThreadingEnabled;
 
 public:
 
@@ -215,8 +217,9 @@ public:
           , _isDeprecated(false)
           , _isInternalOnly(false)
           , _toolSetScript(false)
-          , _activatedSet(false)
           , _activated(true)
+          , _renderScaleEnabled(true)
+          , _multiThreadingEnabled(true)
     {
     }
 
@@ -254,8 +257,9 @@ public:
           , _isDeprecated(isDeprecated)
           , _isInternalOnly(false)
           , _toolSetScript(false)
-          , _activatedSet(false)
           , _activated(true)
+          , _renderScaleEnabled(true)
+          , _multiThreadingEnabled(true)
     {
         if ( _resourcesPath.isEmpty() ) {
             _resourcesPath = QLatin1String(":/Resources/");
@@ -346,6 +350,15 @@ public:
     OFX::Host::ImageEffect::Descriptor* getOfxDesc(ContextEnum* ctx) const;
 
     void setOfxDesc(OFX::Host::ImageEffect::Descriptor* desc, ContextEnum ctx);
+
+    bool isRenderScaleEnabled() const;
+    void setRenderScaleEnabled(bool b);
+
+    bool isMultiThreadingEnabled() const;
+    void setMultiThreadingEnabled(bool b);
+
+    bool isActivated() const;
+    void setActivated(bool b);
 };
 
 struct Plugin_compare_major

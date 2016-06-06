@@ -78,6 +78,11 @@ public Q_SLOTS:
 
     void onItemSelectionChanged();
 
+    void onItemEnabledCheckBoxChecked(bool);
+    void onRSEnabledCheckBoxChecked(bool);
+    void onMTEnabledCheckBoxChecked(bool);
+
+    void filterPlugins(const QString & txt);
 private:
 
     virtual void showEvent(QShowEvent* e) OVERRIDE;

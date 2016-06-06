@@ -42,10 +42,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-/*The current settings in the preferences menu.
-   @todo Move this class to QSettings instead*/
-
-
+/*The current settings in the preferences menu.*/
 class Settings
     : public KnobHolder
 {
@@ -126,12 +123,14 @@ public:
 
     void setUseGlobalThreadPool(bool use);
 
-    void populatePluginsTab();
+    void restorePluginSettings();
 
     void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);
 
     ///save the settings to the application's settings
-    void saveSettings(const std::vector<KnobI*>& settings, bool doWarnings);
+    void saveSettings(const std::vector<KnobI*>& settings, bool doWarnings, bool pluginSettings);
+
+    void savePluginsSettings();
 
     void saveAllSettings();
 
@@ -140,7 +139,7 @@ public:
         std::vector<KnobI*> knobs;
 
         knobs.push_back(knob);
-        saveSettings(knobs, false);
+        saveSettings(knobs, false, false);
     }
 
     ///restores the settings from disk
@@ -260,14 +259,6 @@ public:
      **/
     bool didSettingsExistOnStartup() const;
 
-    /**
-     * @brief Return whether the render scale support is set to its default value (0)  or deactivated (1)
-     * for the given plug-in.
-     * If the plug-in ID is not valid, -1 is returned.
-     **/
-    int getRenderScaleSupportPreference(const Plugin* p) const;
-
-
     bool notifyOnFileChange() const;
 
     bool isAggressiveCachingEnabled() const;
@@ -353,9 +344,7 @@ public:
     void restoreDefaultAppearance();
 
     std::string getUserStyleSheetFilePath() const;
-
-    bool isPluginDeactivated(const Plugin* p) const;
-
+    
     int getDocumentationSource() const;
     int getServerPort() const;
     void setServerPort(int port) const;
@@ -616,25 +605,6 @@ private:
     boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
     boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
 
-    struct PerPluginKnobs
-    {
-        boost::shared_ptr<KnobBool> enabled;
-        boost::shared_ptr<KnobChoice> renderScaleSupport;
-
-        PerPluginKnobs(const boost::shared_ptr<KnobBool>& enabled,
-                       const boost::shared_ptr<KnobChoice>& renderScaleSupport)
-            : enabled(enabled)
-              , renderScaleSupport(renderScaleSupport)
-        {
-        }
-
-        PerPluginKnobs()
-            : enabled(), renderScaleSupport()
-        {
-        }
-    };
-
-    std::map<const Plugin*, PerPluginKnobs> _pluginsMap;
     std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;

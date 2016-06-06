@@ -104,6 +104,11 @@ EffectInstance::EffectInstance(NodePtr node)
       , _node(node)
       , _imp( new Implementation(this) )
 {
+    if (node) {
+        if (!node->isRenderScaleSupportEnabledForPlugin()) {
+            setSupportsRenderScaleMaybe(eSupportsNo);
+        }
+    }
 }
 
 EffectInstance::~EffectInstance()

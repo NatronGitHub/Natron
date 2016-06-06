@@ -72,8 +72,7 @@ public:
                                               OFX::Host::ImageEffect::Descriptor* desc,
                                               ContextEnum context,
                                               const NodeSerialization* serialization,
-                                              const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                              bool disableRenderScaleSupport
+                                              const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                                               , bool allowFileDialogs,
                                               bool *hasUsedFileDialog
@@ -105,8 +104,7 @@ public:
                                       OFX::Host::ImageEffect::Descriptor* desc,
                                       ContextEnum context,
                                       const NodeSerialization* serialization,
-                                      const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                                      bool disableRenderScaleSupport
+                                      const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                                       , bool allowFileDialogs,
                                       bool *hasUsedFileDialog

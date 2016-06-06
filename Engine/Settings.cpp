@@ -669,7 +669,7 @@ Settings::initializeKnobsAppearance()
 void
 Settings::initializeKnobsGuiColors()
 {
-    _guiColorsTab = AppManager::createKnob<KnobPage>( this, tr("Main Window Colors") );
+    _guiColorsTab = AppManager::createKnob<KnobPage>( this, tr("Main Window") );
     _appearanceTab->addKnob(_guiColorsTab);
 
     _useBWIcons = AppManager::createKnob<KnobBool>( this, tr("Use black & white toolbutton icons") );
@@ -761,7 +761,7 @@ Settings::initializeKnobsGuiColors()
 void
 Settings::initializeKnobsCurveEditorColors()
 {
-    _curveEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Curve Editor Colors") );
+    _curveEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Curve Editor") );
     _appearanceTab->addKnob(_curveEditorColorsTab);
 
     _curveEditorBGColor =  AppManager::createKnob<KnobColor>(this, tr("Background color"), 3);
@@ -785,7 +785,7 @@ Settings::initializeKnobsCurveEditorColors()
 void
 Settings::initializeKnobsDopeSheetColors()
 {
-    _dopeSheetEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Dope Sheet Colors") );
+    _dopeSheetEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Dope Sheet") );
     _appearanceTab->addKnob(_dopeSheetEditorColorsTab);
 
     _dopeSheetEditorBackgroundColor = AppManager::createKnob<KnobColor>(this, tr("Sheet background color"), 3);
@@ -818,7 +818,7 @@ Settings::initializeKnobsDopeSheetColors()
 void
 Settings::initializeKnobsNodeGraphColors()
 {
-    _nodegraphColorsTab = AppManager::createKnob<KnobPage>( this, tr("Node Graph Colors") );
+    _nodegraphColorsTab = AppManager::createKnob<KnobPage>( this, tr("Node Graph") );
     _appearanceTab->addKnob(_nodegraphColorsTab);
 
     _usePluginIconsInNodeGraph = AppManager::createKnob<KnobBool>( this, tr("Display plug-in icon on node-graph") );
@@ -932,7 +932,7 @@ Settings::initializeKnobsNodeGraphColors()
 void
 Settings::initializeKnobsScriptEditorColors()
 {
-    _scriptEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Script Editor Colors") );
+    _scriptEditorColorsTab = AppManager::createKnob<KnobPage>( this, tr("Script Editor") );
     _scriptEditorColorsTab->setParentKnob(_appearanceTab);
 
     _scriptEditorFontChoice = AppManager::createKnob<KnobChoice>( this, tr("Font") );
@@ -1726,13 +1726,102 @@ Settings::saveAllSettings()
     for (U32 i = 0; i < knobs.size(); ++i) {
         k[i] = knobs[i].get();
     }
-    saveSettings(k, false);
+    saveSettings(k, false, true);
+}
+
+
+
+void
+Settings::restorePluginSettings()
+{
+    const PluginsMap& plugins = appPTR->getPluginsList();
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        if ( it->first.empty() ) {
+            continue;
+        }
+        assert(it->second.size() > 0);
+
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            Plugin* plugin  = *it2;
+            assert(plugin);
+
+            if ( plugin->getIsForInternalUseOnly() ) {
+                continue;
+            }
+
+
+            {
+                QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number(plugin->getMajorVersion()) + QString::fromUtf8("_") + QString::number(plugin->getMinorVersion());
+                QString enabledKey = pluginIDKey + QString::fromUtf8("_enabled");
+                if (settings.contains(enabledKey)) {
+                    bool enabled = settings.value(enabledKey).toBool();
+                    plugin->setActivated(enabled);
+                } else {
+                    settings.setValue(enabledKey, plugin->isActivated());
+                }
+
+                QString rsKey = pluginIDKey + QString::fromUtf8("_rs");
+                if (settings.contains(rsKey)) {
+                    bool renderScaleEnabled = settings.value(rsKey).toBool();
+                    plugin->setRenderScaleEnabled(renderScaleEnabled);
+                } else {
+                    settings.setValue(rsKey, plugin->isRenderScaleEnabled());
+                }
+
+                QString mtKey = pluginIDKey + QString::fromUtf8("_mt");
+                if (settings.contains(mtKey)) {
+                    bool multiThreadingEnabled = settings.value(mtKey).toBool();
+                    plugin->setMultiThreadingEnabled(multiThreadingEnabled);
+                } else {
+                    settings.setValue(mtKey, plugin->isMultiThreadingEnabled());
+                }
+                
+            }
+            
+        }
+    }
+    
+} // Settings::restorePluginSettings
+
+void
+Settings::savePluginsSettings()
+{
+    const PluginsMap& plugins = appPTR->getPluginsList();
+
+    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    for (PluginsMap::const_iterator it = plugins.begin(); it!=plugins.end(); ++it) {
+
+        assert(it->second.size() > 0);
+
+        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            Plugin* plugin  = *it2;
+            assert(plugin);
+
+            QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number(plugin->getMajorVersion()) + QString::fromUtf8("_") + QString::number(plugin->getMinorVersion());
+            QString enabledKey = pluginID + QString::fromUtf8("_enabled");
+            settings.setValue(enabledKey, plugin->isActivated());
+
+            QString rsKey = pluginID + QString::fromUtf8("_rs");
+            settings.setValue(rsKey, plugin->isRenderScaleEnabled());
+
+            QString mtKey = pluginID + QString::fromUtf8("_mt");
+            settings.setValue(mtKey, plugin->isMultiThreadingEnabled());
+
+        }
+    }
 }
 
 void
 Settings::saveSettings(const std::vector<KnobI*>& knobs,
-                       bool doWarnings)
+                       bool doWarnings,
+                       bool pluginSettings)
 {
+
+    if (pluginSettings) {
+        savePluginsSettings();
+    }
     std::vector<KnobI*> changedKnobs;
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
@@ -1899,7 +1988,7 @@ Settings::restoreSettings()
             for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
                 if (i == curIndex) {
                     QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
-                    QString curRenderer = tr("<p>OpenGL Renderer Infos:</p><p>Vendor: %1</p><p>Renderer: %2</p><p>OpenGL Version: %3</p><p>Max. Memory: %4</p><p>Max. Texture Size (px): %5</p<").arg(QString::fromUtf8(it->vendorName.c_str())).arg(QString::fromUtf8(it->rendererName.c_str())).arg(QString::fromUtf8(it->glVersionString.c_str())).arg(maxMemoryString).arg(it->maxTextureSize);
+                    QString curRenderer = tr("<p><h2>OpenGL Renderer Infos:</h2></p><p><b>Vendor:</b> %1</p><p><b>Renderer:</b> %2</p><p><b>OpenGL Version:</b> %3</p><p><b>Max. Memory:</b> %4</p><p><b>Max. Texture Size (px):</b> %5</p<").arg(QString::fromUtf8(it->vendorName.c_str())).arg(QString::fromUtf8(it->rendererName.c_str())).arg(QString::fromUtf8(it->glVersionString.c_str())).arg(maxMemoryString).arg(it->maxTextureSize);
                     _openglRendererString->setValue(curRenderer.toStdString());
                     break;
                 }
@@ -2327,224 +2416,6 @@ Settings::isAutoPreviewOnForNewProjects() const
 }
 
 
-static bool
-filterDefaultActivatedPlugin(const QString& /*ofxPluginID*/)
-{
-#if 0
-#pragma message WARN("WHY censor this list of plugins? This is open source fer chrissake! Let the user take control!")
-    if (
-        //Tuttle Readers/Writers
-        ( ofxPluginID == "tuttle.avreader") ||
-        ( ofxPluginID == "tuttle.avwriter") ||
-        ( ofxPluginID == "tuttle.dpxwriter") ||
-        ( ofxPluginID == "tuttle.exrreader") ||
-        ( ofxPluginID == "tuttle.exrwriter") ||
-        ( ofxPluginID == "tuttle.imagemagickreader") ||
-        ( ofxPluginID == "tuttle.jpeg2000reader") ||
-        ( ofxPluginID == "tuttle.jpeg2000writer") ||
-        ( ofxPluginID == "tuttle.jpegreader") ||
-        ( ofxPluginID == "tuttle.jpegwriter") ||
-        ( ofxPluginID == "tuttle.oiioreader") ||
-        ( ofxPluginID == "tuttle.oiiowriter") ||
-        ( ofxPluginID == "tuttle.pngreader") ||
-        ( ofxPluginID == "tuttle.pngwriter") ||
-        ( ofxPluginID == "tuttle.rawreader") ||
-        ( ofxPluginID == "tuttle.turbojpegreader") ||
-        ( ofxPluginID == "tuttle.turbojpegwriter") ||
-
-        //Other Tuttle plug-ins
-        ( ofxPluginID == "tuttle.bitdepth") ||
-        ( ofxPluginID == "tuttle.colorgradation") ||
-        ( ofxPluginID == "tuttle.gamma") ||
-        ( ofxPluginID == "tuttle.invert") ||
-        ( ofxPluginID == "tuttle.histogramkeyer") ||
-        ( ofxPluginID == "tuttle.idkeyer") ||
-        ( ofxPluginID == "tuttle.ocio.colorspace") ||
-        ( ofxPluginID == "tuttle.ocio.lut") ||
-        ( ofxPluginID == "tuttle.constant") ||
-        ( ofxPluginID == "tuttle.inputbuffer") ||
-        ( ofxPluginID == "tuttle.outputbuffer") ||
-        ( ofxPluginID == "tuttle.ramp") ||
-        ( ofxPluginID == "tuttle.lut") ||
-        ( ofxPluginID == "tuttle.print") ||
-        ( ofxPluginID == "tuttle.colorgradient") ||
-        ( ofxPluginID == "tuttle.component") ||
-        ( ofxPluginID == "tuttle.merge") ||
-        ( ofxPluginID == "tuttle.crop") ||
-        ( ofxPluginID == "tuttle.flip") ||
-        ( ofxPluginID == "tuttle.resize") ||
-        ( ofxPluginID == "tuttle.pinning") ||
-        ( ofxPluginID == "tuttle.timeshift") ||
-        ( ofxPluginID == "tuttle.diff") ||
-        ( ofxPluginID == "tuttle.dummy") ||
-        ( ofxPluginID == "tuttle.histogram") ||
-        ( ofxPluginID == "tuttle.imagestatistics") ||
-        ( ofxPluginID == "tuttle.debugimageeffectapi") ||
-        ( ofxPluginID == "tuttle.viewer")
-        ) {
-        //These plug-ins of TuttleOFX achieve the same as plug-ins bundled with Natron, deactivate them by default.
-        return false;
-    }
-#endif // if 0
-
-    return true;
-} // filterDefaultActivatedPlugin
-
-/**
- * @brief Returns whether the given plug-in should by default have it's default render-scale support (0) or
- * it should be deactivated (1).
- **/
-static int
-filterDefaultRenderScaleSupportPlugin(const QString& ofxPluginID)
-{
-    if ( ( ofxPluginID == QString::fromUtf8("tuttle.colorbars") ) ||
-         ( ofxPluginID == QString::fromUtf8("tuttle.checkerboard") ) ||
-         ( ofxPluginID == QString::fromUtf8("tuttle.colorcube") ) ||
-         ( ofxPluginID == QString::fromUtf8("tuttle.colorwheel") ) ||
-         ( ofxPluginID == QString::fromUtf8("tuttle.ramp") ) ||
-         ( ofxPluginID == QString::fromUtf8("tuttle.constant") ) ) {
-        return 1;
-    }
-
-    return 0;
-}
-
-void
-Settings::populatePluginsTab()
-{
-    const PluginsMap& plugins = appPTR->getPluginsList();
-    KnobsVec knobsToRestore;
-    std::map< std::string, std::string > groupNames;
-
-    ///First pass to exctract all groups
-    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
-        if ( it->first.empty() ) {
-            continue;
-        }
-        assert(it->second.size() > 0);
-
-        const QStringList& grouping = ( *it->second.rbegin() )->getGrouping();
-        if (grouping.size() > 0) {
-            groupNames.insert( std::make_pair( NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( grouping[0].toStdString() ), grouping[0].toStdString() ) );
-        }
-    }
-
-    ///Now create all groups
-
-    std::list< boost::shared_ptr<KnobGroup> > groups;
-    for (std::map< std::string, std::string >::iterator it = groupNames.begin(); it != groupNames.end(); ++it) {
-        boost::shared_ptr<KnobGroup>  g = AppManager::createKnob<KnobGroup>(this, it->second);
-        g->setName(it->first);
-        _pluginsTab->addKnob(g);
-        groups.push_back(g);
-    }
-
-    std::vector<std::string> zoomSupportEntries;
-    zoomSupportEntries.push_back("Plugin default");
-    zoomSupportEntries.push_back("Deactivated");
-
-    ///Create per-plugin knobs and add them to groups
-    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
-        if ( it->first.empty() ) {
-            continue;
-        }
-        assert(it->second.size() > 0);
-
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
-            assert(plugin);
-
-            if ( plugin->getIsForInternalUseOnly() ) {
-                continue;
-            }
-
-            boost::shared_ptr<KnobGroup> group;
-            const QStringList& grouping = plugin->getGrouping();
-            if (grouping.size() > 0) {
-                std::string mainGroup = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( grouping[0].toStdString() );
-
-                ///Find the corresponding group
-                for (std::list< boost::shared_ptr<KnobGroup> >::const_iterator it3 = groups.begin(); it3 != groups.end(); ++it3) {
-                    if ( (*it3)->getName() == mainGroup ) {
-                        group  = *it3;
-                        break;
-                    }
-                }
-            }
-
-            ///Create checkbox to activate/deactivate the plug-in
-
-            std::string pluginName = plugin->getPluginID().toStdString();
-            {
-                std::stringstream ss;
-                ss << pluginName;
-                ss << " Version ";
-                ss << plugin->getMajorVersion() << '.' << plugin->getMinorVersion();
-                pluginName = ss.str();
-            }
-            boost::shared_ptr<KnobString> pluginLabel = AppManager::createKnob<KnobString>(this, pluginName);
-            pluginLabel->setAsLabel();
-            pluginLabel->setName(it->first);
-            pluginLabel->setDefaultValue(pluginName);
-            pluginLabel->setAddNewLine(false);
-            pluginLabel->setIsPersistant(false);
-            if (group) {
-                group->addKnob(pluginLabel);
-            }
-
-
-            boost::shared_ptr<KnobBool> pluginActivation = AppManager::createKnob<KnobBool>( this, tr("Enabled") );
-            pluginActivation->setDefaultValue( filterDefaultActivatedPlugin( plugin->getPluginID() ) && !plugin->getIsDeprecated() );
-            pluginActivation->setName(it->first + ".enabled");
-            pluginActivation->setAddNewLine(false);
-            pluginActivation->setHintToolTip( tr("When checked, %2 will be activated and you can create a node using this plug-in in %1.\n"
-                                                 "When unchecked, you'll be unable to create a node for this plug-in.\n"
-                                                 "Changing this parameter requires a restart of the application.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( pluginName.c_str() ) ) );
-            if (group) {
-                group->addKnob(pluginActivation);
-            }
-
-            knobsToRestore.push_back(pluginActivation);
-
-            boost::shared_ptr<KnobChoice> zoomSupport = AppManager::createKnob<KnobChoice>( this, tr("Zoom support") );
-            zoomSupport->populateChoices(zoomSupportEntries);
-            zoomSupport->setName(it->first + ".zoomSupport");
-            zoomSupport->setDefaultValue( filterDefaultRenderScaleSupportPlugin( plugin->getPluginID() ) );
-            zoomSupport->setHintToolTip( tr("Controls whether the plug-in should have its default zoom support or it should be deactivated.\n"
-                                            "This parameter is useful because some plug-ins flag that they can support different level of zoom "
-                                            "scale for rendering but in reality they don't. This enables you to explicitly turn-off that flag for a particular "
-                                            "plug-in, hence making it work at different zoom levels."
-                                            "Changes to this parameter will not be applied to existing instances of the plug-in (nodes) unless you "
-                                            "restart the application.") );
-            if (group) {
-                group->addKnob(zoomSupport);
-            }
-
-            knobsToRestore.push_back(zoomSupport);
-
-
-            _pluginsMap.insert( std::make_pair( plugin, PerPluginKnobs(pluginActivation, zoomSupport) ) );
-        }
-    }
-
-    restoreKnobsFromSettings(knobsToRestore);
-} // Settings::populatePluginsTab
-
-bool
-Settings::isPluginDeactivated(const Plugin* p) const
-{
-    if ( p->getIsForInternalUseOnly() ) {
-        return false;
-    }
-    std::map<const Plugin*, PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
-    if ( found == _pluginsMap.end() ) {
-        qDebug() << "Settings::isPluginDeactivated: Plugin not found";
-
-        return false;
-    }
-
-    return !found->second.enabled->getValue();
-}
 
 int
 Settings::getDocumentationSource() const
@@ -2637,21 +2508,6 @@ Settings::makeHTMLDocumentation(bool genHTML) const
     return ret;
 } // Settings::makeHTMLDocumentation
 
-int
-Settings::getRenderScaleSupportPreference(const Plugin* p) const
-{
-    if ( p->getIsForInternalUseOnly() ) {
-        return 0;
-    }
-    std::map<const Plugin*, PerPluginKnobs>::const_iterator found = _pluginsMap.find(p);
-    if ( found == _pluginsMap.end() ) {
-        qDebug() << "Settings::getRenderScaleSupportPreference: Plugin not found";
-
-        return -1;
-    }
-
-    return found->second.renderScaleSupport->getValue();
-}
 
 void
 Settings::populateSystemFonts(const QSettings& settings,

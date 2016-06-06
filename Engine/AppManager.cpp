@@ -1169,7 +1169,7 @@ AppManager::loadAllPlugins()
     // Should be done after settings are declared
     loadPythonGroups();
 
-    _imp->_settings->populatePluginsTab();
+    _imp->_settings->restorePluginSettings();
 
 
     onAllPluginsLoaded();
@@ -1926,8 +1926,7 @@ AppManager::getPluginBinary(const QString & pluginId,
 EffectInstPtr
 AppManager::createOFXEffect(NodePtr node,
                             const NodeSerialization* serialization,
-                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues,
-                            bool disableRenderScaleSupport
+                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                             ,
                             bool allowFileDialogs,
@@ -1935,7 +1934,7 @@ AppManager::createOFXEffect(NodePtr node,
 #endif
                             ) const
 {
-    return _imp->ofxHost->createOfxEffect(node, serialization, paramValues, disableRenderScaleSupport
+    return _imp->ofxHost->createOfxEffect(node, serialization, paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                                           , allowFileDialogs,
                                           hasUsedFileDialog

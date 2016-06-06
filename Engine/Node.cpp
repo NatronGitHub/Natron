@@ -510,12 +510,16 @@ public:
     mutable QMutex createdComponentsMutex;
     std::list<ImageComponents> createdComponents; // comps created by the user
     boost::weak_ptr<RotoDrawableItem> paintStroke;
+
+    // These are dynamic props
     mutable QMutex pluginsPropMutex;
     RenderSafetyEnum pluginSafety, currentThreadSafety;
     bool currentSupportTiles;
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
     SequentialPreferenceEnum currentSupportSequentialRender;
     bool currentCanTransform;
+
+
     bool draftModeUsed, mustComputeInputRelatedData;
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
     mutable QMutex lastStrokeMovementMutex;
@@ -588,6 +592,7 @@ Node::Node(const AppInstPtr& app,
     QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
     QObject::connect( this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
+
 }
 
 bool
@@ -672,7 +677,7 @@ Node::load(const CreateNodeArgs& args)
 
 
     NodePtr thisShared = shared_from_this();
-    int renderScaleSupportPreference = appPTR->getCurrentSettings()->getRenderScaleSupportPreference(_imp->plugin);
+
     LibraryBinary* binary = _imp->plugin->getLibraryBinary();
     std::pair<bool, EffectBuilder> func;
     if (binary) {
@@ -746,7 +751,7 @@ Node::load(const CreateNodeArgs& args)
         createRotoContextConditionnally();
         createTrackerContextConditionnally();
         initializeInputs();
-        initializeKnobs(renderScaleSupportPreference, args.serialization.get() != 0);
+        initializeKnobs(args.serialization.get() != 0);
 
         refreshAcceptedBitDepths();
 
@@ -789,9 +794,9 @@ Node::load(const CreateNodeArgs& args)
     } else {
         //ofx plugin
 #ifndef NATRON_ENABLE_IO_META_NODES
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.paramValues, renderScaleSupportPreference == 1, canOpenFileDialog, &hasUsedFileDialog);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.paramValues, canOpenFileDialog, &hasUsedFileDialog);
 #else
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.paramValues, renderScaleSupportPreference == 1);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.paramValues);
 #endif
         assert(_imp->effect);
     }
@@ -944,6 +949,9 @@ Node::setRenderThreadSafety(RenderSafetyEnum safety)
 RenderSafetyEnum
 Node::getCurrentRenderThreadSafety() const
 {
+    if (!isMultiThreadingSupportEnabledForPlugin()) {
+        return eRenderSafetyInstanceSafe;
+    }
     QMutexLocker k(&_imp->pluginsPropMutex);
 
     return _imp->currentThreadSafety;
@@ -1033,6 +1041,18 @@ Node::refreshDynamicProperties()
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanTransform(canTransform);
+}
+
+bool
+Node::isRenderScaleSupportEnabledForPlugin() const
+{
+    return _imp->plugin ? _imp->plugin->isRenderScaleEnabled() : true;
+}
+
+bool
+Node::isMultiThreadingSupportEnabledForPlugin() const
+{
+    return _imp->plugin ? _imp->plugin->isMultiThreadingEnabled() : true;
 }
 
 void
@@ -3242,8 +3262,7 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,
 }
 
 void
-Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
-                     int renderScaleSupportPref)
+Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
 {
     boost::shared_ptr<KnobBool> hideInputs = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Hide inputs"), 1, false);
 
@@ -3305,7 +3324,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage,
                                                                      "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
                                                                      "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
                                                                      "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
-    if ( (renderScaleSupportPref == 0) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
+    if ( (isRenderScaleSupportEnabledForPlugin()) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
         useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
@@ -3747,8 +3766,7 @@ Node::createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskC
 }
 
 void
-Node::initializeDefaultKnobs(int renderScaleSupportPref,
-                             bool loadingSerialization)
+Node::initializeDefaultKnobs(bool loadingSerialization)
 {
     //Readers and Writers don't have default knobs since these knobs are on the ReadNode/WriteNode itself
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -3869,7 +3887,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
     }
 
 
-    createNodePage(settingsPage, renderScaleSupportPref);
+    createNodePage(settingsPage);
     createInfoPage();
 
     if (_imp->effect->isWriter()
@@ -3895,8 +3913,7 @@ Node::initializeDefaultKnobs(int renderScaleSupportPref,
 } // Node::initializeDefaultKnobs
 
 void
-Node::initializeKnobs(int renderScaleSupportPref,
-                      bool loadingSerialization)
+Node::initializeKnobs(bool loadingSerialization)
 {
     ////Only called by the main-thread
 
@@ -3918,7 +3935,7 @@ Node::initializeKnobs(int renderScaleSupportPref,
 
     if ( _imp->effect->getMakeSettingsPanel() ) {
         //initialize default knobs added by Natron
-        initializeDefaultKnobs(renderScaleSupportPref, loadingSerialization);
+        initializeDefaultKnobs(loadingSerialization);
     }
 
     if (effectIsGroup) {
