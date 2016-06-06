@@ -133,14 +133,6 @@ class OSGLContext : public boost::noncopyable
 {
 public:
 
-
-    enum DefaultGLShaderEnum
-    {
-        eDefaultGLShaderFillConstant,
-        eDefaultGLShaderApplyMaskMix,
-        eDefaultGLShaderCopyUnprocessedChannels
-    };
-
     /**
      * @brief Creates a new OpenGL context for offscreen rendering. The constructor may throw an exception if the context
      * creation failed.
@@ -176,7 +168,9 @@ public:
      * @brief Returns one of the built-in shaders, used in the Image class.
      * Note: this context must be made current before calling this function
      **/
-    boost::shared_ptr<GLShader> getOrCreateDefaultShader(DefaultGLShaderEnum type);
+    boost::shared_ptr<GLShader> getOrCreateFillShader();
+    boost::shared_ptr<GLShader> getOrCreateMaskMixShader(bool maskEnabled);
+    boost::shared_ptr<GLShader> getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
 
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!

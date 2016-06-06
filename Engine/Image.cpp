@@ -1113,6 +1113,50 @@ Image::ensureBounds(const RectI& newBounds,
     return true;
 }
 
+void
+Image::applyTextureMapping(const RectI& bounds, const RectI& roi)
+{
+    glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho( roi.x1, roi.x2,
+            roi.y1, roi.y2,
+            -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glCheckError();
+
+    // Compute the texture coordinates to match the srcRoi
+    Point srcTexCoords[4], vertexCoords[4];
+    vertexCoords[0].x = roi.x1;
+    vertexCoords[0].y = roi.y1;
+    srcTexCoords[0].x = (roi.x1 - bounds.x1) / (double)bounds.width();
+    srcTexCoords[0].y = (roi.y1 - bounds.y1) / (double)bounds.height();
+
+    vertexCoords[1].x = roi.x2;
+    vertexCoords[1].y = roi.y1;
+    srcTexCoords[1].x = (roi.x2 - bounds.x1) / (double)bounds.width();
+    srcTexCoords[1].y = (roi.y1 - bounds.y1) / (double)bounds.height();
+
+    vertexCoords[2].x = roi.x2;
+    vertexCoords[2].y = roi.y2;
+    srcTexCoords[2].x = (roi.x2 - bounds.x1) / (double)bounds.width();
+    srcTexCoords[2].y = (roi.y2 - bounds.y1) / (double)bounds.height();
+
+    vertexCoords[3].x = roi.x1;
+    vertexCoords[3].y = roi.y2;
+    srcTexCoords[3].x = (roi.x1 - bounds.x1) / (double)bounds.width();
+    srcTexCoords[3].y = (roi.y2 - bounds.y1) / (double)bounds.height();
+
+    glBegin(GL_POLYGON);
+    for (int i = 0; i < 4; ++i) {
+        glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+        glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+    }
+    glEnd();
+    glCheckError();
+}
+
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::pasteFrom(const Image & src,
@@ -1138,44 +1182,8 @@ Image::pasteFrom(const Image & src,
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
         glBindTexture( target, src.getGLTextureID() );
-        glViewport( srcRoi.x1 - dstBounds.x1, srcRoi.y1 - dstBounds.y1, srcRoi.width(), srcRoi.height() );
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho( srcRoi.x1, srcRoi.x2,
-                srcRoi.y1, srcRoi.y2,
-                -10.0 * (srcRoi.y2 - srcRoi.y1), 10.0 * (srcRoi.y2 - srcRoi.y1) );
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
 
-
-
-        // Compute the texture coordinates to match the srcRoi
-        Point srcTexCoords[4], vertexCoords[4];
-        vertexCoords[0].x = srcRoi.x1;
-        vertexCoords[0].y = srcRoi.y1;
-        srcTexCoords[0].x = (srcRoi.x1 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[0].y = (srcRoi.y1 - dstBounds.y1) / (double)dstBounds.height();
-
-        vertexCoords[1].x = srcRoi.x2;
-        vertexCoords[1].y = srcRoi.y1;
-        srcTexCoords[1].x = (srcRoi.x2 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[1].y = (srcRoi.y1 - dstBounds.y1) / (double)dstBounds.height();
-
-        vertexCoords[2].x = srcRoi.x2;
-        vertexCoords[2].y = srcRoi.y2;
-        srcTexCoords[2].x = (srcRoi.x2 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[2].y = (srcRoi.y2 - dstBounds.y1) / (double)dstBounds.height();
-
-        vertexCoords[3].x = srcRoi.x1;
-        vertexCoords[3].y = srcRoi.y2;
-        srcTexCoords[3].x = (srcRoi.x1 - dstBounds.x1) / (double)dstBounds.width();
-        srcTexCoords[3].y = (srcRoi.y2 - dstBounds.y1) / (double)dstBounds.height();
-        glBegin(GL_POLYGON);
-        for (int i = 0; i < 4; ++i) {
-            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-        }
-        glEnd();
+        applyTextureMapping(dstBounds, srcRoi);
 
         glBindTexture(target, 0);
         glCheckError();
@@ -1389,7 +1397,7 @@ Image::fill(const RectI & roi,
         }
 
         assert(glContext);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateDefaultShader(OSGLContext::eDefaultGLShaderCopyUnprocessedChannels);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateFillShader();
         assert(shader);
         GLuint fboID = glContext->getFBOId();
 
@@ -1398,49 +1406,20 @@ Image::fill(const RectI & roi,
         glEnable(target);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture( target, getGLTextureID() );
+
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
-
-        glViewport( 0, 0, realRoI.width(), realRoI.height() );
-        glMatrixMode(GL_MODELVIEW);
-        glOrtho( _bounds.x1, _bounds.x2,
-                 _bounds.y1, _bounds.y2,
-                 -10.0 * (_bounds.y2 - _bounds.y1), 10.0 * (_bounds.y2 - _bounds.y1) );
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-
-        // Compute the texture coordinates to match the srcRoi
-        Point srcTexCoords[4], vertexCoords[4];
-        vertexCoords[0].x = realRoI.x1;
-        vertexCoords[0].y = realRoI.y1;
-        srcTexCoords[0].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[0].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
-
-        vertexCoords[1].x = realRoI.x2;
-        vertexCoords[1].y = realRoI.y1;
-        srcTexCoords[1].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[1].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
-
-        vertexCoords[2].x = realRoI.x2;
-        vertexCoords[2].y = realRoI.y2;
-        srcTexCoords[2].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[2].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
-
-        vertexCoords[3].x = realRoI.x1;
-        vertexCoords[3].y = realRoI.y2;
-        srcTexCoords[3].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[3].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
 
         shader->bind();
         OfxRGBAColourF fillColor = {r, g, b, a};
         shader->setUniform("fillColor", fillColor);
-
-        glBegin(GL_POLYGON);
-        for (int i = 0; i < 4; ++i) {
-            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-        }
-        glEnd();
+        applyTextureMapping(_bounds, realRoI);
         shader->unbind();
 
 

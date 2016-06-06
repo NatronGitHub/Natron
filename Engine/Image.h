@@ -250,6 +250,9 @@ public:
      **/
     bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output);
 
+
+    static void applyTextureMapping(const RectI& bounds, const RectI& roi);
+
 private:
 
     static void resizeInternal(const Image* srcImg,

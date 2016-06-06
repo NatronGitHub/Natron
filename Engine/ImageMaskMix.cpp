@@ -216,7 +216,7 @@ Image::applyMaskMix(const RectI& roi,
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
         assert(originalImg->getStorageMode() == eStorageModeGLTex);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateDefaultShader(OSGLContext::eDefaultGLShaderCopyUnprocessedChannels);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateMaskMixShader(maskImg != 0);
         assert(shader);
         GLuint fboID = glContext->getFBOId();
 
@@ -225,45 +225,35 @@ Image::applyMaskMix(const RectI& roi,
         glEnable(target);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture( target, getGLTextureID() );
+
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
 
         glActiveTexture(GL_TEXTURE1);
         glBindTexture( target, originalImg->getGLTextureID() );
+
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(target, maskImg ? maskImg->getGLTextureID() : 0);
 
-        glViewport( realRoI.x1 - _bounds.x1, realRoI.y1 - _bounds.y1, realRoI.width(), realRoI.height() );
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho( realRoI.x1, realRoI.x2,
-                realRoI.y1, realRoI.y2,
-                -10.0 * (realRoI.y2 - realRoI.y1), 10.0 * (realRoI.y2 - realRoI.y1) );
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glCheckError();
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        // Compute the texture coordinates to match the srcRoi
-        Point srcTexCoords[4], vertexCoords[4];
-        vertexCoords[0].x = realRoI.x1;
-        vertexCoords[0].y = realRoI.y1;
-        srcTexCoords[0].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[0].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        vertexCoords[1].x = realRoI.x2;
-        vertexCoords[1].y = realRoI.y1;
-        srcTexCoords[1].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[1].y = (realRoI.y1 - _bounds.y1) / (double)_bounds.height();
 
-        vertexCoords[2].x = realRoI.x2;
-        vertexCoords[2].y = realRoI.y2;
-        srcTexCoords[2].x = (realRoI.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[2].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
-
-        vertexCoords[3].x = realRoI.x1;
-        vertexCoords[3].y = realRoI.y2;
-        srcTexCoords[3].x = (realRoI.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[3].y = (realRoI.y2 - _bounds.y1) / (double)_bounds.height();
 
         shader->bind();
         shader->setUniform("originalImageTex", 1);
@@ -271,13 +261,7 @@ Image::applyMaskMix(const RectI& roi,
         shader->setUniform("outputImageTex", 0);
         shader->setUniform("mixValue", mix);
         shader->setUniform("maskEnabled", maskImg ? 1 : 0);
-
-        glBegin(GL_POLYGON);
-        for (int i = 0; i < 4; ++i) {
-            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-        }
-        glEnd();
+        applyTextureMapping(_bounds, realRoI);
         shader->unbind();
 
 

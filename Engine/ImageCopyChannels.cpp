@@ -623,7 +623,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
         assert(originalImage->getStorageMode() == eStorageModeGLTex);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateDefaultShader(OSGLContext::eDefaultGLShaderCopyUnprocessedChannels);
+        boost::shared_ptr<GLShader> shader = glContext->getOrCreateCopyUnprocessedChannelsShader(processChannels[0], processChannels[1], processChannels[2], processChannels[3]);
         assert(shader);
         GLuint fboID = glContext->getFBOId();
 
@@ -632,47 +632,28 @@ Image::copyUnProcessedChannels(const RectI& roi,
         glEnable(target);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture( target, getGLTextureID() );
+
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
         glCheckError();
         glActiveTexture(GL_TEXTURE1);
         glBindTexture( target, originalImage->getGLTextureID() );
 
+        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        glViewport( srcRoi.x1 - _bounds.x1, srcRoi.y1 - _bounds.y1, srcRoi.width(), srcRoi.height() );
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
-        glOrtho( srcRoi.x1, srcRoi.x2,
-                srcRoi.y1, srcRoi.y2,
-                -10.0 * (srcRoi.y2 - srcRoi.y1), 10.0 * (srcRoi.y2 - srcRoi.y1) );
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glCheckError();
+        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        // Compute the texture coordinates to match the srcRoi
-        Point srcTexCoords[4], vertexCoords[4];
-        vertexCoords[0].x = srcRoi.x1;
-        vertexCoords[0].y = srcRoi.y1;
-        srcTexCoords[0].x = (srcRoi.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[0].y = (srcRoi.y1 - _bounds.y1) / (double)_bounds.height();
-
-        vertexCoords[1].x = srcRoi.x2;
-        vertexCoords[1].y = srcRoi.y1;
-        srcTexCoords[1].x = (srcRoi.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[1].y = (srcRoi.y1 - _bounds.y1) / (double)_bounds.height();
-
-        vertexCoords[2].x = srcRoi.x2;
-        vertexCoords[2].y = srcRoi.y2;
-        srcTexCoords[2].x = (srcRoi.x2 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[2].y = (srcRoi.y2 - _bounds.y1) / (double)_bounds.height();
-
-        vertexCoords[3].x = srcRoi.x1;
-        vertexCoords[3].y = srcRoi.y2;
-        srcTexCoords[3].x = (srcRoi.x1 - _bounds.x1) / (double)_bounds.width();
-        srcTexCoords[3].y = (srcRoi.y2 - _bounds.y1) / (double)_bounds.height();
+        
 
         shader->bind();
-        glCheckError();
         shader->setUniform("originalImageTex", 1);
         shader->setUniform("outputImageTex", 0);
         OfxRGBAColourF procChannelsV = {
@@ -682,16 +663,10 @@ Image::copyUnProcessedChannels(const RectI& roi,
             processChannels[3] ? 1.f : 0.f
         };
         shader->setUniform("processChannels", procChannelsV);
-        glCheckError();
-        glBegin(GL_POLYGON);
-        for (int i = 0; i < 4; ++i) {
-            glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-            glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-        }
-        glEnd();
+        applyTextureMapping(_bounds, srcRoi);
         shader->unbind();
-        glCheckError();
 
+        glCheckError();
         glBindTexture(target, 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(target, 0);

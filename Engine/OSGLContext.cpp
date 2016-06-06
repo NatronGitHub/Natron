@@ -242,7 +242,12 @@ struct OSGLContextPrivate
 
     // The main FBO onto which we do all renders
     GLuint fboID;
-    boost::shared_ptr<GLShader> fillImageShader, applyMaskMixShader, copyUnprocessedChannelsShader;
+    boost::shared_ptr<GLShader> fillImageShader;
+
+    // One for enabled, one for disabled
+    boost::shared_ptr<GLShader> applyMaskMixShader[2];
+
+    boost::shared_ptr<GLShader> copyUnprocessedChannelsShader[16];
 
     OSGLContextPrivate()
         : _platformContext()
@@ -452,93 +457,129 @@ OSGLContext::stringInExtensionString(const char* string,
 }
 
 boost::shared_ptr<GLShader>
-OSGLContext::getOrCreateDefaultShader(DefaultGLShaderEnum type)
+OSGLContext::getOrCreateFillShader()
 {
-    switch (type) {
-    case eDefaultGLShaderFillConstant: {
-        if (_imp->fillImageShader) {
-            return _imp->fillImageShader;
-        }
-        _imp->fillImageShader.reset( new GLShader() );
-#ifdef DEBUG
-        std::string error;
-        bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
-        if (!ok) {
-            qDebug() << error.c_str();
-        }
-#else
-        bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, 0);
-#endif
-
-        assert(ok);
-#ifdef DEBUG
-        ok = _imp->fillImageShader->link(&error);
-        if (!ok) {
-            qDebug() << error.c_str();
-        }
-#else
-        ok = _imp->fillImageShader->link();
-#endif
-
+    if (_imp->fillImageShader) {
         return _imp->fillImageShader;
     }
-
-    case eDefaultGLShaderApplyMaskMix: {
-        if (_imp->applyMaskMixShader) {
-            return _imp->applyMaskMixShader;
-        }
-        _imp->applyMaskMixShader.reset( new GLShader() );
+    _imp->fillImageShader.reset( new GLShader() );
 #ifdef DEBUG
-        std::string error;
-        bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, &error);
-        if (!ok) {
-            qDebug() << error.c_str();
-        }
+    std::string error;
+    bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
 #else
-        bool ok = _imp->applyMaskMixShader->addShader(GLShader::eShaderTypeFragment, applyMaskMix_FragmentShader, 0);
-#endif
-#ifdef DEBUG
-        ok = _imp->applyMaskMixShader->link(&error);
-        if (!ok) {
-            qDebug() << error.c_str();
-        }
-#else
-        ok = _imp->applyMaskMixShader->link();
+    bool ok = _imp->fillImageShader->addShader(GLShader::eShaderTypeFragment, fillConstant_FragmentShader, 0);
 #endif
 
-        return _imp->applyMaskMixShader;
+    assert(ok);
+#ifdef DEBUG
+    ok = _imp->fillImageShader->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = _imp->fillImageShader->link();
+#endif
+
+    return _imp->fillImageShader;
+}
+
+boost::shared_ptr<GLShader>
+OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
+{
+    int shader_i = maskEnabled ? 1 : 0;
+    if (_imp->applyMaskMixShader[shader_i]) {
+        return _imp->applyMaskMixShader[shader_i];
+    }
+    _imp->applyMaskMixShader[shader_i].reset( new GLShader() );
+
+    std::string fragmentSource;
+    if (maskEnabled) {
+        fragmentSource += "#define MASK_ENABLED\n";
     }
 
-    case eDefaultGLShaderCopyUnprocessedChannels: {
-        if (_imp->copyUnprocessedChannelsShader) {
-            return _imp->copyUnprocessedChannelsShader;
-        }
-        _imp->copyUnprocessedChannelsShader.reset( new GLShader() );
-#ifdef DEBUG
-        std::string error;
-        bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, &error);
-        if (!ok) {
-            qDebug() << error.c_str();
-        }
-#else
-        bool ok = _imp->copyUnprocessedChannelsShader->addShader(GLShader::eShaderTypeFragment, copyUnprocessedChannels_FragmentShader, 0);
-#endif
-#ifdef DEBUG
-        ok = _imp->copyUnprocessedChannelsShader->link(&error);
-        if (!ok) {
-            qDebug() << error.c_str();
-        }
-#else
-        ok = _imp->copyUnprocessedChannelsShader->link();
-#endif
+    fragmentSource += std::string(applyMaskMix_FragmentShader);
 
-        return _imp->copyUnprocessedChannelsShader;
+#ifdef DEBUG
+    std::string error;
+    bool ok = _imp->applyMaskMixShader[shader_i]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
     }
-    } // switch
-    assert(false);
+#else
+    bool ok = _imp->applyMaskMixShader[shader_i]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+#ifdef DEBUG
+    ok = _imp->applyMaskMixShader[shader_i]->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = _imp->applyMaskMixShader[shader_i]->link();
+#endif
 
-    return boost::shared_ptr<GLShader>();
-} // getOrCreateDefaultShader
+    return _imp->applyMaskMixShader[shader_i];
+}
+
+boost::shared_ptr<GLShader>
+OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA)
+{
+    int index = 0x0;
+    if (doR) {
+        index |= 0x01;
+    }
+    if (doG) {
+        index |= 0x02;
+    }
+    if (doB) {
+        index |= 0x04;
+    }
+    if (doA) {
+        index |= 0x08;
+    }
+    if (_imp->copyUnprocessedChannelsShader[index]) {
+        return _imp->copyUnprocessedChannelsShader[index];
+    }
+    _imp->copyUnprocessedChannelsShader[index].reset( new GLShader() );
+
+    std::string fragmentSource;
+    if (!doR) {
+        fragmentSource += "#define DO_R\n";
+    }
+    if (!doG) {
+        fragmentSource += "#define DO_G\n";
+    }
+    if (!doB) {
+        fragmentSource += "#define DO_B\n";
+    }
+    if (!doA) {
+        fragmentSource += "#define DO_A\n";
+    }
+    fragmentSource += std::string(copyUnprocessedChannels_FragmentShader);
+
+
+#ifdef DEBUG
+    std::string error;
+    bool ok = _imp->copyUnprocessedChannelsShader[index]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), &error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    bool ok = _imp->copyUnprocessedChannelsShader[index]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), 0);
+#endif
+#ifdef DEBUG
+    ok = _imp->copyUnprocessedChannelsShader[index]->link(&error);
+    if (!ok) {
+        qDebug() << error.c_str();
+    }
+#else
+    ok = _imp->copyUnprocessedChannelsShader[index]->link();
+#endif
+
+    return _imp->copyUnprocessedChannelsShader[index];
+}
 
 void
 OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
