@@ -54,6 +54,7 @@ public Q_SLOTS:
     void startServer();
     void stopServer();
     QString parser(QString html, QString path) const;
+    int serverPort();
 
 private Q_SLOTS:
     void handler(QHttpRequest *req, QHttpResponse *resp);

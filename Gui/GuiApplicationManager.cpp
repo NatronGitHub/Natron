@@ -1098,6 +1098,11 @@ GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node,
     _imp->previewRenderThread.appendToQueue(node, time);
 }
 
+int GuiApplicationManager::getDocumentationServerPort()
+{
+    return _imp->documentation->serverPort();
+}
+
 double
 GuiApplicationManager::getLogicalDPIXRATIO() const
 {

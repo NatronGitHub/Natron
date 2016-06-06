@@ -504,7 +504,7 @@ Settings::initializeKnobsDocumentation()
     _documentationPage->addKnob(_documentationSource);
 
     /// used to store temp port for local webserver
-    _wwwServerPort = AppManager::createKnob<KnobInt>( this, tr("Local webserver port (0=auto)") );
+    _wwwServerPort = AppManager::createKnob<KnobInt>( this, tr("Documentation local port (0=auto)") );
     _wwwServerPort->setName("webserverPort");
     _wwwServerPort->setHintToolTip(tr("The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself."));
     _documentationPage->addKnob(_wwwServerPort);

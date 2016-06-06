@@ -502,6 +502,11 @@ DocumentationManager::parser(QString html,
     return result;
 }             // DocumentationManager::parser
 
+int DocumentationManager::serverPort()
+{
+    return server->serverPort();
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

@@ -79,6 +79,8 @@ public:
         @sa listen(const QHostAddress&, quint16) */
     bool listen(quint16 port);
 
+    int serverPort();
+
     /// Stop the server and listening for new connections.
     void close();
 Q_SIGNALS:

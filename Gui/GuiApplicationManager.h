@@ -189,6 +189,7 @@ public:
 
     void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
 
+    int getDocumentationServerPort();
 
     virtual void setCurrentLogicalDPI(double dpiX, double dpiY) OVERRIDE FINAL;
     virtual double getLogicalDPIXRATIO() const OVERRIDE FINAL WARN_UNUSED_RETURN;

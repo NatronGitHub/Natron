@@ -723,7 +723,10 @@ void
 Gui::openHelpDocumentation()
 {
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
-    int serverPort = appPTR->getCurrentSettings()->getServerPort();
+    int serverPort = appPTR->getDocumentationServerPort();
+    if ( (serverPort == 0) && (docSource == 0) ) {
+        docSource = 1;
+    }
     QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort);
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
 

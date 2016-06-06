@@ -904,7 +904,10 @@ DockablePanel::showHelp()
         assert(plugin);
         if (plugin) {
             int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
-            int serverPort = appPTR->getCurrentSettings()->getServerPort();
+            int serverPort = appPTR->getDocumentationServerPort();
+            if ( (serverPort == 0) && (docSource == 0) ) {
+                docSource = 1;
+            }
             QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + plugin->getPluginID();
             QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + plugin->getPluginID() + QString::fromUtf8(".html");
             switch (docSource) {
