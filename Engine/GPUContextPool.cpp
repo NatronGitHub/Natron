@@ -32,6 +32,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/Settings.h"
 
 #define NATRON_RENDER_SHARED_MAX_ACTIVE_CONTEXTS 2
 
@@ -82,6 +83,14 @@ GPUContextPool::~GPUContextPool()
 {
 }
 
+void
+GPUContextPool::clear()
+{
+    QMutexLocker k(&_imp->contextPoolMutex);
+    _imp->glContextPool.clear();
+
+}
+
 int
 GPUContextPool::getIdealContextCount()
 {
@@ -101,6 +110,13 @@ GPUContextPool::attachGLContextToRender()
     OSGLContextPtr shareContext;// _imp->glShareContext.lock();
     OSGLContextPtr newContext;
 
+    boost::shared_ptr<Settings> settings =  appPTR->getCurrentSettings();
+    GLRendererID rendererID;
+    if (settings) {
+        rendererID = settings->getActiveOpenGLRendererID();
+    }
+
+
 #ifndef NATRON_RENDER_SHARED_CONTEXT
     while (_imp->glContextPool.empty() && (int)_imp->attachedGLContexts.size() >= _imp->maxContexts) {
         _imp->glContextPoolEmpty.wait(&_imp->contextPoolMutex);
@@ -108,7 +124,7 @@ GPUContextPool::attachGLContextToRender()
     if ( _imp->glContextPool.empty() ) {
         assert( (int)_imp->attachedGLContexts.size() < _imp->maxContexts );
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get() ) );
+        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID ) );
     } else {
         std::set<OSGLContextPtr>::iterator it = _imp->glContextPool.begin();
         newContext = *it;
@@ -118,7 +134,7 @@ GPUContextPool::attachGLContextToRender()
 #else
     if ((int)_imp->glContextPool.size() < _imp->maxContexts) {
         //  Create a new one
-        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get() ) );
+        newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID ) );
         _imp->glContextPool.insert(newContext);
     } else {
         // Cycle through all contexts for all renders

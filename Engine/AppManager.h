@@ -576,6 +576,8 @@ public:
 
     bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
 
+    const std::list<OpenGLRendererInfo>& getOpenGLRenderers() const;
+
     /**
      * @brief Returns true if we could correctly fetch needed OpenGL functions and extensions
      **/

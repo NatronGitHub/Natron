@@ -62,6 +62,7 @@ struct PreferenceTab
 
 struct PreferencesPanelPrivate
 {
+    PreferencesPanel* _p;
     Gui* gui;
     QVBoxLayout* mainLayout;
 
@@ -78,8 +79,9 @@ struct PreferencesPanelPrivate
     std::vector<KnobI*> changedKnobs;
     bool closeIsOK;
 
-    PreferencesPanelPrivate(Gui *parent)
-    : gui(parent)
+    PreferencesPanelPrivate(PreferencesPanel* p, Gui *parent)
+    : _p(p)
+    , gui(parent)
     , mainLayout(0)
     , splitter(0)
     , tree(0)
@@ -104,7 +106,7 @@ struct PreferencesPanelPrivate
 PreferencesPanel::PreferencesPanel(Gui *parent)
     : QWidget(parent)
       , KnobGuiContainerHelper(appPTR->getCurrentSettings().get(), boost::shared_ptr<QUndoStack>())
-      , _imp(new PreferencesPanelPrivate(parent))
+      , _imp(new PreferencesPanelPrivate(this, parent))
 {
 
 }
@@ -157,7 +159,7 @@ PreferencesPanel::createGui()
         maxLength = std::max(w, maxLength);
     }
 
-    _imp->tree->setFixedWidth(maxLength + 40);
+    _imp->tree->setFixedWidth(maxLength + 100);
 
     _imp->buttonBox = new QDialogButtonBox(Qt::Horizontal);
     _imp->restoreDefaultsB = new Button( tr("Restore defaults") );
@@ -308,29 +310,62 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page, Prefere
     tab->tab = dynamic_cast<QFrame*>(page->tab);
     tab->tab->hide();
     assert(tab->tab);
-    tab->treeItem = new QTreeWidgetItem(tree);
 
-    QString label = QString::fromUtf8(page->pageKnob.lock()->getLabel().c_str());
+    QTreeWidgetItem* parentItem = 0;
+
+    boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();
+    {
+
+        // In the preferences, there may be sub-pages
+        KnobPtr hasParent = pageKnob->getParentKnob();
+        boost::shared_ptr<KnobPage> parentPage;
+        if (hasParent) {
+            parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
+            if (parentPage) {
+
+                // look in the tabs if it is created
+                for (std::size_t i = 0; i < tabs.size(); ++i) {
+                    if (tabs[i].page.lock()->pageKnob.lock() == parentPage) {
+                        parentItem = tabs[i].treeItem;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (parentItem) {
+        tab->treeItem = new QTreeWidgetItem(parentItem);
+    } else {
+        tab->treeItem = new QTreeWidgetItem(tree);
+    }
+
+    tab->treeItem->setExpanded(true);
+    
+    QString label = QString::fromUtf8(pageKnob->getLabel().c_str());
     tab->treeItem->setText(0, label);
     tab->page = page;
 }
 
 void
-PreferencesPanel::setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool /*restorePageIndex*/)
+PreferencesPanel::setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex)
 {
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         delete _imp->tabs[i].treeItem;
     }
     _imp->tabs.clear();
-    for (std::list<KnobPageGuiPtr>::const_iterator it = order.begin(); it!=order.end(); ++it) {
+
+    int i = 0;
+    for (std::list<KnobPageGuiPtr>::const_iterator it = order.begin(); it!=order.end(); ++it, ++i) {
         PreferenceTab tab;
         _imp->createPreferenceTab(*it, &tab);
         _imp->tabs.push_back(tab);
 
-        if (*it != curPage) {
+        if (*it != curPage || !restorePageIndex) {
             tab.treeItem->setSelected(false);
         } else {
             tab.treeItem->setSelected(true);
+            setCurrentPage(_imp->tabs[i].page.lock());
+            _imp->setVisiblePage(i);
         }
     }
 }

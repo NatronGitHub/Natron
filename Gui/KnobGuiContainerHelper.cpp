@@ -463,6 +463,39 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
     refreshTabWidgetMaxHeight();
 }
 
+static void workAroundGridLayoutBug(QGridLayout* layout)
+{
+    // See http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle for
+    // a bug of QGridLayout: basically all items are centered, but we would like to add stretch in the bottom of the layout.
+    // To do this we add an empty widget with an expanding vertical size policy.
+    QWidget* foundSpacer = 0;
+    for (int i = 0; i < layout->rowCount(); ++i) {
+        QLayoutItem* item = layout->itemAtPosition(i, 0);
+        if (!item) {
+            continue;
+        }
+        QWidget* w = item->widget();
+        if (!w) {
+            continue;
+        }
+        if (w->objectName() == QString::fromUtf8("emptyWidget")) {
+            foundSpacer = w;
+            break;
+        }
+    }
+    if (foundSpacer) {
+        layout->removeWidget(foundSpacer);
+    } else {
+        foundSpacer = new QWidget(layout->parentWidget());
+        foundSpacer->setObjectName(QString::fromUtf8("emptyWidget"));
+        foundSpacer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
+
+    }
+
+    ///And add our stretch
+    layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
+}
+
 KnobGuiPtr
 KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                                           bool makeNewLine,
@@ -542,17 +575,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                 page->groupAsTab = new TabGroup(getPagesContainer());
             }
             page->groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
-
-            // Retrieve the grid layout
-            QGridLayout* layout;
-            if (useScrollAreaForTabs()) {
-                layout = dynamic_cast<QGridLayout*>( dynamic_cast<QScrollArea*>(page->tab)->widget()->layout() );
-            } else {
-                layout = dynamic_cast<QGridLayout*>( page->tab->layout() );
-            }
-            assert(layout);
             if (!existed) {
-                layout->addWidget(page->groupAsTab, page->currentRow, 0, 1, 2);
+                page->gridLayout->addWidget(page->groupAsTab, page->currentRow, 0, 1, 2);
             }
 
             page->groupAsTab->refreshTabSecretNess( isGroup.get() );
@@ -593,16 +617,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                 boost::shared_ptr<KnobPage> topLevelPage = knob->getTopLevelPage();
                 KnobPageGuiPtr page = getOrCreatePage(topLevelPage);
                 assert(page);
-                ///retrieve the form layout
-                QGridLayout* layout;
-                if (useScrollAreaForTabs()) {
-                    layout = dynamic_cast<QGridLayout*>(dynamic_cast<QScrollArea*>(page->tab)->widget()->layout() );
-                } else {
-                    layout = dynamic_cast<QGridLayout*>( page->tab->layout() );
-                }
-                assert(layout);
-
-                layout->addWidget(groupAsTab, page->currentRow, 0, 1, 2);
+                page->gridLayout->addWidget(groupAsTab, page->currentRow, 0, 1, 2);
             }
             groupAsTab->refreshTabSecretNess( isGroup.get() );
         }
@@ -611,32 +626,24 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
     else if ( !ret->hasWidgetBeenCreated() ) {
 
         // Get the top level parent
+        boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
         KnobPtr parentKnobTmp = parentKnob;
-        while (parentKnobTmp) {
-            KnobPtr parent = parentKnobTmp->getParentKnob();
-            if (!parent) {
-                break;
-            } else {
-                parentKnobTmp = parent;
+        while (parentKnobTmp && !isTopLevelParentAPage) {
+            parentKnobTmp = parentKnobTmp->getParentKnob();
+            if (parentKnobTmp) {
+                isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
             }
+
         }
 
         // Find in which page the knob should be
-        boost::shared_ptr<KnobPage> isTopLevelParentAPage = boost::dynamic_pointer_cast<KnobPage>(parentKnobTmp);
         assert(isTopLevelParentAPage);
 
         KnobPageGuiPtr page = getOrCreatePage(isTopLevelParentAPage);
         assert(page);
 
         ///retrieve the form layout
-        QGridLayout* layout;
-        if (useScrollAreaForTabs()) {
-            layout = dynamic_cast<QGridLayout*>(dynamic_cast<QScrollArea*>(page->tab)->widget()->layout() );
-        } else {
-            layout = dynamic_cast<QGridLayout*>( page->tab->layout() );
-        }
-        assert(layout);
-
+        QGridLayout* layout = page->gridLayout;
 
         // If the knob has specified that it didn't want to trigger a new line, decrement the current row
         // index of the tab
@@ -727,7 +734,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                 labelLayout->addWidget(warningLabel);
                 labelLayout->addWidget(label);
             }
-        }
+        } // hasLabel
 
         /*
          * Find out in which layout the knob should be: either in the layout of the page or in the layout of
@@ -783,7 +790,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
         
         ret->setEnabledSlot();
 
-        ///Must add the row to the layout before calling setSecret()
+        // Must add the row to the layout before calling setSecret()
         if (makeNewLine) {
             int rowIndex;
             if (closestParentGroupTab) {
@@ -803,6 +810,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
 
             const bool labelOnSameColumn = ret->isLabelOnSameColumn();
             Qt::Alignment labelAlignment;
+            Qt::Alignment fieldAlignment;
+
             if (isGroup) {
                 labelAlignment = Qt::AlignLeft;
             } else {
@@ -823,38 +832,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                 }
             }
 
+            workAroundGridLayoutBug(layout);
 
-            //if (closestParentGroupTab) {
-            ///See http://stackoverflow.com/questions/14033902/qt-qgridlayout-automatically-centers-moves-items-to-the-middle for
-            ///a bug of QGridLayout: basically all items are centered, but we would like to add stretch in the bottom of the layout.
-            ///To do this we add an empty widget with an expanding vertical size policy.
-            QWidget* foundSpacer = 0;
-            for (int i = 0; i < layout->rowCount(); ++i) {
-                QLayoutItem* item = layout->itemAtPosition(i, 0);
-                if (!item) {
-                    continue;
-                }
-                QWidget* w = item->widget();
-                if (!w) {
-                    continue;
-                }
-                if (w->objectName() == QString::fromUtf8("emptyWidget")) {
-                    foundSpacer = w;
-                    break;
-                }
-            }
-            if (foundSpacer) {
-                layout->removeWidget(foundSpacer);
-            } else {
-                foundSpacer = new QWidget(layout->parentWidget());
-                foundSpacer->setObjectName(QString::fromUtf8("emptyWidget"));
-                foundSpacer->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
-
-            }
-
-            ///And add our stretch
-            layout->addWidget(foundSpacer,layout->rowCount(), 0, 1, 2);
-            // }
         } // makeNewLine
 
         ret->setSecret();

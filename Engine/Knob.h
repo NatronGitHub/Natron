@@ -2348,6 +2348,14 @@ public:
     }
 
     /**
+     * @brief If false, all knobs within this container cannot animate
+     **/
+    virtual bool canKnobsAnimate() const
+    {
+        return true;
+    }
+
+    /**
      * @brief Restore all knobs to their default values
      **/
     void restoreDefaultValues();

@@ -598,15 +598,6 @@ AppManagerPrivate::initGl()
         return;
     }
 
-
-    std::list<OpenGLRendererInfo> gpus;
-    OSGLContext::getGPUInfos(gpus);
-    for (std::list<OpenGLRendererInfo>::iterator it = gpus.begin(); it != gpus.end(); ++it) {
-        qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
-        << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
-        ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
-    }
-
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }
 

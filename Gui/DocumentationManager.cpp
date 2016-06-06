@@ -90,8 +90,7 @@ DocumentationManager::startServer()
 {
     server = new QHttpServer(this);
     connect( server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(handler(QHttpRequest*,QHttpResponse*)) );
-    connect( server, SIGNAL(newPort(int)), this, SLOT(setPort(int)) );
-    server->listen(QHostAddress::LocalHost, 0);
+    server->listen(QHostAddress::LocalHost, appPTR->getCurrentSettings()->getServerPort());
 }
 
 void
@@ -503,14 +502,6 @@ DocumentationManager::parser(QString html,
     return result;
 }             // DocumentationManager::parser
 
-void
-DocumentationManager::setPort(int port)
-{
-#ifdef DEBUG
-    qDebug() << "Documentation Server is attached to port" << port;
-#endif
-    appPTR->getCurrentSettings()->setServerPort(port);
-}
 
 NATRON_NAMESPACE_EXIT;
 

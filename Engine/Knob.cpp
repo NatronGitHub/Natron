@@ -387,6 +387,10 @@ struct KnobHelperPrivate
           , listenersNotificationBlocked(0)
           , isClipPreferenceSlave(false)
     {
+        if ( holder && !holder->canKnobsAnimate() ) {
+            isAnimationEnabled = false;
+        }
+
         mustCloneGuiCurves.resize(dimension);
         mustCloneInternalCurves.resize(dimension);
         mustClearExprResults.resize(dimension);
@@ -2861,6 +2865,9 @@ void
 KnobHelper::setAnimationEnabled(bool val)
 {
     if ( !canAnimate() ) {
+        return;
+    }
+    if ( _imp->holder && !_imp->holder->canKnobsAnimate() ) {
         return;
     }
     _imp->isAnimationEnabled = val;

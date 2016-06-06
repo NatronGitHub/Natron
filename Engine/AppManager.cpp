@@ -599,12 +599,28 @@ AppManager::loadInternal(const CLArgs& cl)
 
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
+
+    OSGLContext::getGPUInfos(_imp->openGLRenderers);
+    for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
+        qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
+        << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
+        ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
+    }
+    _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
+
+
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
 
     ///basically show a splashScreen load fonts etc...
     return initGui(cl);
 } // loadInternal
+
+const std::list<OpenGLRendererInfo>&
+AppManager::getOpenGLRenderers() const
+{
+    return _imp->openGLRenderers;
+}
 
 bool
 AppManager::isSpawnedFromCrashReporter() const
@@ -673,6 +689,10 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
             glContext->unsetCurrentContextNoRender();
+
+            // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
+            // selected by the user in the settings (which are not created yet).
+            _imp->renderingContextPool->clear();
         } else {
              updateAboutWindowLibrariesVersion();
         }

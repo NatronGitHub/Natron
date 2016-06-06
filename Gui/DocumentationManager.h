@@ -57,7 +57,6 @@ public Q_SLOTS:
 
 private Q_SLOTS:
     void handler(QHttpRequest *req, QHttpResponse *resp);
-    void setPort(int port);
 
 private:
     QHttpServer *server;

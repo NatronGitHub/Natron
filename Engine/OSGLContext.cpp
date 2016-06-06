@@ -311,7 +311,7 @@ OSGLContext::checkOpenGLVersion()
     std::string majorStr;
     majorStr.push_back(glVersionString[0]);
     std::string minorStr;
-    minorStr.push_back(glVersionString[3]);
+    minorStr.push_back(glVersionString[2]);
     int major = QString::fromUtf8(majorStr.c_str()).toInt();
     int minor = QString::fromUtf8(minorStr.c_str()).toInt();
     if (major < GLVersion.major || (major == GLVersion.major && minor < GLVersion.minor)) {

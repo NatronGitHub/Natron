@@ -73,6 +73,11 @@ public:
 
     ////////////////////////////////////////////////////////////////
 
+    /**
+     * @brief Clear all created contexts
+     **/
+    void clear();
+
 private:
 
 
