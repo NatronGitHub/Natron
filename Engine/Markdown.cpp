@@ -174,27 +174,41 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
         // table rows
         Q_FOREACH(const QStringList &item, items) {
             QString col1 = item.at(0);
-
             if (col1.count() < header1Length) {
                 for (int i = col1.count(); i < header1Length - 1; ++i) {
                     col1.append( QString::fromUtf8(" ") );
                 }
-                col1.append( QString::fromUtf8("|") );
+            } else if (col1.count() > header1Length) {
+                col1.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
+                col1 = col1.left(header1Length-6);
+                col1.append( QString::fromUtf8(" ... ") );
             }
+            col1.append( QString::fromUtf8("|") );
+
             QString col2 = item.at(1);
             if (col2.count() < header2Length) {
                 for (int i = col2.count(); i < header2Length - 1; ++i) {
                     col2.append( QString::fromUtf8(" ") );
                 }
-                col2.append( QString::fromUtf8("|") );
+            } else if (col2.count() > header2Length) {
+                col2.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
+                col2 = col2.left(header2Length-6);
+                col2.append( QString::fromUtf8(" ... ") );
             }
+            col2.append( QString::fromUtf8("|") );
+
             QString col3 = item.at(2);
             if (col3.count() < header3Length) {
                 for (int i = col3.count(); i < header3Length - 1; ++i) {
                     col3.append( QString::fromUtf8(" ") );
                 }
-                col3.append( QString::fromUtf8("|") );
+            } else if (col3.count() > header3Length) {
+                col3.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
+                col3 = col3.left(header3Length-6);
+                col3.append( QString::fromUtf8(" ... ") );
             }
+            col3.append( QString::fromUtf8("|") );
+
             QString col4 = item.at(3);
             if (col4.count() < header4Length) {
                 for (int i = col4.count(); i < header4Length - 1; ++i) {
@@ -205,6 +219,7 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
                 col4.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
                 col4.append( QString::fromUtf8("|\n") );
             }
+
             ts << "| ";
             ts << col1 << col2 << col3 << col4;
 
