@@ -190,7 +190,6 @@ public:
           ImageFieldingOrderEnum fielding,
           bool useBitmap = false,
           StorageModeEnum storage = eStorageModeRAM,
-          bool generateMipMaps = false,
           U32 textureTarget = GL_TEXTURE_2D);
 
     //Same as above but parameters are in the ImageParams object
@@ -224,7 +223,6 @@ public:
                                                      ImagePremultiplicationEnum premult,
                                                      ImageFieldingOrderEnum fielding,
                                                      StorageModeEnum storage = eStorageModeRAM,
-                                                     bool generateMipMaps = false,
                                                      U32 textureTarget = GL_TEXTURE_2D);
     static boost::shared_ptr<ImageParams> makeParams(const RectD & rod,    // the image rod in canonical coordinates
                                                      const RectI& bounds,
@@ -236,7 +234,6 @@ public:
                                                      ImagePremultiplicationEnum premult,
                                                      ImageFieldingOrderEnum fielding,
                                                      StorageModeEnum storage = eStorageModeRAM,
-                                                     bool generateMipMaps = false,
                                                      U32 textureTarget = GL_TEXTURE_2D);
 
     // boost::shared_ptr<ImageParams> getParams() const WARN_UNUSED_RETURN;

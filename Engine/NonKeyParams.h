@@ -66,7 +66,6 @@ struct CacheEntryStorageInfo
     std::size_t numComponents;
     StorageModeEnum mode;
     U32 textureTarget;
-    bool generateMipMaps;
 
     CacheEntryStorageInfo()
         : bounds()
@@ -74,7 +73,6 @@ struct CacheEntryStorageInfo
           , numComponents(0)
           , mode(eStorageModeNone)
           , textureTarget(0)
-          , generateMipMaps(false)
     {
     }
 

@@ -212,8 +212,7 @@ public:
     }
 
     void allocateGLTexture(const RectI& rectangle,
-                           U32 target,
-                           bool generateMipMaps)
+                           U32 target)
     {
         if (_glTexture) {
             return;
@@ -242,14 +241,13 @@ public:
         //}
 
         _glTexture.reset( new Texture(target,
-                                      GL_LINEAR,
-                                      GL_NEAREST,
-                                      GL_CLAMP_TO_EDGE,
+                                      GL_NONE,
+                                      GL_NONE,
+                                      GL_NONE,
                                       type,
                                       format,
                                       internalFormat,
-                                      glType,
-                                      generateMipMaps));
+                                      glType));
 
 
         TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);
@@ -1018,7 +1016,7 @@ private:
             U64 count = getElementsCountFromParams();
             _data.allocateRAM(count);
         } else if (info.mode == eStorageModeGLTex) {
-            _data.allocateGLTexture(info.bounds, info.textureTarget, info.generateMipMaps);
+            _data.allocateGLTexture(info.bounds, info.textureTarget);
         }
     }
 
