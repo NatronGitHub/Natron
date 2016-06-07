@@ -562,6 +562,10 @@ public:
 
 private:
 
+    bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);
+
+    int disconnectInputInternal(Node* input, bool useGuiInputs);
+
 
     bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
 

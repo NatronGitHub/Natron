@@ -5177,14 +5177,12 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
 }
 
 bool
-Node::replaceInput(const NodePtr& input,
-                   int inputNumber)
+Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     assert(input);
-
     ///Check for cycles: they are forbidden in the graph
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
         return false;
@@ -5204,8 +5202,6 @@ Node::replaceInput(const NodePtr& input,
         }
     }
 
-    bool useGuiInputs = isNodeRendering();
-    _imp->effect->abortAnyEvaluation();
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
@@ -5266,8 +5262,19 @@ Node::replaceInput(const NodePtr& input,
     if (mustCallEnd) {
         endInputEdition(true);
     }
-
+    
     return true;
+}
+
+bool
+Node::replaceInput(const NodePtr& input,
+                   int inputNumber)
+{
+
+
+    bool useGuiInputs = isNodeRendering();
+    _imp->effect->abortAnyEvaluation();
+    return replaceInputInternal(input, inputNumber, useGuiInputs);
 } // Node::replaceInput
 
 void
@@ -5487,14 +5494,12 @@ Node::disconnectInput(int inputNumber)
 } // Node::disconnectInput
 
 int
-Node::disconnectInput(Node* input)
+Node::disconnectInputInternal(Node* input, bool useGuiValues)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     int found = -1;
-    bool useGuiValues = isNodeRendering();
-    _imp->effect->abortAnyEvaluation();
     NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -5558,8 +5563,17 @@ Node::disconnectInput(Node* input)
 
         return found;
     }
-
+    
     return -1;
+}
+
+int
+Node::disconnectInput(Node* input)
+{
+
+    bool useGuiValues = isNodeRendering();
+    _imp->effect->abortAnyEvaluation();
+    return disconnectInputInternal(input, useGuiValues);
 } // Node::disconnectInput
 
 int
@@ -5646,6 +5660,24 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     }
     //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage(false);
+
+
+
+    bool beingDestroyed;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        beingDestroyed = _imp->isBeingDestroyed;
+    }
+
+
+    ///kill any thread it could have started
+    ///Commented-out: If we were to undo the deactivate we don't want all threads to be
+    ///exited, just exit them when the effect is really deleted instead
+    //quitAnyProcessing();
+    if (!beingDestroyed) {
+        _imp->effect->abortAnyEvaluation(false /*keepOldestRender*/);
+        _imp->abortPreview_non_blocking();
+    }
 
     boost::shared_ptr<NodeCollection> parentCol = getGroup();
 
@@ -5794,32 +5826,17 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
-                    output->replaceInput(inputToConnectTo, inputNb);
+                    output->replaceInputInternal(inputToConnectTo, inputNb, false);
                 } else {
-                    ignore_result( output->disconnectInput(this) );
+                    ignore_result( output->disconnectInputInternal(this, false) );
                 }
             }
         }
     }
 
-
-    bool beingDestroyed;
-    {
-        QMutexLocker k(&_imp->isBeingDestroyedMutex);
-        beingDestroyed = _imp->isBeingDestroyed;
-    }
-
     // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
     _imp->effect->dettachAllOpenGLContexts();
 
-    ///kill any thread it could have started
-    ///Commented-out: If we were to undo the deactivate we don't want all threads to be
-    ///exited, just exit them when the effect is really deleted instead
-    //quitAnyProcessing();
-    if (!beingDestroyed) {
-        _imp->effect->abortAnyEvaluation();
-        _imp->abortPreview_non_blocking();
-    }
 
     ///Free all memory used by the plug-in.
 

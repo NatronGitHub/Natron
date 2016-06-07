@@ -321,14 +321,14 @@ GenericSchedulerThread::getThreadState() const
 }
 
 bool
-GenericSchedulerThread::abortThreadedTask()
+GenericSchedulerThread::abortThreadedTask(bool keepOldestRender)
 {
     if ( !isRunning() ) {
         return false;
     }
 
     ThreadStateEnum state = getThreadState();
-    if ( (state == eThreadStateAborted) || (state == eThreadStateIdle) ) {
+    if ( keepOldestRender && ((state == eThreadStateAborted) || (state == eThreadStateIdle)) ) {
         return false;
     }
 
@@ -337,7 +337,7 @@ GenericSchedulerThread::abortThreadedTask()
 
 
         // We are already aborting
-        if (_imp->abortRequested > 0) {
+        if (_imp->abortRequested > 0 && keepOldestRender) {
             return false;
         }
 
@@ -347,7 +347,7 @@ GenericSchedulerThread::abortThreadedTask()
         ++_imp->abortRequested;
     }
 
-    onAbortRequested();
+    onAbortRequested(keepOldestRender);
 
     return true;
 }

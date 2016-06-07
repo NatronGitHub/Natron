@@ -1448,7 +1448,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 } // OutputSchedulerThread::threadLoopOnce
 
 void
-OutputSchedulerThread::onAbortRequested()
+OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
 {
     ///We make sure the render-threads don't wait for the main-thread to process a frame
     ///This function (abortRendering) was probably called from a user event that was posted earlier in the
@@ -3177,26 +3177,26 @@ RenderEngine::waitForEngineToQuit_enforce_blocking()
 }
 
 bool
-RenderEngine::abortRenderingInternal( )
+RenderEngine::abortRenderingInternal(bool keepOldestRender)
 {
     bool ret = false;
 
     if (_imp->currentFrameScheduler) {
-        ret |= _imp->currentFrameScheduler->abortThreadedTask();
+        ret |= _imp->currentFrameScheduler->abortThreadedTask(keepOldestRender);
     }
 
     if ( _imp->scheduler && _imp->scheduler->isWorking() ) {
         //If any playback active, abort it
-        ret |= _imp->scheduler->abortThreadedTask();
+        ret |= _imp->scheduler->abortThreadedTask(keepOldestRender);
     }
 
     return ret;
 }
 
 bool
-RenderEngine::abortRenderingNoRestart()
+RenderEngine::abortRenderingNoRestart(bool keepOldestRender)
 {
-    if ( abortRenderingInternal() ) {
+    if ( abortRenderingInternal(keepOldestRender) ) {
         setPlaybackAutoRestartEnabled(false);
 
         return true;
@@ -3208,7 +3208,7 @@ RenderEngine::abortRenderingNoRestart()
 bool
 RenderEngine::abortRenderingAutoRestart()
 {
-    if ( abortRenderingInternal() ) {
+    if ( abortRenderingInternal(true) ) {
         return true;
     }
 
@@ -3758,7 +3758,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
 }
 
 void
-ViewerCurrentFrameRequestScheduler::onAbortRequested()
+ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
 {
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
     qDebug() << getThreadName().c_str() << "Received abort request";
@@ -3766,7 +3766,7 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested()
     //This will make all processing nodes that call the abort() function return true
     //This function marks all active renders of the viewer as aborted (except the oldest one)
     //and each node actually check if the render has been aborted in EffectInstance::Implementation::aborted()
-    _imp->viewer->markAllOnGoingRendersAsAborted();
+    _imp->viewer->markAllOnGoingRendersAsAborted(keepOldestRender);
     _imp->backupThread.abortThreadedTask();
 }
 

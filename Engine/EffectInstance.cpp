@@ -4983,7 +4983,7 @@ EffectInstance::canSetValue() const
 }
 
 void
-EffectInstance::abortAnyEvaluation()
+EffectInstance::abortAnyEvaluation(bool keepOldestRender)
 {
     /*
        Get recursively downstream all Output nodes and abort any render on them
@@ -5020,7 +5020,11 @@ EffectInstance::abortAnyEvaluation()
     for (std::list<OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         //Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
         //well not be finished
-        (*it)->getRenderEngine()->abortRenderingAutoRestart();
+        if (keepOldestRender) {
+            (*it)->getRenderEngine()->abortRenderingAutoRestart();
+        } else {
+            (*it)->getRenderEngine()->abortRenderingNoRestart(keepOldestRender);
+        }
     }
 }
 

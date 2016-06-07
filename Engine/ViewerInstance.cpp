@@ -2444,10 +2444,10 @@ ViewerInstance::interpolateGammaLut(float value)
 }
 
 void
-ViewerInstance::markAllOnGoingRendersAsAborted()
+ViewerInstance::markAllOnGoingRendersAsAborted(bool keepOldestRender)
 {
     //Do not abort the oldest render while scrubbing timeline or sliders so that the user gets some feedback
-    bool keepOldest = getApp()->isDraftRenderEnabled() || isDoingPartialUpdates();
+    bool keepOldest = (getApp()->isDraftRenderEnabled() || isDoingPartialUpdates()) && keepOldestRender;
     QMutexLocker k(&_imp->renderAgeMutex);
 
     for (int i = 0; i < 2; ++i) {

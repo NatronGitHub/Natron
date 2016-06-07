@@ -826,7 +826,7 @@ public:
     virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void abortAnyEvaluation() OVERRIDE FINAL;
+    virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const

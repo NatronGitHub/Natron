@@ -300,7 +300,7 @@ public:
 
     float interpolateGammaLut(float value);
 
-    void markAllOnGoingRendersAsAborted();
+    void markAllOnGoingRendersAsAborted(bool keepOldestRender);
 
     /**
      * @brief Used to re-render only selected portions of the texture.
