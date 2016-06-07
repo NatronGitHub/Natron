@@ -1043,13 +1043,16 @@ Node::refreshDynamicProperties()
         if (_imp->plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
             // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
             pluginGLSupport = _imp->effect->supportsOpenGLRender();
-
+            
             // Ok still turned on, check the value of the opengl support knob in the Node page
-            int index = _imp->openglRenderingEnabledKnob.lock()->getValue();
-            if (index == 1) {
-                pluginGLSupport = ePluginOpenGLRenderSupportNone;
-            } else if (index == 2 && getApp()->isBackground()) {
-                pluginGLSupport = ePluginOpenGLRenderSupportNone;
+            boost::shared_ptr<KnobChoice> openglSupportKnob = _imp->openglRenderingEnabledKnob.lock();
+            if (openglSupportKnob) {
+                int index = openglSupportKnob->getValue();
+                if (index == 1) {
+                    pluginGLSupport = ePluginOpenGLRenderSupportNone;
+                } else if (index == 2 && getApp()->isBackground()) {
+                    pluginGLSupport = ePluginOpenGLRenderSupportNone;
+                }
             }
         }
     }
