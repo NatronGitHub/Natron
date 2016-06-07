@@ -31,6 +31,26 @@
 
 #include "Engine/OSGLContext.h"
 
+// see Availability.h
+#ifdef __MAC_OS_X_VERSION_MIN_REQUIRED
+// code only compiled when targeting Mac OS X and not iPhone
+// note use of 1070 instead of __MAC_10_7
+#if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
+// code in here might run on pre-Lion OS
+#ifndef kCGLPFAOpenGLProfile
+#define kCGLPFAOpenGLProfile (CGLPixelFormatAttribute)99
+#endif
+#ifndef kCGLOGLPVersion_3_2_Core
+#define kCGLOGLPVersion_3_2_Core (CGLPixelFormatAttribute)0x3200
+#endif
+#ifndef kCGLOGLPVersion_Legacy
+#define kCGLOGLPVersion_Legacy (CGLPixelFormatAttribute)0x1000
+#endif
+#else
+// code here can assume Lion or later
+#endif
+#endif
+
 NATRON_NAMESPACE_ENTER;
 
 class OSGLContext_mac::Implementation
