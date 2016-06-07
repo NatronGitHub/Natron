@@ -15,6 +15,7 @@ include(../../libs.pri)
 include(../../config.pri)
 
 CONFIG -= warn_on
+QMAKE_CXXFLAGS += -Wno-macro-redefined
 
 win32 {
 SOURCES += \
