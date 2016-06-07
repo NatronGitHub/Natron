@@ -251,11 +251,46 @@ struct OfxEffectInstancePrivate
           , multiplanar(false)
     {
     }
+
+    OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
+    : effect()
+    , natronPluginID(other.natronPluginID)
+    , overlayInteract()
+    , preferencesLock(QReadWriteLock::Recursive)
+    , renderSafetyLock()
+    , renderSafety(other.renderSafety)
+    , wasRenderSafetySet(other.wasRenderSafetySet)
+    , context(other.context)
+    , clipsInfos(other.clipsInfos)
+    , outputClip(other.outputClip)
+    , nbSourceClips(other.nbSourceClips)
+    , sequentialPref(other.sequentialPref)
+    , supportsConcurrentGLRendersMutex()
+    , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
+    , isOutput(other.isOutput)
+    , penDown(other.penDown)
+    , created(other.created)
+    , initialized(other.initialized)
+    , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
+    , supportsMultipleClipsPar(other.supportsMultipleClipsPar)
+    , supportsMultipleClipsBitdepth(other.supportsMultipleClipsBitdepth)
+    , doesTemporalAccess(other.doesTemporalAccess)
+    , multiplanar(other.multiplanar)
+    {
+
+    }
 };
 
 OfxEffectInstance::OfxEffectInstance(NodePtr node)
     : AbstractOfxEffectInstance(node)
       , _imp( new OfxEffectInstancePrivate() )
+{
+    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
+}
+
+OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
+: AbstractOfxEffectInstance(other.getNode())
+, _imp(new OfxEffectInstancePrivate(*other._imp))
 {
     QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
@@ -519,6 +554,30 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+}
+
+EffectInstPtr
+OfxEffectInstance::createRenderClone()
+{
+    boost::shared_ptr<OfxEffectInstance> clone(new OfxEffectInstance(*this));
+    clone->_imp->effect.reset(new OfxImageEffectInstance(*_imp->effect));
+    assert(_imp->effect);
+    _imp->effect->setOfxEffectInstance(clone);
+
+    OfxStatus stat;
+    {
+        ///Take the preferences lock so that it cannot be modified throughout the action.
+        QReadLocker preferencesLocker(&_imp->preferencesLock);
+        stat = _imp->effect->createInstanceAction();
+    }
+
+    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
+        // Failed to create clone...
+        return EffectInstPtr();
+    }
+
+
+    return clone;
 }
 
 bool

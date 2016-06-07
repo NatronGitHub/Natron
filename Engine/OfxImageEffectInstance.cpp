@@ -105,6 +105,13 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
 {
 }
 
+OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& other)
+: OFX::Host::ImageEffect::Instance(other)
+, _ofxEffectInstance(other._ofxEffectInstance)
+{
+
+}
+
 OfxImageEffectInstance::~OfxImageEffectInstance()
 {
 }

@@ -63,6 +63,8 @@ public:
                            const std::string & context,
                            bool interactive);
 
+    OfxImageEffectInstance(const OfxImageEffectInstance& other);
+
     virtual ~OfxImageEffectInstance();
 
     void setOfxEffectInstance(const boost::shared_ptr<OfxEffectInstance>& node)

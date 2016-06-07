@@ -98,6 +98,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
     OfxEffectInstance(NodePtr node);
 
+    OfxEffectInstance(const OfxEffectInstance& other);
+
     virtual ~OfxEffectInstance();
 
     void createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
@@ -267,6 +269,7 @@ public:
     virtual StatusEnum attachOpenGLContext(OpenGLContextEffectDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& data) OVERRIDE FINAL;
 
+    virtual EffectInstPtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
 public:
 
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;

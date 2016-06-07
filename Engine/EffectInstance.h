@@ -1707,6 +1707,13 @@ public:
      **/
     virtual bool supportsConcurrentOpenGLRenders() const { return true; }
 
+    /**
+     * @brief Plug-ins that are flagged eRenderSafetyInstanceSafe or lower can implement this function to make a copy
+     * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
+     * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
+     **/
+    virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
+
 private:
 
     /**
