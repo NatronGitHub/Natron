@@ -237,6 +237,14 @@ KnobGuiButton::getKnob() const
     return _knob.lock();
 }
 
+void
+KnobGuiButton::onLabelChangedInternal()
+{
+    if (_button) {
+        _button->setText(QString::fromUtf8(getKnob()->getLabel().c_str()));
+    }
+}
+
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;
