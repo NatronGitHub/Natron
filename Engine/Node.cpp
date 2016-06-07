@@ -586,10 +586,10 @@ Node::Node(const AppInstPtr& app,
     : QObject()
     , _imp( new Implementation(this, app, group, plugin) )
 {
-    QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
-    QObject::connect( this, SIGNAL( mustDequeueActions() ), this, SLOT( dequeueActions() ) );
-    QObject::connect( this, SIGNAL( mustComputeHashOnMainThread() ), this, SLOT( doComputeHashOnMainThread() ) );
-    QObject::connect(this, SIGNAL( refreshIdentityStateRequested() ), this, SLOT( onRefreshIdentityStateRequestReceived() ), Qt::QueuedConnection);
+    QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
+    QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
+    QObject::connect( this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()) );
+    QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 }
 
 bool
@@ -1367,7 +1367,7 @@ Node::fetchParentMultiInstancePointer()
             ///as the child
             _imp->multiInstanceParent = *it;
             (*it)->_imp->appendChild(thisShared);
-            QObject::connect( it->get(), SIGNAL( inputChanged(int) ), this, SLOT( onParentMultiInstanceInputChanged(int) ) );
+            QObject::connect( it->get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)) );
             break;
         }
     }
@@ -3203,7 +3203,7 @@ Node::findRightClickMenuKnob(const KnobsVec& knobs)
             KnobPtr rightClickKnob = knobs[i];
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>( rightClickKnob.get() );
             if (isChoice) {
-                QObject::connect( isChoice, SIGNAL( populated() ), this, SIGNAL( rightClickMenuKnobPopulated() ) );
+                QObject::connect( isChoice, SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
             }
             break;
         }
@@ -5127,7 +5127,7 @@ Node::connectInput(const NodePtr & input,
     getApp()->recheckInvalidExpressions();
 
     ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+    QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
 
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
@@ -5221,7 +5221,7 @@ Node::replaceInput(const NodePtr& input,
         if (!useGuiInputs) {
             NodePtr curIn = _imp->inputs[inputNumber].lock();
             if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
                 curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->inputs[inputNumber] = input;
@@ -5229,7 +5229,7 @@ Node::replaceInput(const NodePtr& input,
         } else {
             NodePtr curIn = _imp->guiInputs[inputNumber].lock();
             if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
                 curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
@@ -5238,7 +5238,7 @@ Node::replaceInput(const NodePtr& input,
     }
 
     ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+    QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
 
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
@@ -5440,7 +5440,7 @@ Node::disconnectInput(int inputNumber)
     }
 
 
-    QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
+    QObject::disconnect( inputShared.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
     inputShared->disconnectOutput(useGuiValues, this);
 
     {
@@ -6081,7 +6081,7 @@ Node::destroyNodeInternal(bool fromDest,
                 isGrp->getNodes_recursive(nodesToWatch, false);
             }
             _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
-            QObject::connect( _imp->renderWatcher.get(), SIGNAL( taskFinished(int, WatcherCallerArgsPtr) ), this, SLOT( onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr) ) );
+            QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
             boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
             args->autoReconnect = autoReconnect;
             _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
@@ -7022,15 +7022,15 @@ Node::onAllKnobsSlaved(bool isSlave,
                 QMutexLocker l(&_imp->masterNodeMutex);
                 _imp->masterNode = masterNode;
             }
-            QObject::connect( masterNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
-            QObject::connect( masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
-            QObject::connect( masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
+            QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
+            QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
+            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
         }
     } else {
         NodePtr master = getMasterNode();
-        QObject::disconnect( master.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
-        QObject::disconnect( master.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
-        QObject::disconnect( master.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
+        QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
+        QObject::disconnect( master.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
+        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
         {
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode.reset();

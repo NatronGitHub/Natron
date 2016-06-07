@@ -47,10 +47,10 @@ FileDownloader::FileDownloader(const QUrl& imageUrl,
     , m_timer( new QTimer() )
 {
     m_timer->setInterval(NATRON_FILE_DOWNLOAD_HEARBEAT_TIMEOUT_MS);
-    QObject::connect( m_timer.get(), SIGNAL( timeout() ), this, SLOT( onTimerTimeout() ) );
+    QObject::connect( m_timer.get(), SIGNAL(timeout()), this, SLOT(onTimerTimeout()) );
 
-    connect( m_WebCtrl.get(), SIGNAL( finished(QNetworkReply*) ),
-             SLOT( fileDownloaded(QNetworkReply*) ) );
+    connect( m_WebCtrl.get(), SIGNAL(finished(QNetworkReply*)),
+             SLOT(fileDownloaded(QNetworkReply*)) );
 
     QNetworkRequest request(imageUrl);
     if (!useNetworkCache) {
@@ -59,8 +59,8 @@ FileDownloader::FileDownloader(const QUrl& imageUrl,
 
     m_reply = m_WebCtrl->get(request);
     m_timer->start();
-    QObject::connect( m_reply, SIGNAL( error(QNetworkReply::NetworkError) ), this, SIGNAL( error() ) );
-    QObject::connect( m_reply, SIGNAL( downloadProgress(qint64, qint64) ), this, SLOT( onDownloadProgress(qint64, qint64) ) );
+    QObject::connect( m_reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SIGNAL(error()) );
+    QObject::connect( m_reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(onDownloadProgress(qint64,qint64)) );
 }
 
 FileDownloader::~FileDownloader()

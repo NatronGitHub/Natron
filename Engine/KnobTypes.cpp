@@ -1124,15 +1124,15 @@ KnobChoice::handleSignalSlotsForAliasLink(const KnobPtr& alias,
         return;
     }
     if (connect) {
-        QObject::connect( this, SIGNAL( populated() ), aliasIsChoice, SLOT( onOriginalKnobPopulated() ) );
-        QObject::connect( this, SIGNAL( entriesReset() ), aliasIsChoice, SLOT( onOriginalKnobEntriesReset() ) );
-        QObject::connect( this, SIGNAL( entryAppended(QString, QString) ), aliasIsChoice,
-                          SLOT( onOriginalKnobEntryAppend(QString, QString) ) );
+        QObject::connect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
+        QObject::connect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
+        QObject::connect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
+                          SLOT(onOriginalKnobEntryAppend(QString,QString)) );
     } else {
-        QObject::disconnect( this, SIGNAL( populated() ), aliasIsChoice, SLOT( onOriginalKnobPopulated() ) );
-        QObject::disconnect( this, SIGNAL( entriesReset() ), aliasIsChoice, SLOT( onOriginalKnobEntriesReset() ) );
-        QObject::disconnect( this, SIGNAL( entryAppended(QString, QString) ), aliasIsChoice,
-                             SLOT( onOriginalKnobEntryAppend(QString, QString) ) );
+        QObject::disconnect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
+        QObject::disconnect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
+        QObject::disconnect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
+                             SLOT(onOriginalKnobEntryAppend(QString,QString)) );
     }
 }
 

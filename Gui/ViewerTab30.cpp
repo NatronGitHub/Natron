@@ -375,7 +375,7 @@ ViewerTab::createTrackerInterface(const NodeGuiPtr& n)
 
         return;
     }
-    QObject::connect( n.get(), SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onTrackerNodeGuiSettingsPanelClosed(bool) ) );
+    QObject::connect( n.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onTrackerNodeGuiSettingsPanelClosed(bool)) );
     if ( n->isSettingsPanelVisible() ) {
         setTrackerInterface(n);
     } else if (tracker) {

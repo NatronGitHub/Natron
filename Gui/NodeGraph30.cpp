@@ -29,7 +29,7 @@
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-    CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QWheelEvent>
 #include <QToolButton>
@@ -37,7 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTabBar>
 #include <QTreeWidget>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-    CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"

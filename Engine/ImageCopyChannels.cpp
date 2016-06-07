@@ -35,9 +35,9 @@
 
 
 // disable some warnings due to unused parameters
-GCC_DIAG_OFF(unused - parameter)
+GCC_DIAG_OFF(unused-parameter)
 # if ( ( __GNUC__ * 100) + __GNUC_MINOR__) >= 406
-GCC_DIAG_OFF(unused - but - set - variable) // only on gcc >= 4.6
+GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 #endif
 
 // NATRON_COPY_CHANNELS_UNPREMULT:

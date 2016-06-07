@@ -795,8 +795,8 @@ LinkArrow::LinkArrow(const NodeGuiPtr& master,
     , _lineWidth(1)
 {
     assert(master && slave);
-    QObject::connect( master.get(), SIGNAL( positionChanged(int, int) ), this, SLOT( refreshPosition() ) );
-    QObject::connect( slave.get(), SIGNAL( positionChanged(int, int) ), this, SLOT( refreshPosition() ) );
+    QObject::connect( master.get(), SIGNAL(positionChanged(int,int)), this, SLOT(refreshPosition()) );
+    QObject::connect( slave.get(), SIGNAL(positionChanged(int,int)), this, SLOT(refreshPosition()) );
 
     refreshPosition();
     setZValue(master->zValue() - 5);

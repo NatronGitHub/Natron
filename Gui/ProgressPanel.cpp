@@ -159,7 +159,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
     _imp->queueTasksCheckbox = new QCheckBox(tr("Queue Renders"), _imp->headerContainer);
     _imp->queueTasksCheckbox->setToolTip( GuiUtils::convertFromPlainText(tr("When checked, renders will be queued in the Progress Panel and will start only when all other prior renders are done. This does not apply to other tasks such as Tracking or analysis."), Qt::WhiteSpaceNormal) );
     _imp->queueTasksCheckbox->setChecked( appPTR->getCurrentSettings()->isRenderQueuingEnabled() );
-    QObject::connect( _imp->queueTasksCheckbox, SIGNAL( stateChanged(int) ), this, SLOT( onQueueRendersCheckboxChecked() ) );
+    QObject::connect( _imp->queueTasksCheckbox, SIGNAL(stateChanged(int)), this, SLOT(onQueueRendersCheckboxChecked()) );
     _imp->headerLayout->addWidget(_imp->queueTasksCheckbox);
 
     _imp->headerLayout->addSpacing( TO_DPIX(20) );
@@ -181,7 +181,7 @@ ProgressPanel::ProgressPanel(Gui* gui)
 
     _imp->mainLayout->addWidget(_imp->view);
 
-    QObject::connect( _imp->view, SIGNAL( itemRightClicked(TableItem*) ), this, SLOT( onItemRightClicked(TableItem*) ) );
+    QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
     QStringList dimensionNames;
     dimensionNames
         << tr("Node")
@@ -199,10 +199,10 @@ ProgressPanel::ProgressPanel(Gui* gui)
     _imp->view->header()->resizeSection( COL_TIME_REMAINING, TO_DPIX(150) );
 
     QItemSelectionModel* selModel = _imp->view->selectionModel();
-    QObject::connect( selModel, SIGNAL( selectionChanged(QItemSelection, QItemSelection) ), this, SLOT( onSelectionChanged(QItemSelection, QItemSelection) ) );
-    QObject::connect( this, SIGNAL( s_doProgressStartOnMainThread(boost::shared_ptr<Node>, QString, QString, bool) ), this, SLOT( doProgressStartOnMainThread(boost::shared_ptr<Node>, QString, QString, bool) ) );
-    QObject::connect( this, SIGNAL( s_doProgressUpdateOnMainThread(ProgressTaskInfoPtr, double) ), this, SLOT( doProgressOnMainThread(ProgressTaskInfoPtr, double) ) );
-    QObject::connect( this, SIGNAL( s_doProgressEndOnMainThread(boost::shared_ptr<Node>) ), this, SLOT( doProgressEndOnMainThread(boost::shared_ptr<Node>) ) );
+    QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
+    QObject::connect( this, SIGNAL(s_doProgressStartOnMainThread(boost::shared_ptr<Node>,QString,QString,bool)), this, SLOT(doProgressStartOnMainThread(boost::shared_ptr<Node>,QString,QString,bool)) );
+    QObject::connect( this, SIGNAL(s_doProgressUpdateOnMainThread(ProgressTaskInfoPtr,double)), this, SLOT(doProgressOnMainThread(ProgressTaskInfoPtr,double)) );
+    QObject::connect( this, SIGNAL(s_doProgressEndOnMainThread(boost::shared_ptr<Node>)), this, SLOT(doProgressEndOnMainThread(boost::shared_ptr<Node>)) );
 }
 
 ProgressPanel::~ProgressPanel()
@@ -376,10 +376,10 @@ static void
 connectProcessSlots(ProgressTaskInfo* task,
                     ProcessHandler* process)
 {
-    QObject::connect( task, SIGNAL( taskCanceled() ), process, SLOT( onProcessCanceled() ) );
-    QObject::connect( process, SIGNAL( processCanceled() ), task, SLOT( onProcessCanceled() ) );
-    QObject::connect( process, SIGNAL( frameRendered(int, double) ), task, SLOT( onRenderEngineFrameComputed(int, double) ) );
-    QObject::connect( process, SIGNAL( processFinished(int) ), task, SLOT( onRenderEngineStopped(int) ) );
+    QObject::connect( task, SIGNAL(taskCanceled()), process, SLOT(onProcessCanceled()) );
+    QObject::connect( process, SIGNAL(processCanceled()), task, SLOT(onProcessCanceled()) );
+    QObject::connect( process, SIGNAL(frameRendered(int,double)), task, SLOT(onRenderEngineFrameComputed(int,double)) );
+    QObject::connect( process, SIGNAL(processFinished(int)), task, SLOT(onRenderEngineStopped(int)) );
 }
 
 void
@@ -467,7 +467,7 @@ ProgressPanel::startTask(const NodePtr& node,
 
     if ( canPause || node->getEffectInstance()->isOutput() ) {
         task->createItems();
-        QTimer::singleShot( NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS, this, SLOT( onShowProgressPanelTimerTriggered() ) );
+        QTimer::singleShot( NATRON_DISPLAY_PROGRESS_PANEL_AFTER_MS, this, SLOT(onShowProgressPanelTimerTriggered()) );
     }
 
     if (process) {
@@ -479,9 +479,9 @@ ProgressPanel::startTask(const NodePtr& node,
             if (isOutput) {
                 boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
                 assert(engine);
-                QObject::connect( engine.get(), SIGNAL( frameRendered(int, double) ), task.get(), SLOT( onRenderEngineFrameComputed(int, double) ) );
-                QObject::connect( engine.get(), SIGNAL( renderFinished(int) ), task.get(), SLOT( onRenderEngineStopped(int) ) );
-                QObject::connect( task.get(), SIGNAL( taskCanceled() ), engine.get(), SLOT( abortRendering_non_blocking() ) );
+                QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
+                QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
+                QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
             }
         }
     }

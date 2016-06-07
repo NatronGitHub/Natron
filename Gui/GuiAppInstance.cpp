@@ -275,7 +275,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
 
 
     boost::shared_ptr<Settings> nSettings = appPTR->getCurrentSettings();
-    QObject::connect( getProject().get(), SIGNAL( formatChanged(Format) ), this, SLOT( projectFormatChanged(Format) ) );
+    QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
     {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );

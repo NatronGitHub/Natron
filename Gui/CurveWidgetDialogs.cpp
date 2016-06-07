@@ -103,7 +103,7 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     QPixmap pix;
     appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
     _fileBrowseButton->setIcon( QIcon(pix) );
-    QObject::connect( _fileBrowseButton, SIGNAL( clicked() ), this, SLOT( open_file() ) );
+    QObject::connect( _fileBrowseButton, SIGNAL(clicked()), this, SLOT(open_file()) );
     _fileLayout->addWidget(_fileBrowseButton);
     _mainLayout->addWidget(_fileContainer);
 
@@ -179,10 +179,10 @@ ImportExportCurveDialog::ImportExportCurveDialog(bool isExportDialog,
     _buttonsContainer = new QWidget(this);
     _buttonsLayout = new QHBoxLayout(_buttonsContainer);
     _okButton = new Button(tr("Ok"), _buttonsContainer);
-    QObject::connect( _okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
+    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonsLayout->addWidget(_okButton);
     _cancelButton = new Button(tr("Cancel"), _buttonsContainer);
-    QObject::connect( _cancelButton, SIGNAL( clicked() ), this, SLOT( reject() ) );
+    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
     _buttonsLayout->addWidget(_cancelButton);
     _mainLayout->addWidget(_buttonsContainer);
 
@@ -406,8 +406,8 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
 
     _imp->xSpinbox = new SpinBox(_imp->boxContainer, xType);
     _imp->xSpinbox->setValue(_imp->originalX);
-    QObject::connect( _imp->xSpinbox, SIGNAL( valueChanged(double) ), this, SLOT( onXSpinBoxValueChanged(double) ) );
-    QObject::connect( _imp->xSpinbox, SIGNAL( returnPressed() ), this, SLOT( onEditingFinished() ) );
+    QObject::connect( _imp->xSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onXSpinBoxValueChanged(double)) );
+    QObject::connect( _imp->xSpinbox, SIGNAL(returnPressed()), this, SLOT(onEditingFinished()) );
     _imp->boxLayout->addWidget(_imp->xSpinbox);
 
     if (mode == eEditModeKeyframePosition) {
@@ -431,8 +431,8 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
         }
 
         _imp->ySpinbox->setValue(_imp->originalY);
-        QObject::connect( _imp->ySpinbox, SIGNAL( valueChanged(double) ), this, SLOT( onYSpinBoxValueChanged(double) ) );
-        QObject::connect( _imp->ySpinbox, SIGNAL( returnPressed() ), this, SLOT( onEditingFinished() ) );
+        QObject::connect( _imp->ySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onYSpinBoxValueChanged(double)) );
+        QObject::connect( _imp->ySpinbox, SIGNAL(returnPressed()), this, SLOT(onEditingFinished()) );
         _imp->boxLayout->addWidget(_imp->ySpinbox);
     }
 

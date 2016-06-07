@@ -75,32 +75,32 @@ KnobGui::initialize()
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
-        QObject::connect( handler, SIGNAL( redrawGuiCurve(int, ViewSpec, int) ), this, SLOT( onRedrawGuiCurve(int, ViewSpec, int) ) );
-        QObject::connect( handler, SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onInternalValueChanged(ViewSpec, int, int) ) );
-        QObject::connect( handler, SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ), this, SLOT( onInternalKeySet(double, ViewSpec, int, int, bool) ) );
-        QObject::connect( handler, SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ), this, SLOT( onInternalKeyRemoved(double, ViewSpec, int, int) ) );
-        QObject::connect( handler, SIGNAL( keyFrameMoved(ViewSpec, int, double, double) ), this, SLOT( onKeyFrameMoved(ViewSpec, int, double, double) ) );
-        QObject::connect( handler, SIGNAL( multipleKeyFramesSet(std::list<double>, ViewSpec, int, int) ), this,
-                          SLOT( onMultipleKeySet(std::list<double>, ViewSpec, int, int) ) );
-        QObject::connect( handler, SIGNAL( multipleKeyFramesRemoved(std::list<double>, ViewSpec, int, int) ), this,
-                          SLOT( onMultipleKeyRemoved(std::list<double>, ViewSpec, int, int) ) );
-        QObject::connect( handler, SIGNAL( secretChanged() ), this, SLOT( setSecret() ) );
-        QObject::connect( handler, SIGNAL( enabledChanged() ), this, SLOT( setEnabledSlot() ) );
-        QObject::connect( handler, SIGNAL( knobSlaved(int, bool) ), this, SLOT( onKnobSlavedChanged(int, bool) ) );
-        QObject::connect( handler, SIGNAL( animationAboutToBeRemoved(ViewSpec, int) ), this, SLOT( onInternalAnimationAboutToBeRemoved(ViewSpec, int) ) );
-        QObject::connect( handler, SIGNAL( animationRemoved(ViewSpec, int) ), this, SLOT( onInternalAnimationRemoved() ) );
-        QObject::connect( handler, SIGNAL( setValueWithUndoStack(Variant, ViewSpec, int) ), this, SLOT( onSetValueUsingUndoStack(Variant, ViewSpec, int) ) );
-        QObject::connect( handler, SIGNAL( dirty(bool) ), this, SLOT( onSetDirty(bool) ) );
-        QObject::connect( handler, SIGNAL( animationLevelChanged(ViewSpec, int) ), this, SLOT( onAnimationLevelChanged(ViewSpec, int) ) );
-        QObject::connect( handler, SIGNAL( appendParamEditChange(int, Variant, ViewSpec, int, double, bool, bool) ), this,
-                          SLOT( onAppendParamEditChanged(int, Variant, ViewSpec, int, double, bool, bool) ) );
-        QObject::connect( handler, SIGNAL( frozenChanged(bool) ), this, SLOT( onFrozenChanged(bool) ) );
-        QObject::connect( handler, SIGNAL( helpChanged() ), this, SLOT( onHelpChanged() ) );
-        QObject::connect( handler, SIGNAL( expressionChanged(int) ), this, SLOT( onExprChanged(int) ) );
-        QObject::connect( handler, SIGNAL( hasModificationsChanged() ), this, SLOT( onHasModificationsChanged() ) );
-        QObject::connect( handler, SIGNAL( labelChanged() ), this, SLOT( onLabelChanged() ) );
-        QObject::connect( handler, SIGNAL( dimensionNameChanged(int) ), this, SLOT( onDimensionNameChanged(int) ) );
-        QObject::connect( handler, SIGNAL( viewerContextSecretChanged() ), this, SLOT( onViewerContextSecretChanged() ) );
+        QObject::connect( handler, SIGNAL(redrawGuiCurve(int,ViewSpec,int)), this, SLOT(onRedrawGuiCurve(int,ViewSpec,int)) );
+        QObject::connect( handler, SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onInternalValueChanged(ViewSpec,int,int)) );
+        QObject::connect( handler, SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)), this, SLOT(onInternalKeySet(double,ViewSpec,int,int,bool)) );
+        QObject::connect( handler, SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)), this, SLOT(onInternalKeyRemoved(double,ViewSpec,int,int)) );
+        QObject::connect( handler, SIGNAL(keyFrameMoved(ViewSpec,int,double,double)), this, SLOT(onKeyFrameMoved(ViewSpec,int,double,double)) );
+        QObject::connect( handler, SIGNAL(multipleKeyFramesSet(std::list<double>,ViewSpec,int,int)), this,
+                          SLOT(onMultipleKeySet(std::list<double>,ViewSpec,int,int)) );
+        QObject::connect( handler, SIGNAL(multipleKeyFramesRemoved(std::list<double>,ViewSpec,int,int)), this,
+                          SLOT(onMultipleKeyRemoved(std::list<double>,ViewSpec,int,int)) );
+        QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
+        QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
+        QObject::connect( handler, SIGNAL(knobSlaved(int,bool)), this, SLOT(onKnobSlavedChanged(int,bool)) );
+        QObject::connect( handler, SIGNAL(animationAboutToBeRemoved(ViewSpec,int)), this, SLOT(onInternalAnimationAboutToBeRemoved(ViewSpec,int)) );
+        QObject::connect( handler, SIGNAL(animationRemoved(ViewSpec,int)), this, SLOT(onInternalAnimationRemoved()) );
+        QObject::connect( handler, SIGNAL(setValueWithUndoStack(Variant,ViewSpec,int)), this, SLOT(onSetValueUsingUndoStack(Variant,ViewSpec,int)) );
+        QObject::connect( handler, SIGNAL(dirty(bool)), this, SLOT(onSetDirty(bool)) );
+        QObject::connect( handler, SIGNAL(animationLevelChanged(ViewSpec,int)), this, SLOT(onAnimationLevelChanged(ViewSpec,int)) );
+        QObject::connect( handler, SIGNAL(appendParamEditChange(int,Variant,ViewSpec,int,double,bool,bool)), this,
+                          SLOT(onAppendParamEditChanged(int,Variant,ViewSpec,int,double,bool,bool)) );
+        QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
+        QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
+        QObject::connect( handler, SIGNAL(expressionChanged(int)), this, SLOT(onExprChanged(int)) );
+        QObject::connect( handler, SIGNAL(hasModificationsChanged()), this, SLOT(onHasModificationsChanged()) );
+        QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
+        QObject::connect( handler, SIGNAL(dimensionNameChanged(int)), this, SLOT(onDimensionNameChanged(int)) );
+        QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onViewerContextSecretChanged()) );
     }
     if (!_imp->isInViewerUIKnob) {
         _imp->guiCurves.resize( knob->getDimension() );
@@ -288,7 +288,7 @@ KnobGui::enableRightClickMenu(QWidget* widget,
     name.append( QString::number(dimension) );
     widget->setContextMenuPolicy(Qt::CustomContextMenu);
     widget->setObjectName(name);
-    QObject::connect( widget, SIGNAL( customContextMenuRequested(QPoint) ), this, SLOT( onRightClickClicked(QPoint) ) );
+    QObject::connect( widget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(onRightClickClicked(QPoint)) );
 }
 
 bool
@@ -350,32 +350,32 @@ KnobGui::createInterpolationMenu(QMenu* menu,
 
     QAction* constantInterpAction = new QAction(tr("Constant"), interpolationMenu);
     constantInterpAction->setData( QVariant(dimension) );
-    QObject::connect( constantInterpAction, SIGNAL( triggered() ), this, SLOT( onConstantInterpActionTriggered() ) );
+    QObject::connect( constantInterpAction, SIGNAL(triggered()), this, SLOT(onConstantInterpActionTriggered()) );
     interpolationMenu->addAction(constantInterpAction);
 
     QAction* linearInterpAction = new QAction(tr("Linear"), interpolationMenu);
     linearInterpAction->setData( QVariant(dimension) );
-    QObject::connect( linearInterpAction, SIGNAL( triggered() ), this, SLOT( onLinearInterpActionTriggered() ) );
+    QObject::connect( linearInterpAction, SIGNAL(triggered()), this, SLOT(onLinearInterpActionTriggered()) );
     interpolationMenu->addAction(linearInterpAction);
 
     QAction* smoothInterpAction = new QAction(tr("Smooth"), interpolationMenu);
     smoothInterpAction->setData( QVariant(dimension) );
-    QObject::connect( smoothInterpAction, SIGNAL( triggered() ), this, SLOT( onSmoothInterpActionTriggered() ) );
+    QObject::connect( smoothInterpAction, SIGNAL(triggered()), this, SLOT(onSmoothInterpActionTriggered()) );
     interpolationMenu->addAction(smoothInterpAction);
 
     QAction* catmullRomInterpAction = new QAction(tr("Catmull-Rom"), interpolationMenu);
     catmullRomInterpAction->setData( QVariant(dimension) );
-    QObject::connect( catmullRomInterpAction, SIGNAL( triggered() ), this, SLOT( onCatmullromInterpActionTriggered() ) );
+    QObject::connect( catmullRomInterpAction, SIGNAL(triggered()), this, SLOT(onCatmullromInterpActionTriggered()) );
     interpolationMenu->addAction(catmullRomInterpAction);
 
     QAction* cubicInterpAction = new QAction(tr("Cubic"), interpolationMenu);
     cubicInterpAction->setData( QVariant(dimension) );
-    QObject::connect( cubicInterpAction, SIGNAL( triggered() ), this, SLOT( onCubicInterpActionTriggered() ) );
+    QObject::connect( cubicInterpAction, SIGNAL(triggered()), this, SLOT(onCubicInterpActionTriggered()) );
     interpolationMenu->addAction(cubicInterpAction);
 
     QAction* horizInterpAction = new QAction(tr("Horizontal"), interpolationMenu);
     horizInterpAction->setData( QVariant(dimension) );
-    QObject::connect( horizInterpAction, SIGNAL( triggered() ), this, SLOT( onHorizontalInterpActionTriggered() ) );
+    QObject::connect( horizInterpAction, SIGNAL(triggered()), this, SLOT(onHorizontalInterpActionTriggered()) );
     interpolationMenu->addAction(horizInterpAction);
 
     menu->addAction( interpolationMenu->menuAction() );
@@ -441,7 +441,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         if (!hasAllKeyframesAtTime) {
             QAction* setKeyAction = new QAction(tr("Set Key") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
             setKeyAction->setData(-1);
-            QObject::connect( setKeyAction, SIGNAL( triggered() ), this, SLOT( onSetKeyActionTriggered() ) );
+            QObject::connect( setKeyAction, SIGNAL(triggered()), this, SLOT(onSetKeyActionTriggered()) );
             menu->addAction(setKeyAction);
             if (!isEnabled) {
                 setKeyAction->setEnabled(false);
@@ -449,7 +449,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         } else {
             QAction* removeKeyAction = new QAction(tr("Remove Key") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
             removeKeyAction->setData(-1);
-            QObject::connect( removeKeyAction, SIGNAL( triggered() ), this, SLOT( onRemoveKeyActionTriggered() ) );
+            QObject::connect( removeKeyAction, SIGNAL(triggered()), this, SLOT(onRemoveKeyActionTriggered()) );
             menu->addAction(removeKeyAction);
             if (!isEnabled) {
                 removeKeyAction->setEnabled(false);
@@ -459,7 +459,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         if (hasAnimation) {
             QAction* removeAnyAnimationAction = new QAction(tr("Remove animation") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
             removeAnyAnimationAction->setData(-1);
-            QObject::connect( removeAnyAnimationAction, SIGNAL( triggered() ), this, SLOT( onRemoveAnimationActionTriggered() ) );
+            QObject::connect( removeAnyAnimationAction, SIGNAL(triggered()), this, SLOT(onRemoveAnimationActionTriggered()) );
             if (!isEnabled) {
                 removeAnyAnimationAction->setEnabled(false);
             }
@@ -475,7 +475,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             if (!dimensionHasKeyframeAtTime) {
                 QAction* setKeyAction = new QAction(tr("Set Key"), menu);
                 setKeyAction->setData(dimension);
-                QObject::connect( setKeyAction, SIGNAL( triggered() ), this, SLOT( onSetKeyActionTriggered() ) );
+                QObject::connect( setKeyAction, SIGNAL(triggered()), this, SLOT(onSetKeyActionTriggered()) );
                 menu->addAction(setKeyAction);
                 if (!isEnabled) {
                     setKeyAction->setEnabled(false);
@@ -483,7 +483,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             } else {
                 QAction* removeKeyAction = new QAction(tr("Remove Key"), menu);
                 removeKeyAction->setData(dimension);
-                QObject::connect( removeKeyAction, SIGNAL( triggered() ), this, SLOT( onRemoveKeyActionTriggered() ) );
+                QObject::connect( removeKeyAction, SIGNAL(triggered()), this, SLOT(onRemoveKeyActionTriggered()) );
                 menu->addAction(removeKeyAction);
                 if (!isEnabled) {
                     removeKeyAction->setEnabled(false);
@@ -493,7 +493,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
             if (dimensionHasAnimation) {
                 QAction* removeAnyAnimationAction = new QAction(tr("Remove animation"), menu);
                 removeAnyAnimationAction->setData(dimension);
-                QObject::connect( removeAnyAnimationAction, SIGNAL( triggered() ), this, SLOT( onRemoveAnimationActionTriggered() ) );
+                QObject::connect( removeAnyAnimationAction, SIGNAL(triggered()), this, SLOT(onRemoveAnimationActionTriggered()) );
                 menu->addAction(removeAnyAnimationAction);
                 if (!isEnabled) {
                     removeAnyAnimationAction->setEnabled(false);
@@ -507,7 +507,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
     if (hasAnimation && isAppKnob) {
         QAction* showInCurveEditorAction = new QAction(tr("Show in curve editor"), menu);
-        QObject::connect( showInCurveEditorAction, SIGNAL( triggered() ), this, SLOT( onShowInCurveEditorActionTriggered() ) );
+        QObject::connect( showInCurveEditorAction, SIGNAL(triggered()), this, SLOT(onShowInCurveEditorActionTriggered()) );
         menu->addAction(showInCurveEditorAction);
         if (!isEnabled) {
             showInCurveEditorAction->setEnabled(false);
@@ -532,7 +532,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         if (hasAnimation && isAppKnob) {
             QAction* copyAnimationAction = new QAction(tr("Copy Animation"), copyMenu);
             copyAnimationAction->setData(-1);
-            QObject::connect( copyAnimationAction, SIGNAL( triggered() ), this, SLOT( onCopyAnimationActionTriggered() ) );
+            QObject::connect( copyAnimationAction, SIGNAL(triggered()), this, SLOT(onCopyAnimationActionTriggered()) );
             copyMenu->addAction(copyAnimationAction);
         }
 
@@ -540,14 +540,14 @@ KnobGui::createAnimationMenu(QMenu* menu,
         QAction* copyValuesAction = new QAction(tr("Copy Value(s)"), copyMenu);
         copyValuesAction->setData( QVariant(-1) );
         copyMenu->addAction(copyValuesAction);
-        QObject::connect( copyValuesAction, SIGNAL( triggered() ), this, SLOT( onCopyValuesActionTriggered() ) );
+        QObject::connect( copyValuesAction, SIGNAL(triggered()), this, SLOT(onCopyValuesActionTriggered()) );
 
 
         if (isAppKnob) {
             QAction* copyLinkAction = new QAction(tr("Copy Link"), copyMenu);
             copyLinkAction->setData( QVariant(-1) );
             copyMenu->addAction(copyLinkAction);
-            QObject::connect( copyLinkAction, SIGNAL( triggered() ), this, SLOT( onCopyLinksActionTriggered() ) );
+            QObject::connect( copyLinkAction, SIGNAL(triggered()), this, SLOT(onCopyLinksActionTriggered()) );
         }
 
         menu->addAction( copyMenu->menuAction() );
@@ -583,7 +583,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                     }
                     QAction* pasteAction = new QAction(title, menu);
                     pasteAction->setData(-1);
-                    QObject::connect( pasteAction, SIGNAL( triggered() ), this, SLOT( onPasteActionTriggered() ) );
+                    QObject::connect( pasteAction, SIGNAL(triggered()), this, SLOT(onPasteActionTriggered()) );
                     menu->addAction(pasteAction);
                     if (!isEnabled) {
                         pasteAction->setEnabled(false);
@@ -593,7 +593,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
                 if ( ( (dimension != -1) || (knob->getDimension() == 1) ) && !dimensionIsSlaved ) {
                     QAction* pasteAction = new QAction(titlebase, menu);
                     pasteAction->setData(dimension != -1 ? dimension : 0);
-                    QObject::connect( pasteAction, SIGNAL( triggered() ), this, SLOT( onPasteActionTriggered() ) );
+                    QObject::connect( pasteAction, SIGNAL(triggered()), this, SLOT(onPasteActionTriggered()) );
                     menu->addAction(pasteAction);
                     if (!isEnabled) {
                         pasteAction->setEnabled(false);
@@ -606,7 +606,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     if ( (knob->getDimension() > 1) && !hasDimensionSlaved ) {
         QAction* resetDefaultAction = new QAction(tr("Reset to default") + QLatin1Char(' ') + tr("(all dimensions)"), _imp->copyRightClickMenu);
         resetDefaultAction->setData( QVariant(-1) );
-        QObject::connect( resetDefaultAction, SIGNAL( triggered() ), this, SLOT( onResetDefaultValuesActionTriggered() ) );
+        QObject::connect( resetDefaultAction, SIGNAL(triggered()), this, SLOT(onResetDefaultValuesActionTriggered()) );
         menu->addAction(resetDefaultAction);
         if (!isEnabled) {
             resetDefaultAction->setEnabled(false);
@@ -615,7 +615,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     if ( ( (dimension != -1) || (knob->getDimension() == 1) ) && !dimensionIsSlaved ) {
         QAction* resetDefaultAction = new QAction(tr("Reset to default"), _imp->copyRightClickMenu);
         resetDefaultAction->setData( QVariant(dimension) );
-        QObject::connect( resetDefaultAction, SIGNAL( triggered() ), this, SLOT( onResetDefaultValuesActionTriggered() ) );
+        QObject::connect( resetDefaultAction, SIGNAL(triggered()), this, SLOT(onResetDefaultValuesActionTriggered()) );
         menu->addAction(resetDefaultAction);
         if (!isEnabled) {
             resetDefaultAction->setEnabled(false);
@@ -640,7 +640,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         QAction* setExprsAction = new QAction( ( hasExpression ? tr("Edit expression") :
                                                  tr("Set expression") ) + QLatin1Char(' ') + tr("(all dimensions)"), menu );
         setExprsAction->setData(-1);
-        QObject::connect( setExprsAction, SIGNAL( triggered() ), this, SLOT( onSetExprActionTriggered() ) );
+        QObject::connect( setExprsAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
         if (!isEnabled) {
             setExprsAction->setEnabled(false);
         }
@@ -648,7 +648,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
         if (hasExpression) {
             QAction* clearExprAction = new QAction(tr("Clear expression") + QLatin1Char(' ') + tr("(all dimensions)"), menu);
-            QObject::connect( clearExprAction, SIGNAL( triggered() ), this, SLOT( onClearExprActionTriggered() ) );
+            QObject::connect( clearExprAction, SIGNAL(triggered()), this, SLOT(onClearExprActionTriggered()) );
             clearExprAction->setData(-1);
             if (!isEnabled) {
                 clearExprAction->setEnabled(false);
@@ -658,7 +658,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     }
     if ( ( (dimension != -1) || (knob->getDimension() == 1) ) && !dimensionIsSlaved && isAppKnob ) {
         QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."), menu);
-        QObject::connect( setExprAction, SIGNAL( triggered() ), this, SLOT( onSetExprActionTriggered() ) );
+        QObject::connect( setExprAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );
         setExprAction->setData(dimension);
         if (!isEnabled) {
             setExprAction->setEnabled(false);
@@ -667,7 +667,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
         if (dimensionHasExpression) {
             QAction* clearExprAction = new QAction(tr("Clear expression"), menu);
-            QObject::connect( clearExprAction, SIGNAL( triggered() ), this, SLOT( onClearExprActionTriggered() ) );
+            QObject::connect( clearExprAction, SIGNAL(triggered()), this, SLOT(onClearExprActionTriggered()) );
             clearExprAction->setData(dimension);
             if (!isEnabled) {
                 clearExprAction->setEnabled(false);
@@ -727,7 +727,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         }
         QAction* unlinkAction = new QAction(actionText, menu);
         unlinkAction->setData( QVariant(dimension) );
-        QObject::connect( unlinkAction, SIGNAL( triggered() ), this, SLOT( onUnlinkActionTriggered() ) );
+        QObject::connect( unlinkAction, SIGNAL(triggered()), this, SLOT(onUnlinkActionTriggered()) );
         menu->addAction(unlinkAction);
     }
     KnobI::ListenerDimsMap listeners;
@@ -736,13 +736,13 @@ KnobGui::createAnimationMenu(QMenu* menu,
         KnobPtr listener = listeners.begin()->first.lock();
         if ( listener && (listener->getAliasMaster() == knob) ) {
             QAction* removeAliasLink = new QAction(tr("Remove alias link"), menu);
-            QObject::connect( removeAliasLink, SIGNAL( triggered() ), this, SLOT( onRemoveAliasLinkActionTriggered() ) );
+            QObject::connect( removeAliasLink, SIGNAL(triggered()), this, SLOT(onRemoveAliasLinkActionTriggered()) );
             menu->addAction(removeAliasLink);
         }
     }
     if ( isCollecGroup && !knob->getAliasMaster() ) {
         QAction* createMasterOnGroup = new QAction(tr("Create alias on group"), menu);
-        QObject::connect( createMasterOnGroup, SIGNAL( triggered() ), this, SLOT( onCreateAliasOnGroupActionTriggered() ) );
+        QObject::connect( createMasterOnGroup, SIGNAL(triggered()), this, SLOT(onCreateAliasOnGroupActionTriggered()) );
         menu->addAction(createMasterOnGroup);
     }
 } // createAnimationMenu

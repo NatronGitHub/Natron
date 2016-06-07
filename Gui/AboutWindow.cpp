@@ -73,7 +73,7 @@ AboutWindow::AboutWindow(QWidget* parent)
     _buttonLayout->addStretch();
 
     _closeButton = new Button(tr("Close"), _buttonContainer);
-    QObject::connect( _closeButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
+    QObject::connect( _closeButton, SIGNAL(clicked()), this, SLOT(accept()) );
     _buttonLayout->addWidget(_closeButton);
 
     _mainLayout->addWidget(_buttonContainer);
@@ -300,8 +300,8 @@ AboutWindow::AboutWindow(QWidget* parent)
         }
     }
 
-    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection, QItemSelection) ), this,
-                      SLOT( onSelectionChanged(QItemSelection, QItemSelection) ) );
+    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this,
+                      SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
     if (readmeIndex) {
         readmeIndex->setSelected(true);
     }

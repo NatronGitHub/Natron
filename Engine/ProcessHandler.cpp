@@ -57,7 +57,7 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
 {
     ///setup the server used to listen the output of the background process
     _ipcServer = new QLocalServer();
-    QObject::connect( _ipcServer, SIGNAL( newConnection() ), this, SLOT( onNewConnectionPending() ) );
+    QObject::connect( _ipcServer, SIGNAL(newConnection()), this, SLOT(onNewConnectionPending()) );
     QString tmpFileName;
 #if defined(Q_OS_WIN)
     tmpFileName += QString::fromUtf8("//./pipe");
@@ -94,10 +94,10 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
     _processArgs << projectPath;
 
     ///connect the useful slots of the process
-    QObject::connect( _process, SIGNAL( readyReadStandardOutput() ), this, SLOT( onStandardOutputBytesWritten() ) );
-    QObject::connect( _process, SIGNAL( readyReadStandardError() ), this, SLOT( onStandardErrorBytesWritten() ) );
-    QObject::connect( _process, SIGNAL( error(QProcess::ProcessError) ), this, SLOT( onProcessError(QProcess::ProcessError) ) );
-    QObject::connect( _process, SIGNAL( finished(int, QProcess::ExitStatus) ), this, SLOT( onProcessEnd(int, QProcess::ExitStatus) ) );
+    QObject::connect( _process, SIGNAL(readyReadStandardOutput()), this, SLOT(onStandardOutputBytesWritten()) );
+    QObject::connect( _process, SIGNAL(readyReadStandardError()), this, SLOT(onStandardErrorBytesWritten()) );
+    QObject::connect( _process, SIGNAL(error(QProcess::ProcessError)), this, SLOT(onProcessError(QProcess::ProcessError)) );
+    QObject::connect( _process, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(onProcessEnd(int,QProcess::ExitStatus)) );
 
 
     ///start the process
@@ -146,7 +146,7 @@ ProcessHandler::onNewConnectionPending()
 
     _bgProcessOutputSocket = _ipcServer->nextPendingConnection();
 
-    QObject::connect( _bgProcessOutputSocket, SIGNAL( readyRead() ), this, SLOT( onDataWrittenToSocket() ) );
+    QObject::connect( _bgProcessOutputSocket, SIGNAL(readyRead()), this, SLOT(onDataWrittenToSocket()) );
 }
 
 void
@@ -182,7 +182,7 @@ ProcessHandler::onDataWrittenToSocket()
         ///the bg process wants us to create the pipe for its input
         if (!_bgProcessInputSocket) {
             _bgProcessInputSocket = new QLocalSocket();
-            QObject::connect( _bgProcessInputSocket, SIGNAL( connected() ), this, SLOT( onInputPipeConnectionMade() ) );
+            QObject::connect( _bgProcessInputSocket, SIGNAL(connected()), this, SLOT(onInputPipeConnectionMade()) );
             _bgProcessInputSocket->connectToServer(str, QLocalSocket::ReadWrite);
         }
     } else if ( str.startsWith( QString::fromUtf8(kRenderingStartedShort) ) ) {
@@ -316,7 +316,7 @@ ProcessInputChannel::onNewConnectionPending()
         return;
     }
     _backgroundInputPipe = _backgroundIPCServer->nextPendingConnection();
-    QObject::connect( _backgroundInputPipe, SIGNAL( readyRead() ), this, SLOT( onInputChannelMessageReceived() ) );
+    QObject::connect( _backgroundInputPipe, SIGNAL(readyRead()), this, SLOT(onInputChannelMessageReceived()) );
 }
 
 bool
@@ -366,12 +366,12 @@ void
 ProcessInputChannel::initialize()
 {
     _backgroundOutputPipe = new QLocalSocket();
-    QObject::connect( _backgroundOutputPipe, SIGNAL( connected() ), this, SLOT( onOutputPipeConnectionMade() ) );
+    QObject::connect( _backgroundOutputPipe, SIGNAL(connected()), this, SLOT(onOutputPipeConnectionMade()) );
     _backgroundOutputPipe->connectToServer(_mainProcessServerName, QLocalSocket::ReadWrite);
     std::cout << "Attempting connection to " << _mainProcessServerName.toStdString() << std::endl;
 
     _backgroundIPCServer = new QLocalServer();
-    QObject::connect( _backgroundIPCServer, SIGNAL( newConnection() ), this, SLOT( onNewConnectionPending() ) );
+    QObject::connect( _backgroundIPCServer, SIGNAL(newConnection()), this, SLOT(onNewConnectionPending()) );
     QString tmpFileName;
 #if defined(Q_OS_WIN)
     tmpFileName += QString::fromUtf8("//./pipe");

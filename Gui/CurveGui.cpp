@@ -595,11 +595,11 @@ KnobCurveGui::KnobCurveGui(CurveWidget *curveWidget,
     }
 
     if (knob) {
-        QObject::connect( knob.get(), SIGNAL( keyFrameSet() ), this, SLOT( onKnobInternalCurveChanged() ) );
-        QObject::connect( knob.get(), SIGNAL( keyFrameRemoved() ), this, SLOT( onKnobInternalCurveChanged() ) );
-        QObject::connect( knob.get(), SIGNAL( keyInterpolationChanged() ), this, SLOT( onKnobInterpolationChanged() ) );
-        QObject::connect( knob.get(), SIGNAL( keyInterpolationChanged() ), this, SLOT( onKnobInterpolationChanged() ) );
-        QObject::connect( knob.get(), SIGNAL( refreshCurveEditor() ), this, SLOT( onKnobInternalCurveChanged() ) );
+        QObject::connect( knob.get(), SIGNAL(keyFrameSet()), this, SLOT(onKnobInternalCurveChanged()) );
+        QObject::connect( knob.get(), SIGNAL(keyFrameRemoved()), this, SLOT(onKnobInternalCurveChanged()) );
+        QObject::connect( knob.get(), SIGNAL(keyInterpolationChanged()), this, SLOT(onKnobInterpolationChanged()) );
+        QObject::connect( knob.get(), SIGNAL(keyInterpolationChanged()), this, SLOT(onKnobInterpolationChanged()) );
+        QObject::connect( knob.get(), SIGNAL(refreshCurveEditor()), this, SLOT(onKnobInternalCurveChanged()) );
     }
 }
 

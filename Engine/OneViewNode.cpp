@@ -49,7 +49,7 @@ OneViewNode::OneViewNode(NodePtr n)
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (n) {
         boost::shared_ptr<Project> project = n->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL( projectViewsChanged() ), this, SLOT( onProjectViewsChanged() ) );
+        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
     }
 }
 

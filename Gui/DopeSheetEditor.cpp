@@ -107,40 +107,40 @@ DopeSheetEditor::DopeSheetEditor(Gui *gui,
     _imp->mainLayout->addWidget(_imp->splitter);
 
     // Main model -> HierarchyView connections
-    connect( _imp->model, SIGNAL( nodeAdded(DSNode*) ),
-             _imp->hierarchyView, SLOT( onNodeAdded(DSNode*) ) );
+    connect( _imp->model, SIGNAL(nodeAdded(DSNode*)),
+             _imp->hierarchyView, SLOT(onNodeAdded(DSNode*)) );
 
-    connect( _imp->model, SIGNAL( nodeAboutToBeRemoved(DSNode*) ),
-             _imp->hierarchyView, SLOT( onNodeAboutToBeRemoved(DSNode*) ) );
+    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
+             _imp->hierarchyView, SLOT(onNodeAboutToBeRemoved(DSNode*)) );
 
-    connect( _imp->model, SIGNAL( keyframeSetOrRemoved(DSKnob*) ),
-             _imp->hierarchyView, SLOT( onKeyframeSetOrRemoved(DSKnob*) ) );
+    connect( _imp->model, SIGNAL(keyframeSetOrRemoved(DSKnob*)),
+             _imp->hierarchyView, SLOT(onKeyframeSetOrRemoved(DSKnob*)) );
 
-    connect( _imp->model->getSelectionModel(), SIGNAL( keyframeSelectionChangedFromModel(bool) ),
-             _imp->hierarchyView, SLOT( onKeyframeSelectionChanged(bool) ) );
+    connect( _imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
+             _imp->hierarchyView, SLOT(onKeyframeSelectionChanged(bool)) );
 
     // Main model -> DopeSheetView connections
-    connect( _imp->model, SIGNAL( nodeAdded(DSNode*) ),
-             _imp->dopeSheetView, SLOT( onNodeAdded(DSNode*) ) );
+    connect( _imp->model, SIGNAL(nodeAdded(DSNode*)),
+             _imp->dopeSheetView, SLOT(onNodeAdded(DSNode*)) );
 
-    connect( _imp->model, SIGNAL( nodeAboutToBeRemoved(DSNode*) ),
-             _imp->dopeSheetView, SLOT( onNodeAboutToBeRemoved(DSNode*) ) );
+    connect( _imp->model, SIGNAL(nodeAboutToBeRemoved(DSNode*)),
+             _imp->dopeSheetView, SLOT(onNodeAboutToBeRemoved(DSNode*)) );
 
-    connect( _imp->model, SIGNAL( modelChanged() ),
-             _imp->dopeSheetView, SLOT( redraw() ) );
+    connect( _imp->model, SIGNAL(modelChanged()),
+             _imp->dopeSheetView, SLOT(redraw()) );
 
-    connect( _imp->model->getSelectionModel(), SIGNAL( keyframeSelectionChangedFromModel(bool) ),
-             _imp->dopeSheetView, SLOT( onKeyframeSelectionChanged() ) );
+    connect( _imp->model->getSelectionModel(), SIGNAL(keyframeSelectionChangedFromModel(bool)),
+             _imp->dopeSheetView, SLOT(onKeyframeSelectionChanged()) );
 
     // HierarchyView -> DopeSheetView connections
-    connect( _imp->hierarchyView->verticalScrollBar(), SIGNAL( valueChanged(int) ),
-             _imp->dopeSheetView, SLOT( onHierarchyViewScrollbarMoved(int) ) );
+    connect( _imp->hierarchyView->verticalScrollBar(), SIGNAL(valueChanged(int)),
+             _imp->dopeSheetView, SLOT(onHierarchyViewScrollbarMoved(int)) );
 
-    connect( _imp->hierarchyView, SIGNAL( itemExpanded(QTreeWidgetItem*) ),
-             _imp->dopeSheetView, SLOT( onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*) ) );
+    connect( _imp->hierarchyView, SIGNAL(itemExpanded(QTreeWidgetItem*)),
+             _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 
-    connect( _imp->hierarchyView, SIGNAL( itemCollapsed(QTreeWidgetItem*) ),
-             _imp->dopeSheetView, SLOT( onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*) ) );
+    connect( _imp->hierarchyView, SIGNAL(itemCollapsed(QTreeWidgetItem*)),
+             _imp->dopeSheetView, SLOT(onHierarchyViewItemExpandedOrCollapsed(QTreeWidgetItem*)) );
 }
 
 DopeSheetEditor::~DopeSheetEditor()

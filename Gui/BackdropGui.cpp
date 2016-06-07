@@ -110,7 +110,7 @@ BackdropGui::createGui()
     Backdrop* isBd = dynamic_cast<Backdrop*>( effect.get() );
     assert(isBd);
 
-    QObject::connect( isBd, SIGNAL( labelChanged(QString) ), this, SLOT( onLabelChanged(QString) ) );
+    QObject::connect( isBd, SIGNAL(labelChanged(QString)), this, SLOT(onLabelChanged(QString)) );
 
     refreshTextLabelFromKnob();
 }

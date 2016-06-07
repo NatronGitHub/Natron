@@ -157,8 +157,8 @@ MessageBox::init(const QString & title,
         defaultB->setFocus();
     }
     _imp->buttons->setCenterButtons( style()->styleHint(QStyle::SH_MessageBox_CenterButtons, 0, this) );
-    QObject::connect( _imp->buttons, SIGNAL( clicked(QAbstractButton*) ),
-                      this, SLOT( onButtonClicked(QAbstractButton*) ) );
+    QObject::connect( _imp->buttons, SIGNAL(clicked(QAbstractButton*)),
+                      this, SLOT(onButtonClicked(QAbstractButton*)) );
     _imp->vLayout->addWidget(_imp->buttons);
 
     _imp->mainLayout->addWidget(_imp->infoLabel);

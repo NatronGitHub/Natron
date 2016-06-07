@@ -458,7 +458,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     int row = pluginsFrameLayout->rowCount();
     pluginsFrameLayout->addWidget(_imp->pluginFilterLabel, row, 0, 1, 1);
     pluginsFrameLayout->addWidget(_imp->pluginFilterEdit, row, 1, 1, 1);
-    connect( _imp->pluginFilterEdit, SIGNAL( textChanged(QString) ), this, SLOT( filterPlugins(QString) ) );
+    connect( _imp->pluginFilterEdit, SIGNAL(textChanged(QString)), this, SLOT(filterPlugins(QString)) );
 
     pluginsFrameLayout->addWidget(_imp->pluginsView, pluginsFrameLayout->rowCount(), 0, 1, 2);
 
@@ -518,7 +518,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
                 checkbox->setChecked( plugin->isActivated() );
-                QObject::connect( checkbox, SIGNAL( clicked(bool) ), this, SLOT( onItemEnabledCheckBoxChecked(bool) ) );
+                QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onItemEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_ENABLED, checkbox);
                 node.enabledCheckbox = checkbox;
             }
@@ -531,7 +531,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
                 checkbox->setChecked( plugin->isActivated() );
-                QObject::connect( checkbox, SIGNAL( clicked(bool) ), this, SLOT( onRSEnabledCheckBoxChecked(bool) ) );
+                QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onRSEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_RS_ENABLED, checkbox);
                 node.rsCheckbox = checkbox;
             }
@@ -545,7 +545,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
                 checkbox->setChecked( plugin->isActivated() );
-                QObject::connect( checkbox, SIGNAL( clicked(bool) ), this, SLOT( onMTEnabledCheckBoxChecked(bool) ) );
+                QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onMTEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_MT_ENABLED, checkbox);
                 node.mtCheckbox = checkbox;
             }
@@ -603,7 +603,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     }
 
     _imp->shortcutsTree->resizeColumnToContents(0);
-    QObject::connect( _imp->shortcutsTree, SIGNAL( itemSelectionChanged() ), this, SLOT( onShortcutsSelectionChanged() ) );
+    QObject::connect( _imp->shortcutsTree, SIGNAL(itemSelectionChanged()), this, SLOT(onShortcutsSelectionChanged()) );
 
     _imp->shortcutsLayout->addWidget(_imp->shortcutsTree);
 
@@ -641,14 +641,14 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->validateShortcutButton = new Button(tr("Validate"), _imp->shortcutGroup);
     _imp->validateShortcutButton->setToolTip( GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal) );
     _imp->shortcutGroupLayout->addWidget(_imp->validateShortcutButton);
-    QObject::connect( _imp->validateShortcutButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateShortcutButtonClicked() ) );
+    QObject::connect( _imp->validateShortcutButton, SIGNAL(clicked(bool)), this, SLOT(onValidateShortcutButtonClicked()) );
 
     _imp->clearShortcutButton = new Button(tr("Clear"), _imp->shortcutGroup);
-    QObject::connect( _imp->clearShortcutButton, SIGNAL( clicked(bool) ), this, SLOT( onClearShortcutButtonClicked() ) );
+    QObject::connect( _imp->clearShortcutButton, SIGNAL(clicked(bool)), this, SLOT(onClearShortcutButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->clearShortcutButton);
 
     _imp->resetShortcutButton = new Button(tr("Reset"), _imp->shortcutGroup);
-    QObject::connect( _imp->resetShortcutButton, SIGNAL( clicked(bool) ), this, SLOT( onResetShortcutButtonClicked() ) );
+    QObject::connect( _imp->resetShortcutButton, SIGNAL(clicked(bool)), this, SLOT(onResetShortcutButtonClicked()) );
     _imp->shortcutGroupLayout->addWidget(_imp->resetShortcutButton);
 
     _imp->shortcutButtonsContainer = new QWidget(this);
@@ -657,7 +657,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutsLayout->addWidget(_imp->shortcutButtonsContainer);
 
     _imp->restoreShortcutsDefaultsButton = new Button(tr("Restore Default Shortcuts"), _imp->restoreShortcutsDefaultsButton);
-    QObject::connect( _imp->restoreShortcutsDefaultsButton, SIGNAL( clicked(bool) ), this, SLOT( onRestoreDefaultShortcutsButtonClicked() ) );
+    QObject::connect( _imp->restoreShortcutsDefaultsButton, SIGNAL(clicked(bool)), this, SLOT(onRestoreDefaultShortcutsButtonClicked()) );
     _imp->shortcutButtonsLayout->addWidget(_imp->restoreShortcutsDefaultsButton);
     _imp->shortcutButtonsLayout->addStretch();
 
@@ -695,7 +695,7 @@ PreferencesPanel::createGui()
     _imp->tree->setColumnCount(1);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->tree->header()->close();
-    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onItemSelectionChanged() ) );
+    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()) );
 
     initializeKnobs();
 
@@ -740,11 +740,11 @@ PreferencesPanel::createGui()
     _imp->mainLayout->addWidget(_imp->splitter);
     _imp->mainLayout->addWidget(_imp->buttonBox);
 
-    QObject::connect( _imp->restoreDefaultsB, SIGNAL( clicked() ), this, SLOT( restoreDefaults() ) );
-    QObject::connect( _imp->prefsHelp, SIGNAL( clicked() ), this, SLOT( openHelp() ) );
-    QObject::connect( _imp->buttonBox, SIGNAL( rejected() ), this, SLOT( cancelChanges() ) );
-    QObject::connect( _imp->buttonBox, SIGNAL( accepted() ), this, SLOT( saveChangesAndClose() ) );
-    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL( settingChanged(KnobI*) ), this, SLOT( onSettingChanged(KnobI*) ) );
+    QObject::connect( _imp->restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
+    QObject::connect( _imp->prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
+    QObject::connect( _imp->buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
+    QObject::connect( _imp->buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
+    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobI*)), this, SLOT(onSettingChanged(KnobI*)) );
 
 
     // Create plug-ins view

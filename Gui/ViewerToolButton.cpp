@@ -55,7 +55,7 @@ ViewerToolButton::mousePressEvent(QMouseEvent* /*e*/)
 {
     setFocus();
     wasMouseReleased = false;
-    QTimer::singleShot( 300, this, SLOT( handleLongPress() ) );
+    QTimer::singleShot( 300, this, SLOT(handleLongPress()) );
 }
 
 void

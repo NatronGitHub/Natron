@@ -37,13 +37,13 @@
 #include <string>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
 
-CLANG_DIAG_OFF(deprecated - register) //'register' storage class specifier is deprecated
+CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QtCore/QDir>
 #include <QtCore/QMutex>
 #include <QtCore/QThreadPool>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
-CLANG_DIAG_ON(deprecated - register)
+CLANG_DIAG_ON(deprecated-register)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 #include <QtCore/QThread>
 #include <QtCore/QThreadStorage>
@@ -70,11 +70,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //ofx host support
 #include <ofxhPluginAPICache.h>
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
-CLANG_DIAG_OFF(unknown - pragmas)
-CLANG_DIAG_OFF(tautological - undefined - compare) // appeared in clang 3.5
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
-CLANG_DIAG_ON(tautological - undefined - compare)
-CLANG_DIAG_ON(unknown - pragmas)
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 #include <ofxhParam.h>

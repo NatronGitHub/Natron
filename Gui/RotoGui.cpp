@@ -435,7 +435,7 @@ RotoToolButton::mousePressEvent(QMouseEvent* /*e*/)
 {
     setFocus();
     wasMouseReleased = false;
-    QTimer::singleShot( 300, this, SLOT( handleLongPress() ) );
+    QTimer::singleShot( 300, this, SLOT(handleLongPress()) );
 }
 
 void
@@ -528,7 +528,7 @@ RotoGui::createToolAction(QToolButton* toolGroup,
         data.setY(eRotoRoleMergeBrush);
     }
     action->setData( QVariant(data) );
-    QObject::connect( action, SIGNAL( triggered() ), this, SLOT( onToolActionTriggered() ) );
+    QObject::connect( action, SIGNAL(triggered()), this, SLOT(onToolActionTriggered()) );
     toolGroup->addAction(action);
 
     return action;
@@ -544,8 +544,8 @@ RotoGui::RotoGui(NodeGui* node,
 
     bool hasShapes = _imp->context->getNCurves();
     bool effectIsPaint = _imp->context->isRotoPaint();
-    QObject::connect( parent->getViewer(), SIGNAL( selectionRectangleChanged(bool) ), this, SLOT( updateSelectionFromSelectionRectangle(bool) ) );
-    QObject::connect( parent->getViewer(), SIGNAL( selectionCleared() ), this, SLOT( onSelectionCleared() ) );
+    QObject::connect( parent->getViewer(), SIGNAL(selectionRectangleChanged(bool)), this, SLOT(updateSelectionFromSelectionRectangle(bool)) );
+    QObject::connect( parent->getViewer(), SIGNAL(selectionCleared()), this, SLOT(onSelectionCleared()) );
     QPixmap pixBezier, pixEllipse, pixRectangle, pixAddPts, pixRemovePts, pixCuspPts, pixSmoothPts, pixOpenCloseCurve, pixRemoveFeather;
     QPixmap pixSelectAll, pixSelectPoints, pixSelectFeather, pixSelectCurves, pixAutoKeyingEnabled, pixAutoKeyingDisabled;
     QPixmap pixStickySelEnabled, pixStickySelDisabled, pixFeatherLinkEnabled, pixFeatherLinkDisabled, pixAddKey, pixRemoveKey;
@@ -613,7 +613,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->autoKeyingEnabled->setChecked( _imp->context->isAutoKeyingEnabled() );
     _imp->autoKeyingEnabled->setDown( _imp->context->isAutoKeyingEnabled() );
     _imp->autoKeyingEnabled->setToolTip( GuiUtils::convertFromPlainText(tr("Auto-keying: When activated any movement to a control point will set a keyframe at the current time."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->autoKeyingEnabled, SIGNAL( clicked(bool) ), this, SLOT( onAutoKeyingButtonClicked(bool) ) );
+    QObject::connect( _imp->autoKeyingEnabled, SIGNAL(clicked(bool)), this, SLOT(onAutoKeyingButtonClicked(bool)) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->autoKeyingEnabled);
 
     QIcon featherLinkIc;
@@ -627,7 +627,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->featherLinkEnabled->setDown( _imp->context->isFeatherLinkEnabled() );
     _imp->featherLinkEnabled->setToolTip( GuiUtils::convertFromPlainText(tr("Feather-link: When activated the feather points will follow the same"
                                                                             " movement as their counter-part does."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->featherLinkEnabled, SIGNAL( clicked(bool) ), this, SLOT( onFeatherLinkButtonClicked(bool) ) );
+    QObject::connect( _imp->featherLinkEnabled, SIGNAL(clicked(bool)), this, SLOT(onFeatherLinkButtonClicked(bool)) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->featherLinkEnabled);
 
     QIcon enableFeatherIC;
@@ -640,7 +640,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->displayFeatherEnabled->setChecked(true);
     _imp->displayFeatherEnabled->setDown(true);
     _imp->displayFeatherEnabled->setToolTip( GuiUtils::convertFromPlainText(tr("When checked, the feather curve applied to the shape(s) will be visible and editable."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->displayFeatherEnabled, SIGNAL( clicked(bool) ), this, SLOT( onDisplayFeatherButtonClicked(bool) ) );
+    QObject::connect( _imp->displayFeatherEnabled, SIGNAL(clicked(bool)), this, SLOT(onDisplayFeatherButtonClicked(bool)) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->displayFeatherEnabled);
 
     QIcon stickSelIc;
@@ -654,7 +654,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->stickySelectionEnabled->setDown(false);
     _imp->stickySelectionEnabled->setToolTip( GuiUtils::convertFromPlainText(tr("Sticky-selection: When activated, "
                                                                                 " clicking outside of any shape will not clear the current selection."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->stickySelectionEnabled, SIGNAL( clicked(bool) ), this, SLOT( onStickySelectionButtonClicked(bool) ) );
+    QObject::connect( _imp->stickySelectionEnabled, SIGNAL(clicked(bool)), this, SLOT(onStickySelectionButtonClicked(bool)) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->stickySelectionEnabled);
 
     QIcon bboxClickIc;
@@ -669,7 +669,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->bboxClickAnywhere->setToolTip( GuiUtils::convertFromPlainText(tr("Easy bounding box manipulation: When activated, "
                                                                            " clicking inside of the bounding box of selected points will move the points."
                                                                            "When deactivated, only clicking on the cross will move the points."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->bboxClickAnywhere, SIGNAL( clicked(bool) ), this, SLOT( onBboxClickButtonClicked(bool) ) );
+    QObject::connect( _imp->bboxClickAnywhere, SIGNAL(clicked(bool)), this, SLOT(onBboxClickButtonClicked(bool)) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->bboxClickAnywhere);
 
 
@@ -685,20 +685,20 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->rippleEditEnabled->setToolTip( GuiUtils::convertFromPlainText(tr("Ripple-edit: When activated, moving a control point"
                                                                            " will move it by the same amount for all the keyframes "
                                                                            "it has."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->rippleEditEnabled, SIGNAL( clicked(bool) ), this, SLOT( onRippleEditButtonClicked(bool) ) );
+    QObject::connect( _imp->rippleEditEnabled, SIGNAL(clicked(bool)), this, SLOT(onRippleEditButtonClicked(bool)) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->rippleEditEnabled);
 
     _imp->addKeyframeButton = new Button(QIcon(pixAddKey), QString(), _imp->selectionButtonsBar);
     _imp->addKeyframeButton->setFixedSize(medButtonSize);
     _imp->addKeyframeButton->setIconSize(medButtonIconSize);
-    QObject::connect( _imp->addKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyFrameClicked() ) );
+    QObject::connect( _imp->addKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onAddKeyFrameClicked()) );
     _imp->addKeyframeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Set a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->addKeyframeButton);
 
     _imp->removeKeyframeButton = new Button(QIcon(pixRemoveKey), QString(), _imp->selectionButtonsBar);
     _imp->removeKeyframeButton->setFixedSize(medButtonSize);
     _imp->removeKeyframeButton->setIconSize(medButtonIconSize);
-    QObject::connect( _imp->removeKeyframeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyFrameClicked() ) );
+    QObject::connect( _imp->removeKeyframeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyFrameClicked()) );
     _imp->removeKeyframeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Remove a keyframe at the current time for the selected shape(s), if any."), Qt::WhiteSpaceNormal) );
     _imp->selectionButtonsBarLayout->addWidget(_imp->removeKeyframeButton);
     _imp->selectionButtonsBarLayout->addStretch();
@@ -738,7 +738,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->colorWheelButton->setToolTip( GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal) );
     _imp->colorWheelButton->setFixedSize(medButtonSize);
     _imp->colorWheelButton->setIconSize(medButtonIconSize);
-    QObject::connect( _imp->colorWheelButton, SIGNAL( clicked(bool) ), this, SLOT( onColorWheelButtonClicked() ) );
+    QObject::connect( _imp->colorWheelButton, SIGNAL(clicked(bool)), this, SLOT(onColorWheelButtonClicked()) );
     _imp->brushButtonsBarLayout->addWidget(_imp->colorWheelButton);
 
     _imp->brushButtonsBarLayout->addSpacing(5);
@@ -754,7 +754,7 @@ RotoGui::RotoGui(NodeGui* node,
     }
     _imp->compositingOperatorButton->setCurrentIndex_no_emit( (int)eMergeCopy );
     _imp->compositingOperatorButton->setToolTip( GuiUtils::convertFromPlainText(tr("The blending mode of the next brush stroke."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->compositingOperatorButton, SIGNAL( currentIndexChanged(int) ), this, SLOT( onBreakMultiStrokeTriggered() ) );
+    QObject::connect( _imp->compositingOperatorButton, SIGNAL(currentIndexChanged(int)), this, SLOT(onBreakMultiStrokeTriggered()) );
     _imp->brushButtonsBarLayout->addWidget(_imp->compositingOperatorButton);
 
 
@@ -767,7 +767,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->opacityLabel);
 
     _imp->opacitySpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeDouble);
-    QObject::connect( _imp->opacitySpinbox, SIGNAL( valueChanged(double) ), this, SLOT( onBreakMultiStrokeTriggered() ) );
+    QObject::connect( _imp->opacitySpinbox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()) );
     _imp->opacitySpinbox->setToolTip(opacitytt);
     _imp->opacitySpinbox->setMinimum(0);
     _imp->opacitySpinbox->setMaximum(1);
@@ -787,7 +787,7 @@ RotoGui::RotoGui(NodeGui* node,
                                                            "brush stroke."), Qt::WhiteSpaceNormal);
 
     _imp->pressureOpacityButton = new Button(pressureIc, QString(), _imp->brushButtonsBar);
-    QObject::connect( _imp->pressureOpacityButton, SIGNAL( clicked(bool) ), this, SLOT( onPressureOpacityClicked(bool) ) );
+    QObject::connect( _imp->pressureOpacityButton, SIGNAL(clicked(bool)), this, SLOT(onPressureOpacityClicked(bool)) );
     _imp->pressureOpacityButton->setToolTip(pressOpatt);
     _imp->pressureOpacityButton->setFixedSize(medButtonSize);
     _imp->pressureOpacityButton->setIconSize(medButtonIconSize);
@@ -805,7 +805,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->sizeLabel);
 
     _imp->sizeSpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeDouble);
-    QObject::connect( _imp->sizeSpinbox, SIGNAL( valueChanged(double) ), this, SLOT( onBreakMultiStrokeTriggered() ) );
+    QObject::connect( _imp->sizeSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()) );
     _imp->sizeSpinbox->setMinimum(0);
     _imp->sizeSpinbox->setMaximum(1000);
     _imp->sizeSpinbox->setValue(25.);
@@ -815,7 +815,7 @@ RotoGui::RotoGui(NodeGui* node,
     QString pressSizett = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the size of the next "
                                                             "brush stroke."), Qt::WhiteSpaceNormal);
     _imp->pressureSizeButton = new Button(pressureIc, QString(), _imp->brushButtonsBar);
-    QObject::connect( _imp->pressureSizeButton, SIGNAL( clicked(bool) ), this, SLOT( onPressureSizeClicked(bool) ) );
+    QObject::connect( _imp->pressureSizeButton, SIGNAL(clicked(bool)), this, SLOT(onPressureSizeClicked(bool)) );
     _imp->pressureSizeButton->setToolTip(pressSizett);
     _imp->pressureSizeButton->setFixedSize(medButtonSize);
     _imp->pressureSizeButton->setIconSize(medButtonIconSize);
@@ -832,7 +832,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->hardnessLabel);
 
     _imp->hardnessSpinBox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeDouble);
-    QObject::connect( _imp->hardnessSpinBox, SIGNAL( valueChanged(double) ), this, SLOT( onBreakMultiStrokeTriggered() ) );
+    QObject::connect( _imp->hardnessSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()) );
     _imp->hardnessSpinBox->setMinimum(0);
     _imp->hardnessSpinBox->setMaximum(1);
     _imp->hardnessSpinBox->setValue(0.2);
@@ -842,7 +842,7 @@ RotoGui::RotoGui(NodeGui* node,
     QString pressHardnesstt = GuiUtils::convertFromPlainText(tr("If checked, the pressure of the pen will dynamically alter the hardness of the next "
                                                                 "brush stroke."), Qt::WhiteSpaceNormal);
     _imp->pressureHardnessButton = new Button(pressureIc, QString(), _imp->brushButtonsBar);
-    QObject::connect( _imp->pressureHardnessButton, SIGNAL( clicked(bool) ), this, SLOT( onPressureHardnessClicked(bool) ) );
+    QObject::connect( _imp->pressureHardnessButton, SIGNAL(clicked(bool)), this, SLOT(onPressureHardnessClicked(bool)) );
     _imp->pressureHardnessButton->setToolTip(pressHardnesstt);
     _imp->pressureHardnessButton->setFixedSize(medButtonSize);
     _imp->pressureHardnessButton->setIconSize(medButtonIconSize);
@@ -864,7 +864,7 @@ RotoGui::RotoGui(NodeGui* node,
     buildupIc.addPixmap(buildupOnPix, QIcon::Normal, QIcon::On);
     buildupIc.addPixmap(buildupOffPix, QIcon::Normal, QIcon::Off);
     _imp->buildUpButton = new Button(buildupIc, QString(), _imp->brushButtonsBar);
-    QObject::connect( _imp->buildUpButton, SIGNAL( clicked(bool) ), this, SLOT( onBuildupClicked(bool) ) );
+    QObject::connect( _imp->buildUpButton, SIGNAL(clicked(bool)), this, SLOT(onBuildupClicked(bool)) );
     _imp->buildUpButton->setToolTip(builduptt);
     _imp->buildUpButton->setFixedSize(medButtonSize);
     _imp->buildUpButton->setIconSize(medButtonIconSize);
@@ -882,7 +882,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->effectLabel);
 
     _imp->effectSpinBox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeDouble);
-    QObject::connect( _imp->effectSpinBox, SIGNAL( valueChanged(double) ), this, SLOT( onBreakMultiStrokeTriggered() ) );
+    QObject::connect( _imp->effectSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()) );
     _imp->effectSpinBox->setMinimum(0);
     _imp->effectSpinBox->setMaximum(100);
     _imp->effectSpinBox->setValue(15);
@@ -903,7 +903,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->brushButtonsBarLayout->addWidget(_imp->timeOffsetLabel);
 
     _imp->timeOffsetSpinbox = new SpinBox(_imp->brushButtonsBar, SpinBox::eSpinBoxTypeInt);
-    QObject::connect( _imp->timeOffsetSpinbox, SIGNAL( valueChanged(double) ), this, SLOT( onBreakMultiStrokeTriggered() ) );
+    QObject::connect( _imp->timeOffsetSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onBreakMultiStrokeTriggered()) );
     _imp->timeOffsetSpinbox->setValue(0);
     _imp->timeOffsetSpinbox->setVisible(false);
     _imp->timeOffsetSpinbox->setToolTip(timeOfftt);
@@ -939,7 +939,7 @@ RotoGui::RotoGui(NodeGui* node,
 
     _imp->resetCloneOffset = new Button(QIcon(), tr("Reset Transform"), _imp->brushButtonsBar);
     _imp->resetCloneOffset->setToolTip( GuiUtils::convertFromPlainText(tr("Reset the transform applied before cloning to identity."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->resetCloneOffset, SIGNAL( clicked(bool) ), this, SLOT( onResetCloneTransformClicked() ) );
+    QObject::connect( _imp->resetCloneOffset, SIGNAL(clicked(bool)), this, SLOT(onResetCloneTransformClicked()) );
     _imp->brushButtonsBarLayout->addWidget(_imp->resetCloneOffset);
     _imp->resetCloneOffset->setVisible(false);
 
@@ -954,7 +954,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->selectTool->setFixedSize(rotoToolSize);
     _imp->selectTool->setIconSize(rotoToolSize);
     _imp->selectTool->setPopupMode(QToolButton::InstantPopup);
-    QObject::connect( _imp->selectTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+    QObject::connect( _imp->selectTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
     QKeySequence selectShortCut(Qt::Key_Q);
     _imp->selectAllAction = createToolAction(_imp->selectTool, QIcon(pixSelectAll), tr("Select all"),
                                              tr("everything can be selected and moved."),
@@ -979,7 +979,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->pointsEditionTool->setFixedSize(rotoToolSize);
     _imp->pointsEditionTool->setIconSize(rotoToolSize);
     _imp->pointsEditionTool->setPopupMode(QToolButton::InstantPopup);
-    QObject::connect( _imp->pointsEditionTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+    QObject::connect( _imp->pointsEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
     _imp->pointsEditionTool->setText( tr("Add points") );
     QKeySequence pointsEditionShortcut(Qt::Key_D);
     QAction* addPtsAct = createToolAction(_imp->pointsEditionTool, QIcon(pixAddPts), tr("Add points"), tr("add a new control point to the shape")
@@ -998,7 +998,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->bezierEditionTool->setFixedSize(rotoToolSize);
     _imp->bezierEditionTool->setIconSize(rotoToolSize);
     _imp->bezierEditionTool->setPopupMode(QToolButton::InstantPopup);
-    QObject::connect( _imp->bezierEditionTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+    QObject::connect( _imp->bezierEditionTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
     _imp->bezierEditionTool->setText( QString::fromUtf8("Bezier") );
     _imp->bezierEditionTool->setDown(!hasShapes && !effectIsPaint);
 
@@ -1025,7 +1025,7 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->paintBrushTool->setFixedSize(rotoToolSize);
     _imp->paintBrushTool->setIconSize(rotoToolSize);
     _imp->paintBrushTool->setPopupMode(QToolButton::InstantPopup);
-    QObject::connect( _imp->paintBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+    QObject::connect( _imp->paintBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
     _imp->paintBrushTool->setText( QString::fromUtf8("Brush") );
     _imp->paintBrushTool->setDown(!hasShapes && effectIsPaint);
     QKeySequence brushPaintShortcut(Qt::Key_N);
@@ -1043,7 +1043,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->cloneBrushTool->setFixedSize(rotoToolSize);
         _imp->cloneBrushTool->setIconSize(rotoToolSize);
         _imp->cloneBrushTool->setPopupMode(QToolButton::InstantPopup);
-        QObject::connect( _imp->cloneBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+        QObject::connect( _imp->cloneBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
         _imp->cloneBrushTool->setText( QString::fromUtf8("Clone") );
         _imp->cloneBrushTool->setDown(false);
         QKeySequence cloneBrushShortcut(Qt::Key_C);
@@ -1057,7 +1057,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->effectBrushTool->setFixedSize(rotoToolSize);
         _imp->effectBrushTool->setIconSize(rotoToolSize);
         _imp->effectBrushTool->setPopupMode(QToolButton::InstantPopup);
-        QObject::connect( _imp->effectBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+        QObject::connect( _imp->effectBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
         _imp->effectBrushTool->setText( QString::fromUtf8("Blur") );
         _imp->effectBrushTool->setDown(false);
         QKeySequence blurShortcut(Qt::Key_X);
@@ -1072,7 +1072,7 @@ RotoGui::RotoGui(NodeGui* node,
         _imp->mergeBrushTool->setFixedSize(rotoToolSize);
         _imp->mergeBrushTool->setIconSize(rotoToolSize);
         _imp->mergeBrushTool->setPopupMode(QToolButton::InstantPopup);
-        QObject::connect( _imp->mergeBrushTool, SIGNAL( triggered(QAction*) ), this, SLOT( onToolActionTriggered(QAction*) ) );
+        QObject::connect( _imp->mergeBrushTool, SIGNAL(triggered(QAction*)), this, SLOT(onToolActionTriggered(QAction*)) );
         _imp->mergeBrushTool->setText( QString::fromUtf8("Dodge") );
         _imp->mergeBrushTool->setDown(false);
         QKeySequence dodgeBrushShortcut(Qt::Key_E);
@@ -1091,14 +1091,14 @@ RotoGui::RotoGui(NodeGui* node,
     _imp->selectedRole = _imp->selectTool;
     onToolActionTriggered(defaultAction);
 
-    QObject::connect( _imp->node->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime, int) ),
-                      this, SLOT( onCurrentFrameChanged(SequenceTime, int) ) );
-    QObject::connect( _imp->context.get(), SIGNAL( refreshViewerOverlays() ), this, SLOT( onRefreshAsked() ) );
-    QObject::connect( _imp->context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
-    QObject::connect( _imp->context.get(), SIGNAL( itemLockedChanged(int) ), this, SLOT( onCurveLockedChanged(int) ) );
-    QObject::connect( _imp->context.get(), SIGNAL( breakMultiStroke() ), this, SLOT( onBreakMultiStrokeTriggered() ) );
-    QObject::connect ( _imp->viewerTab->getGui()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime, int) ), this,
-                       SLOT( onTimelineTimeChanged() ) );;
+    QObject::connect( _imp->node->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)),
+                      this, SLOT(onCurrentFrameChanged(SequenceTime,int)) );
+    QObject::connect( _imp->context.get(), SIGNAL(refreshViewerOverlays()), this, SLOT(onRefreshAsked()) );
+    QObject::connect( _imp->context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)) );
+    QObject::connect( _imp->context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onCurveLockedChanged(int)) );
+    QObject::connect( _imp->context.get(), SIGNAL(breakMultiStroke()), this, SLOT(onBreakMultiStrokeTriggered()) );
+    QObject::connect ( _imp->viewerTab->getGui()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
+                       SLOT(onTimelineTimeChanged()) );;
     restoreSelectionFromContext();
 }
 
@@ -4888,7 +4888,7 @@ RotoGui::onColorWheelButtonClicked()
     QColor previousColor = _imp->colorPickerLabel->getCurrentColor();
 
     dialog.setCurrentColor(previousColor);
-    QObject::connect( &dialog, SIGNAL( currentColorChanged(QColor) ), this, SLOT( onDialogCurrentColorChanged(QColor) ) );
+    QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onDialogCurrentColorChanged(QColor)) );
     if ( !dialog.exec() ) {
         _imp->colorPickerLabel->setColor(previousColor);
     } else {
@@ -4967,8 +4967,8 @@ LinkToTrackDialog::LinkToTrackDialog(const std::vector< std::pair<std::string, b
     mainLayout->addWidget(_choice);
 
     QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
-    connect( buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
-    connect( buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    connect( buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
     mainLayout->addWidget(buttons);
     setWindowTitle( tr("Link to track") );
 }

@@ -80,8 +80,8 @@ struct AbortableRenderInfoPrivate
         aborted.fetchAndStoreAcquire(0);
 
         abortTimeoutTimer->setSingleShot(true);
-        QObject::connect( abortTimeoutTimer, SIGNAL( timeout() ), p, SLOT( onAbortTimerTimeout() ) );
-        QObject::connect( p, SIGNAL( startTimerInOriginalThread() ), p, SLOT( onStartTimerInOriginalThreadTriggered() ) );
+        QObject::connect( abortTimeoutTimer, SIGNAL(timeout()), p, SLOT(onAbortTimerTimeout()) );
+        QObject::connect( p, SIGNAL(startTimerInOriginalThread()), p, SLOT(onStartTimerInOriginalThreadTriggered()) );
     }
 };
 

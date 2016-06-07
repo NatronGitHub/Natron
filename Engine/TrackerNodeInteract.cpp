@@ -1092,7 +1092,7 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
     selectedMarkerImg.reset();
 
     imageGetterWatcher.reset( new TrackWatcher() );
-    QObject::connect( imageGetterWatcher.get(), SIGNAL( finished() ), this, SLOT( onTrackImageRenderingFinished() ) );
+    QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
 }
 
@@ -1122,7 +1122,7 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
 
     if ( !k.roi.isNull() ) {
         TrackWatcherPtr watcher( new TrackWatcher() );
-        QObject::connect( watcher.get(), SIGNAL( finished() ), this, SLOT( onKeyFrameImageRenderingFinished() ) );
+        QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onKeyFrameImageRenderingFinished()) );
         trackRequestsMap[k] = watcher;
         watcher->setFuture( QtConcurrent::run(track.get(), &TrackMarker::getMarkerImage, time, k.roi) );
     }

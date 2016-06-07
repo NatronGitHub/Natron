@@ -308,9 +308,9 @@ InputScriptTextEdit::InputScriptTextEdit(Gui* gui,
     , _lineNumber( new LineNumberWidget(this) )
     , _gui(gui)
 {
-    QObject::connect( this, SIGNAL( blockCountChanged(int) ), this, SLOT( updateLineNumberAreaWidth(int) ) );
-    QObject::connect( this, SIGNAL( updateRequest(QRect, int) ), this, SLOT( updateLineNumberArea(QRect, int) ) );
-    QObject::connect( this, SIGNAL( cursorPositionChanged() ), this, SLOT( highlightCurrentLine() ) );
+    QObject::connect( this, SIGNAL(blockCountChanged(int)), this, SLOT(updateLineNumberAreaWidth(int)) );
+    QObject::connect( this, SIGNAL(updateRequest(QRect,int)), this, SLOT(updateLineNumberArea(QRect,int)) );
+    QObject::connect( this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()) );
 
     _highlighter = new PySyntaxHighlighter( document() );
 }

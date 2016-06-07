@@ -119,8 +119,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     setLabel(label);
 
     NodePtr internalNode = node->getNode();
-    QObject::connect( internalNode.get(), SIGNAL( scriptNameChanged(QString) ), this, SLOT( onInternalNodeScriptNameChanged(QString) ) );
-    QObject::connect( internalNode.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInternalNodeLabelChanged(QString) ) );
+    QObject::connect( internalNode.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onInternalNodeScriptNameChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNodeLabelChanged(QString)) );
 
     _imp->mainLayout = new QVBoxLayout(this);
     setLayout(_imp->mainLayout);
@@ -144,7 +144,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                                    + tr("The layer that the Viewer node will fetch upstream in the tree. "
                                         "The channels of the layer will be mapped to the RGBA channels of the viewer according to "
                                         "its number of channels. (e.g: UV would be mapped to RG)") + QString::fromUtf8("</p>") );
-    QObject::connect( _imp->layerChoice, SIGNAL( currentIndexChanged(int) ), this, SLOT( onLayerComboChanged(int) ) );
+    QObject::connect( _imp->layerChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onLayerComboChanged(int)) );
     _imp->layerChoice->setFixedWidth( fm.width( QString::fromUtf8("Color.Toto.RGBA") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
     _imp->layerChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstRowLayout->addWidget(_imp->layerChoice);
@@ -155,7 +155,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                                                "alpha channel with the <b>Channels</b> choice on the right.") + QString::fromUtf8("</p>") );
     _imp->alphaChannelChoice->setFixedWidth( fm.width( QString::fromUtf8("Color.alpha") ) + 3 * TO_DPIX(DROP_DOWN_ICON_SIZE) );
     _imp->alphaChannelChoice->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    QObject::connect( _imp->alphaChannelChoice, SIGNAL( currentIndexChanged(int) ), this, SLOT( onAlphaChannelComboChanged(int) ) );
+    QObject::connect( _imp->alphaChannelChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onAlphaChannelComboChanged(int)) );
     _imp->firstRowLayout->addWidget(_imp->alphaChannelChoice);
 
     _imp->viewerChannels = new ChannelsComboBox(_imp->firstSettingsRow);
@@ -183,7 +183,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->viewerChannels->addAction(aAction);
     _imp->viewerChannels->addAction(matteAction);
     _imp->viewerChannels->setCurrentIndex(1);
-    QObject::connect( _imp->viewerChannels, SIGNAL( currentIndexChanged(int) ), this, SLOT( onViewerChannelsChanged(int) ) );
+    QObject::connect( _imp->viewerChannels, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewerChannelsChanged(int)) );
 
     _imp->zoomCombobox = new ComboBox(_imp->firstSettingsRow);
     _imp->zoomCombobox->setToolTip( QString::fromUtf8("<p><b>") + tr("Zoom:") + QString::fromUtf8("</b></p>")
@@ -236,7 +236,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->syncViewerButton->setFixedSize(buttonSize);
     _imp->syncViewerButton->setIconSize(buttonIconSize);
     _imp->syncViewerButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _imp->syncViewerButton, SIGNAL( clicked(bool) ), this, SLOT( onSyncViewersButtonPressed(bool) ) );
+    QObject::connect( _imp->syncViewerButton, SIGNAL(clicked(bool)), this, SLOT(onSyncViewersButtonPressed(bool)) );
     _imp->firstRowLayout->addWidget(_imp->syncViewerButton);
 
 
@@ -353,7 +353,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->firstInputImage->setFixedWidth(fm.width( QString::fromUtf8("ColorCorrect1") ) + 3 * DROP_DOWN_ICON_SIZE);
     _imp->firstInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->firstInputImage->addItem( QString::fromUtf8(" - ") );
-    QObject::connect( _imp->firstInputImage, SIGNAL( currentIndexChanged(QString) ), this, SLOT( onFirstInputNameChanged(QString) ) );
+    QObject::connect( _imp->firstInputImage, SIGNAL(currentIndexChanged(QString)), this, SLOT(onFirstInputNameChanged(QString)) );
     _imp->firstRowLayout->addWidget(_imp->firstInputImage);
 
     QPixmap pixMerge;
@@ -365,7 +365,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
 
     _imp->compositingOperator = new ComboBox(_imp->firstSettingsRow);
-    QObject::connect( _imp->compositingOperator, SIGNAL( currentIndexChanged(int) ), this, SLOT( onCompositingOperatorIndexChanged(int) ) );
+    QObject::connect( _imp->compositingOperator, SIGNAL(currentIndexChanged(int)), this, SLOT(onCompositingOperatorIndexChanged(int)) );
     _imp->compositingOperator->setFixedWidth(fm.width( QString::fromUtf8("W-OnionSkin") ) + 3 * DROP_DOWN_ICON_SIZE);
     _imp->compositingOperator->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->compositingOperator->setToolTip( _imp->compositingOperatorLabel->toolTip() );
@@ -392,7 +392,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->secondInputImage->setFixedWidth(fm.width( QString::fromUtf8("ColorCorrect1") )  + 3 * DROP_DOWN_ICON_SIZE);
     _imp->secondInputImage->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
     _imp->secondInputImage->addItem( QString::fromUtf8(" - ") );
-    QObject::connect( _imp->secondInputImage, SIGNAL( currentIndexChanged(QString) ), this, SLOT( onSecondInputNameChanged(QString) ) );
+    QObject::connect( _imp->secondInputImage, SIGNAL(currentIndexChanged(QString)), this, SLOT(onSecondInputNameChanged(QString)) );
     _imp->firstRowLayout->addWidget(_imp->secondInputImage);
 
     _imp->firstRowLayout->addStretch();
@@ -420,7 +420,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->toggleGainButton->setIconSize(buttonIconSize);
     _imp->toggleGainButton->setToolTip( GuiUtils::convertFromPlainText(tr("Switch between \"neutral\" 1.0 gain f-stop and the previous setting."), Qt::WhiteSpaceNormal) );
     _imp->secondRowLayout->addWidget(_imp->toggleGainButton);
-    QObject::connect( _imp->toggleGainButton, SIGNAL( clicked(bool) ), this, SLOT( onGainToggled(bool) ) );
+    QObject::connect( _imp->toggleGainButton, SIGNAL(clicked(bool)), this, SLOT(onGainToggled(bool)) );
 
     _imp->gainBox = new SpinBox(_imp->secondSettingsRow, SpinBox::eSpinBoxTypeDouble);
     QString gainTt =  QString::fromUtf8("<p><b>") + tr("Gain:") + QString::fromUtf8("</b></p><p>") + tr("Gain is shown as f-stops. The image is multipled by pow(2,value) before display.") + QString::fromUtf8("</p>");
@@ -431,7 +431,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
 
     _imp->gainSlider = new ScaleSliderQWidget(-6, 6, 0.0, false, ScaleSliderQWidget::eDataTypeDouble, getGui(), eScaleTypeLinear, _imp->secondSettingsRow);
-    QObject::connect( _imp->gainSlider, SIGNAL( editingFinished(bool) ), this, SLOT( onGainSliderEditingFinished(bool) ) );
+    QObject::connect( _imp->gainSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGainSliderEditingFinished(bool)) );
     _imp->gainSlider->setToolTip(gainTt);
     _imp->secondRowLayout->addWidget(_imp->gainSlider);
 
@@ -460,7 +460,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     gammaIc.addPixmap(gammaEnabled, QIcon::Normal, QIcon::On);
     gammaIc.addPixmap(gammaDisabled, QIcon::Normal, QIcon::Off);
     _imp->toggleGammaButton = new Button(gammaIc, QString(), _imp->secondSettingsRow);
-    QObject::connect( _imp->toggleGammaButton, SIGNAL( clicked(bool) ), this, SLOT( onGammaToggled(bool) ) );
+    QObject::connect( _imp->toggleGammaButton, SIGNAL(clicked(bool)), this, SLOT(onGammaToggled(bool)) );
     _imp->toggleGammaButton->setCheckable(true);
     _imp->toggleGammaButton->setChecked(false);
     _imp->toggleGammaButton->setDown(false);
@@ -473,14 +473,14 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->gammaBox = new SpinBox(_imp->secondSettingsRow, SpinBox::eSpinBoxTypeDouble);
     QString gammaTt = GuiUtils::convertFromPlainText(tr("Viewer gamma correction level (applied after gain and before colorspace correction)."), Qt::WhiteSpaceNormal);
     _imp->gammaBox->setToolTip(gammaTt);
-    QObject::connect( _imp->gammaBox, SIGNAL( valueChanged(double) ), this, SLOT( onGammaSpinBoxValueChanged(double) ) );
+    QObject::connect( _imp->gammaBox, SIGNAL(valueChanged(double)), this, SLOT(onGammaSpinBoxValueChanged(double)) );
     _imp->gammaBox->setValue(1.0);
     _imp->secondRowLayout->addWidget(_imp->gammaBox);
 
     _imp->gammaSlider = new ScaleSliderQWidget(0, 4, 1.0, false, ScaleSliderQWidget::eDataTypeDouble, getGui(), eScaleTypeLinear, _imp->secondSettingsRow);
-    QObject::connect( _imp->gammaSlider, SIGNAL( editingFinished(bool) ), this, SLOT( onGammaSliderEditingFinished(bool) ) );
+    QObject::connect( _imp->gammaSlider, SIGNAL(editingFinished(bool)), this, SLOT(onGammaSliderEditingFinished(bool)) );
     _imp->gammaSlider->setToolTip(gammaTt);
-    QObject::connect( _imp->gammaSlider, SIGNAL( positionChanged(double) ), this, SLOT( onGammaSliderValueChanged(double) ) );
+    QObject::connect( _imp->gammaSlider, SIGNAL(positionChanged(double)), this, SLOT(onGammaSliderValueChanged(double)) );
     _imp->secondRowLayout->addWidget(_imp->gammaSlider);
 
     _imp->viewerColorSpace = new ComboBox(_imp->secondSettingsRow);
@@ -510,7 +510,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->checkerboardButton->setToolTip( GuiUtils::convertFromPlainText(tr("If checked, the viewer draws a checkerboard under input A instead of black (disabled under the wipe area and in stack modes)."), Qt::WhiteSpaceNormal) );
     _imp->checkerboardButton->setFixedSize(buttonSize);
     _imp->checkerboardButton->setIconSize(buttonIconSize);
-    QObject::connect( _imp->checkerboardButton, SIGNAL( clicked(bool) ), this, SLOT( onCheckerboardButtonClicked() ) );
+    QObject::connect( _imp->checkerboardButton, SIGNAL(clicked(bool)), this, SLOT(onCheckerboardButtonClicked()) );
     _imp->secondRowLayout->addWidget(_imp->checkerboardButton);
 
     _imp->viewsComboBox = new ComboBox(_imp->secondSettingsRow);
@@ -534,7 +534,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->pickerButton->setToolTip( GuiUtils::convertFromPlainText(tr("Show/Hide information bar in the bottom of the viewer and if unchecked deactivate any active color picker."), Qt::WhiteSpaceNormal) );
     _imp->pickerButton->setFixedSize(buttonSize);
     _imp->pickerButton->setIconSize(buttonIconSize);
-    QObject::connect( _imp->pickerButton, SIGNAL( clicked(bool) ), this, SLOT( onPickerButtonClicked(bool) ) );
+    QObject::connect( _imp->pickerButton, SIGNAL(clicked(bool)), this, SLOT(onPickerButtonClicked(bool)) );
 
     _imp->secondRowLayout->addWidget(_imp->pickerButton);
     /*=============================================*/
@@ -732,8 +732,8 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->tripleSyncButton->setChecked(false);
     _imp->tripleSyncButton->setFixedSize(buttonSize);
     _imp->tripleSyncButton->setIconSize(buttonIconSize);
-    QObject:: connect( _imp->tripleSyncButton, SIGNAL( toggled(bool) ),
-                       this, SLOT( toggleTripleSync(bool) ) );
+    QObject:: connect( _imp->tripleSyncButton, SIGNAL(toggled(bool)),
+                       this, SLOT(toggleTripleSync(bool)) );
 
 
     _imp->canEditFpsBox = new QCheckBox(_imp->playerButtonsContainer);
@@ -747,10 +747,10 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     //_imp->canEditFpsBox->setIconSize(buttonIconSize);
     _imp->canEditFpsBox->setToolTip(canEditFpsBoxTT);
     _imp->canEditFpsBox->setChecked(!_imp->fpsLocked);
-    QObject::connect( _imp->canEditFpsBox, SIGNAL( clicked(bool) ), this, SLOT( onCanSetFPSClicked(bool) ) );
+    QObject::connect( _imp->canEditFpsBox, SIGNAL(clicked(bool)), this, SLOT(onCanSetFPSClicked(bool)) );
 
     _imp->canEditFpsLabel = new ClickableLabel(tr("fps:"), _imp->playerButtonsContainer);
-    QObject::connect( _imp->canEditFpsLabel, SIGNAL( clicked(bool) ), this, SLOT( onCanSetFPSLabelClicked(bool) ) );
+    QObject::connect( _imp->canEditFpsLabel, SIGNAL(clicked(bool)), this, SLOT(onCanSetFPSLabelClicked(bool)) );
     _imp->canEditFpsLabel->setToolTip(canEditFpsBoxTT);
     //_imp->canEditFpsLabel->setFont(font);
 
@@ -781,7 +781,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
                                    tr("When checked, only the viewer is redrawn during playback, "
                                       "for maximum efficiency.") + QString::fromUtf8("</p>") );
     _imp->turboButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _imp->turboButton, SIGNAL ( clicked(bool) ), getGui(), SLOT( onFreezeUIButtonClicked(bool) ) );
+    QObject::connect( _imp->turboButton, SIGNAL (clicked(bool)), getGui(), SLOT(onFreezeUIButtonClicked(bool)) );
     QPixmap pixFirst;
     QPixmap pixPrevKF;
     QPixmap pixRewindDisabled;
@@ -945,9 +945,9 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     /*frame seeker*/
     _imp->timeLineGui = new TimeLineGui(node, timeline, getGui(), this);
-    QObject::connect( _imp->timeLineGui, SIGNAL( boundariesChanged(SequenceTime, SequenceTime) ),
-                      this, SLOT( onTimelineBoundariesChanged(SequenceTime, SequenceTime) ) );
-    QObject::connect( gui->getApp()->getProject().get(), SIGNAL( frameRangeChanged(int, int) ), _imp->timeLineGui, SLOT( onProjectFrameRangeChanged(int, int) ) );
+    QObject::connect( _imp->timeLineGui, SIGNAL(boundariesChanged(SequenceTime,SequenceTime)),
+                      this, SLOT(onTimelineBoundariesChanged(SequenceTime,SequenceTime)) );
+    QObject::connect( gui->getApp()->getProject().get(), SIGNAL(frameRangeChanged(int,int)), _imp->timeLineGui, SLOT(onProjectFrameRangeChanged(int,int)) );
     _imp->timeLineGui->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
 
     //Add some spacing because the timeline might be black as the info
@@ -966,58 +966,58 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     /*slots & signals*/
 
     manageTimelineSlot(false, timeline);
-    QObject::connect( _imp->nextKeyFrame_Button, SIGNAL( clicked(bool) ), getGui()->getApp().get(), SLOT( goToNextKeyframe() ) );
-    QObject::connect( _imp->previousKeyFrame_Button, SIGNAL( clicked(bool) ), getGui()->getApp().get(), SLOT( goToPreviousKeyframe() ) );
+    QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToNextKeyframe()) );
+    QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToPreviousKeyframe()) );
     NodePtr wrapperNode = _imp->viewerNode->getNode();
     boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
-    QObject::connect( _imp->viewerNode, SIGNAL( renderStatsAvailable(int, ViewIdx, double, RenderStatsMap) ),
-                      this, SLOT( onRenderStatsAvailable(int, ViewIdx, double, RenderStatsMap) ) );
-    QObject::connect( wrapperNode.get(), SIGNAL( inputChanged(int) ), this, SLOT( onInputChanged(int) ) );
-    QObject::connect( wrapperNode.get(), SIGNAL( inputLabelChanged(int, QString) ), this, SLOT( onInputNameChanged(int, QString) ) );
-    QObject::connect( _imp->viewerNode, SIGNAL( clipPreferencesChanged() ), this, SLOT( onClipPreferencesChanged() ) );
-    QObject::connect( _imp->viewerNode, SIGNAL( availableComponentsChanged() ), this, SLOT( onAvailableComponentsChanged() ) );
+    QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
+                      this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
+    QObject::connect( wrapperNode.get(), SIGNAL(inputChanged(int)), this, SLOT(onInputChanged(int)) );
+    QObject::connect( wrapperNode.get(), SIGNAL(inputLabelChanged(int,QString)), this, SLOT(onInputNameChanged(int,QString)) );
+    QObject::connect( _imp->viewerNode, SIGNAL(clipPreferencesChanged()), this, SLOT(onClipPreferencesChanged()) );
+    QObject::connect( _imp->viewerNode, SIGNAL(availableComponentsChanged()), this, SLOT(onAvailableComponentsChanged()) );
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>( wrapperNode.get() );
     if (isInspector) {
-        QObject::connect( isInspector, SIGNAL( activeInputsChanged() ), this, SLOT( onActiveInputsChanged() ) );
+        QObject::connect( isInspector, SIGNAL(activeInputsChanged()), this, SLOT(onActiveInputsChanged()) );
     }
-    QObject::connect( _imp->viewerColorSpace, SIGNAL( currentIndexChanged(int) ), this,
-                      SLOT( onColorSpaceComboBoxChanged(int) ) );
-    QObject::connect( _imp->zoomCombobox, SIGNAL( currentIndexChanged(int) ), this, SLOT( onZoomComboboxCurrentIndexChanged(int) ) );
-    QObject::connect( _imp->viewer, SIGNAL( zoomChanged(int) ), this, SLOT( updateZoomComboBox(int) ) );
-    QObject::connect( _imp->gainBox, SIGNAL( valueChanged(double) ), this, SLOT( onGainSpinBoxValueChanged(double) ) );
-    QObject::connect( _imp->gainSlider, SIGNAL( positionChanged(double) ), this, SLOT( onGainSliderChanged(double) ) );
-    QObject::connect( _imp->currentFrameBox, SIGNAL( valueChanged(double) ), this, SLOT( onCurrentTimeSpinBoxChanged(double) ) );
-    QObject::connect( _imp->play_Forward_Button, SIGNAL( clicked(bool) ), this, SLOT( startPause(bool) ) );
-    QObject::connect( _imp->play_Backward_Button, SIGNAL( clicked(bool) ), this, SLOT( startBackward(bool) ) );
-    QObject::connect( _imp->previousFrame_Button, SIGNAL( clicked() ), this, SLOT( previousFrame() ) );
-    QObject::connect( _imp->nextFrame_Button, SIGNAL( clicked() ), this, SLOT( nextFrame() ) );
-    QObject::connect( _imp->previousIncrement_Button, SIGNAL( clicked() ), this, SLOT( previousIncrement() ) );
-    QObject::connect( _imp->nextIncrement_Button, SIGNAL( clicked() ), this, SLOT( nextIncrement() ) );
-    QObject::connect( _imp->firstFrame_Button, SIGNAL( clicked() ), this, SLOT( firstFrame() ) );
-    QObject::connect( _imp->lastFrame_Button, SIGNAL( clicked() ), this, SLOT( lastFrame() ) );
-    QObject::connect( _imp->playbackMode_Button, SIGNAL( clicked(bool) ), this, SLOT( togglePlaybackMode() ) );
-    QObject::connect( _imp->playBackInputButton, SIGNAL( clicked() ), this, SLOT( onPlaybackInButtonClicked() ) );
-    QObject::connect( _imp->playBackOutputButton, SIGNAL( clicked() ), this, SLOT( onPlaybackOutButtonClicked() ) );
-    QObject::connect( _imp->playBackInputSpinbox, SIGNAL( valueChanged(double) ), this, SLOT( onPlaybackInSpinboxValueChanged(double) ) );
-    QObject::connect( _imp->playBackOutputSpinbox, SIGNAL( valueChanged(double) ), this, SLOT( onPlaybackOutSpinboxValueChanged(double) ) );
-    QObject::connect( _imp->refreshButton, SIGNAL( clicked() ), this, SLOT( refresh() ) );
-    QObject::connect( _imp->pauseButton, SIGNAL( clicked(bool) ), this, SLOT( onPauseViewerButtonClicked(bool) ) );
-    QObject::connect( _imp->centerViewerButton, SIGNAL( clicked() ), this, SLOT( centerViewer() ) );
-    QObject::connect( _imp->viewerNode, SIGNAL( viewerDisconnected() ), this, SLOT( disconnectViewer() ) );
-    QObject::connect( _imp->fpsBox, SIGNAL( valueChanged(double) ), this, SLOT( onSpinboxFpsChanged(double) ) );
-    QObject::connect( engine.get(), SIGNAL( renderFinished(int) ), this, SLOT( onEngineStopped() ) );
-    QObject::connect( engine.get(), SIGNAL( renderStarted(bool) ), this, SLOT( onEngineStarted(bool) ) );
+    QObject::connect( _imp->viewerColorSpace, SIGNAL(currentIndexChanged(int)), this,
+                      SLOT(onColorSpaceComboBoxChanged(int)) );
+    QObject::connect( _imp->zoomCombobox, SIGNAL(currentIndexChanged(int)), this, SLOT(onZoomComboboxCurrentIndexChanged(int)) );
+    QObject::connect( _imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)) );
+    QObject::connect( _imp->gainBox, SIGNAL(valueChanged(double)), this, SLOT(onGainSpinBoxValueChanged(double)) );
+    QObject::connect( _imp->gainSlider, SIGNAL(positionChanged(double)), this, SLOT(onGainSliderChanged(double)) );
+    QObject::connect( _imp->currentFrameBox, SIGNAL(valueChanged(double)), this, SLOT(onCurrentTimeSpinBoxChanged(double)) );
+    QObject::connect( _imp->play_Forward_Button, SIGNAL(clicked(bool)), this, SLOT(startPause(bool)) );
+    QObject::connect( _imp->play_Backward_Button, SIGNAL(clicked(bool)), this, SLOT(startBackward(bool)) );
+    QObject::connect( _imp->previousFrame_Button, SIGNAL(clicked()), this, SLOT(previousFrame()) );
+    QObject::connect( _imp->nextFrame_Button, SIGNAL(clicked()), this, SLOT(nextFrame()) );
+    QObject::connect( _imp->previousIncrement_Button, SIGNAL(clicked()), this, SLOT(previousIncrement()) );
+    QObject::connect( _imp->nextIncrement_Button, SIGNAL(clicked()), this, SLOT(nextIncrement()) );
+    QObject::connect( _imp->firstFrame_Button, SIGNAL(clicked()), this, SLOT(firstFrame()) );
+    QObject::connect( _imp->lastFrame_Button, SIGNAL(clicked()), this, SLOT(lastFrame()) );
+    QObject::connect( _imp->playbackMode_Button, SIGNAL(clicked(bool)), this, SLOT(togglePlaybackMode()) );
+    QObject::connect( _imp->playBackInputButton, SIGNAL(clicked()), this, SLOT(onPlaybackInButtonClicked()) );
+    QObject::connect( _imp->playBackOutputButton, SIGNAL(clicked()), this, SLOT(onPlaybackOutButtonClicked()) );
+    QObject::connect( _imp->playBackInputSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onPlaybackInSpinboxValueChanged(double)) );
+    QObject::connect( _imp->playBackOutputSpinbox, SIGNAL(valueChanged(double)), this, SLOT(onPlaybackOutSpinboxValueChanged(double)) );
+    QObject::connect( _imp->refreshButton, SIGNAL(clicked()), this, SLOT(refresh()) );
+    QObject::connect( _imp->pauseButton, SIGNAL(clicked(bool)), this, SLOT(onPauseViewerButtonClicked(bool)) );
+    QObject::connect( _imp->centerViewerButton, SIGNAL(clicked()), this, SLOT(centerViewer()) );
+    QObject::connect( _imp->viewerNode, SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
+    QObject::connect( _imp->fpsBox, SIGNAL(valueChanged(double)), this, SLOT(onSpinboxFpsChanged(double)) );
+    QObject::connect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onEngineStopped()) );
+    QObject::connect( engine.get(), SIGNAL(renderStarted(bool)), this, SLOT(onEngineStarted(bool)) );
 
     _imp->mustSetUpPlaybackButtonsTimer.setSingleShot(true);
-    QObject::connect( &_imp->mustSetUpPlaybackButtonsTimer, SIGNAL( timeout() ), this, SLOT( onSetDownPlaybackButtonsTimeout() ) );
+    QObject::connect( &_imp->mustSetUpPlaybackButtonsTimer, SIGNAL(timeout()), this, SLOT(onSetDownPlaybackButtonsTimeout()) );
     manageSlotsForInfoWidget(0, true);
 
-    QObject::connect( _imp->clipToProjectFormatButton, SIGNAL( clicked(bool) ), this, SLOT( onClipToProjectButtonToggle(bool) ) );
-    QObject::connect( _imp->viewsComboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( onViewsComboboxChanged(int) ) );
-    QObject::connect( _imp->enableViewerRoI, SIGNAL( clicked(bool) ), this, SLOT( onEnableViewerRoIButtonToggle(bool) ) );
-    QObject::connect( _imp->autoContrast, SIGNAL( clicked(bool) ), this, SLOT( onAutoContrastChanged(bool) ) );
-    QObject::connect( _imp->renderScaleCombo, SIGNAL( currentIndexChanged(int) ), this, SLOT( onRenderScaleComboIndexChanged(int) ) );
-    QObject::connect( _imp->activateRenderScale, SIGNAL( toggled(bool) ), this, SLOT( onRenderScaleButtonClicked(bool) ) );
+    QObject::connect( _imp->clipToProjectFormatButton, SIGNAL(clicked(bool)), this, SLOT(onClipToProjectButtonToggle(bool)) );
+    QObject::connect( _imp->viewsComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onViewsComboboxChanged(int)) );
+    QObject::connect( _imp->enableViewerRoI, SIGNAL(clicked(bool)), this, SLOT(onEnableViewerRoIButtonToggle(bool)) );
+    QObject::connect( _imp->autoContrast, SIGNAL(clicked(bool)), this, SLOT(onAutoContrastChanged(bool)) );
+    QObject::connect( _imp->renderScaleCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onRenderScaleComboIndexChanged(int)) );
+    QObject::connect( _imp->activateRenderScale, SIGNAL(toggled(bool)), this, SLOT(onRenderScaleButtonClicked(bool)) );
 
     connectToViewerCache();
 
@@ -1034,7 +1034,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
 
     refreshLayerAndAlphaChannelComboBox();
 
-    QTimer::singleShot( 25, _imp->timeLineGui, SLOT( recenterOnBounds() ) );
+    QTimer::singleShot( 25, _imp->timeLineGui, SLOT(recenterOnBounds()) );
 
 
     //Refresh the viewport lock state

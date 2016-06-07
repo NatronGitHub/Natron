@@ -591,7 +591,7 @@ PrecompNodePrivate::createReadNode()
     assert(precomp);
     read->setPrecompNode(precomp);
 
-    QObject::connect( read.get(), SIGNAL( persistentMessageChanged() ), _publicInterface, SLOT( onReadNodePersistentMessageChanged() ) );
+    QObject::connect( read.get(), SIGNAL(persistentMessageChanged()), _publicInterface, SLOT(onReadNodePersistentMessageChanged()) );
 
     {
         QMutexLocker k(&dataMutex);
@@ -686,7 +686,7 @@ PrecompNodePrivate::launchPreRender()
     if (w.writer) {
         boost::shared_ptr<RenderEngine> engine = w.writer->getRenderEngine();
         if (engine) {
-            QObject::connect( engine.get(), SIGNAL( renderFinished(int) ), _publicInterface, SLOT( onPreRenderFinished() ) );
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
         }
     }
 
@@ -708,7 +708,7 @@ PrecompNode::onPreRenderFinished()
     if (writer) {
         boost::shared_ptr<RenderEngine> engine = writer->getRenderEngine();
         if (engine) {
-            QObject::disconnect( engine.get(), SIGNAL( renderFinished(int) ), this, SLOT( onPreRenderFinished() ) );
+            QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
         }
     }
     _imp->refreshReadNodeInput();

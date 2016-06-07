@@ -106,9 +106,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 {
     EffectInstPtr effect = node->getEffectInstance();
     //needs to be blocking, otherwise the progressUpdate() call could be made before startProgress
-    QObject::connect( &scheduler, SIGNAL( trackingStarted(int) ), _publicInterface, SLOT( onSchedulerTrackingStarted(int) ) );
-    QObject::connect( &scheduler, SIGNAL( trackingFinished() ), _publicInterface, SLOT( onSchedulerTrackingFinished() ) );
-    QObject::connect( &scheduler, SIGNAL( trackingProgress(double) ), _publicInterface, SLOT( onSchedulerTrackingProgress(double) ) );
+    QObject::connect( &scheduler, SIGNAL(trackingStarted(int)), _publicInterface, SLOT(onSchedulerTrackingStarted(int)) );
+    QObject::connect( &scheduler, SIGNAL(trackingFinished()), _publicInterface, SLOT(onSchedulerTrackingFinished()) );
+    QObject::connect( &scheduler, SIGNAL(trackingProgress(double)), _publicInterface, SLOT(onSchedulerTrackingProgress(double)) );
     boost::shared_ptr<TrackerNode> isTrackerNode = boost::dynamic_pointer_cast<TrackerNode>(effect);
     QString fixedNamePrefix = QString::fromUtf8( node->getScriptName_mt_safe().c_str() );
 
@@ -2091,8 +2091,8 @@ TrackerContextPrivate::computeCornerParamsFromTracks()
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.tWatcher.reset();
     lastSolveRequest.cpWatcher.reset( new QFutureWatcher<TrackerContextPrivate::CornerPinData>() );
-    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL( finished() ), this, SLOT( onCornerPinSolverWatcherFinished() ) );
-    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL( progressValueChanged(int) ), this, SLOT( onCornerPinSolverWatcherProgress(int) ) );
+    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(finished()), this, SLOT(onCornerPinSolverWatcherFinished()) );
+    QObject::connect( lastSolveRequest.cpWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onCornerPinSolverWatcherProgress(int)) );
     lastSolveRequest.cpWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeCornerPinParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
 #else
     NodePtr thisNode = node.lock();
@@ -2425,8 +2425,8 @@ TrackerContextPrivate::computeTransformParamsFromTracks()
 #ifndef TRACKER_GENERATE_DATA_SEQUENTIALLY
     lastSolveRequest.cpWatcher.reset();
     lastSolveRequest.tWatcher.reset( new QFutureWatcher<TrackerContextPrivate::TransformData>() );
-    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL( finished() ), this, SLOT( onTransformSolverWatcherFinished() ) );
-    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL( progressValueChanged(int) ), this, SLOT( onTransformSolverWatcherProgress(int) ) );
+    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(finished()), this, SLOT(onTransformSolverWatcherFinished()) );
+    QObject::connect( lastSolveRequest.tWatcher.get(), SIGNAL(progressValueChanged(int)), this, SLOT(onTransformSolverWatcherProgress(int)) );
     lastSolveRequest.tWatcher->setFuture( QtConcurrent::mapped( lastSolveRequest.keyframes, boost::bind(&TrackerContextPrivate::computeTransformParamsFromTracksAtTime, this, lastSolveRequest.refTime, _1, lastSolveRequest.jitterPeriod, lastSolveRequest.jitterAdd, lastSolveRequest.robustModel, lastSolveRequest.allMarkers) ) );
 #else
     NodePtr thisNode = node.lock();

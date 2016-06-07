@@ -199,7 +199,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->filterLabel->setToolTip(filterTt);
     _imp->filterEdit = new LineEdit(_imp->filterContainer);
     _imp->filterEdit->setToolTip(filterTt);
-    QObject::connect( _imp->filterEdit, SIGNAL( textChanged(QString) ), this, SLOT( onFilterTextChanged(QString) ) );
+    QObject::connect( _imp->filterEdit, SIGNAL(textChanged(QString)), this, SLOT(onFilterTextChanged(QString)) );
     _imp->filterLayout->addWidget(_imp->filterLabel);
     _imp->filterLayout->addWidget(_imp->filterEdit);
 
@@ -230,7 +230,7 @@ CurveEditor::CurveEditor(Gui* gui,
     _imp->knobLabel->setAltered(true);
     _imp->knobLabel->setText( tr("No curve selected") );
     _imp->knobLineEdit = new LineEdit(_imp->expressionContainer);
-    QObject::connect( _imp->knobLineEdit, SIGNAL( editingFinished() ), this, SLOT( onExprLineEditFinished() ) );
+    QObject::connect( _imp->knobLineEdit, SIGNAL(editingFinished()), this, SLOT(onExprLineEditFinished()) );
     _imp->resultLabel = new Label(_imp->expressionContainer);
     _imp->resultLabel->setAltered(true);
     _imp->resultLabel->setText( QString::fromUtf8("= ") );
@@ -242,10 +242,10 @@ CurveEditor::CurveEditor(Gui* gui,
 
     _imp->mainLayout->addWidget(_imp->expressionContainer);
 
-    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ),
-                      this, SLOT( onItemSelectionChanged() ) );
-    QObject::connect( _imp->tree, SIGNAL( itemDoubleClicked(QTreeWidgetItem*, int) ),
-                      this, SLOT( onItemDoubleClicked(QTreeWidgetItem*, int) ) );
+    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()),
+                      this, SLOT(onItemSelectionChanged()) );
+    QObject::connect( _imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
+                      this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)) );
 }
 
 CurveEditor::~CurveEditor()
@@ -506,7 +506,7 @@ NodeCurveEditorContext::NodeCurveEditorContext(QTreeWidget* tree,
     nameItem->setExpanded(true);
     nameItem->setText( 0, QString::fromUtf8( _node->getNode()->getLabel().c_str() ) );
 
-    QObject::connect( node->getNode().get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNameChanged(QString) ) );
+    QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onNameChanged(QString)) );
     const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > & knobs = node->getKnobs();
     bool hasAtLeast1KnobWithACurveShown = false;
 
@@ -714,9 +714,9 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
     , _dimension(dimension)
 {
     if (knob) {
-        QObject::connect( knob.get(), SIGNAL( keyFrameSet() ), this, SLOT( checkVisibleState() ) );
-        QObject::connect( knob.get(), SIGNAL( keyFrameRemoved() ), this, SLOT( checkVisibleState() ) );
-        QObject::connect( knob.get(), SIGNAL( expressionChanged() ), this, SLOT( onExpressionChanged() ) );
+        QObject::connect( knob.get(), SIGNAL(keyFrameSet()), this, SLOT(checkVisibleState()) );
+        QObject::connect( knob.get(), SIGNAL(keyFrameRemoved()), this, SLOT(checkVisibleState()) );
+        QObject::connect( knob.get(), SIGNAL(expressionChanged()), this, SLOT(onExpressionChanged()) );
     }
     if (curve) {
         // even when there is only one keyframe, there may be tangents!
@@ -745,9 +745,9 @@ NodeCurveEditorElement::NodeCurveEditorElement(QTreeWidget *tree,
 {
     if (internalKnob) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = internalKnob->getSignalSlotHandler();
-        QObject::connect( handler.get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ), this, SLOT( checkVisibleState() ) );
-        QObject::connect( handler.get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ), this, SLOT( checkVisibleState() ) );
-        QObject::connect( handler.get(), SIGNAL( animationRemoved(ViewSpec, int) ), this, SLOT( checkVisibleState() ) );
+        QObject::connect( handler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)), this, SLOT(checkVisibleState()) );
+        QObject::connect( handler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)), this, SLOT(checkVisibleState()) );
+        QObject::connect( handler.get(), SIGNAL(animationRemoved(ViewSpec,int)), this, SLOT(checkVisibleState()) );
     }
     if (curve) {
         // even when there is only one keyframe, there may be tangents!
@@ -1273,9 +1273,9 @@ BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
     _imp->curveItem->setText( 0, QString::fromUtf8("Animation") );
 
     CurveWidget* cw = widget->getCurveWidget();
-    QObject::connect( curve.get(), SIGNAL( keyframeSet(double) ), this, SLOT( onKeyframeAdded() ) );
-    QObject::connect( curve.get(), SIGNAL( keyframeRemoved(double) ), this, SLOT( onKeyframeRemoved() ) );
-    QObject::connect( curve.get(), SIGNAL( cloned() ), this, SLOT( onShapeCloned() ) );
+    QObject::connect( curve.get(), SIGNAL(keyframeSet(double)), this, SLOT(onKeyframeAdded()) );
+    QObject::connect( curve.get(), SIGNAL(keyframeRemoved(double)), this, SLOT(onKeyframeRemoved()) );
+    QObject::connect( curve.get(), SIGNAL(cloned()), this, SLOT(onShapeCloned()) );
     boost::shared_ptr<RotoContext> roto = context->getNode()->getNode()->getRotoContext();
     _imp->animCurve.reset( new BezierCPCurveGui(cw, curve, roto, getName(), QColor(255, 255, 255), 1.) );
     _imp->animCurve->setVisible(false);
@@ -1352,11 +1352,11 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
     _imp->nameItem = new QTreeWidgetItem(tree);
     _imp->nameItem->setExpanded(true);
     _imp->nameItem->setText( 0, QString::fromUtf8( _imp->node->getNode()->getLabel().c_str() ) );
-    QObject::connect( node->getNode().get(), SIGNAL( labelChanged(QString) ), this, SLOT( onNameChanged(QString) ) );
-    QObject::connect( rotoCtx.get(), SIGNAL( itemRemoved(boost::shared_ptr<RotoItem>, int) ), this,
-                      SLOT( onItemRemoved(boost::shared_ptr<RotoItem>, int) ) );
-    QObject::connect( rotoCtx.get(), SIGNAL( itemInserted(int, int) ), this, SLOT( itemInserted(int, int) ) );
-    QObject::connect( rotoCtx.get(), SIGNAL( itemLabelChanged(boost::shared_ptr<RotoItem>) ), this, SLOT( onItemNameChanged(boost::shared_ptr<RotoItem>) ) );
+    QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onNameChanged(QString)) );
+    QObject::connect( rotoCtx.get(), SIGNAL(itemRemoved(boost::shared_ptr<RotoItem>,int)), this,
+                      SLOT(onItemRemoved(boost::shared_ptr<RotoItem>,int)) );
+    QObject::connect( rotoCtx.get(), SIGNAL(itemInserted(int,int)), this, SLOT(itemInserted(int,int)) );
+    QObject::connect( rotoCtx.get(), SIGNAL(itemLabelChanged(boost::shared_ptr<RotoItem>)), this, SLOT(onItemNameChanged(boost::shared_ptr<RotoItem>)) );
     std::list<boost::shared_ptr<RotoDrawableItem> > curves = rotoCtx->getCurvesByRenderOrder();
 
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = curves.begin(); it != curves.end(); ++it) {

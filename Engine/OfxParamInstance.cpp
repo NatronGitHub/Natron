@@ -340,12 +340,12 @@ OfxParamToKnob::connectDynamicProperties()
     if (!handler) {
         return;
     }
-    QObject::connect( handler, SIGNAL( labelChanged() ), this, SLOT( onLabelChanged() ) );
-    QObject::connect( handler, SIGNAL( evaluateOnChangeChanged(bool) ), this, SLOT( onEvaluateOnChangeChanged(bool) ) );
-    QObject::connect( handler, SIGNAL( secretChanged() ), this, SLOT( onSecretChanged() ) );
-    QObject::connect( handler, SIGNAL( enabledChanged() ), this, SLOT( onEnabledChanged() ) );
-    QObject::connect( handler, SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
-    QObject::connect( handler, SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
+    QObject::connect( handler, SIGNAL(labelChanged()), this, SLOT(onLabelChanged()) );
+    QObject::connect( handler, SIGNAL(evaluateOnChangeChanged(bool)), this, SLOT(onEvaluateOnChangeChanged(bool)) );
+    QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(onSecretChanged()) );
+    QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(onEnabledChanged()) );
+    QObject::connect( handler, SIGNAL(displayMinMaxChanged(double,double,int)), this, SLOT(onDisplayMinMaxChanged(double,double,int)) );
+    QObject::connect( handler, SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double,double,int)) );
 }
 
 void
@@ -1157,9 +1157,9 @@ OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>&
     if (canAddOptions) {
         choice->setHostCanAddOptions(true);
     }
-    QObject::connect( choice.get(), SIGNAL( populated() ), this, SLOT( onChoiceMenuPopulated() ) );
-    QObject::connect( choice.get(), SIGNAL( entryAppended(QString, QString) ), this, SLOT( onChoiceMenuEntryAppended(QString, QString) ) );
-    QObject::connect( choice.get(), SIGNAL( entriesReset() ), this, SLOT( onChoiceMenuReset() ) );
+    QObject::connect( choice.get(), SIGNAL(populated()), this, SLOT(onChoiceMenuPopulated()) );
+    QObject::connect( choice.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onChoiceMenuEntryAppended(QString,QString)) );
+    QObject::connect( choice.get(), SIGNAL(entriesReset()), this, SLOT(onChoiceMenuReset()) );
 }
 
 OfxStatus

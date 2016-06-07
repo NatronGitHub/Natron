@@ -217,9 +217,9 @@ void
 KnobGuiColor::connectKnobSignalSlots()
 {
     boost::shared_ptr<KnobColor> knob = _knob.lock();
-    QObject::connect( this, SIGNAL( dimensionSwitchToggled(bool) ), knob.get(), SLOT( onDimensionSwitchToggled(bool) ) );
-    QObject::connect( knob.get(), SIGNAL( mustActivateAllDimensions() ), this, SLOT( onMustShowAllDimension() ) );
-    QObject::connect( knob.get(), SIGNAL( pickingEnabled(bool) ), this, SLOT( setPickingEnabled(bool) ) );
+    QObject::connect( this, SIGNAL(dimensionSwitchToggled(bool)), knob.get(), SLOT(onDimensionSwitchToggled(bool)) );
+    QObject::connect( knob.get(), SIGNAL(mustActivateAllDimensions()), this, SLOT(onMustShowAllDimension()) );
+    QObject::connect( knob.get(), SIGNAL(pickingEnabled(bool)), this, SLOT(setPickingEnabled(bool)) );
 }
 
 void
@@ -263,7 +263,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     QSize medIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
     _colorLabel->setFixedSize(medSize);
-    QObject::connect( _colorLabel, SIGNAL( pickingEnabled(bool) ), this, SLOT( onPickingEnabled(bool) ) );
+    QObject::connect( _colorLabel, SIGNAL(pickingEnabled(bool)), this, SLOT(onPickingEnabled(bool)) );
     containerLayout->addWidget(_colorLabel);
 
     if (_useSimplifiedUI) {
@@ -277,7 +277,7 @@ KnobGuiColor::addExtraWidgets(QHBoxLayout* containerLayout)
     _colorDialogButton->setIconSize(medIconSize);
     _colorDialogButton->setToolTip( GuiUtils::convertFromPlainText(tr("Open the color dialog."), Qt::WhiteSpaceNormal) );
     _colorDialogButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _colorDialogButton, SIGNAL( clicked() ), this, SLOT( showColorDialog() ) );
+    QObject::connect( _colorDialogButton, SIGNAL(clicked()), this, SLOT(showColorDialog()) );
     containerLayout->addWidget(_colorDialogButton);
 
     if (_useSimplifiedUI) {
@@ -476,7 +476,7 @@ KnobGuiColor::showColorDialog()
                       Image::clamp<qreal>(isSimple ? curB : Color::to_func_srgb(curB), 0., 1.),
                       Image::clamp<qreal>(curA, 0., 1.) );
     dialog.setCurrentColor(curColor);
-    QObject::connect( &dialog, SIGNAL( currentColorChanged(QColor) ), this, SLOT( onDialogCurrentColorChanged(QColor) ) );
+    QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onDialogCurrentColorChanged(QColor)) );
     if ( !dialog.exec() ) {
         if (nDims == 3) {
             knob->setValues(_lastColor[0], _lastColor[1], _lastColor[2], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);

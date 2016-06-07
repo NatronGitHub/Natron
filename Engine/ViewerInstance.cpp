@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-    CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtGlobal>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QFutureWatcher>
@@ -156,9 +156,9 @@ ViewerInstance::ViewerInstance(NodePtr node)
 
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 
-    QObject::connect( this, SIGNAL( disconnectTextureRequest(int) ), this, SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
-    QObject::connect( _imp.get(), SIGNAL( mustRedrawViewer() ), this, SLOT( redrawViewer() ) );
-    QObject::connect( this, SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
+    QObject::connect( this, SIGNAL(disconnectTextureRequest(int)), this, SLOT(executeDisconnectTextureRequestOnMainThread(int)) );
+    QObject::connect( _imp.get(), SIGNAL(mustRedrawViewer()), this, SLOT(redrawViewer()) );
+    QObject::connect( this, SIGNAL(s_callRedrawOnMainThread()), this, SLOT(redrawViewer()) );
 }
 
 ViewerInstance::~ViewerInstance()

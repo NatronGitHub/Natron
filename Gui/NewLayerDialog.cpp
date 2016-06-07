@@ -131,7 +131,7 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
 
     _imp->numCompsLabel = new Label(tr("No. Channels"), this);
     _imp->numCompsBox = new SpinBox(this, SpinBox::eSpinBoxTypeInt);
-    QObject::connect( _imp->numCompsBox, SIGNAL( valueChanged(double) ), this, SLOT( onNumCompsChanged(double) ) );
+    QObject::connect( _imp->numCompsBox, SIGNAL(valueChanged(double)), this, SLOT(onNumCompsChanged(double)) );
     _imp->numCompsBox->setMinimum(1);
     _imp->numCompsBox->setMaximum(4);
     _imp->numCompsBox->setValue(4);
@@ -147,11 +147,11 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
 
     _imp->setRgbaButton = new Button(this);
     _imp->setRgbaButton->setText( tr("Set RGBA") );
-    QObject::connect( _imp->setRgbaButton, SIGNAL( clicked(bool) ), this, SLOT( onRGBAButtonClicked() ) );
+    QObject::connect( _imp->setRgbaButton, SIGNAL(clicked(bool)), this, SLOT(onRGBAButtonClicked()) );
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
-    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
-    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
 
     _imp->mainLayout->addWidget(_imp->layerLabel, 0, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->layerEdit, 0, 1, 1, 1);

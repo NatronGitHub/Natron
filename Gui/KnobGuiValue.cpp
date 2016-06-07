@@ -198,9 +198,9 @@ KnobGuiValue::KnobGuiValue(KnobPtr knob,
 
     if (handler) {
 #ifdef SPINBOX_TAKE_PLUGIN_RANGE_INTO_ACCOUNT
-        QObject::connect( handler.get(), SIGNAL( minMaxChanged(double, double, int) ), this, SLOT( onMinMaxChanged(double, double, int) ) );
+        QObject::connect( handler.get(), SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double,double,int)) );
 #endif
-        QObject::connect( handler.get(), SIGNAL( displayMinMaxChanged(double, double, int) ), this, SLOT( onDisplayMinMaxChanged(double, double, int) ) );
+        QObject::connect( handler.get(), SIGNAL(displayMinMaxChanged(double,double,int)), this, SLOT(onDisplayMinMaxChanged(double,double,int)) );
     }
 }
 
@@ -336,7 +336,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         SpinBox *box = new KnobSpinBox(layout->parentWidget(), type, thisShared, i);
         NumericKnobValidator* validator = new NumericKnobValidator(box, thisShared);
         box->setValidator(validator);
-        QObject::connect( box, SIGNAL( valueChanged(double) ), this, SLOT( onSpinBoxValueChanged() ) );
+        QObject::connect( box, SIGNAL(valueChanged(double)), this, SLOT(onSpinBoxValueChanged()) );
 
         // Set the copy/link actions in the right click menu of the SpinBox
         enableRightClickMenu(box, i);
@@ -430,9 +430,9 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         if ( hasToolTip() ) {
             _imp->slider->setToolTip( toolTip() );
         }
-        QObject::connect( _imp->slider, SIGNAL( resetToDefaultRequested() ), this, SLOT( onResetToDefaultRequested() ) );
-        QObject::connect( _imp->slider, SIGNAL( positionChanged(double) ), this, SLOT( onSliderValueChanged(double) ) );
-        QObject::connect( _imp->slider, SIGNAL( editingFinished(bool) ), this, SLOT( onSliderEditingFinished(bool) ) );
+        QObject::connect( _imp->slider, SIGNAL(resetToDefaultRequested()), this, SLOT(onResetToDefaultRequested()) );
+        QObject::connect( _imp->slider, SIGNAL(positionChanged(double)), this, SLOT(onSliderValueChanged(double)) );
+        QObject::connect( _imp->slider, SIGNAL(editingFinished(bool)), this, SLOT(onSliderEditingFinished(bool)) );
         containerLayout->addWidget(_imp->slider);
 
         sliderVisible = shouldSliderBeVisible(dispminGui, dispmaxGui);
@@ -453,7 +453,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
         _imp->rectangleFormatButton->setCheckable(true);
         _imp->rectangleFormatButton->setChecked(_imp->rectangleFormatIsWidthHeight);
         _imp->rectangleFormatButton->setDown(_imp->rectangleFormatIsWidthHeight);
-        QObject::connect( _imp->rectangleFormatButton, SIGNAL( clicked(bool) ), this, SLOT( onRectangleFormatButtonClicked() ) );
+        QObject::connect( _imp->rectangleFormatButton, SIGNAL(clicked(bool)), this, SLOT(onRectangleFormatButtonClicked()) );
         containerLayout->addWidget(_imp->rectangleFormatButton);
     }
 
@@ -491,7 +491,7 @@ KnobGuiValue::createWidget(QHBoxLayout* layout)
             foldAllDimensions();
         }
 
-        QObject::connect( _imp->dimensionSwitchButton, SIGNAL( clicked(bool) ), this, SLOT( onDimensionSwitchClicked(bool) ) );
+        QObject::connect( _imp->dimensionSwitchButton, SIGNAL(clicked(bool)), this, SLOT(onDimensionSwitchClicked(bool)) );
     } else {
         if (_imp->slider) {
             _imp->slider->hide();
@@ -1221,8 +1221,8 @@ void
 KnobGuiDouble::connectKnobSignalSlots()
 {
     boost::shared_ptr<KnobDouble> knob = _knob.lock();
-    QObject::connect( knob.get(), SIGNAL( incrementChanged(double, int) ), this, SLOT( onIncrementChanged(double, int) ) );
-    QObject::connect( knob.get(), SIGNAL( decimalsChanged(int, int) ), this, SLOT( onDecimalsChanged(int, int) ) );
+    QObject::connect( knob.get(), SIGNAL(incrementChanged(double,int)), this, SLOT(onIncrementChanged(double,int)) );
+    QObject::connect( knob.get(), SIGNAL(decimalsChanged(int,int)), this, SLOT(onDecimalsChanged(int,int)) );
 }
 
 void
@@ -1266,7 +1266,7 @@ void
 KnobGuiInt::connectKnobSignalSlots()
 {
     boost::shared_ptr<KnobInt> knob = _knob.lock();
-    QObject::connect( knob.get(), SIGNAL( incrementChanged(double, int) ), this, SLOT( onIncrementChanged(double, int) ) );
+    QObject::connect( knob.get(), SIGNAL(incrementChanged(double,int)), this, SLOT(onIncrementChanged(double,int)) );
 }
 
 void

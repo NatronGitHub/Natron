@@ -2367,32 +2367,32 @@ DopeSheetViewPrivate::createContextMenu()
                                                                     kShortcutIDActionDopeSheetEditorDeleteKeys,
                                                                     kShortcutDescActionDopeSheetEditorDeleteKeys,
                                                                     editMenu);
-    QObject::connect( removeSelectedKeyframesAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( deleteSelectedKeyframes() ) );
+    QObject::connect( removeSelectedKeyframesAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(deleteSelectedKeyframes()) );
     editMenu->addAction(removeSelectedKeyframesAction);
 
     QAction *copySelectedKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
                                                                   kShortcutIDActionDopeSheetEditorCopySelectedKeyframes,
                                                                   kShortcutDescActionDopeSheetEditorCopySelectedKeyframes,
                                                                   editMenu);
-    QObject::connect( copySelectedKeyframesAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( copySelectedKeyframes() ) );
+    QObject::connect( copySelectedKeyframesAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(copySelectedKeyframes()) );
     editMenu->addAction(copySelectedKeyframesAction);
 
     QAction *pasteKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
                                                            kShortcutIDActionDopeSheetEditorPasteKeyframes,
                                                            kShortcutDescActionDopeSheetEditorPasteKeyframes,
                                                            editMenu);
-    QObject::connect( pasteKeyframesAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( pasteKeyframes() ) );
+    QObject::connect( pasteKeyframesAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(pasteKeyframes()) );
     editMenu->addAction(pasteKeyframesAction);
 
     QAction *selectAllKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
                                                                kShortcutIDActionDopeSheetEditorSelectAllKeyframes,
                                                                kShortcutDescActionDopeSheetEditorSelectAllKeyframes,
                                                                editMenu);
-    QObject::connect( selectAllKeyframesAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( onSelectedAllTriggered() ) );
+    QObject::connect( selectAllKeyframesAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(onSelectedAllTriggered()) );
     editMenu->addAction(selectAllKeyframesAction);
 
 
@@ -2406,8 +2406,8 @@ DopeSheetViewPrivate::createContextMenu()
     constantInterpAction->setIcon( QIcon(pix) );
     constantInterpAction->setIconVisibleInMenu(true);
 
-    QObject::connect( constantInterpAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( constantInterpSelectedKeyframes() ) );
+    QObject::connect( constantInterpAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(constantInterpSelectedKeyframes()) );
 
     interpMenu->addAction(constantInterpAction);
 
@@ -2420,8 +2420,8 @@ DopeSheetViewPrivate::createContextMenu()
     linearInterpAction->setIcon( QIcon(pix) );
     linearInterpAction->setIconVisibleInMenu(true);
 
-    QObject::connect( linearInterpAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( linearInterpSelectedKeyframes() ) );
+    QObject::connect( linearInterpAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(linearInterpSelectedKeyframes()) );
 
     interpMenu->addAction(linearInterpAction);
 
@@ -2434,8 +2434,8 @@ DopeSheetViewPrivate::createContextMenu()
     smoothInterpAction->setIcon( QIcon(pix) );
     smoothInterpAction->setIconVisibleInMenu(true);
 
-    QObject::connect( smoothInterpAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( smoothInterpSelectedKeyframes() ) );
+    QObject::connect( smoothInterpAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(smoothInterpSelectedKeyframes()) );
 
     interpMenu->addAction(smoothInterpAction);
 
@@ -2447,8 +2447,8 @@ DopeSheetViewPrivate::createContextMenu()
     catmullRomInterpAction->setIcon( QIcon(pix) );
     catmullRomInterpAction->setIconVisibleInMenu(true);
 
-    QObject::connect( catmullRomInterpAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( catmullRomInterpSelectedKeyframes() ) );
+    QObject::connect( catmullRomInterpAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(catmullRomInterpSelectedKeyframes()) );
 
     interpMenu->addAction(catmullRomInterpAction);
 
@@ -2460,8 +2460,8 @@ DopeSheetViewPrivate::createContextMenu()
     cubicInterpAction->setIcon( QIcon(pix) );
     cubicInterpAction->setIconVisibleInMenu(true);
 
-    QObject::connect( cubicInterpAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( cubicInterpSelectedKeyframes() ) );
+    QObject::connect( cubicInterpAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(cubicInterpSelectedKeyframes()) );
 
     interpMenu->addAction(cubicInterpAction);
 
@@ -2473,8 +2473,8 @@ DopeSheetViewPrivate::createContextMenu()
     horizontalInterpAction->setIcon( QIcon(pix) );
     horizontalInterpAction->setIconVisibleInMenu(true);
 
-    QObject::connect( horizontalInterpAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( horizontalInterpSelectedKeyframes() ) );
+    QObject::connect( horizontalInterpAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(horizontalInterpSelectedKeyframes()) );
 
     interpMenu->addAction(horizontalInterpAction);
 
@@ -2486,8 +2486,8 @@ DopeSheetViewPrivate::createContextMenu()
     breakInterpAction->setIcon( QIcon(pix) );
     breakInterpAction->setIconVisibleInMenu(true);
 
-    QObject::connect( breakInterpAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( breakInterpSelectedKeyframes() ) );
+    QObject::connect( breakInterpAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(breakInterpSelectedKeyframes()) );
 
     interpMenu->addAction(breakInterpAction);
 
@@ -2496,8 +2496,8 @@ DopeSheetViewPrivate::createContextMenu()
                                                            kShortcutIDActionDopeSheetEditorFrameSelection,
                                                            kShortcutDescActionDopeSheetEditorFrameSelection,
                                                            viewMenu);
-    QObject::connect( frameSelectionAction, SIGNAL( triggered() ),
-                      q_ptr, SLOT( centerOnSelection() ) );
+    QObject::connect( frameSelectionAction, SIGNAL(triggered()),
+                      q_ptr, SLOT(centerOnSelection()) );
     viewMenu->addAction(frameSelectionAction);
 } // DopeSheetViewPrivate::createContextMenu
 
@@ -2533,8 +2533,8 @@ DopeSheetView::DopeSheetView(DopeSheet *model,
         boost::shared_ptr<Project> project = gui->getApp()->getProject();
         assert(project);
 
-        connect( timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ), this, SLOT( onTimeLineFrameChanged(SequenceTime, int) ) );
-        connect( project.get(), SIGNAL( frameRangeChanged(int, int) ), this, SLOT( onTimeLineBoundariesChanged(int, int) ) );
+        connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
+        connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onTimeLineBoundariesChanged(int,int)) );
 
         onTimeLineFrameChanged(timeline->currentFrame(), eValueChangedReasonNatronGuiEdited);
 
@@ -2947,14 +2947,14 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
             for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
                 KnobPtr knob = knobIt->first.lock();
                 const KnobGuiPtr& knobGui = knobIt->second;
-                connect( knob->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(ViewSpec, int, double, double) ),
-                         this, SLOT( onKeyframeChanged() ) );
+                connect( knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
+                         this, SLOT(onKeyframeChanged()) );
 
-                connect( knobGui.get(), SIGNAL( keyFrameSet() ),
-                         this, SLOT( onKeyframeChanged() ) );
+                connect( knobGui.get(), SIGNAL(keyFrameSet()),
+                         this, SLOT(onKeyframeChanged()) );
 
-                connect( knobGui.get(), SIGNAL( keyFrameRemoved() ),
-                         this, SLOT( onKeyframeChanged() ) );
+                connect( knobGui.get(), SIGNAL(keyFrameRemoved()),
+                         this, SLOT(onKeyframeChanged()) );
             }
         }
 
@@ -2971,11 +2971,11 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
         boost::shared_ptr<KnobSignalSlotHandler> startingTimeKnob = node->getKnobByName(kReaderParamNameStartingTime)->getSignalSlotHandler();
         assert(startingTimeKnob);
 
-        connect( lastFrameKnobHandler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
-                 this, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
+        connect( lastFrameKnobHandler.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
 
-        connect( startingTimeKnob.get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
-                 this, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
+        connect( startingTimeKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
 
         // We don't make the connection for the first frame knob, because the
         // starting time is updated when it's modified. Thus we avoid two
@@ -2984,20 +2984,20 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
         boost::shared_ptr<KnobSignalSlotHandler> speedKnob =  node->getKnobByName(kRetimeParamNameSpeed)->getSignalSlotHandler();
         assert(speedKnob);
 
-        connect( speedKnob.get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
-                 this, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
+        connect( speedKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
     } else if (nodeType == eDopeSheetItemTypeTimeOffset) {
         boost::shared_ptr<KnobSignalSlotHandler> timeOffsetKnob =  node->getKnobByName(kReaderParamNameTimeOffset)->getSignalSlotHandler();
         assert(timeOffsetKnob);
 
-        connect( timeOffsetKnob.get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
-                 this, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
+        connect( timeOffsetKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
     } else if (nodeType == eDopeSheetItemTypeFrameRange) {
         boost::shared_ptr<KnobSignalSlotHandler> frameRangeKnob =  node->getKnobByName(kFrameRangeParamNameFrameRange)->getSignalSlotHandler();
         assert(frameRangeKnob);
 
-        connect( frameRangeKnob.get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
-                 this, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
+        connect( frameRangeKnob.get(), SIGNAL(valueChanged(ViewSpec,int,int)),
+                 this, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
     }
 
     if (mustComputeNodeRange) {

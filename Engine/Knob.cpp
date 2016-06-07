@@ -3369,14 +3369,14 @@ KnobHelper::slaveToInternal(int dimension,
     }
 
     if (masterKnob->_signalSlotHandler && _signalSlotHandler) {
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
-                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewSpec, int, int, bool) ), Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ),
-                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double, ViewSpec, int, int) ), Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(ViewSpec, int, double, double) ),
-                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(ViewSpec, int, double, double) ), Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( animationRemoved(ViewSpec, int) ),
-                          _signalSlotHandler.get(), SLOT( onMasterAnimationRemoved(ViewSpec, int) ), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
+                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameSet(double,ViewSpec,int,int,bool)), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
+                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameRemoved(double,ViewSpec,int,int)), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
+                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameMoved(ViewSpec,int,double,double)), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(animationRemoved(ViewSpec,int)),
+                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)), Qt::UniqueConnection );
     }
 
     bool hasChanged = cloneAndCheckIfChanged(other.get(), dimension);
@@ -4567,11 +4567,11 @@ KnobHolder::KnobHolder(const AppInstPtr& appInstance)
     : QObject()
     , _imp( new KnobHolderPrivate(appInstance) )
 {
-    QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
-    QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
-                      SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
-    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ), this,
-                      SLOT( onDoValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ) );
+    QObject::connect( this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()) );
+    QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
+                      SLOT(onDoEvaluateOnMainThread(bool,bool)) );
+    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
+                      SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)) );
 }
 
 KnobHolder::~KnobHolder()

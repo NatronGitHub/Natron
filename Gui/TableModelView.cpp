@@ -212,7 +212,7 @@ TableModel::TableModel(int rows,
     : QAbstractTableModel(view)
     , _imp( new TableModelPrivate(rows, columns) )
 {
-    QObject::connect( this, SIGNAL( dataChanged(QModelIndex, QModelIndex) ), this, SLOT( onDataChanged(QModelIndex) ) );
+    QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex)) );
 }
 
 TableModel::~TableModel()
@@ -892,7 +892,7 @@ struct TableViewPrivate
 ExpandingLineEdit::ExpandingLineEdit(QWidget *parent)
     : LineEdit(parent), originalWidth(-1), widgetOwnsGeometry(false)
 {
-    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( resizeToContents() ) );
+    connect( this, SIGNAL(textChanged(QString)), this, SLOT(resizeToContents()) );
     updateMinimumWidth();
 }
 

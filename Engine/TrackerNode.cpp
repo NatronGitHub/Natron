@@ -395,13 +395,13 @@ TrackerNode::initializeKnobs()
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );
 
-    QObject::connect( getNode().get(), SIGNAL( s_refreshPreviewsAfterProjectLoadRequested() ), _imp->ui.get(), SLOT( rebuildMarkerTextures() ) );
-    QObject::connect( context.get(), SIGNAL( selectionChanged(int) ), _imp->ui.get(), SLOT( onContextSelectionChanged(int) ) );
-    QObject::connect( context.get(), SIGNAL( keyframeSetOnTrack(TrackMarkerPtr, int) ), _imp->ui.get(), SLOT( onKeyframeSetOnTrack(TrackMarkerPtr, int) ) );
-    QObject::connect( context.get(), SIGNAL( keyframeRemovedOnTrack(TrackMarkerPtr, int) ), _imp->ui.get(), SLOT( onKeyframeRemovedOnTrack(TrackMarkerPtr, int) ) );
-    QObject::connect( context.get(), SIGNAL( allKeyframesRemovedOnTrack(TrackMarkerPtr) ), _imp->ui.get(), SLOT( onAllKeyframesRemovedOnTrack(TrackMarkerPtr) ) );
-    QObject::connect( context.get(), SIGNAL( trackingFinished() ), _imp->ui.get(), SLOT( onTrackingEnded() ) );
-    QObject::connect( context.get(), SIGNAL( trackingStarted(int) ), _imp->ui.get(), SLOT( onTrackingStarted(int) ) );
+    QObject::connect( getNode().get(), SIGNAL(s_refreshPreviewsAfterProjectLoadRequested()), _imp->ui.get(), SLOT(rebuildMarkerTextures()) );
+    QObject::connect( context.get(), SIGNAL(selectionChanged(int)), _imp->ui.get(), SLOT(onContextSelectionChanged(int)) );
+    QObject::connect( context.get(), SIGNAL(keyframeSetOnTrack(TrackMarkerPtr,int)), _imp->ui.get(), SLOT(onKeyframeSetOnTrack(TrackMarkerPtr,int)) );
+    QObject::connect( context.get(), SIGNAL(keyframeRemovedOnTrack(TrackMarkerPtr,int)), _imp->ui.get(), SLOT(onKeyframeRemovedOnTrack(TrackMarkerPtr,int)) );
+    QObject::connect( context.get(), SIGNAL(allKeyframesRemovedOnTrack(TrackMarkerPtr)), _imp->ui.get(), SLOT(onAllKeyframesRemovedOnTrack(TrackMarkerPtr)) );
+    QObject::connect( context.get(), SIGNAL(trackingFinished()), _imp->ui.get(), SLOT(onTrackingEnded()) );
+    QObject::connect( context.get(), SIGNAL(trackingStarted(int)), _imp->ui.get(), SLOT(onTrackingStarted(int)) );
 
     // Right click menu
     boost::shared_ptr<KnobChoice> rightClickMenu = AppManager::createKnob<KnobChoice>( this, std::string(kTrackerUIParamRightClickMenu) );

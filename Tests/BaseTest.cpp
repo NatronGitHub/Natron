@@ -43,7 +43,7 @@ NATRON_NAMESPACE_USING
 static AppManager* g_manager = 0;
 BaseTest::BaseTest()
     : testing::Test()
-      , _app()
+    , _app()
 {
 }
 

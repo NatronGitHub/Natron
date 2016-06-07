@@ -539,11 +539,11 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
     : GenericSchedulerThread()
     , _imp( new OutputSchedulerThreadPrivate(engine, effect, mode) )
 {
-    QObject::connect( _imp->timer.get(), SIGNAL( fpsChanged(double, double) ), _imp->engine, SIGNAL( fpsChanged(double, double) ) );
+    QObject::connect( _imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)) );
 
 
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
-    QObject::connect( &_imp->threadSpawnsTimer, SIGNAL( timeout() ), this, SLOT( onThreadSpawnsTimerTriggered() ) );
+    QObject::connect( &_imp->threadSpawnsTimer, SIGNAL(timeout()), this, SLOT(onThreadSpawnsTimerTriggered()) );
 #endif
 
     setThreadName("Scheduler thread");
@@ -2972,7 +2972,7 @@ struct RenderEnginePrivate
 RenderEngine::RenderEngine(const boost::shared_ptr<OutputEffectInstance>& output)
     : _imp( new RenderEnginePrivate(output) )
 {
-    QObject::connect(this, SIGNAL( currentFrameRenderRequestPosted() ), this, SLOT( onCurrentFrameRenderRequestPosted() ), Qt::QueuedConnection);
+    QObject::connect(this, SIGNAL(currentFrameRenderRequestPosted()), this, SLOT(onCurrentFrameRenderRequestPosted()), Qt::QueuedConnection);
 }
 
 RenderEngine::~RenderEngine()
@@ -3160,7 +3160,7 @@ RenderEngine::waitForEngineToQuit_main_thread(bool allowRestart)
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->engineWatcher);
     _imp->engineWatcher.reset( new RenderEngineWatcher(this) );
-    QObject::connect( _imp->engineWatcher.get(), SIGNAL( taskFinished(int, WatcherCallerArgsPtr) ), this, SLOT( onWatcherEngineQuitEmitted() ) );
+    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineQuitEmitted()) );
     _imp->engineWatcher->scheduleBlockingTask(allowRestart ? RenderEngineWatcher::eBlockingTaskWaitForQuitAllowRestart : RenderEngineWatcher::eBlockingTaskWaitForQuitDisallowRestart);
 }
 
@@ -3266,7 +3266,7 @@ RenderEngine::waitForAbortToComplete_main_thread()
     assert( QThread::currentThread() == qApp->thread() );
     assert(!_imp->engineWatcher);
     _imp->engineWatcher.reset( new RenderEngineWatcher(this) );
-    QObject::connect( _imp->engineWatcher.get(), SIGNAL( taskFinished(int, WatcherCallerArgsPtr) ), this, SLOT( onWatcherEngineAbortedEmitted() ) );
+    QObject::connect( _imp->engineWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherEngineAbortedEmitted()) );
     _imp->engineWatcher->scheduleBlockingTask(RenderEngineWatcher::eBlockingTaskWaitForAbort);
 }
 

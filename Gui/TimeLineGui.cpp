@@ -210,15 +210,15 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     assert(app);
     if (_imp->timeline) {
         //connect the internal timeline to the gui
-        QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ), this, SLOT( onFrameChanged(SequenceTime, int) ) );
+        QObject::disconnect( _imp->timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)) );
 
         //connect the gui to the internal timeline
-        QObject::disconnect( app.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
+        QObject::disconnect( app.get(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()) );
     }
 
     //connect the internal timeline to the gui
-    QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ), this, SLOT( onFrameChanged(SequenceTime, int) ), Qt::UniqueConnection );
-    QObject::connect( app.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ), Qt::UniqueConnection );
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)), Qt::UniqueConnection );
+    QObject::connect( app.get(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()), Qt::UniqueConnection );
 
     _imp->timeline = timeline;
 }
@@ -1188,12 +1188,12 @@ TimeLineGui::connectSlotsToViewerCache()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::connect( emitter.get(), SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
-    QObject::connect( emitter.get(), SIGNAL( removedEntry(SequenceTime, int) ), this, SLOT( onCachedFrameRemoved(SequenceTime, int) ) );
-    QObject::connect( emitter.get(), SIGNAL( entryStorageChanged(SequenceTime, int, int) ), this,
-                      SLOT( onCachedFrameStorageChanged(SequenceTime, int, int) ) );
-    QObject::connect( emitter.get(), SIGNAL( clearedDiskPortion() ), this, SLOT( onDiskCacheCleared() ) );
-    QObject::connect( emitter.get(), SIGNAL( clearedInMemoryPortion() ), this, SLOT( onMemoryCacheCleared() ) );
+    QObject::connect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
+    QObject::connect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
+    QObject::connect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
+                      SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
+    QObject::connect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
+    QObject::connect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
 }
 
 void
@@ -1203,12 +1203,12 @@ TimeLineGui::disconnectSlotsFromViewerCache()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::disconnect( emitter.get(), SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
-    QObject::disconnect( emitter.get(), SIGNAL( removedEntry(SequenceTime, int) ), this, SLOT( onCachedFrameRemoved(SequenceTime, int) ) );
-    QObject::disconnect( emitter.get(), SIGNAL( entryStorageChanged(SequenceTime, int, int) ), this,
-                         SLOT( onCachedFrameStorageChanged(SequenceTime, int, int) ) );
-    QObject::disconnect( emitter.get(), SIGNAL( clearedDiskPortion() ), this, SLOT( onDiskCacheCleared() ) );
-    QObject::disconnect( emitter.get(), SIGNAL( clearedInMemoryPortion() ), this, SLOT( onMemoryCacheCleared() ) );
+    QObject::disconnect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
+    QObject::disconnect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
+    QObject::disconnect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
+                         SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
+    QObject::disconnect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
+    QObject::disconnect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
 }
 
 bool

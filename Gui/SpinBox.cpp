@@ -121,7 +121,7 @@ SpinBox::SpinBox(QWidget* parent,
     , ignoreWheelEvent(false)
     , _imp( new SpinBoxPrivate(type) )
 {
-    QObject::connect( this, SIGNAL( returnPressed() ), this, SLOT( interpretReturn() ) );
+    QObject::connect( this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()) );
 
     setValue(0);
     setMaximumWidth( TO_DPIX(SPINBOX_MAX_WIDTH) );

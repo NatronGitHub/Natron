@@ -137,7 +137,7 @@ GenericSchedulerThread::GenericSchedulerThread()
     , AbortableThread(this)
     , _imp( new GenericSchedulerThreadPrivate(this) )
 {
-    QObject::connect( this, SIGNAL( executionOnMainThreadRequested(ExecOnMTArgsPtr) ), this, SLOT( onExecutionOnMainThreadReceived(ExecOnMTArgsPtr) ) );
+    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(ExecOnMTArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(ExecOnMTArgsPtr)) );
 }
 
 GenericSchedulerThread::~GenericSchedulerThread()
@@ -243,7 +243,7 @@ GenericSchedulerThread::waitForThreadToQuitQueued_main_thread(bool allowRestart)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->blockingOperationWatcher.reset( new GenericSchedulerThreadWatcher(this) );
-    QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL( taskFinished(int, WatcherCallerArgsPtr) ), this, SLOT( onWatcherTaskFinishedEmitted() ) );
+    QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherTaskFinishedEmitted()) );
     GenericSchedulerThreadWatcher::BlockingTaskEnum task = allowRestart ? GenericSchedulerThreadWatcher::eBlockingTaskWaitForQuitAllowRestart : GenericSchedulerThreadWatcher::eBlockingTaskWaitForQuitDisallowRestart;
     _imp->blockingOperationWatcher->scheduleBlockingTask(task);
 }
@@ -412,7 +412,7 @@ GenericSchedulerThread::waitForAbortToCompleteQueued_main_thread()
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->blockingOperationWatcher.reset( new GenericSchedulerThreadWatcher(this) );
-    QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL( taskFinished(int, WatcherCallerArgsPtr) ), this, SLOT( onWatcherTaskAbortedEmitted() ) );
+    QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherTaskAbortedEmitted()) );
     _imp->blockingOperationWatcher->scheduleBlockingTask(GenericSchedulerThreadWatcher::eBlockingTaskWaitForAbort);
 }
 

@@ -51,7 +51,7 @@ JoinViewsNode::JoinViewsNode(NodePtr node)
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (node) {
         boost::shared_ptr<Project> project = node->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL( projectViewsChanged() ), this, SLOT( onProjectViewsChanged() ) );
+        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
     }
 }
 

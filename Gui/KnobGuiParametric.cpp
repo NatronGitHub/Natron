@@ -97,7 +97,7 @@ KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
     , _curves()
 {
     _knob = boost::dynamic_pointer_cast<KnobParametric>(knob);
-    QObject::connect( _knob.lock().get(), SIGNAL( curveColorChanged(int) ), this, SLOT( onColorChanged(int) ) );
+    QObject::connect( _knob.lock().get(), SIGNAL(curveColorChanged(int)), this, SLOT(onColorChanged(int)) );
 }
 
 KnobGuiParametric::~KnobGuiParametric()
@@ -115,7 +115,7 @@ void
 KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
     boost::shared_ptr<KnobParametric> knob = _knob.lock();
-    QObject::connect( knob.get(), SIGNAL( curveChanged(int) ), this, SLOT( onCurveChanged(int) ) );
+    QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
     boost::shared_ptr<OfxParamOverlayInteract> interact = knob->getCustomInteract();
 
     //layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -134,7 +134,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     _resetButton = new Button(QString::fromUtf8("Reset"), treeColumn);
     _resetButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _resetButton, SIGNAL( clicked() ), this, SLOT( resetSelectedCurves() ) );
+    QObject::connect( _resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()) );
     treeColumnLayout->addWidget(_resetButton);
 
     layout->addWidget(treeColumn);
@@ -175,7 +175,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
 
     _curveWidget->centerOn(visibleCurves);
-    QObject::connect( _tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onItemsSelectionChanged() ) );
+    QObject::connect( _tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemsSelectionChanged()) );
 } // createWidget
 
 void

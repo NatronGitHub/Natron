@@ -88,11 +88,11 @@ public:
         , view(0)
         , id(-1)
         , itemFlags(Qt::ItemIsEditable
-                  | Qt::ItemIsSelectable
-                  | Qt::ItemIsUserCheckable
-                  | Qt::ItemIsEnabled
-                  | Qt::ItemIsDragEnabled
-                  | Qt::ItemIsDropEnabled)
+                    | Qt::ItemIsSelectable
+                    | Qt::ItemIsUserCheckable
+                    | Qt::ItemIsEnabled
+                    | Qt::ItemIsDragEnabled
+                    | Qt::ItemIsDropEnabled)
     {
     }
 

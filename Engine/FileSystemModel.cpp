@@ -469,8 +469,8 @@ FileSystemModel::initialize(SortableViewI* view)
 
     _imp->watcher.reset(new QFileSystemWatcher);
     assert(_imp->watcher);
-    QObject::connect( _imp->watcher.get(), SIGNAL( directoryChanged(QString) ), this, SLOT( onWatchedDirectoryChanged(QString) ) );
-    QObject::connect( _imp->watcher.get(), SIGNAL( fileChanged(QString) ), this, SLOT( onWatchedFileChanged(QString) ) );
+    QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );
+    QObject::connect( _imp->watcher.get(), SIGNAL(fileChanged(QString)), this, SLOT(onWatchedFileChanged(QString)) );
     _imp->watcher->addPath( QDir::rootPath() );
 
     resetCompletly(true);
@@ -1191,8 +1191,8 @@ FileSystemModel::setRootPath(const QString& path)
     if (item != _imp->rootItem) {
         _imp->watcher.reset(new QFileSystemWatcher);
         assert(_imp->watcher);
-        QObject::connect( _imp->watcher.get(), SIGNAL( directoryChanged(QString) ), this, SLOT( onWatchedDirectoryChanged(QString) ) );
-        QObject::connect( _imp->watcher.get(), SIGNAL( fileChanged(QString) ), this, SLOT( onWatchedFileChanged(QString) ) );
+        QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );
+        QObject::connect( _imp->watcher.get(), SIGNAL(fileChanged(QString)), this, SLOT(onWatchedFileChanged(QString)) );
         _imp->watcher->removePath(_imp->currentRootPath);
         _imp->watcher->addPath( item->absoluteFilePath() );
 
@@ -1217,7 +1217,7 @@ FileSystemModel::initGatherer()
     if (!_imp->gatherer) {
         _imp->gatherer.reset( new FileGathererThread( shared_from_this() ) );
         assert(_imp->gatherer);
-        QObject::connect( _imp->gatherer.get(), SIGNAL( directoryLoaded(QString) ), this, SLOT( onDirectoryLoadedByGatherer(QString) ) );
+        QObject::connect( _imp->gatherer.get(), SIGNAL(directoryLoaded(QString)), this, SLOT(onDirectoryLoadedByGatherer(QString)) );
     }
 }
 

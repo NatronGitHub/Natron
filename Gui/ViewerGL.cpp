@@ -119,7 +119,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     //setFocusPolicy(Qt::StrongFocus);
     setMouseTracking(true);
 
-    QObject::connect( parent->getGui()->getApp()->getProject().get(), SIGNAL( formatChanged(Format) ), this, SLOT( onProjectFormatChanged(Format) ) );
+    QObject::connect( parent->getGui()->getApp()->getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(onProjectFormatChanged(Format)) );
     Format projectFormat;
     parent->getGui()->getApp()->getProject()->getProjectDefaultFormat(&projectFormat);
 
@@ -132,7 +132,7 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     resetWipeControls();
     populateMenu();
 
-    QObject::connect( appPTR, SIGNAL( checkerboardSettingsChanged() ), this, SLOT( onCheckerboardSettingsChanged() ) );
+    QObject::connect( appPTR, SIGNAL(checkerboardSettingsChanged()), this, SLOT(onCheckerboardSettingsChanged()) );
 }
 
 ViewerGL::~ViewerGL()
@@ -3125,27 +3125,27 @@ ViewerGL::populateMenu()
 
     displayOverlaysAction->setCheckable(true);
     displayOverlaysAction->setChecked(_imp->overlay);
-    QObject::connect( displayOverlaysAction, SIGNAL( triggered() ), this, SLOT( toggleOverlays() ) );
+    QObject::connect( displayOverlaysAction, SIGNAL(triggered()), this, SLOT(toggleOverlays()) );
     QAction* toggleWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDToggleWipe, kShortcutDescToggleWipe, _imp->menu);
     toggleWipe->setCheckable(true);
     toggleWipe->setChecked(getViewerTab()->getCompositingOperator() != eViewerCompositingOperatorNone);
-    QObject::connect( toggleWipe, SIGNAL( triggered() ), this, SLOT( toggleWipe() ) );
+    QObject::connect( toggleWipe, SIGNAL(triggered()), this, SLOT(toggleWipe()) );
     _imp->menu->addAction(toggleWipe);
 
 
     QAction* centerWipe = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDCenterWipe, kShortcutDescCenterWipe, _imp->menu);
-    QObject::connect( centerWipe, SIGNAL( triggered() ), this, SLOT( centerWipe() ) );
+    QObject::connect( centerWipe, SIGNAL(triggered()), this, SLOT(centerWipe()) );
     _imp->menu->addAction(centerWipe);
 
     QAction* goToPrevLayer = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDPrevLayer, kShortcutDescPrevLayer, _imp->menu);
-    QObject::connect( goToPrevLayer, SIGNAL( triggered() ), _imp->viewerTab, SLOT( previousLayer() ) );
+    QObject::connect( goToPrevLayer, SIGNAL(triggered()), _imp->viewerTab, SLOT(previousLayer()) );
     _imp->menu->addAction(goToPrevLayer);
     QAction* goToNextLayer = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDNextLayer, kShortcutDescNextLayer, _imp->menu);
-    QObject::connect( goToNextLayer, SIGNAL( triggered() ), _imp->viewerTab, SLOT( nextLayer() ) );
+    QObject::connect( goToNextLayer, SIGNAL(triggered()), _imp->viewerTab, SLOT(nextLayer()) );
     _imp->menu->addAction(goToNextLayer);
 
     QAction* switchAB = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDSwitchInputAAndB, kShortcutDescSwitchInputAAndB, _imp->menu);
-    QObject::connect( switchAB, SIGNAL( triggered() ), _imp->viewerTab, SLOT( switchInputAAndB() ) );
+    QObject::connect( switchAB, SIGNAL(triggered()), _imp->viewerTab, SLOT(switchInputAAndB()) );
     _imp->menu->addAction(switchAB);
 
     Menu* showHideMenu = new Menu(tr("Show/Hide"), _imp->menu);
@@ -3177,14 +3177,14 @@ ViewerGL::populateMenu()
     hideAll = new ActionWithShortcut(kShortcutGroupViewer, kShortcutIDActionHideAll, kShortcutDescActionHideAll,
                                      showHideMenu);
 
-    QObject::connect( showHidePlayer, SIGNAL( triggered() ), _imp->viewerTab, SLOT( togglePlayerVisibility() ) );
-    QObject::connect( showHideLeftToolbar, SIGNAL( triggered() ), _imp->viewerTab, SLOT( toggleLeftToolbarVisiblity() ) );
-    QObject::connect( showHideRightToolbar, SIGNAL( triggered() ), _imp->viewerTab, SLOT( toggleRightToolbarVisibility() ) );
-    QObject::connect( showHideTopToolbar, SIGNAL( triggered() ), _imp->viewerTab, SLOT( toggleTopToolbarVisibility() ) );
-    QObject::connect( showHideInfobar, SIGNAL( triggered() ), _imp->viewerTab, SLOT( toggleInfobarVisbility() ) );
-    QObject::connect( showHideTimeline, SIGNAL( triggered() ), _imp->viewerTab, SLOT( toggleTimelineVisibility() ) );
-    QObject::connect( showAll, SIGNAL( triggered() ), _imp->viewerTab, SLOT( showAllToolbars() ) );
-    QObject::connect( hideAll, SIGNAL( triggered() ), _imp->viewerTab, SLOT( hideAllToolbars() ) );
+    QObject::connect( showHidePlayer, SIGNAL(triggered()), _imp->viewerTab, SLOT(togglePlayerVisibility()) );
+    QObject::connect( showHideLeftToolbar, SIGNAL(triggered()), _imp->viewerTab, SLOT(toggleLeftToolbarVisiblity()) );
+    QObject::connect( showHideRightToolbar, SIGNAL(triggered()), _imp->viewerTab, SLOT(toggleRightToolbarVisibility()) );
+    QObject::connect( showHideTopToolbar, SIGNAL(triggered()), _imp->viewerTab, SLOT(toggleTopToolbarVisibility()) );
+    QObject::connect( showHideInfobar, SIGNAL(triggered()), _imp->viewerTab, SLOT(toggleInfobarVisbility()) );
+    QObject::connect( showHideTimeline, SIGNAL(triggered()), _imp->viewerTab, SLOT(toggleTimelineVisibility()) );
+    QObject::connect( showAll, SIGNAL(triggered()), _imp->viewerTab, SLOT(showAllToolbars()) );
+    QObject::connect( hideAll, SIGNAL(triggered()), _imp->viewerTab, SLOT(hideAllToolbars()) );
 
     showHideMenu->addAction(showHidePlayer);
     showHideMenu->addAction(showHideTimeline);

@@ -247,7 +247,7 @@ KnobGuiContainerHelper::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
     pageGui->gridLayout = tabLayout;
 
     boost::shared_ptr<KnobSignalSlotHandler> handler = page->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL( labelChanged() ), _imp->signals.get(), SLOT( onPageLabelChangedInternally() ) );
+    QObject::connect( handler.get(), SIGNAL(labelChanged()), _imp->signals.get(), SLOT(onPageLabelChangedInternally()) );
 
     // Add the page to the container (most likely a tab widget)
     addPageToPagesContainer(pageGui);
@@ -723,7 +723,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                 }
                 label->setText_overload(labelStr );
             }
-            QObject::connect( label, SIGNAL( clicked(bool) ), ret.get(), SIGNAL( labelClicked(bool) ) );
+            QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
 
 
             if (makeNewLine) {

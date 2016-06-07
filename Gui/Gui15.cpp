@@ -197,43 +197,43 @@ slotForView(int view)
     switch (view) {
     case 0:
 
-        return SLOT( showView0() );
+        return SLOT(showView0());
         break;
     case 1:
 
-        return SLOT( showView1() );
+        return SLOT(showView1());
         break;
     case 2:
 
-        return SLOT( showView2() );
+        return SLOT(showView2());
         break;
     case 3:
 
-        return SLOT( showView3() );
+        return SLOT(showView3());
         break;
     case 4:
 
-        return SLOT( showView4() );
+        return SLOT(showView4());
         break;
     case 5:
 
-        return SLOT( showView5() );
+        return SLOT(showView5());
         break;
     case 6:
 
-        return SLOT( showView6() );
+        return SLOT(showView6());
         break;
     case 7:
 
-        return SLOT( showView7() );
+        return SLOT(showView7());
         break;
     case 8:
 
-        return SLOT( showView7() );
+        return SLOT(showView7());
         break;
     case 9:
 
-        return SLOT( showView8() );
+        return SLOT(showView8());
         break;
     default:
 
@@ -253,13 +253,13 @@ Gui::updateViewsActions(int viewsCount)
         left->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_1) );
         _imp->viewersViewMenu->addAction(left);
         left->setText( tr("Display Left View") );
-        QObject::connect( left, SIGNAL( triggered() ), this, SLOT( showView0() ) );
+        QObject::connect( left, SIGNAL(triggered()), this, SLOT(showView0()) );
         QAction* right = new QAction(this);
         right->setCheckable(false);
         right->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_2) );
         _imp->viewersViewMenu->addAction(right);
         right->setText( tr("Display Right View") );
-        QObject::connect( right, SIGNAL( triggered() ), this, SLOT( showView1() ) );
+        QObject::connect( right, SIGNAL(triggered()), this, SLOT(showView1()) );
 
         _imp->viewersMenu->addAction( _imp->viewersViewMenu->menuAction() );
     } else if (viewsCount > 2) {
@@ -277,7 +277,7 @@ Gui::updateViewsActions(int viewsCount)
             const char* slot = slotForView(i);
             viewI->setText( QString( tr("Display View ") ) + QString::number(i + 1) );
             if (slot) {
-                QObject::connect(viewI, SIGNAL( triggered() ), this, slot);
+                QObject::connect(viewI, SIGNAL(triggered()), this, slot);
             }
         }
 

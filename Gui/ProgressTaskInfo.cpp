@@ -187,7 +187,7 @@ ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
     //We compute the time remaining automatically based on a timer if this is not a render but a general progress dialog
     _imp->timer.reset(new TimeLapse);
     _imp->refreshLabelTimer.reset(new QTimer);
-    QObject::connect( _imp->refreshLabelTimer.get(), SIGNAL( timeout() ), this, SLOT( onRefreshLabelTimeout() ) );
+    QObject::connect( _imp->refreshLabelTimer.get(), SIGNAL(timeout()), this, SLOT(onRefreshLabelTimeout()) );
     _imp->refreshLabelTimer->start(NATRON_PROGRESS_DIALOG_ETA_REFRESH_MS);
 }
 
@@ -608,7 +608,7 @@ ProgressTaskInfo::createCellWidgets()
     _imp->pauseTasksButton->setFocusPolicy(Qt::NoFocus);
     _imp->pauseTasksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Pause the task. Tasks that can be paused "
                                                                           "may be restarted with the restart button."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->pauseTasksButton, SIGNAL( clicked(bool) ), this, SLOT( onPauseTriggered() ) );
+    QObject::connect( _imp->pauseTasksButton, SIGNAL(clicked(bool)), this, SLOT(onPauseTriggered()) );
     _imp->pauseTasksButton->setEnabled(_imp->canBePaused);
     layout->addWidget(_imp->pauseTasksButton);
 
@@ -617,7 +617,7 @@ ProgressTaskInfo::createCellWidgets()
     _imp->restartTasksButton->setIconSize(medButtonIconSize);
     _imp->restartTasksButton->setFocusPolicy(Qt::NoFocus);
     _imp->restartTasksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Restart task"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->restartTasksButton, SIGNAL( clicked(bool) ), this, SLOT( onRestartTriggered() ) );
+    QObject::connect( _imp->restartTasksButton, SIGNAL(clicked(bool)), this, SLOT(onRestartTriggered()) );
     _imp->restartTasksButton->setEnabled(false);
     layout->addWidget(_imp->restartTasksButton);
 
@@ -627,7 +627,7 @@ ProgressTaskInfo::createCellWidgets()
     _imp->cancelTasksButton->setIconSize(medButtonIconSize);
     _imp->cancelTasksButton->setFocusPolicy(Qt::NoFocus);
     _imp->cancelTasksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Cancel and remove the task from the list"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->cancelTasksButton, SIGNAL( clicked(bool) ), this, SLOT( onCancelTriggered() ) );
+    QObject::connect( _imp->cancelTasksButton, SIGNAL(clicked(bool)), this, SLOT(onCancelTriggered()) );
     layout->addWidget(_imp->cancelTasksButton);
 
     _imp->refreshButtons();

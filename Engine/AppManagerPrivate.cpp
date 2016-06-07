@@ -34,11 +34,11 @@
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-    GCC_DIAG_OFF(unused - parameter)
+GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/export.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-    GCC_DIAG_ON(unused - parameter)
+GCC_DIAG_ON(unused-parameter)
 
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>
@@ -150,7 +150,7 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
     breakpadAliveThread.reset( new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
                                                           QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
                                                           breakpadComPipePath) );
-    QObject::connect( breakpadAliveThread.get(), SIGNAL( otherProcessUnreachable() ), appPTR, SLOT( onCrashReporterNoLongerResponding() ) );
+    QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
     breakpadAliveThread->start();
 }
 

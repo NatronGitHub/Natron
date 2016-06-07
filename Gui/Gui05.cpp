@@ -78,7 +78,7 @@ Gui::setupUi()
 
 
     _imp->_undoStacksGroup = new QUndoGroup;
-    QObject::connect( _imp->_undoStacksGroup, SIGNAL( activeStackChanged(QUndoStack*) ), this, SLOT( onCurrentUndoStackChanged(QUndoStack*) ) );
+    QObject::connect( _imp->_undoStacksGroup, SIGNAL(activeStackChanged(QUndoStack*)), this, SLOT(onCurrentUndoStackChanged(QUndoStack*)) );
 
     createMenuActions();
 
@@ -139,10 +139,10 @@ Gui::setupUi()
 
     //the same action also clears the ofx plugins caches, they are not the same cache but are used to the same end
 
-    QObject::connect( project.get(), SIGNAL( projectNameChanged(QString, bool) ), this, SLOT( onProjectNameChanged(QString, bool) ) );
+    QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
     boost::shared_ptr<TimeLine> timeline = project->getTimeLine();
-    QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ), this, SLOT( renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime, int) ) );
-    QObject::connect( timeline.get(), SIGNAL( frameAboutToChange() ), this, SLOT( onTimelineTimeAboutToChange() ) );
+    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime,int)) );
+    QObject::connect( timeline.get(), SIGNAL(frameAboutToChange()), this, SLOT(onTimelineTimeAboutToChange()) );
 
     /*Searches recursively for all child objects of the given object,
        and connects matching signals from them to slots of object that follow the following form:
@@ -222,7 +222,7 @@ Gui::createGroupGui(const NodePtr & group,
     _imp->_groups.push_back(nodeGraph);
     if ( where && (reason == eCreateNodeReasonUserCreate) && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
-        QTimer::singleShot( 25, nodeGraph, SLOT( centerOnAllNodes() ) );
+        QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {
         nodeGraph->setVisible(false);
     }

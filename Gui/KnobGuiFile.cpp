@@ -75,7 +75,7 @@ KnobGuiFile::KnobGuiFile(KnobPtr knob,
     boost::shared_ptr<KnobFile> k = boost::dynamic_pointer_cast<KnobFile>(knob);
 
     assert(k);
-    QObject::connect( k.get(), SIGNAL( openFile() ), this, SLOT( open_file() ) );
+    QObject::connect( k.get(), SIGNAL(openFile()), this, SLOT(open_file()) );
     _knob = k;
 }
 
@@ -98,7 +98,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
 
     if ( holderIsEffect && holderIsEffect->isReader() && (knob->getName() == kOfxImageEffectFileParamName) ) {
         boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
-        QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ), this, SLOT( onTimelineFrameChanged(SequenceTime, int) ) );
+        QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineFrameChanged(SequenceTime,int)) );
     }
 
 
@@ -110,7 +110,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_lineEdit, 0);
 
-    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+    QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
 
     _openFileButton = new Button( layout->parentWidget() );
@@ -120,7 +120,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
     _openFileButton->setIcon( QIcon(pix) );
     _openFileButton->setToolTip( toolTip() );
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
-    QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
+    QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
 
     layout->addWidget(_lineEdit);
     layout->addWidget(_openFileButton);
@@ -133,7 +133,7 @@ KnobGuiFile::createWidget(QHBoxLayout* layout)
         appPTR->getIcon(NATRON_PIXMAP_VIEWER_REFRESH, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pixRefresh);
         _reloadButton->setIcon( QIcon(pixRefresh) );
         _reloadButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reload the file."), Qt::WhiteSpaceNormal) );
-        QObject::connect( _reloadButton, SIGNAL( clicked() ), this, SLOT( onReloadClicked() ) );
+        QObject::connect( _reloadButton, SIGNAL(clicked()), this, SLOT(onReloadClicked()) );
         layout->addWidget(_reloadButton);
     }
 }
@@ -372,16 +372,16 @@ void
 KnobGuiFile::addRightClickMenuEntries(QMenu* menu)
 {
     QAction* makeAbsoluteAction = new QAction(tr("Make absolute"), menu);
-    QObject::connect( makeAbsoluteAction, SIGNAL( triggered() ), this, SLOT( onMakeAbsoluteTriggered() ) );
+    QObject::connect( makeAbsoluteAction, SIGNAL(triggered()), this, SLOT(onMakeAbsoluteTriggered()) );
 
     makeAbsoluteAction->setToolTip( tr("Make the file-path absolute if it was previously relative to any project path") );
     menu->addAction(makeAbsoluteAction);
     QAction* makeRelativeToProject = new QAction(tr("Make relative to project"), menu);
     makeRelativeToProject->setToolTip( tr("Make the file-path relative to the [Project] path") );
-    QObject::connect( makeRelativeToProject, SIGNAL( triggered() ), this, SLOT( onMakeRelativeTriggered() ) );
+    QObject::connect( makeRelativeToProject, SIGNAL(triggered()), this, SLOT(onMakeRelativeTriggered()) );
     menu->addAction(makeRelativeToProject);
     QAction* simplify = new QAction(tr("Simplify"), menu);
-    QObject::connect( simplify, SIGNAL( triggered() ), this, SLOT( onSimplifyTriggered() ) );
+    QObject::connect( simplify, SIGNAL(triggered()), this, SLOT(onSimplifyTriggered()) );
     simplify->setToolTip( tr("Same as make relative but will pick the longest project variable to simplify") );
     menu->addAction(simplify);
 
@@ -467,7 +467,7 @@ KnobGuiOutputFile::KnobGuiOutputFile(KnobPtr knob,
 {
     _knob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     assert( _knob.lock() );
-    QObject::connect( _knob.lock().get(), SIGNAL( openFile(bool) ), this, SLOT( open_file(bool) ) );
+    QObject::connect( _knob.lock().get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
 }
 
 KnobGuiOutputFile::~KnobGuiOutputFile()
@@ -486,7 +486,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
 {
     _lineEdit = new LineEdit( layout->parentWidget() );
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-    QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+    QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
     _lineEdit->setPlaceholderText( tr("File path...") );
 
@@ -503,7 +503,7 @@ KnobGuiOutputFile::createWidget(QHBoxLayout* layout)
     _openFileButton->setIcon( QIcon(pix) );
     _openFileButton->setToolTip( GuiUtils::convertFromPlainText(tr("Browse file..."), Qt::WhiteSpaceNormal) );
     _openFileButton->setFocusPolicy(Qt::NoFocus); // exclude from tab focus
-    QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
+    QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
     QWidget *container = new QWidget( layout->parentWidget() );
     QHBoxLayout *containerLayout = new QHBoxLayout(container);
     container->setLayout(containerLayout);
@@ -622,16 +622,16 @@ void
 KnobGuiOutputFile::addRightClickMenuEntries(QMenu* menu)
 {
     QAction* makeAbsoluteAction = new QAction(tr("Make absolute"), menu);
-    QObject::connect( makeAbsoluteAction, SIGNAL( triggered() ), this, SLOT( onMakeAbsoluteTriggered() ) );
+    QObject::connect( makeAbsoluteAction, SIGNAL(triggered()), this, SLOT(onMakeAbsoluteTriggered()) );
 
     makeAbsoluteAction->setToolTip( tr("Make the file-path absolute if it was previously relative to any project path") );
     menu->addAction(makeAbsoluteAction);
     QAction* makeRelativeToProject = new QAction(tr("Make relative to project"), menu);
     makeRelativeToProject->setToolTip( tr("Make the file-path relative to the [Project] path") );
-    QObject::connect( makeRelativeToProject, SIGNAL( triggered() ), this, SLOT( onMakeRelativeTriggered() ) );
+    QObject::connect( makeRelativeToProject, SIGNAL(triggered()), this, SLOT(onMakeRelativeTriggered()) );
     menu->addAction(makeRelativeToProject);
     QAction* simplify = new QAction(tr("Simplify"), menu);
-    QObject::connect( simplify, SIGNAL( triggered() ), this, SLOT( onSimplifyTriggered() ) );
+    QObject::connect( simplify, SIGNAL(triggered()), this, SLOT(onSimplifyTriggered()) );
     simplify->setToolTip( tr("Same as make relative but will pick the longest project variable to simplify") );
     menu->addAction(simplify);
 
@@ -748,7 +748,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         mainLayout->setContentsMargins(0, 0, 0, 0);
         _lineEdit = new LineEdit(_mainContainer);
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-        QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onTextEdited() ) );
+        QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onTextEdited()) );
 
         enableRightClickMenu(_lineEdit, 0);
         _openFileButton = new Button( layout->parentWidget() );
@@ -757,7 +757,7 @@ KnobGuiPath::createWidget(QHBoxLayout* layout)
         QPixmap pix;
         appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, NATRON_MEDIUM_BUTTON_ICON_SIZE, &pix);
         _openFileButton->setIcon( QIcon(pix) );
-        QObject::connect( _openFileButton, SIGNAL( clicked() ), this, SLOT( onOpenFileButtonClicked() ) );
+        QObject::connect( _openFileButton, SIGNAL(clicked()), this, SLOT(onOpenFileButtonClicked()) );
 
         mainLayout->addWidget(_lineEdit);
         mainLayout->addWidget(_openFileButton);
@@ -970,15 +970,15 @@ KnobGuiPath::addRightClickMenuEntries(QMenu* menu)
 {
     if ( !_knob.lock()->isMultiPath() ) {
         QAction* makeAbsoluteAction = new QAction(tr("Make absolute"), menu);
-        QObject::connect( makeAbsoluteAction, SIGNAL( triggered() ), this, SLOT( onMakeAbsoluteTriggered() ) );
+        QObject::connect( makeAbsoluteAction, SIGNAL(triggered()), this, SLOT(onMakeAbsoluteTriggered()) );
         makeAbsoluteAction->setToolTip( tr("Make the file-path absolute if it was previously relative to any project path") );
         menu->addAction(makeAbsoluteAction);
         QAction* makeRelativeToProject = new QAction(tr("Make relative to project"), menu);
         makeRelativeToProject->setToolTip( tr("Make the file-path relative to the [Project] path") );
-        QObject::connect( makeRelativeToProject, SIGNAL( triggered() ), this, SLOT( onMakeRelativeTriggered() ) );
+        QObject::connect( makeRelativeToProject, SIGNAL(triggered()), this, SLOT(onMakeRelativeTriggered()) );
         menu->addAction(makeRelativeToProject);
         QAction* simplify = new QAction(tr("Simplify"), menu);
-        QObject::connect( simplify, SIGNAL( triggered() ), this, SLOT( onSimplifyTriggered() ) );
+        QObject::connect( simplify, SIGNAL(triggered()), this, SLOT(onSimplifyTriggered()) );
         simplify->setToolTip( tr("Same as make relative but will pick the longest project variable to simplify") );
         menu->addAction(simplify);
 

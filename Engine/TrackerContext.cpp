@@ -1698,7 +1698,7 @@ TrackScheduler::TrackScheduler(TrackerParamsProvider* paramsProvider,
     : GenericSchedulerThread()
     , _imp( new TrackSchedulerPrivate(paramsProvider, node) )
 {
-    QObject::connect( this, SIGNAL( renderCurrentFrameForViewer(ViewerInstance*) ), this, SLOT( doRenderCurrentFrameForViewer(ViewerInstance*) ) );
+    QObject::connect( this, SIGNAL(renderCurrentFrameForViewer(ViewerInstance*)), this, SLOT(doRenderCurrentFrameForViewer(ViewerInstance*)) );
 
     setThreadName("TrackScheduler");
 }

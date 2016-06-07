@@ -151,7 +151,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         _button->setChecked(checked);
         _button->setDown(checked);
     }
-    QObject::connect( _button, SIGNAL( clicked(bool) ), this, SLOT( emitValueChanged(bool) ) );
+    QObject::connect( _button, SIGNAL(clicked(bool)), this, SLOT(emitValueChanged(bool)) );
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }

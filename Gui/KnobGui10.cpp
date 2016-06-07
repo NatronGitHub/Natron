@@ -117,8 +117,8 @@ KnobGui::onSetExprActionTriggered()
     int dim = action->data().toInt();
     EditExpressionDialog* dialog = new EditExpressionDialog(getGui(), dim, shared_from_this(), _imp->field);
     dialog->create(QString::fromUtf8( getKnob()->getExpression(dim == -1 ? 0 : dim).c_str() ), true);
-    QObject::connect( dialog, SIGNAL( accepted() ), this, SLOT( onEditExprDialogFinished() ) );
-    QObject::connect( dialog, SIGNAL( rejected() ), this, SLOT( onEditExprDialogFinished() ) );
+    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onEditExprDialogFinished()) );
+    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onEditExprDialogFinished()) );
 
     dialog->show();
 }

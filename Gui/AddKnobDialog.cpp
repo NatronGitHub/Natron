@@ -584,7 +584,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                 assert(_imp->typeChoice->count() == i);
                 _imp->typeChoice->addItem( tr( dataTypeString( (ParamDataTypeEnum)i ) ) );
             }
-            QObject::connect( _imp->typeChoice, SIGNAL( currentIndexChanged(int) ), this, SLOT( onTypeCurrentIndexChanged(int) ) );
+            QObject::connect( _imp->typeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onTypeCurrentIndexChanged(int)) );
 
             thirdRowLayout->addWidget(_imp->typeChoice);
         }
@@ -940,7 +940,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->parentPageLabel = new Label(tr("Page:"), optContainer);
     _imp->parentPage = new ComboBox(optContainer);
 
-    QObject::connect( _imp->parentPage, SIGNAL( currentIndexChanged(int) ), this, SLOT( onPageCurrentIndexChanged(int) ) );
+    QObject::connect( _imp->parentPage, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageCurrentIndexChanged(int)) );
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
         if ( (*it)->isUserKnob() ) {
@@ -1033,8 +1033,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
 
     QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
-    QObject::connect( buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
-    QObject::connect( buttons, SIGNAL( accepted() ), this, SLOT( onOkClicked() ) );
+    QObject::connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
     _imp->vLayout->addWidget(buttons);
 
     ParamDataTypeEnum t;

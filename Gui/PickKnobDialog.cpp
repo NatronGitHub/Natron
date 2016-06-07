@@ -175,7 +175,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     _imp->nodeSelectionCombo->setFocus(Qt::PopupFocusReason);
 
     _imp->knobSelectionCombo = new ComboBox(this);
-    QObject::connect( _imp->knobSelectionCombo, SIGNAL( currentIndexChanged(int) ), this, SLOT( onKnobComboIndexChanged(int) ) );
+    QObject::connect( _imp->knobSelectionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onKnobComboIndexChanged(int)) );
     QString useAliasTt = GuiUtils::convertFromPlainText(tr("If checked, an alias of the selected parameter will be created, coyping entirely its state. "
                                                            "Only the script-name, label and tooltip will be editable.\n"
                                                            "For choice parameters this will also "
@@ -188,14 +188,14 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     _imp->useAliasCheckBox->setToolTip(useAliasTt);
     _imp->useAliasCheckBox->setChecked(true);
 
-    QObject::connect( _imp->nodeSelectionCombo, SIGNAL( itemCompletionChosen() ), this, SLOT( onNodeComboEditingFinished() ) );
+    QObject::connect( _imp->nodeSelectionCombo, SIGNAL(itemCompletionChosen()), this, SLOT(onNodeComboEditingFinished()) );
 
     _imp->destPageLabel = new Label(tr("Page:"), this);
     QString pagett = GuiUtils::convertFromPlainText(tr("Select the page into which the parameter will be created."), Qt::WhiteSpaceNormal);
     _imp->destPageLabel->setToolTip(pagett);
     _imp->destPageCombo = new ComboBox(this);
     _imp->destPageCombo->setToolTip(pagett);
-    QObject::connect( _imp->destPageCombo, SIGNAL( currentIndexChanged(int) ), this, SLOT( onPageComboIndexChanged(int) ) );
+    QObject::connect( _imp->destPageCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageComboIndexChanged(int)) );
     const KnobsVec& knobs = node->getKnobs();
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->isUserKnob() ) {
@@ -226,8 +226,8 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal, this);
-    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
-    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
+    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
 
     _imp->mainLayout->addWidget(_imp->selectNodeLabel, 0, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->nodeSelectionCombo, 0, 1, 1, 1);
@@ -240,7 +240,7 @@ PickKnobDialog::PickKnobDialog(DockablePanel* panel,
     _imp->mainLayout->addWidget(_imp->groupCombo, 2, 3, 1, 1);
     _imp->mainLayout->addWidget(_imp->buttons, 3, 0, 1, 3);
 
-    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT( showCompleter() ) );
+    QTimer::singleShot( 25, _imp->nodeSelectionCombo, SLOT(showCompleter()) );
 }
 
 PickKnobDialog::~PickKnobDialog()

@@ -36,10 +36,10 @@
 #include <QtCore/QDebug>
 #include <QPainter>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-    CLANG_DIAG_OFF(deprecated - register) //'register' storage class specifier is deprecated
+CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-    CLANG_DIAG_ON(deprecated - register)
+CLANG_DIAG_ON(deprecated-register)
 
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"

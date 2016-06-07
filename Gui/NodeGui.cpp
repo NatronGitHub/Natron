@@ -224,38 +224,38 @@ NodeGui::initialize(NodeGraph* dag,
 
     internalNode->setNodeGuiPointer(thisAsShared);
 
-    QObject::connect( internalNode.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInternalNameChanged(QString) ) );
-    QObject::connect( internalNode.get(), SIGNAL( refreshEdgesGUI() ), this, SLOT( refreshEdges() ) );
-    QObject::connect( internalNode.get(), SIGNAL( knobsInitialized() ), this, SLOT( initializeKnobs() ) );
-    QObject::connect( internalNode.get(), SIGNAL( inputsInitialized() ), this, SLOT( initializeInputs() ) );
-    QObject::connect( internalNode.get(), SIGNAL( previewImageChanged(double) ), this, SLOT( updatePreviewImage(double) ) );
-    QObject::connect( internalNode.get(), SIGNAL( previewRefreshRequested(double) ), this, SLOT( forceComputePreview(double) ) );
-    QObject::connect( internalNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( deactivate(bool) ) );
-    QObject::connect( internalNode.get(), SIGNAL( activated(bool) ), this, SLOT( activate(bool) ) );
-    QObject::connect( internalNode.get(), SIGNAL( inputChanged(int) ), this, SLOT( connectEdge(int) ) );
-    QObject::connect( internalNode.get(), SIGNAL( persistentMessageChanged() ), this, SLOT( onPersistentMessageChanged() ) );
-    QObject::connect( internalNode.get(), SIGNAL( allKnobsSlaved(bool) ), this, SLOT( onAllKnobsSlaved(bool) ) );
-    QObject::connect( internalNode.get(), SIGNAL( knobsLinksChanged() ), this, SLOT( onKnobsLinksChanged() ) );
-    QObject::connect( internalNode.get(), SIGNAL( outputsChanged() ), this, SLOT( refreshOutputEdgeVisibility() ) );
-    QObject::connect( internalNode.get(), SIGNAL( previewKnobToggled() ), this, SLOT( onPreviewKnobToggled() ) );
-    QObject::connect( internalNode.get(), SIGNAL( disabledKnobToggled(bool) ), this, SLOT( onDisabledKnobToggled(bool) ) );
-    QObject::connect( internalNode.get(), SIGNAL( streamWarningsChanged() ), this, SLOT( onStreamWarningsChanged() ) );
-    QObject::connect( internalNode.get(), SIGNAL( nodeExtraLabelChanged(QString) ), this, SLOT( onNodeExtraLabelChanged(QString) ) );
-    QObject::connect( internalNode.get(), SIGNAL( outputLayerChanged() ), this, SLOT( onOutputLayerChanged() ) );
-    QObject::connect( internalNode.get(), SIGNAL( hideInputsKnobChanged(bool) ), this, SLOT( onHideInputsKnobValueChanged(bool) ) );
-    QObject::connect( internalNode.get(), SIGNAL( availableViewsChanged() ), this, SLOT( onAvailableViewsChanged() ) );
-    QObject::connect( internalNode.get(), SIGNAL( rightClickMenuKnobPopulated() ), this, SLOT( onRightClickMenuKnobPopulated() ) );
-    QObject::connect( this, SIGNAL( previewImageComputed() ), this, SLOT( onPreviewImageComputed() ) );
+    QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInternalNameChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
+    QObject::connect( internalNode.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobs()) );
+    QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
+    QObject::connect( internalNode.get(), SIGNAL(previewImageChanged(double)), this, SLOT(updatePreviewImage(double)) );
+    QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested(double)), this, SLOT(forceComputePreview(double)) );
+    QObject::connect( internalNode.get(), SIGNAL(deactivated(bool)), this, SLOT(deactivate(bool)) );
+    QObject::connect( internalNode.get(), SIGNAL(activated(bool)), this, SLOT(activate(bool)) );
+    QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
+    QObject::connect( internalNode.get(), SIGNAL(persistentMessageChanged()), this, SLOT(onPersistentMessageChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(allKnobsSlaved(bool)), this, SLOT(onAllKnobsSlaved(bool)) );
+    QObject::connect( internalNode.get(), SIGNAL(knobsLinksChanged()), this, SLOT(onKnobsLinksChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(outputsChanged()), this, SLOT(refreshOutputEdgeVisibility()) );
+    QObject::connect( internalNode.get(), SIGNAL(previewKnobToggled()), this, SLOT(onPreviewKnobToggled()) );
+    QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)), this, SLOT(onDisabledKnobToggled(bool)) );
+    QObject::connect( internalNode.get(), SIGNAL(streamWarningsChanged()), this, SLOT(onStreamWarningsChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(nodeExtraLabelChanged(QString)), this, SLOT(onNodeExtraLabelChanged(QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(outputLayerChanged()), this, SLOT(onOutputLayerChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
+    QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
+    QObject::connect( internalNode.get(), SIGNAL(rightClickMenuKnobPopulated()), this, SLOT(onRightClickMenuKnobPopulated()) );
+    QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
     OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( internalNode->getEffectInstance().get() );
     if (isOutput) {
-        QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL( refreshAllKnobs() ), _graph, SLOT( refreshAllKnobsGui() ) );
+        QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>( internalNode.get() );
     if (isInspector) {
-        QObject::connect( isInspector, SIGNAL( refreshOptionalState() ), this, SLOT( refreshDashedStateOfEdges() ) );
+        QObject::connect( isInspector, SIGNAL(refreshOptionalState()), this, SLOT(refreshDashedStateOfEdges()) );
     }
 
     createGui();
@@ -316,7 +316,7 @@ NodeGui::initialize(NodeGraph* dag,
         assert(parentNode && parentNodeGui_I);
         NodeGui* parentNodeGui = dynamic_cast<NodeGui*>( parentNodeGui_I.get() );
         assert(parentNodeGui);
-        QObject::connect( parentNodeGui, SIGNAL( positionChanged(int, int) ), this, SLOT( onParentMultiInstancePositionChanged(int, int) ) );
+        QObject::connect( parentNodeGui, SIGNAL(positionChanged(int,int)), this, SLOT(onParentMultiInstancePositionChanged(int,int)) );
         QPointF p = parentNodeGui->pos();
         refreshPosition(p.x(), p.y(), true);
     }
@@ -414,9 +414,9 @@ NodeGui::ensurePanelCreated()
     initializeKnobs();
     beginEditKnobs();
     if (_settingsPanel) {
-        QObject::connect( _settingsPanel, SIGNAL( nameChanged(QString) ), this, SLOT( setName(QString) ) );
-        QObject::connect( _settingsPanel, SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
-        QObject::connect( _settingsPanel, SIGNAL( colorChanged(QColor) ), this, SLOT( onSettingsPanelColorChanged(QColor) ) );
+        QObject::connect( _settingsPanel, SIGNAL(nameChanged(QString)), this, SLOT(setName(QString)) );
+        QObject::connect( _settingsPanel, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
+        QObject::connect( _settingsPanel, SIGNAL(colorChanged(QColor)), this, SLOT(onSettingsPanelColorChanged(QColor)) );
 
         _graph->getGui()->setNodeViewerInterface(thisShared);
     }
@@ -3123,8 +3123,8 @@ void
 TextItem::init()
 {
     updateGeometry();
-    connect( document(), SIGNAL( contentsChange(int, int, int) ),
-             this, SLOT( updateGeometry(int, int, int) ) );
+    connect( document(), SIGNAL(contentsChange(int,int,int)),
+             this, SLOT(updateGeometry(int,int,int)) );
 }
 
 void
@@ -3922,7 +3922,7 @@ NodeGui::onRightClickMenuKnobPopulated()
             action->setCheckable(true);
             action->setChecked( button->getValue() );
         }
-        QObject::connect( action, SIGNAL( triggered() ), this, SLOT( onRightClickActionTriggered() ) );
+        QObject::connect( action, SIGNAL(triggered()), this, SLOT(onRightClickActionTriggered()) );
         m.addAction(action);
     }
 

@@ -209,9 +209,9 @@ KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
     , _comboBox(0)
 {
     boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    QObject::connect( k.get(), SIGNAL( populated() ), this, SLOT( onEntriesPopulated() ) );
-    QObject::connect( k.get(), SIGNAL( entryAppended(QString, QString) ), this, SLOT( onEntryAppended(QString, QString) ) );
-    QObject::connect( k.get(), SIGNAL( entriesReset() ), this, SLOT( onEntriesReset() ) );
+    QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
+    QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
+    QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
 
     _knob = k;
 }
@@ -233,8 +233,8 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
     _comboBox->setCascading( _knob.lock()->isCascading() );
     onEntriesPopulated();
 
-    QObject::connect( _comboBox, SIGNAL( currentIndexChanged(int) ), this, SLOT( onCurrentIndexChanged(int) ) );
-    QObject::connect( _comboBox, SIGNAL( itemNewSelected() ), this, SLOT( onItemNewSelected() ) );
+    QObject::connect( _comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
+    QObject::connect( _comboBox, SIGNAL(itemNewSelected()), this, SLOT(onItemNewSelected()) );
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_comboBox, 0);
 
@@ -284,7 +284,7 @@ KnobGuiChoice::addRightClickMenuEntries(QMenu* menu)
     }
 
     QAction* refreshMenuAction = new QAction(tr("Refresh Menu"), menu);
-    QObject::connect( refreshMenuAction, SIGNAL( triggered() ), this, SLOT( onRefreshMenuActionTriggered() ) );
+    QObject::connect( refreshMenuAction, SIGNAL(triggered()), this, SLOT(onRefreshMenuActionTriggered()) );
     refreshMenuAction->setToolTip( tr("Synchronize the menu with the actual state of the parameter") );
     menu->addAction(refreshMenuAction);
 }
