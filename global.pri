@@ -193,6 +193,11 @@ macx {
   LIBS += -framework CoreServices
 }
 
+macx-clang-libc++ {
+    # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
+    QMAKE_OBJECTIVE_CFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
+}
+
 CONFIG(debug) {
     CONFIG += nopch
 }
