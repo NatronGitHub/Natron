@@ -4561,6 +4561,34 @@ struct KnobHolder::KnobHolderPrivate
 
     {
     }
+
+    KnobHolderPrivate(const KnobHolderPrivate& other)
+    : app(other.app)
+    , knobsMutex()
+    , knobs(other.knobs)
+    , knobsInitialized(other.knobsInitialized)
+    , isInitializingKnobs(other.isInitializingKnobs)
+    , isSlave(other.isSlave)
+    , overlayRedrawStackMutex()
+    , overlayRedrawStack(0)
+    , isDequeingValuesSet(other.isDequeingValuesSet)
+    , paramsEditLevel(other.paramsEditLevel)
+    , paramsEditRecursionLevel(other.paramsEditRecursionLevel)
+    , evaluationBlockedMutex(QMutex::Recursive)
+    , evaluationBlocked(0)
+    , canCurrentlySetValue(other.canCurrentlySetValue)
+    , knobChanged()
+    , nbSignificantChangesDuringEvaluationBlock(0)
+    , nbChangesDuringEvaluationBlock(0)
+    , nbChangesRequiringMetadataRefresh(0)
+    , knobsFrozenMutex()
+    , knobsFrozen(false)
+    , hasAnimationMutex()
+    , hasAnimation(other.hasAnimation)
+    , settingsPanel(other.settingsPanel)
+    {
+
+    }
 };
 
 KnobHolder::KnobHolder(const AppInstPtr& appInstance)
@@ -4572,6 +4600,17 @@ KnobHolder::KnobHolder(const AppInstPtr& appInstance)
                       SLOT(onDoEvaluateOnMainThread(bool,bool)) );
     QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
                       SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)) );
+}
+
+KnobHolder::KnobHolder(const KnobHolder& other)
+: QObject()
+, _imp (new KnobHolderPrivate(*other._imp))
+{
+    QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
+    QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
+                     SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
+    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ), this,
+                     SLOT( onDoValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ) );
 }
 
 KnobHolder::~KnobHolder()

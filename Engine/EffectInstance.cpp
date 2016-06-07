@@ -112,7 +112,7 @@ EffectInstance::EffectInstance(NodePtr node)
 }
 
 EffectInstance::EffectInstance(const EffectInstance& other)
-: NamedKnobHolder(other.getNode()->getApp())
+: NamedKnobHolder(other)
 , _node(other.getNode())
 , _imp(new Implementation(*other._imp))
 {
@@ -3947,7 +3947,7 @@ EffectInstance::releaseRenderInstance(const EffectInstPtr& instance)
         return;
     }
     QMutexLocker k(&_imp->renderClonesMutex);
-    instance->_imp->isDoingInstanceSafeRender = true;
+    instance->_imp->isDoingInstanceSafeRender = false;
     if (instance.get() == this) {
         return;
     }

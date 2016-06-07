@@ -288,7 +288,7 @@ OfxEffectInstance::OfxEffectInstance(NodePtr node)
 }
 
 OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
-    : AbstractOfxEffectInstance( other.getNode() )
+    : AbstractOfxEffectInstance(other)
     , _imp( new OfxEffectInstancePrivate(*other._imp) )
 {
     QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );

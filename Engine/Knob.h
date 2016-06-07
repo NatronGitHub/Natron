@@ -2256,6 +2256,8 @@ public:
      **/
     KnobHolder(const AppInstPtr& appInstance);
 
+    KnobHolder(const KnobHolder& other);
+
     virtual ~KnobHolder();
 
     void setPanelPointer(DockablePanelI* gui);
@@ -2750,6 +2752,12 @@ public:
         : KnobHolder(instance)
     {
     }
+
+    NamedKnobHolder(const NamedKnobHolder& other)
+    : KnobHolder(other)
+    {
+    }
+
 
     virtual ~NamedKnobHolder()
     {
