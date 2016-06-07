@@ -31,11 +31,6 @@
 
 #ifdef __NATRON_OSX__
 
-//#import <Cocoa/Cocoa.h>
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/CGLTypes.h>
-
-
 NATRON_NAMESPACE_ENTER;
 
 class OSGLContext_mac
@@ -60,22 +55,8 @@ public:
     void swapInterval(int interval);
 
 private:
-
-    /*void createWindow();
-
-       struct WindowNS
-       {
-        id object;
-        id delegate;
-        id view;
-       };
-
-       WindowNS _nsWindow;
-
-       // NSGL-specific per-context data
-       id _pixelFormat;
-       id _object;*/
-    CGLContextObj _context;
+    class Implementation;
+    boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 
 NATRON_NAMESPACE_EXIT;

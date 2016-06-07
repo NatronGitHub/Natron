@@ -16,16 +16,28 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #include "OSGLContext_mac.h"
 
 #include <stdexcept>
 #ifdef __NATRON_OSX__
 
 #include <QDebug>
+
+#include "Global/GLIncludes.h"
+
+//#import <Cocoa/Cocoa.h>
+#include <OpenGL/OpenGL.h> // necessary for CGL, even if glad was included just above
+#include <OpenGL/CGLTypes.h>
+
 #include "Engine/OSGLContext.h"
 
 NATRON_NAMESPACE_ENTER;
+
+class OSGLContext_mac::Implementation
+{
+public:
+    CGLContextObj context;
+};
 
 #if 0
 void
@@ -178,7 +190,7 @@ static void makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs, i
 }
 
 OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int minor,bool coreProfile, const GLRendererID& rendererID, const OSGLContext_mac* shareContext)
-: _context(0)
+: _imp(new Implementation)
 {
 
 
@@ -194,7 +206,7 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
         throw std::runtime_error("CGL: Failed to choose pixel format");
     }
 
-    errorCode = CGLCreateContext( nativePixelFormat, shareContext ? shareContext->_context : 0, &_context ); 
+    errorCode = CGLCreateContext( nativePixelFormat, shareContext ? shareContext->_imp->context : 0, &_imp->context );
     if (errorCode != kCGLNoError) {
         throw std::runtime_error("CGL: Failed to create context");
     }
@@ -428,7 +440,7 @@ OSGLContext_mac::makeContextCurrent(const OSGLContext_mac* context)
         [NSOpenGLContext clearCurrentContext];
     }*/
     if (context) {
-        CGLSetCurrentContext(context->_context);
+        CGLSetCurrentContext(context->_imp->context);
     } else {
         CGLSetCurrentContext(0);
     }
@@ -438,7 +450,7 @@ void
 OSGLContext_mac::swapBuffers()
 {
  //   [_object flushBuffer];
-    CGLFlushDrawable(_context);
+    CGLFlushDrawable(_imp->context);
 }
 
 void
@@ -447,13 +459,13 @@ OSGLContext_mac::swapInterval(int interval)
     /*GLint sync = interval;
     [_object setValues:&sync forParameter:NSOpenGLCPSwapInterval];*/
     GLint value = interval;
-    CGLSetParameter(_context, kCGLCPSwapInterval, &value);
+    CGLSetParameter(_imp->context, kCGLCPSwapInterval, &value);
 }
 
 OSGLContext_mac::~OSGLContext_mac()
 {
-    CGLDestroyContext(_context);
-    _context = 0;
+    CGLDestroyContext(_imp->context);
+    _imp->context = 0;
     /*[_pixelFormat release];
     _pixelFormat = nil;
 
