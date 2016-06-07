@@ -562,14 +562,14 @@ OfxEffectInstance::createRenderClone()
     boost::shared_ptr<OfxEffectInstance> clone( new OfxEffectInstance(*this) );
 
     clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
-    assert(_imp->effect);
-    _imp->effect->setOfxEffectInstance(clone);
+    assert(clone->_imp->effect);
+    clone->_imp->effect->setOfxEffectInstance(clone);
 
     OfxStatus stat;
     {
         ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
-        stat = _imp->effect->createInstanceAction();
+        QReadLocker preferencesLocker(&clone->_imp->preferencesLock);
+        stat = clone->_imp->effect->createInstanceAction();
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
