@@ -600,15 +600,16 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
 
-    OSGLContext::getGPUInfos(_imp->openGLRenderers);
-    for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
-        qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
-        << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
-        ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
+    if (_imp->hasInitializedOpenGLFunctions) {
+        OSGLContext::getGPUInfos(_imp->openGLRenderers);
+        for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
+            qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
+            << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
+            ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
+        }
+        _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
     }
-    _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
-
-
+    
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
 
