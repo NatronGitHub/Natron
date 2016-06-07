@@ -737,6 +737,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         assert(liveInstance);
         bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
         RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
+        PluginOpenGLRenderSupport glSupport = (*it)->getCurrentOpenGLRenderSupport();
         NodesList rotoPaintNodes;
         boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
         if (roto) {
@@ -746,13 +747,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         {
             U64 nodeHash = (*it)->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
-                                                   abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, doNanHandling, draftMode, stats);
+                                                   abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             U64 nodeHash = (*it2)->getHashValue();
 
 
-            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(), doNanHandling, draftMode, stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
         }
 
         if ( (*it)->isMultiInstance() ) {
@@ -767,7 +768,8 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 EffectInstPtr childLiveInstance = (*it2)->getEffectInstance();
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, doNanHandling, draftMode, stats);
+                PluginOpenGLRenderSupport childGlSupport = (*it2)->getCurrentOpenGLRenderSupport();
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, childGlSupport, doNanHandling, draftMode, stats);
             }
         }
 
@@ -887,6 +889,7 @@ ParallelRenderArgs::ParallelRenderArgs()
       , openGLContext()
       , textureIndex(0)
       , currentThreadSafety(eRenderSafetyInstanceSafe)
+      , currentOpenglSupport(ePluginOpenGLRenderSupportNone)
       , isRenderResponseToUserInteraction(false)
       , isSequentialRender(false)
       , isAnalysis(false)

@@ -302,6 +302,18 @@ Plugin::setMultiThreadingEnabled(bool b)
 }
 
 bool
+Plugin::isOpenGLEnabled() const
+{
+    return _openglActivated;
+}
+
+void
+Plugin::setOpenGLEnabled(bool b)
+{
+    _openglActivated = b;
+}
+
+bool
 Plugin::isActivated() const
 {
     return _activated;

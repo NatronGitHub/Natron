@@ -65,6 +65,7 @@ CLANG_DIAG_ON(uninitialized)
 #define COL_ENABLED COL_VERSION + 1
 #define COL_RS_ENABLED COL_ENABLED + 1
 #define COL_MT_ENABLED COL_RS_ENABLED + 1
+#define COL_GL_ENABLED COL_MT_ENABLED + 1
 
 NATRON_NAMESPACE_ENTER;
 
@@ -81,6 +82,7 @@ struct PluginTreeNode
     AnimatedCheckBox* enabledCheckbox;
     AnimatedCheckBox* rsCheckbox;
     AnimatedCheckBox* mtCheckbox;
+    AnimatedCheckBox* glCheckbox;
     Plugin* plugin;
 };
 
@@ -480,6 +482,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     treeHeader->setText(COL_ENABLED, tr("Enabled"));
     treeHeader->setText(COL_RS_ENABLED, tr("Render-Scale Enabled"));
     treeHeader->setText(COL_MT_ENABLED, tr("Multi-threading Enabled"));
+    treeHeader->setText(COL_GL_ENABLED, tr("OpenGL Render Enabled"));
     _imp->pluginsView->setHeaderItem(treeHeader);
     _imp->pluginsView->setSelectionMode(QAbstractItemView::NoSelection);
 #if QT_VERSION < 0x050000
@@ -558,6 +561,20 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 _imp->pluginsView->setItemWidget(node.item, COL_MT_ENABLED, checkbox);
                 node.mtCheckbox = checkbox;
             }
+            {
+                QWidget *checkboxContainer = new QWidget(0);
+                QHBoxLayout* checkboxLayout = new QHBoxLayout(checkboxContainer);
+                AnimatedCheckBox* checkbox = new AnimatedCheckBox(checkboxContainer);
+                checkboxLayout->addWidget(checkbox, Qt::AlignLeft | Qt::AlignVCenter);
+                checkboxLayout->setContentsMargins(0, 0, 0, 0);
+                checkboxLayout->setSpacing(0);
+                checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
+                checkbox->setChecked(plugin->isActivated());
+                QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onGLEnabledCheckBoxChecked(bool)) );
+                _imp->pluginsView->setItemWidget(node.item, COL_GL_ENABLED, checkbox);
+                node.glCheckbox = checkbox;
+            }
+
             _imp->pluginsList.push_back(node);
         }
     }
@@ -841,6 +858,22 @@ PreferencesPanel::onMTEnabledCheckBoxChecked(bool checked)
     for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it!=_imp->pluginsList.end(); ++it) {
         if (it->mtCheckbox == cb) {
             it->plugin->setMultiThreadingEnabled(checked);
+            _imp->pluginSettingsChanged = true;
+            break;
+        }
+    }
+}
+
+void
+PreferencesPanel::onGLEnabledCheckBoxChecked(bool checked)
+{
+    AnimatedCheckBox* cb = qobject_cast<AnimatedCheckBox*>(sender());
+    if (!cb) {
+        return;
+    }
+    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it!=_imp->pluginsList.end(); ++it) {
+        if (it->mtCheckbox == cb) {
+            it->plugin->setOpenGLEnabled(checked);
             _imp->pluginSettingsChanged = true;
             break;
         }

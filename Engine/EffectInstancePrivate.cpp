@@ -330,7 +330,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
       , pluginMemoryChunksMutex()
       , pluginMemoryChunks()
       , supportsRenderScale(eSupportsMaybe)
-      , actionsCache(appPTR->getHardwareIdealThreadCount() * 2)
+      , actionsCache(new ActionsCache(appPTR->getHardwareIdealThreadCount() * 2))
 #if NATRON_ENABLE_TRIMAP
       , imagesBeingRenderedMutex()
       , imagesBeingRendered()
@@ -345,7 +345,42 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
       , overlaysViewport(0)
       , attachedContextsMutex(QMutex::Recursive)
       , attachedContexts()
+      , mainInstance(0)
+      , isDoingInstanceSafeRender(false)
+      , renderClonesMutex()
+      , renderClonesPool()
 {
+}
+
+EffectInstance::Implementation::Implementation(const Implementation& other)
+: _publicInterface(0)
+, tlsData(other.tlsData)
+, duringInteractActionMutex()
+, duringInteractAction(other.duringInteractAction)
+, pluginMemoryChunksMutex()
+, pluginMemoryChunks()
+, supportsRenderScale(other.supportsRenderScale)
+, actionsCache(other.actionsCache)
+#if NATRON_ENABLE_TRIMAP
+, imagesBeingRenderedMutex()
+, imagesBeingRendered()
+#endif
+, componentsAvailableMutex()
+, componentsAvailableDirty(other.componentsAvailableDirty)
+, outputComponentsAvailable(other.outputComponentsAvailable)
+, overlaySlaves(other.overlaySlaves)
+, metadatasMutex()
+, metadatas(other.metadatas)
+, runningClipPreferences(other.runningClipPreferences)
+, overlaysViewport(other.overlaysViewport)
+, attachedContextsMutex(QMutex::Recursive)
+, attachedContexts()
+, mainInstance(other._publicInterface)
+, isDoingInstanceSafeRender(false)
+, renderClonesMutex()
+, renderClonesPool()
+{
+
 }
 
 void

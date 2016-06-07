@@ -7418,6 +7418,9 @@ Node::onInputChanged(int inputNb,
         _imp->effect->onInputChanged(inputNb);
         _imp->inputsModified.insert(inputNb);
 
+        // If the effect has render clones, kill them as the plug-in might have changed its internal state
+        _imp->effect->clearRenderInstances();
+
         //A knob value might have changed recursively, redraw  any overlay
         if ( !_imp->effect->isDequeueingValuesSet() &&
              ( _imp->effect->getRecursionLevel() == 0) && _imp->effect->checkIfOverlayRedrawNeeded() ) {
@@ -8376,7 +8379,22 @@ Node::onEffectKnobValueChanged(KnobI* what,
         std::string outputInfo = makeInfoForInput(-1);
         ssinfo << outputInfo << "<br />";
         std::string cacheInfo = makeCacheInfo();
-        ssinfo << cacheInfo;
+        ssinfo << cacheInfo << "<br />";
+        ssinfo << "<b>OpenGL Rendering Support:</b>: ";
+        PluginOpenGLRenderSupport glSupport = _imp->effect->supportsOpenGLRender();
+        switch (glSupport) {
+            case ePluginOpenGLRenderSupportNone:
+                ssinfo << "No";
+                break;
+            case ePluginOpenGLRenderSupportNeeded:
+                ssinfo << "Yes but CPU rendering is not supported";
+                break;
+            case ePluginOpenGLRenderSupportYes:
+                ssinfo << "Yes";
+                break;
+            default:
+                break;
+        }
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
     } else {
         ret = false;

@@ -89,6 +89,15 @@ OutputEffectInstance::OutputEffectInstance(NodePtr node)
 {
 }
 
+OutputEffectInstance::OutputEffectInstance(const OutputEffectInstance& other)
+: EffectInstance(other)
+, _outputEffectDataLock()
+, _renderSequenceRequests()
+, _engine(other._engine)
+{
+
+}
+
 OutputEffectInstance::~OutputEffectInstance()
 {
 }

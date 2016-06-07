@@ -232,6 +232,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         return eRenderRoIRetCodeOk;
     }
 
+    // Make sure this call is not made recursively from getImage on a render clone on which we are already calling renderRoI.
+    // If so, forward the call to the main instance
+    if (_imp->mainInstance) {
+        return _imp->mainInstance->renderRoI(args, outputPlanes);
+    }
+
     //Create the TLS data for this node if it did not exist yet
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
@@ -717,7 +723,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
-    const PluginOpenGLRenderSupport openGLSupport = getNode()->getCurrentOpenGLRenderSupport();
+    const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
     StorageModeEnum storage = eStorageModeRAM;
     boost::scoped_ptr<OSGLContextAttacher> glContextLocker;
 
@@ -1516,8 +1522,25 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             // eRenderSafetyFullySafe means that there is only one render per FRAME : the lock is by image and handled in Node.cpp
             ///locks belongs to an instance)
 
+
             boost::scoped_ptr<QMutexLocker> locker;
             RenderSafetyEnum safety = frameArgs->currentThreadSafety;
+
+            EffectInstPtr renderInstance;
+            /**
+             * Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
+             * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support
+             * concurrent GL renders.
+             **/
+            bool useRenderClone = safety == eRenderSafetyInstanceSafe || (storage == eStorageModeGLTex && !supportsConcurrentOpenGLRenders());
+            if (useRenderClone) {
+                renderInstance = getOrCreateRenderInstance();
+            } else {
+                renderInstance = shared_from_this();
+            }
+            assert(renderInstance);
+
+
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
             } else if (safety == eRenderSafetyUnsafe) {
@@ -1528,6 +1551,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 // no need to lock
                 Q_UNUSED(locker);
             }
+
+
             ///For eRenderSafetyFullySafe, don't take any lock, the image already has a lock on itself so we're sure it can't be written to by 2 different threads.
 
             if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
@@ -1554,7 +1579,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             bool attachGLOK = true;
             if (storage == eStorageModeGLTex) {
                 assert(glContext);
-                Natron::StatusEnum stat = attachOpenGLContext_public(glContext, &planesToRender->glContextData);
+                Natron::StatusEnum stat = renderInstance->attachOpenGLContext_public(glContext, &planesToRender->glContextData);
                 if (stat == eStatusOutOfMemory) {
                     renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
                     attachGLOK = false;
@@ -1564,7 +1589,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
             if (attachGLOK) {
-                renderRetCode = renderRoIInternal(args.time,
+                renderRetCode = renderRoIInternal(renderInstance.get(),
+                                                  args.time,
                                                   frameArgs,
                                                   safety,
                                                   args.mipMapLevel,
@@ -1585,9 +1611,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
                     // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
                     if ( planesToRender->glContextData->getHasTakenLock() || !supportsConcurrentOpenGLRenders() ) {
-                        dettachOpenGLContext_public(glContext);
+                        renderInstance->dettachOpenGLContext_public(glContext);
                     }
                 }
+            }
+
+            if (useRenderClone) {
+                releaseRenderInstance(renderInstance);
             }
         } // if (hasSomethingToRender) {
 
@@ -1800,7 +1830,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 } // renderRoI
 
 EffectInstance::RenderRoIStatusEnum
-EffectInstance::renderRoIInternal(double time,
+EffectInstance::renderRoIInternal(EffectInstance* self,
+                                  double time,
                                   const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
                                   RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
@@ -1829,13 +1860,13 @@ EffectInstance::renderRoIInternal(double time,
     ///Any solution how to work around this ?
     ///Edit: do not do this if in the main-thread (=noRenderThread = -1) otherwise we will change the parallel render args TLS
     ///which will lead to asserts down the stream
-    if ( isReader() && ( QThread::currentThread() != qApp->thread() ) ) {
+    if ( self->isReader() && ( QThread::currentThread() != qApp->thread() ) ) {
         Format frmt;
         RectI pixelRoD;
         rod.toPixelEnclosing(0, par, &pixelRoD);
         frmt.set(pixelRoD);
         frmt.setPixelAspectRatio(par);
-        getApp()->getProject()->setOrAddProjectFormat(frmt);
+        self->getApp()->getProject()->setOrAddProjectFormat(frmt);
     }
 
     unsigned int renderMappedMipMapLevel = 0;
@@ -1859,7 +1890,7 @@ EffectInstance::renderRoIInternal(double time,
     ///Notify the gui we're rendering
     boost::shared_ptr<NotifyRenderingStarted_RAII> renderingNotifier;
     if ( !planesToRender->rectsToRender.empty() ) {
-        renderingNotifier.reset( new NotifyRenderingStarted_RAII( getNode().get() ) );
+        renderingNotifier.reset( new NotifyRenderingStarted_RAII( self->getNode().get() ) );
     }
 
     ///depending on the thread-safety of the plug-in we render with a different
@@ -1875,7 +1906,7 @@ EffectInstance::renderRoIInternal(double time,
         if ( !frameArgs->tilesSupported || (nbThreads == -1) || (nbThreads == 1) ||
              ( (nbThreads == 0) && (appPTR->getHardwareIdealThreadCount() == 1) ) ||
              ( QThreadPool::globalInstance()->activeThreadCount() >= QThreadPool::globalInstance()->maxThreadCount() ) ||
-             isRotoPaintNode() ) {
+             self->isRotoPaintNode() ) {
             safety = eRenderSafetyFullySafe;
         }
     }
@@ -1888,26 +1919,26 @@ EffectInstance::renderRoIInternal(double time,
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).
          */
-        getApp()->getProject()->getParallelRenderArgs(*tlsCopy);
+        self->getApp()->getProject()->getParallelRenderArgs(*tlsCopy);
     }
 
     double firstFrame, lastFrame;
-    getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
+    self->getFrameRange_public(nodeHash, &firstFrame, &lastFrame);
 
 
     ///We only need to call begin if we've not already called it.
     bool callBegin = false;
 
     /// call beginsequenceRender here if the render is sequential
-    SequentialPreferenceEnum pref = getSequentialPreference();
-    if ( !isWriter() || (pref == eSequentialPreferenceNotSequential) ) {
+    SequentialPreferenceEnum pref = self->getNode()->getCurrentSequentialRenderSupport();
+    if ( !self->isWriter() || (pref == eSequentialPreferenceNotSequential) ) {
         callBegin = true;
     }
 
 
     if (callBegin) {
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
-        if (beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
+        assert( !( (self->supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+        if (self->beginSequenceRender_public(time, time, 1, !appPTR->isBackground(), renderMappedScale, isSequentialRender,
                                        isRenderMadeInResponseToUserInteraction, frameArgs->draftMode, view, planesToRender->useOpenGL, planesToRender->glContextData) == eStatusFailed) {
             renderStatus = eRenderingFunctorRetFailed;
         }
@@ -1917,8 +1948,8 @@ EffectInstance::renderRoIInternal(double time,
     /*
      * All channels will be taken from this input if some channels are marked to be not processed
      */
-    int preferredInput = getNode()->getPreferredInput();
-    if ( (preferredInput != -1) && isInputMask(preferredInput) ) {
+    int preferredInput = self->getNode()->getPreferredInput();
+    if ( (preferredInput != -1) && self->isInputMask(preferredInput) ) {
         preferredInput = -1;
     }
 
@@ -1950,7 +1981,7 @@ EffectInstance::renderRoIInternal(double time,
             std::vector<EffectInstance::RenderingFunctorRetEnum> ret( tiledData.size() );
             int i = 0;
             for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it, ++i) {
-                ret[i] = tiledRenderingFunctor(tiledArgs,
+                ret[i] = self->_imp->tiledRenderingFunctor(tiledArgs,
                                                *it,
                                                currentThread);
             }
@@ -1961,7 +1992,7 @@ EffectInstance::renderRoIInternal(double time,
 
             QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped( planesToRender->rectsToRender,
                                                                          boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
-                                                                                     _imp.get(),
+                                                                                     self->_imp.get(),
                                                                                      *tiledArgs,
                                                                                      _1,
                                                                                      currentThread) );
@@ -1989,7 +2020,7 @@ EffectInstance::renderRoIInternal(double time,
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
-                RenderingFunctorRetEnum functorRet = _imp->tiledRenderingFunctor(*it,  renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = self->_imp->tiledRenderingFunctor(*it,  renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
                 if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) || (functorRet == eRenderingFunctorRetOutOfGPUMemory) ) {
                     renderStatus = functorRet;
@@ -2008,8 +2039,8 @@ EffectInstance::renderRoIInternal(double time,
 
     ///never call endsequence render here if the render is sequential
     if (callBegin) {
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
-        if (endSequenceRender_public(time, time, time, false, renderMappedScale,
+        assert( !( (self->supportsRenderScaleMaybe() == eSupportsNo) && !(renderMappedScale.x == 1. && renderMappedScale.y == 1.) ) );
+        if (self->endSequenceRender_public(time, time, time, false, renderMappedScale,
                                      isSequentialRender,
                                      isRenderMadeInResponseToUserInteraction,
                                      frameArgs->draftMode,

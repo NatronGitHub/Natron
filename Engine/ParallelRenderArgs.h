@@ -118,6 +118,9 @@ struct ParallelRenderArgs
     ///whereas afterwards we revert back to the plug-in thread safety
     RenderSafetyEnum currentThreadSafety;
 
+    ///Current OpenGL support: it might change during instanceChanged action
+    PluginOpenGLRenderSupport currentOpenglSupport;
+
     /// is this a render due to user interaction ? Generally this is true when rendering because
     /// of a user parameter tweek or timeline seek, or more generally by calling RenderEngine::renderCurrentFrame
     bool isRenderResponseToUserInteraction : 1;

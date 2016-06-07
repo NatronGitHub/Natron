@@ -85,6 +85,7 @@ public Q_SLOTS:
     void onItemEnabledCheckBoxChecked(bool);
     void onRSEnabledCheckBoxChecked(bool);
     void onMTEnabledCheckBoxChecked(bool);
+    void onGLEnabledCheckBoxChecked(bool);
 
     void filterPlugins(const QString & txt);
 

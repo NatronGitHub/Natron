@@ -111,6 +111,14 @@ EffectInstance::EffectInstance(NodePtr node)
     }
 }
 
+EffectInstance::EffectInstance(const EffectInstance& other)
+: NamedKnobHolder(other.getNode()->getApp())
+, _node(other.getNode())
+, _imp(new Implementation(*other._imp))
+{
+    _imp->_publicInterface = this;
+}
+
 EffectInstance::~EffectInstance()
 {
 }
@@ -243,6 +251,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          bool isDuringPaintStrokeCreation,
                                          const NodesList & rotoPaintNodes,
                                          RenderSafetyEnum currentThreadSafety,
+                                         PluginOpenGLRenderSupport currentOpenGLSupport,
                                          bool doNanHandling,
                                          bool draftMode,
                                          const boost::shared_ptr<RenderStats> & stats)
@@ -269,6 +278,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
     args->isAnalysis = isAnalysis;
     args->isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
     args->currentThreadSafety = currentThreadSafety;
+    args->currentOpenglSupport = currentOpenGLSupport;
     args->rotoPaintNodes = rotoPaintNodes;
     args->doNansHandling = isAnalysis ? false : doNanHandling;
     args->draftMode = draftMode;
@@ -3612,7 +3622,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     if (useIdentityCache) {
         double timeF = 0.;
-        bool foundInCache = _imp->actionsCache.getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
+        bool foundInCache = _imp->actionsCache->getIdentityResult(hash, time, view, inputNb, inputView, &timeF);
         if (foundInCache) {
             *inputTime = timeF;
 
@@ -3655,7 +3665,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     }
 
     if (useIdentityCache) {
-        _imp->actionsCache.setIdentityResult(hash, time, view, *inputNb, *inputView, *inputTime);
+        _imp->actionsCache->setIdentityResult(hash, time, view, *inputNb, *inputView, *inputTime);
     }
 
     return ret;
@@ -3675,7 +3685,7 @@ EffectInstance::getRegionOfDefinitionFromCache(U64 hash,
                                                bool* isProjectFormat)
 {
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
+    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
 
     if (foundInCache) {
         if (isProjectFormat) {
@@ -3704,7 +3714,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
     }
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    bool foundInCache = _imp->actionsCache.getRoDResult(hash, time, view, mipMapLevel, rod);
+    bool foundInCache = _imp->actionsCache->getRoDResult(hash, time, view, mipMapLevel, rod);
     if (foundInCache) {
         if (isProjectFormat) {
             *isProjectFormat = false;
@@ -3749,8 +3759,8 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
                 //if (!isDuringStrokeCreation) {
-                _imp->actionsCache.invalidateAll(hash);
-                _imp->actionsCache.setRoDResult( hash, time, view, mipMapLevel, RectD() );
+                _imp->actionsCache->invalidateAll(hash);
+                _imp->actionsCache->setRoDResult( hash, time, view, mipMapLevel, RectD() );
 
                 // }
                 return ret;
@@ -3758,7 +3768,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
             if ( rod->isNull() ) {
                 // RoD is empty, which means output is black and transparent
-                _imp->actionsCache.setRoDResult( hash, time, view, mipMapLevel, RectD() );
+                _imp->actionsCache->setRoDResult( hash, time, view, mipMapLevel, RectD() );
 
                 return ret;
             }
@@ -3772,7 +3782,7 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
         assert(rod->x1 <= rod->x2 && rod->y1 <= rod->y2);
 
         //if (!isDuringStrokeCreation) {
-        _imp->actionsCache.setRoDResult(hash, time, view,  mipMapLevel, *rod);
+        _imp->actionsCache->setRoDResult(hash, time, view,  mipMapLevel, *rod);
 
         //}
         return ret;
@@ -3802,7 +3812,7 @@ EffectInstance::getFramesNeeded_public(U64 hash,
 {
     NON_RECURSIVE_ACTION();
     FramesNeededMap framesNeeded;
-    bool foundInCache = _imp->actionsCache.getFramesNeededResult(hash, time, view, mipMapLevel, &framesNeeded);
+    bool foundInCache = _imp->actionsCache->getFramesNeededResult(hash, time, view, mipMapLevel, &framesNeeded);
     if (foundInCache) {
         return framesNeeded;
     }
@@ -3815,7 +3825,7 @@ EffectInstance::getFramesNeeded_public(U64 hash,
         }
     }
 
-    _imp->actionsCache.setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);
+    _imp->actionsCache->setFramesNeededResult(hash, time, view, mipMapLevel, framesNeeded);
 
     return framesNeeded;
 }
@@ -3830,7 +3840,7 @@ EffectInstance::getFrameRange_public(U64 hash,
     bool foundInCache = false;
 
     if (!bypasscache) {
-        foundInCache = _imp->actionsCache.getTimeDomainResult(hash, &fFirst, &fLast);
+        foundInCache = _imp->actionsCache->getTimeDomainResult(hash, &fFirst, &fLast);
     }
     if (foundInCache) {
         *first = std::floor(fFirst + 0.5);
@@ -3849,7 +3859,7 @@ EffectInstance::getFrameRange_public(U64 hash,
 
         NON_RECURSIVE_ACTION();
         getFrameRange(first, last);
-        _imp->actionsCache.setTimeDomainResult(hash, *first, *last);
+        _imp->actionsCache->setTimeDomainResult(hash, *first, *last);
     }
 }
 
@@ -3897,6 +3907,56 @@ EffectInstance::endSequenceRender_public(double first,
     assert(tls->beginEndRenderCount >= 0);
 
     return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
+}
+
+EffectInstPtr
+EffectInstance::getOrCreateRenderInstance()
+{
+    QMutexLocker k(&_imp->renderClonesMutex);
+    if (!_imp->isDoingInstanceSafeRender) {
+        // The main instance is not rendering, use it
+        _imp->isDoingInstanceSafeRender = true;
+        return shared_from_this();
+    }
+    // Ok get a clone
+    if (!_imp->renderClonesPool.empty()) {
+        EffectInstPtr ret =  _imp->renderClonesPool.front();
+        _imp->renderClonesPool.pop_front();
+        ret->_imp->isDoingInstanceSafeRender = true;
+        return ret;
+    }
+
+    EffectInstPtr clone = createRenderClone();
+    if (!clone) {
+        // We have no way but to use this node since the effect does not support render clones
+        _imp->isDoingInstanceSafeRender = true;
+        return shared_from_this();
+    }
+    clone->_imp->isDoingInstanceSafeRender = true;
+    return clone;
+}
+
+void
+EffectInstance::clearRenderInstances()
+{
+    QMutexLocker k(&_imp->renderClonesMutex);
+    _imp->renderClonesPool.clear();
+}
+
+void
+EffectInstance::releaseRenderInstance(const EffectInstPtr& instance)
+{
+    if (!instance) {
+        return;
+    }
+    QMutexLocker k(&_imp->renderClonesMutex);
+    instance->_imp->isDoingInstanceSafeRender = true;
+    if (instance.get() == this) {
+        return;
+    }
+
+    // Make this instance available again
+    _imp->renderClonesPool.push_back(instance);
 }
 
 /**
@@ -4021,7 +4081,7 @@ EffectInstance::findClosestSupportedComponents(int inputNb,
 void
 EffectInstance::clearActionsCache()
 {
-    _imp->actionsCache.clearAll();
+    _imp->actionsCache->clearAll();
 }
 
 void
@@ -4663,6 +4723,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     ///and whose render() function is never called.
     _imp->clearInputImagePointers();
 
+    // If there are any render clones, kill them as the plug-in might have changed internally
+    clearRenderInstances();
+
     return ret;
 } // onKnobValueChanged_public
 
@@ -4905,7 +4968,7 @@ void
 EffectInstance::onNodeHashChanged(U64 hash)
 {
     ///Invalidate actions cache
-    _imp->actionsCache.invalidateAll(hash);
+    _imp->actionsCache->invalidateAll(hash);
 
     const KnobsVec & knobs = getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {

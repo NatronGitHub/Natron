@@ -72,6 +72,8 @@ public:
 
     OutputEffectInstance(NodePtr node);
 
+    OutputEffectInstance(const OutputEffectInstance& other);
+
     virtual ~OutputEffectInstance();
 
     virtual bool isOutput() const OVERRIDE

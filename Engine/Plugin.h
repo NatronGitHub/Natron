@@ -192,7 +192,7 @@ class Plugin
 
     bool _renderScaleEnabled;
     bool _multiThreadingEnabled;
-
+    bool _openglActivated;
 public:
 
     Plugin()
@@ -220,6 +220,7 @@ public:
           , _activated(true)
           , _renderScaleEnabled(true)
           , _multiThreadingEnabled(true)
+          , _openglActivated(true)
     {
     }
 
@@ -260,6 +261,7 @@ public:
           , _activated(true)
           , _renderScaleEnabled(true)
           , _multiThreadingEnabled(true)
+          , _openglActivated(true)
     {
         if ( _resourcesPath.isEmpty() ) {
             _resourcesPath = QLatin1String(":/Resources/");
@@ -359,6 +361,9 @@ public:
 
     bool isActivated() const;
     void setActivated(bool b);
+
+    bool isOpenGLEnabled() const;
+    void setOpenGLEnabled(bool b);
 };
 
 struct Plugin_compare_major

@@ -154,6 +154,8 @@ class EffectInstance::Implementation
 public:
     Implementation(EffectInstance* publicInterface);
 
+    Implementation(const Implementation& other);
+
 public:
     EffectInstance* _publicInterface;
 
@@ -171,7 +173,7 @@ public:
     SupportsEnum supportsRenderScale;
 
     /// Mt-Safe actions cache
-    ActionsCache actionsCache;
+    boost::shared_ptr<ActionsCache> actionsCache;
 
 #if NATRON_ENABLE_TRIMAP
     ///Store all images being rendered to avoid 2 threads rendering the same portion of an image
@@ -210,6 +212,13 @@ public:
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
     std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr> attachedContexts;
+
+    // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
+    // eRenderSafetyInstanceSafe or lower
+    EffectInstance* mainInstance; // pointer to the main-instance if this instance is a clone
+    bool isDoingInstanceSafeRender; // true if this intance is rendering
+    mutable QMutex renderClonesMutex;
+    std::list<EffectInstPtr> renderClonesPool;
 
     void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
 

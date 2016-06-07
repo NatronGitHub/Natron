@@ -229,6 +229,8 @@ public:
      **/
     explicit EffectInstance(NodePtr node);
 
+    EffectInstance(const EffectInstance& other);
+
     virtual ~EffectInstance();
 
 
@@ -642,6 +644,7 @@ public:
                                   bool isDuringPaintStrokeCreation,
                                   const NodesList & rotoPaintNodes,
                                   RenderSafetyEnum currentThreadSafety,
+                                  PluginOpenGLRenderSupport currentOpenGLSupport,
                                   bool doNanHandling,
                                   bool draftMode,
                                   const boost::shared_ptr<RenderStats> & stats);
@@ -1707,6 +1710,12 @@ public:
      **/
     virtual bool supportsConcurrentOpenGLRenders() const { return true; }
 
+
+    void clearRenderInstances();
+
+protected:
+
+
     /**
      * @brief Plug-ins that are flagged eRenderSafetyInstanceSafe or lower can implement this function to make a copy
      * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
@@ -1715,6 +1724,11 @@ public:
     virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
 
 private:
+
+    EffectInstPtr getOrCreateRenderInstance();
+
+
+    void releaseRenderInstance(const EffectInstPtr& instance);
 
     /**
      * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
@@ -2072,23 +2086,24 @@ private:
      * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    RenderRoIStatusEnum renderRoIInternal(double time,
-                                          const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
-                                          RenderSafetyEnum safety,
-                                          unsigned int mipMapLevel,
-                                          ViewIdx view,
-                                          const RectD & rod, //!< rod in canonical coordinates
-                                          const double par,
-                                          const boost::shared_ptr<ImagePlanesToRender> & planes,
-                                          bool isSequentialRender,
-                                          bool isRenderMadeInResponseToUserInteraction,
-                                          U64 nodeHash,
-                                          bool renderFullScaleThenDownscale,
-                                          bool byPassCache,
-                                          ImageBitDepthEnum outputClipPrefDepth,
-                                          const ImageComponents& outputClipPrefsComps,
-                                          const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
-                                          std::bitset<4> processChannels);
+    static RenderRoIStatusEnum renderRoIInternal(EffectInstance* self,
+                                                 double time,
+                                                 const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                                 RenderSafetyEnum safety,
+                                                 unsigned int mipMapLevel,
+                                                 ViewIdx view,
+                                                 const RectD & rod, //!< rod in canonical coordinates
+                                                 const double par,
+                                                 const boost::shared_ptr<ImagePlanesToRender> & planes,
+                                                 bool isSequentialRender,
+                                                 bool isRenderMadeInResponseToUserInteraction,
+                                                 U64 nodeHash,
+                                                 bool renderFullScaleThenDownscale,
+                                                 bool byPassCache,
+                                                 ImageBitDepthEnum outputClipPrefDepth,
+                                                 const ImageComponents& outputClipPrefsComps,
+                                                 const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                 std::bitset<4> processChannels);
 
 
     /// \returns false if rendering was aborted

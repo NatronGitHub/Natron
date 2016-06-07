@@ -64,6 +64,12 @@ public:
     {
     }
 
+
+    AbstractOfxEffectInstance(const AbstractOfxEffectInstance& other)
+    : OutputEffectInstance(other)
+    {
+    }
+
     virtual ~AbstractOfxEffectInstance()
     {
     }

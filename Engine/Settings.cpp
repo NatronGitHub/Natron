@@ -1778,6 +1778,14 @@ Settings::restorePluginSettings()
                 } else {
                     settings.setValue(mtKey, plugin->isMultiThreadingEnabled());
                 }
+
+                QString glKey = pluginIDKey + QString::fromUtf8("_gl");
+                if (settings.contains(glKey)) {
+                    bool openglEnabled = settings.value(glKey).toBool();
+                    plugin->setOpenGLEnabled(openglEnabled);
+                } else {
+                    settings.setValue(glKey, plugin->isOpenGLEnabled());
+                }
                 
             }
             
@@ -1809,6 +1817,9 @@ Settings::savePluginsSettings()
 
             QString mtKey = pluginID + QString::fromUtf8("_mt");
             settings.setValue(mtKey, plugin->isMultiThreadingEnabled());
+
+            QString glKey = pluginID + QString::fromUtf8("_gl");
+            settings.setValue(glKey, plugin->isOpenGLEnabled());
 
         }
     }
