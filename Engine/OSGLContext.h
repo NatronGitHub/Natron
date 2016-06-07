@@ -110,7 +110,7 @@ struct GLRendererID
         : renderID(-1)
         , rendererHandle(0) {}
 
-    explicit GLRendererID(int id) : renderID(id), rendererHandle(0){}
+    explicit GLRendererID(int id) : renderID(id), rendererHandle(0) {}
 
     explicit GLRendererID(void* handle) : renderID(0), rendererHandle(handle) {}
 };
@@ -129,7 +129,8 @@ struct OpenGLRendererInfo
  * @brief This class encapsulates a cross-platform OpenGL context used for offscreen rendering.
  **/
 struct OSGLContextPrivate;
-class OSGLContext : public boost::noncopyable
+class OSGLContext
+    : public boost::noncopyable
 {
 public:
 
@@ -151,10 +152,10 @@ public:
      * @brief This function checks that the context has at least the OpenGL version required by Natron, otherwise
      * it fails by throwing an exception with the required version.
      * Note: the context must be made current before calling this function
-    **/
+     **/
     static void checkOpenGLVersion();
-    
-    
+
+
     GLuint getPBOId() const;
 
     GLuint getFBOId() const;
@@ -216,42 +217,45 @@ private:
  **/
 class OSGLContextAttacher
 {
-
     boost::weak_ptr<OSGLContext> _c;
     AbortableRenderInfoWPtr _a;
+
 public:
 
     OSGLContextAttacher()
-    : _c()
-    , _a()
+        : _c()
+        , _a()
     {
-
     }
 
-    OSGLContextAttacher(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render
+    OSGLContextAttacher(const OSGLContextPtr& c,
+                        const AbortableRenderInfoPtr& render
 #ifdef DEBUG
-                        , double frameTime
+                        ,
+                        double frameTime
 #endif
-    )
+                        )
     {
-        init(c,render
+        init(c, render
 #ifdef DEBUG
-             ,frameTime
+             , frameTime
 #endif
              );
     }
 
-    void init(const OSGLContextPtr& c, const AbortableRenderInfoPtr& render
+    void init(const OSGLContextPtr& c,
+              const AbortableRenderInfoPtr& render
 #ifdef DEBUG
-              , double frameTime
+              ,
+              double frameTime
 #endif
-    )
+              )
     {
         _c = c;
         _a = render;
         c->setContextCurrent(render
 #ifdef DEBUG
-                            ,frameTime
+                             , frameTime
 #endif
                              );
     }
@@ -259,8 +263,9 @@ public:
     ~OSGLContextAttacher()
     {
         OSGLContextPtr c = _c.lock();
+
         if (c) {
-            c->unsetCurrentContext(_a.lock());
+            c->unsetCurrentContext( _a.lock() );
         }
     }
 };

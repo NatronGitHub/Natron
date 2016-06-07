@@ -250,7 +250,7 @@ public:
     DopeSheetKey(const boost::shared_ptr<DSKnob> &knob,
                  const KeyFrame& kf)
         : context(knob)
-          , key(kf)
+        , key(kf)
     {
         boost::shared_ptr<DSKnob> knobContext = context.lock();
 
@@ -259,7 +259,7 @@ public:
 
     DopeSheetKey(const DopeSheetKey &other)
         : context(other.context)
-          , key(other.key)
+        , key(other.key)
     {}
 
     friend bool operator==(const DopeSheetKey &key,

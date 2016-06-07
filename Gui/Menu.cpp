@@ -36,7 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
 #include <QHelpEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-CLANG_DIAG_ON(deprecated)
+    CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;

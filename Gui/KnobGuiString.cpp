@@ -90,11 +90,11 @@ AnimatingTextEdit::AnimatingTextEdit(const KnobGuiPtr& knob,
                                      int dimension,
                                      QWidget* parent)
     : QTextEdit(parent)
-      , animation(0)
-      , readOnlyNatron(false)
-      , _hasChanged(false)
-      , dirty(false)
-      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , animation(0)
+    , readOnlyNatron(false)
+    , _hasChanged(false)
+    , dirty(false)
+    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {
     setTabStopWidth(20); // a tab width of 20 is more reasonable than 80 for programming languages (e.g. Shadertoy)
 }
@@ -253,7 +253,7 @@ KnobLineEdit::KnobLineEdit(const KnobGuiPtr& knob,
                            int dimension,
                            QWidget* parent)
     : LineEdit(parent)
-      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {}
 
 KnobLineEdit::~KnobLineEdit()
@@ -352,21 +352,21 @@ KnobLineEdit::focusOutEvent(QFocusEvent* e)
 KnobGuiString::KnobGuiString(KnobPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
-      , _lineEdit(0)
-      , _label(0)
-      , _container(0)
-      , _mainLayout(0)
-      , _textEdit(0)
-      , _richTextOptions(0)
-      , _richTextOptionsLayout(0)
-      , _fontCombo(0)
-      , _setBoldButton(0)
-      , _setItalicButton(0)
-      , _fontSizeSpinBox(0)
-      , _fontColorButton(0)
-      , _fontSize(0)
-      , _boldActivated(false)
-      , _italicActivated(false)
+    , _lineEdit(0)
+    , _label(0)
+    , _container(0)
+    , _mainLayout(0)
+    , _textEdit(0)
+    , _richTextOptions(0)
+    , _richTextOptionsLayout(0)
+    , _fontCombo(0)
+    , _setBoldButton(0)
+    , _setItalicButton(0)
+    , _fontSizeSpinBox(0)
+    , _fontColorButton(0)
+    , _fontSize(0)
+    , _boldActivated(false)
+    , _italicActivated(false)
 {
     _knob = boost::dynamic_pointer_cast<KnobString>(knob);
 }
@@ -389,7 +389,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
 
         _mainLayout->addWidget(_textEdit);
 
-        QObject::connect( _textEdit, SIGNAL(editingFinished()), this, SLOT(onTextChanged()) );
+        QObject::connect( _textEdit, SIGNAL( editingFinished() ), this, SLOT( onTextChanged() ) );
         // layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
         _textEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -415,7 +415,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _fontSizeSpinBox->setMinimum(1);
             _fontSizeSpinBox->setMaximum(100);
             _fontSizeSpinBox->setValue(6);
-            QObject::connect( _fontSizeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onFontSizeChanged(double)) );
+            QObject::connect( _fontSizeSpinBox, SIGNAL( valueChanged(double) ), this, SLOT( onFontSizeChanged(double) ) );
             _fontSizeSpinBox->setToolTip( GuiUtils::convertFromPlainText(tr("Font size."), Qt::WhiteSpaceNormal) );
             _richTextOptionsLayout->addWidget(_fontSizeSpinBox);
 
@@ -432,7 +432,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _setBoldButton->setCheckable(true);
             _setBoldButton->setToolTip( GuiUtils::convertFromPlainText(tr("Bold."), Qt::WhiteSpaceNormal) );
             _setBoldButton->setMaximumSize(18, 18);
-            QObject::connect( _setBoldButton, SIGNAL(clicked(bool)), this, SLOT(boldChanged(bool)) );
+            QObject::connect( _setBoldButton, SIGNAL( clicked(bool) ), this, SLOT( boldChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setBoldButton);
 
             QIcon italicIcon;
@@ -444,7 +444,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _setItalicButton->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
             _setItalicButton->setToolTip( GuiUtils::convertFromPlainText(tr("Italic."), Qt::WhiteSpaceNormal) );
             _setItalicButton->setMaximumSize(18, 18);
-            QObject::connect( _setItalicButton, SIGNAL(clicked(bool)), this, SLOT(italicChanged(bool)) );
+            QObject::connect( _setItalicButton, SIGNAL( clicked(bool) ), this, SLOT( italicChanged(bool) ) );
             _richTextOptionsLayout->addWidget(_setItalicButton);
 
             QPixmap pixBlack(15, 15);
@@ -454,7 +454,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             _fontColorButton->setIconSize( QSize(NATRON_MEDIUM_BUTTON_ICON_SIZE, NATRON_MEDIUM_BUTTON_ICON_SIZE) );
             _fontColorButton->setToolTip( GuiUtils::convertFromPlainText(tr("Font color."), Qt::WhiteSpaceNormal) );
             _fontColorButton->setMaximumSize(18, 18);
-            QObject::connect( _fontColorButton, SIGNAL(clicked(bool)), this, SLOT(colorFontButtonClicked()) );
+            QObject::connect( _fontColorButton, SIGNAL( clicked(bool) ), this, SLOT( colorFontButtonClicked() ) );
             _richTextOptionsLayout->addWidget(_fontColorButton);
 
             _richTextOptionsLayout->addStretch();
@@ -464,7 +464,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
             restoreTextInfoFromString();
 
             ///Connect the slot after restoring
-            QObject::connect( _fontCombo, SIGNAL(currentFontChanged(QFont)), this, SLOT(onCurrentFontChanged(QFont)) );
+            QObject::connect( _fontCombo, SIGNAL( currentFontChanged(QFont) ), this, SLOT( onCurrentFontChanged(QFont) ) );
         }
 
         layout->addWidget(_container);
@@ -487,7 +487,7 @@ KnobGuiString::createWidget(QHBoxLayout* layout)
         _lineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
         layout->addWidget(_lineEdit);
-        QObject::connect( _lineEdit, SIGNAL(editingFinished()), this, SLOT(onLineChanged()) );
+        QObject::connect( _lineEdit, SIGNAL( editingFinished() ), this, SLOT( onLineChanged() ) );
 
         if ( knob->isCustomKnob() ) {
             _lineEdit->setReadOnly_NoFocusRect(true);
@@ -928,7 +928,7 @@ KnobGuiString::colorFontButtonClicked()
     boost::shared_ptr<KnobString> knob = _knob.lock();
     QColorDialog dialog(_textEdit);
     dialog.setOption(QColorDialog::DontUseNativeDialog);
-    QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(updateFontColorIcon(QColor)) );
+    QObject::connect( &dialog, SIGNAL( currentColorChanged(QColor) ), this, SLOT( updateFontColorIcon(QColor) ) );
     dialog.setCurrentColor(_fontColor);
     if ( dialog.exec() ) {
         _fontColor = dialog.currentColor();

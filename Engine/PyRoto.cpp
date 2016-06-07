@@ -134,7 +134,7 @@ ItemBase::getParam(const QString& name) const
 
 Layer::Layer(const boost::shared_ptr<RotoItem>& item)
     : ItemBase(item)
-      , _layer( boost::dynamic_pointer_cast<RotoLayer>(item) )
+    , _layer( boost::dynamic_pointer_cast<RotoLayer>(item) )
 {
 }
 
@@ -176,7 +176,7 @@ Layer::getChildren() const
 
 BezierCurve::BezierCurve(const boost::shared_ptr<RotoItem>& item)
     : ItemBase(item)
-      , _bezier( boost::dynamic_pointer_cast<Bezier>(item) )
+    , _bezier( boost::dynamic_pointer_cast<Bezier>(item) )
 {
 }
 
@@ -298,26 +298,42 @@ void
 BezierCurve::getKeyframes(std::list<double>* keys) const
 {
     std::set<double> keyframes;
+
     _bezier->getKeyframeTimes(&keyframes);
-    for (std::set<double>::iterator it = keyframes.begin(); it!=keyframes.end(); ++it) {
+    for (std::set<double>::iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         keys->push_back(*it);
     }
 }
 
 void
-BezierCurve::getControlPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const
+BezierCurve::getControlPointPosition(int index,
+                                     double time,
+                                     double* x,
+                                     double *y,
+                                     double *lx,
+                                     double *ly,
+                                     double *rx,
+                                     double *ry) const
 {
     boost::shared_ptr<BezierCP> cp = _bezier->getControlPointAtIndex(index);
+
     cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
     cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
     cp->getRightBezierPointAtTime(true, time, ViewIdx(0), rx, ry);
-
 }
 
 void
-BezierCurve::getFeatherPointPosition(int index, double time, double* x, double *y, double *lx, double *ly, double *rx, double *ry) const
+BezierCurve::getFeatherPointPosition(int index,
+                                     double time,
+                                     double* x,
+                                     double *y,
+                                     double *lx,
+                                     double *ly,
+                                     double *rx,
+                                     double *ry) const
 {
     boost::shared_ptr<BezierCP> cp = _bezier->getFeatherPointAtIndex(index);
+
     cp->getPositionAtTime(true, time, ViewIdx(0), x, y);
     cp->getLeftBezierPointAtTime(true, time, ViewIdx(0), lx, ly);
     cp->getRightBezierPointAtTime(true, time, ViewIdx(0), rx, ry);

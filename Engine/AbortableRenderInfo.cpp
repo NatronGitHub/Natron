@@ -67,21 +67,21 @@ struct AbortableRenderInfoPrivate
                                bool canAbort,
                                U64 age)
         : _p(p)
-          , canAbort(canAbort)
-          , aborted()
-          , age(age)
-          , threadsMutex()
-          , threadsForThisRender()
-          , timerMutex()
-          , timerStarted(false)
-          , abortTimeoutTimer(new QTimer)
-          , ownerThread( QThread::currentThread() )
+        , canAbort(canAbort)
+        , aborted()
+        , age(age)
+        , threadsMutex()
+        , threadsForThisRender()
+        , timerMutex()
+        , timerStarted(false)
+        , abortTimeoutTimer(new QTimer)
+        , ownerThread( QThread::currentThread() )
     {
         aborted.fetchAndStoreAcquire(0);
 
         abortTimeoutTimer->setSingleShot(true);
-        QObject::connect( abortTimeoutTimer, SIGNAL(timeout()), p, SLOT(onAbortTimerTimeout()) );
-        QObject::connect( p, SIGNAL(startTimerInOriginalThread()), p, SLOT(onStartTimerInOriginalThreadTriggered()) );
+        QObject::connect( abortTimeoutTimer, SIGNAL( timeout() ), p, SLOT( onAbortTimerTimeout() ) );
+        QObject::connect( p, SIGNAL( startTimerInOriginalThread() ), p, SLOT( onStartTimerInOriginalThreadTriggered() ) );
     }
 };
 

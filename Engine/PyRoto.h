@@ -159,7 +159,6 @@ public:
 
     void setCompositingOperator(NATRON_NAMESPACE::MergingFunctionEnum op);
     NATRON_NAMESPACE::MergingFunctionEnum getCompositingOperator() const;
-
     BooleanParam* getActivatedParam() const;
     DoubleParam* getOpacityParam() const;
     DoubleParam* getFeatherDistanceParam() const;

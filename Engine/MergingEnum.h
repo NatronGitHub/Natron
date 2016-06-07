@@ -35,8 +35,6 @@
 NATRON_NAMESPACE_ENTER;
 
 
-
-
 namespace Merge {
 /**
  * @brief Returns the name of the merge oeprator as described in @openfx-supportext/ofxsMerging.h

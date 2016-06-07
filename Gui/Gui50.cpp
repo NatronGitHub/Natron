@@ -759,7 +759,6 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     }
 }
 
-
 void
 Gui::addShortcut(BoundAction* action)
 {
@@ -836,10 +835,10 @@ Gui::toggleAutoHideGraphInputs()
 void
 Gui::centerAllNodeGraphsWithTimer()
 {
-    QTimer::singleShot( 25, _imp->_nodeGraphArea, SLOT(centerOnAllNodes()) );
+    QTimer::singleShot( 25, _imp->_nodeGraphArea, SLOT( centerOnAllNodes() ) );
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
-        QTimer::singleShot( 25, *it, SLOT(centerOnAllNodes()) );
+        QTimer::singleShot( 25, *it, SLOT( centerOnAllNodes() ) );
     }
 }
 
@@ -1239,7 +1238,6 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
             _imp->_scriptEditor->sourceScript( QString::fromUtf8( content.begin()->second.absoluteFileName().c_str() ) );
             ensureScriptEditorVisible();
         } else {
-
             std::string readerPluginID = appPTR->getReaderPluginIDForFileType(extLower);
             if ( readerPluginID.empty() ) {
                 Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");

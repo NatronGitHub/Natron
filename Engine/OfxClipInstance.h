@@ -244,7 +244,7 @@ public:
 
         RenderActionData()
             : imagesBeingRendered()
-              , clipComponents()
+            , clipComponents()
         {
         }
     };
@@ -277,18 +277,18 @@ public:
 
         ClipTLSData()
             : view()
-              , mipMapLevel()
-              , componentsPresent()
-              , unmappedComponents()
+            , mipMapLevel()
+            , componentsPresent()
+            , unmappedComponents()
         {
         }
 
         ClipTLSData(const ClipTLSData& other)
             : view(other.view)
-              , mipMapLevel(other.mipMapLevel)
-              , renderData()
-              , componentsPresent(other.componentsPresent)
-              , unmappedComponents(other.unmappedComponents)
+            , mipMapLevel(other.mipMapLevel)
+            , renderData()
+            , componentsPresent(other.componentsPresent)
+            , unmappedComponents(other.unmappedComponents)
         {
             for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
                  it != other.renderData.end(); ++it) {
@@ -350,7 +350,7 @@ public:
                        const std::string& components,
                        int nComps)
         : OFX::Host::ImageEffect::Image()
-          , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
     {
     }
 };
@@ -368,7 +368,7 @@ public:
                          const std::string& components,
                          int nComps)
         : OFX::Host::ImageEffect::Texture()
-          , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
     {
     }
 };

@@ -28,9 +28,9 @@
 #include <stdexcept>
 
 #include "Global/Macros.h"
-CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
+CLANG_DIAG_OFF(deprecated - register) //'register' storage class specifier is deprecated
 #include <QtCore/QDebug>
-CLANG_DIAG_ON(deprecated-register)
+CLANG_DIAG_ON(deprecated - register)
 
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstance.h"
@@ -42,7 +42,7 @@ NATRON_NAMESPACE_ENTER;
 
 BlockingBackgroundRender::BlockingBackgroundRender(OutputEffectInstance* writer)
     : _running(false)
-      , _writer(writer)
+    , _writer(writer)
 {
 }
 

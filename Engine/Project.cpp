@@ -140,10 +140,10 @@ generateUserFriendlyNatronVersionName()
 
 Project::Project(const AppInstPtr& appInstance)
     : KnobHolder(appInstance)
-      , NodeCollection(appInstance)
-      , _imp( new ProjectPrivate(this) )
+    , NodeCollection(appInstance)
+    , _imp( new ProjectPrivate(this) )
 {
-    QObject::connect( _imp->autoSaveTimer.get(), SIGNAL(timeout()), this, SLOT(onAutoSaveTimerTriggered()) );
+    QObject::connect( _imp->autoSaveTimer.get(), SIGNAL( timeout() ), this, SLOT( onAutoSaveTimerTriggered() ) );
 }
 
 Project::~Project()
@@ -655,7 +655,7 @@ Project::onAutoSaveTimerTriggered()
 
     if (canAutoSave) {
         boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
-        QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
+        QObject::connect( watcher.get(), SIGNAL( finished() ), this, SLOT( onAutoSaveFutureFinished() ) );
         watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
         _imp->autoSaveFutures.push_back(watcher);
     } else {
@@ -763,7 +763,7 @@ Project::initializeKnobs()
     _imp->formatKnob->setAnimationEnabled(false);
     page->addKnob(_imp->formatKnob);
 
-    QObject::connect( _imp->formatKnob.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
+    QObject::connect( _imp->formatKnob.get(), SIGNAL( populated() ), this, SLOT( onProjectFormatPopulated() ) );
 
     _imp->addFormatKnob = AppManager::createKnob<KnobButton>( this, tr("New Format...") );
     _imp->addFormatKnob->setName("newFormat");
@@ -1709,7 +1709,7 @@ public:
 
     ResetWatcherArgs()
         : GenericWatcherCallerArgs()
-          , aboutToQuit(false)
+        , aboutToQuit(false)
     {
     }
 
@@ -1815,12 +1815,13 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
                                       const WatcherCallerArgsPtr& args)
 {
     NodesList nodesToWatch;
+
     getNodes_recursive(nodesToWatch, false);
     if ( nodesToWatch.empty() ) {
         return false;
     }
     boost::shared_ptr<NodeRenderWatcher> renderWatcher( new NodeRenderWatcher(nodesToWatch) );
-    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
+    QObject::connect(renderWatcher.get(), SIGNAL( taskFinished(int, WatcherCallerArgsPtr) ), this, SLOT( onQuitAnyProcessingWatcherTaskFinished(int, WatcherCallerArgsPtr) ), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
     p.watcher = renderWatcher;

@@ -64,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 
 GuiApplicationManager::GuiApplicationManager()
     : AppManager()
-      , _imp( new GuiApplicationManagerPrivate(this) )
+    , _imp( new GuiApplicationManagerPrivate(this) )
 {
 }
 
@@ -925,10 +925,10 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
 
     _imp->fontconfigUpdateWatcher.reset(new QFutureWatcher<void>);
-    QObject::connect( _imp->fontconfigUpdateWatcher.get(), SIGNAL(finished()), this, SLOT(onFontconfigCacheUpdateFinished()) );
+    QObject::connect( _imp->fontconfigUpdateWatcher.get(), SIGNAL( finished() ), this, SLOT( onFontconfigCacheUpdateFinished() ) );
     setLoadingStatus( tr("Updating fontconfig cache...") );
 
-    QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL(timeout()), this, SLOT(onFontconfigTimerTriggered()) );
+    QObject::connect( &_imp->updateSplashscreenTimer, SIGNAL( timeout() ), this, SLOT( onFontconfigTimerTriggered() ) );
     _imp->updateSplashscreenTimer.start(1000);
 
     _imp->fontconfigUpdateWatcher->setFuture( QtConcurrent::run(_imp.get(), &GuiApplicationManagerPrivate::updateFontConfigCache) );
@@ -1098,7 +1098,8 @@ GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node,
     _imp->previewRenderThread.appendToQueue(node, time);
 }
 
-int GuiApplicationManager::getDocumentationServerPort()
+int
+GuiApplicationManager::getDocumentationServerPort()
 {
     return _imp->documentation->serverPort();
 }

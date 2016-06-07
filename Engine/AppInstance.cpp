@@ -72,7 +72,7 @@ NATRON_NAMESPACE_ENTER;
 FlagSetter::FlagSetter(bool initialValue,
                        bool* p)
     : p(p)
-      , lock(0)
+    , lock(0)
 {
     *p = initialValue;
 }
@@ -81,7 +81,7 @@ FlagSetter::FlagSetter(bool initialValue,
                        bool* p,
                        QMutex* mutex)
     : p(p)
-      , lock(mutex)
+    , lock(mutex)
 {
     lock->lock();
     *p = initialValue;
@@ -101,7 +101,7 @@ FlagSetter::~FlagSetter()
 
 FlagIncrementer::FlagIncrementer(int* p)
     : p(p)
-      , lock(0)
+    , lock(0)
 {
     *p = *p + 1;
 }
@@ -109,7 +109,7 @@ FlagIncrementer::FlagIncrementer(int* p)
 FlagIncrementer::FlagIncrementer(int* p,
                                  QMutex* mutex)
     : p(p)
-      , lock(mutex)
+    , lock(mutex)
 {
     lock->lock();
     *p = *p + 1;
@@ -163,18 +163,18 @@ public:
                        AppInstance* app)
 
         : _publicInterface(app)
-          , _currentProject()
-          , _appID(appID)
-          , _projectCreatedWithLowerCaseIDs(false)
-          , creatingGroupMutex()
-          , _creatingGroup(0)
-          , _creatingNodeQueue()
-          , _creatingTree(0)
-          , renderQueueMutex()
-          , renderQueue()
-          , activeRenders()
-          , invalidExprKnobsMutex()
-          , invalidExprKnobs()
+        , _currentProject()
+        , _appID(appID)
+        , _projectCreatedWithLowerCaseIDs(false)
+        , creatingGroupMutex()
+        , _creatingGroup(0)
+        , _creatingNodeQueue()
+        , _creatingTree(0)
+        , renderQueueMutex()
+        , renderQueue()
+        , activeRenders()
+        , invalidExprKnobsMutex()
+        , invalidExprKnobs()
     {
     }
 
@@ -195,7 +195,7 @@ public:
 
 AppInstance::AppInstance(int appID)
     : QObject()
-      , _imp( new AppInstancePrivate(appID, this) )
+    , _imp( new AppInstancePrivate(appID, this) )
 {
 }
 
@@ -240,13 +240,13 @@ void
 AppInstance::checkForNewVersion() const
 {
     FileDownloader* downloader = new FileDownloader( QUrl( QString::fromUtf8(NATRON_LAST_VERSION_URL) ), false );
-    QObject::connect( downloader, SIGNAL(downloaded()), this, SLOT(newVersionCheckDownloaded()) );
-    QObject::connect( downloader, SIGNAL(error()), this, SLOT(newVersionCheckError()) );
+    QObject::connect( downloader, SIGNAL( downloaded() ), this, SLOT( newVersionCheckDownloaded() ) );
+    QObject::connect( downloader, SIGNAL( error() ), this, SLOT( newVersionCheckError() ) );
 
     ///make the call blocking
     QEventLoop loop;
 
-    connect( downloader->getReply(), SIGNAL(finished()), &loop, SLOT(quit()) );
+    connect( downloader->getReply(), SIGNAL( finished() ), &loop, SLOT( quit() ) );
     loop.exec();
 }
 
@@ -821,7 +821,7 @@ public:
     AddCreateNode_RAII(AppInstancePrivate* imp,
                        const NodePtr& node)
         : _imp(imp)
-          , _node(node)
+        , _node(node)
     {
         _imp->_creatingNodeQueue.push_back(node);
     }
@@ -1640,9 +1640,9 @@ AppInstance::startWritersRendering(bool doBlockingRender,
 
         if (renderInSeparateProcess) {
             item.process.reset( new ProcessHandler(savePath, item.work.writer) );
-            QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
+            QObject::connect( item.process.get(), SIGNAL( processFinished(int) ), this, SLOT( onBackgroundRenderProcessFinished() ) );
         } else {
-            QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
+            QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL( renderFinished(int) ), this, SLOT( onQueuedRenderFinished(int) ), Qt::UniqueConnection);
         }
 
         bool canPause = !item.work.writer->isVideoWriter();
@@ -1912,7 +1912,7 @@ AppInstance::declareCurrentAppVariable_Python()
     const KnobsVec& knobs = _imp->_currentProject->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss << "app" << _imp->_appID + 1 << "." << (*it)->getName() << " = app" << _imp->_appID + 1 << ".getProjectParam('" <<
-            (*it)->getName() << "')\n";
+        (*it)->getName() << "')\n";
     }
     std::string script = ss.str();
     std::string err;

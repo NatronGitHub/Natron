@@ -725,25 +725,24 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         storage = eStorageModeDisk;
     }
     // Enable GPU render if the plug-in cannot render another way or if all conditions are met
-    else if (glContext && (openGLSupport == ePluginOpenGLRenderSupportNeeded ||
-               (openGLSupport == ePluginOpenGLRenderSupportYes && args.allowGPURendering && getApp()->getProject()->isGPURenderingEnabledInProject())) ) {
+    else if ( glContext && ( (openGLSupport == ePluginOpenGLRenderSupportNeeded) ||
+                             ( ( openGLSupport == ePluginOpenGLRenderSupportYes) && args.allowGPURendering && getApp()->getProject()->isGPURenderingEnabledInProject() ) ) ) {
         /*
            We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
            since we do not use the cache for textures)
          */
         // Make the OpenGL context current to this thread
-        glContextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
+        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
 #ifdef DEBUG
-                                                      , frameArgs->time
+                                                       , frameArgs->time
 #endif
-                                                      ));
+                                                       ) );
         storage = eStorageModeGLTex;
 
         // If the plug-in knows how to render on CPU, check if we actually should not render on CPU instead.
         if (openGLSupport == ePluginOpenGLRenderSupportYes) {
-
             // User want to force caching of this node but we cannot cache OpenGL renders, so fallback on CPU.
-            if (getNode()->isForceCachingEnabled()) {
+            if ( getNode()->isForceCachingEnabled() ) {
                 storage = eStorageModeRAM;
                 glContextLocker.reset();
             }
@@ -1065,7 +1064,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         }
 
         // If doing opengl renders, we don't allow retrieving partial images from the cache
-        if (!rectsLeftToRender.empty() && (planesToRender->useOpenGL || cacheAlmostFull)) {
+        if ( !rectsLeftToRender.empty() && (planesToRender->useOpenGL || cacheAlmostFull) ) {
             ///The node cache is almost full and we need to render  something in the image, if we hold a pointer to this image here
             ///we might recursively end-up in this same situation at each level of the render tree, ending with all images of each level
             ///being held in memory.
@@ -1767,7 +1766,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         rod.toPixelEnclosing(args.mipMapLevel, par, &renderedImageBounds);
         RectI expectedContainedRoI;
         args.roi.intersect(renderedImageBounds, &expectedContainedRoI);
-        if (!it->second.downscaleImage->getBounds().contains(expectedContainedRoI)) {
+        if ( !it->second.downscaleImage->getBounds().contains(expectedContainedRoI) ) {
             qDebug() << "[WARNING]:" << getScriptName_mt_safe().c_str() << "rendered an image with an RoI that fell outside its bounds.";
         }
 #endif

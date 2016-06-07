@@ -87,16 +87,16 @@ struct RotoPaintData
 
     RotoPaintData()
         : rotoPaintNode()
-          , stroke()
-          , isPainting(false)
-          , turboAlreadyActiveBeforePainting(false)
-          , lastStrokeMovementBbox()
-          , lastStrokeIndex(-1)
-          , multiStrokeIndex(0)
-          , lastStrokePoints()
-          , distToNextIn(0)
-          , distToNextOut(0)
-          , strokeImage()
+        , stroke()
+        , isPainting(false)
+        , turboAlreadyActiveBeforePainting(false)
+        , lastStrokeMovementBbox()
+        , lastStrokeIndex(-1)
+        , multiStrokeIndex(0)
+        , lastStrokePoints()
+        , distToNextIn(0)
+        , distToNextOut(0)
+        , strokeImage()
     {
     }
 };
@@ -136,20 +136,20 @@ struct GuiAppInstancePrivate
 
     GuiAppInstancePrivate()
         : _gui(NULL)
-          , _isClosing(false)
-          , _showingDialog(0)
-          , _showingDialogMutex()
-          , _previewProvider(new FileDialogPreviewProvider)
-          , lastTimelineViewerMutex()
-          , lastTimelineViewer()
-          , loadProjectSplash(0)
-          , declareAppAndParamsString()
-          , overlayRedrawRequests(0)
-          , rotoDataMutex()
-          , rotoData()
-          , timelineKeyframes()
-          , timelineUserKeys()
-          , knobDnd()
+        , _isClosing(false)
+        , _showingDialog(0)
+        , _showingDialogMutex()
+        , _previewProvider(new FileDialogPreviewProvider)
+        , lastTimelineViewerMutex()
+        , lastTimelineViewer()
+        , loadProjectSplash(0)
+        , declareAppAndParamsString()
+        , overlayRedrawRequests(0)
+        , rotoDataMutex()
+        , rotoData()
+        , timelineKeyframes()
+        , timelineUserKeys()
+        , knobDnd()
     {
         rotoData.turboAlreadyActiveBeforePainting = false;
     }
@@ -159,7 +159,7 @@ struct GuiAppInstancePrivate
 
 GuiAppInstance::GuiAppInstance(int appID)
     : AppInstance(appID)
-      , _imp(new GuiAppInstancePrivate)
+    , _imp(new GuiAppInstancePrivate)
 
 {
 }
@@ -275,7 +275,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
 
 
     boost::shared_ptr<Settings> nSettings = appPTR->getCurrentSettings();
-    QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
+    QObject::connect( getProject().get(), SIGNAL( formatChanged(Format) ), this, SLOT( projectFormatChanged(Format) ) );
 
     {
         QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
@@ -976,7 +976,7 @@ GuiAppInstance::declareCurrentAppVariable_Python()
     const KnobsVec& knobs = getProject()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss << appIDStr << "." << (*it)->getName() << " = "  << appIDStr  << ".getProjectParam('" <<
-            (*it)->getName() << "')\n";
+        (*it)->getName() << "')\n";
     }
 
     std::string script = ss.str();

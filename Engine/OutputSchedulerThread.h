@@ -61,9 +61,9 @@ struct BufferedFrame
 
     BufferedFrame()
         : view(0)
-          , time(0)
-          , stats()
-          , frame()
+        , time(0)
+        , stats()
+        , frame()
     {
     }
 };
@@ -80,7 +80,7 @@ public:
 
     ViewerCurrentFrameRequestSchedulerStartArgs()
         : GenericThreadStartArgs()
-          , age(0)
+        , age(0)
     {
     }
 
@@ -170,14 +170,14 @@ public:
                                    const std::vector<ViewIdx>& viewsToRender,
                                    RenderDirectionEnum forward)
         : GenericThreadStartArgs()
-          , isBlocking(isBlocking)
-          , enableRenderStats(enableRenderStats)
-          , firstFrame(firstFrame)
-          , lastFrame(lastFrame)
-          , frameStep(frameStep)
-          , viewsToRender(viewsToRender)
-          , processTimelineDirection(forward)
-          , pushTimelineDirection(forward)
+        , isBlocking(isBlocking)
+        , enableRenderStats(enableRenderStats)
+        , firstFrame(firstFrame)
+        , lastFrame(lastFrame)
+        , frameStep(frameStep)
+        , viewsToRender(viewsToRender)
+        , processTimelineDirection(forward)
+        , pushTimelineDirection(forward)
     {
     }
 

@@ -59,7 +59,7 @@ struct SelectedKey
 
     SelectedKey()
         : hasPrevious(false)
-          , hasNext(false)
+        , hasNext(false)
     {
     }
 
@@ -70,23 +70,23 @@ struct SelectedKey
                 const bool hasNext,
                 const KeyFrame & next)
         : curve(c)
-          , key(k)
-          , prevKey(previous)
-          , nextKey(next)
-          , hasPrevious(hasPrevious)
-          , hasNext(hasNext)
+        , key(k)
+        , prevKey(previous)
+        , nextKey(next)
+        , hasPrevious(hasPrevious)
+        , hasNext(hasNext)
     {
     }
 
     SelectedKey(const SelectedKey & o)
         : curve(o.curve)
-          , key(o.key)
-          , prevKey(o.prevKey)
-          , nextKey(o.nextKey)
-          , hasPrevious(o.hasPrevious)
-          , hasNext(o.hasNext)
-          , leftTan(o.leftTan)
-          , rightTan(o.rightTan)
+        , key(o.key)
+        , prevKey(o.prevKey)
+        , nextKey(o.nextKey)
+        , hasPrevious(o.hasPrevious)
+        , hasNext(o.hasNext)
+        , leftTan(o.leftTan)
+        , rightTan(o.rightTan)
     {
     }
 };
@@ -261,8 +261,8 @@ struct KeyInterpolationChange
                            KeyframeTypeEnum newType,
                            const KeyPtr & k)
         : oldInterp(oldType)
-          , newInterp(newType)
-          , key(k)
+        , newInterp(newType)
+        , key(k)
     {
     }
 };

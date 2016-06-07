@@ -63,9 +63,9 @@ public:
 
     RotoItemSerialization()
         : name()
-          , activated(false)
-          , parentLayerName()
-          , locked(false)
+        , activated(false)
+        , parentLayerName()
+        , locked(false)
     {
     }
 

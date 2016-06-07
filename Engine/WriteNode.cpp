@@ -193,19 +193,19 @@ public:
 
     WriteNodePrivate(WriteNode* publicInterface)
         : _publicInterface(publicInterface)
-          , embeddedPlugin()
-          , readBackNode()
-          , inputNode()
-          , outputNode()
-          , genericKnobsSerialization()
-          , outputFileKnob()
-          , frameIncrKnob()
-          , pluginSelectorKnob()
-          , pluginIDStringKnob()
-          , separatorKnob()
-          , renderButtonKnob()
-          , writeNodeKnobs()
-          , creatingWriteNode(0)
+        , embeddedPlugin()
+        , readBackNode()
+        , inputNode()
+        , outputNode()
+        , genericKnobsSerialization()
+        , outputFileKnob()
+        , frameIncrKnob()
+        , pluginSelectorKnob()
+        , pluginIDStringKnob()
+        , separatorKnob()
+        , renderButtonKnob()
+        , writeNodeKnobs()
+        , creatingWriteNode(0)
     {
     }
 
@@ -250,7 +250,7 @@ public:
 
 WriteNode::WriteNode(NodePtr n)
     : NodeGroup(n)
-      , _imp( new WriteNodePrivate(this) )
+    , _imp( new WriteNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -510,7 +510,6 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     boost::shared_ptr<NodeGroup> isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( _publicInterface->shared_from_this() );
     std::string readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
-
     NodePtr writeNode = embeddedPlugin.lock();
 
     readBackNode.reset();
@@ -726,13 +725,12 @@ WriteNodePrivate::refreshPluginSelectorKnob()
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string pluginID;
     if ( !ext.empty() ) {
-
         pluginID = appPTR->getWriterPluginIDForFileType(ext);
         IOPluginSetForFormat writersForFormat;
         appPTR->getWritersForFormat(ext, &writersForFormat);
 
         // Reverse it so that we sort them by decreasing score order
-        for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it!=writersForFormat.rend(); ++it) {
+        for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it != writersForFormat.rend(); ++it) {
             Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;

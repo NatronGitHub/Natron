@@ -67,8 +67,8 @@ public:
 
     TrackerParamsProvider()
         : _trackParamsMutex()
-          , _centerTrack(false)
-          , _updateViewer(false)
+        , _centerTrack(false)
+        , _updateViewer(false)
     {
     }
 

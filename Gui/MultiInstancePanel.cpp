@@ -150,20 +150,20 @@ public:
     MultiInstancePanelPrivate(MultiInstancePanel* publicI,
                               const boost::shared_ptr<NodeGui> & node)
         : publicInterface(publicI)
-          , guiCreated(false)
-          , mainInstance(node)
-          , instances()
-          , view(0)
-          , model(0)
-          , buttonsContainer(0)
-          , buttonsLayout(0)
-          , addButton(0)
-          , removeButton(0)
-          , selectAll(0)
-          , resetTracksButton(0)
-          , executingKnobValueChanged(false)
-          , knobValueRecursion(0)
-          , redrawOnSelectionChanged(true)
+        , guiCreated(false)
+        , mainInstance(node)
+        , instances()
+        , view(0)
+        , model(0)
+        , buttonsContainer(0)
+        , buttonsLayout(0)
+        , addButton(0)
+        , removeButton(0)
+        , selectAll(0)
+        , resetTracksButton(0)
+        , executingKnobValueChanged(false)
+        , knobValueRecursion(0)
+        , redrawOnSelectionChanged(true)
     {
     }
 
@@ -298,7 +298,7 @@ public:
 
 MultiInstancePanel::MultiInstancePanel(const boost::shared_ptr<NodeGui> & node)
     : NamedKnobHolder( node->getNode()->getApp() )
-      , _imp( new MultiInstancePanelPrivate(this, node) )
+    , _imp( new MultiInstancePanelPrivate(this, node) )
 {
 }
 
@@ -334,8 +334,8 @@ private:
 TableItemDelegate::TableItemDelegate(TableView* view,
                                      MultiInstancePanel* panel)
     : QStyledItemDelegate(view)
-      , _view(view)
-      , _panel(panel)
+    , _view(view)
+    , _panel(panel)
 {
 }
 
@@ -514,18 +514,18 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->getInstanceSpecificKnobs(_imp->getMainInstance().get(), &instanceSpecificKnobs);
 
     _imp->view = new TableView( layout->parentWidget() );
-    QObject::connect( _imp->view, SIGNAL(deleteKeyPressed()), this, SLOT(onDeleteKeyPressed()) );
-    QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
+    QObject::connect( _imp->view, SIGNAL( deleteKeyPressed() ), this, SLOT( onDeleteKeyPressed() ) );
+    QObject::connect( _imp->view, SIGNAL( itemRightClicked(TableItem*) ), this, SLOT( onItemRightClicked(TableItem*) ) );
     TableItemDelegate* delegate = new TableItemDelegate(_imp->view, this);
     _imp->view->setItemDelegate(delegate);
 
     _imp->model = new TableModel(0, 0, _imp->view);
-    QObject::connect( _imp->model, SIGNAL(s_itemChanged(TableItem*)), this, SLOT(onItemDataChanged(TableItem*)) );
+    QObject::connect( _imp->model, SIGNAL( s_itemChanged(TableItem*) ), this, SLOT( onItemDataChanged(TableItem*) ) );
     _imp->view->setTableModel(_imp->model);
 
     QItemSelectionModel *selectionModel = _imp->view->selectionModel();
-    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this,
-                      SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
+    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection, QItemSelection) ), this,
+                      SLOT( onSelectionChanged(QItemSelection, QItemSelection) ) );
     QStringList dimensionNames;
     for (std::list<KnobPtr >::iterator it = instanceSpecificKnobs.begin(); it != instanceSpecificKnobs.end(); ++it) {
         QString knobDesc( QString::fromUtf8( (*it)->getLabel().c_str() ) );
@@ -568,7 +568,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->addButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add new."), Qt::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->addButton);
 
-    QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()) );
+    QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
 
     _imp->removeButton = new Button(QIcon(), QString::fromUtf8("-"), _imp->buttonsContainer);
     _imp->removeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Remove selection."), Qt::WhiteSpaceNormal) );
@@ -576,7 +576,7 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->removeButton->setIconSize( QSize(NATRON_SMALL_BUTTON_ICON_SIZE, NATRON_SMALL_BUTTON_ICON_SIZE) );
     _imp->buttonsLayout->addWidget(_imp->removeButton);
 
-    QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()) );
+    QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveButtonClicked() ) );
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, NATRON_SMALL_BUTTON_ICON_SIZE, &selectAll);
     _imp->selectAll = new Button(QIcon(selectAll), QString(), _imp->buttonsContainer);
@@ -585,10 +585,10 @@ MultiInstancePanel::createMultiInstanceGui(QVBoxLayout* layout)
     _imp->selectAll->setToolTip( GuiUtils::convertFromPlainText(tr("Select all."), Qt::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->selectAll);
 
-    QObject::connect( _imp->selectAll, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()) );
+    QObject::connect( _imp->selectAll, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
 
     _imp->resetTracksButton = new Button(QString::fromUtf8("Reset"), _imp->buttonsContainer);
-    QObject::connect( _imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(resetSelectedInstances()) );
+    QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( resetSelectedInstances() ) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
     _imp->resetTracksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset selected items."), Qt::WhiteSpaceNormal) );
 
@@ -617,9 +617,9 @@ public:
                    const NodePtr & node,
                    QUndoCommand* parent = 0)
         : QUndoCommand(parent)
-          , _firstRedoCalled(false)
-          , _node(node)
-          , _panel(panel)
+        , _firstRedoCalled(false)
+        , _node(node)
+        , _panel(panel)
     {
     }
 
@@ -718,7 +718,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
             boost::shared_ptr<KnobSignalSlotHandler> slotsHandler =
                 instanceKnobs[i]->getSignalSlotHandler();
             if (slotsHandler) {
-                QObject::connect( slotsHandler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), publicInterface, SLOT(onInstanceKnobValueChanged(ViewSpec,int,int)) );
+                QObject::connect( slotsHandler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), publicInterface, SLOT( onInstanceKnobValueChanged(ViewSpec, int, int) ) );
             }
 
             if ( instanceKnobs[i]->isInstanceSpecific() ) {
@@ -742,7 +742,7 @@ MultiInstancePanelPrivate::addTableRow(const NodePtr & node)
     {
         QCheckBox* checkbox = new QCheckBox();
         checkbox->setChecked( !node->isNodeDisabled() );
-        QObject::connect( checkbox, SIGNAL(toggled(bool)), publicInterface, SLOT(onCheckBoxChecked(bool)) );
+        QObject::connect( checkbox, SIGNAL( toggled(bool) ), publicInterface, SLOT( onCheckBoxChecked(bool) ) );
         view->setCellWidget(newRowIndex, COL_ENABLED, checkbox);
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
@@ -904,8 +904,8 @@ public:
                       const std::list<NodePtr > & nodes,
                       QUndoCommand* parent = 0)
         : QUndoCommand(parent)
-          , _panel(panel)
-          , _nodes(nodes)
+        , _panel(panel)
+        , _nodes(nodes)
     {
     }
 
@@ -1752,15 +1752,15 @@ public:
     TrackerPanelPrivateV1(TrackerPanelV1* publicInterface,
                           const boost::shared_ptr<NodeGui> & node)
         : publicInterface(publicInterface)
-          , averageTracksButton(0)
-          , exportLabel(0)
-          , exportContainer(0)
-          , exportLayout(0)
-          , exportChoice(0)
-          , exportButton(0)
-          , transformPage()
-          , referenceFrame()
-          , scheduler( publicInterface, node->getNode() )
+        , averageTracksButton(0)
+        , exportLabel(0)
+        , exportContainer(0)
+        , exportLayout(0)
+        , exportChoice(0)
+        , exportButton(0)
+        , transformPage()
+        , referenceFrame()
+        , scheduler( publicInterface, node->getNode() )
     {
     }
 
@@ -1773,10 +1773,10 @@ public:
 
 TrackerPanelV1::TrackerPanelV1(const boost::shared_ptr<NodeGui> & node)
     : MultiInstancePanel(node)
-      , _imp( new TrackerPanelPrivateV1(this, node) )
+    , _imp( new TrackerPanelPrivateV1(this, node) )
 {
-    QObject::connect( &_imp->scheduler, SIGNAL(trackingStarted(int)), this, SLOT(onTrackingStarted(int)) );
-    QObject::connect( &_imp->scheduler, SIGNAL(trackingFinished()), this, SLOT(onTrackingFinished()) );
+    QObject::connect( &_imp->scheduler, SIGNAL( trackingStarted(int) ), this, SLOT( onTrackingStarted(int) ) );
+    QObject::connect( &_imp->scheduler, SIGNAL( trackingFinished() ), this, SLOT( onTrackingFinished() ) );
 }
 
 TrackerPanelV1::~TrackerPanelV1()
@@ -1859,7 +1859,7 @@ TrackerPanelV1::appendExtraGui(QVBoxLayout* layout)
     _imp->exportLayout->addWidget(_imp->exportChoice);
 
     _imp->exportButton = new Button(tr("Export"), _imp->exportContainer);
-    QObject::connect( _imp->exportButton, SIGNAL(clicked(bool)), this, SLOT(onExportButtonClicked()) );
+    QObject::connect( _imp->exportButton, SIGNAL( clicked(bool) ), this, SLOT( onExportButtonClicked() ) );
     _imp->exportLayout->addWidget(_imp->exportButton);
     _imp->exportLayout->addStretch();
     layout->addWidget(_imp->exportContainer);
@@ -1873,7 +1873,7 @@ TrackerPanelV1::appendButtons(QHBoxLayout* buttonLayout)
     }
     _imp->averageTracksButton = new Button( tr("Average tracks"), buttonLayout->parentWidget() );
     _imp->averageTracksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Make a new track which is the average of the selected tracks."), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->averageTracksButton, SIGNAL(clicked(bool)), this, SLOT(onAverageTracksButtonClicked()) );
+    QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageTracksButtonClicked() ) );
     buttonLayout->addWidget(_imp->averageTracksButton);
 }
 

@@ -51,8 +51,8 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor,
                                const KeysToAddList & keys,
                                QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _keys(keys)
-      , _curveWidget(editor)
+    , _keys(keys)
+    , _curveWidget(editor)
 {
 }
 
@@ -61,8 +61,8 @@ AddKeysCommand::AddKeysCommand(CurveWidget *editor,
                                const std::vector<KeyFrame> & keys,
                                QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _keys()
-      , _curveWidget(editor)
+    , _keys()
+    , _curveWidget(editor)
 {
     KeyToAdd k;
 
@@ -207,8 +207,8 @@ SetKeysCommand::SetKeysCommand(CurveWidget *editor,
                                const std::vector<KeyFrame> & keys,
                                QUndoCommand *parent)
     : AddKeysCommand(editor, curve, keys, parent)
-      , _guiCurve(curve)
-      , _oldCurve()
+    , _guiCurve(curve)
+    , _oldCurve()
 {
     boost::shared_ptr<Curve> internalCurve = curve->getInternalCurve();
 
@@ -246,8 +246,8 @@ RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
                                      const std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> > & keys,
                                      QUndoCommand *parent )
     : QUndoCommand(parent)
-      , _keys(keys)
-      , _curveWidget(editor)
+    , _keys(keys)
+    , _curveWidget(editor)
 {
 }
 
@@ -357,12 +357,12 @@ MoveKeysCommand::MoveKeysCommand(CurveWidget* widget,
                                  bool updateOnFirstRedo,
                                  QUndoCommand *parent )
     : QUndoCommand(parent)
-      , _firstRedoCalled(false)
-      , _updateOnFirstRedo(updateOnFirstRedo)
-      , _dt(dt)
-      , _dv(dv)
-      , _keys(keys)
-      , _widget(widget)
+    , _firstRedoCalled(false)
+    , _updateOnFirstRedo(updateOnFirstRedo)
+    , _dt(dt)
+    , _dv(dv)
+    , _keys(keys)
+    , _widget(widget)
 {
 }
 
@@ -523,8 +523,8 @@ SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* widget,
                                                          const std::list< KeyInterpolationChange > & keys,
                                                          QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _keys(keys)
-      , _widget(widget)
+    , _keys(keys)
+    , _widget(widget)
 {
 }
 
@@ -620,15 +620,15 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
                                        bool updateOnFirstRedo,
                                        QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _widget(widget)
-      , _key(key)
-      , _deriv(deriv)
-      , _oldInterp( key->key.getInterpolation() )
-      , _oldLeft( key->key.getLeftDerivative() )
-      , _oldRight( key->key.getRightDerivative() )
-      , _setBoth(false)
-      , _updateOnFirstRedo(updateOnFirstRedo)
-      , _firstRedoCalled(false)
+    , _widget(widget)
+    , _key(key)
+    , _deriv(deriv)
+    , _oldInterp( key->key.getInterpolation() )
+    , _oldLeft( key->key.getLeftDerivative() )
+    , _oldRight( key->key.getRightDerivative() )
+    , _setBoth(false)
+    , _updateOnFirstRedo(updateOnFirstRedo)
+    , _firstRedoCalled(false)
 {
     KeyFrameSet keys = key->curve->getInternalCurve()->getKeyFrames_mt_safe();
     KeyFrameSet::const_iterator cur = keys.find(key->key);
@@ -696,15 +696,15 @@ MoveTangentCommand::MoveTangentCommand(CurveWidget* widget,
                                        double derivative,
                                        QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _widget(widget)
-      , _key(key)
-      , _deriv(deriv)
-      , _oldInterp( key->key.getInterpolation() )
-      , _oldLeft( key->key.getLeftDerivative() )
-      , _oldRight( key->key.getRightDerivative() )
-      , _setBoth(true)
-      , _updateOnFirstRedo(true)
-      , _firstRedoCalled(false)
+    , _widget(widget)
+    , _key(key)
+    , _deriv(deriv)
+    , _oldInterp( key->key.getInterpolation() )
+    , _oldLeft( key->key.getLeftDerivative() )
+    , _oldRight( key->key.getRightDerivative() )
+    , _setBoth(true)
+    , _updateOnFirstRedo(true)
+    , _firstRedoCalled(false)
 {
     _newInterp = _oldInterp == eKeyframeTypeBroken ? eKeyframeTypeBroken : eKeyframeTypeFree;
     _setBoth = _newInterp == eKeyframeTypeFree;
@@ -820,12 +820,12 @@ TransformKeysCommand::TransformKeysCommand(CurveWidget* widget,
                                            bool updateOnFirstRedo,
                                            QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _firstRedoCalled(false)
-      , _updateOnFirstRedo(updateOnFirstRedo)
-      , _keys(keys)
-      , _widget(widget)
-      , _matrix()
-      , _invMatrix()
+    , _firstRedoCalled(false)
+    , _updateOnFirstRedo(updateOnFirstRedo)
+    , _keys(keys)
+    , _widget(widget)
+    , _matrix()
+    , _invMatrix()
 {
     _matrix = Transform::matTransformCanonical(tx, ty, sx, sy, 0, 0, true, 0, centerX, centerY);
     _invMatrix = Transform::matTransformCanonical(-tx, -ty, 1. / sx, 1. / sy, 0, 0, true, 0, centerX, centerY);

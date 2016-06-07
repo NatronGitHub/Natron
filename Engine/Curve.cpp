@@ -77,10 +77,10 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 KeyFrame::KeyFrame()
     : _time(0.)
-      , _value(0.)
-      , _leftDerivative(0.)
-      , _rightDerivative(0.)
-      , _interpolation(eKeyframeTypeSmooth)
+    , _value(0.)
+    , _leftDerivative(0.)
+    , _rightDerivative(0.)
+    , _interpolation(eKeyframeTypeSmooth)
 {
 }
 
@@ -90,10 +90,10 @@ KeyFrame::KeyFrame(double time,
                    double rightDerivative,
                    KeyframeTypeEnum interpolation)
     : _time(time)
-      , _value(initialValue)
-      , _leftDerivative(leftDerivative)
-      , _rightDerivative(rightDerivative)
-      , _interpolation(interpolation)
+    , _value(initialValue)
+    , _leftDerivative(leftDerivative)
+    , _rightDerivative(rightDerivative)
+    , _interpolation(interpolation)
 {
     assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
     assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );
@@ -103,10 +103,10 @@ KeyFrame::KeyFrame(double time,
 
 KeyFrame::KeyFrame(const KeyFrame & other)
     : _time(other._time)
-      , _value(other._value)
-      , _leftDerivative(other._leftDerivative)
-      , _rightDerivative(other._rightDerivative)
-      , _interpolation(other._interpolation)
+    , _value(other._value)
+    , _leftDerivative(other._leftDerivative)
+    , _rightDerivative(other._rightDerivative)
+    , _interpolation(other._interpolation)
 {
     assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
     assert( !boost::math::isnan(_value) && !boost::math::isinf(_value) );

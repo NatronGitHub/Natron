@@ -87,7 +87,7 @@ using std::make_pair;
 KnobGuiButton::KnobGuiButton(KnobPtr knob,
                              KnobGuiContainerI *container)
     : KnobGui(knob, container)
-      , _button(0)
+    , _button(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobButton>(knob);
 }
@@ -151,7 +151,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         _button->setChecked(checked);
         _button->setDown(checked);
     }
-    QObject::connect( _button, SIGNAL(clicked(bool)), this, SLOT(emitValueChanged(bool)) );
+    QObject::connect( _button, SIGNAL( clicked(bool) ), this, SLOT( emitValueChanged(bool) ) );
     if ( hasToolTip() ) {
         _button->setToolTip( toolTip() );
     }

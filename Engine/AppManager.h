@@ -77,7 +77,7 @@ public:
 
     GlobalOFXTLS()
         : lastEffectCallingMainEntry(0)
-          , threadIndexes()
+        , threadIndexes()
     {
     }
 };
@@ -592,7 +592,6 @@ public:
 #endif
 
     const IOPluginsMap& getFileFormatsForReadingAndReader() const;
-
     const IOPluginsMap& getFileFormatsForWritingAndWriter() const;
 
     void getSupportedReaderFileFormats(std::vector<std::string>* formats) const;
@@ -604,7 +603,6 @@ public:
     void getWritersForFormat(const std::string& format, IOPluginSetForFormat* encoders) const;
 
     std::string getReaderPluginIDForFileType(const std::string & extension) const;
-
     std::string getWriterPluginIDForFileType(const std::string & extension) const;
 
 public Q_SLOTS:

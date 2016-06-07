@@ -30,7 +30,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
+    GCC_DIAG_OFF(unused - parameter)
 // /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
@@ -38,7 +38,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/version.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
+    GCC_DIAG_ON(unused - parameter)
 #endif
 
 #include <QApplication>

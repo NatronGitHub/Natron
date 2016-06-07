@@ -107,7 +107,7 @@ NATRON_NAMESPACE_ENTER;
 RotoContext::RotoContext(const NodePtr& node)
     : _imp( new RotoContextPrivate(node) )
 {
-    QObject::connect( _imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onLifeTimeKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( _imp->lifeTime.lock()->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onLifeTimeKnobValueChanged(ViewSpec, int, int) ) );
 }
 
 bool
@@ -1199,18 +1199,18 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
                         (*it)->slaveTo(i, thisKnob, i);
                     }
 
-                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
-                                      this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
-                                      this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
-                                      this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewSpec,int)),
-                                      this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewSpec,int)),
-                                      this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
-                                      this, SLOT(onSelectedKnobCurveChanged()) );
+                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
+                                      this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ),
+                                      this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(ViewSpec, int, double, double) ),
+                                      this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL( animationRemoved(ViewSpec, int) ),
+                                      this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL( derivativeMoved(double, ViewSpec, int) ),
+                                      this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::connect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameInterpolationChanged(double, ViewSpec, int) ),
+                                      this, SLOT( onSelectedKnobCurveChanged() ) );
 
                     break;
                 }
@@ -1355,18 +1355,18 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
                         (*it)->unSlave(i, isBezier ? !bezierDirty : !strokeDirty);
                     }
 
-                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
-                                         this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
-                                         this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
-                                         this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL(animationRemoved(ViewSpec,int)),
-                                         this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL(derivativeMoved(double,ViewSpec,int)),
-                                         this, SLOT(onSelectedKnobCurveChanged()) );
-                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL(keyFrameInterpolationChanged(double,ViewSpec,int)),
-                                         this, SLOT(onSelectedKnobCurveChanged()) );
+                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
+                                         this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ),
+                                         this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameMoved(ViewSpec, int, double, double) ),
+                                         this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL( animationRemoved(ViewSpec, int) ),
+                                         this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL( derivativeMoved(double, ViewSpec, int) ),
+                                         this, SLOT( onSelectedKnobCurveChanged() ) );
+                    QObject::disconnect( (*it)->getSignalSlotHandler().get(), SIGNAL( keyFrameInterpolationChanged(double, ViewSpec, int) ),
+                                         this, SLOT( onSelectedKnobCurveChanged() ) );
                     break;
                 }
             }

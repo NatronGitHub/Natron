@@ -28,12 +28,12 @@
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-CLANG_DIAG_OFF(deprecated)
+    CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QMouseEvent>
 #include <QApplication>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-CLANG_DIAG_ON(deprecated)
+    CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
@@ -140,7 +140,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
                             isParentTab->appendTab(graph, graph);
                         }
                     }
-                    QTimer::singleShot( 25, graph, SLOT(centerOnAllNodes()) );
+                    QTimer::singleShot( 25, graph, SLOT( centerOnAllNodes() ) );
                 }
             }
         }
@@ -163,8 +163,8 @@ NodeGraph::event(QEvent* e)
 
             ///This allows us to have a non-modal dialog: when the user clicks outside of the dialog,
             ///it closes it.
-            QObject::connect( nodeCreation, SIGNAL(accepted()), this, SLOT(onNodeCreationDialogFinished()) );
-            QObject::connect( nodeCreation, SIGNAL(rejected()), this, SLOT(onNodeCreationDialogFinished()) );
+            QObject::connect( nodeCreation, SIGNAL( accepted() ), this, SLOT( onNodeCreationDialogFinished() ) );
+            QObject::connect( nodeCreation, SIGNAL( rejected() ), this, SLOT( onNodeCreationDialogFinished() ) );
             nodeCreation->show();
 
             takeClickFocus();

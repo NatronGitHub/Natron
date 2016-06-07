@@ -60,17 +60,16 @@ struct GPUContextPoolPrivate
 
     GPUContextPoolPrivate()
         : contextPoolMutex()
-          , glContextPool()
+        , glContextPool()
 #ifdef NATRON_RENDER_SHARED_CONTEXT
-          , lastUsedGLContext()
+        , lastUsedGLContext()
 #else
-          , glContextPoolEmpty()
-          , attachedGLContexts()
+        , glContextPoolEmpty()
+        , attachedGLContexts()
 #endif
-          , glShareContext()
-          , maxContexts(GPUContextPool::getIdealContextCount())
+        , glShareContext()
+        , maxContexts( GPUContextPool::getIdealContextCount() )
     {
-
     }
 };
 
@@ -87,16 +86,18 @@ void
 GPUContextPool::clear()
 {
     QMutexLocker k(&_imp->contextPoolMutex);
-    _imp->glContextPool.clear();
 
+    _imp->glContextPool.clear();
 }
 
 int
 GPUContextPool::getIdealContextCount()
 {
 #ifdef NATRON_RENDER_SHARED_CONTEXT
+
     return NATRON_RENDER_SHARED_MAX_ACTIVE_CONTEXTS;
 #else
+
     return appPTR->getHardwareIdealThreadCount();
 #endif
 }
@@ -104,8 +105,7 @@ GPUContextPool::getIdealContextCount()
 OSGLContextPtr
 GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 {
-
-    if (checkIfGLLoaded && !appPTR->isOpenGLLoaded()) {
+    if ( checkIfGLLoaded && !appPTR->isOpenGLLoaded() ) {
         return OSGLContextPtr();
     }
     QMutexLocker k(&_imp->contextPoolMutex);
@@ -113,7 +113,6 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
     // Context-sharing disabled as it is not needed
     OSGLContextPtr shareContext;// _imp->glShareContext.lock();
     OSGLContextPtr newContext;
-
     boost::shared_ptr<Settings> settings =  appPTR->getCurrentSettings();
     GLRendererID rendererID;
     if (settings) {
@@ -136,7 +135,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
         _imp->glContextPool.erase(it);
     }
 #else
-    if ((int)_imp->glContextPool.size() < _imp->maxContexts) {
+    if ( (int)_imp->glContextPool.size() < _imp->maxContexts ) {
         //  Create a new one
         newContext.reset( new OSGLContext( FramebufferConfig(), shareContext.get(), GLVersion.major, GLVersion.minor, rendererID ) );
         _imp->glContextPool.insert(newContext);
@@ -145,13 +144,13 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
         OSGLContextPtr lastContext = _imp->lastUsedGLContext.lock();
         assert(lastContext);
         std::set<OSGLContextPtr>::iterator foundLast = _imp->glContextPool.find(lastContext);
-        assert(foundLast != _imp->glContextPool.end());
-        if (foundLast == _imp->glContextPool.end()) {
+        assert( foundLast != _imp->glContextPool.end() );
+        if ( foundLast == _imp->glContextPool.end() ) {
             throw std::logic_error("No context to attach");
         } else {
             std::set<OSGLContextPtr>::iterator next = foundLast;
             ++next;
-            if (next == _imp->glContextPool.end()) {
+            if ( next == _imp->glContextPool.end() ) {
                 next = _imp->glContextPool.begin();
             }
             newContext = *next;
@@ -173,7 +172,7 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 #endif
 
     return newContext;
-}
+} // GPUContextPool::attachGLContextToRender
 
 void
 GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
@@ -182,7 +181,6 @@ GPUContextPool::releaseGLContextFromRender(const OSGLContextPtr& context)
     QMutexLocker k(&_imp->contextPoolMutex);
 
     // The thread has a context on its TLS so it must be found in the attached contexts set
-
     std::set<OSGLContextPtr>::iterator foundAttached = _imp->attachedGLContexts.find(context);
 
     assert( foundAttached != _imp->attachedGLContexts.end() );

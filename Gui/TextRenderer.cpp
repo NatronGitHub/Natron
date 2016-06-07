@@ -97,9 +97,9 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 TextRendererPrivate::TextRendererPrivate(const QFont &font)
     : _font(font)
-      , _fontMetrics(font)
-      , _xOffset(0)
-      , _yOffset(0)
+    , _fontMetrics(font)
+    , _xOffset(0)
+    , _yOffset(0)
 {
 }
 

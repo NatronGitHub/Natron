@@ -49,10 +49,10 @@ struct NumericKnobValidatorPrivate
     NumericKnobValidatorPrivate(const SpinBox* spinbox,
                                 const KnobGuiPtr& knob)
         : spinbox(spinbox)
-          , knobUi(knob)
-          , isDoubleGui( dynamic_cast<KnobGuiDouble*>( knob.get() ) )
-          , isColorGui( dynamic_cast<KnobGuiColor*>( knob.get() ) )
-          , isIntGui( dynamic_cast<KnobGuiInt*>( knob.get() ) )
+        , knobUi(knob)
+        , isDoubleGui( dynamic_cast<KnobGuiDouble*>( knob.get() ) )
+        , isColorGui( dynamic_cast<KnobGuiColor*>( knob.get() ) )
+        , isIntGui( dynamic_cast<KnobGuiInt*>( knob.get() ) )
     {
         KnobPtr internalKnob = knob->getKnob();
 

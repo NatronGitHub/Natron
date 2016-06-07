@@ -45,7 +45,7 @@
 NATRON_NAMESPACE_ENTER;
 DocumentationManager::DocumentationManager(QObject *parent)
     : QObject(parent)
-      , server(NULL)
+    , server(NULL)
 {
     // list of translatable group names
     (void)QT_TR_NOOP(PLUGIN_GROUP_IMAGE);
@@ -89,8 +89,8 @@ void
 DocumentationManager::startServer()
 {
     server = new QHttpServer(this);
-    connect( server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(handler(QHttpRequest*,QHttpResponse*)) );
-    server->listen(QHostAddress::LocalHost, appPTR->getCurrentSettings()->getServerPort());
+    connect( server, SIGNAL( newRequest(QHttpRequest*, QHttpResponse*) ), this, SLOT( handler(QHttpRequest*, QHttpResponse*) ) );
+    server->listen( QHostAddress::LocalHost, appPTR->getCurrentSettings()->getServerPort() );
 }
 
 void
@@ -502,11 +502,11 @@ DocumentationManager::parser(QString html,
     return result;
 }             // DocumentationManager::parser
 
-int DocumentationManager::serverPort()
+int
+DocumentationManager::serverPort()
 {
     return server->serverPort();
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

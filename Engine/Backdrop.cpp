@@ -44,7 +44,7 @@ struct BackdropPrivate
 
 Backdrop::Backdrop(NodePtr node)
     : NoOpBase(node)
-      , _imp( new BackdropPrivate() )
+    , _imp( new BackdropPrivate() )
 {
 }
 

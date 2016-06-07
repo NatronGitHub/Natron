@@ -117,7 +117,6 @@ Gui::showAbout()
     ignore_result( _imp->_aboutWindow->exec() );
 }
 
-
 void
 Gui::openRecentFile()
 {

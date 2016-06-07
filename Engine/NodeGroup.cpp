@@ -70,9 +70,9 @@ struct NodeCollectionPrivate
 
     NodeCollectionPrivate(const AppInstPtr& app)
         : app(app)
-          , graph(0)
-          , nodesMutex()
-          , nodes()
+        , graph(0)
+        , nodesMutex()
+        , nodes()
     {
     }
 
@@ -1007,22 +1007,22 @@ struct NodeGroupPrivate
 
     NodeGroupPrivate()
         : nodesLock(QMutex::Recursive)
-          , inputs()
-          , guiInputs()
-          , outputs()
-          , guiOutputs()
-          , isDeactivatingGroup(false)
-          , isActivatingGroup(false)
-          , isEditable(true)
-          , exportAsTemplate()
+        , inputs()
+        , guiInputs()
+        , outputs()
+        , guiOutputs()
+        , isDeactivatingGroup(false)
+        , isActivatingGroup(false)
+        , isEditable(true)
+        , exportAsTemplate()
     {
     }
 };
 
 NodeGroup::NodeGroup(const NodePtr &node)
     : OutputEffectInstance(node)
-      , NodeCollection( node ? node->getApp() : AppInstPtr() )
-      , _imp( new NodeGroupPrivate() )
+    , NodeCollection( node ? node->getApp() : AppInstPtr() )
+    , _imp( new NodeGroupPrivate() )
 {
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 }
@@ -1573,7 +1573,7 @@ escapeString(const std::string& str)
 
 #define WRITE_STATIC_LINE(line) ts << line "\n"
         #define WRITE_INDENT(x) \
-        for (int _i = 0; _i < x; ++_i) { ts << "    "; }
+    for (int _i = 0; _i < x; ++_i) { ts << "    "; }
         #define WRITE_STRING(str) ts << str << "\n"
 //#define NUM(n) QString::number(n)
 #define NUM_INT(n) QString::number(n, 10)

@@ -63,7 +63,7 @@ using std::make_pair; using std::pair;
 
 KnobSignalSlotHandler::KnobSignalSlotHandler(const KnobPtr& knob)
     : QObject()
-      , k(knob)
+    , k(knob)
 {
 }
 
@@ -327,65 +327,65 @@ struct KnobHelperPrivate
                       const std::string & label_,
                       bool declaredByPlugin_)
         : publicInterface(publicInterface_)
-          , holder(holder_)
-          , labelMutex()
-          , label(label_)
-          , iconFilePath()
-          , name( label_.c_str() )
-          , originalName( label_.c_str() )
-          , newLine(true)
-          , addSeparator(false)
-          , itemSpacing(0)
-          , inViewerContextAddSeparator(false)
-          , inViewerContextItemSpacing(5)
-          , inViewerContextAddNewLine(false)
-          , inViewerContextLabel()
-          , inViewerContextHasShortcut(false)
-          , parentKnob()
-          , stateMutex()
-          , IsSecret(false)
-          , defaultIsSecret(false)
-          , inViewerContextSecret(false)
-          , enabled(dimension_)
-          , defaultEnabled(dimension_)
-          , CanUndo(true)
-          , evaluateOnChangeMutex()
-          , evaluateOnChange(true)
-          , IsPersistant(true)
-          , tooltipHint()
-          , hintIsMarkdown(false)
-          , isAnimationEnabled(true)
-          , dimension(dimension_)
-          , curves(dimension_)
-          , mastersMutex()
-          , masters(dimension_)
-          , ignoreMasterPersistence(false)
-          , slaveForAlias()
-          , listeners()
-          , animationLevelMutex()
-          , animationLevel(dimension_)
-          , declaredByPlugin(declaredByPlugin_)
-          , dynamicallyCreated(false)
-          , userKnob(false)
-          , customInteract()
-          , gui()
-          , mustCloneGuiCurvesMutex()
-          , mustCloneGuiCurves()
-          , mustCloneInternalCurves()
-          , mustClearExprResults()
-          , ofxParamHandle(0)
-          , isInstanceSpecific(false)
-          , dimensionNames(dimension_)
-          , expressionMutex()
-          , expressions()
-          , lastRandomHash(0)
-          , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
-          , hasModificationsMutex()
-          , hasModifications()
-          , valueChangedBlockedMutex()
-          , valueChangedBlocked(0)
-          , listenersNotificationBlocked(0)
-          , isClipPreferenceSlave(false)
+        , holder(holder_)
+        , labelMutex()
+        , label(label_)
+        , iconFilePath()
+        , name( label_.c_str() )
+        , originalName( label_.c_str() )
+        , newLine(true)
+        , addSeparator(false)
+        , itemSpacing(0)
+        , inViewerContextAddSeparator(false)
+        , inViewerContextItemSpacing(5)
+        , inViewerContextAddNewLine(false)
+        , inViewerContextLabel()
+        , inViewerContextHasShortcut(false)
+        , parentKnob()
+        , stateMutex()
+        , IsSecret(false)
+        , defaultIsSecret(false)
+        , inViewerContextSecret(false)
+        , enabled(dimension_)
+        , defaultEnabled(dimension_)
+        , CanUndo(true)
+        , evaluateOnChangeMutex()
+        , evaluateOnChange(true)
+        , IsPersistant(true)
+        , tooltipHint()
+        , hintIsMarkdown(false)
+        , isAnimationEnabled(true)
+        , dimension(dimension_)
+        , curves(dimension_)
+        , mastersMutex()
+        , masters(dimension_)
+        , ignoreMasterPersistence(false)
+        , slaveForAlias()
+        , listeners()
+        , animationLevelMutex()
+        , animationLevel(dimension_)
+        , declaredByPlugin(declaredByPlugin_)
+        , dynamicallyCreated(false)
+        , userKnob(false)
+        , customInteract()
+        , gui()
+        , mustCloneGuiCurvesMutex()
+        , mustCloneGuiCurves()
+        , mustCloneInternalCurves()
+        , mustClearExprResults()
+        , ofxParamHandle(0)
+        , isInstanceSpecific(false)
+        , dimensionNames(dimension_)
+        , expressionMutex()
+        , expressions()
+        , lastRandomHash(0)
+        , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
+        , hasModificationsMutex()
+        , hasModifications()
+        , valueChangedBlockedMutex()
+        , valueChangedBlocked(0)
+        , listenersNotificationBlocked(0)
+        , isClipPreferenceSlave(false)
     {
         if ( holder && !holder->canKnobsAnimate() ) {
             isAnimationEnabled = false;
@@ -424,7 +424,7 @@ KnobHelper::KnobHelper(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : _signalSlotHandler()
-      , _imp( new KnobHelperPrivate(this, holder, dimension, label, declaredByPlugin) )
+    , _imp( new KnobHelperPrivate(this, holder, dimension, label, declaredByPlugin) )
 {
 }
 
@@ -3369,14 +3369,14 @@ KnobHelper::slaveToInternal(int dimension,
     }
 
     if (masterKnob->_signalSlotHandler && _signalSlotHandler) {
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)),
-                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameSet(double,ViewSpec,int,int,bool)), Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)),
-                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameRemoved(double,ViewSpec,int,int)), Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
-                          _signalSlotHandler.get(), SLOT(onMasterKeyFrameMoved(ViewSpec,int,double,double)), Qt::UniqueConnection );
-        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL(animationRemoved(ViewSpec,int)),
-                          _signalSlotHandler.get(), SLOT(onMasterAnimationRemoved(ViewSpec,int)), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ),
+                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameSet(double, ViewSpec, int, int, bool) ), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ),
+                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameRemoved(double, ViewSpec, int, int) ), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( keyFrameMoved(ViewSpec, int, double, double) ),
+                          _signalSlotHandler.get(), SLOT( onMasterKeyFrameMoved(ViewSpec, int, double, double) ), Qt::UniqueConnection );
+        QObject::connect( masterKnob->_signalSlotHandler.get(), SIGNAL( animationRemoved(ViewSpec, int) ),
+                          _signalSlotHandler.get(), SLOT( onMasterAnimationRemoved(ViewSpec, int) ), Qt::UniqueConnection );
     }
 
     bool hasChanged = cloneAndCheckIfChanged(other.get(), dimension);
@@ -4536,28 +4536,28 @@ struct KnobHolder::KnobHolderPrivate
 
     KnobHolderPrivate(const AppInstPtr& appInstance_)
         : app(appInstance_)
-          , knobsMutex()
-          , knobs()
-          , knobsInitialized(false)
-          , isInitializingKnobs(false)
-          , isSlave(false)
-          , overlayRedrawStackMutex()
-          , overlayRedrawStack(0)
-          , isDequeingValuesSet(false)
-          , paramsEditLevel(eMultipleParamsEditOff)
-          , paramsEditRecursionLevel(0)
-          , evaluationBlockedMutex(QMutex::Recursive)
-          , evaluationBlocked(0)
-          , canCurrentlySetValue(true)
-          , knobChanged()
-          , nbSignificantChangesDuringEvaluationBlock(0)
-          , nbChangesDuringEvaluationBlock(0)
-          , nbChangesRequiringMetadataRefresh(0)
-          , knobsFrozenMutex()
-          , knobsFrozen(false)
-          , hasAnimationMutex()
-          , hasAnimation(false)
-          , settingsPanel(0)
+        , knobsMutex()
+        , knobs()
+        , knobsInitialized(false)
+        , isInitializingKnobs(false)
+        , isSlave(false)
+        , overlayRedrawStackMutex()
+        , overlayRedrawStack(0)
+        , isDequeingValuesSet(false)
+        , paramsEditLevel(eMultipleParamsEditOff)
+        , paramsEditRecursionLevel(0)
+        , evaluationBlockedMutex(QMutex::Recursive)
+        , evaluationBlocked(0)
+        , canCurrentlySetValue(true)
+        , knobChanged()
+        , nbSignificantChangesDuringEvaluationBlock(0)
+        , nbChangesDuringEvaluationBlock(0)
+        , nbChangesRequiringMetadataRefresh(0)
+        , knobsFrozenMutex()
+        , knobsFrozen(false)
+        , hasAnimationMutex()
+        , hasAnimation(false)
+        , settingsPanel(0)
 
     {
     }
@@ -4565,13 +4565,13 @@ struct KnobHolder::KnobHolderPrivate
 
 KnobHolder::KnobHolder(const AppInstPtr& appInstance)
     : QObject()
-      , _imp( new KnobHolderPrivate(appInstance) )
+    , _imp( new KnobHolderPrivate(appInstance) )
 {
-    QObject::connect( this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()) );
-    QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
-                      SLOT(onDoEvaluateOnMainThread(bool,bool)) );
-    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
-                      SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)) );
+    QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
+    QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
+                      SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
+    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ), this,
+                      SLOT( onDoValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ) );
 }
 
 KnobHolder::~KnobHolder()
@@ -6004,7 +6004,7 @@ AnimatingKnobStringHelper::AnimatingKnobStringHelper(KnobHolder* holder,
                                                      int dimension,
                                                      bool declaredByPlugin)
     : Knob<std::string>(holder, description, dimension, declaredByPlugin)
-      , _animation( new StringAnimationManager(this) )
+    , _animation( new StringAnimationManager(this) )
 {
 }
 

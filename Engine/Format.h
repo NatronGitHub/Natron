@@ -55,37 +55,37 @@ public:
            const std::string & name,
            double par)
         : RectI(l, b, r, t)
-          , _par(par)
-          , _name(name)
+        , _par(par)
+        , _name(name)
     {
     }
 
     Format(const RectI & rect)
         : RectI(rect)
-          , _par(1.)
-          , _name()
+        , _par(1.)
+        , _name()
     {
     }
 
     Format(const RectI& rect,
            const double par)
         : RectI(rect)
-          , _par(par)
-          , _name()
+        , _par(par)
+        , _name()
     {
     }
 
     Format(const Format & other)
         : RectI( other.left(), other.bottom(), other.right(), other.top() )
-          , _par( other.getPixelAspectRatio() )
-          , _name( other.getName() )
+        , _par( other.getPixelAspectRatio() )
+        , _name( other.getName() )
     {
     }
 
     Format()
         : RectI()
-          , _par(1.0)
-          , _name()
+        , _par(1.0)
+        , _name()
     {
     }
 

@@ -83,23 +83,23 @@ public:
 
     PrecompNodePrivate(PrecompNode* publicInterface)
         : _publicInterface(publicInterface)
-          , app()
-          , projectFileNameKnob()
-          //, reloadProjectKnob()
-          , editProjectKnob()
-          , enablePreRenderKnob()
-          , preRenderGroupKnob()
-          , writeNodesKnob()
-          , preRenderKnob()
-          , firstFrameKnob()
-          , lastFrameKnob()
-          , outputNodeNameKnob()
-          , errorBehaviourKnbo()
-          , subLabelKnob()
-          , dataMutex()
-          , precompInputs()
-          , readNode()
-          , outputNode()
+        , app()
+        , projectFileNameKnob()
+        //, reloadProjectKnob()
+        , editProjectKnob()
+        , enablePreRenderKnob()
+        , preRenderGroupKnob()
+        , writeNodesKnob()
+        , preRenderKnob()
+        , firstFrameKnob()
+        , lastFrameKnob()
+        , outputNodeNameKnob()
+        , errorBehaviourKnbo()
+        , subLabelKnob()
+        , dataMutex()
+        , precompInputs()
+        , readNode()
+        , outputNode()
     {
     }
 
@@ -126,7 +126,7 @@ public:
 
 PrecompNode::PrecompNode(NodePtr n)
     : EffectInstance(n)
-      , _imp( new PrecompNodePrivate(this) )
+    , _imp( new PrecompNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -559,7 +559,6 @@ PrecompNodePrivate::createReadNode()
 
     std::string pattern = fileKnob->getValue();
     QString qpattern = QString::fromUtf8( pattern.c_str() );
-
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
     std::string found = appPTR->getReaderPluginIDForFileType(ext);
     if ( found.empty() ) {
@@ -592,7 +591,7 @@ PrecompNodePrivate::createReadNode()
     assert(precomp);
     read->setPrecompNode(precomp);
 
-    QObject::connect( read.get(), SIGNAL(persistentMessageChanged()), _publicInterface, SLOT(onReadNodePersistentMessageChanged()) );
+    QObject::connect( read.get(), SIGNAL( persistentMessageChanged() ), _publicInterface, SLOT( onReadNodePersistentMessageChanged() ) );
 
     {
         QMutexLocker k(&dataMutex);
@@ -687,7 +686,7 @@ PrecompNodePrivate::launchPreRender()
     if (w.writer) {
         boost::shared_ptr<RenderEngine> engine = w.writer->getRenderEngine();
         if (engine) {
-            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
+            QObject::connect( engine.get(), SIGNAL( renderFinished(int) ), _publicInterface, SLOT( onPreRenderFinished() ) );
         }
     }
 
@@ -709,7 +708,7 @@ PrecompNode::onPreRenderFinished()
     if (writer) {
         boost::shared_ptr<RenderEngine> engine = writer->getRenderEngine();
         if (engine) {
-            QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
+            QObject::disconnect( engine.get(), SIGNAL( renderFinished(int) ), this, SLOT( onPreRenderFinished() ) );
         }
     }
     _imp->refreshReadNodeInput();

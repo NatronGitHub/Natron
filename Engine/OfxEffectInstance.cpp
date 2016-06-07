@@ -37,17 +37,17 @@
 #include "Global/Macros.h"
 
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
-CLANG_DIAG_OFF(unknown-pragmas)
-CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
+CLANG_DIAG_OFF(unknown - pragmas)
+CLANG_DIAG_OFF(tautological - undefined - compare) // appeared in clang 3.5
 #include <ofxhPluginCache.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
+CLANG_DIAG_ON(tautological - undefined - compare)
+CLANG_DIAG_ON(unknown - pragmas)
 #include <ofxhPluginAPICache.h>
-CLANG_DIAG_OFF(unknown-pragmas)
-CLANG_DIAG_OFF(tautological-undefined-compare)
+CLANG_DIAG_OFF(unknown - pragmas)
+CLANG_DIAG_OFF(tautological - undefined - compare)
 #include <ofxhImageEffect.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
+CLANG_DIAG_ON(tautological - undefined - compare)
+CLANG_DIAG_ON(unknown - pragmas)
 #include <ofxhImageEffectAPI.h>
 #include <ofxOpenGLRender.h>
 #include <ofxhHost.h>
@@ -227,72 +227,71 @@ struct OfxEffectInstancePrivate
 
     OfxEffectInstancePrivate()
         : effect()
-          , natronPluginID()
-          , overlayInteract()
-          , preferencesLock(QReadWriteLock::Recursive)
-          , renderSafetyLock()
-          , renderSafety(eRenderSafetyUnsafe)
-          , wasRenderSafetySet(false)
-          , context(eContextNone)
-          , clipsInfos()
-          , outputClip(0)
-          , nbSourceClips(0)
-          , sequentialPref(eSequentialPreferenceNotSequential)
-          , supportsConcurrentGLRendersMutex()
-          , supportsConcurrentGLRenders(false)
-          , isOutput(false)
-          , penDown(false)
-          , created(false)
-          , initialized(false)
-          , overlaysCanHandleRenderScale(true)
-          , supportsMultipleClipsPar(false)
-          , supportsMultipleClipsBitdepth(false)
-          , doesTemporalAccess(false)
-          , multiplanar(false)
+        , natronPluginID()
+        , overlayInteract()
+        , preferencesLock(QReadWriteLock::Recursive)
+        , renderSafetyLock()
+        , renderSafety(eRenderSafetyUnsafe)
+        , wasRenderSafetySet(false)
+        , context(eContextNone)
+        , clipsInfos()
+        , outputClip(0)
+        , nbSourceClips(0)
+        , sequentialPref(eSequentialPreferenceNotSequential)
+        , supportsConcurrentGLRendersMutex()
+        , supportsConcurrentGLRenders(false)
+        , isOutput(false)
+        , penDown(false)
+        , created(false)
+        , initialized(false)
+        , overlaysCanHandleRenderScale(true)
+        , supportsMultipleClipsPar(false)
+        , supportsMultipleClipsBitdepth(false)
+        , doesTemporalAccess(false)
+        , multiplanar(false)
     {
     }
 
     OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
-    : effect()
-    , natronPluginID(other.natronPluginID)
-    , overlayInteract()
-    , preferencesLock(QReadWriteLock::Recursive)
-    , renderSafetyLock()
-    , renderSafety(other.renderSafety)
-    , wasRenderSafetySet(other.wasRenderSafetySet)
-    , context(other.context)
-    , clipsInfos(other.clipsInfos)
-    , outputClip(other.outputClip)
-    , nbSourceClips(other.nbSourceClips)
-    , sequentialPref(other.sequentialPref)
-    , supportsConcurrentGLRendersMutex()
-    , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
-    , isOutput(other.isOutput)
-    , penDown(other.penDown)
-    , created(other.created)
-    , initialized(other.initialized)
-    , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
-    , supportsMultipleClipsPar(other.supportsMultipleClipsPar)
-    , supportsMultipleClipsBitdepth(other.supportsMultipleClipsBitdepth)
-    , doesTemporalAccess(other.doesTemporalAccess)
-    , multiplanar(other.multiplanar)
+        : effect()
+        , natronPluginID(other.natronPluginID)
+        , overlayInteract()
+        , preferencesLock(QReadWriteLock::Recursive)
+        , renderSafetyLock()
+        , renderSafety(other.renderSafety)
+        , wasRenderSafetySet(other.wasRenderSafetySet)
+        , context(other.context)
+        , clipsInfos(other.clipsInfos)
+        , outputClip(other.outputClip)
+        , nbSourceClips(other.nbSourceClips)
+        , sequentialPref(other.sequentialPref)
+        , supportsConcurrentGLRendersMutex()
+        , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
+        , isOutput(other.isOutput)
+        , penDown(other.penDown)
+        , created(other.created)
+        , initialized(other.initialized)
+        , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
+        , supportsMultipleClipsPar(other.supportsMultipleClipsPar)
+        , supportsMultipleClipsBitdepth(other.supportsMultipleClipsBitdepth)
+        , doesTemporalAccess(other.doesTemporalAccess)
+        , multiplanar(other.multiplanar)
     {
-
     }
 };
 
 OfxEffectInstance::OfxEffectInstance(NodePtr node)
     : AbstractOfxEffectInstance(node)
-      , _imp( new OfxEffectInstancePrivate() )
+    , _imp( new OfxEffectInstancePrivate() )
 {
-    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
+    QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
 
 OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
-: AbstractOfxEffectInstance(other.getNode())
-, _imp(new OfxEffectInstancePrivate(*other._imp))
+    : AbstractOfxEffectInstance( other.getNode() )
+    , _imp( new OfxEffectInstancePrivate(*other._imp) )
 {
-    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
+    QObject::connect( this, SIGNAL( syncPrivateDataRequested() ), this, SLOT( onSyncPrivateDataRequested() ) );
 }
 
 OfxImageEffectInstance*
@@ -326,7 +325,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                 const NodeSerialization* serialization,
                                                 const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
-                                                ,bool allowFileDialogs,
+                                                ,
+                                                bool allowFileDialogs,
                                                 bool *hasUsedFileDialog
 #endif
                                                 )
@@ -559,8 +559,9 @@ OfxEffectInstance::~OfxEffectInstance()
 EffectInstPtr
 OfxEffectInstance::createRenderClone()
 {
-    boost::shared_ptr<OfxEffectInstance> clone(new OfxEffectInstance(*this));
-    clone->_imp->effect.reset(new OfxImageEffectInstance(*_imp->effect));
+    boost::shared_ptr<OfxEffectInstance> clone( new OfxEffectInstance(*this) );
+
+    clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
     assert(_imp->effect);
     _imp->effect->setOfxEffectInstance(clone);
 
@@ -1764,7 +1765,7 @@ public:
 
     OfxGLContextEffectData()
         : EffectInstance::OpenGLContextEffectData()
-          , _dataHandle(0)
+        , _dataHandle(0)
     {
     }
 
@@ -2910,6 +2911,7 @@ OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffec
     OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );
     void* ofxGLData = isOfxData ? isOfxData->getDataHandle() : 0;
     OfxStatus stat = effectInstance()->contextDetachedAction(ofxGLData);
+
     if (isOfxData) {
         // the context data can not be used anymore, reset it.
         isOfxData->setDataHandle(NULL);

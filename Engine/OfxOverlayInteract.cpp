@@ -55,7 +55,7 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
                                        int bitDepthPerComponent,
                                        bool hasAlpha)
     : OFX::Host::ImageEffect::OverlayInteract(v, bitDepthPerComponent, hasAlpha)
-      , NatronOverlayInteractSupport()
+    , NatronOverlayInteractSupport()
 {
 }
 
@@ -208,7 +208,7 @@ OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                  OFX::Host::Interact::Descriptor &desc,
                                                  void *effectInstance)
     : OFX::Host::Interact::Instance(desc, effectInstance)
-      , NatronOverlayInteractSupport()
+    , NatronOverlayInteractSupport()
 {
     setCallingViewport(knob);
 }

@@ -64,23 +64,22 @@ void
 OSGLContext_mac::createWindow()
 {
     /*_nsWindow.delegate = [[GLFWWindowDelegate alloc] initWithGlfwWindow:window];
-    if (window->ns.delegate == nil)
-    {
+       if (window->ns.delegate == nil)
+       {
         _glfwInputError(GLFW_PLATFORM_ERROR,
                         "Cocoa: Failed to create window delegate");
         return GLFW_FALSE;
-    }*/
+       }*/
 
     const int width = 32;
     const int height = 32;
-
     NSRect contentRect = NSMakeRect(0, 0, width, height);
 
     _nsWindow.object = [[GLFWWindow alloc]
-                         initWithContentRect:contentRect
-                         styleMask:getStyleMask(window)
-                         backing:NSBackingStoreBuffered
-                         defer:NO];
+                        initWithContentRect:contentRect
+                        styleMask:getStyleMask(window)
+                        backing:NSBackingStoreBuffered
+                        defer:NO];
 
     if (_nsWindow.object == nil) {
         throw std::runtime_error("Cocoa: Failed to create window");
@@ -98,11 +97,17 @@ OSGLContext_mac::createWindow()
     //[_nsWindow.object setDelegate:window->ns.delegate];
     [_nsWindow.object setContentView:_nsWindow.view];
     [_nsWindow.object setRestorable:NO];
-
 }
+
 #endif
 
-static void makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs, int major, int /*minor*/, bool coreProfile, int rendererID ,std::vector<CGLPixelFormatAttribute> &attributes)
+static void
+makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs,
+                        int major,
+                        int /*minor*/,
+                        bool coreProfile,
+                        int rendererID,
+                        std::vector<CGLPixelFormatAttribute> &attributes)
 {
     // See https://developer.apple.com/library/mac/documentation/GraphicsImaging/Reference/CGL_OpenGL/#//apple_ref/c/tdef/CGLPixelFormatAttribute
     // for a reference to attributes
@@ -113,81 +118,79 @@ static void makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs, i
      */
     if (rendererID != -1) {
         attributes.push_back(kCGLPFARendererID);
-        attributes.push_back((CGLPixelFormatAttribute)rendererID);
+        attributes.push_back( (CGLPixelFormatAttribute)rendererID );
     }
     attributes.push_back(kCGLPFAClosestPolicy);
     attributes.push_back(kCGLPFAAccelerated);
     attributes.push_back(kCGLPFAOpenGLProfile);
     if (coreProfile) {
-        attributes.push_back((CGLPixelFormatAttribute) kCGLOGLPVersion_3_2_Core);
+        attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_3_2_Core );
     } else {
-        attributes.push_back((CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy);
+        attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy );
     }
     if (pixelFormatAttrs.doublebuffer) {
         attributes.push_back(kCGLPFADoubleBuffer);
     }
     /*if (pixelFormatAttrs.stereo) {
-     attributes.push_back(kCGLPFAStereo);
-     }*/
+       attributes.push_back(kCGLPFAStereo);
+       }*/
 
     if (major <= 2) {
-        if (pixelFormatAttrs.auxBuffers && pixelFormatAttrs.auxBuffers != FramebufferConfig::ATTR_DONT_CARE) {
+        if ( pixelFormatAttrs.auxBuffers && (pixelFormatAttrs.auxBuffers != FramebufferConfig::ATTR_DONT_CARE) ) {
             attributes.push_back(kCGLPFAAuxBuffers);
-            attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.auxBuffers);
+            attributes.push_back( (CGLPixelFormatAttribute)pixelFormatAttrs.auxBuffers );
         }
-        if (pixelFormatAttrs.accumRedBits != FramebufferConfig::ATTR_DONT_CARE &&
-            pixelFormatAttrs.accumGreenBits != FramebufferConfig::ATTR_DONT_CARE &&
-            pixelFormatAttrs.accumBlueBits != FramebufferConfig::ATTR_DONT_CARE &&
-            pixelFormatAttrs.accumAlphaBits != FramebufferConfig::ATTR_DONT_CARE)
-        {
+        if ( (pixelFormatAttrs.accumRedBits != FramebufferConfig::ATTR_DONT_CARE) &&
+             ( pixelFormatAttrs.accumGreenBits != FramebufferConfig::ATTR_DONT_CARE) &&
+             ( pixelFormatAttrs.accumBlueBits != FramebufferConfig::ATTR_DONT_CARE) &&
+             ( pixelFormatAttrs.accumAlphaBits != FramebufferConfig::ATTR_DONT_CARE) ) {
             const int accumBits = pixelFormatAttrs.accumRedBits +
-            pixelFormatAttrs.accumGreenBits +
-            pixelFormatAttrs.accumBlueBits +
-            pixelFormatAttrs.accumAlphaBits;
+                                  pixelFormatAttrs.accumGreenBits +
+                                  pixelFormatAttrs.accumBlueBits +
+                                  pixelFormatAttrs.accumAlphaBits;
 
             attributes.push_back(kCGLPFAAccumSize);
-            attributes.push_back((CGLPixelFormatAttribute)accumBits);
-
+            attributes.push_back( (CGLPixelFormatAttribute)accumBits );
         }
 
         /*
-         Deprecated in OS X v10.7. This attribute must not be specified if the attributes array also requests a profile other than a legacy OpenGL profile; if present, pixel format creation fails.
+           Deprecated in OS X v10.7. This attribute must not be specified if the attributes array also requests a profile other than a legacy OpenGL profile; if present, pixel format creation fails.
          */
 
         //attributes.push_back(kCGLPFAOffScreen);
     }
-    if (pixelFormatAttrs.redBits != FramebufferConfig::ATTR_DONT_CARE &&
-        pixelFormatAttrs.greenBits != FramebufferConfig::ATTR_DONT_CARE &&
-        pixelFormatAttrs.blueBits != FramebufferConfig::ATTR_DONT_CARE) {
-
+    if ( (pixelFormatAttrs.redBits != FramebufferConfig::ATTR_DONT_CARE) &&
+         ( pixelFormatAttrs.greenBits != FramebufferConfig::ATTR_DONT_CARE) &&
+         ( pixelFormatAttrs.blueBits != FramebufferConfig::ATTR_DONT_CARE) ) {
         int colorBits = pixelFormatAttrs.redBits +
-        pixelFormatAttrs.greenBits +
-        pixelFormatAttrs.blueBits;
+                        pixelFormatAttrs.greenBits +
+                        pixelFormatAttrs.blueBits;
 
         // OS X needs non-zero color size, so set reasonable values
-        if (colorBits == 0)
+        if (colorBits == 0) {
             colorBits = 24;
-        else if (colorBits < 15)
+        } else if (colorBits < 15) {
             colorBits = 15;
+        }
 
         attributes.push_back(kCGLPFAColorSize);
-        attributes.push_back((CGLPixelFormatAttribute)colorBits);
+        attributes.push_back( (CGLPixelFormatAttribute)colorBits );
     }
 
 
     if (pixelFormatAttrs.alphaBits != FramebufferConfig::ATTR_DONT_CARE) {
         attributes.push_back(kCGLPFAAlphaSize);
-        attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.alphaBits);
+        attributes.push_back( (CGLPixelFormatAttribute)pixelFormatAttrs.alphaBits );
     }
 
     if (pixelFormatAttrs.depthBits != FramebufferConfig::ATTR_DONT_CARE) {
         attributes.push_back(kCGLPFADepthSize);
-        attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.depthBits);
+        attributes.push_back( (CGLPixelFormatAttribute)pixelFormatAttrs.depthBits );
     }
 
     if (pixelFormatAttrs.stencilBits != FramebufferConfig::ATTR_DONT_CARE) {
         attributes.push_back(kCGLPFAStencilSize);
-        attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.stencilBits);
+        attributes.push_back( (CGLPixelFormatAttribute)pixelFormatAttrs.stencilBits );
     }
 
     // Use float buffers
@@ -196,27 +199,28 @@ static void makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs, i
     if (pixelFormatAttrs.samples != FramebufferConfig::ATTR_DONT_CARE) {
         if (pixelFormatAttrs.samples == 0) {
             attributes.push_back(kCGLPFASampleBuffers);
-            attributes.push_back((CGLPixelFormatAttribute)0);
+            attributes.push_back( (CGLPixelFormatAttribute)0 );
         } else {
             attributes.push_back(kCGLPFAMultisample);
             attributes.push_back(kCGLPFASampleBuffers);
-            attributes.push_back((CGLPixelFormatAttribute)1);
+            attributes.push_back( (CGLPixelFormatAttribute)1 );
             attributes.push_back(kCGLPFASamples);
-            attributes.push_back((CGLPixelFormatAttribute)pixelFormatAttrs.samples);
+            attributes.push_back( (CGLPixelFormatAttribute)pixelFormatAttrs.samples );
         }
     }
-    attributes.push_back((CGLPixelFormatAttribute)0);
+    attributes.push_back( (CGLPixelFormatAttribute)0 );
+} // makeAttribsFromFBConfig
 
-}
-
-OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int major, int minor,bool coreProfile, const GLRendererID& rendererID, const OSGLContext_mac* shareContext)
-: _imp(new Implementation)
+OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,
+                                 int major,
+                                 int minor,
+                                 bool coreProfile,
+                                 const GLRendererID& rendererID,
+                                 const OSGLContext_mac* shareContext)
+    : _imp(new Implementation)
 {
-
-
-
-
     std::vector<CGLPixelFormatAttribute> attributes;
+
     makeAttribsFromFBConfig(pixelFormatAttrs, major, minor, coreProfile, rendererID.renderID, attributes);
 
     CGLPixelFormatObj nativePixelFormat;
@@ -264,62 +268,64 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
     }
 
     if (major <= 2) {
-        if (pixelFormatAttrs.auxBuffers != FramebufferConfig::ATTR_DONT_CARE)
+        if (pixelFormatAttrs.auxBuffers != FramebufferConfig::ATTR_DONT_CARE) {
             ADD_ATTR2(NSOpenGLPFAAuxBuffers, pixelFormatAttrs.auxBuffers);
+        }
 
-        if (pixelFormatAttrs.accumRedBits != FramebufferConfig::ATTR_DONT_CARE &&
-            pixelFormatAttrs.accumGreenBits != FramebufferConfig::ATTR_DONT_CARE &&
-            pixelFormatAttrs.accumBlueBits != FramebufferConfig::ATTR_DONT_CARE &&
-            pixelFormatAttrs.accumAlphaBits != FramebufferConfig::ATTR_DONT_CARE)
-        {
+        if ( (pixelFormatAttrs.accumRedBits != FramebufferConfig::ATTR_DONT_CARE) &&
+             ( pixelFormatAttrs.accumGreenBits != FramebufferConfig::ATTR_DONT_CARE) &&
+             ( pixelFormatAttrs.accumBlueBits != FramebufferConfig::ATTR_DONT_CARE) &&
+             ( pixelFormatAttrs.accumAlphaBits != FramebufferConfig::ATTR_DONT_CARE) ) {
             const int accumBits = pixelFormatAttrs.accumRedBits +
-            pixelFormatAttrs.accumGreenBits +
-            pixelFormatAttrs.accumBlueBits +
-            pixelFormatAttrs.accumAlphaBits;
+                                  pixelFormatAttrs.accumGreenBits +
+                                  pixelFormatAttrs.accumBlueBits +
+                                  pixelFormatAttrs.accumAlphaBits;
 
             ADD_ATTR2(NSOpenGLPFAAccumSize, accumBits);
         }
     }
 
-    if (pixelFormatAttrs.redBits != FramebufferConfig::ATTR_DONT_CARE &&
-        pixelFormatAttrs.greenBits != FramebufferConfig::ATTR_DONT_CARE &&
-        pixelFormatAttrs.blueBits != FramebufferConfig::ATTR_DONT_CARE) {
+    if ( (pixelFormatAttrs.redBits != FramebufferConfig::ATTR_DONT_CARE) &&
+         ( pixelFormatAttrs.greenBits != FramebufferConfig::ATTR_DONT_CARE) &&
+         ( pixelFormatAttrs.blueBits != FramebufferConfig::ATTR_DONT_CARE) ) {
         int colorBits = pixelFormatAttrs.redBits +
-        pixelFormatAttrs.greenBits +
-        pixelFormatAttrs.blueBits;
+                        pixelFormatAttrs.greenBits +
+                        pixelFormatAttrs.blueBits;
 
         // OS X needs non-zero color size, so set reasonable values
-        if (colorBits == 0)
+        if (colorBits == 0) {
             colorBits = 24;
-        else if (colorBits < 15)
+        } else if (colorBits < 15) {
             colorBits = 15;
+        }
 
         ADD_ATTR2(NSOpenGLPFAColorSize, colorBits);
     }
 
-    if (pixelFormatAttrs.alphaBits != FramebufferConfig::ATTR_DONT_CARE)
+    if (pixelFormatAttrs.alphaBits != FramebufferConfig::ATTR_DONT_CARE) {
         ADD_ATTR2(NSOpenGLPFAAlphaSize, pixelFormatAttrs.alphaBits);
+    }
 
-    if (pixelFormatAttrs.depthBits != FramebufferConfig::ATTR_DONT_CARE)
+    if (pixelFormatAttrs.depthBits != FramebufferConfig::ATTR_DONT_CARE) {
         ADD_ATTR2(NSOpenGLPFADepthSize, pixelFormatAttrs.depthBits);
+    }
 
-    if (pixelFormatAttrs.stencilBits != FramebufferConfig::ATTR_DONT_CARE)
+    if (pixelFormatAttrs.stencilBits != FramebufferConfig::ATTR_DONT_CARE) {
         ADD_ATTR2(NSOpenGLPFAStencilSize, pixelFormatAttrs.stencilBits);
+    }
 
-    if (pixelFormatAttrs.stereo)
+    if (pixelFormatAttrs.stereo) {
         ADD_ATTR(NSOpenGLPFAStereo);
+    }
 
-    if (pixelFormatAttrs.doublebuffer)
+    if (pixelFormatAttrs.doublebuffer) {
         ADD_ATTR(NSOpenGLPFADoubleBuffer);
+    }
 
-    if (pixelFormatAttrs.samples != FramebufferConfig::ATTR_DONT_CARE)
-    {
-        if (pixelFormatAttrs.samples == 0)
-        {
+    if (pixelFormatAttrs.samples != FramebufferConfig::ATTR_DONT_CARE) {
+        if (pixelFormatAttrs.samples == 0) {
             ADD_ATTR2(NSOpenGLPFASampleBuffers, 0);
-        }
-        else
-        {
+        } else   {
             ADD_ATTR2(NSOpenGLPFASampleBuffers, 1);
             ADD_ATTR2(NSOpenGLPFASamples, pixelFormatAttrs.samples);
         }
@@ -349,24 +355,22 @@ OSGLContext_mac::OSGLContext_mac(const FramebufferConfig& pixelFormatAttrs,int m
     }
 
     //[_object setView:window->ns.view];
-#endif
+#endif // if 0
 }
-
 
 void
 OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
     CGLContextObj curr_ctx = 0;
+
     curr_ctx = CGLGetCurrentContext (); // get current CGL context
 
     CGLRendererInfoObj rend;
     GLint nrend = 0;
     CGLQueryRendererInfo(0xffffffff, &rend, &nrend);
     for (GLint i = 0; i < nrend; ++i) {
-
         OpenGLRendererInfo info;
-
-        GLint rendererID,haccelerated;
+        GLint rendererID, haccelerated;
         if (CGLDescribeRenderer(rend, i,  kCGLRPRendererID, &rendererID) != kCGLNoError) {
             continue;
         }
@@ -380,7 +384,7 @@ OSGLContext_mac::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         info.rendererID.renderID = rendererID;
 
 #if !defined(MAC_OS_X_VERSION_10_7) || \
-MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+        MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
         GLint nBytesMem;
         CGLDescribeRenderer(rend, i,  kCGLRPVideoMemory, &nBytesMem);
 
@@ -399,12 +403,10 @@ MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
 
 #endif
         /*GLint fragCapable, clCapable
-        CGLDescribeRenderer(rend, i,  kCGLRPGPUFragProcCapable, &fragCapable);
-        CGLDescribeRenderer(rend, i,  kCGLRPAcceleratedCompute, &clCapable);*/
+           CGLDescribeRenderer(rend, i,  kCGLRPGPUFragProcCapable, &fragCapable);
+           CGLDescribeRenderer(rend, i,  kCGLRPAcceleratedCompute, &clCapable);*/
         //info.fragCapable = (bool)fragCapable;
         //info.clCapable = (bool)clCapable;
-
-
 
 
         // Create a dummy OpenGL context for that specific renderer to retrieve more infos
@@ -431,9 +433,9 @@ MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
             continue;
         }
         // get renderer strings
-        info.rendererName = std::string((char*)glGetString (GL_RENDERER));
-        info.vendorName = std::string((char*)glGetString (GL_VENDOR));
-        info.glVersionString = std::string((char*)glGetString (GL_VERSION));
+        info.rendererName = std::string( (char*)glGetString (GL_RENDERER) );
+        info.vendorName = std::string( (char*)glGetString (GL_VENDOR) );
+        info.glVersionString = std::string( (char*)glGetString (GL_VERSION) );
         //std::string strExt((char*)glGetString (GL_EXTENSIONS));
 
         glGetIntegerv (GL_MAX_TEXTURE_SIZE,
@@ -449,16 +451,16 @@ MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
     if (curr_ctx) {
         CGLSetCurrentContext (curr_ctx); // reset current CGL context
     }
-}
+} // OSGLContext_mac::getGPUInfos
 
 void
 OSGLContext_mac::makeContextCurrent(const OSGLContext_mac* context)
 {
     /*if (context) {
         [context->_object makeCurrentContext];
-    } else {
+       } else {
         [NSOpenGLContext clearCurrentContext];
-    }*/
+       }*/
     if (context) {
         CGLSetCurrentContext(context->_imp->context);
     } else {
@@ -469,7 +471,7 @@ OSGLContext_mac::makeContextCurrent(const OSGLContext_mac* context)
 void
 OSGLContext_mac::swapBuffers()
 {
- //   [_object flushBuffer];
+    //   [_object flushBuffer];
     CGLFlushDrawable(_imp->context);
 }
 
@@ -477,8 +479,9 @@ void
 OSGLContext_mac::swapInterval(int interval)
 {
     /*GLint sync = interval;
-    [_object setValues:&sync forParameter:NSOpenGLCPSwapInterval];*/
+       [_object setValues:&sync forParameter:NSOpenGLCPSwapInterval];*/
     GLint value = interval;
+
     CGLSetParameter(_imp->context, kCGLCPSwapInterval, &value);
 }
 
@@ -487,10 +490,10 @@ OSGLContext_mac::~OSGLContext_mac()
     CGLDestroyContext(_imp->context);
     _imp->context = 0;
     /*[_pixelFormat release];
-    _pixelFormat = nil;
+       _pixelFormat = nil;
 
-    [_object release];
-    _object = nil;*/
+       [_object release];
+       _object = nil;*/
 }
 
 NATRON_NAMESPACE_EXIT;

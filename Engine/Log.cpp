@@ -83,9 +83,9 @@ public:
 
     LogPrivate()
         : _lock()
-          , _file(NULL)
-          , _stream(NULL)
-          , _beginsCount(0)
+        , _file(NULL)
+        , _stream(NULL)
+        , _beginsCount(0)
     {
     }
 

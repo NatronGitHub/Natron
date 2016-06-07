@@ -105,8 +105,8 @@ public:
 
     OfxParamToKnob(const EffectInstPtr& effect)
         : dynamicPropModifiedMutex()
-          , _dynamicPropModified(0)
-          , _effect(effect)
+        , _dynamicPropModified(0)
+        , _effect(effect)
     {
     }
 

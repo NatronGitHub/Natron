@@ -129,9 +129,9 @@ public:
 
     ChannelSelector()
         : layer()
-          , hasAllChoice(false)
-          , compsMutex()
-          , compsAvailable()
+        , hasAllChoice(false)
+        , compsMutex()
+        , compsAvailable()
     {
     }
 
@@ -161,9 +161,9 @@ public:
 
     MaskSelector()
         : enabled()
-          , channel()
-          , compsMutex()
-          , compsAvailable()
+        , channel()
+        , compsMutex()
+        , compsAvailable()
     {
     }
 
@@ -202,124 +202,124 @@ public:
                    const boost::shared_ptr<NodeCollection>& collection,
                    Plugin* plugin_)
         : _publicInterface(publicInterface)
-          , group(collection)
-          , precomp()
-          , app(app_)
-          , isPartOfProject(true)
-          , knobsInitialized(false)
-          , inputsInitialized(false)
-          , outputsMutex()
-          , outputs()
-          , guiOutputs()
-          , inputsMutex()
-          , inputs()
-          , guiInputs()
-          , effect()
-          , inputsComponents()
-          , outputComponents()
-          , inputsLabelsMutex()
-          , inputLabels()
-          , scriptName()
-          , label()
-          , cacheID()
-          , deactivatedState()
-          , activatedMutex()
-          , activated(true)
-          , plugin(plugin_)
-          , pluginPythonModuleMutex()
-          , pluginPythonModule()
-          , pyplugChangedSinceScript(false)
-          , pyPlugID()
-          , pyPlugLabel()
-          , pyPlugDesc()
-          , pyPlugGrouping()
-          , pyPlugVersion(0)
-          , computingPreview(false)
-          , previewThreadQuit(false)
-          , computingPreviewMutex()
-          , pluginInstanceMemoryUsed(0)
-          , memoryUsedMutex()
-          , mustQuitPreview(0)
-          , mustQuitPreviewMutex()
-          , mustQuitPreviewCond()
-          , renderInstancesSharedMutex(QMutex::Recursive)
-          , knobsAge(0)
-          , knobsAgeMutex()
-          , masterNodeMutex()
-          , masterNode()
-          , nodeLinks()
+        , group(collection)
+        , precomp()
+        , app(app_)
+        , isPartOfProject(true)
+        , knobsInitialized(false)
+        , inputsInitialized(false)
+        , outputsMutex()
+        , outputs()
+        , guiOutputs()
+        , inputsMutex()
+        , inputs()
+        , guiInputs()
+        , effect()
+        , inputsComponents()
+        , outputComponents()
+        , inputsLabelsMutex()
+        , inputLabels()
+        , scriptName()
+        , label()
+        , cacheID()
+        , deactivatedState()
+        , activatedMutex()
+        , activated(true)
+        , plugin(plugin_)
+        , pluginPythonModuleMutex()
+        , pluginPythonModule()
+        , pyplugChangedSinceScript(false)
+        , pyPlugID()
+        , pyPlugLabel()
+        , pyPlugDesc()
+        , pyPlugGrouping()
+        , pyPlugVersion(0)
+        , computingPreview(false)
+        , previewThreadQuit(false)
+        , computingPreviewMutex()
+        , pluginInstanceMemoryUsed(0)
+        , memoryUsedMutex()
+        , mustQuitPreview(0)
+        , mustQuitPreviewMutex()
+        , mustQuitPreviewCond()
+        , renderInstancesSharedMutex(QMutex::Recursive)
+        , knobsAge(0)
+        , knobsAgeMutex()
+        , masterNodeMutex()
+        , masterNode()
+        , nodeLinks()
 #ifdef NATRON_ENABLE_IO_META_NODES
-          , ioContainer()
+        , ioContainer()
 #endif
-          , frameIncrKnob()
-          , nodeSettingsPage()
-          , nodeLabelKnob()
-          , previewEnabledKnob()
-          , disableNodeKnob()
-          , infoPage()
-          , nodeInfos()
-          , refreshInfoButton()
-          , useFullScaleImagesWhenRenderScaleUnsupported()
-          , forceCaching()
-          , hideInputs()
-          , beforeFrameRender()
-          , beforeRender()
-          , afterFrameRender()
-          , afterRender()
-          , enabledChan()
-          , channelsSelectors()
-          , maskSelectors()
-          , rotoContext()
-          , trackContext()
-          , imagesBeingRenderedMutex()
-          , imageBeingRenderedCond()
-          , imagesBeingRendered()
-          , supportedDepths()
-          , isMultiInstance(false)
-          , multiInstanceParent()
-          , childrenMutex()
-          , children()
-          , multiInstanceParentName()
-          , keyframesDisplayedOnTimeline(false)
-          , lastRenderStartedMutex()
-          , lastRenderStartedSlotCallTime()
-          , renderStartedCounter(0)
-          , inputIsRenderingCounter(0)
-          , lastInputNRenderStartedSlotCallTime()
-          , nodeIsDequeuing(false)
-          , nodeIsDequeuingMutex()
-          , nodeIsDequeuingCond()
-          , nodeIsRendering(0)
-          , nodeIsRenderingMutex()
-          , persistentMessage()
-          , persistentMessageType(0)
-          , persistentMessageMutex()
-          , guiPointer()
-          , nativeOverlays()
-          , nodeCreated(false)
-          , createdComponentsMutex()
-          , createdComponents()
-          , paintStroke()
-          , pluginsPropMutex()
-          , pluginSafety(eRenderSafetyInstanceSafe)
-          , currentThreadSafety(eRenderSafetyInstanceSafe)
-          , currentSupportTiles(false)
-          , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
-          , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
-          , currentCanTransform(false)
-          , draftModeUsed(false)
-          , mustComputeInputRelatedData(true)
-          , duringPaintStrokeCreation(false)
-          , lastStrokeMovementMutex()
-          , strokeBitmapCleared(false)
-          , useAlpha0ToConvertFromRGBToRGBA(false)
-          , isBeingDestroyedMutex()
-          , isBeingDestroyed(false)
-          , inputModifiedRecursion(0)
-          , inputsModified()
-          , refreshIdentityStateRequestsCount(0)
-          , isRefreshingInputRelatedData(false)
-          , streamWarnings()
+        , frameIncrKnob()
+        , nodeSettingsPage()
+        , nodeLabelKnob()
+        , previewEnabledKnob()
+        , disableNodeKnob()
+        , infoPage()
+        , nodeInfos()
+        , refreshInfoButton()
+        , useFullScaleImagesWhenRenderScaleUnsupported()
+        , forceCaching()
+        , hideInputs()
+        , beforeFrameRender()
+        , beforeRender()
+        , afterFrameRender()
+        , afterRender()
+        , enabledChan()
+        , channelsSelectors()
+        , maskSelectors()
+        , rotoContext()
+        , trackContext()
+        , imagesBeingRenderedMutex()
+        , imageBeingRenderedCond()
+        , imagesBeingRendered()
+        , supportedDepths()
+        , isMultiInstance(false)
+        , multiInstanceParent()
+        , childrenMutex()
+        , children()
+        , multiInstanceParentName()
+        , keyframesDisplayedOnTimeline(false)
+        , lastRenderStartedMutex()
+        , lastRenderStartedSlotCallTime()
+        , renderStartedCounter(0)
+        , inputIsRenderingCounter(0)
+        , lastInputNRenderStartedSlotCallTime()
+        , nodeIsDequeuing(false)
+        , nodeIsDequeuingMutex()
+        , nodeIsDequeuingCond()
+        , nodeIsRendering(0)
+        , nodeIsRenderingMutex()
+        , persistentMessage()
+        , persistentMessageType(0)
+        , persistentMessageMutex()
+        , guiPointer()
+        , nativeOverlays()
+        , nodeCreated(false)
+        , createdComponentsMutex()
+        , createdComponents()
+        , paintStroke()
+        , pluginsPropMutex()
+        , pluginSafety(eRenderSafetyInstanceSafe)
+        , currentThreadSafety(eRenderSafetyInstanceSafe)
+        , currentSupportTiles(false)
+        , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
+        , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
+        , currentCanTransform(false)
+        , draftModeUsed(false)
+        , mustComputeInputRelatedData(true)
+        , duringPaintStrokeCreation(false)
+        , lastStrokeMovementMutex()
+        , strokeBitmapCleared(false)
+        , useAlpha0ToConvertFromRGBToRGBA(false)
+        , isBeingDestroyedMutex()
+        , isBeingDestroyed(false)
+        , inputModifiedRecursion(0)
+        , inputsModified()
+        , refreshIdentityStateRequestsCount(0)
+        , isRefreshingInputRelatedData(false)
+        , streamWarnings()
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -518,8 +518,6 @@ public:
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
     SequentialPreferenceEnum currentSupportSequentialRender;
     bool currentCanTransform;
-
-
     bool draftModeUsed, mustComputeInputRelatedData;
     bool duringPaintStrokeCreation; // protected by lastStrokeMovementMutex
     mutable QMutex lastStrokeMovementMutex;
@@ -586,13 +584,12 @@ Node::Node(const AppInstPtr& app,
            const boost::shared_ptr<NodeCollection>& group,
            Plugin* plugin)
     : QObject()
-      , _imp( new Implementation(this, app, group, plugin) )
+    , _imp( new Implementation(this, app, group, plugin) )
 {
-    QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
-    QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
-    QObject::connect( this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()) );
-    QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
-
+    QObject::connect( this, SIGNAL( pluginMemoryUsageChanged(qint64) ), appPTR, SLOT( onNodeMemoryRegistered(qint64) ) );
+    QObject::connect( this, SIGNAL( mustDequeueActions() ), this, SLOT( dequeueActions() ) );
+    QObject::connect( this, SIGNAL( mustComputeHashOnMainThread() ), this, SLOT( doComputeHashOnMainThread() ) );
+    QObject::connect(this, SIGNAL( refreshIdentityStateRequested() ), this, SLOT( onRefreshIdentityStateRequestReceived() ), Qt::QueuedConnection);
 }
 
 bool
@@ -677,7 +674,6 @@ Node::load(const CreateNodeArgs& args)
 
 
     NodePtr thisShared = shared_from_this();
-
     LibraryBinary* binary = _imp->plugin->getLibraryBinary();
     std::pair<bool, EffectBuilder> func;
     if (binary) {
@@ -949,7 +945,7 @@ Node::setRenderThreadSafety(RenderSafetyEnum safety)
 RenderSafetyEnum
 Node::getCurrentRenderThreadSafety() const
 {
-    if (!isMultiThreadingSupportEnabledForPlugin()) {
+    if ( !isMultiThreadingSupportEnabledForPlugin() ) {
         return eRenderSafetyInstanceSafe;
     }
     QMutexLocker k(&_imp->pluginsPropMutex);
@@ -1371,7 +1367,7 @@ Node::fetchParentMultiInstancePointer()
             ///as the child
             _imp->multiInstanceParent = *it;
             (*it)->_imp->appendChild(thisShared);
-            QObject::connect( it->get(), SIGNAL(inputChanged(int)), this, SLOT(onParentMultiInstanceInputChanged(int)) );
+            QObject::connect( it->get(), SIGNAL( inputChanged(int) ), this, SLOT( onParentMultiInstanceInputChanged(int) ) );
             break;
         }
     }
@@ -3207,7 +3203,7 @@ Node::findRightClickMenuKnob(const KnobsVec& knobs)
             KnobPtr rightClickKnob = knobs[i];
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>( rightClickKnob.get() );
             if (isChoice) {
-                QObject::connect( isChoice, SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
+                QObject::connect( isChoice, SIGNAL( populated() ), this, SIGNAL( rightClickMenuKnobPopulated() ) );
             }
             break;
         }
@@ -3324,7 +3320,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
                                                                      "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
                                                                      "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
                                                                      "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
-    if ( (isRenderScaleSupportEnabledForPlugin()) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
+    if ( ( isRenderScaleSupportEnabledForPlugin() ) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
         useFullScaleImagesWhenRenderScaleUnsupported->setSecretByDefault(true);
     }
     settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
@@ -4080,15 +4076,12 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
     choice->beginChanges();
     choice->setDefaultValue(defValue);
     if (!loadingProject) {
-
         //changedKnob was not called because we are initializing knobs
         handleFormatKnob( choice.get() );
-
     } else {
         if ( curIndex < (int)entries.size() ) {
             choice->setValue(curIndex);
         }
-
     }
 
     choice->endChanges();
@@ -5134,7 +5127,7 @@ Node::connectInput(const NodePtr & input,
     getApp()->recheckInvalidExpressions();
 
     ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+    QObject::connect( input.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
 
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
@@ -5228,7 +5221,7 @@ Node::replaceInput(const NodePtr& input,
         if (!useGuiInputs) {
             NodePtr curIn = _imp->inputs[inputNumber].lock();
             if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+                QObject::connect( curIn.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
                 curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->inputs[inputNumber] = input;
@@ -5236,7 +5229,7 @@ Node::replaceInput(const NodePtr& input,
         } else {
             NodePtr curIn = _imp->guiInputs[inputNumber].lock();
             if (curIn) {
-                QObject::connect( curIn.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+                QObject::connect( curIn.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
                 curIn->disconnectOutput(useGuiInputs, this);
             }
             _imp->guiInputs[inputNumber] = input;
@@ -5245,7 +5238,7 @@ Node::replaceInput(const NodePtr& input,
     }
 
     ///Get notified when the input name has changed
-    QObject::connect( input.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+    QObject::connect( input.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
 
     ///Notify the GUI
     Q_EMIT inputChanged(inputNumber);
@@ -5447,7 +5440,7 @@ Node::disconnectInput(int inputNumber)
     }
 
 
-    QObject::disconnect( inputShared.get(), SIGNAL(labelChanged(QString)), this, SLOT(onInputLabelChanged(QString)) );
+    QObject::disconnect( inputShared.get(), SIGNAL( labelChanged(QString) ), this, SLOT( onInputLabelChanged(QString) ) );
     inputShared->disconnectOutput(useGuiValues, this);
 
     {
@@ -5974,7 +5967,7 @@ public:
 
     NodeDestroyNodeInternalArgs()
         : GenericWatcherCallerArgs()
-          , autoReconnect(false)
+        , autoReconnect(false)
     {}
 
     virtual ~NodeDestroyNodeInternalArgs() {}
@@ -6088,7 +6081,7 @@ Node::destroyNodeInternal(bool fromDest,
                 isGrp->getNodes_recursive(nodesToWatch, false);
             }
             _imp->renderWatcher.reset( new NodeRenderWatcher(nodesToWatch) );
-            QObject::connect( _imp->renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onProcessingQuitInDestroyNodeInternal(int,WatcherCallerArgsPtr)) );
+            QObject::connect( _imp->renderWatcher.get(), SIGNAL( taskFinished(int, WatcherCallerArgsPtr) ), this, SLOT( onProcessingQuitInDestroyNodeInternal(int, WatcherCallerArgsPtr) ) );
             boost::shared_ptr<NodeDestroyNodeInternalArgs> args( new NodeDestroyNodeInternalArgs() );
             args->autoReconnect = autoReconnect;
             _imp->renderWatcher->scheduleBlockingTask(NodeRenderWatcher::eBlockingTaskQuitAnyProcessing, args);
@@ -7029,15 +7022,15 @@ Node::onAllKnobsSlaved(bool isSlave,
                 QMutexLocker l(&_imp->masterNodeMutex);
                 _imp->masterNode = masterNode;
             }
-            QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-            QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
-            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
+            QObject::connect( masterNode.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
+            QObject::connect( masterNode.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
+            QObject::connect( masterNode.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
         }
     } else {
         NodePtr master = getMasterNode();
-        QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-        QObject::disconnect( master.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
-        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
+        QObject::disconnect( master.get(), SIGNAL( deactivated(bool) ), this, SLOT( onMasterNodeDeactivated() ) );
+        QObject::disconnect( master.get(), SIGNAL( knobsAgeChanged(U64) ), this, SLOT( setKnobsAge(U64) ) );
+        QObject::disconnect( master.get(), SIGNAL( previewImageChanged(int) ), this, SLOT( refreshPreviewImage(int) ) );
         {
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode.reset();
@@ -9108,7 +9101,7 @@ Node::setNodeIsRenderingInternal(std::list<NodeWPtr>& markedNodes)
 
 RenderingFlagSetter::RenderingFlagSetter(const NodePtr& n)
     : node(n)
-      , nodes()
+    , nodes()
 {
     n->setNodeIsRendering(nodes);
 }
@@ -10557,8 +10550,8 @@ public:
 
     MergeMaskChannelData()
         : KnobChoiceMergeEntriesData()
-          , isColor(false)
-          , dataSet(false)
+        , isColor(false)
+        , dataSet(false)
     {
     }
 
@@ -10632,8 +10625,8 @@ public:
 
     MergeLayerData()
         : KnobChoiceMergeEntriesData()
-          , isColor(false)
-          , dataSet(false)
+        , isColor(false)
+        , dataSet(false)
     {
     }
 

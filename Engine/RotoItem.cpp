@@ -116,7 +116,7 @@ RotoItem::RotoItem(const boost::shared_ptr<RotoContext>& context,
                    const std::string & name,
                    boost::shared_ptr<RotoLayer> parent)
     : itemMutex()
-      , _imp( new RotoItemPrivate(context, name, parent) )
+    , _imp( new RotoItemPrivate(context, name, parent) )
 {
 }
 

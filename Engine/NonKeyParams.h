@@ -69,10 +69,10 @@ struct CacheEntryStorageInfo
 
     CacheEntryStorageInfo()
         : bounds()
-          , dataTypeSize(0)
-          , numComponents(0)
-          , mode(eStorageModeNone)
-          , textureTarget(0)
+        , dataTypeSize(0)
+        , numComponents(0)
+        , mode(eStorageModeNone)
+        , textureTarget(0)
     {
     }
 

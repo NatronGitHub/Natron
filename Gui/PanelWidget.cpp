@@ -39,8 +39,8 @@ NATRON_NAMESPACE_ENTER;
 PanelWidget::PanelWidget(QWidget* thisWidget,
                          Gui* gui)
     : ScriptObject()
-      , _thisWidget(thisWidget)
-      , _gui(gui)
+    , _thisWidget(thisWidget)
+    , _gui(gui)
 {
     assert(_gui && _thisWidget);
 }

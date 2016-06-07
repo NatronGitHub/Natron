@@ -823,12 +823,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::
 {
     // Ensure this thread gets an OpenGL context for the render of the frame
     OSGLContextPtr glContext;
+
     try {
         glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
         _openGLContext = glContext;
     } catch (...) {
-
     }
+
     if (args) {
         for (std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
             it->second->openGLContext = glContext;
@@ -876,24 +877,24 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
 
 ParallelRenderArgs::ParallelRenderArgs()
     : time(0)
-      , timeline(0)
-      , nodeHash(0)
-      , request()
-      , view(0)
-      , abortInfo()
-      , treeRoot()
-      , rotoPaintNodes()
-      , stats()
-      , openGLContext()
-      , textureIndex(0)
-      , currentThreadSafety(eRenderSafetyInstanceSafe)
-      , isRenderResponseToUserInteraction(false)
-      , isSequentialRender(false)
-      , isAnalysis(false)
-      , isDuringPaintStrokeCreation(false)
-      , doNansHandling(true)
-      , draftMode(false)
-      , tilesSupported(false)
+    , timeline(0)
+    , nodeHash(0)
+    , request()
+    , view(0)
+    , abortInfo()
+    , treeRoot()
+    , rotoPaintNodes()
+    , stats()
+    , openGLContext()
+    , textureIndex(0)
+    , currentThreadSafety(eRenderSafetyInstanceSafe)
+    , isRenderResponseToUserInteraction(false)
+    , isSequentialRender(false)
+    , isAnalysis(false)
+    , isDuringPaintStrokeCreation(false)
+    , doNansHandling(true)
+    , draftMode(false)
+    , tilesSupported(false)
 {
 }
 

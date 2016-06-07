@@ -87,9 +87,9 @@ public:
 
     ImageComponents(const ImageComponents& other)
         : _layerName(other._layerName)
-          , _pairedLayer(other._pairedLayer)
-          , _componentNames(other._componentNames)
-          , _globalComponentsName(other._globalComponentsName)
+        , _pairedLayer(other._pairedLayer)
+        , _componentNames(other._componentNames)
+        , _globalComponentsName(other._globalComponentsName)
     {
     }
 

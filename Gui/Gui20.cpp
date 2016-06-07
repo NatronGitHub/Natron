@@ -371,7 +371,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     }
 
     ViewerTab* tab = new ViewerTab(nodeViewerUi, activeNodeViewerUi, this, viewer, where);
-    QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
+    QObject::connect( tab->getViewer(), SIGNAL( imageChanged(int, bool) ), this, SLOT( onViewerImageChanged(int, bool) ) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         _imp->_viewerTabs.push_back(tab);
@@ -872,7 +872,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QAction* action = new QAction(this);
         action->setText(label);
         action->setIcon( pluginsToolButton->getMenuIcon() );
-        QObject::connect( action, SIGNAL(triggered()), pluginsToolButton, SLOT(onTriggered()) );
+        QObject::connect( action, SIGNAL( triggered() ), pluginsToolButton, SLOT( onTriggered() ) );
         pluginsToolButton->setAction(action);
     } else {
         Menu* menu = new Menu(this);
@@ -891,7 +891,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         QMenu* imageMenu = pluginsToolButton->getMenu();
         assert(imageMenu);
         QAction* createReaderAction = new QAction(this);
-        QObject::connect( createReaderAction, SIGNAL(triggered()), this, SLOT(createReader()) );
+        QObject::connect( createReaderAction, SIGNAL( triggered() ), this, SLOT( createReader() ) );
         createReaderAction->setText( tr("Read") );
         QPixmap readImagePix;
         appPTR->getIcon(NATRON_PIXMAP_READ_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &readImagePix);
@@ -901,7 +901,7 @@ Gui::findOrCreateToolButton(const boost::shared_ptr<PluginGroupNode> & plugin)
         imageMenu->addAction(createReaderAction);
 
         QAction* createWriterAction = new QAction(this);
-        QObject::connect( createWriterAction, SIGNAL(triggered()), this, SLOT(createWriter()) );
+        QObject::connect( createWriterAction, SIGNAL( triggered() ), this, SLOT( createWriter() ) );
         createWriterAction->setText( tr("Write") );
         QPixmap writeImagePix;
         appPTR->getIcon(NATRON_PIXMAP_WRITE_IMAGE, TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), &writeImagePix);
@@ -1249,6 +1249,7 @@ Gui::createReader()
 {
     NodePtr ret;
     std::vector<std::string> filters;
+
     appPTR->getSupportedReaderFileFormats(&filters);
 
     std::string pattern = popOpenFileDialog( true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true );
@@ -1302,8 +1303,8 @@ NodePtr
 Gui::createWriter()
 {
     NodePtr ret;
-
     std::vector<std::string> filters;
+
     appPTR->getSupportedWriterFileFormats(&filters);
 
     std::string file;
@@ -1359,18 +1360,20 @@ Gui::popOpenFileDialog(bool sequenceDialog,
 std::string
 Gui::openImageSequenceDialog()
 {
-
     std::vector<std::string> filters;
+
     appPTR->getSupportedReaderFileFormats(&filters);
+
     return popOpenFileDialog(true, filters, _imp->_lastLoadSequenceOpenedDir.toStdString(), true);
 }
 
 std::string
 Gui::saveImageSequenceDialog()
 {
-
     std::vector<std::string> filters;
+
     appPTR->getSupportedWriterFileFormats(&filters);
+
     return popSaveFileDialog(true, filters, _imp->_lastSaveSequenceOpenedDir.toStdString(), true);
 }
 

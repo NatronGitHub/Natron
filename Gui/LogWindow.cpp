@@ -57,11 +57,11 @@ LogWindow::LogWindow(const QString & log,
 
     clearButton = new Button(tr("Clear"), buttonsContainer);
     buttonsLayout->addWidget(clearButton);
-    QObject::connect( clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()) );
+    QObject::connect( clearButton, SIGNAL( clicked() ), this, SLOT( onClearButtonClicked() ) );
     buttonsLayout->addStretch();
     okButton = new Button(tr("Ok"), buttonsContainer);
     buttonsLayout->addWidget(okButton);
-    QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(accept()) );
+    QObject::connect( okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
     mainLayout->addWidget(buttonsContainer);
 }
 

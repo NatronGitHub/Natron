@@ -103,27 +103,27 @@ public:
 
     ImageParams()
         : NonKeyParams()
-          , _rod()
-          , _par(1.)
-          , _components( ImageComponents::getRGBAComponents() )
-          , _bitdepth(eImageBitDepthFloat)
-          , _fielding(eImageFieldingOrderNone)
-          , _premult(eImagePremultiplicationPremultiplied)
-          , _mipMapLevel(0)
-          , _isRoDProjectFormat(false)
+        , _rod()
+        , _par(1.)
+        , _components( ImageComponents::getRGBAComponents() )
+        , _bitdepth(eImageBitDepthFloat)
+        , _fielding(eImageFieldingOrderNone)
+        , _premult(eImagePremultiplicationPremultiplied)
+        , _mipMapLevel(0)
+        , _isRoDProjectFormat(false)
     {
     }
 
     ImageParams(const ImageParams & other)
         : NonKeyParams(other)
-          , _rod(other._rod)
-          , _par(other._par)
-          , _components(other._components)
-          , _bitdepth(other._bitdepth)
-          , _fielding(other._fielding)
-          , _premult(other._premult)
-          , _mipMapLevel(other._mipMapLevel)
-          , _isRoDProjectFormat(other._isRoDProjectFormat)
+        , _rod(other._rod)
+        , _par(other._par)
+        , _components(other._components)
+        , _bitdepth(other._bitdepth)
+        , _fielding(other._fielding)
+        , _premult(other._premult)
+        , _mipMapLevel(other._mipMapLevel)
+        , _isRoDProjectFormat(other._isRoDProjectFormat)
     {
     }
 
@@ -139,14 +139,14 @@ public:
                 StorageModeEnum storageMode,
                 U32 textureTarget)
         : NonKeyParams()
-          , _rod(rod)
-          , _par(par)
-          , _components(components)
-          , _bitdepth(bitdepth)
-          , _fielding(fielding)
-          , _premult(premult)
-          , _mipMapLevel(mipMapLevel)
-          , _isRoDProjectFormat(isRoDProjectFormat)
+        , _rod(rod)
+        , _par(par)
+        , _components(components)
+        , _bitdepth(bitdepth)
+        , _fielding(fielding)
+        , _premult(premult)
+        , _mipMapLevel(mipMapLevel)
+        , _isRoDProjectFormat(isRoDProjectFormat)
     {
         CacheEntryStorageInfo& info = getStorageInfo();
 

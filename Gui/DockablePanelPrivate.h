@@ -92,7 +92,6 @@ struct DockablePanelPrivate
     Button* _redoButton;
     Button* _restoreDefaultsButton;
     bool _minimized; /*!< true if the panel is minimized*/
-
     bool _floating; /*!< true if the panel is floating*/
     FloatingWidget* _floatingWidget;
 
@@ -100,7 +99,6 @@ struct DockablePanelPrivate
     ///to show only the knobs that need to afterwards
     std::map<KnobGuiWPtr, bool> _knobsVisibilityBeforeHideModif;
     KnobHolder* _holder;
-
     bool _useScrollAreasForTabs;
     DockablePanel::HeaderModeEnum _mode;
     mutable QMutex _isClosedMutex;
@@ -119,8 +117,6 @@ struct DockablePanelPrivate
                          DockablePanel::HeaderModeEnum headerMode,
                          bool useScrollAreasForTabs,
                          const QString& helpToolTip);
-
-
 };
 
 class OverlayColorButton

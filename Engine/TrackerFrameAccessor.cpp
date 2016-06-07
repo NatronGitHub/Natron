@@ -26,13 +26,13 @@
 
 #include "Global/Macros.h"
 
-GCC_DIAG_OFF(unused-function)
-GCC_DIAG_OFF(unused-parameter)
+GCC_DIAG_OFF(unused - function)
+GCC_DIAG_OFF(unused - parameter)
 #include <libmv/image/array_nd.h>
 #include <libmv/autotrack/region.h>
 #include <libmv/logging/logging.h>
-GCC_DIAG_ON(unused-function)
-GCC_DIAG_ON(unused-parameter)
+GCC_DIAG_ON(unused - function)
+GCC_DIAG_ON(unused - parameter)
 
 #include <QtCore/QDebug>
 
@@ -218,11 +218,11 @@ struct TrackerFrameAccessorPrivate
                                 bool enabledChannels[3],
                                 int formatHeight)
         : context(context)
-          , trackerInput()
-          , cacheMutex()
-          , cache()
-          , enabledChannels()
-          , formatHeight(formatHeight)
+        , trackerInput()
+        , cacheMutex()
+        , cache()
+        , enabledChannels()
+        , formatHeight(formatHeight)
     {
         trackerInput = context->getNode()->getInput(0);
         assert(trackerInput);
@@ -236,7 +236,7 @@ TrackerFrameAccessor::TrackerFrameAccessor(const TrackerContext* context,
                                            bool enabledChannels[3],
                                            int formatHeight)
     : mv::FrameAccessor()
-      , _imp( new TrackerFrameAccessorPrivate(context, enabledChannels, formatHeight) )
+    , _imp( new TrackerFrameAccessorPrivate(context, enabledChannels, formatHeight) )
 {
 }
 

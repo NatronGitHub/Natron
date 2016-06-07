@@ -48,7 +48,7 @@ public:
 
     NodeClipBoard()
         : nodes()
-          , nodesUI()
+        , nodesUI()
     {
     }
 

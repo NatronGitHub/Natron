@@ -44,9 +44,9 @@ ImageLayer::ImageLayer(const QString& layerName,
                        const QString& componentsPrettyName,
                        const QStringList& componentsName)
     : _layerName(layerName)
-      , _componentsPrettyName(componentsPrettyName)
-      , _componentsName(componentsName)
-      , _comps()
+    , _componentsPrettyName(componentsPrettyName)
+    , _componentsName(componentsName)
+    , _comps()
 {
     std::vector<std::string> channels( componentsName.size() );
     int i = 0;
@@ -59,7 +59,7 @@ ImageLayer::ImageLayer(const QString& layerName,
 
 ImageLayer::ImageLayer(const ImageComponents& comps)
     : _layerName( QString::fromUtf8( comps.getLayerName().c_str() ) )
-      , _componentsPrettyName( QString::fromUtf8( comps.getComponentsGlobalName().c_str() ) )
+    , _componentsPrettyName( QString::fromUtf8( comps.getComponentsGlobalName().c_str() ) )
 {
     const std::vector<std::string>& channels = comps.getComponentsNames();
 
@@ -195,8 +195,8 @@ UserParamHolder::setHolder(KnobHolder* holder)
 
 Effect::Effect(const NodePtr& node)
     : Group()
-      , UserParamHolder(node ? node->getEffectInstance().get() : 0)
-      , _node(node)
+    , UserParamHolder(node ? node->getEffectInstance().get() : 0)
+    , _node(node)
 {
     if (node) {
         boost::shared_ptr<NodeGroup> grp;

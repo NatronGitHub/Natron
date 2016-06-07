@@ -639,9 +639,9 @@ private:
 
         LinkedKnob()
             : master()
-              , slave()
-              , linkInValid(false)
-              , dimensions()
+            , slave()
+            , linkInValid(false)
+            , dimensions()
         {
         }
     };

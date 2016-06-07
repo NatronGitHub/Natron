@@ -407,11 +407,11 @@ public:
     {
         TransformData()
             : rotation(0.)
-              , scale(0.)
-              , hasRotationAndScale(false)
-              , time(-1.)
-              , valid(false)
-              , rms(-1.)
+            , scale(0.)
+            , hasRotationAndScale(false)
+            , time(-1.)
+            , valid(false)
+            , rms(-1.)
         {
             translation.x = translation.y = 0.;
         }
@@ -429,10 +429,10 @@ public:
     {
         CornerPinData()
             : h()
-              , nbEnabledPoints(0)
-              , time(-1.)
-              , valid(false)
-              , rms(-1.)
+            , nbEnabledPoints(0)
+            , time(-1.)
+            , valid(false)
+            , rms(-1.)
         {
         }
 

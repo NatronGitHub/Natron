@@ -48,7 +48,7 @@ public:
     virtual void recreateUserKnobs(bool restorePageIndex) = 0;
 
     /**
-    * @brief Same as recreateUserKnobs but for all knobs
+     * @brief Same as recreateUserKnobs but for all knobs
      **/
     virtual void refreshGuiForKnobsChanges(bool restorePageIndex) = 0;
 

@@ -90,25 +90,25 @@ struct EdgePrivate
                 int inputNb,
                 double angle)
         : _publicInterface(publicInterface)
-          , isOutputEdge(inputNb == -1)
-          , inputNb(inputNb)
-          , angle(angle)
-          , label(NULL)
-          , arrowHead()
-          , dest()
-          , source()
-          , defaultColor(Qt::black)
-          , renderingColor(243, 149, 0)
-          , useRenderingColor(false)
-          , useHighlight(false)
-          , paintWithDash(false)
-          , optional(false)
-          , paintBendPoint(false)
-          , bendPointHiddenAutomatically(false)
-          , enoughSpaceToShowLabel(true)
-          , isRotoMask(false)
-          , isMask(false)
-          , middlePoint()
+        , isOutputEdge(inputNb == -1)
+        , inputNb(inputNb)
+        , angle(angle)
+        , label(NULL)
+        , arrowHead()
+        , dest()
+        , source()
+        , defaultColor(Qt::black)
+        , renderingColor(243, 149, 0)
+        , useRenderingColor(false)
+        , useHighlight(false)
+        , paintWithDash(false)
+        , optional(false)
+        , paintBendPoint(false)
+        , bendPointHiddenAutomatically(false)
+        , enoughSpaceToShowLabel(true)
+        , isRotoMask(false)
+        , isMask(false)
+        , middlePoint()
     {
     }
 
@@ -120,7 +120,7 @@ Edge::Edge(int inputNb_,
            const NodeGuiPtr & dest_,
            QGraphicsItem *parent)
     : QGraphicsLineItem(parent)
-      , _imp( new EdgePrivate(this, inputNb_, angle_) )
+    , _imp( new EdgePrivate(this, inputNb_, angle_) )
 {
     _imp->dest = dest_;
 
@@ -159,7 +159,7 @@ EdgePrivate::initLabel()
 Edge::Edge(const NodeGuiPtr & src,
            QGraphicsItem *parent)
     : QGraphicsLineItem(parent)
-      , _imp( new EdgePrivate(this, -1, M_PI_2) )
+    , _imp( new EdgePrivate(this, -1, M_PI_2) )
 {
     _imp->source = src;
     assert(src);
@@ -787,16 +787,16 @@ LinkArrow::LinkArrow(const NodeGuiPtr& master,
                      const NodeGuiPtr& slave,
                      QGraphicsItem* parent)
     : QObject(), QGraphicsLineItem(parent)
-      , _master(master)
-      , _slave(slave)
-      , _arrowHead()
-      , _renderColor(Qt::black)
-      , _headColor(Qt::white)
-      , _lineWidth(1)
+    , _master(master)
+    , _slave(slave)
+    , _arrowHead()
+    , _renderColor(Qt::black)
+    , _headColor(Qt::white)
+    , _lineWidth(1)
 {
     assert(master && slave);
-    QObject::connect( master.get(), SIGNAL(positionChanged(int,int)), this, SLOT(refreshPosition()) );
-    QObject::connect( slave.get(), SIGNAL(positionChanged(int,int)), this, SLOT(refreshPosition()) );
+    QObject::connect( master.get(), SIGNAL( positionChanged(int, int) ), this, SLOT( refreshPosition() ) );
+    QObject::connect( slave.get(), SIGNAL( positionChanged(int, int) ), this, SLOT( refreshPosition() ) );
 
     refreshPosition();
     setZValue(master->zValue() - 5);

@@ -91,12 +91,12 @@ using std::make_pair;
 KnobGuiGroup::KnobGuiGroup(KnobPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
-      , _checked(false)
-      , _button(0)
-      , _children()
-      , _childrenToEnable()
-      , _tabGroup(0)
-      , _knob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
+    , _checked(false)
+    , _button(0)
+    , _children()
+    , _childrenToEnable()
+    , _tabGroup(0)
+    , _knob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
 {
 }
 
@@ -151,7 +151,7 @@ KnobGuiGroup::createWidget(QHBoxLayout* layout)
     _checked = _knob.lock()->getValue();
     _button->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
     _button->setChecked(_checked);
-    QObject::connect( _button, SIGNAL(checked(bool)), this, SLOT(onCheckboxChecked(bool)) );
+    QObject::connect( _button, SIGNAL( checked(bool) ), this, SLOT( onCheckboxChecked(bool) ) );
     layout->addWidget(_button);
 }
 

@@ -1114,14 +1114,15 @@ Image::ensureBounds(const RectI& newBounds,
 }
 
 void
-Image::applyTextureMapping(const RectI& bounds, const RectI& roi)
+Image::applyTextureMapping(const RectI& bounds,
+                           const RectI& roi)
 {
     glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho( roi.x1, roi.x2,
-            roi.y1, roi.y2,
-            -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+             roi.y1, roi.y2,
+             -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glCheckError();
@@ -1412,7 +1413,7 @@ Image::fill(const RectI & roi,
 
         glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        
+
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError();
 

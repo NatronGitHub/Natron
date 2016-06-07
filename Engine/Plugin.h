@@ -64,14 +64,14 @@ public:
                     int minor,
                     bool isUserCreatable)
         : _id(pluginID)
-          , _label(pluginLabel)
-          , _iconPath(iconPath)
-          , _major(major)
-          , _minor(minor)
-          , _children()
-          , _parent()
-          , _notHighestMajorVersion(false)
-          , _isUserCreatable(isUserCreatable)
+        , _label(pluginLabel)
+        , _iconPath(iconPath)
+        , _major(major)
+        , _minor(minor)
+        , _children()
+        , _parent()
+        , _notHighestMajorVersion(false)
+        , _isUserCreatable(isUserCreatable)
     {
     }
 
@@ -189,7 +189,6 @@ class Plugin
        These are shortcuts that the plug-in registered
      */
     std::list<PluginActionShortcut> _shortcuts;
-
     bool _renderScaleEnabled;
     bool _multiThreadingEnabled;
 
@@ -197,29 +196,29 @@ public:
 
     Plugin()
         : _binary(NULL)
-          , _resourcesPath()
-          , _id()
-          , _label()
-          , _iconFilePath()
-          , _groupIconFilePath()
-          , _grouping()
-          , _labelWithoutSuffix()
-          , _pythonModule()
-          , _ofxPlugin(0)
-          , _ofxDescriptor(0)
-          , _lock()
-          , _majorVersion(0)
-          , _minorVersion(0)
-          , _ofxContext(eContextNone)
-          , _hasShortcutSet(false)
-          , _isReader(false)
-          , _isWriter(false)
-          , _isDeprecated(false)
-          , _isInternalOnly(false)
-          , _toolSetScript(false)
-          , _activated(true)
-          , _renderScaleEnabled(true)
-          , _multiThreadingEnabled(true)
+        , _resourcesPath()
+        , _id()
+        , _label()
+        , _iconFilePath()
+        , _groupIconFilePath()
+        , _grouping()
+        , _labelWithoutSuffix()
+        , _pythonModule()
+        , _ofxPlugin(0)
+        , _ofxDescriptor(0)
+        , _lock()
+        , _majorVersion(0)
+        , _minorVersion(0)
+        , _ofxContext(eContextNone)
+        , _hasShortcutSet(false)
+        , _isReader(false)
+        , _isWriter(false)
+        , _isDeprecated(false)
+        , _isInternalOnly(false)
+        , _toolSetScript(false)
+        , _activated(true)
+        , _renderScaleEnabled(true)
+        , _multiThreadingEnabled(true)
     {
     }
 
@@ -237,29 +236,29 @@ public:
            bool isWriter,
            bool isDeprecated)
         : _binary(binary)
-          , _resourcesPath(resourcesPath)
-          , _id(id)
-          , _label(label)
-          , _iconFilePath(iconFilePath)
-          , _groupIconFilePath(groupIconFilePath)
-          , _grouping(grouping)
-          , _labelWithoutSuffix()
-          , _pythonModule()
-          , _ofxPlugin(0)
-          , _ofxDescriptor(0)
-          , _lock(lock)
-          , _majorVersion(majorVersion)
-          , _minorVersion(minorVersion)
-          , _ofxContext(eContextNone)
-          , _hasShortcutSet(false)
-          , _isReader(isReader)
-          , _isWriter(isWriter)
-          , _isDeprecated(isDeprecated)
-          , _isInternalOnly(false)
-          , _toolSetScript(false)
-          , _activated(true)
-          , _renderScaleEnabled(true)
-          , _multiThreadingEnabled(true)
+        , _resourcesPath(resourcesPath)
+        , _id(id)
+        , _label(label)
+        , _iconFilePath(iconFilePath)
+        , _groupIconFilePath(groupIconFilePath)
+        , _grouping(grouping)
+        , _labelWithoutSuffix()
+        , _pythonModule()
+        , _ofxPlugin(0)
+        , _ofxDescriptor(0)
+        , _lock(lock)
+        , _majorVersion(majorVersion)
+        , _minorVersion(minorVersion)
+        , _ofxContext(eContextNone)
+        , _hasShortcutSet(false)
+        , _isReader(isReader)
+        , _isWriter(isWriter)
+        , _isDeprecated(isDeprecated)
+        , _isInternalOnly(false)
+        , _toolSetScript(false)
+        , _activated(true)
+        , _renderScaleEnabled(true)
+        , _multiThreadingEnabled(true)
     {
         if ( _resourcesPath.isEmpty() ) {
             _resourcesPath = QLatin1String(":/Resources/");
@@ -379,27 +378,28 @@ struct IOPluginEvaluation
     double evaluation;
 
     IOPluginEvaluation()
-    : pluginID()
-    , evaluation(0)
+        : pluginID()
+        , evaluation(0)
     {
-
     }
 
-    IOPluginEvaluation(const std::string& p, double e)
-    : pluginID(p)
-    , evaluation(e)
+    IOPluginEvaluation(const std::string& p,
+                       double e)
+        : pluginID(p)
+        , evaluation(e)
     {}
 };
 
 struct IOPluginEvaluation_CompareLess
 {
-    bool operator() (const IOPluginEvaluation& lhs, const IOPluginEvaluation& rhs) const
+    bool operator() (const IOPluginEvaluation& lhs,
+                     const IOPluginEvaluation& rhs) const
     {
         return lhs.evaluation < rhs.evaluation;
     }
 };
 
-struct FormatExtensionCompareCaseInsensitive 
+struct FormatExtensionCompareCaseInsensitive
 {
     bool operator() (const std::string& lhs, const std::string& rhs) const;
 };

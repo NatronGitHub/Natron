@@ -89,9 +89,9 @@ Bool_CheckBox::Bool_CheckBox(const KnobGuiPtr& knob,
                              int dimension,
                              QWidget* parent)
     : AnimatedCheckBox(parent)
-      , useCustomColor(false)
-      , customColor()
-      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , useCustomColor(false)
+    , customColor()
+    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {
 }
 
@@ -205,7 +205,7 @@ Bool_CheckBox::focusOutEvent(QFocusEvent* e)
 KnobGuiBool::KnobGuiBool(KnobPtr knob,
                          KnobGuiContainerI *container)
     : KnobGui(knob, container)
-      , _checkBox(0)
+    , _checkBox(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobBool>(knob);
 }
@@ -216,8 +216,8 @@ KnobGuiBool::createWidget(QHBoxLayout* layout)
     _checkBox = new Bool_CheckBox( shared_from_this(), 0, layout->parentWidget() );
     onLabelChangedInternal();
     //_checkBox->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _checkBox, SIGNAL(clicked(bool)), this, SLOT(onCheckBoxStateChanged(bool)) );
-    QObject::connect( this, SIGNAL(labelClicked(bool)), this, SLOT(onLabelClicked(bool)) );
+    QObject::connect( _checkBox, SIGNAL( clicked(bool) ), this, SLOT( onCheckBoxStateChanged(bool) ) );
+    QObject::connect( this, SIGNAL( labelClicked(bool) ), this, SLOT( onLabelClicked(bool) ) );
 
     ///set the copy/link actions in the right click menu
     enableRightClickMenu(_checkBox, 0);

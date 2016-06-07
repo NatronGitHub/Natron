@@ -79,19 +79,19 @@ struct NodeRenderStatsPrivate
 
     NodeRenderStatsPrivate()
         : totalTimeSpentRendering(0)
-          , rod()
-          , isWholeImageIdentity()
-          , rectanglesRendered()
-          , identityRectangles()
-          , mipmapLevelsAccessed()
-          , planesRendered()
-          , nbCacheMisses(0)
-          , nbCacheHit(0)
-          , nbCacheHitButDownscaledImages(0)
-          , tileSupportEnabled(false)
-          , renderScaleSupportEnabled(false)
-          , channelsEnabled()
-          , outputPremult(eImagePremultiplicationOpaque)
+        , rod()
+        , isWholeImageIdentity()
+        , rectanglesRendered()
+        , identityRectangles()
+        , mipmapLevelsAccessed()
+        , planesRendered()
+        , nbCacheMisses(0)
+        , nbCacheHit(0)
+        , nbCacheHitButDownscaledImages(0)
+        , tileSupportEnabled(false)
+        , renderScaleSupportEnabled(false)
+        , channelsEnabled()
+        , outputPremult(eImagePremultiplicationOpaque)
     {
         for (int i = 0; i < 4; ++i) {
             channelsEnabled[i] = false;
@@ -317,9 +317,9 @@ struct RenderStatsPrivate
 
     RenderStatsPrivate()
         : lock()
-          , totalTimeSpentForFrameTimer()
-          , doNodesProfiling(false)
-          , nodeInfos()
+        , totalTimeSpentForFrameTimer()
+        , doNodesProfiling(false)
+        , nodeInfos()
     {
     }
 

@@ -103,7 +103,7 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
                                const boost::shared_ptr<RotoLayer>& parent)
 
     : RotoDrawableItem(context, name, parent, true)
-      , _imp( new RotoStrokeItemPrivate(type) )
+    , _imp( new RotoStrokeItemPrivate(type) )
 {
 }
 

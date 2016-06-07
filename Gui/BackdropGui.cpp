@@ -57,7 +57,7 @@ struct BackdropGuiPrivate
 
     BackdropGuiPrivate(BackdropGui* publicInterface)
         : _publicInterface(publicInterface)
-          , label(0)
+        , label(0)
     {
     }
 
@@ -68,7 +68,7 @@ struct BackdropGuiPrivate
 
 BackdropGui::BackdropGui(QGraphicsItem* parent)
     : NodeGui(parent)
-      , _imp( new BackdropGuiPrivate(this) )
+    , _imp( new BackdropGuiPrivate(this) )
 {
 }
 
@@ -110,7 +110,7 @@ BackdropGui::createGui()
     Backdrop* isBd = dynamic_cast<Backdrop*>( effect.get() );
     assert(isBd);
 
-    QObject::connect( isBd, SIGNAL(labelChanged(QString)), this, SLOT(onLabelChanged(QString)) );
+    QObject::connect( isBd, SIGNAL( labelChanged(QString) ), this, SLOT( onLabelChanged(QString) ) );
 
     refreshTextLabelFromKnob();
 }

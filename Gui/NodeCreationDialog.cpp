@@ -69,10 +69,10 @@ struct CompleterLineEditPrivate
                              bool quickExit,
                              QDialog* parent)
         : dialog(parent)
-          , listView(NULL)
-          , model(NULL)
-          , names(plugins)
-          , quickExitEnabled(quickExit)
+        , listView(NULL)
+        , model(NULL)
+        , names(plugins)
+        , quickExitEnabled(quickExit)
     {
     }
 
@@ -81,9 +81,9 @@ struct CompleterLineEditPrivate
                              bool quickExit,
                              QDialog* parent)
         : dialog(parent)
-          , listView(NULL)
-          , model(NULL)
-          , quickExitEnabled(quickExit)
+        , listView(NULL)
+        , model(NULL)
+        , quickExitEnabled(quickExit)
     {
         assert( displayWords.size() == internalIds.size() );
 
@@ -97,15 +97,15 @@ CompleterLineEdit::CompleterLineEdit(const PluginsNamesMap& plugins,
                                      bool quickExit,
                                      QDialog* parent)
     : LineEdit(parent)
-      , _imp( new CompleterLineEditPrivate(plugins, quickExit, parent) )
+    , _imp( new CompleterLineEditPrivate(plugins, quickExit, parent) )
 {
     _imp->listView = new QListView(parent);
     _imp->model = new QStringListModel(this);
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
 
-    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
-    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
+    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
+    connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
 }
 
 CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
@@ -113,15 +113,15 @@ CompleterLineEdit::CompleterLineEdit(const QStringList & displayWords,
                                      bool quickExit,
                                      QDialog* parent)
     : LineEdit(parent)
-      , _imp( new CompleterLineEditPrivate(displayWords, internalIds, quickExit, parent) )
+    , _imp( new CompleterLineEditPrivate(displayWords, internalIds, quickExit, parent) )
 {
     _imp->listView = new QListView(parent);
     _imp->model = new QStringListModel(this);
     _imp->listView->setWindowFlags(Qt::ToolTip);
     _imp->listView->setModel(_imp->model);
 
-    connect( this, SIGNAL(textChanged(QString)), this, SLOT(filterText(QString)) );
-    connect( _imp->listView, SIGNAL(clicked(QModelIndex)), this, SLOT(setTextFromIndex(QModelIndex)) );
+    connect( this, SIGNAL( textChanged(QString) ), this, SLOT( filterText(QString) ) );
+    connect( _imp->listView, SIGNAL( clicked(QModelIndex) ), this, SLOT( setTextFromIndex(QModelIndex) ) );
 }
 
 CompleterLineEdit::~CompleterLineEdit()
@@ -304,8 +304,8 @@ struct NodeCreationDialogPrivate
 
     NodeCreationDialogPrivate()
         : layout(NULL)
-          , textEdit(NULL)
-          , items( appPTR->getPluginsList() )
+        , textEdit(NULL)
+        , items( appPTR->getPluginsList() )
     {
     }
 };
@@ -336,7 +336,7 @@ incrementPluginWeight(const QString& pluginID,
 NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
                                        QWidget* parent)
     : QDialog(parent)
-      , _imp( new NodeCreationDialogPrivate() )
+    , _imp( new NodeCreationDialogPrivate() )
 {
     setWindowTitle( tr("Node Creation Tool") );
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
@@ -422,7 +422,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
     _imp->layout->addWidget(_imp->textEdit);
     _imp->textEdit->setFocus();
     _imp->textEdit->selectAll();
-    QTimer::singleShot( 20, _imp->textEdit, SLOT(showCompleter()) );
+    QTimer::singleShot( 20, _imp->textEdit, SLOT( showCompleter() ) );
 }
 
 NodeCreationDialog::~NodeCreationDialog()

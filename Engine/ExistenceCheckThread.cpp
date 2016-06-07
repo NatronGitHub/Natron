@@ -59,12 +59,12 @@ struct ExistenceCheckerThreadPrivate
                                   const QString& acknowledgementMessage,
                                   const QString &comServerPipePath)
         : socket()
-          , comServerPipePath(comServerPipePath)
-          , checkMessage(checkMessage)
-          , acknowledgementMessage(acknowledgementMessage)
-          , mustQuitMutex()
-          , mustQuit(false)
-          , mustQuitCond()
+        , comServerPipePath(comServerPipePath)
+        , checkMessage(checkMessage)
+        , acknowledgementMessage(acknowledgementMessage)
+        , mustQuitMutex()
+        , mustQuit(false)
+        , mustQuitCond()
     {
     }
 };
@@ -73,7 +73,7 @@ ExistenceCheckerThread::ExistenceCheckerThread(const QString& checkMessage,
                                                const QString& acknowledgementMessage,
                                                const QString &comServerPipePath)
     : QThread()
-      , _imp( new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage, comServerPipePath) )
+    , _imp( new ExistenceCheckerThreadPrivate(checkMessage, acknowledgementMessage, comServerPipePath) )
 {
     setObjectName( QString::fromUtf8("CrashReporterAliveThread") );
 }

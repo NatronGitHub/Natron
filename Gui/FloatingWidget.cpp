@@ -43,16 +43,16 @@ NATRON_NAMESPACE_ENTER;
 FloatingWidget::FloatingWidget(Gui* gui,
                                QWidget* parent)
     : QWidget(parent, Qt::Tool) // use Qt::Tool instead of Qt::Window to get a minimal titlebar
-      , SerializableWindow()
-      , _embeddedWidget(0)
-      , _scrollArea(0)
-      , _layout(0)
-      , _gui(gui)
+    , SerializableWindow()
+    , _embeddedWidget(0)
+    , _scrollArea(0)
+    , _layout(0)
+    , _gui(gui)
 {
     setAttribute(Qt::WA_DeleteOnClose, true);
     if (gui) {
         boost::shared_ptr<Project> project = gui->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL(projectNameChanged(QString,bool)), this, SLOT(onProjectNameChanged(QString,bool)) );
+        QObject::connect( project.get(), SIGNAL( projectNameChanged(QString, bool) ), this, SLOT( onProjectNameChanged(QString, bool) ) );
         onProjectNameChanged(project->getProjectPath(), false);
     }
     _layout = new QVBoxLayout(this);

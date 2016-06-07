@@ -145,12 +145,12 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 
     assert(engine);
     if (connect) {
-        QObject::connect( engine.get(), SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex], SLOT(setFps(double,double)) );
-        QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
+        QObject::connect( engine.get(), SIGNAL( fpsChanged(double, double) ), _imp->infoWidget[textureIndex], SLOT( setFps(double, double) ) );
+        QObject::connect( engine.get(), SIGNAL( renderFinished(int) ), _imp->infoWidget[textureIndex], SLOT( hideFps() ) );
     } else {
-        QObject::disconnect( engine.get(), SIGNAL(fpsChanged(double,double)), _imp->infoWidget[textureIndex],
-                             SLOT(setFps(double,double)) );
-        QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), _imp->infoWidget[textureIndex], SLOT(hideFps()) );
+        QObject::disconnect( engine.get(), SIGNAL( fpsChanged(double, double) ), _imp->infoWidget[textureIndex],
+                             SLOT( setFps(double, double) ) );
+        QObject::disconnect( engine.get(), SIGNAL( renderFinished(int) ), _imp->infoWidget[textureIndex], SLOT( hideFps() ) );
     }
 }
 
@@ -599,12 +599,12 @@ ViewerTab::manageTimelineSlot(bool disconnectPrevious,
 {
     if (disconnectPrevious) {
         boost::shared_ptr<TimeLine> previous = _imp->timeLineGui->getTimeline();
-        QObject::disconnect( previous.get(), SIGNAL(frameChanged(SequenceTime,int)),
-                             this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
+        QObject::disconnect( previous.get(), SIGNAL( frameChanged(SequenceTime, int) ),
+                             this, SLOT( onTimeLineTimeChanged(SequenceTime, int) ) );
     }
 
-    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)),
-                      this, SLOT(onTimeLineTimeChanged(SequenceTime,int)) );
+    QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ),
+                      this, SLOT( onTimeLineTimeChanged(SequenceTime, int) ) );
 }
 
 boost::shared_ptr<TimeLine>

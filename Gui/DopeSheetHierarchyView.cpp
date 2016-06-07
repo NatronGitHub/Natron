@@ -58,11 +58,11 @@ HierarchyViewSelectionModel::HierarchyViewSelectionModel(DopeSheet* dopesheetMod
                                                          QAbstractItemModel *model,
                                                          QObject *parent)
     : QItemSelectionModel(model, parent)
-      , _dopesheetModel(dopesheetModel)
-      , _view(view)
+    , _dopesheetModel(dopesheetModel)
+    , _view(view)
 {
-    connect( model, SIGNAL(destroyed()),
-             this, SLOT(deleteLater()) );
+    connect( model, SIGNAL( destroyed() ),
+             this, SLOT( deleteLater() ) );
 }
 
 HierarchyViewSelectionModel::~HierarchyViewSelectionModel()
@@ -316,9 +316,9 @@ public:
 
 HierarchyViewPrivate::HierarchyViewPrivate(HierarchyView *qq)
     : q_ptr(qq),
-      dopeSheetModel(0),
-      gui(0),
-      _canResizeOtherWidget(true)
+    dopeSheetModel(0),
+    gui(0),
+    _canResizeOtherWidget(true)
 {}
 
 HierarchyViewPrivate::~HierarchyViewPrivate()
@@ -652,7 +652,7 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel,
                              Gui *gui,
                              QWidget *parent)
     : QTreeWidget(parent),
-      _imp( new HierarchyViewPrivate(this) )
+    _imp( new HierarchyViewPrivate(this) )
 {
     _imp->dopeSheetModel = dopeSheetModel;
     _imp->gui = gui;
@@ -670,11 +670,11 @@ HierarchyView::HierarchyView(DopeSheet *dopeSheetModel,
 
     setStyleSheet( QString::fromUtf8("HierarchyView { border: 0px; }") );
 
-    connect( this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)),
-             this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)) );
+    connect( this, SIGNAL( itemDoubleClicked(QTreeWidgetItem*, int) ),
+             this, SLOT( onItemDoubleClicked(QTreeWidgetItem*, int) ) );
 
-    connect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-             this, SLOT(onSelectionChanged()) );
+    connect( selectionModel(), SIGNAL( selectionChanged(QItemSelection, QItemSelection) ),
+             this, SLOT( onSelectionChanged() ) );
 }
 
 HierarchyView::~HierarchyView()
@@ -1001,8 +1001,8 @@ HierarchyView::onKeyframeSelectionChanged(bool recurse)
     }
 
 
-    disconnect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-                this, SLOT(onSelectionChanged()) );
+    disconnect( selectionModel(), SIGNAL( selectionChanged(QItemSelection, QItemSelection) ),
+                this, SLOT( onSelectionChanged() ) );
 
     // Compose tree selection from the selected keyframes
     if ( toCheck.empty() && selectedNodes.empty() ) {
@@ -1057,8 +1057,8 @@ HierarchyView::onKeyframeSelectionChanged(bool recurse)
         mySelecModel->selectWithRecursion(selection, flags, recurse);
     }
 
-    connect( selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
-             this, SLOT(onSelectionChanged()) );
+    connect( selectionModel(), SIGNAL( selectionChanged(QItemSelection, QItemSelection) ),
+             this, SLOT( onSelectionChanged() ) );
 } // HierarchyView::onKeyframeSelectionChanged
 
 void

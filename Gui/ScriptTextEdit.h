@@ -119,7 +119,7 @@ public:
 
     LineNumberWidget(InputScriptTextEdit *editor)
         : QWidget(editor)
-          , codeEditor(editor)
+        , codeEditor(editor)
     {
         codeEditor = editor;
     }

@@ -181,7 +181,7 @@ public:
 
         OfxHostTLSData()
             : lastEffectCallingMainEntry(0)
-              , threadIndexes()
+            , threadIndexes()
         {
         }
     };

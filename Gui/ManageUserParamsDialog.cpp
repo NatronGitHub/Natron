@@ -104,18 +104,18 @@ struct ManageUserParamsDialogPrivate
 
     ManageUserParamsDialogPrivate(DockablePanel* panel)
         : panel(panel)
-          , mainLayout(0)
-          , tree(0)
-          , items()
-          , buttonsContainer(0)
-          , buttonsLayout(0)
-          , addButton(0)
-          , pickButton(0)
-          , editButton(0)
-          , removeButton(0)
-          , upButton(0)
-          , downButton(0)
-          , closeButton(0)
+        , mainLayout(0)
+        , tree(0)
+        , items()
+        , buttonsContainer(0)
+        , buttonsLayout(0)
+        , addButton(0)
+        , pickButton(0)
+        , editButton(0)
+        , removeButton(0)
+        , upButton(0)
+        , downButton(0)
+        , closeButton(0)
     {
     }
 
@@ -144,7 +144,7 @@ struct ManageUserParamsDialogPrivate
 ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
                                                QWidget* parent)
     : QDialog(parent)
-      , _imp( new ManageUserParamsDialogPrivate(panel) )
+    , _imp( new ManageUserParamsDialogPrivate(panel) )
 {
     EffectInstance* effect = dynamic_cast<EffectInstance*>( panel->getHolder() );
     QString title = QString::fromUtf8("User Parameters");
@@ -175,8 +175,8 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
 
        _imp->items.push_back(userPageItem);*/
 
-    QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onSelectionChanged()) );
-    QObject::connect( _imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)) );
+    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onSelectionChanged() ) );
+    QObject::connect( _imp->tree, SIGNAL( itemDoubleClicked(QTreeWidgetItem*, int) ), this, SLOT( onItemDoubleClicked(QTreeWidgetItem*, int) ) );
     std::list<KnobI*> markedKnobs;
     const KnobsVec& knobs = panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
@@ -216,37 +216,37 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
 
     _imp->addButton = new Button(tr("Add..."), _imp->buttonsContainer);
     _imp->addButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add a new parameter, group or page"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddClicked()) );
+    QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->addButton);
 
     _imp->pickButton = new Button(tr("Pick..."), _imp->buttonsContainer);
     _imp->pickButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add a new parameter that is directly copied from/linked to another parameter"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->pickButton, SIGNAL(clicked(bool)), this, SLOT(onPickClicked()) );
+    QObject::connect( _imp->pickButton, SIGNAL( clicked(bool) ), this, SLOT( onPickClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->pickButton);
 
     _imp->editButton = new Button(tr("Edit..."), _imp->buttonsContainer);
     _imp->editButton->setToolTip( GuiUtils::convertFromPlainText(tr("Edit the selected parameter"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->editButton, SIGNAL(clicked(bool)), this, SLOT(onEditClicked()) );
+    QObject::connect( _imp->editButton, SIGNAL( clicked(bool) ), this, SLOT( onEditClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->editButton);
 
     _imp->removeButton = new Button(tr("Delete"), _imp->buttonsContainer);
     _imp->removeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Delete the selected parameter"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onDeleteClicked()) );
+    QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onDeleteClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->removeButton);
 
     _imp->upButton = new Button(tr("Up"), _imp->buttonsContainer);
     _imp->upButton->setToolTip( GuiUtils::convertFromPlainText(tr("Move the selected parameter one level up in the layout"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->upButton, SIGNAL(clicked(bool)), this, SLOT(onUpClicked()) );
+    QObject::connect( _imp->upButton, SIGNAL( clicked(bool) ), this, SLOT( onUpClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->upButton);
 
     _imp->downButton = new Button(tr("Down"), _imp->buttonsContainer);
     _imp->downButton->setToolTip( GuiUtils::convertFromPlainText(tr("Move the selected parameter one level down in the layout"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->downButton, SIGNAL(clicked(bool)), this, SLOT(onDownClicked()) );
+    QObject::connect( _imp->downButton, SIGNAL( clicked(bool) ), this, SLOT( onDownClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->downButton);
 
     _imp->closeButton = new Button(tr("Close"), _imp->buttonsContainer);
     _imp->closeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Close this dialog"), Qt::WhiteSpaceNormal) );
-    QObject::connect( _imp->closeButton, SIGNAL(clicked(bool)), this, SLOT(onCloseClicked()) );
+    QObject::connect( _imp->closeButton, SIGNAL( clicked(bool) ), this, SLOT( onCloseClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->closeButton);
 
     _imp->mainLayout->addWidget(_imp->buttonsContainer);

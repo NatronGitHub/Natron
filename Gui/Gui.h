@@ -630,7 +630,7 @@ public Q_SLOTS:
     void showSettings();
 
     void showAbout();
-    
+
     void showErrorLog();
 
     void openRecentFile();

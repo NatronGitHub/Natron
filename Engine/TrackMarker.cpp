@@ -80,33 +80,33 @@ struct TrackMarkerPrivate
     TrackMarkerPrivate(TrackMarker* publicInterface,
                        const boost::shared_ptr<TrackerContext>& context)
         : _publicInterface(publicInterface)
-          , context(context)
-          , searchWindowBtmLeft()
-          , searchWindowTopRight()
-          , patternTopLeft()
-          , patternTopRight()
-          , patternBtmRight()
-          , patternBtmLeft()
-          , center()
-          , offset()
-          , error()
+        , context(context)
+        , searchWindowBtmLeft()
+        , searchWindowTopRight()
+        , patternTopLeft()
+        , patternTopRight()
+        , patternBtmRight()
+        , patternBtmLeft()
+        , center()
+        , offset()
+        , error()
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-          , weight()
+        , weight()
 #endif
-          , motionModel()
-          , trackMutex()
-          , userKeyframes()
-          , trackScriptName()
-          , trackLabel()
-          , enabled()
+        , motionModel()
+        , trackMutex()
+        , userKeyframes()
+        , trackScriptName()
+        , trackLabel()
+        , enabled()
     {
     }
 };
 
 TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
     : NamedKnobHolder( context->getNode()->getApp() )
-      , boost::enable_shared_from_this<TrackMarker>()
-      , _imp( new TrackMarkerPrivate(this, context) )
+    , boost::enable_shared_from_this<TrackMarker>()
+    , _imp( new TrackMarkerPrivate(this, context) )
 {
 }
 
@@ -205,31 +205,31 @@ TrackMarker::initializeKnobs()
     _imp->enabled = enableKnob;
 
 
-    QObject::connect( this, SIGNAL(enabledChanged(int)), _imp->context.lock().get(), SLOT(onMarkerEnabledChanged(int)) );
+    QObject::connect( this, SIGNAL( enabledChanged(int) ), _imp->context.lock().get(), SLOT( onMarkerEnabledChanged(int) ) );
     boost::shared_ptr<KnobSignalSlotHandler> handler = _imp->center.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(keyFrameSet(double,ViewSpec,int,int,bool)), this, SLOT(onCenterKeyframeSet(double,ViewSpec,int,int,bool)) );
-    QObject::connect( handler.get(), SIGNAL(keyFrameRemoved(double,ViewSpec,int,int)), this, SLOT(onCenterKeyframeRemoved(double,ViewSpec,int,int)) );
-    QObject::connect( handler.get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)), this, SLOT(onCenterKeyframeMoved(ViewSpec,int,double,double)) );
-    QObject::connect( handler.get(), SIGNAL(multipleKeyFramesSet(std::list<double>,ViewSpec,int,int)), this,
-                      SLOT(onCenterKeyframesSet(std::list<double>,ViewSpec,int,int)) );
-    QObject::connect( handler.get(), SIGNAL(multipleKeyFramesRemoved(std::list<double>,ViewSpec,int,int)), this,
-                      SLOT(onCenterMultipleKeysRemoved(std::list<double>,ViewSpec,int,int)) );
-    QObject::connect( handler.get(), SIGNAL(animationRemoved(ViewSpec,int)), this, SLOT(onCenterAnimationRemoved(ViewSpec,int)) );
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onCenterKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( keyFrameSet(double, ViewSpec, int, int, bool) ), this, SLOT( onCenterKeyframeSet(double, ViewSpec, int, int, bool) ) );
+    QObject::connect( handler.get(), SIGNAL( keyFrameRemoved(double, ViewSpec, int, int) ), this, SLOT( onCenterKeyframeRemoved(double, ViewSpec, int, int) ) );
+    QObject::connect( handler.get(), SIGNAL( keyFrameMoved(ViewSpec, int, double, double) ), this, SLOT( onCenterKeyframeMoved(ViewSpec, int, double, double) ) );
+    QObject::connect( handler.get(), SIGNAL( multipleKeyFramesSet(std::list<double>, ViewSpec, int, int) ), this,
+                      SLOT( onCenterKeyframesSet(std::list<double>, ViewSpec, int, int) ) );
+    QObject::connect( handler.get(), SIGNAL( multipleKeyFramesRemoved(std::list<double>, ViewSpec, int, int) ), this,
+                      SLOT( onCenterMultipleKeysRemoved(std::list<double>, ViewSpec, int, int) ) );
+    QObject::connect( handler.get(), SIGNAL( animationRemoved(ViewSpec, int) ), this, SLOT( onCenterAnimationRemoved(ViewSpec, int) ) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onCenterKnobValueChanged(ViewSpec, int, int) ) );
 
     handler = _imp->offset.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onOffsetKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onOffsetKnobValueChanged(ViewSpec, int, int) ) );
 
     handler = _imp->error.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onErrorKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onErrorKnobValueChanged(ViewSpec, int, int) ) );
 
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
     handler = _imp->weight.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onWeightKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onWeightKnobValueChanged(ViewSpec, int, int) ) );
 #endif
 
     handler = _imp->motionModel.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onMotionModelKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onMotionModelKnobValueChanged(ViewSpec, int, int) ) );
 
     /*handler = _imp->patternBtmLeft->getSignalSlotHandler();
        QObject::connect(handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onPatternBtmLeftKnobValueChanged(int,int)));
@@ -245,13 +245,13 @@ TrackMarker::initializeKnobs()
      */
 
     handler = _imp->searchWindowBtmLeft.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onSearchBtmLeftKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onSearchBtmLeftKnobValueChanged(ViewSpec, int, int) ) );
 
     handler = _imp->searchWindowTopRight.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onSearchTopRightKnobValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onSearchTopRightKnobValueChanged(ViewSpec, int, int) ) );
 
     handler = _imp->enabled.lock()->getSignalSlotHandler();
-    QObject::connect( handler.get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onEnabledValueChanged(ViewSpec,int,int)) );
+    QObject::connect( handler.get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onEnabledValueChanged(ViewSpec, int, int) ) );
 } // TrackMarker::initializeKnobs
 
 void
@@ -1258,7 +1258,7 @@ TrackMarkerPM::initializeKnobs()
 {
     TrackMarker::initializeKnobs();
     NodePtr thisNode = getContext()->getNode();
-    QObject::connect( getContext().get(), SIGNAL(onNodeInputChanged(int)), this, SLOT(onTrackerNodeInputChanged(int)) );
+    QObject::connect( getContext().get(), SIGNAL( onNodeInputChanged(int) ), this, SLOT( onTrackerNodeInputChanged(int) ) );
     NodePtr node;
     {
         CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_TRACKERPM), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );

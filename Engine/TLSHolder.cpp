@@ -43,9 +43,9 @@ NATRON_NAMESPACE_ENTER;
 
 AppTLS::AppTLS()
     : _objectMutex()
-      , _object( new GLobalTLSObject() )
-      , _spawnsMutex()
-      , _spawns()
+    , _object( new GLobalTLSObject() )
+    , _spawnsMutex()
+    , _spawns()
 {
 }
 

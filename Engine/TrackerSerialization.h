@@ -58,11 +58,11 @@ public:
 
     TrackSerialization()
         : _enabled(true)
-          , _isPM(false)
-          , _label()
-          , _scriptName()
-          , _knobs()
-          , _userKeys()
+        , _isPM(false)
+        , _label()
+        , _scriptName()
+        , _knobs()
+        , _userKeys()
     {
     }
 

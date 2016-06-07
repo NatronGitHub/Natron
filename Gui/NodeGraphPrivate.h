@@ -88,10 +88,10 @@ public:
 
     Navigator(QGraphicsItem* parent = 0)
         : QGraphicsPixmapItem(parent)
-          , _navLeftEdge(NULL)
-          , _navBottomEdge(NULL)
-          , _navRightEdge(NULL)
-          , _navTopEdge(NULL)
+        , _navLeftEdge(NULL)
+        , _navBottomEdge(NULL)
+        , _navRightEdge(NULL)
+        , _navTopEdge(NULL)
     {
         QPen p;
 
