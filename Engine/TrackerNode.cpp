@@ -699,6 +699,7 @@ TrackerNode::drawOverlay(double time,
         bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
         bool showErrorColor = _imp->ui->showCorrelationButton.lock()->getValue();
         TrackMarkerPtr selectedMarker = _imp->ui->selectedMarker.lock();
+        bool selectedFound = false;
         Point selectedCenter;
         Point selectedPtnTopLeft;
         Point selectedPtnTopRight;
@@ -814,6 +815,7 @@ TrackerNode::drawOverlay(double time,
 
                     selectedSearchTopRight.x = searchRight;
                     selectedSearchTopRight.y = searchTop;
+                    selectedFound = true;
                 }
 
                 const QPointF innerMidLeft( (btmLeft + topLeft) / 2 );
@@ -1108,7 +1110,7 @@ TrackerNode::drawOverlay(double time,
             } // if (!isSelected) {
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
-        if (_imp->ui->showMarkerTexture) {
+        if (_imp->ui->showMarkerTexture && selectedFound) {
             _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
