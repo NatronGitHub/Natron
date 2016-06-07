@@ -1635,6 +1635,17 @@ TrackerNode::onOverlayPenMotion(double time,
         case eMouseStateDraggingCenter:
         case eMouseStateDraggingOffset: {
             assert(_imp->ui->interactMarker);
+            if (!centerKnob || !offsetKnob) {
+                didSomething = false;
+                break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
+            }
+
             if (_imp->ui->eventState == eMouseStateDraggingOffset) {
                 offsetKnob->setValues(offsetKnob->getValueAtTime(time, 0) + delta.x,
                                       offsetKnob->getValueAtTime(time, 1) + delta.y,
@@ -1667,9 +1678,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             int index = 0;
             if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
@@ -1759,9 +1776,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -1815,9 +1838,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -1877,9 +1906,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -1936,9 +1971,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -2021,6 +2062,11 @@ TrackerNode::onOverlayPenMotion(double time,
             boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
             boost::shared_ptr<KnobDouble> searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
             boost::shared_ptr<KnobDouble> searchTopRight = marker->getSearchWindowTopRightKnob();
+            if (!centerKnob || !offsetKnob || !searchBtmLeft || !searchTopRight) {
+                didSomething = false;
+                break;
+            }
+
             Point center, offset, btmLeft, topRight;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -2050,6 +2096,16 @@ TrackerNode::onOverlayPenMotion(double time,
             break;
         }
         case eMouseStateDraggingSelectedMarker: {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
+            }
             double x = centerKnob->getValueAtTime(time, 0);
             double y = centerKnob->getValueAtTime(time, 1);
             double dx = delta.x *  _imp->ui->selectedMarkerScale.x;

@@ -2220,7 +2220,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (data && createdKnob) {
                     KnobChoice* sKnobChoice = dynamic_cast<KnobChoice*>( sKnob.get() );
                     if (sKnobChoice) {
-                        createdKnob->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
+                        createdKnob->choiceRestoration(sKnobChoice, data);
                     }
                 }
             } else {

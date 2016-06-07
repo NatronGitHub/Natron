@@ -328,6 +328,7 @@ public:
         , clearShortcutButton(0)
         , resetShortcutButton(0)
         , shortcutButtonsContainer(0)
+        , shortcutButtonsLayout(0)
         , restoreShortcutsDefaultsButton(0)
         , appShortcuts()
     {
@@ -992,8 +993,10 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
                                              PreferenceTab* tab)
 {
     tab->tab = dynamic_cast<QFrame*>(page->tab);
-    tab->tab->hide();
     assert(tab->tab);
+    if (tab->tab) {
+        tab->tab->hide();
+    }
 
     QTreeWidgetItem* parentItem = 0;
     boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();

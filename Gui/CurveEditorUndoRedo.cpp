@@ -121,10 +121,12 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
         }
 
         if (guiKnob && !isParametric) {
-            if (add && isKnobCurve) {
-                guiKnob->setKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
-            } else {
-                guiKnob->removeKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
+            if (isKnobCurve) {
+                if (add) {
+                    guiKnob->setKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
+                } else {
+                    guiKnob->removeKeyframes( it->keyframes, isKnobCurve->getDimension(), ViewIdx(0) );
+                }
             }
         } else {
             for (std::size_t i = 0; i < it->keyframes.size(); ++i) {

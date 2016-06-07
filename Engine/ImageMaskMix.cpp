@@ -215,7 +215,7 @@ Image::applyMaskMix(const RectI& roi,
 
     if (getStorageMode() == eStorageModeGLTex) {
         assert(glContext);
-        assert(originalImg->getStorageMode() == eStorageModeGLTex);
+        assert(!originalImg || originalImg->getStorageMode() == eStorageModeGLTex);
         boost::shared_ptr<GLShader> shader = glContext->getOrCreateMaskMixShader(maskImg != 0);
         assert(shader);
         GLuint fboID = glContext->getFBOId();
@@ -236,7 +236,7 @@ Image::applyMaskMix(const RectI& roi,
         glCheckFramebufferError();
 
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture( target, originalImg->getGLTextureID() );
+        glBindTexture(target, originalImg ? originalImg->getGLTextureID() : 0);
 
         glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

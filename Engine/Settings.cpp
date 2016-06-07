@@ -431,7 +431,7 @@ Settings::getActiveOpenGLRendererID() const
         return GLRendererID();
     }
     int i = 0;
-    for (std::list<OpenGLRendererInfo>::const_iterator it; it != renderers.end(); ++it, ++i) {
+    for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
         if (i == activeIndex) {
             return it->rendererID;
         }

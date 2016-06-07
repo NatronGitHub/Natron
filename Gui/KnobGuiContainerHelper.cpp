@@ -909,11 +909,13 @@ KnobGuiContainerHelper::deleteKnobGui(const KnobPtr& knob)
                 assert( found != _imp->knobsMap.end() );
                 KnobGuiGroup* parentGroupGui = dynamic_cast<KnobGuiGroup*>( found->second.get() );
                 assert(parentGroupGui);
-                TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
-                if (groupAsTab) {
-                    groupAsTab->removeTab(isGrp);
-                    if ( groupAsTab->isEmpty() ) {
-                        parentGroupGui->removeTabWidget();
+                if (parentGroupGui) {
+                    TabGroup* groupAsTab = parentGroupGui->getOrCreateTabWidget();
+                    if (groupAsTab) {
+                        groupAsTab->removeTab(isGrp);
+                        if ( groupAsTab->isEmpty() ) {
+                            parentGroupGui->removeTabWidget();
+                        }
                     }
                 }
             }
