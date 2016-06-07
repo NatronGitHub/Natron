@@ -102,8 +102,12 @@ GPUContextPool::getIdealContextCount()
 }
 
 OSGLContextPtr
-GPUContextPool::attachGLContextToRender()
+GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 {
+
+    if (checkIfGLLoaded && !appPTR->isOpenGLLoaded()) {
+        return OSGLContextPtr();
+    }
     QMutexLocker k(&_imp->contextPoolMutex);
 
     // Context-sharing disabled as it is not needed

@@ -61,7 +61,7 @@ public:
      *
      * @param renderUniqueAbortInfo These are the infos that uniquely identify the render attached to the context
      **/
-    OSGLContextPtr attachGLContextToRender();
+    OSGLContextPtr attachGLContextToRender(bool checkIfGLLoaded = true);
 
     /**
      * @brief Releases the given OpenGL context from a render. After this call the context may be re-used

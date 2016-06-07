@@ -822,10 +822,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::
     : argsMap(args)
 {
     // Ensure this thread gets an OpenGL context for the render of the frame
-    OSGLContextPtr glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+    OSGLContextPtr glContext;
+    try {
+        glContext = appPTR->getGPUContextPool()->attachGLContextToRender();
+        _openGLContext = glContext;
+    } catch (...) {
 
-    assert(glContext);
-    _openGLContext = glContext;
+    }
     if (args) {
         for (std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
             it->second->openGLContext = glContext;
