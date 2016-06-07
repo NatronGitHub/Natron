@@ -446,6 +446,7 @@ public:
     boost::weak_ptr<KnobString> nodeLabelKnob;
     boost::weak_ptr<KnobBool> previewEnabledKnob;
     boost::weak_ptr<KnobBool> disableNodeKnob;
+    boost::weak_ptr<KnobChoice> openglRenderingEnabledKnob;
     boost::weak_ptr<KnobInt> lifeTimeKnob;
     boost::weak_ptr<KnobBool> enableLifeTimeKnob;
     boost::weak_ptr<KnobString> knobChangedCallback;
@@ -972,6 +973,14 @@ Node::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 PluginOpenGLRenderSupport
 Node::getCurrentOpenGLRenderSupport() const
 {
+    if (_imp->plugin) {
+        PluginOpenGLRenderSupport pluginProp = _imp->plugin->getPluginOpenGLRenderSupport();
+        if (pluginProp != ePluginOpenGLRenderSupportYes) {
+            return pluginProp;
+        }
+    }
+
+    // Descriptor returned that it supported OpenGL, let's see if it turned off/on in the instance the OpenGL rendering
     QMutexLocker k(&_imp->pluginsPropMutex);
 
     return _imp->currentSupportOpenGLRender;
@@ -1028,7 +1037,25 @@ Node::getCurrentCanTransform() const
 void
 Node::refreshDynamicProperties()
 {
-    setCurrentOpenGLRenderSupport( _imp->effect->supportsOpenGLRender() );
+    PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
+    if (_imp->plugin) {
+        pluginGLSupport = _imp->plugin->getPluginOpenGLRenderSupport();
+        if (_imp->plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
+            // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
+            pluginGLSupport = _imp->effect->supportsOpenGLRender();
+
+            // Ok still turned on, check the value of the opengl support knob in the Node page
+            int index = _imp->openglRenderingEnabledKnob.lock()->getValue();
+            if (index == 1) {
+                pluginGLSupport = ePluginOpenGLRenderSupportNone;
+            } else if (index == 2 && getApp()->isBackground()) {
+                pluginGLSupport = ePluginOpenGLRenderSupportNone;
+            }
+        }
+    }
+
+
+    setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canTransform = _imp->effect->getCanTransform();
@@ -3300,13 +3327,13 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Disable"), 1, false);
     assert(disableNodeKnob);
     disableNodeKnob->setAnimationEnabled(false);
-    disableNodeKnob->setDefaultValue(false);
     disableNodeKnob->setIsMetadataSlave(true);
     disableNodeKnob->setName(kDisableNodeKnobName);
     disableNodeKnob->setAddNewLine(false);
     disableNodeKnob->setHintToolTip( tr("When disabled, this node acts as a pass through.") );
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
+
 
 
     boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
@@ -3348,6 +3375,33 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
                                                "Outside of this frame range, it behaves as if the Disable parameter is checked") );
     settingsPage->addKnob(enableLifetimeNodeKnob);
     _imp->enableLifeTimeKnob = enableLifetimeNodeKnob;
+
+    PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
+    if (_imp->plugin && _imp->plugin->isOpenGLEnabled()) {
+        glSupport = _imp->plugin->getPluginOpenGLRenderSupport();
+    }
+    if (glSupport != ePluginOpenGLRenderSupportNone) {
+        boost::shared_ptr<KnobChoice> openglRenderingKnob = AppManager::createKnob<KnobChoice>(_imp->effect.get(), tr("GPU Rendering"), 1, false);
+        assert(openglRenderingKnob);
+        openglRenderingKnob->setAnimationEnabled(false);
+        {
+            std::vector<std::string> entries;
+            std::vector<std::string> helps;
+            entries.push_back("Enabled");
+            helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+            entries.push_back("Disabled");
+            helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+            entries.push_back("Disabled if background");
+            helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+            openglRenderingKnob->populateChoices(entries, helps);
+        }
+
+        openglRenderingKnob->setName("enableGPURendering");
+        openglRenderingKnob->setHintToolTip( tr("Select when to activate GPU rendering for this node") );
+        settingsPage->addKnob(openglRenderingKnob);
+        _imp->openglRenderingEnabledKnob = openglRenderingKnob;
+    }
+
 
     boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
     knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "

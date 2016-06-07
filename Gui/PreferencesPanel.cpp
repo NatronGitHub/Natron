@@ -464,14 +464,20 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     pluginsFrameLayout->addWidget(_imp->pluginsView, pluginsFrameLayout->rowCount(), 0, 1, 2);
 
     QTreeWidgetItem* treeHeader = new QTreeWidgetItem;
-
-    treeHeader->setText( COL_PLUGIN_LABEL, tr("Plugin Label") );
-    treeHeader->setText( COL_PLUGINID, tr("Plugin ID") );
-    treeHeader->setText( COL_VERSION, tr("Plugin Version") );
+    treeHeader->setToolTip(COL_PLUGIN_LABEL, tr("The label of the plug-in"));
+    treeHeader->setText( COL_PLUGIN_LABEL, tr("Label") );
+    treeHeader->setToolTip(COL_PLUGINID, tr("The ID of the plug-in"));
+    treeHeader->setText( COL_PLUGINID, tr("ID") );
+    treeHeader->setToolTip(COL_VERSION, tr("The version of the plug-in"));
+    treeHeader->setText( COL_VERSION, tr("Version") );
+    treeHeader->setToolTip(COL_ENABLED, tr("If unchecked, the user will not be able to use a node with this plug-in"));
     treeHeader->setText( COL_ENABLED, tr("Enabled") );
-    treeHeader->setText( COL_RS_ENABLED, tr("Render-Scale Enabled") );
-    treeHeader->setText( COL_MT_ENABLED, tr("Multi-threading Enabled") );
-    treeHeader->setText( COL_GL_ENABLED, tr("OpenGL Render Enabled") );
+    treeHeader->setToolTip(COL_RS_ENABLED, tr("If unchecked, renders will always be made at full image resolution for this plug-in"));
+    treeHeader->setText( COL_RS_ENABLED, tr("R-S") );
+    treeHeader->setToolTip(COL_MT_ENABLED, tr("If unchecked, there can only be a single render issued at a time for a node of this plug-in. This can alter performances a lot."));
+    treeHeader->setText( COL_MT_ENABLED, tr("M-T") );
+    treeHeader->setToolTip(COL_GL_ENABLED, tr("If unchecked, OpenGL rendering is disabled for any node with this plug-in. If the checkbox is disabled, the plug-in does not support OpenGL rendering"));
+    treeHeader->setText( COL_GL_ENABLED, tr("OpenGL") );
     _imp->pluginsView->setHeaderItem(treeHeader);
     _imp->pluginsView->setSelectionMode(QAbstractItemView::NoSelection);
 #if QT_VERSION < 0x050000
@@ -561,6 +567,10 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkbox->setChecked(plugin->isActivated());
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onGLEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_GL_ENABLED, checkbox);
+                if (plugin->getPluginOpenGLRenderSupport() == ePluginOpenGLRenderSupportNone) {
+                    checkbox->setChecked(false);
+                    checkbox->setReadOnly(true);
+                }
                 node.glCheckbox = checkbox;
             }
 

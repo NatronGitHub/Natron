@@ -2491,14 +2491,6 @@ OfxEffectInstance::supportsTiles() const
 PluginOpenGLRenderSupport
 OfxEffectInstance::supportsOpenGLRender() const
 {
-    // first, check the descriptor
-    {
-        const std::string& str = effectInstance()->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
-        if (str == "false") {
-            return ePluginOpenGLRenderSupportNone;
-        }
-    }
-    // then, check the instance
     const std::string& str = effectInstance()->getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
 
     if (str == "false") {

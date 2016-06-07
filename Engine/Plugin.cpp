@@ -312,6 +312,18 @@ Plugin::setOpenGLEnabled(bool b)
     _openglActivated = b;
 }
 
+void
+Plugin::setOpenGLRenderSupport(PluginOpenGLRenderSupport support)
+{
+    _openglRenderSupport = support;
+}
+
+PluginOpenGLRenderSupport
+Plugin::getPluginOpenGLRenderSupport() const
+{
+    return _openglRenderSupport;
+}
+
 bool
 Plugin::isActivated() const
 {

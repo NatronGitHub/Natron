@@ -907,6 +907,19 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             natronPlugin->setForInternalUseOnly(true);
         }
 
+        PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
+        {
+            const std::string& str = p->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+            if (str == "false") {
+                glSupport = ePluginOpenGLRenderSupportNone;
+            } else if (str == "needed") {
+                glSupport = ePluginOpenGLRenderSupportNeeded;
+            } else if (str == "true") {
+                glSupport = ePluginOpenGLRenderSupportYes;
+            }
+        }
+        natronPlugin->setOpenGLRenderSupport(glSupport);
+
         natronPlugin->setOfxPlugin(p);
 
         ///if this plugin's descriptor has the kTuttleOfxImageEffectPropSupportedExtensions property,

@@ -733,6 +733,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     // Enable GPU render if the plug-in cannot render another way or if all conditions are met
     else if ( glContext && ( (openGLSupport == ePluginOpenGLRenderSupportNeeded) ||
                              ( ( openGLSupport == ePluginOpenGLRenderSupportYes) && args.allowGPURendering && getApp()->getProject()->isGPURenderingEnabledInProject() ) ) ) {
+
+        if (openGLSupport == ePluginOpenGLRenderSupportNeeded && !getNode()->getPlugin()->isOpenGLEnabled()) {
+            QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+            setPersistentMessage(eMessageTypeError, message.toStdString());
+            return eRenderRoIRetCodeFailed;
+        }
+
         /*
            We only render using OpenGL if this effect is the preferred input of the calling node (to avoid recursions in the graph
            since we do not use the cache for textures)

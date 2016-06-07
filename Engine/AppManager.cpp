@@ -1281,6 +1281,9 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
     node->getPluginShortcuts(&shortcuts);
     p->setShorcuts(shortcuts);
 
+    PluginOpenGLRenderSupport glSupport = node->supportsOpenGLRender();
+    p->setOpenGLRenderSupport(glSupport);
+
     if (internalUseOnly) {
         p->setForInternalUseOnly(true);
     }
