@@ -90,9 +90,6 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 	qmake -r -spec unsupported/macx-clang-libc++ QMAKE_CC=gcc QMAKE_CXX=g++ CONFIG+="debug $BREAKPAD $SILENT";
     else
 	qmake -r -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD $SILENT";
-	# for testing puposes, do not build hoedown and Tests with silent
-	(cd libs/hoedown; qmake -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD")
-	(cd Tests; qmake -spec unsupported/macx-clang-libc++ CONFIG+="debug $BREAKPAD")
     fi
     export MAKEFLAGS="$J" # qmake doesn't seem to pass MAKEFLAGS for recursive builds
     make $J -C libs/gflags
