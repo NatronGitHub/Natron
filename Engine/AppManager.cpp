@@ -1795,22 +1795,6 @@ AppManager::getPluginsList() const
     return _imp->_plugins;
 }
 
-QMutex*
-AppManager::getMutexForPlugin(const QString & pluginId,
-                              int major,
-                              int /*minor*/) const
-{
-    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( ( (*it2)->getPluginID() == pluginId ) && ( (*it2)->getMajorVersion() == major ) ) {
-                return (*it2)->getPluginLock();
-            }
-        }
-    }
-    std::string exc("Couldn't find a plugin named ");
-    exc.append( pluginId.toStdString() );
-    throw std::invalid_argument(exc);
-}
 
 const std::vector<Format> &
 AppManager::getFormats() const

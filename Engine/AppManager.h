@@ -172,7 +172,6 @@ public:
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
     AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
-    QMutex* getMutexForPlugin(const QString & pluginId, int major, int minor) const WARN_UNUSED_RETURN;
     Plugin* getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
