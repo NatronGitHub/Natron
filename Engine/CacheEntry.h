@@ -74,7 +74,7 @@ public:
 
     RamBuffer()
         : data(0)
-          , count(0)
+        , count(0)
     {
     }
 
@@ -158,9 +158,9 @@ public:
 
     Buffer()
         : _path()
-          , _buffer()
-          , _backingFile()
-          , _storageMode(eStorageModeRAM)
+        , _buffer()
+        , _backingFile()
+        , _storageMode(eStorageModeRAM)
     {
     }
 
@@ -247,7 +247,7 @@ public:
                                       type,
                                       format,
                                       internalFormat,
-                                      glType));
+                                      glType) );
 
 
         TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);
@@ -603,11 +603,11 @@ public:
      **/
     CacheEntryHelper()
         : _key()
-          , _params()
-          , _data()
-          , _cache()
-          , _entryLock(QReadWriteLock::Recursive)
-          , _removeBackingFileBeforeDestruction(false)
+        , _params()
+        , _data()
+        , _cache()
+        , _entryLock(QReadWriteLock::Recursive)
+        , _removeBackingFileBeforeDestruction(false)
     {
     }
 
@@ -621,11 +621,11 @@ public:
                      const boost::shared_ptr<ParamsType> & params,
                      const CacheAPI* cache)
         : _key(key)
-          , _params(params)
-          , _data()
-          , _cache(cache)
-          , _entryLock(QReadWriteLock::Recursive)
-          , _removeBackingFileBeforeDestruction(false)
+        , _params(params)
+        , _data()
+        , _cache(cache)
+        , _entryLock(QReadWriteLock::Recursive)
+        , _removeBackingFileBeforeDestruction(false)
     {
     }
 

@@ -77,16 +77,16 @@ public:
                     bool refreshGui = true,
                     QUndoCommand *parent = 0)
         : QUndoCommand(parent)
-          , _dimension(dimension)
-          , _oldValue()
-          , _newValue()
-          , _knob(knob)
-          , _valueChangedReturnCode(1)
-          , _newKeys(1)
-          , _oldKeys(1)
-          , _merge(true)
-          , _refreshGuiFirstTime(refreshGui)
-          , _firstRedoCalled(false)
+        , _dimension(dimension)
+        , _oldValue()
+        , _newValue()
+        , _knob(knob)
+        , _valueChangedReturnCode(1)
+        , _newKeys(1)
+        , _oldKeys(1)
+        , _merge(true)
+        , _refreshGuiFirstTime(refreshGui)
+        , _firstRedoCalled(false)
     {
         _oldValue.push_back(oldValue);
         _newValue.push_back(newValue);
@@ -100,16 +100,16 @@ public:
                     bool refreshGui = true,
                     QUndoCommand *parent = 0)
         : QUndoCommand(parent)
-          , _dimension(-1)
-          , _oldValue(oldValue)
-          , _newValue(newValue)
-          , _knob(knob)
-          , _valueChangedReturnCode( oldValue.size() )
-          , _newKeys( oldValue.size() )
-          , _oldKeys( oldValue.size() )
-          , _merge(true)
-          , _refreshGuiFirstTime(refreshGui)
-          , _firstRedoCalled(false)
+        , _dimension(-1)
+        , _oldValue(oldValue)
+        , _newValue(newValue)
+        , _knob(knob)
+        , _valueChangedReturnCode( oldValue.size() )
+        , _newKeys( oldValue.size() )
+        , _oldKeys( oldValue.size() )
+        , _merge(true)
+        , _refreshGuiFirstTime(refreshGui)
+        , _firstRedoCalled(false)
     {
     }
 

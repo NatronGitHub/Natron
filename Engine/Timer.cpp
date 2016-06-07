@@ -129,11 +129,11 @@ Timer::printAsTime(const double timeInSeconds,
 
 Timer::Timer ()
     : playState (ePlayStateRunning),
-      _spf (1 / 24.0),
-      _timingError (0),
-      _framesSinceLastFpsFrame (0),
-      _actualFrameRate (0),
-      _mutex(new QMutex)
+    _spf (1 / 24.0),
+    _timingError (0),
+    _framesSinceLastFpsFrame (0),
+    _actualFrameRate (0),
+    _mutex(new QMutex)
 {
     gettimeofday (&_lastFrameTime, 0);
     _lastFpsFrameTime = _lastFrameTime;

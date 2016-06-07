@@ -52,14 +52,14 @@ struct KnobGuiTablePrivate
 
     KnobGuiTablePrivate()
         : mainContainer(0)
-          , table(0)
-          , model(0)
-          , addPathButton(0)
-          , removePathButton(0)
-          , editPathButton(0)
-          , isInsertingItem(false)
-          , items()
-          , dragAndDropping(false)
+        , table(0)
+        , model(0)
+        , addPathButton(0)
+        , removePathButton(0)
+        , editPathButton(0)
+        , isInsertingItem(false)
+        , items()
+        , dragAndDropping(false)
     {
     }
 };
@@ -67,7 +67,7 @@ struct KnobGuiTablePrivate
 KnobGuiTable::KnobGuiTable(KnobPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
-      , _imp( new KnobGuiTablePrivate() )
+    , _imp( new KnobGuiTablePrivate() )
 {
 }
 
@@ -110,8 +110,8 @@ private:
 KnobTableItemDelegate::KnobTableItemDelegate(const boost::shared_ptr<KnobTable>& knob,
                                              TableView* view)
     : QStyledItemDelegate(view)
-      , _view(view)
-      , _knob(knob)
+    , _view(view)
+    , _knob(knob)
 {
 }
 
@@ -187,9 +187,9 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     _imp->table = new TableView(_imp->mainContainer);
-    QObject::connect( _imp->table, SIGNAL(aboutToDrop()), this, SLOT(onItemAboutToDrop()) );
-    QObject::connect( _imp->table, SIGNAL(itemDropped()), this, SLOT(onItemDropped()) );
-    QObject::connect( _imp->table, SIGNAL(itemDoubleClicked(TableItem*)), this, SLOT(onItemDoubleClicked(TableItem*)) );
+    QObject::connect( _imp->table, SIGNAL( aboutToDrop() ), this, SLOT( onItemAboutToDrop() ) );
+    QObject::connect( _imp->table, SIGNAL( itemDropped() ), this, SLOT( onItemDropped() ) );
+    QObject::connect( _imp->table, SIGNAL( itemDoubleClicked(TableItem*) ), this, SLOT( onItemDoubleClicked(TableItem*) ) );
 
     layout->parentWidget()->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
@@ -207,7 +207,7 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     _imp->table->setItemDelegate( new KnobTableItemDelegate(knob, _imp->table) );
 
     _imp->model = new TableModel(0, 0, _imp->table);
-    QObject::connect( _imp->model, SIGNAL(s_itemChanged(TableItem*)), this, SLOT(onItemDataChanged(TableItem*)) );
+    QObject::connect( _imp->model, SIGNAL( s_itemChanged(TableItem*) ), this, SLOT( onItemDataChanged(TableItem*) ) );
 
 
     _imp->table->setTableModel(_imp->model);
@@ -232,14 +232,14 @@ KnobGuiTable::createWidget(QHBoxLayout* layout)
     _imp->addPathButton = new Button( tr("Add..."), buttonsContainer );
     _imp->addPathButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add a new value"), Qt::WhiteSpaceNormal) );
 
-    QObject::connect( _imp->addPathButton, SIGNAL(clicked()), this, SLOT(onAddButtonClicked()) );
+    QObject::connect( _imp->addPathButton, SIGNAL( clicked() ), this, SLOT( onAddButtonClicked() ) );
 
     _imp->removePathButton = new Button( tr("Remove"), buttonsContainer);
-    QObject::connect( _imp->removePathButton, SIGNAL(clicked()), this, SLOT(onRemoveButtonClicked()) );
+    QObject::connect( _imp->removePathButton, SIGNAL( clicked() ), this, SLOT( onRemoveButtonClicked() ) );
     _imp->removePathButton->setToolTip( GuiUtils::convertFromPlainText(tr("Remove selected values"), Qt::WhiteSpaceNormal) );
 
     _imp->editPathButton = new Button( tr("Edit..."), buttonsContainer);
-    QObject::connect( _imp->editPathButton, SIGNAL(clicked()), this, SLOT(onEditButtonClicked()) );
+    QObject::connect( _imp->editPathButton, SIGNAL( clicked() ), this, SLOT( onEditButtonClicked() ) );
     _imp->editPathButton->setToolTip( GuiUtils::convertFromPlainText(tr("Click to edit seleted value."), Qt::WhiteSpaceNormal) );
 
 

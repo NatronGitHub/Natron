@@ -39,8 +39,8 @@ struct ScriptObjectPrivate
 
     ScriptObjectPrivate()
         : nameMutex()
-          , name()
-          , label()
+        , name()
+        , label()
     {
     }
 };

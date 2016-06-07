@@ -74,18 +74,18 @@ struct CurvePrivate
     CurvePrivate()
         : keyFrames()
 #ifdef NATRON_CURVE_USE_CACHE
-          , resultCache()
+        , resultCache()
 #endif
-          , owner(NULL)
-          , dimensionInOwner(-1)
-          , type(eCurveTypeDouble)
-          , xMin(INT_MIN)
-          , xMax(INT_MAX)
-          , yMin(INT_MIN)
-          , yMax(INT_MAX)
-          , _lock(QMutex::Recursive)
-          , isParametric(false)
-          , hasYRange(false)
+        , owner(NULL)
+        , dimensionInOwner(-1)
+        , type(eCurveTypeDouble)
+        , xMin(INT_MIN)
+        , xMax(INT_MAX)
+        , yMin(INT_MIN)
+        , yMax(INT_MAX)
+        , _lock(QMutex::Recursive)
+        , isParametric(false)
+        , hasYRange(false)
     {
     }
 

@@ -87,51 +87,51 @@ struct HistogramPrivate
 public:
     HistogramPrivate(Histogram* widget)
         : mainLayout(NULL)
-          , rightClickMenu(NULL)
-          , histogramSelectionMenu(NULL)
-          , histogramSelectionGroup(NULL)
-          , viewerCurrentInputMenu(NULL)
-          , viewerCurrentInputGroup(NULL)
-          , modeActions(0)
-          , modeMenu(NULL)
-          , fullImage(NULL)
-          , filterActions(0)
-          , filterMenu(NULL)
-          , widget(widget)
-          , mode(Histogram::eDisplayModeRGB)
-          , oldClick()
-          , zoomCtx()
-          , state(eEventStateNone)
-          , hasBeenModifiedSinceResize(false)
-          , _baseAxisColor(118, 215, 90, 255)
-          , _scaleColor(67, 123, 52, 255)
-          , _font(appFont, appFontSize)
-          , textRenderer()
-          , drawCoordinates(false)
-          , xCoordinateStr()
-          , rValueStr()
-          , gValueStr()
-          , bValueStr()
-          , filterSize(0)
+        , rightClickMenu(NULL)
+        , histogramSelectionMenu(NULL)
+        , histogramSelectionGroup(NULL)
+        , viewerCurrentInputMenu(NULL)
+        , viewerCurrentInputGroup(NULL)
+        , modeActions(0)
+        , modeMenu(NULL)
+        , fullImage(NULL)
+        , filterActions(0)
+        , filterMenu(NULL)
+        , widget(widget)
+        , mode(Histogram::eDisplayModeRGB)
+        , oldClick()
+        , zoomCtx()
+        , state(eEventStateNone)
+        , hasBeenModifiedSinceResize(false)
+        , _baseAxisColor(118, 215, 90, 255)
+        , _scaleColor(67, 123, 52, 255)
+        , _font(appFont, appFontSize)
+        , textRenderer()
+        , drawCoordinates(false)
+        , xCoordinateStr()
+        , rValueStr()
+        , gValueStr()
+        , bValueStr()
+        , filterSize(0)
 #ifdef NATRON_HISTOGRAM_USING_OPENGL
-          , histogramComputingShader()
-          , histogramMaximumShader()
-          , histogramRenderingShader()
+        , histogramComputingShader()
+        , histogramMaximumShader()
+        , histogramRenderingShader()
 #else
-          , histogramThread()
-          , histogram1()
-          , histogram2()
-          , histogram3()
-          , pixelsCount(0)
-          , vmin(0)
-          , vmax(0)
-          , binsCount(0)
-          , mipMapLevel(0)
-          , hasImage(false)
+        , histogramThread()
+        , histogram1()
+        , histogram2()
+        , histogram3()
+        , pixelsCount(0)
+        , vmin(0)
+        , vmax(0)
+        , binsCount(0)
+        , mipMapLevel(0)
+        , hasImage(false)
 #endif
-          , sizeH()
-          , showViewerPicker(false)
-          , viewerPickerColor()
+        , sizeH()
+        , showViewerPicker(false)
+        , viewerPickerColor()
     {
     }
 
@@ -278,8 +278,8 @@ public:
 Histogram::Histogram(Gui* gui,
                      const QGLWidget* shareWidget)
     : QGLWidget(gui, shareWidget)
-      , PanelWidget(this, gui)
-      , _imp( new HistogramPrivate(this) )
+    , PanelWidget(this, gui)
+    , _imp( new HistogramPrivate(this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -287,7 +287,7 @@ Histogram::Histogram(Gui* gui,
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
 #ifndef NATRON_HISTOGRAM_USING_OPENGL
-    QObject::connect( &_imp->histogramThread, SIGNAL(histogramProduced()), this, SLOT(onCPUHistogramComputed()) );
+    QObject::connect( &_imp->histogramThread, SIGNAL( histogramProduced() ), this, SLOT( onCPUHistogramComputed() ) );
 #endif
 
 //    QDesktopWidget* desktop = QApplication::desktop();
@@ -314,7 +314,7 @@ Histogram::Histogram(Gui* gui,
     inputAAction->setData(0);
     inputAAction->setCheckable(true);
     inputAAction->setChecked(true);
-    QObject::connect( inputAAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
+    QObject::connect( inputAAction, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
     _imp->viewerCurrentInputGroup->addAction(inputAAction);
     _imp->viewerCurrentInputMenu->addAction(inputAAction);
 
@@ -323,7 +323,7 @@ Histogram::Histogram(Gui* gui,
     inputBAction->setData(1);
     inputBAction->setCheckable(true);
     inputBAction->setChecked(false);
-    QObject::connect( inputBAction, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
+    QObject::connect( inputBAction, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
     _imp->viewerCurrentInputGroup->addAction(inputBAction);
     _imp->viewerCurrentInputMenu->addAction(inputBAction);
 
@@ -335,7 +335,7 @@ Histogram::Histogram(Gui* gui,
     _imp->fullImage->setText( tr("Full image") );
     _imp->fullImage->setCheckable(true);
     _imp->fullImage->setChecked(false);
-    QObject::connect( _imp->fullImage, SIGNAL(triggered()), this, SLOT(computeHistogramAndRefresh()) );
+    QObject::connect( _imp->fullImage, SIGNAL( triggered() ), this, SLOT( computeHistogramAndRefresh() ) );
     _imp->rightClickMenu->addAction(_imp->fullImage);
 
     _imp->filterMenu = new Menu(tr("Smoothing"), _imp->rightClickMenu);
@@ -377,7 +377,7 @@ Histogram::Histogram(Gui* gui,
         _imp->modeMenu->addAction( actions.at(i) );
     }
 
-    QObject::connect( _imp->modeActions, SIGNAL(triggered(QAction*)), this, SLOT(onDisplayModeChanged(QAction*)) );
+    QObject::connect( _imp->modeActions, SIGNAL( triggered(QAction*) ), this, SLOT( onDisplayModeChanged(QAction*) ) );
 
 
     _imp->filterActions = new QActionGroup(_imp->filterMenu);
@@ -407,8 +407,8 @@ Histogram::Histogram(Gui* gui,
         _imp->filterMenu->addAction( actions.at(i) );
     }
 
-    QObject::connect( _imp->filterActions, SIGNAL(triggered(QAction*)), this, SLOT(onFilterChanged(QAction*)) );
-    QObject::connect( getGui(), SIGNAL(viewersChanged()), this, SLOT(populateViewersChoices()) );
+    QObject::connect( _imp->filterActions, SIGNAL( triggered(QAction*) ), this, SLOT( onFilterChanged(QAction*) ) );
+    QObject::connect( getGui(), SIGNAL( viewersChanged() ), this, SLOT( populateViewersChoices() ) );
     populateViewersChoices();
 }
 
@@ -588,7 +588,7 @@ Histogram::populateViewersChoices()
     }
     _imp->histogramSelectionGroup->blockSignals(false);
 
-    QObject::connect( _imp->histogramSelectionGroup, SIGNAL(triggered(QAction*)), this, SLOT(onCurrentViewerChanged(QAction*)) );
+    QObject::connect( _imp->histogramSelectionGroup, SIGNAL( triggered(QAction*) ), this, SLOT( onCurrentViewerChanged(QAction*) ) );
 } // populateViewersChoices
 
 void
@@ -674,7 +674,7 @@ Histogram::initializeGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     appPTR->initializeOpenGLFunctionsOnce();
 
-    if (!appPTR->isOpenGLLoaded()) {
+    if ( !appPTR->isOpenGLLoaded() ) {
         return;
     }
 
@@ -1136,7 +1136,7 @@ Histogram::paintGL()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    if (!appPTR->isOpenGLLoaded()) {
+    if ( !appPTR->isOpenGLLoaded() ) {
         return;
     }
 
@@ -1209,7 +1209,7 @@ Histogram::resizeGL(int width,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
-    if (!appPTR->isOpenGLLoaded()) {
+    if ( !appPTR->isOpenGLLoaded() ) {
         return;
     }
 

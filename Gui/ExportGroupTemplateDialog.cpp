@@ -63,7 +63,7 @@ public:
 
     PlaceHolderTextEdit(QWidget* parent)
         : QTextEdit(parent)
-          , placeHolder()
+        , placeHolder()
     {
     }
 
@@ -131,22 +131,22 @@ struct ExportGroupTemplateDialogPrivate
     ExportGroupTemplateDialogPrivate(NodeCollection* group,
                                      Gui* gui)
         : gui(gui)
-          , group(group)
-          , mainLayout(0)
-          , labelLabel(0)
-          , labelEdit(0)
-          , idLabel(0)
-          , idEdit(0)
-          , groupingLabel(0)
-          , groupingEdit(0)
-          , fileLabel(0)
-          , fileEdit(0)
-          , openButton(0)
-          , iconPathLabel(0)
-          , iconPath(0)
-          , descriptionLabel(0)
-          , descriptionEdit(0)
-          , buttons(0)
+        , group(group)
+        , mainLayout(0)
+        , labelLabel(0)
+        , labelEdit(0)
+        , idLabel(0)
+        , idEdit(0)
+        , groupingLabel(0)
+        , groupingEdit(0)
+        , fileLabel(0)
+        , fileEdit(0)
+        , openButton(0)
+        , iconPathLabel(0)
+        , iconPath(0)
+        , descriptionLabel(0)
+        , descriptionEdit(0)
+        , buttons(0)
     {
     }
 };
@@ -155,7 +155,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
                                                      Gui* gui,
                                                      QWidget* parent)
     : QDialog(parent)
-      , _imp( new ExportGroupTemplateDialogPrivate(group, gui) )
+    , _imp( new ExportGroupTemplateDialogPrivate(group, gui) )
 {
     _imp->mainLayout = new QGridLayout(this);
 
@@ -179,7 +179,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->labelLabel->setToolTip(labelTt);
     _imp->labelEdit = new LineEdit(this);
     _imp->labelEdit->setPlaceholderText( QString::fromUtf8("MyPlugin") );
-    QObject::connect( _imp->labelEdit, SIGNAL(editingFinished()), this, SLOT(onLabelEditingFinished()) );
+    QObject::connect( _imp->labelEdit, SIGNAL( editingFinished() ), this, SLOT( onLabelEditingFinished() ) );
     _imp->labelEdit->setToolTip(labelTt);
 
 
@@ -222,12 +222,12 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->openButton = new Button(QIcon(openPix), QString(), this);
     _imp->openButton->setFocusPolicy(Qt::NoFocus);
     _imp->openButton->setFixedSize(NATRON_MEDIUM_BUTTON_SIZE, NATRON_MEDIUM_BUTTON_SIZE);
-    QObject::connect( _imp->openButton, SIGNAL(clicked()), this, SLOT(onButtonClicked()) );
+    QObject::connect( _imp->openButton, SIGNAL( clicked() ), this, SLOT( onButtonClicked() ) );
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel),
                                          Qt::Horizontal, this);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( onOkClicked() ) );
+    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
 
 
     _imp->mainLayout->addWidget(_imp->idLabel, 0, 0, 1, 1);

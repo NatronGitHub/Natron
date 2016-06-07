@@ -92,21 +92,21 @@ struct SpinBoxPrivate
 
     SpinBoxPrivate(SpinBox::SpinBoxTypeEnum type)
         : type(type)
-          , ms(eSpinBoxMouseStateIdle)
-          , decimals(2)
-          , increment(1.0)
-          , currentDelta(0)
-          , mini()
-          , maxi()
-          , doubleValidator(0)
-          , intValidator(0)
-          , valueWhenEnteringFocus()
-          , hasChangedSinceLastValidation(false)
-          , valueAfterLastValidation(0)
-          , valueInitialized(false)
-          , useLineColor(false)
-          , lineColor(Qt::black)
-          , customValidator(0)
+        , ms(eSpinBoxMouseStateIdle)
+        , decimals(2)
+        , increment(1.0)
+        , currentDelta(0)
+        , mini()
+        , maxi()
+        , doubleValidator(0)
+        , intValidator(0)
+        , valueWhenEnteringFocus()
+        , hasChangedSinceLastValidation(false)
+        , valueAfterLastValidation(0)
+        , valueInitialized(false)
+        , useLineColor(false)
+        , lineColor(Qt::black)
+        , customValidator(0)
     {
     }
 
@@ -116,12 +116,12 @@ struct SpinBoxPrivate
 SpinBox::SpinBox(QWidget* parent,
                  SpinBoxTypeEnum type)
     : LineEdit(parent)
-      , animation(0)
-      , dirty(false)
-      , ignoreWheelEvent(false)
-      , _imp( new SpinBoxPrivate(type) )
+    , animation(0)
+    , dirty(false)
+    , ignoreWheelEvent(false)
+    , _imp( new SpinBoxPrivate(type) )
 {
-    QObject::connect( this, SIGNAL(returnPressed()), this, SLOT(interpretReturn()) );
+    QObject::connect( this, SIGNAL( returnPressed() ), this, SLOT( interpretReturn() ) );
 
     setValue(0);
     setMaximumWidth( TO_DPIX(SPINBOX_MAX_WIDTH) );
@@ -982,9 +982,9 @@ KnobSpinBox::KnobSpinBox(QWidget* parent,
                          const KnobGuiPtr& knob,
                          int dimension)
     : SpinBox(parent, type)
-      , knob(knob)
-      , dimension(dimension)
-      , _dnd( new KnobWidgetDnD(knob, dimension, this) )
+    , knob(knob)
+    , dimension(dimension)
+    , _dnd( new KnobWidgetDnD(knob, dimension, this) )
 {
 }
 

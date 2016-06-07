@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-CLANG_DIAG_OFF(deprecated)
+    CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QtGlobal>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtCore/QFutureWatcher>
@@ -149,16 +149,16 @@ ViewerInstance::BuildEffect(NodePtr n)
 
 ViewerInstance::ViewerInstance(NodePtr node)
     : OutputEffectInstance(node)
-      , _imp( new ViewerInstancePrivate(this) )
+    , _imp( new ViewerInstancePrivate(this) )
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 
-    QObject::connect( this, SIGNAL(disconnectTextureRequest(int)), this, SLOT(executeDisconnectTextureRequestOnMainThread(int)) );
-    QObject::connect( _imp.get(), SIGNAL(mustRedrawViewer()), this, SLOT(redrawViewer()) );
-    QObject::connect( this, SIGNAL(s_callRedrawOnMainThread()), this, SLOT(redrawViewer()) );
+    QObject::connect( this, SIGNAL( disconnectTextureRequest(int) ), this, SLOT( executeDisconnectTextureRequestOnMainThread(int) ) );
+    QObject::connect( _imp.get(), SIGNAL( mustRedrawViewer() ), this, SLOT( redrawViewer() ) );
+    QObject::connect( this, SIGNAL( s_callRedrawOnMainThread() ), this, SLOT( redrawViewer() ) );
 }
 
 ViewerInstance::~ViewerInstance()
@@ -368,9 +368,9 @@ public:
                                    bool draftMode,
                                    const boost::shared_ptr<RenderStats>& stats)
         : ParallelRenderArgsSetter(time, view, isRenderUserInteraction, isSequential, abortInfo, treeRoot, textureIndex, timeline, rotoPaintNode, isAnalysis, draftMode, stats)
-          , rotoNode(rotoPaintNode)
-          , viewerNode(treeRoot)
-          , viewerInputNode()
+        , rotoNode(rotoPaintNode)
+        , viewerNode(treeRoot)
+        , viewerInputNode()
     {
         ///There can be a case where the viewer input tree does not belong to the project, for example
         ///for the File Dialog preview.

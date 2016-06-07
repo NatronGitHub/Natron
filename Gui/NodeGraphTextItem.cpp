@@ -45,8 +45,8 @@ NodeGraphTextItem::NodeGraphTextItem(NodeGraph* graph,
                                      QGraphicsItem* parent,
                                      bool alwaysDrawText)
     : QGraphicsTextItem(parent)
-      , _graph(graph)
-      , _alwaysDrawText(alwaysDrawText)
+    , _graph(graph)
+    , _alwaysDrawText(alwaysDrawText)
 {
     QFont f = font();
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
@@ -89,8 +89,8 @@ NodeGraphSimpleTextItem::NodeGraphSimpleTextItem(NodeGraph* graph,
                                                  QGraphicsItem* parent,
                                                  bool alwaysDrawText)
     : QGraphicsSimpleTextItem(parent)
-      , _graph(graph)
-      , _alwaysDrawText(alwaysDrawText)
+    , _graph(graph)
+    , _alwaysDrawText(alwaysDrawText)
 {
     QFont f = font();
     bool antialias = appPTR->getCurrentSettings()->isNodeGraphAntiAliasingEnabled();
@@ -132,7 +132,7 @@ NodeGraphSimpleTextItem::paint(QPainter *painter,
 NodeGraphPixmapItem::NodeGraphPixmapItem(NodeGraph* graph,
                                          QGraphicsItem* parent)
     : QGraphicsPixmapItem(parent)
-      , _graph(graph)
+    , _graph(graph)
 {
 }
 

@@ -89,7 +89,6 @@ struct PluginTreeNode
 typedef std::list<PluginTreeNode> PluginTreeNodeList;
 
 
-
 struct GuiBoundAction
 {
     QTreeWidgetItem* item;
@@ -116,17 +115,17 @@ mouseShortcutToString(const Qt::KeyboardModifiers & modifiers,
     QString ret = makeKeySequence(modifiers, (Qt::Key)0).toString(QKeySequence::NativeText);
 
     switch (button) {
-        case Qt::LeftButton:
-            ret.append( QCoreApplication::translate("ShortCutEditor", "LeftButton") );
-            break;
-        case Qt::MiddleButton:
-            ret.append( QCoreApplication::translate("ShortCutEditor", "MiddleButton") );
-            break;
-        case Qt::RightButton:
-            ret.append( QCoreApplication::translate("ShortCutEditor", "RightButton") );
-            break;
-        default:
-            break;
+    case Qt::LeftButton:
+        ret.append( QCoreApplication::translate("ShortCutEditor", "LeftButton") );
+        break;
+    case Qt::MiddleButton:
+        ret.append( QCoreApplication::translate("ShortCutEditor", "MiddleButton") );
+        break;
+    case Qt::RightButton:
+        ret.append( QCoreApplication::translate("ShortCutEditor", "RightButton") );
+        break;
+    default:
+        break;
     }
 
     return ret;
@@ -136,12 +135,12 @@ typedef std::list<GuiShortCutGroup> GuiAppShorcuts;
 
 ///A small hack to the QTreeWidget class to make 2 fuctions public so we can use them in the ShortcutDelegate class
 class HackedTreeWidget
-: public QTreeWidget
+    : public QTreeWidget
 {
 public:
 
     HackedTreeWidget(QWidget* parent)
-    : QTreeWidget(parent)
+        : QTreeWidget(parent)
     {
     }
 
@@ -156,7 +155,6 @@ public:
         return itemFromIndex(index);
     }
 };
-
 
 
 static void
@@ -232,15 +230,15 @@ setItemShortCutText(QTreeWidgetItem* item,
 }
 
 class ShortcutDelegate
-: public QStyledItemDelegate
+    : public QStyledItemDelegate
 {
     HackedTreeWidget* tree;
 
 public:
 
     ShortcutDelegate(HackedTreeWidget* parent)
-    : QStyledItemDelegate(parent)
-    , tree(parent)
+        : QStyledItemDelegate(parent)
+        , tree(parent)
     {
     }
 
@@ -249,11 +247,8 @@ private:
     virtual void paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const OVERRIDE FINAL;
 };
 
-
-
 struct PreferencesPanelPrivate
 {
-
     Q_DECLARE_TR_FUNCTIONS(PreferencesPanel)
 
 public:
@@ -261,12 +256,10 @@ public:
     PreferencesPanel* _p;
     Gui* gui;
     QVBoxLayout* mainLayout;
-
     Splitter* splitter;
     QTreeWidget* tree;
     std::vector<PreferenceTab> tabs;
     int currentTabIndex;
-
     QDialogButtonBox* buttonBox;
     Button* restoreDefaultsB;
     Button* prefsHelp;
@@ -275,12 +268,10 @@ public:
     std::vector<KnobI*> changedKnobs;
     bool pluginSettingsChanged;
     bool closeIsOK;
-
     Label* pluginFilterLabel;
     LineEdit* pluginFilterEdit;
     QTreeWidget* pluginsView;
     PluginTreeNodeList pluginsList;
-
     QFrame* shortcutsFrame;
     QVBoxLayout* shortcutsLayout;
     HackedTreeWidget* shortcutsTree;
@@ -301,45 +292,45 @@ public:
     GuiAppShorcuts appShortcuts;
 
 
-    PreferencesPanelPrivate(PreferencesPanel* p, Gui *parent)
-    : _p(p)
-    , gui(parent)
-    , mainLayout(0)
-    , splitter(0)
-    , tree(0)
-    , tabs()
-    , currentTabIndex(-1)
-    , buttonBox(0)
-    , restoreDefaultsB(0)
-    , prefsHelp(0)
-    , cancelB(0)
-    , okB(0)
-    , changedKnobs(0)
-    , pluginSettingsChanged(false)
-    , closeIsOK(false)
-    , pluginFilterLabel(0)
-    , pluginFilterEdit(0)
-    , pluginsView(0)
-    , pluginsList()
-    , shortcutsFrame(0)
-    , shortcutsLayout(0)
-    , shortcutsTree(0)
-    , shortcutGroup(0)
-    , shortcutGroupLayout(0)
-    , shortcutLabel(0)
-    , shortcutEditor(0)
-    , altShortcutGroup(0)
-    , altShortcutGroupLayout(0)
-    , altShortcutLabel(0)
-    , altShortcutEditor(0)
-    , validateShortcutButton(0)
-    , clearShortcutButton(0)
-    , resetShortcutButton(0)
-    , shortcutButtonsContainer(0)
-    , restoreShortcutsDefaultsButton(0)
-    , appShortcuts()
+    PreferencesPanelPrivate(PreferencesPanel* p,
+                            Gui *parent)
+        : _p(p)
+        , gui(parent)
+        , mainLayout(0)
+        , splitter(0)
+        , tree(0)
+        , tabs()
+        , currentTabIndex(-1)
+        , buttonBox(0)
+        , restoreDefaultsB(0)
+        , prefsHelp(0)
+        , cancelB(0)
+        , okB(0)
+        , changedKnobs(0)
+        , pluginSettingsChanged(false)
+        , closeIsOK(false)
+        , pluginFilterLabel(0)
+        , pluginFilterEdit(0)
+        , pluginsView(0)
+        , pluginsList()
+        , shortcutsFrame(0)
+        , shortcutsLayout(0)
+        , shortcutsTree(0)
+        , shortcutGroup(0)
+        , shortcutGroupLayout(0)
+        , shortcutLabel(0)
+        , shortcutEditor(0)
+        , altShortcutGroup(0)
+        , altShortcutGroupLayout(0)
+        , altShortcutLabel(0)
+        , altShortcutEditor(0)
+        , validateShortcutButton(0)
+        , clearShortcutButton(0)
+        , resetShortcutButton(0)
+        , shortcutButtonsContainer(0)
+        , restoreShortcutsDefaultsButton(0)
+        , appShortcuts()
     {
-        
     }
 
     void createPreferenceTab(const KnobPageGuiPtr& page, PreferenceTab* tab);
@@ -347,7 +338,6 @@ public:
     void setVisiblePage(int index);
 
     PluginTreeNodeList::iterator buildPluginGroupHierarchy(const QStringList& grouping);
-
     BoundAction* getActionForTreeItem(QTreeWidgetItem* item) const
     {
         for (GuiAppShorcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
@@ -371,15 +361,13 @@ public:
 
 PreferencesPanel::PreferencesPanel(Gui *parent)
     : QWidget(parent)
-      , KnobGuiContainerHelper(appPTR->getCurrentSettings().get(), boost::shared_ptr<QUndoStack>())
-      , _imp(new PreferencesPanelPrivate(this, parent))
+    , KnobGuiContainerHelper( appPTR->getCurrentSettings().get(), boost::shared_ptr<QUndoStack>() )
+    , _imp( new PreferencesPanelPrivate(this, parent) )
 {
-
 }
 
 PreferencesPanel::~PreferencesPanel()
 {
-    
 }
 
 PluginTreeNodeList::iterator
@@ -454,11 +442,10 @@ PreferencesPanelPrivate::buildPluginGroupHierarchy(const QStringList& groupingSp
 void
 PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
 {
-
     _imp->pluginsView = new QTreeWidget(this);
     _imp->pluginsView->setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-    Label* restartWarningLabel = new Label(tr("<i>Changing any plug-in property requires a restart of %1</i>").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)), this);
+    Label* restartWarningLabel = new Label(tr("<i>Changing any plug-in property requires a restart of %1</i>").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), this);
     pluginsFrameLayout->addWidget(restartWarningLabel, pluginsFrameLayout->rowCount(), 0, 1, 2);
 
     _imp->pluginFilterLabel = new Label(tr("Plugin Filter"), this);
@@ -471,18 +458,19 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
     int row = pluginsFrameLayout->rowCount();
     pluginsFrameLayout->addWidget(_imp->pluginFilterLabel, row, 0, 1, 1);
     pluginsFrameLayout->addWidget(_imp->pluginFilterEdit, row, 1, 1, 1);
-    connect( _imp->pluginFilterEdit, SIGNAL(textChanged(QString)), this, SLOT(filterPlugins(QString)) );
+    connect( _imp->pluginFilterEdit, SIGNAL( textChanged(QString) ), this, SLOT( filterPlugins(QString) ) );
 
     pluginsFrameLayout->addWidget(_imp->pluginsView, pluginsFrameLayout->rowCount(), 0, 1, 2);
 
     QTreeWidgetItem* treeHeader = new QTreeWidgetItem;
-    treeHeader->setText(COL_PLUGIN_LABEL, tr("Plugin Label") );
-    treeHeader->setText(COL_PLUGINID, tr("Plugin ID") );
-    treeHeader->setText(COL_VERSION, tr("Plugin Version") );
-    treeHeader->setText(COL_ENABLED, tr("Enabled"));
-    treeHeader->setText(COL_RS_ENABLED, tr("Render-Scale Enabled"));
-    treeHeader->setText(COL_MT_ENABLED, tr("Multi-threading Enabled"));
-    treeHeader->setText(COL_GL_ENABLED, tr("OpenGL Render Enabled"));
+
+    treeHeader->setText( COL_PLUGIN_LABEL, tr("Plugin Label") );
+    treeHeader->setText( COL_PLUGINID, tr("Plugin ID") );
+    treeHeader->setText( COL_VERSION, tr("Plugin Version") );
+    treeHeader->setText( COL_ENABLED, tr("Enabled") );
+    treeHeader->setText( COL_RS_ENABLED, tr("Render-Scale Enabled") );
+    treeHeader->setText( COL_MT_ENABLED, tr("Multi-threading Enabled") );
+    treeHeader->setText( COL_GL_ENABLED, tr("OpenGL Render Enabled") );
     _imp->pluginsView->setHeaderItem(treeHeader);
     _imp->pluginsView->setSelectionMode(QAbstractItemView::NoSelection);
 #if QT_VERSION < 0x050000
@@ -508,17 +496,17 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
             }
 
 
-            PluginTreeNodeList::iterator foundParent = _imp->buildPluginGroupHierarchy(plugin->getGrouping());
+            PluginTreeNodeList::iterator foundParent = _imp->buildPluginGroupHierarchy( plugin->getGrouping() );
             PluginTreeNode node;
             node.plugin = plugin;
-            if (foundParent == _imp->pluginsList.end()) {
+            if ( foundParent == _imp->pluginsList.end() ) {
                 node.item = new QTreeWidgetItem(_imp->pluginsView);
             } else {
                 node.item = new QTreeWidgetItem(foundParent->item);
             }
-            node.item->setText(COL_PLUGIN_LABEL, plugin->getLabelWithoutSuffix());
-            node.item->setText(COL_PLUGINID, plugin->getPluginID());
-            QString versionString = QString::number(plugin->getMajorVersion()) + QString::fromUtf8(".") + QString::number(plugin->getMinorVersion());
+            node.item->setText( COL_PLUGIN_LABEL, plugin->getLabelWithoutSuffix() );
+            node.item->setText( COL_PLUGINID, plugin->getPluginID() );
+            QString versionString = QString::number( plugin->getMajorVersion() ) + QString::fromUtf8(".") + QString::number( plugin->getMinorVersion() );
             node.item->setText(COL_VERSION, versionString);
 
             {
@@ -529,8 +517,8 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked(plugin->isActivated());
-                QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onItemEnabledCheckBoxChecked(bool)) );
+                checkbox->setChecked( plugin->isActivated() );
+                QObject::connect( checkbox, SIGNAL( clicked(bool) ), this, SLOT( onItemEnabledCheckBoxChecked(bool) ) );
                 _imp->pluginsView->setItemWidget(node.item, COL_ENABLED, checkbox);
                 node.enabledCheckbox = checkbox;
             }
@@ -542,8 +530,8 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked(plugin->isActivated());
-                QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onRSEnabledCheckBoxChecked(bool)) );
+                checkbox->setChecked( plugin->isActivated() );
+                QObject::connect( checkbox, SIGNAL( clicked(bool) ), this, SLOT( onRSEnabledCheckBoxChecked(bool) ) );
                 _imp->pluginsView->setItemWidget(node.item, COL_RS_ENABLED, checkbox);
                 node.rsCheckbox = checkbox;
             }
@@ -556,8 +544,8 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkboxLayout->setContentsMargins(0, 0, 0, 0);
                 checkboxLayout->setSpacing(0);
                 checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
-                checkbox->setChecked(plugin->isActivated());
-                QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onMTEnabledCheckBoxChecked(bool)) );
+                checkbox->setChecked( plugin->isActivated() );
+                QObject::connect( checkbox, SIGNAL( clicked(bool) ), this, SLOT( onMTEnabledCheckBoxChecked(bool) ) );
                 _imp->pluginsView->setItemWidget(node.item, COL_MT_ENABLED, checkbox);
                 node.mtCheckbox = checkbox;
             }
@@ -578,12 +566,12 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
             _imp->pluginsList.push_back(node);
         }
     }
-}
+} // PreferencesPanel::createPluginsView
 
 void
 PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
 {
-    _imp->shortcutsFrame = dynamic_cast<QFrame*>(createPageMainWidget(this));
+    _imp->shortcutsFrame = dynamic_cast<QFrame*>( createPageMainWidget(this) );
     _imp->shortcutsLayout = new QVBoxLayout(_imp->shortcutsFrame);
     _imp->shortcutsTree = new HackedTreeWidget(_imp->shortcutsFrame);
     _imp->shortcutsTree->setColumnCount(3);
@@ -594,13 +582,13 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutsTree->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->shortcutsTree->setSortingEnabled(false);
     _imp->shortcutsTree->setToolTip( GuiUtils::convertFromPlainText(
-                                                           tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
-                                                              " Note that this table also have some special assignments which also involve the mouse. "
-                                                              "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
-                                                              "Note that internally %1 does an emulation of a three-button mouse "
-                                                              "if your computer doesn't have one, that is: \n"
-                                                              "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
-                                                              "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal) );
+                                         tr("In this table is represented each action of the application that can have a possible keybind/mouse shortcut."
+                                            " Note that this table also have some special assignments which also involve the mouse. "
+                                            "You cannot assign a keybind to a shortcut involving the mouse and vice versa. "
+                                            "Note that internally %1 does an emulation of a three-button mouse "
+                                            "if your computer doesn't have one, that is: \n"
+                                            "---> Middle mouse button is emulated by holding down Options (alt) coupled with a left click.\n "
+                                            "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), Qt::WhiteSpaceNormal) );
     _imp->shortcutsTree->setItemDelegate( new ShortcutDelegate(_imp->shortcutsTree) );
 
     const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
@@ -615,7 +603,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     }
 
     _imp->shortcutsTree->resizeColumnToContents(0);
-    QObject::connect( _imp->shortcutsTree, SIGNAL(itemSelectionChanged()), this, SLOT(onShortcutsSelectionChanged()) );
+    QObject::connect( _imp->shortcutsTree, SIGNAL( itemSelectionChanged() ), this, SLOT( onShortcutsSelectionChanged() ) );
 
     _imp->shortcutsLayout->addWidget(_imp->shortcutsTree);
 
@@ -653,14 +641,14 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->validateShortcutButton = new Button(tr("Validate"), _imp->shortcutGroup);
     _imp->validateShortcutButton->setToolTip( GuiUtils::convertFromPlainText(tr("Validates the shortcut on the field editor and set the selected shortcut."), Qt::WhiteSpaceNormal) );
     _imp->shortcutGroupLayout->addWidget(_imp->validateShortcutButton);
-    QObject::connect( _imp->validateShortcutButton, SIGNAL(clicked(bool)), this, SLOT(onValidateShortcutButtonClicked()) );
+    QObject::connect( _imp->validateShortcutButton, SIGNAL( clicked(bool) ), this, SLOT( onValidateShortcutButtonClicked() ) );
 
     _imp->clearShortcutButton = new Button(tr("Clear"), _imp->shortcutGroup);
-    QObject::connect( _imp->clearShortcutButton, SIGNAL(clicked(bool)), this, SLOT(onClearShortcutButtonClicked()) );
+    QObject::connect( _imp->clearShortcutButton, SIGNAL( clicked(bool) ), this, SLOT( onClearShortcutButtonClicked() ) );
     _imp->shortcutGroupLayout->addWidget(_imp->clearShortcutButton);
 
     _imp->resetShortcutButton = new Button(tr("Reset"), _imp->shortcutGroup);
-    QObject::connect( _imp->resetShortcutButton, SIGNAL(clicked(bool)), this, SLOT(onResetShortcutButtonClicked()) );
+    QObject::connect( _imp->resetShortcutButton, SIGNAL( clicked(bool) ), this, SLOT( onResetShortcutButtonClicked() ) );
     _imp->shortcutGroupLayout->addWidget(_imp->resetShortcutButton);
 
     _imp->shortcutButtonsContainer = new QWidget(this);
@@ -669,7 +657,7 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->shortcutsLayout->addWidget(_imp->shortcutButtonsContainer);
 
     _imp->restoreShortcutsDefaultsButton = new Button(tr("Restore Default Shortcuts"), _imp->restoreShortcutsDefaultsButton);
-    QObject::connect( _imp->restoreShortcutsDefaultsButton, SIGNAL(clicked(bool)), this, SLOT(onRestoreDefaultShortcutsButtonClicked()) );
+    QObject::connect( _imp->restoreShortcutsDefaultsButton, SIGNAL( clicked(bool) ), this, SLOT( onRestoreDefaultShortcutsButtonClicked() ) );
     _imp->shortcutButtonsLayout->addWidget(_imp->restoreShortcutsDefaultsButton);
     _imp->shortcutButtonsLayout->addStretch();
 
@@ -680,10 +668,10 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     tab.tab = _imp->shortcutsFrame;
     tab.tab->hide();
     tab.treeItem = new QTreeWidgetItem(uiPageTreeItem);
-    tab.treeItem->setText(0, tr("Shortcut Editor"));
+    tab.treeItem->setText( 0, tr("Shortcut Editor") );
     tab.page = page;
     _imp->tabs.push_back(tab);
-}
+} // PreferencesPanel::createShortcutEditor
 
 Gui*
 PreferencesPanel::getGui() const
@@ -707,7 +695,7 @@ PreferencesPanel::createGui()
     _imp->tree->setColumnCount(1);
     _imp->tree->setAttribute(Qt::WA_MacShowFocusRect, 0);
     _imp->tree->header()->close();
-    QObject::connect(_imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onItemSelectionChanged()));
+    QObject::connect( _imp->tree, SIGNAL( itemSelectionChanged() ), this, SLOT( onItemSelectionChanged() ) );
 
     initializeKnobs();
 
@@ -716,7 +704,6 @@ PreferencesPanel::createGui()
 
     int maxLength = 0;
     QFontMetrics fm = fontMetrics();
-
     QGridLayout* pluginsFrameLayout = 0;
     QTreeWidgetItem* uiTabTreeItem = 0;
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
@@ -726,7 +713,7 @@ PreferencesPanel::createGui()
         } else if (pageKnob->getName() == "userInterfacePage") {
             uiTabTreeItem = _imp->tabs[i].treeItem;
         }
-        QString label = QString::fromUtf8(pageKnob->getLabel().c_str());
+        QString label = QString::fromUtf8( pageKnob->getLabel().c_str() );
         int w = fm.width(label);
         maxLength = std::max(w, maxLength);
     }
@@ -753,11 +740,11 @@ PreferencesPanel::createGui()
     _imp->mainLayout->addWidget(_imp->splitter);
     _imp->mainLayout->addWidget(_imp->buttonBox);
 
-    QObject::connect( _imp->restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
-    QObject::connect( _imp->prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
-    QObject::connect( _imp->buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
-    QObject::connect( _imp->buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
-    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobI*)), this, SLOT(onSettingChanged(KnobI*)) );
+    QObject::connect( _imp->restoreDefaultsB, SIGNAL( clicked() ), this, SLOT( restoreDefaults() ) );
+    QObject::connect( _imp->prefsHelp, SIGNAL( clicked() ), this, SLOT( openHelp() ) );
+    QObject::connect( _imp->buttonBox, SIGNAL( rejected() ), this, SLOT( cancelChanges() ) );
+    QObject::connect( _imp->buttonBox, SIGNAL( accepted() ), this, SLOT( saveChangesAndClose() ) );
+    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL( settingChanged(KnobI*) ), this, SLOT( onSettingChanged(KnobI*) ) );
 
 
     // Create plug-ins view
@@ -772,13 +759,11 @@ PreferencesPanel::createGui()
     onItemSelectionChanged();
 
     resize( TO_DPIX(900), TO_DPIY(600) );
-}
+} // PreferencesPanel::createGui
 
 void
 PreferencesPanel::filterPlugins(const QString & txt)
 {
-
-
     if ( txt.isEmpty() ) {
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
             it->item->setHidden(false);
@@ -792,10 +777,9 @@ PreferencesPanel::filterPlugins(const QString & txt)
         }
         pattern.push_back( QLatin1Char('*') );
         QRegExp expr(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
-
         std::list<QTreeWidgetItem*> itemsToDisplay;
         for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
-            if (it->plugin && it->plugin->getLabelWithoutSuffix().contains(expr)) {
+            if ( it->plugin && it->plugin->getLabelWithoutSuffix().contains(expr) ) {
                 itemsToDisplay.push_back(it->item);
             } else {
                 it->item->setExpanded(false);
@@ -803,7 +787,7 @@ PreferencesPanel::filterPlugins(const QString & txt)
             }
         }
         // Expand recursively
-        for (std::list<QTreeWidgetItem*>::iterator it = itemsToDisplay.begin(); it!=itemsToDisplay.end(); ++it) {
+        for (std::list<QTreeWidgetItem*>::iterator it = itemsToDisplay.begin(); it != itemsToDisplay.end(); ++it) {
             (*it)->setHidden(false);
             QTreeWidgetItem* parent = (*it)->parent();
             while (parent) {
@@ -813,17 +797,17 @@ PreferencesPanel::filterPlugins(const QString & txt)
             }
         }
     }
-
 }
 
 void
 PreferencesPanel::onItemEnabledCheckBoxChecked(bool checked)
 {
-    AnimatedCheckBox* cb = qobject_cast<AnimatedCheckBox*>(sender());
+    AnimatedCheckBox* cb = qobject_cast<AnimatedCheckBox*>( sender() );
+
     if (!cb) {
         return;
     }
-    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it!=_imp->pluginsList.end(); ++it) {
+    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->enabledCheckbox == cb) {
             it->plugin->setActivated(checked);
             _imp->pluginSettingsChanged = true;
@@ -835,11 +819,12 @@ PreferencesPanel::onItemEnabledCheckBoxChecked(bool checked)
 void
 PreferencesPanel::onRSEnabledCheckBoxChecked(bool checked)
 {
-    AnimatedCheckBox* cb = qobject_cast<AnimatedCheckBox*>(sender());
+    AnimatedCheckBox* cb = qobject_cast<AnimatedCheckBox*>( sender() );
+
     if (!cb) {
         return;
     }
-    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it!=_imp->pluginsList.end(); ++it) {
+    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->rsCheckbox == cb) {
             it->plugin->setRenderScaleEnabled(checked);
             _imp->pluginSettingsChanged = true;
@@ -851,11 +836,12 @@ PreferencesPanel::onRSEnabledCheckBoxChecked(bool checked)
 void
 PreferencesPanel::onMTEnabledCheckBoxChecked(bool checked)
 {
-    AnimatedCheckBox* cb = qobject_cast<AnimatedCheckBox*>(sender());
+    AnimatedCheckBox* cb = qobject_cast<AnimatedCheckBox*>( sender() );
+
     if (!cb) {
         return;
     }
-    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it!=_imp->pluginsList.end(); ++it) {
+    for (PluginTreeNodeList::iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
         if (it->mtCheckbox == cb) {
             it->plugin->setMultiThreadingEnabled(checked);
             _imp->pluginSettingsChanged = true;
@@ -915,9 +901,10 @@ PreferencesPanel::onItemSelectionChanged()
 {
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     assert(selection.size() <= 1);
-    if (selection.empty()) {
-        setCurrentPage(KnobPageGuiPtr());
+    if ( selection.empty() ) {
+        setCurrentPage( KnobPageGuiPtr() );
         _imp->setVisiblePage(-1);
+
         return;
     }
 
@@ -925,12 +912,12 @@ PreferencesPanel::onItemSelectionChanged()
 
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].treeItem == selectedItem) {
-            setCurrentPage(_imp->tabs[i].page.lock());
+            setCurrentPage( _imp->tabs[i].page.lock() );
             _imp->setVisiblePage(i);
+
             return;
         }
     }
-
 }
 
 void
@@ -938,8 +925,9 @@ PreferencesPanel::refreshCurrentPage()
 {
     QList<QTreeWidgetItem*> selection = _imp->tree->selectedItems();
     assert(selection.size() <= 1);
-    if (selection.empty()) {
-        setCurrentPage(KnobPageGuiPtr());
+    if ( selection.empty() ) {
+        setCurrentPage( KnobPageGuiPtr() );
+
         return;
     }
 
@@ -947,8 +935,9 @@ PreferencesPanel::refreshCurrentPage()
 
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].treeItem == selectedItem) {
-            setCurrentPage(_imp->tabs[i].page.lock());
+            setCurrentPage( _imp->tabs[i].page.lock() );
             _imp->setVisiblePage(i);
+
             return;
         }
     }
@@ -964,8 +953,10 @@ QWidget*
 PreferencesPanel::createPageMainWidget(QWidget* parent) const
 {
     QFrame* ret = new QFrame(parent);
+
     ret->setFrameShadow(QFrame::Sunken);
     ret->setFrameShape(QFrame::Box);
+
     return ret;
 }
 
@@ -973,6 +964,7 @@ void
 PreferencesPanel::addPageToPagesContainer(const KnobPageGuiPtr& page)
 {
     PreferenceTab tab;
+
     _imp->createPreferenceTab(page, &tab);
     _imp->tabs.push_back(tab);
 }
@@ -983,36 +975,35 @@ PreferencesPanel::removePageFromContainer(const KnobPageGuiPtr& page)
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].tab == page->tab) {
             _imp->tabs.erase(_imp->tabs.begin() + i);
+
             return;
         }
     }
 }
 
 void
-PreferencesPanel::refreshUndoRedoButtonsEnabledNess(bool /*canUndo*/, bool /*canRedo*/)
+PreferencesPanel::refreshUndoRedoButtonsEnabledNess(bool /*canUndo*/,
+                                                    bool /*canRedo*/)
 {
-
 }
 
 void
-PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page, PreferenceTab* tab)
+PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
+                                             PreferenceTab* tab)
 {
     tab->tab = dynamic_cast<QFrame*>(page->tab);
     tab->tab->hide();
     assert(tab->tab);
 
     QTreeWidgetItem* parentItem = 0;
-
     boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();
     if (pageKnob) {
-
         // In the preferences, there may be sub-pages
         KnobPtr hasParent = pageKnob->getParentKnob();
         boost::shared_ptr<KnobPage> parentPage;
         if (hasParent) {
             parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
             if (parentPage) {
-
                 // look in the tabs if it is created
                 for (std::size_t i = 0; i < tabs.size(); ++i) {
                     if (tabs[i].page.lock()->pageKnob.lock() == parentPage) {
@@ -1032,14 +1023,16 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page, Prefere
     tab->treeItem->setExpanded(true);
 
     if (pageKnob) {
-        QString label = QString::fromUtf8(pageKnob->getLabel().c_str());
+        QString label = QString::fromUtf8( pageKnob->getLabel().c_str() );
         tab->treeItem->setText(0, label);
     }
     tab->page = page;
 }
 
 void
-PreferencesPanel::setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex)
+PreferencesPanel::setPagesOrder(const std::list<KnobPageGuiPtr>& order,
+                                const KnobPageGuiPtr& curPage,
+                                bool restorePageIndex)
 {
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         delete _imp->tabs[i].treeItem;
@@ -1047,16 +1040,16 @@ PreferencesPanel::setPagesOrder(const std::list<KnobPageGuiPtr>& order, const Kn
     _imp->tabs.clear();
 
     int i = 0;
-    for (std::list<KnobPageGuiPtr>::const_iterator it = order.begin(); it!=order.end(); ++it, ++i) {
+    for (std::list<KnobPageGuiPtr>::const_iterator it = order.begin(); it != order.end(); ++it, ++i) {
         PreferenceTab tab;
         _imp->createPreferenceTab(*it, &tab);
         _imp->tabs.push_back(tab);
 
-        if (*it != curPage || !restorePageIndex) {
+        if ( (*it != curPage) || !restorePageIndex ) {
             tab.treeItem->setSelected(false);
         } else {
             tab.treeItem->setSelected(true);
-            setCurrentPage(_imp->tabs[i].page.lock());
+            setCurrentPage( _imp->tabs[i].page.lock() );
             _imp->setVisiblePage(i);
         }
     }
@@ -1067,8 +1060,9 @@ PreferencesPanel::onPageLabelChanged(const KnobPageGuiPtr& page)
 {
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].tab == page->tab) {
-            QString label = QString::fromUtf8(page->pageKnob.lock()->getLabel().c_str());
+            QString label = QString::fromUtf8( page->pageKnob.lock()->getLabel().c_str() );
             _imp->tabs[i].treeItem->setText(0, label);
+
             return;
         }
     }
@@ -1162,9 +1156,9 @@ PreferencesPanel::showEvent(QShowEvent* /*e*/)
 void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
-    if ( !_imp->closeIsOK && (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged)) {
+    if ( !_imp->closeIsOK && (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) ) {
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-        if (!_imp->changedKnobs.empty()) {
+        if ( !_imp->changedKnobs.empty() ) {
             settings->beginChanges();
             settings->restoreKnobsFromSettings(_imp->changedKnobs);
             settings->endChanges();
@@ -1185,8 +1179,6 @@ PreferencesPanel::keyPressEvent(QKeyEvent* e)
         QWidget::keyPressEvent(e);
     }
 }
-
-
 
 GuiAppShorcuts::iterator
 PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
@@ -1263,7 +1255,7 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
 
 void
 PreferencesPanelPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,
-                                                BoundAction* action)
+                                                  BoundAction* action)
 {
     GuiBoundAction guiAction;
 
@@ -1307,7 +1299,6 @@ PreferencesPanelPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGr
     guiGroupIterator->actions.push_back(guiAction);
     guiGroupIterator->item->addChild(guiAction.item);
 }
-
 
 void
 ShortcutDelegate::paint(QPainter * painter,
@@ -1364,7 +1355,7 @@ ShortcutDelegate::paint(QPainter * painter,
 } // paint
 
 KeybindRecorder::KeybindRecorder(QWidget* parent)
-: LineEdit(parent)
+    : LineEdit(parent)
 {
 }
 
@@ -1398,7 +1389,6 @@ KeybindRecorder::keyPressEvent(QKeyEvent* e)
     setText(txt);
 }
 
-
 void
 PreferencesPanel::addShortcut(BoundAction* action)
 {
@@ -1408,7 +1398,6 @@ PreferencesPanel::addShortcut(BoundAction* action)
 
     _imp->makeGuiActionForShortcut(foundGuiGroup, action);
 }
-
 
 void
 PreferencesPanel::onShortcutsSelectionChanged()
@@ -1491,7 +1480,7 @@ PreferencesPanel::onValidateShortcutButtonClicked()
                     for (std::list<Qt::Key>::const_iterator it3 = keyAction->currentShortcut.begin(); it3 != keyAction->currentShortcut.end(); ++it3, ++mit) {
                         if ( (*mit == modifiers) && (*it3 == symbol) ) {
                             QString err = QString::fromUtf8("Cannot bind this shortcut because the following action is already using it: %1")
-                            .arg( it2->item->text(0) );
+                                          .arg( it2->item->text(0) );
                             _imp->shortcutEditor->clear();
                             Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
 
@@ -1515,7 +1504,7 @@ PreferencesPanel::onValidateShortcutButtonClicked()
     }
 
     appPTR->notifyShortcutChanged(ka);
-}
+} // PreferencesPanel::onValidateShortcutButtonClicked
 
 void
 PreferencesPanel::onClearShortcutButtonClicked()

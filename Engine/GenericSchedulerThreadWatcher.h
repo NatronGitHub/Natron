@@ -116,7 +116,7 @@ public:
 
     GenericSchedulerThreadWatcher(GenericSchedulerThread* thread)
         : GenericWatcher()
-          , _thread(thread)
+        , _thread(thread)
     {
     }
 
@@ -148,7 +148,7 @@ public:
 
     RenderEngineWatcher(RenderEngine* engine)
         : GenericWatcher()
-          , _engine(engine)
+        , _engine(engine)
     {
     }
 
@@ -185,7 +185,7 @@ public:
 
     NodeRenderWatcher(const NodesList& nodes)
         : GenericWatcher()
-          , _nodes()
+        , _nodes()
     {
         for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
             _nodes.push_back(*it);

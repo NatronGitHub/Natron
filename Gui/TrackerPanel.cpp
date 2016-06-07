@@ -97,8 +97,8 @@ private:
 TrackerTableItemDelegate::TrackerTableItemDelegate(TableView* view,
                                                    TrackerPanel* panel)
     : QStyledItemDelegate(view)
-      , _view(view)
-      , _panel(panel)
+    , _view(view)
+    , _panel(panel)
 {
 }
 
@@ -267,32 +267,32 @@ public:
     TrackerPanelPrivate(TrackerPanel* publicI,
                         const NodeGuiPtr& n)
         : _publicInterface(publicI)
-          , node(n)
-          , context()
-          , items()
-          , mainLayout(0)
-          , view(0)
-          , model(0)
-          , buttonsContainer(0)
-          , buttonsLayout(0)
-          , addButton(0)
-          , removeButton(0)
-          , selectAllButton(0)
-          , resetTracksButton(0)
-          , averageTracksButton(0)
-          , selectionBlocked(0)
-          , selectionRecursion(0)
-          , keys()
-          , trackLabel(0)
-          , currentKeyframe(0)
-          , ofLabel(0)
-          , totalKeyframes(0)
-          , prevKeyframe(0)
-          , nextKeyframe(0)
-          , addKeyframe(0)
-          , removeKeyframe(0)
-          , clearAnimation(0)
-          , itemDataChangedRecursion(0)
+        , node(n)
+        , context()
+        , items()
+        , mainLayout(0)
+        , view(0)
+        , model(0)
+        , buttonsContainer(0)
+        , buttonsLayout(0)
+        , addButton(0)
+        , removeButton(0)
+        , selectAllButton(0)
+        , resetTracksButton(0)
+        , averageTracksButton(0)
+        , selectionBlocked(0)
+        , selectionRecursion(0)
+        , keys()
+        , trackLabel(0)
+        , currentKeyframe(0)
+        , ofLabel(0)
+        , totalKeyframes(0)
+        , prevKeyframe(0)
+        , nextKeyframe(0)
+        , addKeyframe(0)
+        , removeKeyframe(0)
+        , clearAnimation(0)
+        , itemDataChangedRecursion(0)
     {
         context = n->getNode()->getTrackerContext();
         assert( context.lock() );
@@ -318,46 +318,46 @@ public:
 TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
                            NodeSettingsPanel* parent)
     : QWidget(parent)
-      , _imp( new TrackerPanelPrivate(this, n) )
+    , _imp( new TrackerPanelPrivate(this, n) )
 {
-    QObject::connect( parent, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
+    QObject::connect( parent, SIGNAL( closeChanged(bool) ), this, SLOT( onSettingsPanelClosed(bool) ) );
     boost::shared_ptr<TrackerContext> context = getContext();
-    QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
-                      SLOT(onTimeChanged(SequenceTime,int)) );
-    QObject::connect( context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onContextSelectionChanged(int)) );
-    QObject::connect( context.get(), SIGNAL(selectionAboutToChange(int)), this, SLOT(onContextSelectionAboutToChange(int)) );
-    QObject::connect( context.get(), SIGNAL(trackInserted(TrackMarkerPtr,int)), this, SLOT(onTrackInserted(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(trackRemoved(TrackMarkerPtr)), this, SLOT(onTrackRemoved(TrackMarkerPtr)) );
-    QObject::connect( context.get(), SIGNAL(trackCloned(TrackMarkerPtr)),
-                      this, SLOT(onTrackCloned(TrackMarkerPtr)) );
-    QObject::connect( context.get(), SIGNAL(trackAboutToClone(TrackMarkerPtr)),
-                      this, SLOT(onTrackAboutToClone(TrackMarkerPtr)) );
-    QObject::connect( context.get(), SIGNAL(keyframeSetOnTrack(TrackMarkerPtr,int)),
-                      this, SLOT(onTrackKeyframeSet(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(keyframeRemovedOnTrack(TrackMarkerPtr,int)),
-                      this, SLOT(onTrackKeyframeRemoved(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(allKeyframesRemovedOnTrack(TrackMarkerPtr)),
-                      this, SLOT(onTrackAllKeyframesRemoved(TrackMarkerPtr)) );
-    QObject::connect( context.get(), SIGNAL(keyframeSetOnTrackCenter(TrackMarkerPtr,int)),
-                      this, SLOT(onKeyframeSetOnTrackCenter(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(keyframeRemovedOnTrackCenter(TrackMarkerPtr,int)),
-                      this, SLOT(onKeyframeRemovedOnTrackCenter(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(allKeyframesRemovedOnTrackCenter(TrackMarkerPtr)),
-                      this, SLOT(onAllKeyframesRemovedOnTrackCenter(TrackMarkerPtr)) );
-    QObject::connect( context.get(), SIGNAL(multipleKeyframesSetOnTrackCenter(TrackMarkerPtr,std::list<double>)),
-                      this, SLOT(onMultipleKeyframesSetOnTrackCenter(TrackMarkerPtr,std::list<double>)) );
-    QObject::connect( context.get(), SIGNAL(multipleKeyframesRemovedOnTrackCenter(TrackMarkerPtr,std::list<double>)),
-                      this, SLOT(onMultipleKeysRemovedOnTrackCenter(TrackMarkerPtr,std::list<double>)) );
-    QObject::connect( context.get(), SIGNAL(enabledChanged(TrackMarkerPtr,int)), this,
-                      SLOT(onEnabledChanged(TrackMarkerPtr,int)) );
-    QObject::connect( context.get(), SIGNAL(centerKnobValueChanged(TrackMarkerPtr,int,int)), this,
-                      SLOT(onCenterKnobValueChanged(TrackMarkerPtr,int,int)) );
-    QObject::connect( context.get(), SIGNAL(offsetKnobValueChanged(TrackMarkerPtr,int,int)), this,
-                      SLOT(onOffsetKnobValueChanged(TrackMarkerPtr,int,int)) );
-    QObject::connect( context.get(), SIGNAL(errorKnobValueChanged(TrackMarkerPtr,int,int)), this,
-                      SLOT(onErrorKnobValueChanged(TrackMarkerPtr,int,int)) );
-    QObject::connect( context.get(), SIGNAL(motionModelKnobValueChanged(TrackMarkerPtr,int,int)), this,
-                      SLOT(onMotionModelKnobValueChanged(TrackMarkerPtr,int,int)) );
+    QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL( frameChanged(SequenceTime, int) ), this,
+                      SLOT( onTimeChanged(SequenceTime, int) ) );
+    QObject::connect( context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onContextSelectionChanged(int) ) );
+    QObject::connect( context.get(), SIGNAL( selectionAboutToChange(int) ), this, SLOT( onContextSelectionAboutToChange(int) ) );
+    QObject::connect( context.get(), SIGNAL( trackInserted(TrackMarkerPtr, int) ), this, SLOT( onTrackInserted(TrackMarkerPtr, int) ) );
+    QObject::connect( context.get(), SIGNAL( trackRemoved(TrackMarkerPtr) ), this, SLOT( onTrackRemoved(TrackMarkerPtr) ) );
+    QObject::connect( context.get(), SIGNAL( trackCloned(TrackMarkerPtr) ),
+                      this, SLOT( onTrackCloned(TrackMarkerPtr) ) );
+    QObject::connect( context.get(), SIGNAL( trackAboutToClone(TrackMarkerPtr) ),
+                      this, SLOT( onTrackAboutToClone(TrackMarkerPtr) ) );
+    QObject::connect( context.get(), SIGNAL( keyframeSetOnTrack(TrackMarkerPtr, int) ),
+                      this, SLOT( onTrackKeyframeSet(TrackMarkerPtr, int) ) );
+    QObject::connect( context.get(), SIGNAL( keyframeRemovedOnTrack(TrackMarkerPtr, int) ),
+                      this, SLOT( onTrackKeyframeRemoved(TrackMarkerPtr, int) ) );
+    QObject::connect( context.get(), SIGNAL( allKeyframesRemovedOnTrack(TrackMarkerPtr) ),
+                      this, SLOT( onTrackAllKeyframesRemoved(TrackMarkerPtr) ) );
+    QObject::connect( context.get(), SIGNAL( keyframeSetOnTrackCenter(TrackMarkerPtr, int) ),
+                      this, SLOT( onKeyframeSetOnTrackCenter(TrackMarkerPtr, int) ) );
+    QObject::connect( context.get(), SIGNAL( keyframeRemovedOnTrackCenter(TrackMarkerPtr, int) ),
+                      this, SLOT( onKeyframeRemovedOnTrackCenter(TrackMarkerPtr, int) ) );
+    QObject::connect( context.get(), SIGNAL( allKeyframesRemovedOnTrackCenter(TrackMarkerPtr) ),
+                      this, SLOT( onAllKeyframesRemovedOnTrackCenter(TrackMarkerPtr) ) );
+    QObject::connect( context.get(), SIGNAL( multipleKeyframesSetOnTrackCenter(TrackMarkerPtr, std::list<double>) ),
+                      this, SLOT( onMultipleKeyframesSetOnTrackCenter(TrackMarkerPtr, std::list<double>) ) );
+    QObject::connect( context.get(), SIGNAL( multipleKeyframesRemovedOnTrackCenter(TrackMarkerPtr, std::list<double>) ),
+                      this, SLOT( onMultipleKeysRemovedOnTrackCenter(TrackMarkerPtr, std::list<double>) ) );
+    QObject::connect( context.get(), SIGNAL( enabledChanged(TrackMarkerPtr, int) ), this,
+                      SLOT( onEnabledChanged(TrackMarkerPtr, int) ) );
+    QObject::connect( context.get(), SIGNAL( centerKnobValueChanged(TrackMarkerPtr, int, int) ), this,
+                      SLOT( onCenterKnobValueChanged(TrackMarkerPtr, int, int) ) );
+    QObject::connect( context.get(), SIGNAL( offsetKnobValueChanged(TrackMarkerPtr, int, int) ), this,
+                      SLOT( onOffsetKnobValueChanged(TrackMarkerPtr, int, int) ) );
+    QObject::connect( context.get(), SIGNAL( errorKnobValueChanged(TrackMarkerPtr, int, int) ), this,
+                      SLOT( onErrorKnobValueChanged(TrackMarkerPtr, int, int) ) );
+    QObject::connect( context.get(), SIGNAL( motionModelKnobValueChanged(TrackMarkerPtr, int, int) ), this,
+                      SLOT( onMotionModelKnobValueChanged(TrackMarkerPtr, int, int) ) );
     const QSize medButtonSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     const QSize medButtonIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
 
@@ -401,7 +401,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->prevKeyframe->setIconSize(medButtonIconSize);
     _imp->prevKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Go to the previous pattern keyframe."), Qt::WhiteSpaceNormal) );
     _imp->prevKeyframe->setEnabled(false);
-    QObject::connect( _imp->prevKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToPrevKeyframeButtonClicked()) );
+    QObject::connect( _imp->prevKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToPrevKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->prevKeyframe);
 
     _imp->nextKeyframe = new Button(QIcon(nextPix), QString(), trackContainer);
@@ -409,7 +409,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->nextKeyframe->setIconSize(medButtonIconSize);
     _imp->nextKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Go to the next pattern keyframe."), Qt::WhiteSpaceNormal) );
     _imp->nextKeyframe->setEnabled(false);
-    QObject::connect( _imp->nextKeyframe, SIGNAL(clicked(bool)), this, SLOT(onGoToNextKeyframeButtonClicked()) );
+    QObject::connect( _imp->nextKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onGoToNextKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->nextKeyframe);
 
     _imp->addKeyframe = new Button(QIcon(addPix), QString(), trackContainer);
@@ -417,7 +417,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->addKeyframe->setIconSize(medButtonIconSize);
     _imp->addKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Add a keyframe to the pattern at the current timeline's time."), Qt::WhiteSpaceNormal) );
     _imp->addKeyframe->setEnabled(false);
-    QObject::connect( _imp->addKeyframe, SIGNAL(clicked(bool)), this, SLOT(onAddKeyframeButtonClicked()) );
+    QObject::connect( _imp->addKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onAddKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->addKeyframe);
 
     _imp->removeKeyframe = new Button(QIcon(removePix), QString(), trackContainer);
@@ -425,7 +425,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->removeKeyframe->setIconSize(medButtonIconSize);
     _imp->removeKeyframe->setToolTip( GuiUtils::convertFromPlainText(tr("Remove keyframe on the pattern at the current timeline's time."), Qt::WhiteSpaceNormal) );
     _imp->removeKeyframe->setEnabled(false);
-    QObject::connect( _imp->removeKeyframe, SIGNAL(clicked(bool)), this, SLOT(onRemoveKeyframeButtonClicked()) );
+    QObject::connect( _imp->removeKeyframe, SIGNAL( clicked(bool) ), this, SLOT( onRemoveKeyframeButtonClicked() ) );
     trackLayout->addWidget(_imp->removeKeyframe);
 
     _imp->clearAnimation = new Button(QIcon(clearAnimPix), QString(), trackContainer);
@@ -433,7 +433,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->clearAnimation->setIconSize(medButtonIconSize);
     _imp->clearAnimation->setToolTip( GuiUtils::convertFromPlainText(tr("Remove all keyframes on the pattern for the selected track(s)."), Qt::WhiteSpaceNormal) );
     _imp->clearAnimation->setEnabled(false);
-    QObject::connect( _imp->clearAnimation, SIGNAL(clicked(bool)), this, SLOT(onRemoveAnimationButtonClicked()) );
+    QObject::connect( _imp->clearAnimation, SIGNAL( clicked(bool) ), this, SLOT( onRemoveAnimationButtonClicked() ) );
     trackLayout->addWidget(_imp->clearAnimation);
 
 
@@ -443,20 +443,20 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     ///-------- TableView
 
     _imp->view = new TableView(this);
-    QObject::connect( _imp->view, SIGNAL(deleteKeyPressed()), this, SLOT(onRemoveButtonClicked()) );
-    QObject::connect( _imp->view, SIGNAL(itemRightClicked(TableItem*)), this, SLOT(onItemRightClicked(TableItem*)) );
+    QObject::connect( _imp->view, SIGNAL( deleteKeyPressed() ), this, SLOT( onRemoveButtonClicked() ) );
+    QObject::connect( _imp->view, SIGNAL( itemRightClicked(TableItem*) ), this, SLOT( onItemRightClicked(TableItem*) ) );
     TrackerTableItemDelegate* delegate = new TrackerTableItemDelegate(_imp->view, this);
     _imp->itemEditorFactory.reset(new TableItemEditorFactory);
     delegate->setItemEditorFactory( _imp->itemEditorFactory.get() );
     _imp->view->setItemDelegate(delegate);
 
     _imp->model = new TableModel(0, 0, _imp->view);
-    QObject::connect( _imp->model, SIGNAL(s_itemChanged(TableItem*)), this, SLOT(onItemDataChanged(TableItem*)) );
+    QObject::connect( _imp->model, SIGNAL( s_itemChanged(TableItem*) ), this, SLOT( onItemDataChanged(TableItem*) ) );
     _imp->view->setTableModel(_imp->model);
     _imp->view->setUniformRowHeights(true);
     QItemSelectionModel *selectionModel = _imp->view->selectionModel();
-    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this,
-                      SLOT(onModelSelectionChanged(QItemSelection,QItemSelection)) );
+    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection, QItemSelection) ), this,
+                      SLOT( onModelSelectionChanged(QItemSelection, QItemSelection) ) );
     QStringList dimensionNames;
     dimensionNames << tr("Enabled") << tr("Label") << tr("Motion-Model") <<
         tr("Center X") << tr("Center Y") << tr("Offset X") << tr("Offset Y") <<
@@ -487,14 +487,14 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->addButton->setIconSize(smallButtonIconSize);
     _imp->addButton->setToolTip( GuiUtils::convertFromPlainText(tr("Add new track"), Qt::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->addButton);
-    QObject::connect( _imp->addButton, SIGNAL(clicked(bool)), this, SLOT(onAddButtonClicked()) );
+    QObject::connect( _imp->addButton, SIGNAL( clicked(bool) ), this, SLOT( onAddButtonClicked() ) );
 
     _imp->removeButton = new Button(QIcon(), QString::fromUtf8("-"), _imp->buttonsContainer);
     _imp->removeButton->setToolTip( GuiUtils::convertFromPlainText(tr("Remove selected tracks"), Qt::WhiteSpaceNormal) );
     _imp->removeButton->setFixedSize(medButtonSize);
     _imp->removeButton->setIconSize(smallButtonIconSize);
     _imp->buttonsLayout->addWidget(_imp->removeButton);
-    QObject::connect( _imp->removeButton, SIGNAL(clicked(bool)), this, SLOT(onRemoveButtonClicked()) );
+    QObject::connect( _imp->removeButton, SIGNAL( clicked(bool) ), this, SLOT( onRemoveButtonClicked() ) );
     QPixmap selectAll;
     appPTR->getIcon(NATRON_PIXMAP_SELECT_ALL, &selectAll);
 
@@ -503,15 +503,15 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     _imp->selectAllButton->setIconSize(smallButtonIconSize);
     _imp->selectAllButton->setToolTip( GuiUtils::convertFromPlainText(tr("Select all tracks"), Qt::WhiteSpaceNormal) );
     _imp->buttonsLayout->addWidget(_imp->selectAllButton);
-    QObject::connect( _imp->selectAllButton, SIGNAL(clicked(bool)), this, SLOT(onSelectAllButtonClicked()) );
+    QObject::connect( _imp->selectAllButton, SIGNAL( clicked(bool) ), this, SLOT( onSelectAllButtonClicked() ) );
 
     _imp->resetTracksButton = new Button(tr("Reset"), _imp->buttonsContainer);
-    QObject::connect( _imp->resetTracksButton, SIGNAL(clicked(bool)), this, SLOT(onResetButtonClicked()) );
+    QObject::connect( _imp->resetTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onResetButtonClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->resetTracksButton);
     _imp->resetTracksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Reset selected tracks"), Qt::WhiteSpaceNormal) );
 
     _imp->averageTracksButton = new Button(tr("Average"), _imp->buttonsContainer);
-    QObject::connect( _imp->averageTracksButton, SIGNAL(clicked(bool)), this, SLOT(onAverageButtonClicked()) );
+    QObject::connect( _imp->averageTracksButton, SIGNAL( clicked(bool) ), this, SLOT( onAverageButtonClicked() ) );
     _imp->buttonsLayout->addWidget(_imp->averageTracksButton);
     _imp->averageTracksButton->setToolTip( GuiUtils::convertFromPlainText(tr("Creates a new track as the average of the selected tracks"), Qt::WhiteSpaceNormal) );
 
@@ -604,7 +604,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         checkbox->setFixedSize( TO_DPIX(NATRON_SMALL_BUTTON_SIZE), TO_DPIY(NATRON_SMALL_BUTTON_SIZE) );
         checkbox->setChecked( marker.isEnabled( marker.getCurrentTime() ) );
         checkbox->setAnimation( (int)marker.getEnabledNessAnimationLevel() );
-        QObject::connect( checkbox, SIGNAL(clicked(bool)), _publicInterface, SLOT(onItemEnabledCheckBoxChecked(bool)) );
+        QObject::connect( checkbox, SIGNAL( clicked(bool) ), _publicInterface, SLOT( onItemEnabledCheckBoxChecked(bool) ) );
         TableItem* newItem = new TableItem;
         newItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsUserCheckable);
         newItem->setToolTip( GuiUtils::convertFromPlainText(tr("When unchecked, this track will no longer be tracked even if selected. Also the transform parameters in the Transform tab will not take this track into account"), Qt::WhiteSpaceNormal) );
@@ -638,7 +638,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         std::vector<std::string> choices, helps;
         TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
         cb->setCurrentIndex( motionModel->getValue() );
-        QObject::connect( cb, SIGNAL(currentIndexChanged(int)), _publicInterface, SLOT(onItemMotionModelChanged(int)) );
+        QObject::connect( cb, SIGNAL( currentIndexChanged(int) ), _publicInterface, SLOT( onItemMotionModelChanged(int) ) );
         assert( choices.size() == helps.size() );
         for (std::size_t i = 0; i < choices.size(); ++i) {
             cb->addItem( QString::fromUtf8( choices[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helps[i].c_str() ) );

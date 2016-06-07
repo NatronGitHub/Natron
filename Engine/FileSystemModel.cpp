@@ -123,23 +123,23 @@ struct FileSystemModelPrivate
 
     FileSystemModelPrivate(FileSystemModel* model)
         : _publicInterface(model)
-          , view(0)
-          , gatherer()
-          , watcher()
-          , rootItem()
-          , currentRootPath()
-          , headers()
-          , filters(QDir::AllEntries | QDir::NoDotAndDotDot)
-          , encodedRegexps()
-          , regexps()
-          , filtersMutex()
-          , sequenceModeEnabledMutex()
-          , sequenceModeEnabled(false)
-          , ordering(Qt::AscendingOrder)
-          , sortSection(0)
-          , sortMutex()
-          , mappingMutex()
-          , itemsMap()
+        , view(0)
+        , gatherer()
+        , watcher()
+        , rootItem()
+        , currentRootPath()
+        , headers()
+        , filters(QDir::AllEntries | QDir::NoDotAndDotDot)
+        , encodedRegexps()
+        , regexps()
+        , filtersMutex()
+        , sequenceModeEnabledMutex()
+        , sequenceModeEnabled(false)
+        , ordering(Qt::AscendingOrder)
+        , sortSection(0)
+        , sortMutex()
+        , mappingMutex()
+        , itemsMap()
     {
     }
 
@@ -193,17 +193,17 @@ struct FileSystemItemPrivate
                           quint64 size,
                           const boost::shared_ptr<FileSystemItem> &parent)
         : model(model)
-          , parent(parent)
-          , children()
-          , childrenMutex()
-          , isDir(isDir)
-          , filename(filename)
-          , userFriendlySequenceName(userFriendlySequenceName)
-          , sequence(sequence)
-          , dateModified(dateModified)
-          , size(size)
-          , fileExtension()
-          , absoluteFilePath()
+        , parent(parent)
+        , children()
+        , childrenMutex()
+        , isDir(isDir)
+        , filename(filename)
+        , userFriendlySequenceName(userFriendlySequenceName)
+        , sequence(sequence)
+        , dateModified(dateModified)
+        , size(size)
+        , fileExtension()
+        , absoluteFilePath()
     {
         if (!isDir) {
             int lastDotPos = filename.lastIndexOf( QChar::fromLatin1('.') );
@@ -449,7 +449,7 @@ FileSystemItem::matchPath(const QStringList& path,
 
 FileSystemModel::FileSystemModel()
     : QAbstractItemModel()
-      , _imp( new FileSystemModelPrivate(this) )
+    , _imp( new FileSystemModelPrivate(this) )
 {
 }
 
@@ -469,8 +469,8 @@ FileSystemModel::initialize(SortableViewI* view)
 
     _imp->watcher.reset(new QFileSystemWatcher);
     assert(_imp->watcher);
-    QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );
-    QObject::connect( _imp->watcher.get(), SIGNAL(fileChanged(QString)), this, SLOT(onWatchedFileChanged(QString)) );
+    QObject::connect( _imp->watcher.get(), SIGNAL( directoryChanged(QString) ), this, SLOT( onWatchedDirectoryChanged(QString) ) );
+    QObject::connect( _imp->watcher.get(), SIGNAL( fileChanged(QString) ), this, SLOT( onWatchedFileChanged(QString) ) );
     _imp->watcher->addPath( QDir::rootPath() );
 
     resetCompletly(true);
@@ -1191,8 +1191,8 @@ FileSystemModel::setRootPath(const QString& path)
     if (item != _imp->rootItem) {
         _imp->watcher.reset(new QFileSystemWatcher);
         assert(_imp->watcher);
-        QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );
-        QObject::connect( _imp->watcher.get(), SIGNAL(fileChanged(QString)), this, SLOT(onWatchedFileChanged(QString)) );
+        QObject::connect( _imp->watcher.get(), SIGNAL( directoryChanged(QString) ), this, SLOT( onWatchedDirectoryChanged(QString) ) );
+        QObject::connect( _imp->watcher.get(), SIGNAL( fileChanged(QString) ), this, SLOT( onWatchedFileChanged(QString) ) );
         _imp->watcher->removePath(_imp->currentRootPath);
         _imp->watcher->addPath( item->absoluteFilePath() );
 
@@ -1217,7 +1217,7 @@ FileSystemModel::initGatherer()
     if (!_imp->gatherer) {
         _imp->gatherer.reset( new FileGathererThread( shared_from_this() ) );
         assert(_imp->gatherer);
-        QObject::connect( _imp->gatherer.get(), SIGNAL(directoryLoaded(QString)), this, SLOT(onDirectoryLoadedByGatherer(QString)) );
+        QObject::connect( _imp->gatherer.get(), SIGNAL( directoryLoaded(QString) ), this, SLOT( onDirectoryLoadedByGatherer(QString) ) );
     }
 }
 
@@ -1352,20 +1352,20 @@ struct FileGathererThreadPrivate
 
     FileGathererThreadPrivate(const boost::shared_ptr<FileSystemModel>& model)
         : model(model)
-          , mustQuit(false)
-          , mustQuitMutex()
-          , mustQuitCond()
-          , working(false)
-          , workingMutex()
-          , abortRequests(0)
-          , abortRequestsMutex()
-          , abortRequestsCond()
-          , startCount(0)
-          , startCountMutex()
-          , startCountCond()
-          , requestedItem()
-          , itemBeingFetched()
-          , requestedDirMutex()
+        , mustQuit(false)
+        , mustQuitMutex()
+        , mustQuitCond()
+        , working(false)
+        , workingMutex()
+        , abortRequests(0)
+        , abortRequestsMutex()
+        , abortRequestsCond()
+        , startCount(0)
+        , startCountMutex()
+        , startCountCond()
+        , requestedItem()
+        , itemBeingFetched()
+        , requestedDirMutex()
     {
     }
 
@@ -1405,7 +1405,7 @@ struct FileGathererThreadPrivate
 
 FileGathererThread::FileGathererThread(const boost::shared_ptr<FileSystemModel>& model)
     : QThread()
-      , _imp( new FileGathererThreadPrivate(model) )
+    , _imp( new FileGathererThreadPrivate(model) )
 {
 }
 

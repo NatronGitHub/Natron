@@ -90,7 +90,6 @@ public:
         return false;
     }
 
-
     virtual bool onKnobValueChanged(KnobI* k,
                                     ValueChangedReasonEnum reason,
                                     double time,
@@ -344,7 +343,7 @@ public:
     void restoreDefaultAppearance();
 
     std::string getUserStyleSheetFilePath() const;
-    
+
     int getDocumentationSource() const;
     int getServerPort() const;
     void setServerPort(int port) const;
@@ -384,7 +383,6 @@ private:
     void initializeKnobsDopeSheetColors();
     void initializeKnobsNodeGraphColors();
     void initializeKnobsScriptEditorColors();
-
 
 
     void warnChangedKnobs(const std::vector<KnobI*>& knobs);
@@ -604,7 +602,6 @@ private:
     boost::shared_ptr<KnobColor> _defaultMergeGroupColor;
     boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
     boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
-
     std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;

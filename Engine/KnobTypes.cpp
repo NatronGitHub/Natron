@@ -70,9 +70,9 @@ KnobInt::KnobInt(KnobHolder* holder,
                  int dimension,
                  bool declaredByPlugin)
     : Knob<int>(holder, label, dimension, declaredByPlugin)
-      , _increments(dimension, 1)
-      , _disableSlider(false)
-      , _isRectangle(false)
+    , _increments(dimension, 1)
+    , _disableSlider(false)
+    , _isRectangle(false)
 {
 }
 
@@ -81,9 +81,9 @@ KnobInt::KnobInt(KnobHolder* holder,
                  int dimension,
                  bool declaredByPlugin)
     : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _increments(dimension, 1)
-      , _disableSlider(false)
-      , _isRectangle(false)
+    , _increments(dimension, 1)
+    , _disableSlider(false)
+    , _isRectangle(false)
 {
 }
 
@@ -200,14 +200,14 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<double>(holder, label, dimension, declaredByPlugin)
-      , _spatial(false)
-      , _isRectangle(false)
-      , _increments(dimension, 1)
-      , _decimals(dimension, 2)
-      , _disableSlider(false)
-      , _valueIsNormalized(dimension, eValueIsNormalizedNone)
-      , _defaultValuesAreNormalized(false)
-      , _hasHostOverlayHandle(false)
+    , _spatial(false)
+    , _isRectangle(false)
+    , _increments(dimension, 1)
+    , _decimals(dimension, 2)
+    , _disableSlider(false)
+    , _valueIsNormalized(dimension, eValueIsNormalizedNone)
+    , _defaultValuesAreNormalized(false)
+    , _hasHostOverlayHandle(false)
 {
 }
 
@@ -216,14 +216,14 @@ KnobDouble::KnobDouble(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _spatial(false)
-      , _isRectangle(false)
-      , _increments(dimension, 1)
-      , _decimals(dimension, 2)
-      , _disableSlider(false)
-      , _valueIsNormalized(dimension, eValueIsNormalizedNone)
-      , _defaultValuesAreNormalized(false)
-      , _hasHostOverlayHandle(false)
+    , _spatial(false)
+    , _isRectangle(false)
+    , _increments(dimension, 1)
+    , _decimals(dimension, 2)
+    , _disableSlider(false)
+    , _valueIsNormalized(dimension, eValueIsNormalizedNone)
+    , _defaultValuesAreNormalized(false)
+    , _hasHostOverlayHandle(false)
 {
     if (dimension >= 4) {
         disableSlider();
@@ -452,9 +452,9 @@ KnobButton::KnobButton(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
-      , _renderButton(false)
-      , _checkable(false)
-      , _isToolButtonAction(false)
+    , _renderButton(false)
+    , _checkable(false)
+    , _isToolButtonAction(false)
 {
     //setIsPersistant(false);
 }
@@ -464,9 +464,9 @@ KnobButton::KnobButton(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _renderButton(false)
-      , _checkable(false)
-      , _isToolButtonAction(false)
+    , _renderButton(false)
+    , _checkable(false)
+    , _isToolButtonAction(false)
 {
     //setIsPersistant(false);
 }
@@ -506,10 +506,10 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<int>(holder, label, dimension, declaredByPlugin)
-      , _entriesMutex()
-      , _currentEntryLabel()
-      , _addNewChoice(false)
-      , _isCascading(false)
+    , _entriesMutex()
+    , _currentEntryLabel()
+    , _addNewChoice(false)
+    , _isCascading(false)
 {
 }
 
@@ -518,10 +518,10 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _entriesMutex()
-      , _currentEntryLabel()
-      , _addNewChoice(false)
-      , _isCascading(false)
+    , _entriesMutex()
+    , _currentEntryLabel()
+    , _addNewChoice(false)
+    , _isCascading(false)
 {
 }
 
@@ -1124,15 +1124,15 @@ KnobChoice::handleSignalSlotsForAliasLink(const KnobPtr& alias,
         return;
     }
     if (connect) {
-        QObject::connect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
-        QObject::connect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
-        QObject::connect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
-                          SLOT(onOriginalKnobEntryAppend(QString,QString)) );
+        QObject::connect( this, SIGNAL( populated() ), aliasIsChoice, SLOT( onOriginalKnobPopulated() ) );
+        QObject::connect( this, SIGNAL( entriesReset() ), aliasIsChoice, SLOT( onOriginalKnobEntriesReset() ) );
+        QObject::connect( this, SIGNAL( entryAppended(QString, QString) ), aliasIsChoice,
+                          SLOT( onOriginalKnobEntryAppend(QString, QString) ) );
     } else {
-        QObject::disconnect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
-        QObject::disconnect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
-        QObject::disconnect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
-                             SLOT(onOriginalKnobEntryAppend(QString,QString)) );
+        QObject::disconnect( this, SIGNAL( populated() ), aliasIsChoice, SLOT( onOriginalKnobPopulated() ) );
+        QObject::disconnect( this, SIGNAL( entriesReset() ), aliasIsChoice, SLOT( onOriginalKnobEntriesReset() ) );
+        QObject::disconnect( this, SIGNAL( entryAppended(QString, QString) ), aliasIsChoice,
+                             SLOT( onOriginalKnobEntryAppend(QString, QString) ) );
     }
 }
 
@@ -1187,8 +1187,8 @@ KnobColor::KnobColor(KnobHolder* holder,
                      int dimension,
                      bool declaredByPlugin)
     : Knob<double>(holder, label, dimension, declaredByPlugin)
-      , _allDimensionsEnabled(true)
-      , _simplifiedMode(false)
+    , _allDimensionsEnabled(true)
+    , _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
@@ -1199,8 +1199,8 @@ KnobColor::KnobColor(KnobHolder* holder,
                      int dimension,
                      bool declaredByPlugin)
     : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _allDimensionsEnabled(true)
-      , _simplifiedMode(false)
+    , _allDimensionsEnabled(true)
+    , _simplifiedMode(false)
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
@@ -1258,11 +1258,11 @@ KnobString::KnobString(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : AnimatingKnobStringHelper(holder, label, dimension, declaredByPlugin)
-      , _multiLine(false)
-      , _richText(false)
-      , _customHtmlText(false)
-      , _isLabel(false)
-      , _isCustom(false)
+    , _multiLine(false)
+    , _richText(false)
+    , _customHtmlText(false)
+    , _isLabel(false)
+    , _isCustom(false)
 {
 }
 
@@ -1271,11 +1271,11 @@ KnobString::KnobString(KnobHolder* holder,
                        int dimension,
                        bool declaredByPlugin)
     : AnimatingKnobStringHelper(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _multiLine(false)
-      , _richText(false)
-      , _customHtmlText(false)
-      , _isLabel(false)
-      , _isCustom(false)
+    , _multiLine(false)
+    , _richText(false)
+    , _customHtmlText(false)
+    , _isLabel(false)
+    , _isCustom(false)
 {
 }
 
@@ -1362,9 +1362,9 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      int dimension,
                      bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
-      , _isTab(false)
-      , _isToolButton(false)
-      , _isDialog(false)
+    , _isTab(false)
+    , _isToolButton(false)
+    , _isDialog(false)
 {
 }
 
@@ -1373,9 +1373,9 @@ KnobGroup::KnobGroup(KnobHolder* holder,
                      int dimension,
                      bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _isTab(false)
-      , _isToolButton(false)
-      , _isDialog(false)
+    , _isTab(false)
+    , _isToolButton(false)
+    , _isDialog(false)
 {
 }
 
@@ -1549,7 +1549,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
     : Knob<bool>(holder, label, dimension, declaredByPlugin)
-      , _isToolBar(false)
+    , _isToolBar(false)
 {
     setIsPersistant(false);
 }
@@ -1559,7 +1559,7 @@ KnobPage::KnobPage(KnobHolder* holder,
                    int dimension,
                    bool declaredByPlugin)
     : Knob<bool>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _isToolBar(false)
+    , _isToolBar(false)
 {
     setIsPersistant(false);
 }
@@ -1699,10 +1699,10 @@ KnobParametric::KnobParametric(KnobHolder* holder,
                                int dimension,
                                bool declaredByPlugin)
     : Knob<double>(holder, label, dimension, declaredByPlugin)
-      , _curvesMutex()
-      , _curves(dimension)
-      , _defaultCurves(dimension)
-      , _curvesColor(dimension)
+    , _curvesMutex()
+    , _curves(dimension)
+    , _defaultCurves(dimension)
+    , _curvesColor(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
         RGBAColourD color;
@@ -1718,10 +1718,10 @@ KnobParametric::KnobParametric(KnobHolder* holder,
                                int dimension,
                                bool declaredByPlugin)
     : Knob<double>(holder, label.toStdString(), dimension, declaredByPlugin)
-      , _curvesMutex()
-      , _curves(dimension)
-      , _defaultCurves(dimension)
-      , _curvesColor(dimension)
+    , _curvesMutex()
+    , _curves(dimension)
+    , _defaultCurves(dimension)
+    , _curvesColor(dimension)
 {
     for (int i = 0; i < dimension; ++i) {
         RGBAColourD color;

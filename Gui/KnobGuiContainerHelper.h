@@ -37,9 +37,8 @@ NATRON_NAMESPACE_ENTER;
 
 typedef std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > KnobsGuiMapping;
 
-struct KnobPageGui 
+struct KnobPageGui
 {
-
     QWidget* tab;
     int currentRow;
     TabGroup* groupAsTab; //< to gather group knobs that are set as a tab
@@ -47,14 +46,13 @@ struct KnobPageGui
     QGridLayout* gridLayout;
 
     KnobPageGui()
-    : tab(0)
-    , currentRow(0)
-    , groupAsTab(0)
-    , pageKnob()
-    , gridLayout(0)
+        : tab(0)
+        , currentRow(0)
+        , groupAsTab(0)
+        , pageKnob()
+        , gridLayout(0)
     {
     }
-
 };
 
 typedef boost::shared_ptr<KnobPageGui> KnobPageGuiPtr;
@@ -65,7 +63,8 @@ typedef std::map<boost::weak_ptr<KnobPage>, KnobPageGuiPtr> PagesMap;
  * We do this because derived class of KnobGuiContainerHelper might also want inherit QWidget in which case
  * there would be an ambiguous class derivation of QObject.
  **/
-class KnobGuiContainerSignalsHandler : public QObject
+class KnobGuiContainerSignalsHandler
+    : public QObject
 {
     Q_OBJECT
 
@@ -73,16 +72,14 @@ public:
 
 
     KnobGuiContainerSignalsHandler(KnobGuiContainerHelper* container)
-    : QObject()
-    , _container(container)
+        : QObject()
+        , _container(container)
     {
-        QObject::connect(this, SIGNAL(deleteCurCmdLater()), this, SLOT(onDeleteCurCmdLaterTriggered()), Qt::QueuedConnection);
-
+        QObject::connect(this, SIGNAL( deleteCurCmdLater() ), this, SLOT( onDeleteCurCmdLaterTriggered() ), Qt::QueuedConnection);
     }
 
     virtual ~KnobGuiContainerSignalsHandler()
     {
-
     }
 
     void s_deleteCurCmdLater()
@@ -103,7 +100,6 @@ public Q_SLOTS:
 private:
 
     KnobGuiContainerHelper* _container;
-
 };
 
 /**
@@ -111,10 +107,10 @@ private:
  * must indicate how pages are selected and which one is active at a time. @see DockablePanel for an implementation.
  **/
 struct KnobGuiContainerHelperPrivate;
-class KnobGuiContainerHelper : public KnobGuiContainerI, public DockablePanelI
+class KnobGuiContainerHelper
+    : public KnobGuiContainerI, public DockablePanelI
 
 {
-
 public:
 
     /**
@@ -249,6 +245,7 @@ public:
      **/
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     ///// End override from KnobGuiContainerI
+
 protected:
 
     /**
@@ -322,7 +319,6 @@ protected:
      **/
     KnobPageGuiPtr getOrCreateDefaultPage();
 
-
 private:
 
     void initializeKnobVector(const KnobsVec& knobs);
@@ -344,7 +340,6 @@ private:
 
     friend class KnobGuiContainerSignalsHandler;
     boost::scoped_ptr<KnobGuiContainerHelperPrivate> _imp;
-
 };
 
 NATRON_NAMESPACE_EXIT;

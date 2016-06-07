@@ -43,7 +43,7 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 App::App(const AppInstPtr& instance)
     : Group()
-      , _instance(instance)
+    , _instance(instance)
 {
     if ( instance->getProject() ) {
         init( instance->getProject() );

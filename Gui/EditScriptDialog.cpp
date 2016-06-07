@@ -112,16 +112,16 @@ struct EditScriptDialogPrivate
 
     EditScriptDialogPrivate(Gui* gui)
         : gui(gui)
-          , mainLayout(0)
-          , expressionLabel(0)
-          , expressionEdit(0)
-          , midButtonsContainer(0)
-          , midButtonsLayout(0)
-          , useRetButton(0)
-          , helpButton(0)
-          , resultLabel(0)
-          , resultEdit(0)
-          , buttons(0)
+        , mainLayout(0)
+        , expressionLabel(0)
+        , expressionEdit(0)
+        , midButtonsContainer(0)
+        , midButtonsLayout(0)
+        , useRetButton(0)
+        , helpButton(0)
+        , resultLabel(0)
+        , resultEdit(0)
+        , buttons(0)
     {
     }
 };
@@ -129,7 +129,7 @@ struct EditScriptDialogPrivate
 EditScriptDialog::EditScriptDialog(Gui* gui,
                                    QWidget* parent)
     : QDialog(parent)
-      , _imp( new EditScriptDialogPrivate(gui) )
+    , _imp( new EditScriptDialogPrivate(gui) )
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 }
@@ -190,13 +190,13 @@ EditScriptDialog::create(const QString& initialScript,
         bool checked = !initialScript.isEmpty() && retVariable;
         _imp->useRetButton->setChecked(checked);
         _imp->useRetButton->setDown(checked);
-        QObject::connect( _imp->useRetButton, SIGNAL(clicked(bool)), this, SLOT(onUseRetButtonClicked(bool)) );
+        QObject::connect( _imp->useRetButton, SIGNAL( clicked(bool) ), this, SLOT( onUseRetButtonClicked(bool) ) );
         _imp->midButtonsLayout->addWidget(_imp->useRetButton);
     }
 
 
     _imp->helpButton = new Button(tr("Help"), _imp->midButtonsContainer);
-    QObject::connect( _imp->helpButton, SIGNAL(clicked(bool)), this, SLOT(onHelpRequested()) );
+    QObject::connect( _imp->helpButton, SIGNAL( clicked(bool) ), this, SLOT( onHelpRequested() ) );
     _imp->midButtonsLayout->addWidget(_imp->helpButton);
     _imp->midButtonsLayout->addStretch();
 
@@ -212,13 +212,13 @@ EditScriptDialog::create(const QString& initialScript,
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
     _imp->mainLayout->addWidget(_imp->buttons);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
+    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
 
     if ( !initialScript.isEmpty() ) {
         compileAndSetResult(initialScript);
     }
-    QObject::connect( _imp->expressionEdit, SIGNAL(textChanged()), this, SLOT(onTextEditChanged()) );
+    QObject::connect( _imp->expressionEdit, SIGNAL( textChanged() ), this, SLOT( onTextEditChanged() ) );
     _imp->expressionEdit->setFocus();
 
     QString fontFamily = QString::fromUtf8( appPTR->getCurrentSettings()->getSEFontFamily().c_str() );

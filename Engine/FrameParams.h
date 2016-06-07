@@ -46,15 +46,15 @@ public:
 
     FrameParams()
         : NonKeyParams()
-          , _image()
-          , _rod()
+        , _image()
+        , _rod()
     {
     }
 
     FrameParams(const FrameParams & other)
         : NonKeyParams(other)
-          , _image(other._image)
-          , _rod(other._rod)
+        , _image(other._image)
+        , _rod(other._rod)
     {
     }
 
@@ -63,8 +63,8 @@ public:
                 const RectI& bounds,
                 const ImagePtr& originalImage)
         : NonKeyParams()
-          , _image(originalImage)
-          , _rod(rod)
+        , _image(originalImage)
+        , _rod(rod)
     {
         CacheEntryStorageInfo& info = getStorageInfo();
 

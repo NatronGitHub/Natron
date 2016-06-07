@@ -102,20 +102,20 @@ struct NewLayerDialogPrivate
 
     NewLayerDialogPrivate()
         : mainLayout(0)
-          , layerLabel(0)
-          , layerEdit(0)
-          , numCompsLabel(0)
-          , numCompsBox(0)
-          , rLabel(0)
-          , rEdit(0)
-          , gLabel(0)
-          , gEdit(0)
-          , bLabel(0)
-          , bEdit(0)
-          , aLabel(0)
-          , aEdit(0)
-          , setRgbaButton(0)
-          , buttons(0)
+        , layerLabel(0)
+        , layerEdit(0)
+        , numCompsLabel(0)
+        , numCompsBox(0)
+        , rLabel(0)
+        , rEdit(0)
+        , gLabel(0)
+        , gEdit(0)
+        , bLabel(0)
+        , bEdit(0)
+        , aLabel(0)
+        , aEdit(0)
+        , setRgbaButton(0)
+        , buttons(0)
     {
     }
 };
@@ -123,7 +123,7 @@ struct NewLayerDialogPrivate
 NewLayerDialog::NewLayerDialog(const ImageComponents& original,
                                QWidget* parent)
     : QDialog(parent)
-      , _imp( new NewLayerDialogPrivate() )
+    , _imp( new NewLayerDialogPrivate() )
 {
     _imp->mainLayout = new QGridLayout(this);
     _imp->layerLabel = new Label(tr("Layer Name"), this);
@@ -131,7 +131,7 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
 
     _imp->numCompsLabel = new Label(tr("No. Channels"), this);
     _imp->numCompsBox = new SpinBox(this, SpinBox::eSpinBoxTypeInt);
-    QObject::connect( _imp->numCompsBox, SIGNAL(valueChanged(double)), this, SLOT(onNumCompsChanged(double)) );
+    QObject::connect( _imp->numCompsBox, SIGNAL( valueChanged(double) ), this, SLOT( onNumCompsChanged(double) ) );
     _imp->numCompsBox->setMinimum(1);
     _imp->numCompsBox->setMaximum(4);
     _imp->numCompsBox->setValue(4);
@@ -147,11 +147,11 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
 
     _imp->setRgbaButton = new Button(this);
     _imp->setRgbaButton->setText( tr("Set RGBA") );
-    QObject::connect( _imp->setRgbaButton, SIGNAL(clicked(bool)), this, SLOT(onRGBAButtonClicked()) );
+    QObject::connect( _imp->setRgbaButton, SIGNAL( clicked(bool) ), this, SLOT( onRGBAButtonClicked() ) );
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-    QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
+    QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
 
     _imp->mainLayout->addWidget(_imp->layerLabel, 0, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->layerEdit, 0, 1, 1, 1);

@@ -52,14 +52,14 @@ struct AbortableThreadPrivate
 
     AbortableThreadPrivate(QThread* thread)
         : thread(thread)
-          , threadName()
-          , abortInfoMutex()
-          , isRenderResponseToUserInteraction(false)
-          , abortInfo()
-          , treeRoot()
-          , abortInfoValid(false)
-          , currentActionName()
-          , currentActionNode()
+        , threadName()
+        , abortInfoMutex()
+        , isRenderResponseToUserInteraction(false)
+        , abortInfo()
+        , treeRoot()
+        , abortInfoValid(false)
+        , currentActionName()
+        , currentActionNode()
     {
     }
 };
@@ -187,7 +187,7 @@ public:
 
     ThreadPoolThread()
         : QThreadPoolThread()
-          , AbortableThread(this)
+        , AbortableThread(this)
     {
     }
 

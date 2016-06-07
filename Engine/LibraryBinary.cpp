@@ -37,15 +37,15 @@ NATRON_NAMESPACE_ENTER;
 
 LibraryBinary::LibraryBinary(LibraryBinary::LibraryTypeEnum type)
     : _type(type)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
 }
 
 LibraryBinary::LibraryBinary(const std::map<std::string, void(*) ()> &functions)
     : _type(LibraryBinary::eLibraryTypeBuiltin)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
 #ifdef __NATRON_UNIX__
     _functions = functions;
@@ -60,8 +60,8 @@ LibraryBinary::LibraryBinary(const std::map<std::string, void(*) ()> &functions)
 
 LibraryBinary::LibraryBinary(const std::string & binaryPath)
     : _type(LibraryBinary::eLibraryTypeExternal)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
     loadBinary(binaryPath);
 }
@@ -69,8 +69,8 @@ LibraryBinary::LibraryBinary(const std::string & binaryPath)
 LibraryBinary::LibraryBinary(const std::string & binaryPath,
                              const std::vector<std::string> & funcNames)
     : _type(LibraryBinary::eLibraryTypeExternal)
-      , _library(0)
-      , _valid(false)
+    , _library(0)
+    , _valid(false)
 {
     if ( !loadBinary(binaryPath) ) {
         return;

@@ -50,7 +50,7 @@ struct DiskCacheNodePrivate
 
 DiskCacheNode::DiskCacheNode(NodePtr node)
     : OutputEffectInstance(node)
-      , _imp( new DiskCacheNodePrivate() )
+    , _imp( new DiskCacheNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }

@@ -101,11 +101,11 @@ EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
 
 EffectInstance::EffectInstance(NodePtr node)
     : NamedKnobHolder( node ? node->getApp() : AppInstPtr() )
-      , _node(node)
-      , _imp( new Implementation(this) )
+    , _node(node)
+    , _imp( new Implementation(this) )
 {
     if (node) {
-        if (!node->isRenderScaleSupportEnabledForPlugin()) {
+        if ( !node->isRenderScaleSupportEnabledForPlugin() ) {
             setSupportsRenderScaleMaybe(eSupportsNo);
         }
     }
@@ -855,7 +855,7 @@ EffectInstance::getImage(int inputNb,
         }
     }
 
-    if ((!glContext || !renderInfo) && returnOpenGLTexture) {
+    if ( (!glContext || !renderInfo) && returnOpenGLTexture ) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";
 
         return ImagePtr();
@@ -863,11 +863,11 @@ EffectInstance::getImage(int inputNb,
 
     boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
     if (glContext && returnOpenGLTexture && renderInfo) {
-        glContextAttacher.reset(new OSGLContextAttacher(glContext, renderInfo
+        glContextAttacher.reset( new OSGLContextAttacher(glContext, renderInfo
 #ifdef DEBUG
-                                                        , time
+                                                         , time
 #endif
-                                                        ));
+                                                         ) );
     }
 
     RectD inputRoD;
@@ -1396,7 +1396,7 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
 EffectInstance::NotifyInputNRenderingStarted_RAII::NotifyInputNRenderingStarted_RAII(Node* node,
                                                                                      int inputNumber)
     : _node(node)
-      , _inputNumber(inputNumber)
+    , _inputNumber(inputNumber)
 {
     _didEmit = node->notifyInputNIsRendering(inputNumber);
 }
@@ -1417,7 +1417,6 @@ getOrCreateFromCacheInternal(const ImageKey & key,
     if (!useCache) {
         image->reset( new Image(key, params) );
     } else {
-
         assert(params->getStorageInfo().mode != eStorageModeGLTex);
 
         if (params->getStorageInfo().mode == eStorageModeRAM) {
@@ -1724,7 +1723,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 // the GPU image.
                 std::list<RectI> restToRender;
                 imageToConvert->getRestToRender(roi, restToRender);
-                if (restToRender.empty()) {
+                if ( restToRender.empty() ) {
                     *image = convertRAMImageToOpenGLTexture(imageToConvert);
                 }
             } else {
@@ -1736,7 +1735,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
         } else if (*image) { //  else if (imageToConvert && !*image)
             ///Ensure the image is allocated
-            if ((*image)->getStorageMode() != eStorageModeGLTex) {
+            if ( (*image)->getStorageMode() != eStorageModeGLTex ) {
                 (*image)->allocateMemory();
 
                 if (storage == eStorageModeGLTex) {
@@ -1745,7 +1744,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     // the GPU image.
                     std::list<RectI> restToRender;
                     (*image)->getRestToRender(roi, restToRender);
-                    if (restToRender.empty()) {
+                    if ( restToRender.empty() ) {
                         *image = convertRAMImageToOpenGLTexture(*image);
                     }
                 }
@@ -2404,11 +2403,11 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         assert(glContext);
 
         // Ensure the context is current
-        glContextAttacher.reset(new OSGLContextAttacher(glContext, abortInfo
+        glContextAttacher.reset( new OSGLContextAttacher(glContext, abortInfo
 #ifdef DEBUG
-                                                        , frameArgs->time
+                                                         , frameArgs->time
 #endif
-                                                        ));
+                                                         ) );
 
 
         GLuint fboID = glContext->getFBOId();
@@ -2570,7 +2569,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
         // OpenGL render never use the cache and bitmaps, all images are local to a render.
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
                ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() && !planes.useOpenGL ) {
-
             it->second.tmpImage.reset( new Image(prefComp,
                                                  it->second.renderMappedImage->getRoD(),
                                                  actionArgs.roi,
@@ -2627,7 +2625,6 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
         int textureTarget = 0;
         if (planes.useOpenGL) {
-
             actionArgs.glContextData = planes.glContextData;
 
             // Effects that render multiple planes at once are NOT supported by the OpenGL render suite
@@ -2646,7 +2643,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
             // setup the output viewport
             RectI imageBounds = mainImagePlane->getBounds();
-            glViewport(actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
+            glViewport( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
 
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
@@ -2659,7 +2656,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
             // Enable scissor to make the plug-in doesn't render outside of the viewport...
             glEnable(GL_SCISSOR_TEST);
-            glScissor(actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
+            glScissor( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
         }
 
         StatusEnum st = _publicInterface->render_public(actionArgs);
@@ -3979,6 +3976,7 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
     if ( found != _imp->attachedContexts.end() ) {
         // The context is already attached
         *data = found->second;
+
         return eStatusOK;
     }
 
@@ -4011,7 +4009,7 @@ EffectInstance::dettachAllOpenGLContexts()
         context->setContextCurrentNoRender();
         dettachOpenGLContext(it->second);
     }
-    if (!_imp->attachedContexts.empty()) {
+    if ( !_imp->attachedContexts.empty() ) {
         OSGLContext::unsetCurrentContextNoRender();
     }
 }

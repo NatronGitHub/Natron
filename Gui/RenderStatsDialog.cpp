@@ -132,8 +132,8 @@ public:
                     int cols,
                     TableView* view)
         : TableModel(row, cols, view)
-          , view(view)
-          , rows()
+        , view(view)
+        , rows()
     {
     }
 
@@ -718,29 +718,29 @@ struct RenderStatsDialogPrivate
 
     RenderStatsDialogPrivate(Gui* gui)
         : gui(gui)
-          , mainLayout(0)
-          , descriptionLabel(0)
-          , globalInfosContainer(0)
-          , globalInfosLayout(0)
-          , accumulateLabel(0)
-          , accumulateCheckbox(0)
-          , advancedLabel(0)
-          , advancedCheckbox(0)
-          , totalTimeSpentDescLabel(0)
-          , totalTimeSpentValueLabel(0)
-          , totalSpentTime(0)
-          , resetButton(0)
-          , filterContainer(0)
-          , filterLayout(0)
-          , filtersLabel(0)
-          , nameFilterLabel(0)
-          , nameFilterEdit(0)
-          , idFilterLabel(0)
-          , idFilterEdit(0)
-          , useUnixWildcardsLabel(0)
-          , useUnixWildcardsCheckbox(0)
-          , view(0)
-          , model(0)
+        , mainLayout(0)
+        , descriptionLabel(0)
+        , globalInfosContainer(0)
+        , globalInfosLayout(0)
+        , accumulateLabel(0)
+        , accumulateCheckbox(0)
+        , advancedLabel(0)
+        , advancedCheckbox(0)
+        , totalTimeSpentDescLabel(0)
+        , totalTimeSpentValueLabel(0)
+        , totalSpentTime(0)
+        , resetButton(0)
+        , filterContainer(0)
+        , filterLayout(0)
+        , filtersLabel(0)
+        , nameFilterLabel(0)
+        , nameFilterEdit(0)
+        , idFilterLabel(0)
+        , idFilterEdit(0)
+        , useUnixWildcardsLabel(0)
+        , useUnixWildcardsCheckbox(0)
+        , view(0)
+        , model(0)
     {
     }
 
@@ -751,7 +751,7 @@ struct RenderStatsDialogPrivate
 
 RenderStatsDialog::RenderStatsDialog(Gui* gui)
     : QWidget(gui)
-      , _imp( new RenderStatsDialogPrivate(gui) )
+    , _imp( new RenderStatsDialogPrivate(gui) )
 {
     setWindowFlags(Qt::Tool);
     setWindowTitle( tr("Render statistics") );
@@ -793,7 +793,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->advancedCheckbox = new QCheckBox(_imp->globalInfosContainer);
     _imp->advancedCheckbox->setChecked(false);
     _imp->advancedCheckbox->setToolTip(adTt);
-    QObject::connect( _imp->advancedCheckbox, SIGNAL(clicked(bool)), this, SLOT(refreshAdvancedColsVisibility()) );
+    QObject::connect( _imp->advancedCheckbox, SIGNAL( clicked(bool) ), this, SLOT( refreshAdvancedColsVisibility() ) );
 
     _imp->globalInfosLayout->addWidget(_imp->advancedLabel);
     _imp->globalInfosLayout->addWidget(_imp->advancedCheckbox);
@@ -812,7 +812,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 
     _imp->resetButton = new Button(tr("Reset"), _imp->globalInfosContainer);
     _imp->resetButton->setToolTip( tr("Clears the statistics.") );
-    QObject::connect( _imp->resetButton, SIGNAL(clicked(bool)), this, SLOT(resetStats()) );
+    QObject::connect( _imp->resetButton, SIGNAL( clicked(bool) ), this, SLOT( resetStats() ) );
     _imp->globalInfosLayout->addWidget(_imp->resetButton);
 
     _imp->globalInfosLayout->addStretch();
@@ -834,8 +834,8 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->nameFilterLabel->setToolTip(nameFilterTt);
     _imp->nameFilterEdit = new LineEdit(_imp->filterContainer);
     _imp->nameFilterEdit->setToolTip(nameFilterTt);
-    QObject::connect( _imp->nameFilterEdit, SIGNAL(editingFinished()), this, SLOT(updateVisibleRows()) );
-    QObject::connect( _imp->nameFilterEdit, SIGNAL(textEdited(QString)), this, SLOT(onNameLineEditChanged(QString)) );
+    QObject::connect( _imp->nameFilterEdit, SIGNAL( editingFinished() ), this, SLOT( updateVisibleRows() ) );
+    QObject::connect( _imp->nameFilterEdit, SIGNAL( textEdited(QString) ), this, SLOT( onNameLineEditChanged(QString) ) );
 
     _imp->filterLayout->addWidget(_imp->nameFilterLabel);
     _imp->filterLayout->addWidget(_imp->nameFilterEdit);
@@ -849,8 +849,8 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->idFilterLabel->setToolTip(idFilterTt);
     _imp->idFilterEdit = new LineEdit(_imp->idFilterEdit);
     _imp->idFilterEdit->setToolTip(idFilterTt);
-    QObject::connect( _imp->idFilterEdit, SIGNAL(editingFinished()), this, SLOT(updateVisibleRows()) );
-    QObject::connect( _imp->idFilterEdit, SIGNAL(textEdited(QString)), this, SLOT(onIDLineEditChanged(QString)) );
+    QObject::connect( _imp->idFilterEdit, SIGNAL( editingFinished() ), this, SLOT( updateVisibleRows() ) );
+    QObject::connect( _imp->idFilterEdit, SIGNAL( textEdited(QString) ), this, SLOT( onIDLineEditChanged(QString) ) );
 
     _imp->filterLayout->addWidget(_imp->idFilterLabel);
     _imp->filterLayout->addWidget(_imp->idFilterEdit);
@@ -858,7 +858,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->useUnixWildcardsLabel = new Label(tr("Use Unix wildcards (*, ?, etc..)"), _imp->filterContainer);
     _imp->useUnixWildcardsCheckbox = new QCheckBox(_imp->filterContainer);
     _imp->useUnixWildcardsCheckbox->setChecked(false);
-    QObject::connect( _imp->useUnixWildcardsCheckbox, SIGNAL(toggled(bool)), this, SLOT(updateVisibleRows()) );
+    QObject::connect( _imp->useUnixWildcardsCheckbox, SIGNAL( toggled(bool) ), this, SLOT( updateVisibleRows() ) );
 
     _imp->filterLayout->addWidget(_imp->useUnixWildcardsLabel);
     _imp->filterLayout->addWidget(_imp->useUnixWildcardsCheckbox);
@@ -913,7 +913,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
 
     refreshAdvancedColsVisibility();
     QItemSelectionModel* selModel = _imp->view->selectionModel();
-    QObject::connect( selModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged(QItemSelection,QItemSelection)) );
+    QObject::connect( selModel, SIGNAL( selectionChanged(QItemSelection, QItemSelection) ), this, SLOT( onSelectionChanged(QItemSelection, QItemSelection) ) );
     _imp->mainLayout->addWidget(_imp->view);
 }
 

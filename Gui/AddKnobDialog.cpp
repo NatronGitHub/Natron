@@ -124,61 +124,61 @@ struct AddKnobDialogPrivate
 
     AddKnobDialogPrivate(DockablePanel* panel)
         : knob()
-          , originalKnobSerialization()
-          , isKnobAlias()
-          , panel(panel)
-          , vLayout(0)
-          , mainContainer(0)
-          , mainLayout(0)
-          , typeLabel(0)
-          , typeChoice(0)
-          , nameLabel(0)
-          , nameLineEdit(0)
-          , labelLabel(0)
-          , labelLineEdit(0)
-          , hideLabel(0)
-          , hideBox(0)
-          , startNewLineLabel(0)
-          , startNewLineBox(0)
-          , animatesLabel(0)
-          , animatesCheckbox(0)
-          , evaluatesLabel(0)
-          , evaluatesOnChange(0)
-          , tooltipLabel(0)
-          , tooltipArea(0)
-          , minLabel(0)
-          , minBox(0)
-          , maxLabel(0)
-          , maxBox(0)
-          , dminLabel(0)
-          , dminBox(0)
-          , dmaxLabel(0)
-          , dmaxBox(0)
-          , defaultValueLabel(0)
-          , default0(0)
-          , default1(0)
-          , default2(0)
-          , default3(0)
-          , defaultStr(0)
-          , defaultBool(0)
-          , menuItemsLabel(0)
-          , menuItemsEdit(0)
-          , multiLineLabel(0)
-          , multiLine(0)
-          , richTextLabel(0)
-          , richText(0)
-          , sequenceDialogLabel(0)
-          , sequenceDialog(0)
-          , multiPathLabel(0)
-          , multiPath(0)
-          , groupAsTabLabel(0)
-          , groupAsTab(0)
-          , parentGroupLabel(0)
-          , parentGroup(0)
-          , parentPageLabel(0)
-          , parentPage(0)
-          , userGroups()
-          , userPages()
+        , originalKnobSerialization()
+        , isKnobAlias()
+        , panel(panel)
+        , vLayout(0)
+        , mainContainer(0)
+        , mainLayout(0)
+        , typeLabel(0)
+        , typeChoice(0)
+        , nameLabel(0)
+        , nameLineEdit(0)
+        , labelLabel(0)
+        , labelLineEdit(0)
+        , hideLabel(0)
+        , hideBox(0)
+        , startNewLineLabel(0)
+        , startNewLineBox(0)
+        , animatesLabel(0)
+        , animatesCheckbox(0)
+        , evaluatesLabel(0)
+        , evaluatesOnChange(0)
+        , tooltipLabel(0)
+        , tooltipArea(0)
+        , minLabel(0)
+        , minBox(0)
+        , maxLabel(0)
+        , maxBox(0)
+        , dminLabel(0)
+        , dminBox(0)
+        , dmaxLabel(0)
+        , dmaxBox(0)
+        , defaultValueLabel(0)
+        , default0(0)
+        , default1(0)
+        , default2(0)
+        , default3(0)
+        , defaultStr(0)
+        , defaultBool(0)
+        , menuItemsLabel(0)
+        , menuItemsEdit(0)
+        , multiLineLabel(0)
+        , multiLine(0)
+        , richTextLabel(0)
+        , richText(0)
+        , sequenceDialogLabel(0)
+        , sequenceDialog(0)
+        , multiPathLabel(0)
+        , multiPath(0)
+        , groupAsTabLabel(0)
+        , groupAsTab(0)
+        , parentGroupLabel(0)
+        , parentGroup(0)
+        , parentPageLabel(0)
+        , parentPage(0)
+        , userGroups()
+        , userPages()
     {
     }
 
@@ -435,7 +435,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                              const std::string& selectedGroupName,
                              QWidget* parent)
     : QDialog(parent)
-      , _imp( new AddKnobDialogPrivate(panel) )
+    , _imp( new AddKnobDialogPrivate(panel) )
 {
     _imp->knob = knob;
     assert( !knob || knob->isUserKnob() );
@@ -584,7 +584,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
                 assert(_imp->typeChoice->count() == i);
                 _imp->typeChoice->addItem( tr( dataTypeString( (ParamDataTypeEnum)i ) ) );
             }
-            QObject::connect( _imp->typeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onTypeCurrentIndexChanged(int)) );
+            QObject::connect( _imp->typeChoice, SIGNAL( currentIndexChanged(int) ), this, SLOT( onTypeCurrentIndexChanged(int) ) );
 
             thirdRowLayout->addWidget(_imp->typeChoice);
         }
@@ -940,7 +940,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->parentPageLabel = new Label(tr("Page:"), optContainer);
     _imp->parentPage = new ComboBox(optContainer);
 
-    QObject::connect( _imp->parentPage, SIGNAL(currentIndexChanged(int)), this, SLOT(onPageCurrentIndexChanged(int)) );
+    QObject::connect( _imp->parentPage, SIGNAL( currentIndexChanged(int) ), this, SLOT( onPageCurrentIndexChanged(int) ) );
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
         if ( (*it)->isUserKnob() ) {
@@ -1033,8 +1033,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
 
     QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
-    QObject::connect( buttons, SIGNAL(rejected()), this, SLOT(reject()) );
-    QObject::connect( buttons, SIGNAL(accepted()), this, SLOT(onOkClicked()) );
+    QObject::connect( buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
+    QObject::connect( buttons, SIGNAL( accepted() ), this, SLOT( onOkClicked() ) );
     _imp->vLayout->addWidget(buttons);
 
     ParamDataTypeEnum t;

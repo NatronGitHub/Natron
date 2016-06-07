@@ -87,7 +87,7 @@ using std::make_pair;
 KnobGuiSeparator::KnobGuiSeparator(KnobPtr knob,
                                    KnobGuiContainerI *container)
     : KnobGui(knob, container)
-      , _line(0)
+    , _line(0)
 {
     _knob = boost::dynamic_pointer_cast<KnobSeparator>(knob);
 }

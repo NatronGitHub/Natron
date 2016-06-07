@@ -50,9 +50,9 @@ struct RotoSmearPrivate
 
     RotoSmearPrivate()
         : smearDataMutex()
-          , lastTickPoint()
-          , lastCur()
-          , lastDistToNext(0)
+        , lastTickPoint()
+        , lastCur()
+        , lastDistToNext(0)
     {
         lastCur.first.x = lastCur.first.y = INT_MIN;
     }
@@ -60,7 +60,7 @@ struct RotoSmearPrivate
 
 RotoSmear::RotoSmear(NodePtr node)
     : EffectInstance(node)
-      , _imp( new RotoSmearPrivate() )
+    , _imp( new RotoSmearPrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }

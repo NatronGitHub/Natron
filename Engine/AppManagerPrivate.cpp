@@ -34,11 +34,11 @@
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-GCC_DIAG_OFF(unused-parameter)
+    GCC_DIAG_OFF(unused - parameter)
 #include <boost/serialization/export.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-GCC_DIAG_ON(unused-parameter)
+    GCC_DIAG_ON(unused - parameter)
 
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>
@@ -71,55 +71,55 @@ BOOST_CLASS_EXPORT(NATRON_NAMESPACE::ImageParams)
 NATRON_NAMESPACE_ENTER;
 AppManagerPrivate::AppManagerPrivate()
     : globalTLS()
-      , _appType(AppManager::eAppTypeBackground)
-      , _appInstancesMutex()
-      , _appInstances()
-      , _availableID(0)
-      , _topLevelInstanceID(0)
-      , _settings()
-      , _formats()
-      , _plugins()
-      , readerPlugins()
-      , writerPlugins()
-      , ofxHost( new OfxHost() )
-      , _knobFactory( new KnobFactory() )
-      , _nodeCache()
-      , _diskCache()
-      , _viewerCache()
-      , diskCachesLocationMutex()
-      , diskCachesLocation()
-      , _backgroundIPC()
-      , _loaded(false)
-      , _binaryPath()
-      , _nodesGlobalMemoryUse(0)
-      , errorLogMutex()
-      , errorLog()
-      , maxCacheFiles(0)
-      , currentCacheFilesCount(0)
-      , currentCacheFilesCountMutex()
-      , idealThreadCount(0)
-      , nThreadsToRender(0)
-      , nThreadsPerEffect(0)
-      , useThreadPool(true)
-      , nThreadsMutex()
-      , runningThreadsCount()
-      , lastProjectLoadedCreatedDuringRC2Or3(false)
-      , args()
-      , mainModule(0)
-      , mainThreadState(0)
+    , _appType(AppManager::eAppTypeBackground)
+    , _appInstancesMutex()
+    , _appInstances()
+    , _availableID(0)
+    , _topLevelInstanceID(0)
+    , _settings()
+    , _formats()
+    , _plugins()
+    , readerPlugins()
+    , writerPlugins()
+    , ofxHost( new OfxHost() )
+    , _knobFactory( new KnobFactory() )
+    , _nodeCache()
+    , _diskCache()
+    , _viewerCache()
+    , diskCachesLocationMutex()
+    , diskCachesLocation()
+    , _backgroundIPC()
+    , _loaded(false)
+    , _binaryPath()
+    , _nodesGlobalMemoryUse(0)
+    , errorLogMutex()
+    , errorLog()
+    , maxCacheFiles(0)
+    , currentCacheFilesCount(0)
+    , currentCacheFilesCountMutex()
+    , idealThreadCount(0)
+    , nThreadsToRender(0)
+    , nThreadsPerEffect(0)
+    , useThreadPool(true)
+    , nThreadsMutex()
+    , runningThreadsCount()
+    , lastProjectLoadedCreatedDuringRC2Or3(false)
+    , args()
+    , mainModule(0)
+    , mainThreadState(0)
 #ifdef NATRON_USE_BREAKPAD
-      , breakpadProcessExecutableFilePath()
-      , breakpadProcessPID(0)
-      , breakpadHandler()
-      , breakpadAliveThread()
+    , breakpadProcessExecutableFilePath()
+    , breakpadProcessPID(0)
+    , breakpadHandler()
+    , breakpadAliveThread()
 #endif
-      , natronPythonGIL(QMutex::Recursive)
-      , pluginsUseInputImageCopyToRender(false)
-      , hasRequiredOpenGLVersionAndExtensions(true)
-      , missingOpenglError()
-      , hasInitializedOpenGLFunctions(false)
-      , openGLFunctionsMutex()
-      , renderingContextPool()
+    , natronPythonGIL(QMutex::Recursive)
+    , pluginsUseInputImageCopyToRender(false)
+    , hasRequiredOpenGLVersionAndExtensions(true)
+    , missingOpenglError()
+    , hasInitializedOpenGLFunctions(false)
+    , openGLFunctionsMutex()
+    , renderingContextPool()
 {
     setMaxCacheFiles();
 
@@ -150,7 +150,7 @@ AppManagerPrivate::initBreakpad(const QString& breakpadPipePath,
     breakpadAliveThread.reset( new ExistenceCheckerThread(QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK),
                                                           QString::fromUtf8(NATRON_NATRON_TO_BREAKPAD_EXISTENCE_CHECK_ACK),
                                                           breakpadComPipePath) );
-    QObject::connect( breakpadAliveThread.get(), SIGNAL(otherProcessUnreachable()), appPTR, SLOT(onCrashReporterNoLongerResponding()) );
+    QObject::connect( breakpadAliveThread.get(), SIGNAL( otherProcessUnreachable() ), appPTR, SLOT( onCrashReporterNoLongerResponding() ) );
     breakpadAliveThread->start();
 }
 
@@ -270,7 +270,7 @@ AppManagerPrivate::declareSettingsToPython()
     const KnobsVec& knobs = _settings->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         ss <<  NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings." <<
-            (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
+        (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
     }
 }
 

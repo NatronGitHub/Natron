@@ -60,8 +60,6 @@ using std::make_pair;
 NATRON_NAMESPACE_ENTER;
 
 
-
-
 DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
                                            Gui* gui,
                                            KnobHolder* holder,
@@ -70,52 +68,51 @@ DockablePanelPrivate::DockablePanelPrivate(DockablePanel* publicI,
                                            bool useScrollAreasForTabs,
                                            const QString& helpToolTip)
     : _publicInterface(publicI)
-      , _gui(gui)
-      , _container(container)
-      , _mainLayout(NULL)
-      , _headerWidget(NULL)
-      , _headerLayout(NULL)
-      , _nameLineEdit(NULL)
-      , _nameLabel(NULL)
-      , _horizLayout(0)
-      , _horizContainer(0)
-      , _verticalColorBar(0)
-      , _rightContainer(0)
-      , _rightContainerLayout(0)
-      , _tabWidget(NULL)
-      , _centerNodeButton(NULL)
-      , _enterInGroupButton(NULL)
-      , _helpButton(NULL)
-      , _minimize(NULL)
-      , _hideUnmodifiedButton(NULL)
-      , _floatButton(NULL)
-      , _cross(NULL)
-      , _overlayColor()
-      , _hasOverlayColor(false)
-      , _colorButton(NULL)
-      , _overlayButton(NULL)
-      , _undoButton(NULL)
-      , _redoButton(NULL)
-      , _restoreDefaultsButton(NULL)
-      , _minimized(false)
-      , _floating(false)
-      , _floatingWidget(NULL)
-      , _knobsVisibilityBeforeHideModif()
-      , _holder(holder)
-      , _useScrollAreasForTabs(useScrollAreasForTabs)
-      , _mode(headerMode)
-      , _isClosedMutex()
-      , _isClosed(false)
-      , _helpToolTip(helpToolTip)
-      , _pluginID()
-      , _pluginVersionMajor(0)
-      , _pluginVersionMinor(0)
-      , _pagesEnabled(true)
-      , _trackerPanel(0)
-      , _iconLabel(0)
+    , _gui(gui)
+    , _container(container)
+    , _mainLayout(NULL)
+    , _headerWidget(NULL)
+    , _headerLayout(NULL)
+    , _nameLineEdit(NULL)
+    , _nameLabel(NULL)
+    , _horizLayout(0)
+    , _horizContainer(0)
+    , _verticalColorBar(0)
+    , _rightContainer(0)
+    , _rightContainerLayout(0)
+    , _tabWidget(NULL)
+    , _centerNodeButton(NULL)
+    , _enterInGroupButton(NULL)
+    , _helpButton(NULL)
+    , _minimize(NULL)
+    , _hideUnmodifiedButton(NULL)
+    , _floatButton(NULL)
+    , _cross(NULL)
+    , _overlayColor()
+    , _hasOverlayColor(false)
+    , _colorButton(NULL)
+    , _overlayButton(NULL)
+    , _undoButton(NULL)
+    , _redoButton(NULL)
+    , _restoreDefaultsButton(NULL)
+    , _minimized(false)
+    , _floating(false)
+    , _floatingWidget(NULL)
+    , _knobsVisibilityBeforeHideModif()
+    , _holder(holder)
+    , _useScrollAreasForTabs(useScrollAreasForTabs)
+    , _mode(headerMode)
+    , _isClosedMutex()
+    , _isClosed(false)
+    , _helpToolTip(helpToolTip)
+    , _pluginID()
+    , _pluginVersionMajor(0)
+    , _pluginVersionMinor(0)
+    , _pagesEnabled(true)
+    , _trackerPanel(0)
+    , _iconLabel(0)
 {
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -123,7 +120,7 @@ OverlayColorButton::OverlayColorButton(DockablePanel* panel,
                                        const QIcon& icon,
                                        QWidget* parent)
     : Button(icon, QString(), parent)
-      , _panel(panel)
+    , _panel(panel)
 {
 }
 

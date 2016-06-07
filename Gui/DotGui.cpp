@@ -113,8 +113,8 @@ using std::make_pair;
 //////////Dot node gui
 DotGui::DotGui(QGraphicsItem* parent)
     : NodeGui(parent)
-      , diskShape(NULL)
-      , ellipseIndicator(NULL)
+    , diskShape(NULL)
+    , ellipseIndicator(NULL)
 {
 }
 

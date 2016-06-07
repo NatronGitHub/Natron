@@ -43,7 +43,7 @@ NATRON_NAMESPACE_ENTER;
 struct PreferencesPanelPrivate;
 class PreferencesPanel
     : public QWidget
-    , public KnobGuiContainerHelper
+      , public KnobGuiContainerHelper
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -58,15 +58,12 @@ public:
     void createGui();
 
     virtual Gui* getGui() const OVERRIDE FINAL;
-
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
     }
 
-
     void addShortcut(BoundAction* action);
-
 
 public Q_SLOTS:
 
@@ -109,31 +106,21 @@ private:
     virtual void showEvent(QShowEvent* e) OVERRIDE;
     virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
-
     virtual void onPageActivated(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-
     virtual void refreshCurrentPage() OVERRIDE FINAL;
-
     virtual QWidget* getPagesContainer() const OVERRIDE FINAL;
-
     virtual QWidget* createPageMainWidget(QWidget* parent) const OVERRIDE FINAL;
-
     virtual void addPageToPagesContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-
     virtual void removePageFromContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
-
     virtual void setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex) OVERRIDE FINAL;
-
     virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-
     boost::scoped_ptr<PreferencesPanelPrivate> _imp;
 };
 
 
 class KeybindRecorder
-: public LineEdit
+    : public LineEdit
 {
 public:
 

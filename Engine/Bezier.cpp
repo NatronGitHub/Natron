@@ -654,14 +654,14 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
                const boost::shared_ptr<RotoLayer>& parent,
                bool isOpenBezier)
     : RotoDrawableItem(ctx, name, parent, false)
-      , _imp( new BezierPrivate(isOpenBezier) )
+    , _imp( new BezierPrivate(isOpenBezier) )
 {
 }
 
 Bezier::Bezier(const Bezier & other,
                const boost::shared_ptr<RotoLayer>& parent)
     : RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
-      , _imp( new BezierPrivate(false) )
+    , _imp( new BezierPrivate(false) )
 {
     clone(&other);
     setParentLayer(parent);

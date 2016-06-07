@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 TrackerNodePrivate::TrackerNodePrivate(TrackerNode* publicInterface)
     : publicInterface(publicInterface)
-      , ui( new TrackerNodeInteract(this) )
+    , ui( new TrackerNodeInteract(this) )
 {
 }
 
@@ -54,47 +54,47 @@ TrackerNodePrivate::~TrackerNodePrivate()
 
 TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     : _p(p)
-      , addTrackButton()
-      , trackRangeButton()
-      , trackBwButton()
-      , trackPrevButton()
-      , trackNextButton()
-      , trackFwButton()
-      , trackAllKeyframesButton()
-      , trackCurrentKeyframeButton()
-      , clearAllAnimationButton()
-      , clearBwAnimationButton()
-      , clearFwAnimationButton()
-      , updateViewerButton()
-      , centerViewerButton()
-      , createKeyOnMoveButton()
-      , setKeyFrameButton()
-      , removeKeyFrameButton()
-      , resetOffsetButton()
-      , resetTrackButton()
-      , showCorrelationButton()
-      , clickToAddTrackEnabled(false)
-      , lastMousePos()
-      , selectionRectangle()
-      , controlDown(0)
-      , shiftDown(0)
-      , altDown(0)
-      , eventState(eMouseStateIdle)
-      , hoverState(eDrawStateInactive)
-      , interactMarker()
-      , trackTextures()
-      , trackRequestsMap()
-      , selectedMarkerTexture()
-      , selectedMarkerTextureTime(0)
-      , selectedMarkerTextureRoI()
-      , selectedMarker()
-      , pboID(0)
-      , selectedMarkerWidth(SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX)
-      , imageGetterWatcher()
-      , showMarkerTexture(false)
-      , selectedMarkerScale()
-      , selectedMarkerImg()
-      , isTracking(false)
+    , addTrackButton()
+    , trackRangeButton()
+    , trackBwButton()
+    , trackPrevButton()
+    , trackNextButton()
+    , trackFwButton()
+    , trackAllKeyframesButton()
+    , trackCurrentKeyframeButton()
+    , clearAllAnimationButton()
+    , clearBwAnimationButton()
+    , clearFwAnimationButton()
+    , updateViewerButton()
+    , centerViewerButton()
+    , createKeyOnMoveButton()
+    , setKeyFrameButton()
+    , removeKeyFrameButton()
+    , resetOffsetButton()
+    , resetTrackButton()
+    , showCorrelationButton()
+    , clickToAddTrackEnabled(false)
+    , lastMousePos()
+    , selectionRectangle()
+    , controlDown(0)
+    , shiftDown(0)
+    , altDown(0)
+    , eventState(eMouseStateIdle)
+    , hoverState(eDrawStateInactive)
+    , interactMarker()
+    , trackTextures()
+    , trackRequestsMap()
+    , selectedMarkerTexture()
+    , selectedMarkerTextureTime(0)
+    , selectedMarkerTextureRoI()
+    , selectedMarker()
+    , pboID(0)
+    , selectedMarkerWidth(SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX)
+    , imageGetterWatcher()
+    , showMarkerTexture(false)
+    , selectedMarkerScale()
+    , selectedMarkerImg()
+    , isTracking(false)
 {
     selectedMarkerScale.x = selectedMarkerScale.y = 1.;
 }
@@ -1092,7 +1092,7 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
     selectedMarkerImg.reset();
 
     imageGetterWatcher.reset( new TrackWatcher() );
-    QObject::connect( imageGetterWatcher.get(), SIGNAL(finished()), this, SLOT(onTrackImageRenderingFinished()) );
+    QObject::connect( imageGetterWatcher.get(), SIGNAL( finished() ), this, SLOT( onTrackImageRenderingFinished() ) );
     imageGetterWatcher->setFuture( QtConcurrent::run(marker.get(), &TrackMarker::getMarkerImage, time, roi) );
 }
 
@@ -1122,7 +1122,7 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
 
     if ( !k.roi.isNull() ) {
         TrackWatcherPtr watcher( new TrackWatcher() );
-        QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onKeyFrameImageRenderingFinished()) );
+        QObject::connect( watcher.get(), SIGNAL( finished() ), this, SLOT( onKeyFrameImageRenderingFinished() ) );
         trackRequestsMap[k] = watcher;
         watcher->setFuture( QtConcurrent::run(track.get(), &TrackMarker::getMarkerImage, time, k.roi) );
     }

@@ -47,26 +47,26 @@ NATRON_NAMESPACE_ENTER;
 
 GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager* publicInterface)
     :   _publicInterface(publicInterface)
-      , _topLevelToolButtons()
-      , _knobsClipBoard(new KnobsClipBoard)
-      , _knobGuiFactory( new KnobGuiFactory() )
-      , _colorPickerCursor()
-      , _linkToCursor()
-      , _splashScreen(NULL)
-      , _openFileRequest()
-      , _actionShortcuts()
-      , _shortcutsChangedVersion(false)
-      , _fontFamily()
-      , _fontSize(0)
-      , _nodeCB()
-      , pythonCommands()
-      , startupArgs()
-      , fontconfigUpdateWatcher()
-      , updateSplashscreenTimer()
-      , fontconfigMessageDots(3)
-      , previewRenderThread()
-      , dpiX(96)
-      , dpiY(96)
+    , _topLevelToolButtons()
+    , _knobsClipBoard(new KnobsClipBoard)
+    , _knobGuiFactory( new KnobGuiFactory() )
+    , _colorPickerCursor()
+    , _linkToCursor()
+    , _splashScreen(NULL)
+    , _openFileRequest()
+    , _actionShortcuts()
+    , _shortcutsChangedVersion(false)
+    , _fontFamily()
+    , _fontSize(0)
+    , _nodeCB()
+    , pythonCommands()
+    , startupArgs()
+    , fontconfigUpdateWatcher()
+    , updateSplashscreenTimer()
+    , fontconfigMessageDots(3)
+    , previewRenderThread()
+    , dpiX(96)
+    , dpiY(96)
 {
 }
 
@@ -269,7 +269,7 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,
     }
 
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if ( app ) {
+    if (app) {
         app->getGui()->addShortcut(kA);
     }
 }
@@ -382,7 +382,7 @@ GuiApplicationManagerPrivate::addMouseShortcut(const std::string & grouping,
     }
 
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if ( app ) {
+    if (app) {
         app->getGui()->addShortcut(mA);
     }
 }
@@ -432,7 +432,7 @@ GuiApplicationManagerPrivate::addStandardKeybind(const std::string & grouping,
     }
 
     GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
-    if ( app ) {
+    if (app) {
         app->getGui()->addShortcut(kA);
     }
 }

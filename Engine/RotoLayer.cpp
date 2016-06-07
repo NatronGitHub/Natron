@@ -100,13 +100,13 @@ RotoLayer::RotoLayer(const boost::shared_ptr<RotoContext>& context,
                      const std::string & n,
                      const boost::shared_ptr<RotoLayer>& parent)
     : RotoItem(context, n, parent)
-      , _imp( new RotoLayerPrivate() )
+    , _imp( new RotoLayerPrivate() )
 {
 }
 
 RotoLayer::RotoLayer(const RotoLayer & other)
     : RotoItem( other.getContext(), other.getScriptName(), other.getParentLayer() )
-      , _imp( new RotoLayerPrivate() )
+    , _imp( new RotoLayerPrivate() )
 {
     clone(&other);
 }

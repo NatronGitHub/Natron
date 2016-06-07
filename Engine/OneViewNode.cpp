@@ -44,12 +44,12 @@ struct OneViewNodePrivate
 
 OneViewNode::OneViewNode(NodePtr n)
     : EffectInstance(n)
-      , _imp( new OneViewNodePrivate() )
+    , _imp( new OneViewNodePrivate() )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
     if (n) {
         boost::shared_ptr<Project> project = n->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
+        QObject::connect( project.get(), SIGNAL( projectViewsChanged() ), this, SLOT( onProjectViewsChanged() ) );
     }
 }
 

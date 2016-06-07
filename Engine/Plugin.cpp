@@ -264,7 +264,6 @@ Plugin::getOfxDesc(ContextEnum* ctx) const
 bool
 Plugin::getIsUserCreatable() const
 {
-
     return !_isInternalOnly && _activated;
 }
 
@@ -349,9 +348,10 @@ PluginGroupNode::tryRemoveChild(PluginGroupNode* plugin)
 }
 
 bool
-FormatExtensionCompareCaseInsensitive::operator() (const std::string& lhs, const std::string& rhs) const
+FormatExtensionCompareCaseInsensitive::operator() (const std::string& lhs,
+                                                   const std::string& rhs) const
 {
-    return boost::algorithm::lexicographical_compare(lhs, rhs, boost::algorithm::is_iless());
+    return boost::algorithm::lexicographical_compare( lhs, rhs, boost::algorithm::is_iless() );
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -41,7 +41,6 @@ NATRON_NAMESPACE_ENTER;
 struct OSGLContext_glx_dataPrivate;
 class OSGLContext_glx_data
 {
-
 public:
 
     boost::scoped_ptr<OSGLContext_glx_dataPrivate> _imp;
@@ -69,7 +68,6 @@ public:
     static void initGLXData(OSGLContext_glx_data* glxInfo);
     static void destroyGLXData(OSGLContext_glx_data* glxInfo);
     static bool makeContextCurrent(const OSGLContext_x11* context);
-
     static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
     void swapBuffers();
@@ -81,7 +79,6 @@ private:
 
     friend class OSGLContext_x11Private;
     boost::scoped_ptr<OSGLContext_x11Private> _imp;
-
 };
 
 NATRON_NAMESPACE_EXIT;

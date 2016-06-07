@@ -56,12 +56,12 @@ NATRON_NAMESPACE_ENTER;
 // —— construction ——————————————————————————
 DocumentWindow::DocumentWindow(QWidget* parent,
                                Qt::WindowFlags flags)
-    : QMainWindow(parent, flags),
-      m_registerForDDE(false),
-      m_appAtomName(),
-      m_systemTopicAtomName( QString::fromUtf8("system") ),
-      m_appAtom(0),
-      m_systemTopicAtom(0)
+    : QMainWindow(parent, flags)
+    , m_registerForDDE(false)
+    , m_appAtomName()
+    , m_systemTopicAtomName( QString::fromUtf8("system") )
+    , m_appAtom(0)
+    , m_systemTopicAtom(0)
 {
     QFileInfo fi( qApp->applicationFilePath() );
 

@@ -31,7 +31,7 @@ NATRON_NAMESPACE_ENTER;
 
 Splitter::Splitter(QWidget* parent)
     : QSplitter(parent)
-      , _lock()
+    , _lock()
 {
     setMouseTracking(true);
 }
@@ -39,7 +39,7 @@ Splitter::Splitter(QWidget* parent)
 Splitter::Splitter(Qt::Orientation orientation,
                    QWidget * parent)
     : QSplitter(orientation, parent)
-      , _lock()
+    , _lock()
 {
     setMouseTracking(true);
 }

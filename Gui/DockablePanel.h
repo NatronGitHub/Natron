@@ -131,13 +131,11 @@ public:
 
     void onGuiClosing();
 
-    
-    virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public:
 
-  
 
     /**
      * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
@@ -151,33 +149,21 @@ public:
     void setPluginIDAndVersion(const std::string& pluginLabel, const std::string& pluginID, unsigned int version);
 
     virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
-
     virtual bool isPagingEnabled() const OVERRIDE FINAL;
-
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;
-
     virtual void onKnobsInitialized() OVERRIDE FINAL;
 
 private:
 
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
-
     virtual QWidget* getPagesContainer() const OVERRIDE FINAL;
-
     virtual QWidget* createPageMainWidget(QWidget* parent) const OVERRIDE FINAL;
-
     virtual void addPageToPagesContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-
     virtual void removePageFromContainer(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-
-    virtual void setPagesOrder(const std::list<KnobPageGuiPtr>& order,const KnobPageGuiPtr& curPage, bool restorePageIndex) OVERRIDE FINAL;
-
+    virtual void setPagesOrder(const std::list<KnobPageGuiPtr>& order, const KnobPageGuiPtr& curPage, bool restorePageIndex) OVERRIDE FINAL;
     virtual void onKnobsRecreated() OVERRIDE FINAL;
-
     virtual void onPageActivated(const KnobPageGuiPtr& page) OVERRIDE FINAL;
-
     virtual void refreshCurrentPage() OVERRIDE FINAL;
-
     virtual void onPageLabelChanged(const KnobPageGuiPtr& page) OVERRIDE FINAL;
 
 public Q_SLOTS:

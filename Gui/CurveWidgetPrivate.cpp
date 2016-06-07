@@ -68,38 +68,38 @@ CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
                                        boost::shared_ptr<TimeLine> timeline,
                                        CurveWidget* widget)
     : _lastMousePos()
-      , zoomCtx()
-      , _state(eEventStateNone)
-      , _rightClickMenu( new Menu(widget) )
-      , _selectedCurveColor(255, 255, 89, 255)
-      , _nextCurveAddedColor()
-      , textRenderer()
-      , _font( new QFont(appFont, appFontSize) )
-      , _curves()
-      , _selectedKeyFrames()
-      , _mustSetDragOrientation(false)
-      , _mouseDragOrientation()
-      , _keyFramesClipBoard()
-      , _selectionRectangle()
-      , _dragStartPoint()
-      , _drawSelectedKeyFramesBbox(false)
-      , _selectedKeyFramesBbox()
-      , _selectedKeyFramesCrossVertLine()
-      , _selectedKeyFramesCrossHorizLine()
-      , _timeline(timeline)
-      , _timelineEnabled(false)
-      , _selectedDerivative()
-      , _evaluateOnPenUp(false)
-      , _keyDragLastMovement()
-      , _undoStack(new QUndoStack)
-      , _gui(gui)
-      , savedTexture(0)
-      , sizeH()
-      , zoomOrPannedSinceLastFit(false)
-      , _timelineTopPoly()
-      , _timelineBtmPoly()
-      , _widget(widget)
-      , _selectionModel(selectionModel)
+    , zoomCtx()
+    , _state(eEventStateNone)
+    , _rightClickMenu( new Menu(widget) )
+    , _selectedCurveColor(255, 255, 89, 255)
+    , _nextCurveAddedColor()
+    , textRenderer()
+    , _font( new QFont(appFont, appFontSize) )
+    , _curves()
+    , _selectedKeyFrames()
+    , _mustSetDragOrientation(false)
+    , _mouseDragOrientation()
+    , _keyFramesClipBoard()
+    , _selectionRectangle()
+    , _dragStartPoint()
+    , _drawSelectedKeyFramesBbox(false)
+    , _selectedKeyFramesBbox()
+    , _selectedKeyFramesCrossVertLine()
+    , _selectedKeyFramesCrossHorizLine()
+    , _timeline(timeline)
+    , _timelineEnabled(false)
+    , _selectedDerivative()
+    , _evaluateOnPenUp(false)
+    , _keyDragLastMovement()
+    , _undoStack(new QUndoStack)
+    , _gui(gui)
+    , savedTexture(0)
+    , sizeH()
+    , zoomOrPannedSinceLastFit(false)
+    , _timelineTopPoly()
+    , _timelineBtmPoly()
+    , _widget(widget)
+    , _selectionModel(selectionModel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -165,103 +165,103 @@ CurveWidgetPrivate::createMenu()
 
 
     QAction* exportCurveToAsciiAction = new QAction(tr("Export curve to ASCII file"), fileMenu);
-    QObject::connect( exportCurveToAsciiAction, SIGNAL(triggered()), _widget, SLOT(exportCurveToAscii()) );
+    QObject::connect( exportCurveToAsciiAction, SIGNAL( triggered() ), _widget, SLOT( exportCurveToAscii() ) );
     fileMenu->addAction(exportCurveToAsciiAction);
 
     QAction* importCurveFromAsciiAction = new QAction(tr("Import curve from ASCII file"), fileMenu);
-    QObject::connect( importCurveFromAsciiAction, SIGNAL(triggered()), _widget, SLOT(importCurveFromAscii()) );
+    QObject::connect( importCurveFromAsciiAction, SIGNAL( triggered() ), _widget, SLOT( importCurveFromAscii() ) );
     fileMenu->addAction(importCurveFromAsciiAction);
 
     QAction* deleteKeyFramesAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorRemoveKeys,
                                                             kShortcutDescActionCurveEditorRemoveKeys, editMenu);
     deleteKeyFramesAction->setShortcut( QKeySequence(Qt::Key_Backspace) );
-    QObject::connect( deleteKeyFramesAction, SIGNAL(triggered()), _widget, SLOT(deleteSelectedKeyFrames()) );
+    QObject::connect( deleteKeyFramesAction, SIGNAL( triggered() ), _widget, SLOT( deleteSelectedKeyFrames() ) );
     editMenu->addAction(deleteKeyFramesAction);
 
     QAction* copyKeyFramesAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy,
                                                           kShortcutDescActionCurveEditorCopy, editMenu);
     copyKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_C) );
 
-    QObject::connect( copyKeyFramesAction, SIGNAL(triggered()), _widget, SLOT(copySelectedKeyFramesToClipBoard()) );
+    QObject::connect( copyKeyFramesAction, SIGNAL( triggered() ), _widget, SLOT( copySelectedKeyFramesToClipBoard() ) );
     editMenu->addAction(copyKeyFramesAction);
 
     QAction* pasteKeyFramesAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste,
                                                            kShortcutDescActionCurveEditorPaste, editMenu);
     pasteKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_V) );
-    QObject::connect( pasteKeyFramesAction, SIGNAL(triggered()), _widget, SLOT(pasteKeyFramesFromClipBoardToSelectedCurve()) );
+    QObject::connect( pasteKeyFramesAction, SIGNAL( triggered() ), _widget, SLOT( pasteKeyFramesFromClipBoardToSelectedCurve() ) );
     editMenu->addAction(pasteKeyFramesAction);
 
     QAction* selectAllAction = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSelectAll,
                                                       kShortcutDescActionCurveEditorSelectAll, editMenu);
     selectAllAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_A) );
-    QObject::connect( selectAllAction, SIGNAL(triggered()), _widget, SLOT(selectAllKeyFrames()) );
+    QObject::connect( selectAllAction, SIGNAL( triggered() ), _widget, SLOT( selectAllKeyFrames() ) );
     editMenu->addAction(selectAllAction);
 
 
     QAction* constantInterp = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorConstant,
                                                      kShortcutDescActionCurveEditorConstant, interpMenu);
     constantInterp->setShortcut( QKeySequence(Qt::Key_K) );
-    QObject::connect( constantInterp, SIGNAL(triggered()), _widget, SLOT(constantInterpForSelectedKeyFrames()) );
+    QObject::connect( constantInterp, SIGNAL( triggered() ), _widget, SLOT( constantInterpForSelectedKeyFrames() ) );
     interpMenu->addAction(constantInterp);
 
     QAction* linearInterp = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorLinear,
                                                    kShortcutDescActionCurveEditorLinear, interpMenu);
     linearInterp->setShortcut( QKeySequence(Qt::Key_L) );
-    QObject::connect( linearInterp, SIGNAL(triggered()), _widget, SLOT(linearInterpForSelectedKeyFrames()) );
+    QObject::connect( linearInterp, SIGNAL( triggered() ), _widget, SLOT( linearInterpForSelectedKeyFrames() ) );
     interpMenu->addAction(linearInterp);
 
 
     QAction* smoothInterp = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorSmooth,
                                                    kShortcutDescActionCurveEditorSmooth, interpMenu);
     smoothInterp->setShortcut( QKeySequence(Qt::Key_Z) );
-    QObject::connect( smoothInterp, SIGNAL(triggered()), _widget, SLOT(smoothForSelectedKeyFrames()) );
+    QObject::connect( smoothInterp, SIGNAL( triggered() ), _widget, SLOT( smoothForSelectedKeyFrames() ) );
     interpMenu->addAction(smoothInterp);
 
 
     QAction* catmullRomInterp = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCatmullrom,
                                                        kShortcutDescActionCurveEditorCatmullrom, interpMenu);
     catmullRomInterp->setShortcut( QKeySequence(Qt::Key_R) );
-    QObject::connect( catmullRomInterp, SIGNAL(triggered()), _widget, SLOT(catmullromInterpForSelectedKeyFrames()) );
+    QObject::connect( catmullRomInterp, SIGNAL( triggered() ), _widget, SLOT( catmullromInterpForSelectedKeyFrames() ) );
     interpMenu->addAction(catmullRomInterp);
 
 
     QAction* cubicInterp = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCubic,
                                                   kShortcutDescActionCurveEditorCubic, interpMenu);
     cubicInterp->setShortcut( QKeySequence(Qt::Key_C) );
-    QObject::connect( cubicInterp, SIGNAL(triggered()), _widget, SLOT(cubicInterpForSelectedKeyFrames()) );
+    QObject::connect( cubicInterp, SIGNAL( triggered() ), _widget, SLOT( cubicInterpForSelectedKeyFrames() ) );
     interpMenu->addAction(cubicInterp);
 
     QAction* horizontalInterp = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorHorizontal,
                                                        kShortcutDescActionCurveEditorHorizontal, interpMenu);
     horizontalInterp->setShortcut( QKeySequence(Qt::Key_H) );
-    QObject::connect( horizontalInterp, SIGNAL(triggered()), _widget, SLOT(horizontalInterpForSelectedKeyFrames()) );
+    QObject::connect( horizontalInterp, SIGNAL( triggered() ), _widget, SLOT( horizontalInterpForSelectedKeyFrames() ) );
     interpMenu->addAction(horizontalInterp);
 
 
     QAction* breakDerivatives = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorBreak,
                                                        kShortcutDescActionCurveEditorBreak, interpMenu);
     breakDerivatives->setShortcut( QKeySequence(Qt::Key_X) );
-    QObject::connect( breakDerivatives, SIGNAL(triggered()), _widget, SLOT(breakDerivativesForSelectedKeyFrames()) );
+    QObject::connect( breakDerivatives, SIGNAL( triggered() ), _widget, SLOT( breakDerivativesForSelectedKeyFrames() ) );
     interpMenu->addAction(breakDerivatives);
 
     QAction* frameCurve = new ActionWithShortcut(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCenter,
                                                  kShortcutDescActionCurveEditorCenter, interpMenu);
     frameCurve->setShortcut( QKeySequence(Qt::Key_F) );
-    QObject::connect( frameCurve, SIGNAL(triggered()), _widget, SLOT(frameSelectedCurve()) );
+    QObject::connect( frameCurve, SIGNAL( triggered() ), _widget, SLOT( frameSelectedCurve() ) );
     viewMenu->addAction(frameCurve);
 
     if (predefMenu) {
         QAction* loop = new QAction(tr("Loop"), _rightClickMenu);
-        QObject::connect( loop, SIGNAL(triggered()), _widget, SLOT(loopSelectedCurve()) );
+        QObject::connect( loop, SIGNAL( triggered() ), _widget, SLOT( loopSelectedCurve() ) );
         predefMenu->addAction(loop);
 
         QAction* reverse = new QAction(tr("Reverse"), _rightClickMenu);
-        QObject::connect( reverse, SIGNAL(triggered()), _widget, SLOT(reverseSelectedCurve()) );
+        QObject::connect( reverse, SIGNAL( triggered() ), _widget, SLOT( reverseSelectedCurve() ) );
         predefMenu->addAction(reverse);
 
 
         QAction* negate = new QAction(tr("Negate"), _rightClickMenu);
-        QObject::connect( negate, SIGNAL(triggered()), _widget, SLOT(negateSelectedCurve()) );
+        QObject::connect( negate, SIGNAL( triggered() ), _widget, SLOT( negateSelectedCurve() ) );
         predefMenu->addAction(negate);
     }
 
@@ -269,7 +269,7 @@ CurveWidgetPrivate::createMenu()
     updateOnPenUp->setCheckable(true);
     updateOnPenUp->setChecked( appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly() );
     _rightClickMenu->addAction(updateOnPenUp);
-    QObject::connect( updateOnPenUp, SIGNAL(triggered()), _widget, SLOT(onUpdateOnPenUpActionTriggered()) );
+    QObject::connect( updateOnPenUp, SIGNAL( triggered() ), _widget, SLOT( onUpdateOnPenUpActionTriggered() ) );
 } // createMenu
 
 void

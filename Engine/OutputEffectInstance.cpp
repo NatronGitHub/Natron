@@ -83,9 +83,9 @@ NATRON_NAMESPACE_ENTER;
 
 OutputEffectInstance::OutputEffectInstance(NodePtr node)
     : EffectInstance(node)
-      , _outputEffectDataLock()
-      , _renderSequenceRequests()
-      , _engine()
+    , _outputEffectDataLock()
+    , _renderSequenceRequests()
+    , _engine()
 {
 }
 

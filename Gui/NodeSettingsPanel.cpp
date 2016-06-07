@@ -75,17 +75,17 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
                     QString::fromUtf8( NodeUi->getNode()->getLabel().c_str() ),
                     QString::fromUtf8( NodeUi->getNode()->getPluginDescription().c_str() ),
                     parent)
-      , _nodeGUI(NodeUi)
-      , _selected(false)
-      , _settingsButton(0)
-      , _multiPanel(multiPanel)
+    , _nodeGUI(NodeUi)
+    , _selected(false)
+    , _settingsButton(0)
+    , _multiPanel(multiPanel)
 {
     if (multiPanel) {
         multiPanel->initializeKnobsPublic();
     }
 
 
-    QObject::connect( this, SIGNAL(closeChanged(bool)), NodeUi.get(), SLOT(onSettingsPanelClosedChanged(bool)) );
+    QObject::connect( this, SIGNAL( closeChanged(bool) ), NodeUi.get(), SLOT( onSettingsPanelClosedChanged(bool) ) );
     const QSize mediumBSize( TO_DPIX(NATRON_MEDIUM_BUTTON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_SIZE) );
     const QSize mediumIconSize( TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE), TO_DPIY(NATRON_MEDIUM_BUTTON_ICON_SIZE) );
     QPixmap pixSettings;
@@ -95,7 +95,7 @@ NodeSettingsPanel::NodeSettingsPanel(const boost::shared_ptr<MultiInstancePanel>
     _settingsButton->setIconSize(mediumIconSize);
     _settingsButton->setToolTip( GuiUtils::convertFromPlainText(tr("Settings and presets."), Qt::WhiteSpaceNormal) );
     _settingsButton->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _settingsButton, SIGNAL(clicked()), this, SLOT(onSettingsButtonClicked()) );
+    QObject::connect( _settingsButton, SIGNAL( clicked() ), this, SLOT( onSettingsButtonClicked() ) );
     insertHeaderWidget(1, _settingsButton);
 }
 
@@ -166,25 +166,25 @@ NodeSettingsPanel::onSettingsButtonClicked()
     NodeGuiPtr node = getNode();
     NodePtr master = node->getNode()->getMasterNode();
     QAction* importPresets = new QAction(tr("Import presets"), &menu);
-    QObject::connect( importPresets, SIGNAL(triggered()), this, SLOT(onImportPresetsActionTriggered()) );
+    QObject::connect( importPresets, SIGNAL( triggered() ), this, SLOT( onImportPresetsActionTriggered() ) );
     QAction* exportAsPresets = new QAction(tr("Export as presets"), &menu);
-    QObject::connect( exportAsPresets, SIGNAL(triggered()), this, SLOT(onExportPresetsActionTriggered()) );
+    QObject::connect( exportAsPresets, SIGNAL( triggered() ), this, SLOT( onExportPresetsActionTriggered() ) );
 
     menu.addAction(importPresets);
     menu.addAction(exportAsPresets);
     menu.addSeparator();
 
     QAction* manageUserParams = new QAction(tr("Manage user parameters..."), &menu);
-    QObject::connect( manageUserParams, SIGNAL(triggered()), this, SLOT(onManageUserParametersActionTriggered()) );
+    QObject::connect( manageUserParams, SIGNAL( triggered() ), this, SLOT( onManageUserParametersActionTriggered() ) );
     menu.addAction(manageUserParams);
 
     menu.addSeparator();
 
 
     QAction* setKeyOnAll = new QAction(tr("Set key on all parameters"), &menu);
-    QObject::connect( setKeyOnAll, SIGNAL(triggered()), this, SLOT(setKeyOnAllParameters()) );
+    QObject::connect( setKeyOnAll, SIGNAL( triggered() ), this, SLOT( setKeyOnAllParameters() ) );
     QAction* removeAnimationOnAll = new QAction(tr("Remove animation on all parameters"), &menu);
-    QObject::connect( removeAnimationOnAll, SIGNAL(triggered()), this, SLOT(removeAnimationOnAllParameters()) );
+    QObject::connect( removeAnimationOnAll, SIGNAL( triggered() ), this, SLOT( removeAnimationOnAllParameters() ) );
     menu.addAction(setKeyOnAll);
     menu.addAction(removeAnimationOnAll);
 

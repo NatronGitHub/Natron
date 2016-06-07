@@ -58,9 +58,9 @@ struct DialogParamHolderPrivate
     DialogParamHolderPrivate(UserParamHolder* widget,
                              const QString& uniqueID)
         : uniqueID( uniqueID.toStdString() )
-          , paramChangedCBMutex()
-          , paramChangedCB()
-          , widget(widget)
+        , paramChangedCBMutex()
+        , paramChangedCB()
+        , widget(widget)
     {
     }
 };
@@ -69,7 +69,7 @@ DialogParamHolder::DialogParamHolder(const QString& uniqueID,
                                      const AppInstPtr& app,
                                      UserParamHolder* widget)
     : NamedKnobHolder(app)
-      , _imp( new DialogParamHolderPrivate(widget, uniqueID) )
+    , _imp( new DialogParamHolderPrivate(widget, uniqueID) )
 {
 }
 
@@ -178,12 +178,12 @@ struct PyModalDialogPrivate
 
     PyModalDialogPrivate(Gui* gui)
         : gui(gui)
-          , holder(0)
-          , mainLayout(0)
-          , panel(0)
-          , centerContainer(0)
-          , centerLayout(0)
-          , buttons(0)
+        , holder(0)
+        , mainLayout(0)
+        , panel(0)
+        , centerContainer(0)
+        , centerLayout(0)
+        , buttons(0)
     {
     }
 };
@@ -191,8 +191,8 @@ struct PyModalDialogPrivate
 PyModalDialog::PyModalDialog(Gui* gui,
                              StandardButtons defaultButtons)
     : QDialog(gui)
-      , UserParamHolder()
-      , _imp( new PyModalDialogPrivate(gui) )
+    , UserParamHolder()
+    , _imp( new PyModalDialogPrivate(gui) )
 {
     _imp->holder = new DialogParamHolder( QString(), gui->getApp(), this );
     setHolder(_imp->holder);
@@ -279,8 +279,8 @@ PyModalDialog::PyModalDialog(Gui* gui,
 
         _imp->buttons = new QDialogButtonBox(qbuttons, Qt::Horizontal, this);
         _imp->buttons->setFocusPolicy(Qt::TabFocus);
-        QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(accept()) );
-        QObject::connect( _imp->buttons, SIGNAL(rejected()), this, SLOT(reject()) );
+        QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( accept() ) );
+        QObject::connect( _imp->buttons, SIGNAL( rejected() ), this, SLOT( reject() ) );
         _imp->mainLayout->addWidget(_imp->buttons);
     }
 }
@@ -339,12 +339,12 @@ struct PyPanelPrivate
 
     PyPanelPrivate()
         : holder(0)
-          , mainLayout(0)
-          , panel(0)
-          , centerContainer(0)
-          , centerLayout(0)
-          , serializationMutex()
-          , serialization()
+        , mainLayout(0)
+        , panel(0)
+        , centerContainer(0)
+        , centerLayout(0)
+        , serializationMutex()
+        , serialization()
     {
     }
 };
@@ -354,9 +354,9 @@ PyPanel::PyPanel(const QString& scriptName,
                  bool useUserParameters,
                  GuiApp* app)
     : QWidget( app->getGui() )
-      , UserParamHolder()
-      , PanelWidget( this, app->getGui() )
-      , _imp( new PyPanelPrivate() )
+    , UserParamHolder()
+    , PanelWidget( this, app->getGui() )
+    , _imp( new PyPanelPrivate() )
 {
     setLabel( label.toStdString() );
 

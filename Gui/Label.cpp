@@ -35,7 +35,7 @@ Label::Label(const QString &text,
              QWidget *parent,
              Qt::WindowFlags f)
     : QLabel(text, parent, f)
-      , altered(false)
+    , altered(false)
 
 {
     setFont( QApplication::font() ); // necessary, or the labels will get the default font size
@@ -44,7 +44,7 @@ Label::Label(const QString &text,
 Label::Label(QWidget *parent,
              Qt::WindowFlags f)
     : QLabel(parent, f)
-      , altered(false)
+    , altered(false)
 {
     setFont( QApplication::font() ); // necessary, or the labels will get the default font size
 }

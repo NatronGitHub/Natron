@@ -60,10 +60,10 @@ MoveMultipleNodesCommand::MoveMultipleNodesCommand(const NodesGuiList & nodes,
                                                    double dy,
                                                    QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _firstRedoCalled(false)
-      , _nodes(nodes)
-      , _dx(dx)
-      , _dy(dy)
+    , _firstRedoCalled(false)
+    , _nodes(nodes)
+    , _dx(dx)
+    , _dy(dy)
 {
     assert( !nodes.empty() );
 }
@@ -99,10 +99,10 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
                                                  const std::list<NodeGuiPtr > & nodes,
                                                  QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes()
-      , _graph(graph)
-      , _firstRedoCalled(false)
-      , _isUndone(false)
+    , _nodes()
+    , _graph(graph)
+    , _firstRedoCalled(false)
+    , _isUndone(false)
 {
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
@@ -113,10 +113,10 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
                                                  const NodeGuiPtr & node,
                                                  QUndoCommand* parent)
     : QUndoCommand(parent)
-      , _nodes()
-      , _graph(graph)
-      , _firstRedoCalled(false)
-      , _isUndone(false)
+    , _nodes()
+    , _graph(graph)
+    , _firstRedoCalled(false)
+    , _isUndone(false)
 {
     _nodes.push_back(node);
 }
@@ -221,9 +221,9 @@ RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
                                                        const std::list<NodeGuiPtr > & nodes,
                                                        QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes()
-      , _graph(graph)
-      , _isRedone(false)
+    , _nodes()
+    , _graph(graph)
+    , _isRedone(false)
 {
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToRemove n;
@@ -414,11 +414,11 @@ ConnectCommand::ConnectCommand(NodeGraph* graph,
                                const NodeGuiPtr & newSrc,
                                QUndoCommand *parent)
     : QUndoCommand(parent),
-      _oldSrc(oldSrc),
-      _newSrc(newSrc),
-      _dst( edge->getDest() ),
-      _graph(graph),
-      _inputNb( edge->getInputNumber() )
+    _oldSrc(oldSrc),
+    _newSrc(newSrc),
+    _dst( edge->getDest() ),
+    _graph(graph),
+    _inputNb( edge->getInputNumber() )
 {
     assert( _dst.lock() );
 }
@@ -543,7 +543,7 @@ InsertNodeCommand::InsertNodeCommand(NodeGraph* graph,
                                      const NodeGuiPtr & newSrc,
                                      QUndoCommand *parent)
     : ConnectCommand(graph, edge, edge->getSource(), newSrc, parent)
-      , _inputEdge(0)
+    , _inputEdge(0)
 {
     assert(newSrc);
     setText( tr("Insert node") );
@@ -641,11 +641,11 @@ ResizeBackdropCommand::ResizeBackdropCommand(const NodeGuiPtr& bd,
                                              int h,
                                              QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _bd(bd)
-      , _w(w)
-      , _h(h)
-      , _oldW(0)
-      , _oldH(0)
+    , _bd(bd)
+    , _w(w)
+    , _h(h)
+    , _oldW(0)
+    , _oldH(0)
 {
     QRectF bbox = bd->boundingRect();
 
@@ -692,8 +692,8 @@ DecloneMultipleNodesCommand::DecloneMultipleNodesCommand(NodeGraph* graph,
                                                          const std::list<NodeGuiPtr > & nodes,
                                                          QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes()
-      , _graph(graph)
+    , _nodes()
+    , _graph(graph)
 {
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToDeclone n;
@@ -743,7 +743,7 @@ public:
 
     Tree()
         : nodes()
-          , topLevelNodeCenter(0, INT_MAX)
+        , topLevelNodeCenter(0, INT_MAX)
     {
     }
 
@@ -988,7 +988,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & nodes,
                                              QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes()
+    , _nodes()
 {
     ///1) Separate the nodes in trees they belong to, once a node has been "used" by a tree, mark it
     ///and don't try to reposition it for another tree
@@ -1070,7 +1070,7 @@ RearrangeNodesCommand::redo()
 DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr > & nodes,
                                          QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes()
+    , _nodes()
 {
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
@@ -1098,7 +1098,7 @@ DisableNodesCommand::redo()
 EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr > & nodes,
                                        QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _nodes()
+    , _nodes()
 {
     for (std::list<NodeGuiPtr > ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
@@ -1127,10 +1127,10 @@ LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
                                                const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _firstRedoCalled(false)
-      , _isUndone(false)
-      , _node(node)
-      , _newSerializations(serialization)
+    , _firstRedoCalled(false)
+    , _isUndone(false)
+    , _node(node)
+    , _newSerializations(serialization)
 {
 }
 
@@ -1232,9 +1232,9 @@ RenameNodeUndoRedoCommand::RenameNodeUndoRedoCommand(const NodeGuiPtr & node,
                                                      const QString& oldName,
                                                      const QString& newName)
     : QUndoCommand()
-      , _node(node)
-      , _oldName(oldName)
-      , _newName(newName)
+    , _node(node)
+    , _oldName(oldName)
+    , _newName(newName)
 {
     assert(node);
     setText( tr("Rename node") );
@@ -1340,8 +1340,8 @@ extractTreesFromNodes(const std::list<NodeGuiPtr >& nodes,
 ExtractNodeUndoRedoCommand::ExtractNodeUndoRedoCommand(NodeGraph* graph,
                                                        const std::list<NodeGuiPtr >& nodes)
     : QUndoCommand()
-      , _graph(graph)
-      , _trees()
+    , _graph(graph)
+    , _trees()
 {
     extractTreesFromNodes(nodes, _trees);
 }
@@ -1502,10 +1502,10 @@ ExtractNodeUndoRedoCommand::redo()
 GroupFromSelectionCommand::GroupFromSelectionCommand(NodeGraph* graph,
                                                      const NodesGuiList & nodes)
     : QUndoCommand()
-      , _graph(graph)
-      , _group()
-      , _firstRedoCalled(false)
-      , _isRedone(false)
+    , _graph(graph)
+    , _group()
+    , _firstRedoCalled(false)
+    , _isRedone(false)
 {
     setText( tr("Group from selection") );
 
@@ -1711,9 +1711,9 @@ GroupFromSelectionCommand::redo()
 InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                                        const std::list<NodeGuiPtr > & groupNodes)
     : QUndoCommand()
-      , _graph(graph)
-      , _groupNodes()
-      , _firstRedoCalled(false)
+    , _graph(graph)
+    , _groupNodes()
+    , _firstRedoCalled(false)
 {
     setText( tr("Inline group(s)") );
 

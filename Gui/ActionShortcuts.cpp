@@ -38,8 +38,8 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
                                        QObject* parent,
                                        bool setShortcutOnAction)
     : QAction(parent)
-      , _group( QString::fromUtf8( group.c_str() ) )
-      , _shortcuts()
+    , _group( QString::fromUtf8( group.c_str() ) )
+    , _shortcuts()
 {
     // insert here the output of:
     // fgrep "#define kShortcutDescAction" ActionShortcuts.h | sed -e 's/#define /(void)QT_TR_NOOP(/' -e 's/ .*/);/'
@@ -216,8 +216,8 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
                                        QObject* parent,
                                        bool setShortcutOnAction)
     : QAction(parent)
-      , _group( QString::fromUtf8( group.c_str() ) )
-      , _shortcuts()
+    , _group( QString::fromUtf8( group.c_str() ) )
+    , _shortcuts()
 {
     QKeySequence seq0;
 
@@ -267,9 +267,9 @@ ToolTipActionShortcut::ToolTipActionShortcut(const std::string & group,
                                              const std::string & toolip,
                                              QWidget* parent)
     : ActionWithShortcut(group, actionID, std::string(), parent, false)
-      , _widget(parent)
-      , _originalToolTip( QString::fromUtf8( toolip.c_str() ) )
-      , _tooltipSetInternally(false)
+    , _widget(parent)
+    , _originalToolTip( QString::fromUtf8( toolip.c_str() ) )
+    , _tooltipSetInternally(false)
 {
     assert(parent);
     setToolTipFromOriginalToolTip();
@@ -281,9 +281,9 @@ ToolTipActionShortcut::ToolTipActionShortcut(const std::string & group,
                                              const std::string & toolip,
                                              QWidget* parent)
     : ActionWithShortcut(group, actionIDs, std::string(), parent, false)
-      , _widget(parent)
-      , _originalToolTip( QString::fromUtf8( toolip.c_str() ) )
-      , _tooltipSetInternally(false)
+    , _widget(parent)
+    , _originalToolTip( QString::fromUtf8( toolip.c_str() ) )
+    , _tooltipSetInternally(false)
 {
     assert(parent);
     setToolTipFromOriginalToolTip();

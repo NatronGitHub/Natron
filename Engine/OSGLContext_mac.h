@@ -47,7 +47,6 @@ public:
     ~OSGLContext_mac();
 
     static void makeContextCurrent(const OSGLContext_mac* context);
-
     static void getGPUInfos(std::list<OpenGLRendererInfo>& renderers);
 
     void swapBuffers();

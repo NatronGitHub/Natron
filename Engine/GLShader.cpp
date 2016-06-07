@@ -38,11 +38,11 @@ struct GLShaderPrivate
 
     GLShaderPrivate()
         : shaderID(0)
-          , vertexID(0)
-          , fragmentID(0)
-          , vertexAttached(false)
-          , fragmentAttached(false)
-          , firstTime(true)
+        , vertexID(0)
+        , fragmentID(0)
+        , vertexAttached(false)
+        , fragmentAttached(false)
+        , firstTime(true)
     {
     }
 

@@ -169,7 +169,6 @@ public:
 
     boost::scoped_ptr<GPUContextPool> renderingContextPool;
     std::list<OpenGLRendererInfo> openGLRenderers;
-
     boost::scoped_ptr<QCoreApplication> _qApp;
 
 public:

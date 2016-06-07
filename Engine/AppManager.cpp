@@ -166,11 +166,11 @@ backTraceSigSegvHandler(int sig,
         }
         std::cerr << "Caught segmentation fault (SIGSEGV) from thread "  << threadName << "(" << curThread << "), faulty address is " <<
              #ifndef __x86_64__
-            (void*)uc->uc_mcontext.gregs[REG_EIP]
+        (void*)uc->uc_mcontext.gregs[REG_EIP]
              #else
             (void*) uc->uc_mcontext.gregs[REG_RIP]
              #endif
-                  << " from " << info->si_addr << std::endl;
+            << " from " << info->si_addr << std::endl;
     } else {
         printf("Got signal %d#92;n", sig);
     }
@@ -227,12 +227,12 @@ AppManager::getHardwareIdealThreadCount()
 
 AppManager::AppManager()
     : QObject()
-      , _imp( new AppManagerPrivate() )
+    , _imp( new AppManagerPrivate() )
 {
     assert(!_instance);
     _instance = this;
 
-    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)) );
+    QObject::connect( this, SIGNAL( s_requestOFXDialogOnMainThread(OfxImageEffectInstance*, void*) ), this, SLOT( onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*, void*) ) );
 
 #ifdef __NATRON_WIN32__
     FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
@@ -394,7 +394,7 @@ public:
 
     QuitInstanceArgs()
         : GenericWatcherCallerArgs()
-          , instance()
+        , instance()
     {
     }
 
@@ -604,12 +604,12 @@ AppManager::loadInternal(const CLArgs& cl)
         OSGLContext::getGPUInfos(_imp->openGLRenderers);
         for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
             qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
-            << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
-            ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
+                     << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
+                ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
         }
         _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
     }
-    
+
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
 
@@ -651,6 +651,7 @@ bool
 AppManager::isOpenGLLoaded() const
 {
     QMutexLocker k(&_imp->openGLFunctionsMutex);
+
     return _imp->hasInitializedOpenGLFunctions;
 }
 
@@ -672,8 +673,9 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
                 // Make the context current and check its version
                 glContext->setContextCurrentNoRender();
             } catch (const std::exception& e) {
-                std::cerr << "Error while loading OpenGL: "<< e.what() << std::endl;
+                std::cerr << "Error while loading OpenGL: " << e.what() << std::endl;
                 std::cerr << "OpenGL rendering is disabled. Viewer will probably not function properly." << std::endl;
+
                 return false;
             }
         }
@@ -683,8 +685,8 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
             try {
                 OSGLContext::checkOpenGLVersion();
             } catch (const std::exception& e) {
-                if (!_imp->missingOpenglError.isEmpty()) {
-                    _imp->missingOpenglError = QString::fromUtf8(e.what());
+                if ( !_imp->missingOpenglError.isEmpty() ) {
+                    _imp->missingOpenglError = QString::fromUtf8( e.what() );
                 }
             }
 
@@ -695,14 +697,13 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
             // selected by the user in the settings (which are not created yet).
             _imp->renderingContextPool->clear();
         } else {
-             updateAboutWindowLibrariesVersion();
+            updateAboutWindowLibrariesVersion();
         }
-        return true;
 
+        return true;
     }
 
     return false;
-
 }
 
 #ifdef __NATRON_WIN32__
@@ -819,6 +820,7 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 
     if (!mainInstance) {
         qApp->quit();
+
         return false;
     } else {
         onLoadCompleted();
@@ -3113,7 +3115,8 @@ void
 AppManager::getSupportedReaderFileFormats(std::vector<std::string>* formats) const
 {
     const IOPluginsMap& readersForFormat = getFileFormatsForReadingAndReader();
-    formats->resize(readersForFormat.size());
+
+    formats->resize( readersForFormat.size() );
     int i = 0;
     for (IOPluginsMap::const_iterator it = readersForFormat.begin(); it != readersForFormat.end(); ++it, ++i) {
         (*formats)[i] = it->first;
@@ -3124,7 +3127,8 @@ void
 AppManager::getSupportedWriterFileFormats(std::vector<std::string>* formats) const
 {
     const IOPluginsMap& writersForFormat = getFileFormatsForWritingAndWriter();
-    formats->resize(writersForFormat.size());
+
+    formats->resize( writersForFormat.size() );
     int i = 0;
     for (IOPluginsMap::const_iterator it = writersForFormat.begin(); it != writersForFormat.end(); ++it, ++i) {
         (*formats)[i] = it->first;
@@ -3132,26 +3136,29 @@ AppManager::getSupportedWriterFileFormats(std::vector<std::string>* formats) con
 }
 
 void
-AppManager::getReadersForFormat(const std::string& format, IOPluginSetForFormat* decoders) const
+AppManager::getReadersForFormat(const std::string& format,
+                                IOPluginSetForFormat* decoders) const
 {
     // This will perform a case insensitive find
     IOPluginsMap::const_iterator found = _imp->readerPlugins.find(format);
-    if (found == _imp->readerPlugins.end()) {
+
+    if ( found == _imp->readerPlugins.end() ) {
         return;
     }
     *decoders = found->second;
 }
 
 void
-AppManager::getWritersForFormat(const std::string& format, IOPluginSetForFormat* encoders) const
+AppManager::getWritersForFormat(const std::string& format,
+                                IOPluginSetForFormat* encoders) const
 {
     // This will perform a case insensitive find
     IOPluginsMap::const_iterator found = _imp->writerPlugins.find(format);
-    if (found == _imp->writerPlugins.end()) {
+
+    if ( found == _imp->writerPlugins.end() ) {
         return;
     }
     *encoders = found->second;
-
 }
 
 std::string
@@ -3159,7 +3166,8 @@ AppManager::getReaderPluginIDForFileType(const std::string & extension) const
 {
     // This will perform a case insensitive find
     IOPluginsMap::const_iterator found = _imp->readerPlugins.find(extension);
-    if (found == _imp->readerPlugins.end()) {
+
+    if ( found == _imp->readerPlugins.end() ) {
         return std::string();
     }
     // Return the "best" plug-in (i.e: higher score)
@@ -3172,7 +3180,8 @@ AppManager::getWriterPluginIDForFileType(const std::string & extension) const
 {
     // This will perform a case insensitive find
     IOPluginsMap::const_iterator found = _imp->writerPlugins.find(extension);
-    if (found == _imp->writerPlugins.end()) {
+
+    if ( found == _imp->writerPlugins.end() ) {
         return std::string();
     }
     // Return the "best" plug-in (i.e: higher score)

@@ -210,15 +210,15 @@ public:
 
     ReadNodePrivate(ReadNode* publicInterface)
         : _publicInterface(publicInterface)
-          , embeddedPlugin()
-          , genericKnobsSerialization()
-          , inputFileKnob()
-          , pluginSelectorKnob()
-          , pluginIDStringKnob()
-          , separatorKnob()
-          , fileInfosKnob()
-          , readNodeKnobs()
-          , creatingReadNode(0)
+        , embeddedPlugin()
+        , genericKnobsSerialization()
+        , inputFileKnob()
+        , pluginSelectorKnob()
+        , pluginIDStringKnob()
+        , separatorKnob()
+        , fileInfosKnob()
+        , readNodeKnobs()
+        , creatingReadNode(0)
     {
     }
 
@@ -274,7 +274,7 @@ public:
 
 ReadNode::ReadNode(NodePtr n)
     : EffectInstance(n)
-      , _imp( new ReadNodePrivate(this) )
+    , _imp( new ReadNodePrivate(this) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -513,10 +513,10 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     bool defaultFallback = false;
 
-    if (!ReadNode::isBundledReader(readerPluginID, false)) {
+    if ( !ReadNode::isBundledReader(readerPluginID, false) ) {
         if (throwErrors) {
             QString message = tr("%1 is not a bundled reader, please create it from the Image->Readers menu or with the tab menu in the Nodegraph")
-            .arg( QString::fromUtf8( readerPluginID.c_str() ) );
+                              .arg( QString::fromUtf8( readerPluginID.c_str() ) );
             throw std::runtime_error( message.toStdString() );
         }
         defaultFallback = true;
@@ -618,7 +618,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         appPTR->getReadersForFormat(ext, &readersForFormat);
 
         // Reverse it so that we sort them by decreasing score order
-        for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it!=readersForFormat.rend(); ++it) {
+        for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
             Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
             entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;

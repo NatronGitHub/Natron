@@ -39,9 +39,9 @@ NATRON_NAMESPACE_ENTER;
 
 SplashScreen::SplashScreen(const QString & filePath)
     : QWidget(0, Qt::ToolTip | Qt::FramelessWindowHint | Qt::X11BypassWindowManagerHint)
-      , _pixmap()
-      , _text()
-      , _versionString()
+    , _pixmap()
+    , _text()
+    , _versionString()
 {
     QString customBuildString = QString::fromUtf8(NATRON_CUSTOM_BUILD_USER_NAME);
 
@@ -101,9 +101,9 @@ SplashScreen::paintEvent(QPaintEvent*)
 
 LoadProjectSplashScreen::LoadProjectSplashScreen(const QString & filePath)
     : QWidget(0, Qt::SplashScreen)
-      , _pixmap()
-      , _text()
-      , _projectName(filePath)
+    , _pixmap()
+    , _text()
+    , _projectName(filePath)
 {
     setAttribute( Qt::WA_TransparentForMouseEvents );
     setAttribute(Qt::WA_TranslucentBackground, true);

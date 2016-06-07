@@ -47,11 +47,11 @@ extern "C"
 #define GLX_RGBA_BIT 0x00000001
 #define GLX_WINDOW_BIT 0x00000001
 #define GLX_DRAWABLE_TYPE 0x8010
-#define GLX_RENDER_TYPE	0x8011
+#define GLX_RENDER_TYPE 0x8011
 #define GLX_RGBA_TYPE 0x8014
 #define GLX_DOUBLEBUFFER 5
 #define GLX_STEREO 6
-#define GLX_AUX_BUFFERS	7
+#define GLX_AUX_BUFFERS 7
 #define GLX_RED_SIZE 8
 #define GLX_GREEN_SIZE 9
 #define GLX_BLUE_SIZE 10
@@ -60,7 +60,7 @@ extern "C"
 #define GLX_STENCIL_SIZE 13
 #define GLX_ACCUM_RED_SIZE 14
 #define GLX_ACCUM_GREEN_SIZE 15
-#define GLX_ACCUM_BLUE_SIZE	16
+#define GLX_ACCUM_BLUE_SIZE     16
 #define GLX_ACCUM_ALPHA_SIZE 17
 #define GLX_SAMPLES 0x186a1
 #define GLX_VISUAL_ID 0x800b
@@ -122,12 +122,12 @@ typedef XVisualInfo* (*PFNGLXGETVISUALFROMFBCONFIGPROC)(Display*, GLXFBConfig);
 typedef GLXWindow (*PFNGLXCREATEWINDOWPROC)(Display*, GLXFBConfig, Window, const int*);
 typedef void (*PFNGLXDESTROYWINDOWPROC)(Display*, GLXWindow);
 typedef void (*PFNGLXMAKECONTEXTCURRENTPROC)(Display*, GLXDrawable, GLXDrawable, GLXContext);
-typedef Bool (*PFNGLXISDIRECT)(Display*,GLXContext);
+typedef Bool (*PFNGLXISDIRECT)(Display*, GLXContext);
 
 // https://www.opengl.org/registry/specs/MESA/glx_query_renderer.txt
-typedef Bool (*PFNGLXQUERYRENDERERINTEGERMESA)(Display*,int, int, int, unsigned int*);
+typedef Bool (*PFNGLXQUERYRENDERERINTEGERMESA)(Display*, int, int, int, unsigned int*);
 typedef Bool (*PFNGLXQUERYCURRENTRENDERERINTEGERMESA)(int, unsigned int*);
-typedef const char* (*PFNGLXQUERYRENDERERSTRINGMESA)(Display*,int, int, int);
+typedef const char* (*PFNGLXQUERYRENDERERSTRINGMESA)(Display*, int, int, int);
 typedef const char* (*PFNGLXQUERYCURRENTRENDERERSTRINGMESA)(int);
 
 #ifndef GLXBadProfileARB
@@ -145,7 +145,6 @@ struct X11Data
     Window root;
     // Context for mapping window XIDs to _GLFWwindow pointers
     XContext context;
-
 };
 
 struct OSGLContext_glx_dataPrivate
@@ -186,7 +185,6 @@ struct OSGLContext_glx_dataPrivate
     PFNGLXQUERYCURRENTRENDERERINTEGERMESA QueryCurrentRendererIntegerMESA;
     PFNGLXQUERYRENDERERSTRINGMESA QueryRendererStringMesa;
     PFNGLXQUERYCURRENTRENDERERSTRINGMESA QueryCurrentRendererStringMesa;
-
     GLboolean SGI_swap_control;
     GLboolean EXT_swap_control;
     GLboolean MESA_swap_control;
@@ -202,16 +200,13 @@ struct OSGLContext_glx_dataPrivate
 };
 
 OSGLContext_glx_data::OSGLContext_glx_data()
-    : _imp(new OSGLContext_glx_dataPrivate())
+    : _imp( new OSGLContext_glx_dataPrivate() )
 {
-
 }
 
 OSGLContext_glx_data::~OSGLContext_glx_data()
 {
-
 }
-
 
 struct OSGLContext_x11Private
 {
@@ -234,10 +229,9 @@ struct OSGLContext_x11Private
 
     OSGLContext_x11Private()
         : glxContextHandle(0)
-          , glxWindowHandle(0)
-          , x11Window()
+        , glxWindowHandle(0)
+        , x11Window()
     {
-
     }
 
     void createContextGLX(OSGLContext_glx_data* glxInfo, const FramebufferConfig& fbconfig, int major, int minor, bool coreProfile, int rendererID, const OSGLContext_x11* shareContext);
@@ -245,7 +239,6 @@ struct OSGLContext_x11Private
     void createWindow(OSGLContext_glx_data* glxInfo,
                       Visual* visual, int depth);
 };
-
 
 static bool
 extensionSupported(const OSGLContext_glx_data* data,
@@ -263,7 +256,6 @@ extensionSupported(const OSGLContext_glx_data* data,
 }
 
 typedef void (*GLPFNglproc)(void);
-
 static GLPFNglproc
 getProcAddress(const OSGLContext_glx_data* data,
                const char* procname)
@@ -281,7 +273,7 @@ void
 OSGLContext_x11::initGLXData(OSGLContext_glx_data* glxInfo)
 {
     //Sets all bits to 0
-    memset(glxInfo->_imp.get(), 0, sizeof(OSGLContext_glx_dataPrivate));
+    memset( glxInfo->_imp.get(), 0, sizeof(OSGLContext_glx_dataPrivate) );
 
     XInitThreads();
     glxInfo->_imp->x11.display = XOpenDisplay(NULL);
@@ -548,12 +540,14 @@ static int gX11ErrorCode;
 
 // X error handler
 //
-static int errorHandler(Display */*display*/, XErrorEvent* event)
+static int
+errorHandler(Display */*display*/,
+             XErrorEvent* event)
 {
     gX11ErrorCode = event->error_code;
+
     return 0;
 }
-
 
 // Sets the X error handler callback
 //
@@ -578,8 +572,8 @@ ReleaseErrorHandlerX11(OSGLContext_glx_data* glxInfo)
 //
 void
 OSGLContext_x11Private::createWindow(OSGLContext_glx_data* glxInfo,
-                              Visual* visual,
-                              int depth)
+                                     Visual* visual,
+                                     int depth)
 {
     const int width = 32;
     const int height = 32;
@@ -598,23 +592,23 @@ OSGLContext_x11Private::createWindow(OSGLContext_glx_data* glxInfo,
         wa.colormap = x11Window.colormap;
         wa.border_pixel = 0;
         wa.event_mask = 0;/*StructureNotifyMask | KeyPressMask | KeyReleaseMask |
-                        PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
-                        ExposureMask | FocusChangeMask | VisibilityChangeMask |
-                        EnterWindowMask | LeaveWindowMask | PropertyChangeMask;*/
+                             PointerMotionMask | ButtonPressMask | ButtonReleaseMask |
+                             ExposureMask | FocusChangeMask | VisibilityChangeMask |
+                             EnterWindowMask | LeaveWindowMask | PropertyChangeMask;*/
 
         GrabErrorHandlerX11();
 
 
         x11Window.handle = XCreateWindow(glxInfo->_imp->x11.display,
-                                          glxInfo->_imp->x11.root,
-                                          0, 0,
-                                          width, height,
-                                          0,      // Border width
-                                          depth,  // Color depth
-                                          InputOutput,
-                                          visual,
-                                          wamask,
-                                          &wa);
+                                         glxInfo->_imp->x11.root,
+                                         0, 0,
+                                         width, height,
+                                         0,       // Border width
+                                         depth,   // Color depth
+                                         InputOutput,
+                                         visual,
+                                         wamask,
+                                         &wa);
 
         ReleaseErrorHandlerX11(glxInfo);
 
@@ -678,12 +672,12 @@ createLegacyContext(OSGLContext_glx_data* glxInfo,
 
 void
 OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
-                                  const FramebufferConfig& fbconfig,
-                                  int /*major*/,
-                                  int /*minor*/,
-                                  bool coreProfile,
-                                  int rendererID,
-                                  const OSGLContext_x11* shareContext)
+                                         const FramebufferConfig& fbconfig,
+                                         int /*major*/,
+                                         int /*minor*/,
+                                         bool coreProfile,
+                                         int rendererID,
+                                         const OSGLContext_x11* shareContext)
 {
     GLXFBConfig native = NULL;
     GLXContext share = shareContext ? shareContext->_imp->glxContextHandle : 0;
@@ -695,9 +689,7 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
     if (!glxInfo->_imp->ARB_create_context) {
         glxContextHandle = createLegacyContext(glxInfo, native, share);
     } else {
-
         std::vector<int> attribs;
-
         int mask = 0, flags = 0;
 
         /*if (ctxconfig->forward)
@@ -716,7 +708,7 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
         /*if ( (major != 1) || (minor != 0) ) {
             setGLXattrib(GLX_CONTEXT_MAJOR_VERSION_ARB, major);
             setGLXattrib(GLX_CONTEXT_MINOR_VERSION_ARB, minor);
-        }*/
+           }*/
 
         if (mask) {
             setGLXattrib(GLX_CONTEXT_PROFILE_MASK_ARB, mask);
@@ -726,7 +718,7 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
             setGLXattrib(GLX_CONTEXT_FLAGS_ARB, flags);
         }
 
-        if (glxInfo->_imp->MESA_query_renderer && rendererID != -1 && rendererID != 0) {
+        if ( glxInfo->_imp->MESA_query_renderer && (rendererID != -1) && (rendererID != 0) ) {
             setGLXattrib(GLX_RENDERER_ID_MESA, rendererID);
         }
 
@@ -763,7 +755,7 @@ OSGLContext_x11Private::createContextGLX(OSGLContext_glx_data* glxInfo,
         throw std::runtime_error("GLX: Failed to create window");
     }
 
-    if (!glxInfo->_imp->IsDirect(glxInfo->_imp->x11.display, glxContextHandle)) {
+    if ( !glxInfo->_imp->IsDirect(glxInfo->_imp->x11.display, glxContextHandle) ) {
         glxInfo->_imp->DestroyContext(glxInfo->_imp->x11.display, glxContextHandle);
         glxContextHandle = 0;
         glxInfo->_imp->DestroyWindow(glxInfo->_imp->x11.display, glxWindowHandle);
@@ -786,9 +778,9 @@ OSGLContext_x11::OSGLContext_x11(const FramebufferConfig& pixelFormatAttrs,
                                  bool coreProfile,
                                  const GLRendererID& rendererID,
                                  const OSGLContext_x11* shareContext)
-    : _imp(new OSGLContext_x11Private())
+    : _imp( new OSGLContext_x11Private() )
 {
-    OSGLContext_glx_data* glxInfo = const_cast<OSGLContext_glx_data*>(appPTR->getGLXData());
+    OSGLContext_glx_data* glxInfo = const_cast<OSGLContext_glx_data*>( appPTR->getGLXData() );
 
     assert(glxInfo);
 
@@ -862,16 +854,19 @@ void
 OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 {
     const OSGLContext_glx_data* glxInfo = appPTR->getGLXData();
+
     assert(glxInfo);
     if (!glxInfo->_imp->MESA_query_renderer) {
         boost::scoped_ptr<OSGLContext_x11> context;
         try {
-            context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0));
+            context.reset( new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0) );
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
+
             return;
         }
-        if (!makeContextCurrent(context.get())) {
+
+        if ( !makeContextCurrent( context.get() ) ) {
             return;
         }
 
@@ -879,14 +874,14 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             OSGLContext::checkOpenGLVersion();
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
+
             return;
         }
 
-
         OpenGLRendererInfo info;
-        info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
-        info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
-        info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
+        info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
+        info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
+        info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
         glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = 0;
@@ -903,7 +898,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             gotRenderer = (bool)glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_DEVICE_ID_MESA, v);
             if (gotRenderer) {
                 int rendererID = v[0];
-                if ((unsigned int)rendererID == 0xFFFFFFFF) {
+                if ( (unsigned int)rendererID == 0xFFFFFFFF ) {
                     gotRenderer = false;
                 } else {
                     bool ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_ACCELERATED_MESA, v);
@@ -914,7 +909,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     }
 
 
-                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_OPENGL_COMPATIBILITY_PROFILE_VERSION_MESA , v);
+                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_OPENGL_COMPATIBILITY_PROFILE_VERSION_MESA, v);
                     assert(ok);
                     if (!ok) {
                         ++renderer;
@@ -924,7 +919,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     int maxCompatGLVersionMajor = (int)v[0];
                     int maxCompatGLVersionMinor = (int)v[1];
 
-                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer,  GLX_RENDERER_OPENGL_CORE_PROFILE_VERSION_MESA , v);
+                    ok = glxInfo->_imp->QueryRendererIntegerMESA(glxInfo->_imp->x11.display, screen, renderer,  GLX_RENDERER_OPENGL_CORE_PROFILE_VERSION_MESA, v);
                     assert(ok);
                     if (!ok) {
                         ++renderer;
@@ -933,21 +928,18 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
 
                     int maxCoreGLVersionMajor = (int)v[0];
                     int maxCoreGLVersionMinor = (int)v[1];
-
-
-                    const char* vendorIDStr = glxInfo->_imp->QueryRendererStringMesa(glxInfo->_imp->x11.display, screen ,renderer, GLX_RENDERER_VENDOR_ID_MESA);
+                    const char* vendorIDStr = glxInfo->_imp->QueryRendererStringMesa(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_VENDOR_ID_MESA);
                     if (!vendorIDStr) {
                         ++renderer;
                         continue;
                     }
-                    const char* deviceIDStr = glxInfo->_imp->QueryRendererStringMesa(glxInfo->_imp->x11.display, screen ,renderer, GLX_RENDERER_DEVICE_ID_MESA);
+                    const char* deviceIDStr = glxInfo->_imp->QueryRendererStringMesa(glxInfo->_imp->x11.display, screen, renderer, GLX_RENDERER_DEVICE_ID_MESA);
                     if (!deviceIDStr) {
                         ++renderer;
                         continue;
                     }
                     std::string vendorID(vendorIDStr);
                     std::string deviceID(deviceIDStr);
-
                     std::stringstream ss;
                     ss << "Creating context for Device:" << deviceID << ", Vendor:" << vendorID << std::endl;
                     ss << "Max Compatibility OpenGL profile version: " << maxCompatGLVersionMajor << "." << maxCompatGLVersionMinor << std::endl;
@@ -965,7 +957,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     // Now create a context with the renderer ID
                     boost::scoped_ptr<OSGLContext_x11> context;
                     try {
-                        context.reset(new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID((int)renderer), 0));
+                        context.reset( new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID( (int)renderer ), 0) );
                     } catch (const std::exception& e) {
 #ifndef DEBUG
                         std::cerr << ss.str() << std::endl;
@@ -974,7 +966,8 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                         ++renderer;
                         continue;
                     }
-                    if (!makeContextCurrent(context.get())) {
+
+                    if ( !makeContextCurrent( context.get() ) ) {
                         ++renderer;
                         continue;
                     }
@@ -991,9 +984,9 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     }
 
                     info.rendererID.renderID = renderer;
-                    info.vendorName = std::string((const char *) glGetString(GL_VENDOR));
-                    info.rendererName = std::string((const char *) glGetString(GL_RENDERER));
-                    info.glVersionString = std::string((const char *) glGetString(GL_VERSION));
+                    info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
+                    info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
+                    info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
                     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
 
                     renderers.push_back(info);
@@ -1002,11 +995,9 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                 }
             }
             ++renderer;
-
         } while (gotRenderer);
     }
-}
-
+} // OSGLContext_x11::getGPUInfos
 
 NATRON_NAMESPACE_EXIT;
 

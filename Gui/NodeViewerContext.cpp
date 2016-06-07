@@ -82,19 +82,19 @@ public:
                              const NodeGuiPtr& node,
                              ViewerTab* viewer)
         : publicInterface(pi)
-          , node(node)
-          , viewer( viewer->getViewer() )
-          , viewerTab(viewer)
-          , knobsMapping()
-          , currentRole()
-          , currentTool()
-          , toolbar(0)
-          , toolButtons()
-          , mainContainer(0)
-          , mainContainerLayout(0)
-          , nodeLabel(0)
-          , widgetsContainer(0)
-          , widgetsContainerLayout(0)
+        , node(node)
+        , viewer( viewer->getViewer() )
+        , viewerTab(viewer)
+        , knobsMapping()
+        , currentRole()
+        , currentTool()
+        , toolbar(0)
+        , toolButtons()
+        , mainContainer(0)
+        , mainContainerLayout(0)
+        , nodeLabel(0)
+        , widgetsContainer(0)
+        , widgetsContainerLayout(0)
     {
     }
 
@@ -143,8 +143,8 @@ public:
 NodeViewerContext::NodeViewerContext(const NodeGuiPtr& node,
                                      ViewerTab* viewer)
     : QObject()
-      , KnobGuiContainerI()
-      , _imp( new NodeViewerContextPrivate(this, node, viewer) )
+    , KnobGuiContainerI()
+    , _imp( new NodeViewerContextPrivate(this, node, viewer) )
 {
 }
 
@@ -155,10 +155,10 @@ NodeViewerContext::~NodeViewerContext()
 void
 NodeViewerContext::createGui()
 {
-    QObject::connect( _imp->viewer, SIGNAL(selectionRectangleChanged(bool)), this, SLOT(updateSelectionFromViewerSelectionRectangle(bool)), Qt::UniqueConnection );
-    QObject::connect( _imp->viewer, SIGNAL(selectionCleared()), this, SLOT(onViewerSelectionCleared()), Qt::UniqueConnection );
+    QObject::connect( _imp->viewer, SIGNAL( selectionRectangleChanged(bool) ), this, SLOT( updateSelectionFromViewerSelectionRectangle(bool) ), Qt::UniqueConnection );
+    QObject::connect( _imp->viewer, SIGNAL( selectionCleared() ), this, SLOT( onViewerSelectionCleared() ), Qt::UniqueConnection );
     NodeGuiPtr node = _imp->getNode();
-    QObject::connect( node.get(), SIGNAL(settingsPanelClosed(bool)), this, SLOT(onNodeSettingsPanelClosed(bool)), Qt::UniqueConnection );
+    QObject::connect( node.get(), SIGNAL( settingsPanelClosed(bool) ), this, SLOT( onNodeSettingsPanelClosed(bool) ), Qt::UniqueConnection );
     KnobsVec knobsOrdered = node->getNode()->getEffectInstance()->getViewerUIKnobs();
 
 
@@ -168,7 +168,7 @@ NodeViewerContext::createGui()
         _imp->mainContainerLayout->setContentsMargins(0, 0, 0, 0);
         _imp->mainContainerLayout->setSpacing(0);
         _imp->nodeLabel = new Label(QString::fromUtf8( node->getNode()->getLabel().c_str() ), _imp->mainContainer);
-        QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), _imp->nodeLabel, SLOT(setText(QString)) );
+        QObject::connect( node->getNode().get(), SIGNAL( labelChanged(QString) ), _imp->nodeLabel, SLOT( setText(QString) ) );
         _imp->widgetsContainer = new QWidget(_imp->mainContainer);
         _imp->widgetsContainerLayout = new QVBoxLayout(_imp->widgetsContainer);
         _imp->widgetsContainerLayout->setContentsMargins(0, 0, 0, 0);
@@ -177,7 +177,7 @@ NodeViewerContext::createGui()
         _imp->mainContainerLayout->addWidget(_imp->nodeLabel);
         _imp->mainContainerLayout->addStretch();
         onNodeColorChanged( node->getCurrentColor() );
-        QObject::connect( node.get(), SIGNAL(colorChanged(QColor)), this, SLOT(onNodeColorChanged(QColor)) );
+        QObject::connect( node.get(), SIGNAL( colorChanged(QColor) ), this, SLOT( onNodeColorChanged(QColor) ) );
         setContainerWidget(_imp->mainContainer);
         _imp->createKnobs(knobsOrdered);
     }
@@ -200,14 +200,14 @@ NodeViewerContext::createGui()
             for (std::size_t i = 0; i < pageChildren.size(); ++i) {
                 KnobGroup* isGroup = dynamic_cast<KnobGroup*>( pageChildren[i].get() );
                 if (isGroup) {
-                    QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)) );
+                    QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onToolGroupValueChanged(ViewSpec, int, int) ) );
                     std::vector<KnobPtr> toolButtonChildren = isGroup->getChildren();
                     ViewerToolButton* createdToolButton = 0;
                     QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
                         KnobButton* isButton = dynamic_cast<KnobButton*>( toolButtonChildren[j].get() );
                         if (isButton) {
-                            QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolActionValueChanged(ViewSpec,int,int)) );
+                            QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec, int, int) ), this, SLOT( onToolActionValueChanged(ViewSpec, int, int) ) );
                             const std::string& roleShortcutID = isGroup->getName();
                             QAction* act = _imp->addToolBarTool(isButton->getName(), isGroup->getName(), roleShortcutID, isButton->getLabel(), isButton->getHintToolTip(), isButton->getIconLabel(), &createdToolButton);
                             if ( act && createdToolButton && isButton->getValue() ) {
@@ -310,7 +310,7 @@ NodeViewerContextPrivate::createKnobs(const KnobsVec& knobsOrdered)
         std::string inViewerLabel = (*it)->getInViewerContextLabel();
         if ( !inViewerLabel.empty() ) {
             label = new KnobClickableLabel(QString::fromUtf8( inViewerLabel.c_str() ) + QLatin1String(":"), ret, widgetsContainer);
-            QObject::connect( label, SIGNAL(clicked(bool)), ret.get(), SIGNAL(labelClicked(bool)) );
+            QObject::connect( label, SIGNAL( clicked(bool) ), ret.get(), SIGNAL( labelClicked(bool) ) );
         }
         ret->createGUI(lastRowContainer, 0, label, 0 /*warningIndicator*/, lastRowLayout, makeNewLine, knobsOnSameLine);
 
@@ -367,7 +367,7 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
         toolButton->setFixedSize(rotoToolSize);
         toolButton->setIconSize(rotoToolSize);
         toolButton->setPopupMode(QToolButton::InstantPopup);
-        QObject::connect( toolButton, SIGNAL(triggered(QAction*)), publicInterface, SLOT(onToolActionTriggered(QAction*)) );
+        QObject::connect( toolButton, SIGNAL( triggered(QAction*) ), publicInterface, SLOT( onToolActionTriggered(QAction*) ) );
     }
 
     *createdToolButton = toolButton;
@@ -407,7 +407,7 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
         }
         action->setToolTip(toolTip);
     }
-    QObject::connect( action, SIGNAL(triggered()), publicInterface, SLOT(onToolActionTriggered()) );
+    QObject::connect( action, SIGNAL( triggered() ), publicInterface, SLOT( onToolActionTriggered() ) );
     toolButton->addAction(action);
 
     return action;

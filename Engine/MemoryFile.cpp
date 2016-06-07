@@ -65,13 +65,13 @@ struct MemoryFilePrivate
 
     MemoryFilePrivate(const std::string & filepath)
         : path(filepath)
-          , data(0)
-          , size(0)
+        , data(0)
+        , size(0)
 #if defined(__NATRON_UNIX__)
-          , file_handle(-1)
+        , file_handle(-1)
 #elif defined(__NATRON_WIN32__)
-          , file_handle(INVALID_HANDLE_VALUE)
-          , file_mapping_handle(INVALID_HANDLE_VALUE)
+        , file_handle(INVALID_HANDLE_VALUE)
+        , file_mapping_handle(INVALID_HANDLE_VALUE)
 #endif
     {
     }

@@ -2138,7 +2138,7 @@ public:
                              ValueChangedReasonEnum reason,
                              bool valueChangesBlocked)
             : QueuedSetValue(view, dimension, value, key, true, reason, valueChangesBlocked)
-              , _time(time)
+            , _time(time)
         {
         }
 

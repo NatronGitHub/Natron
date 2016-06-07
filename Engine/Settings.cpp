@@ -78,10 +78,10 @@ NATRON_NAMESPACE_ENTER;
 
 Settings::Settings()
     : KnobHolder( AppInstPtr() ) // < Settings are process wide and do not belong to a single AppInstance
-      , _restoringSettings(false)
-      , _ocioRestored(false)
-      , _settingsExisted(false)
-      , _defaultAppearanceOutdated(false)
+    , _restoringSettings(false)
+    , _ocioRestored(false)
+    , _settingsExisted(false)
+    , _defaultAppearanceOutdated(false)
 {
 }
 
@@ -132,7 +132,6 @@ Settings::initializeKnobs()
 
     setDefaultValues();
 }
-
 
 void
 Settings::initializeKnobsGeneral()
@@ -288,9 +287,7 @@ Settings::initializeKnobsGeneral()
                                         "The default host name is: \n%1").arg( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME) ) );
     _customHostName->setSecretByDefault(true);
     _generalTab->addKnob(_customHostName);
-    
 } // Settings::initializeKnobsGeneral
-
 
 void
 Settings::initializeKnobsThreading()
@@ -358,9 +355,7 @@ Settings::initializeKnobsThreading()
                                       "other prior tasks are done.") );
     _queueRenders->setName("queueRenders");
     _threadingPage->addKnob(_queueRenders);
-    
-
-}
+} // Settings::initializeKnobsThreading
 
 void
 Settings::initializeKnobsRendering()
@@ -401,18 +396,18 @@ Settings::initializeKnobsRendering()
                                                                "transformations.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _activateTransformConcatenationSupport->setName("transformCatSupport");
     _renderingPage->addKnob(_activateTransformConcatenationSupport);
-
 }
 
 void
 Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers)
 {
-    if (renderers.empty()) {
+    if ( renderers.empty() ) {
         _availableOpenGLRenderers->setSecret(true);
+
         return;
     }
 
-    std::vector<std::string> entries(renderers.size());
+    std::vector<std::string> entries( renderers.size() );
     int i = 0;
     for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
         std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
@@ -420,28 +415,28 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     }
     _availableOpenGLRenderers->populateChoices(entries);
     _availableOpenGLRenderers->setSecret(renderers.size() == 1);
-
 }
 
 GLRendererID
 Settings::getActiveOpenGLRendererID() const
 {
-    if (_availableOpenGLRenderers->getIsSecret()) {
+    if ( _availableOpenGLRenderers->getIsSecret() ) {
         // We were not able to detect multiple renderers, use default
         return GLRendererID();
     }
     int activeIndex = _availableOpenGLRenderers->getValue();
     const std::list<OpenGLRendererInfo>& renderers = appPTR->getOpenGLRenderers();
-    if (activeIndex < 0 || activeIndex >= (int)renderers.size()) {
+    if ( (activeIndex < 0) || ( activeIndex >= (int)renderers.size() ) ) {
         // Invalid index
         return GLRendererID();
     }
     int i = 0;
-    for (std::list<OpenGLRendererInfo>::const_iterator it; it!=renderers.end(); ++it, ++i) {
+    for (std::list<OpenGLRendererInfo>::const_iterator it; it != renderers.end(); ++it, ++i) {
         if (i == activeIndex) {
             return it->rendererID;
         }
     }
+
     return GLRendererID();
 }
 
@@ -451,20 +446,19 @@ Settings::initializeKnobsGPU()
     _gpuPage = AppManager::createKnob<KnobPage>( this, tr("GPU Rendering") );
     _openglRendererString = AppManager::createKnob<KnobString>( this, tr("Active OpenGL Renderer") );
     _openglRendererString->setName("activeOpenGLRenderer");
-    _openglRendererString->setHintToolTip(tr("The currently active OpenGL renderer"));
+    _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer") );
     _openglRendererString->setAsLabel();
     _gpuPage->addKnob(_openglRendererString);
 
     _availableOpenGLRenderers = AppManager::createKnob<KnobChoice>( this, tr("Choose OpenGL Renderer") );
     _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
-    _availableOpenGLRenderers->setHintToolTip(tr("Select the renderer that will be used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application."));
+    _availableOpenGLRenderers->setHintToolTip( tr("Select the renderer that will be used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
     _gpuPage->addKnob(_availableOpenGLRenderers);
 }
 
 void
 Settings::initializeKnobsProjectSetup()
 {
-
     _projectsPage = AppManager::createKnob<KnobPage>( this, tr("Project Setup") );
 
     _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>( this, tr("First image read set project format") );
@@ -472,7 +466,6 @@ Settings::initializeKnobsProjectSetup()
     _firstReadSetProjectFormat->setHintToolTip( tr("If checked, the first image you read in the project sets the project format to the "
                                                    "image size.") );
     _projectsPage->addKnob(_firstReadSetProjectFormat);
-
 
 
     _autoPreviewEnabledForNewProjects = AppManager::createKnob<KnobBool>( this, tr("Auto-preview enabled by default for new projects") );
@@ -487,8 +480,8 @@ Settings::initializeKnobsProjectSetup()
     _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
 
     _projectsPage->addKnob(_fixPathsOnProjectPathChanged);
-
 }
+
 void
 Settings::initializeKnobsDocumentation()
 {
@@ -506,9 +499,8 @@ Settings::initializeKnobsDocumentation()
     /// used to store temp port for local webserver
     _wwwServerPort = AppManager::createKnob<KnobInt>( this, tr("Documentation local port (0=auto)") );
     _wwwServerPort->setName("webserverPort");
-    _wwwServerPort->setHintToolTip(tr("The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself."));
+    _wwwServerPort->setHintToolTip( tr("The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself.") );
     _documentationPage->addKnob(_wwwServerPort);
-
 }
 
 void
@@ -578,7 +570,7 @@ Settings::initializeKnobsUserInterface()
     _loadProjectsWorkspace->setHintToolTip( tr("When checked, when loading a project, the workspace (windows layout) will also be loaded, otherwise it "
                                                "will use your current layout.") );
     _uiPage->addKnob(_loadProjectsWorkspace);
-}
+} // Settings::initializeKnobsUserInterface
 
 void
 Settings::initializeKnobsColorManagement()
@@ -632,8 +624,7 @@ Settings::initializeKnobsColorManagement()
     _ocioStartupCheck = AppManager::createKnob<KnobBool>( this, tr("Warn on startup if OpenColorIO config is not the default") );
     _ocioStartupCheck->setName("startupCheckOCIO");
     _ocioTab->addKnob(_ocioStartupCheck);
-}
-
+} // Settings::initializeKnobsColorManagement
 
 void
 Settings::initializeKnobsAppearance()
@@ -661,11 +652,7 @@ Settings::initializeKnobsAppearance()
     _qssFile->setHintToolTip( tr("When pointing to a valid .qss file, the stylesheet of the application will be set according to this file instead of the default "
                                  "stylesheet. You can adapt the default stylesheet that can be found in your distribution of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _appearanceTab->addKnob(_qssFile);
-
-
-
 } // Settings::initializeKnobsAppearance
-
 
 void
 Settings::initializeKnobsGuiColors()
@@ -755,9 +742,7 @@ Settings::initializeKnobsGuiColors()
     _exprColor->setName("exprColor");
     _exprColor->setSimplified(true);
     _guiColorsTab->addKnob(_exprColor);
-
-}
-
+} // Settings::initializeKnobsGuiColors
 
 void
 Settings::initializeKnobsCurveEditorColors()
@@ -779,9 +764,7 @@ Settings::initializeKnobsCurveEditorColors()
     _curveEditorScaleColor->setName("curveeditorScale");
     _curveEditorScaleColor->setSimplified(true);
     _curveEditorColorsTab->addKnob(_curveEditorScaleColor);
-
 }
-
 
 void
 Settings::initializeKnobsDopeSheetColors()
@@ -814,7 +797,6 @@ Settings::initializeKnobsDopeSheetColors()
     _dopeSheetEditorGridColor->setSimplified(true);
     _dopeSheetEditorColorsTab->addKnob(_dopeSheetEditorGridColor);
 }
-
 
 void
 Settings::initializeKnobsNodeGraphColors()
@@ -927,8 +909,7 @@ Settings::initializeKnobsNodeGraphColors()
     _defaultDeepGroupColor->setSimplified(true);
     _defaultDeepGroupColor->setHintToolTip( tr("The color used for newly created Deep nodes.") );
     _nodegraphColorsTab->addKnob(_defaultDeepGroupColor);
-}
-
+} // Settings::initializeKnobsNodeGraphColors
 
 void
 Settings::initializeKnobsScriptEditorColors()
@@ -990,8 +971,7 @@ Settings::initializeKnobsScriptEditorColors()
     _numbersColor->setName("numbersColor");
     _numbersColor->setSimplified(true);
     _scriptEditorColorsTab->addKnob(_numbersColor);
-
-}
+} // Settings::initializeKnobsScriptEditorColors
 
 void
 Settings::initializeKnobsViewers()
@@ -1265,7 +1245,6 @@ Settings::initializeKnobsCaching()
                                        "for some reason.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _cachingTab->addKnob(_wipeDiskCache);
 } // Settings::initializeKnobsCaching
-
 
 void
 Settings::initializeKnobsPlugins()
@@ -1730,8 +1709,6 @@ Settings::saveAllSettings()
     saveSettings(k, false, true);
 }
 
-
-
 void
 Settings::restorePluginSettings()
 {
@@ -1754,29 +1731,29 @@ Settings::restorePluginSettings()
 
 
             {
-                QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number(plugin->getMajorVersion()) + QString::fromUtf8("_") + QString::number(plugin->getMinorVersion());
+                QString pluginIDKey = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
                 QString enabledKey = pluginIDKey + QString::fromUtf8("_enabled");
-                if (settings.contains(enabledKey)) {
+                if ( settings.contains(enabledKey) ) {
                     bool enabled = settings.value(enabledKey).toBool();
                     plugin->setActivated(enabled);
                 } else {
-                    settings.setValue(enabledKey, plugin->isActivated());
+                    settings.setValue( enabledKey, plugin->isActivated() );
                 }
 
                 QString rsKey = pluginIDKey + QString::fromUtf8("_rs");
-                if (settings.contains(rsKey)) {
+                if ( settings.contains(rsKey) ) {
                     bool renderScaleEnabled = settings.value(rsKey).toBool();
                     plugin->setRenderScaleEnabled(renderScaleEnabled);
                 } else {
-                    settings.setValue(rsKey, plugin->isRenderScaleEnabled());
+                    settings.setValue( rsKey, plugin->isRenderScaleEnabled() );
                 }
 
                 QString mtKey = pluginIDKey + QString::fromUtf8("_mt");
-                if (settings.contains(mtKey)) {
+                if ( settings.contains(mtKey) ) {
                     bool multiThreadingEnabled = settings.value(mtKey).toBool();
                     plugin->setMultiThreadingEnabled(multiThreadingEnabled);
                 } else {
-                    settings.setValue(mtKey, plugin->isMultiThreadingEnabled());
+                    settings.setValue( mtKey, plugin->isMultiThreadingEnabled() );
                 }
 
                 QString glKey = pluginIDKey + QString::fromUtf8("_gl");
@@ -1786,34 +1763,31 @@ Settings::restorePluginSettings()
                 } else {
                     settings.setValue(glKey, plugin->isOpenGLEnabled());
                 }
-                
+
             }
-            
         }
     }
-    
 } // Settings::restorePluginSettings
 
 void
 Settings::savePluginsSettings()
 {
     const PluginsMap& plugins = appPTR->getPluginsList();
-
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-    for (PluginsMap::const_iterator it = plugins.begin(); it!=plugins.end(); ++it) {
 
+    for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         assert(it->second.size() > 0);
 
         for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             Plugin* plugin  = *it2;
             assert(plugin);
 
-            QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number(plugin->getMajorVersion()) + QString::fromUtf8("_") + QString::number(plugin->getMinorVersion());
+            QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
             QString enabledKey = pluginID + QString::fromUtf8("_enabled");
-            settings.setValue(enabledKey, plugin->isActivated());
+            settings.setValue( enabledKey, plugin->isActivated() );
 
             QString rsKey = pluginID + QString::fromUtf8("_rs");
-            settings.setValue(rsKey, plugin->isRenderScaleEnabled());
+            settings.setValue( rsKey, plugin->isRenderScaleEnabled() );
 
             QString mtKey = pluginID + QString::fromUtf8("_mt");
             settings.setValue(mtKey, plugin->isMultiThreadingEnabled());
@@ -1830,7 +1804,6 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
                        bool doWarnings,
                        bool pluginSettings)
 {
-
     if (pluginSettings) {
         savePluginsSettings();
     }
@@ -1990,23 +1963,22 @@ Settings::restoreSettings()
     // Restore opengl renderer
     {
         std::vector<std::string> availableRenderers = _availableOpenGLRenderers->getEntries_mt_safe();
-        if (availableRenderers.empty()) {
-            _openglRendererString->setValue(tr("OpenGL rendering disabled: No device meeting %1 requirements could be found.").arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).toStdString());
+        if ( availableRenderers.empty() ) {
+            _openglRendererString->setValue( tr("OpenGL rendering disabled: No device meeting %1 requirements could be found.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
         int curIndex = _availableOpenGLRenderers->getValue();
-        if (curIndex >= 0 && curIndex < (int)availableRenderers.size()) {
+        if ( (curIndex >= 0) && ( curIndex < (int)availableRenderers.size() ) ) {
             const std::list<OpenGLRendererInfo>& renderers = appPTR->getOpenGLRenderers();
             int i = 0;
             for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
                 if (i == curIndex) {
                     QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
-                    QString curRenderer = tr("<p><h2>OpenGL Renderer Infos:</h2></p><p><b>Vendor:</b> %1</p><p><b>Renderer:</b> %2</p><p><b>OpenGL Version:</b> %3</p><p><b>Max. Memory:</b> %4</p><p><b>Max. Texture Size (px):</b> %5</p<").arg(QString::fromUtf8(it->vendorName.c_str())).arg(QString::fromUtf8(it->rendererName.c_str())).arg(QString::fromUtf8(it->glVersionString.c_str())).arg(maxMemoryString).arg(it->maxTextureSize);
-                    _openglRendererString->setValue(curRenderer.toStdString());
+                    QString curRenderer = tr("<p><h2>OpenGL Renderer Infos:</h2></p><p><b>Vendor:</b> %1</p><p><b>Renderer:</b> %2</p><p><b>OpenGL Version:</b> %3</p><p><b>Max. Memory:</b> %4</p><p><b>Max. Texture Size (px):</b> %5</p<").arg( QString::fromUtf8( it->vendorName.c_str() ) ).arg( QString::fromUtf8( it->rendererName.c_str() ) ).arg( QString::fromUtf8( it->glVersionString.c_str() ) ).arg(maxMemoryString).arg(it->maxTextureSize);
+                    _openglRendererString->setValue( curRenderer.toStdString() );
                     break;
                 }
             }
         }
-
     }
 
     _settingsExisted = false;
@@ -2427,8 +2399,6 @@ Settings::isAutoPreviewOnForNewProjects() const
     return _autoPreviewEnabledForNewProjects->getValue();
 }
 
-
-
 int
 Settings::getDocumentationSource() const
 {
@@ -2520,7 +2490,6 @@ Settings::makeHTMLDocumentation(bool genHTML) const
     return ret;
 } // Settings::makeHTMLDocumentation
 
-
 void
 Settings::populateSystemFonts(const QSettings& settings,
                               const std::vector<std::string>& fonts)
@@ -2561,7 +2530,6 @@ Settings::populateSystemFonts(const QSettings& settings,
         }
     }
 }
-
 
 void
 Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const

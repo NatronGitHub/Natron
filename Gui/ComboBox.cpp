@@ -36,10 +36,10 @@
 #include <QtCore/QDebug>
 #include <QPainter>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-CLANG_DIAG_OFF(deprecated-register) //'register' storage class specifier is deprecated
+    CLANG_DIAG_OFF(deprecated - register) //'register' storage class specifier is deprecated
 #include <QMouseEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-CLANG_DIAG_ON(deprecated-register)
+    CLANG_DIAG_ON(deprecated - register)
 
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
@@ -82,25 +82,25 @@ strippedText(QString s)
 
 ComboBox::ComboBox(QWidget* parent)
     : QFrame(parent)
-      , _readOnly(false)
-      , _enabled(true)
-      , _animation(0)
-      , _clicked(false)
-      , _dirty(false)
-      , _altered(false)
-      , _cascading(false)
-      , _cascadingIndex(0)
-      , _currentIndex(-1)
-      , _currentText()
-      , _separators()
-      , _rootNode( new ComboBoxMenuNode() )
-      , _sh()
-      , _msh()
-      , _sizePolicy()
-      , _validHints(false)
-      , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
-      , _currentDelta(0)
-      , ignoreWheelEvent(false)
+    , _readOnly(false)
+    , _enabled(true)
+    , _animation(0)
+    , _clicked(false)
+    , _dirty(false)
+    , _altered(false)
+    , _cascading(false)
+    , _cascadingIndex(0)
+    , _currentIndex(-1)
+    , _currentText()
+    , _separators()
+    , _rootNode( new ComboBoxMenuNode() )
+    , _sh()
+    , _msh()
+    , _sizePolicy()
+    , _validHints(false)
+    , _align(Qt::AlignLeft | Qt::AlignVCenter | Qt::TextExpandTabs)
+    , _currentDelta(0)
+    , ignoreWheelEvent(false)
 {
     setFrameShape(QFrame::Box);
 

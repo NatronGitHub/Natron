@@ -79,9 +79,9 @@ NodeGraph::NodeGraph(Gui* gui,
                      QGraphicsScene* scene,
                      QWidget *parent)
     : QGraphicsView(scene, parent)
-      , NodeGraphI()
-      , PanelWidget(this, gui)
-      , _imp( new NodeGraphPrivate(this, group) )
+    , NodeGraphI()
+    , PanelWidget(this, gui)
+    , _imp( new NodeGraphPrivate(this, group) )
 {
     group->setNodeGraphPointer(this);
 
@@ -99,14 +99,14 @@ NodeGraph::NodeGraph(Gui* gui,
         std::string label;
         makeFullyQualifiedLabel(isGrp->getNode().get(), &label);
         setLabel(label);
-        QObject::connect( isGrp->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onGroupNameChanged(QString)) );
-        QObject::connect( isGrp->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onGroupScriptNameChanged(QString)) );
+        QObject::connect( isGrp->getNode().get(), SIGNAL( labelChanged(QString) ), this, SLOT( onGroupNameChanged(QString) ) );
+        QObject::connect( isGrp->getNode().get(), SIGNAL( scriptNameChanged(QString) ), this, SLOT( onGroupScriptNameChanged(QString) ) );
     } else {
         setScriptName(kNodeGraphObjectName);
         setLabel( tr("Node Graph").toStdString() );
     }
 
-    QObject::connect( &_imp->autoScrollTimer, SIGNAL(timeout()), this, SLOT(onAutoScrollTimerTriggered()) );
+    QObject::connect( &_imp->autoScrollTimer, SIGNAL( timeout() ), this, SLOT( onAutoScrollTimerTriggered() ) );
 
 
     setMouseTracking(true);
@@ -134,10 +134,10 @@ NodeGraph::NodeGraph(Gui* gui,
     _imp->_cacheSizeText->setBrush( QColor(200, 200, 200) );
     _imp->_cacheSizeText->setVisible(false);
 
-    QObject::connect( &_imp->refreshRenderStateTimer, SIGNAL(timeout()), this, SLOT(onRefreshNodesRenderStateTimerTimeout()) );
+    QObject::connect( &_imp->refreshRenderStateTimer, SIGNAL( timeout() ), this, SLOT( onRefreshNodesRenderStateTimerTimeout() ) );
     _imp->refreshRenderStateTimer.start(NATRON_NODES_RENDER_STATE_REFRESH_INTERVAL_MS);
 
-    QObject::connect( &_imp->_refreshCacheTextTimer, SIGNAL(timeout()), this, SLOT(updateCacheSizeText()) );
+    QObject::connect( &_imp->_refreshCacheTextTimer, SIGNAL( timeout() ), this, SLOT( updateCacheSizeText() ) );
     _imp->_refreshCacheTextTimer.start(NATRON_CACHE_SIZE_TEXT_REFRESH_INTERVAL_MS);
 
     _imp->_undoStack = new QUndoStack(this);
@@ -212,7 +212,7 @@ NodeGraph::~NodeGraph()
         delete _imp->_hintOutputEdge;
     }
 
-    QObject::disconnect( &_imp->_refreshCacheTextTimer, SIGNAL(timeout()), this, SLOT(updateCacheSizeText()) );
+    QObject::disconnect( &_imp->_refreshCacheTextTimer, SIGNAL( timeout() ), this, SLOT( updateCacheSizeText() ) );
     _imp->_nodeCreationShortcutEnabled = false;
 }
 

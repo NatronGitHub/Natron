@@ -37,14 +37,14 @@ Texture::Texture(U32 target,
                  int internalFormat,
                  int glType)
     : _texID(0)
-      , _target(target)
-      , _minFilter(minFilter)
-      , _magFilter(magFilter)
-      , _clamp(clamp)
-      , _internalFormat(internalFormat)
-      , _format(format)
-      , _glType(glType)
-      , _type(type)
+    , _target(target)
+    , _minFilter(minFilter)
+    , _magFilter(magFilter)
+    , _clamp(clamp)
+    , _internalFormat(internalFormat)
+    , _format(format)
+    , _glType(glType)
+    , _type(type)
 {
     glGenTextures(1, &_texID);
 }
@@ -85,7 +85,7 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
         glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
         glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
     }
-    
+
     glTexImage2D (_target,
                   0,            // level
                   _internalFormat, //internalFormat

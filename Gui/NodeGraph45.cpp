@@ -30,7 +30,7 @@
 #include <stdexcept>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
-CLANG_DIAG_OFF(deprecated)
+    CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QThread>
 #include <QVBoxLayout>
@@ -39,7 +39,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QApplication>
 #include <QCheckBox>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
-CLANG_DIAG_ON(deprecated)
+    CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
@@ -206,8 +206,8 @@ NodeGraph::popFindDialog(const QPoint& p)
         realPos = global;
     }
 
-    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onFindNodeDialogFinished()) );
-    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onFindNodeDialogFinished()) );
+    QObject::connect( dialog, SIGNAL( rejected() ), this, SLOT( onFindNodeDialogFinished() ) );
+    QObject::connect( dialog, SIGNAL( accepted() ), this, SLOT( onFindNodeDialogFinished() ) );
     dialog->move( realPos.x(), realPos.y() );
     dialog->raise();
     dialog->show();
@@ -246,8 +246,8 @@ NodeGraph::renameNode()
         realPos = global;
         //qDebug() << realPos.x() << realPos.y();
     }
-    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()) );
-    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()) );
+    QObject::connect( dialog, SIGNAL( rejected() ), this, SLOT( onNodeNameEditDialogFinished() ) );
+    QObject::connect( dialog, SIGNAL( accepted() ), this, SLOT( onNodeNameEditDialogFinished() ) );
     dialog->move( realPos.x(), realPos.y() );
     dialog->raise();
     dialog->show();
@@ -280,16 +280,16 @@ struct FindNodeDialogPrivate
 
     FindNodeDialogPrivate(NodeGraph* graph)
         : graph(graph)
-          , currentFilter()
-          , nodeResults()
-          , currentFindIndex(-1)
-          , mainLayout(0)
-          , label(0)
-          , matchWhole(0)
-          , caseSensitivity(0)
-          , resultLabel(0)
-          , filter(0)
-          , buttons(0)
+        , currentFilter()
+        , nodeResults()
+        , currentFindIndex(-1)
+        , mainLayout(0)
+        , label(0)
+        , matchWhole(0)
+        , caseSensitivity(0)
+        , resultLabel(0)
+        , filter(0)
+        , buttons(0)
     {
     }
 };
@@ -297,7 +297,7 @@ struct FindNodeDialogPrivate
 FindNodeDialog::FindNodeDialog(NodeGraph* graph,
                                QWidget* parent)
     : QDialog(parent)
-      , _imp( new FindNodeDialogPrivate(graph) )
+    , _imp( new FindNodeDialogPrivate(graph) )
 {
     setWindowFlags(Qt::Popup);
 
@@ -313,20 +313,20 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
                                  "? Matches any single character.\n"
                                  "* Matches zero or more of any characters.\n"
                                  "[...] Matches any character within the set in square brackets.") );
-    QObject::connect( _imp->filter, SIGNAL(editingFinished()), this, SLOT(updateFindResultsWithCurrentFilter()) );
-    QObject::connect( _imp->filter, SIGNAL(textEdited(QString)), this, SLOT(updateFindResults(QString)) );
+    QObject::connect( _imp->filter, SIGNAL( editingFinished() ), this, SLOT( updateFindResultsWithCurrentFilter() ) );
+    QObject::connect( _imp->filter, SIGNAL( textEdited(QString) ), this, SLOT( updateFindResults(QString) ) );
 
     _imp->mainLayout->addWidget(_imp->filter);
 
     _imp->matchWhole = new QCheckBox(tr("Match whole pattern"), this);
     _imp->filter->setToolTip( tr("When checked, the given pattern must match the whole node name.") );
     _imp->matchWhole->setChecked(false);
-    QObject::connect( _imp->matchWhole, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()) );
+    QObject::connect( _imp->matchWhole, SIGNAL( toggled(bool) ), this, SLOT( forceUpdateFindResults() ) );
     _imp->mainLayout->addWidget(_imp->matchWhole);
 
     _imp->caseSensitivity = new QCheckBox(tr("Case sensitive"), this);
     _imp->caseSensitivity->setChecked(false);
-    QObject::connect( _imp->caseSensitivity, SIGNAL(toggled(bool)), this, SLOT(forceUpdateFindResults()) );
+    QObject::connect( _imp->caseSensitivity, SIGNAL( toggled(bool) ), this, SLOT( forceUpdateFindResults() ) );
     _imp->mainLayout->addWidget(_imp->caseSensitivity);
 
 
@@ -336,7 +336,7 @@ FindNodeDialog::FindNodeDialog(NodeGraph* graph,
 
     _imp->buttons = new QDialogButtonBox(QDialogButtonBox::NoButton, Qt::Horizontal, this);
     _imp->buttons->addButton(tr("&Next"), QDialogButtonBox::ActionRole);
-    QObject::connect( _imp->buttons, SIGNAL(accepted()), this, SLOT(onNextClicked()) );
+    QObject::connect( _imp->buttons, SIGNAL( accepted() ), this, SLOT( onNextClicked() ) );
 
     _imp->mainLayout->addWidget(_imp->buttons);
     _imp->filter->setFocus();
@@ -474,7 +474,7 @@ struct EditNodeNameDialogPrivate
 
     EditNodeNameDialogPrivate(const NodeGuiPtr& node)
         : field(0)
-          , node(node)
+        , node(node)
     {
     }
 };
@@ -482,7 +482,7 @@ struct EditNodeNameDialogPrivate
 EditNodeNameDialog::EditNodeNameDialog(const NodeGuiPtr& node,
                                        QWidget* parent)
     : QDialog(parent)
-      , _imp( new EditNodeNameDialogPrivate(node) )
+    , _imp( new EditNodeNameDialogPrivate(node) )
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
 

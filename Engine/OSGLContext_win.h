@@ -93,18 +93,18 @@ typedef BOOL (WINAPI * WGLSHARELISTS_T)(HGLRC, HGLRC);
 
 DECLARE_HANDLE(HGPUNV);
 
-typedef struct _GPU_DEVICE {
-    DWORD  cb;
-    CHAR   DeviceName[32];
-    CHAR   DeviceString[128];
-    DWORD  Flags;
-    RECT   rcVirtualScreen;
+typedef struct _GPU_DEVICE
+{
+    DWORD cb;
+    CHAR DeviceName[32];
+    CHAR DeviceString[128];
+    DWORD Flags;
+    RECT rcVirtualScreen;
 } GPU_DEVICE, *PGPU_DEVICE;
-
-typedef BOOL (*PFNWGLENUMGPUSNV)(UINT,HGPUNV*);
-typedef BOOL (*PFNWGLENUMGPUDEVICESNV)(HGPUNV,UINT,PGPU_DEVICE);
+typedef BOOL (*PFNWGLENUMGPUSNV)(UINT, HGPUNV*);
+typedef BOOL (*PFNWGLENUMGPUDEVICESNV)(HGPUNV, UINT, PGPU_DEVICE);
 typedef HDC (*PFNWGLCREATEAFFINITYDCNV)(const HGPUNV*);
-typedef BOOL (*PFNWGLENUMGPUSFROMAFFINITYDCNV)(HDC,UINT,HGPUNV*);
+typedef BOOL (*PFNWGLENUMGPUSFROMAFFINITYDCNV)(HDC, UINT, HGPUNV*);
 typedef BOOL (*PFNWGLDELETEDCNV)(HDC);
 
 
@@ -122,28 +122,20 @@ typedef BOOL (*PFNWGLDELETEDCNV)(HDC);
 #define WGL_GPU_NUM_SPI_AMD                0x21A8
 
 
-typedef UINT  (*PFNWGLGETGPUIDSAMD)(UINT maxCount, UINT *ids);
-
-typedef INT   (*PFNWGLGETGPUINFOAMD)(UINT id, INT property, GLenum dataType,
-                       UINT size, void *data);
-
-typedef UINT  (*PFNWGLGETCONTEXTGPUIDAMD)(HGLRC hglrc);
-
+typedef UINT (*PFNWGLGETGPUIDSAMD)(UINT maxCount, UINT *ids);
+typedef INT (*PFNWGLGETGPUINFOAMD)(UINT id, INT property, GLenum dataType,
+                                   UINT size, void *data);
+typedef UINT (*PFNWGLGETCONTEXTGPUIDAMD)(HGLRC hglrc);
 typedef HGLRC (*PFNWGLCREATEASSOCIATEDCONTEXTAMD)(UINT id);
-
 typedef HGLRC (*PFNWGLCREATEASSOCIATEDCONTEXTATTRIBSAMD)(UINT id, HGLRC hShareContext,
-                                           const int *attribList);
-
-typedef BOOL  (*PFNWGLDELETEASSOCIATEDCONTEXTAMD)(HGLRC hglrc);
-
-typedef BOOL  (*PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD)(HGLRC hglrc);
-
+                                                         const int *attribList);
+typedef BOOL (*PFNWGLDELETEASSOCIATEDCONTEXTAMD)(HGLRC hglrc);
+typedef BOOL (*PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD)(HGLRC hglrc);
 typedef HGLRC (*PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD)(void);
-
-typedef VOID  (*PFNWGLBLITCONTEXTFRAMEBUFFERAMD)(HGLRC dstCtx, GLint srcX0, GLint srcY0,
-                                                 GLint srcX1, GLint srcY1, GLint dstX0,
-                                                 GLint dstY0, GLint dstX1, GLint dstY1,
-                                                 GLbitfield mask, GLenum filter);
+typedef VOID (*PFNWGLBLITCONTEXTFRAMEBUFFERAMD)(HGLRC dstCtx, GLint srcX0, GLint srcY0,
+                                                GLint srcX1, GLint srcY1, GLint dstX0,
+                                                GLint dstY0, GLint dstX1, GLint dstY1,
+                                                GLbitfield mask, GLenum filter);
 
 
 /////////// http://developer.download.nvidia.com/opengl/specs/GL_NVX_gpu_memory_info.txt
@@ -170,13 +162,11 @@ struct OSGLContext_wgl_data
     PFNWGLGETEXTENSIONSSTRINGEXTPROC GetExtensionsStringEXT;
     PFNWGLGETEXTENSIONSSTRINGARBPROC GetExtensionsStringARB;
     PFNWGLCREATECONTEXTATTRIBSARBPROC CreateContextAttribsARB;
-
     PFNWGLENUMGPUSNV EnumGpusNV;
     PFNWGLENUMGPUDEVICESNV EnumGpuDevicesNV;
     PFNWGLCREATEAFFINITYDCNV CreateAffinityDCNV;
     PFNWGLENUMGPUSFROMAFFINITYDCNV EnumGpusFromAffinityDCNV;
     PFNWGLDELETEDCNV DeleteDCNV;
-
     PFNWGLGETGPUIDSAMD GetGpuIDAMD;
     PFNWGLGETGPUINFOAMD GetGPUInfoAMD;
     PFNWGLGETCONTEXTGPUIDAMD GetContextGpuIDAMD;
@@ -186,7 +176,6 @@ struct OSGLContext_wgl_data
     PFNWGLMAKEASSOCIATEDCONTEXTCURRENTAMD MakeAssociatedContetCurrentAMD;
     PFNWGLGETCURRENTASSOCIATEDCONTEXTAMD GetCurrentAssociatedContextAMD;
     PFNWGLBLITCONTEXTFRAMEBUFFERAMD BlitContextFrameBufferAMD;
-
     GLboolean NV_gpu_affinity;
     GLboolean AMD_gpu_association;
     GLboolean NVX_gpu_memory_info;

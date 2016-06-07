@@ -74,12 +74,12 @@ struct OfxClipInstancePrivate
                            const boost::shared_ptr<OfxEffectInstance>& nodeInstance,
                            OfxImageEffectInstance* effect)
         : _publicInterface(publicInterface)
-          , nodeInstance(nodeInstance)
-          , effect(effect)
-          , aspectRatio(1.)
-          , optional(false)
-          , mask(false)
-          , tlsData( new TLSHolder<OfxClipInstance::ClipTLSData>() )
+        , nodeInstance(nodeInstance)
+        , effect(effect)
+        , aspectRatio(1.)
+        , optional(false)
+        , mask(false)
+        , tlsData( new TLSHolder<OfxClipInstance::ClipTLSData>() )
     {
     }
 
@@ -91,7 +91,7 @@ OfxClipInstance::OfxClipInstance(const boost::shared_ptr<OfxEffectInstance>& nod
                                  int /*index*/,
                                  OFX::Host::ImageEffect::ClipDescriptor* desc)
     : OFX::Host::ImageEffect::ClipInstance(effect, *desc)
-      , _imp( new OfxClipInstancePrivate(this, nodeInstance, effect) )
+    , _imp( new OfxClipInstancePrivate(this, nodeInstance, effect) )
 {
     assert(nodeInstance && effect);
     _imp->optional = isOptional();
@@ -1387,11 +1387,11 @@ struct OfxImageCommonPrivate
                           const ImagePtr& image,
                           const boost::shared_ptr<OfxClipInstance::RenderActionData>& tls)
         : ofxImageBase(ofxImageBase)
-          , natronImage(image)
-          , access()
-          , tls(tls)
-          , components()
-          , localBuffer()
+        , natronImage(image)
+        , access()
+        , tls(tls)
+        , components()
+        , localBuffer()
     {
     }
 };

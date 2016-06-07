@@ -69,7 +69,7 @@ RotoPaint::getPluginDescription() const
 RotoPaint::RotoPaint(NodePtr node,
                      bool isPaintByDefault)
     : EffectInstance(node)
-      , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
+    , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
 }
@@ -227,10 +227,10 @@ RotoPaint::initializeKnobs()
 
     boost::shared_ptr<RotoContext> context = getNode()->getRotoContext();
     assert(context);
-    QObject::connect( context.get(), SIGNAL(refreshViewerOverlays()), this, SLOT(onRefreshAsked()) );
-    QObject::connect( context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)) );
-    QObject::connect( context.get(), SIGNAL(itemLockedChanged(int)), this, SLOT(onCurveLockedChanged(int)) );
-    QObject::connect( context.get(), SIGNAL(breakMultiStroke()), this, SLOT(onBreakMultiStrokeTriggered()) );
+    QObject::connect( context.get(), SIGNAL( refreshViewerOverlays() ), this, SLOT( onRefreshAsked() ) );
+    QObject::connect( context.get(), SIGNAL( selectionChanged(int) ), this, SLOT( onSelectionChanged(int) ) );
+    QObject::connect( context.get(), SIGNAL( itemLockedChanged(int) ), this, SLOT( onCurveLockedChanged(int) ) );
+    QObject::connect( context.get(), SIGNAL( breakMultiStroke() ), this, SLOT( onBreakMultiStrokeTriggered() ) );
 
 
     /// Initializing the viewer interface

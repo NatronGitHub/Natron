@@ -46,21 +46,21 @@ NATRON_NAMESPACE_ENTER;
 
 FramebufferConfig::FramebufferConfig()
     : redBits(8)
-      , greenBits(8)
-      , blueBits(8)
-      , alphaBits(8)
-      , depthBits(24)
-      , stencilBits(8)
-      , accumRedBits(0)
-      , accumGreenBits(0)
-      , accumBlueBits(0)
-      , accumAlphaBits(0)
-      , auxBuffers(0)
-      , stereo(GL_FALSE)
-      , samples(0)
-      , sRGB(GL_FALSE)
-      , doublebuffer(GL_FALSE)
-      , handle(0)
+    , greenBits(8)
+    , blueBits(8)
+    , alphaBits(8)
+    , depthBits(24)
+    , stencilBits(8)
+    , accumRedBits(0)
+    , accumGreenBits(0)
+    , accumBlueBits(0)
+    , accumAlphaBits(0)
+    , auxBuffers(0)
+    , stereo(GL_FALSE)
+    , samples(0)
+    , sRGB(GL_FALSE)
+    , doublebuffer(GL_FALSE)
+    , handle(0)
 {
 }
 
@@ -246,25 +246,24 @@ struct OSGLContextPrivate
 
     // One for enabled, one for disabled
     boost::shared_ptr<GLShader> applyMaskMixShader[2];
-
     boost::shared_ptr<GLShader> copyUnprocessedChannelsShader[16];
 
     OSGLContextPrivate()
         : _platformContext()
 #ifdef NATRON_RENDER_SHARED_CONTEXT
-          , renderOwningContextMutex()
-          , renderOwningContextCond()
-          , renderOwningContext()
-          , renderOwningContextCount(0)
+        , renderOwningContextMutex()
+        , renderOwningContextCond()
+        , renderOwningContext()
+        , renderOwningContextCount(0)
 #ifdef DEBUG
-          , renderOwningContextFrameTime(0)
+        , renderOwningContextFrameTime(0)
 #endif
 #endif
-          , pboID(0)
-          , fboID(0)
-          , fillImageShader()
-          , applyMaskMixShader()
-          , copyUnprocessedChannelsShader()
+        , pboID(0)
+        , fboID(0)
+        , fillImageShader()
+        , applyMaskMixShader()
+        , copyUnprocessedChannelsShader()
     {
     }
 
@@ -309,18 +308,18 @@ void
 OSGLContext::checkOpenGLVersion()
 {
     const char *verstr = (const char *) glGetString(GL_VERSION);
-
     int major, minor;
+
     if ( (verstr == NULL) || (std::sscanf(verstr, "%d.%d", &major, &minor) != 2) ) {
         major = minor = 0;
         //fprintf(stderr, "Invalid GL_VERSION format!!!\n");
     }
 
-    if (major < GLVersion.major || (major == GLVersion.major && minor < GLVersion.minor)) {
+    if ( (major < GLVersion.major) || ( (major == GLVersion.major) && (minor < GLVersion.minor) ) ) {
         std::stringstream ss;
         ss << NATRON_APPLICATION_NAME << " requires at least OpenGL " << GLVersion.major << "." << GLVersion.minor << "to perform OpenGL accelerated rendering." << std::endl;
         ss << "Your system only has OpenGL " << major << "." << minor << "available.";
-        throw std::runtime_error(ss.str());
+        throw std::runtime_error( ss.str() );
     }
 }
 
@@ -351,9 +350,10 @@ OSGLContext::setContextCurrentNoRender()
 void
 OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
 #ifdef DEBUG
-                               , double frameTime
+                               ,
+                               double frameTime
 #endif
-)
+                               )
 {
     assert(_imp && _imp->_platformContext);
 
@@ -375,11 +375,10 @@ OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
     setContextCurrentNoRender();
 
     // The first time this context is made current, allocate the PBO and FBO
-    // This is thread-safe 
+    // This is thread-safe
     if (!_imp->pboID) {
         _imp->init();
     }
-
 }
 
 void
@@ -397,8 +396,6 @@ OSGLContext::unsetCurrentContextNoRender()
 void
 OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
 {
-
-
 #ifdef NATRON_RENDER_SHARED_CONTEXT
     QMutexLocker k(&_imp->renderOwningContextMutex);
     if (abortInfo != _imp->renderOwningContext) {
@@ -413,12 +410,10 @@ OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
         unsetCurrentContextNoRender();
         //Wake-up only one thread waiting, since each thread that is waiting in setContextCurrent() will actually call this function.
         _imp->renderOwningContextCond.wakeOne();
-
     }
 #else
     unsetCurrentContextNoRender();
 #endif
-
 }
 
 void
@@ -490,6 +485,7 @@ boost::shared_ptr<GLShader>
 OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
 {
     int shader_i = maskEnabled ? 1 : 0;
+
     if (_imp->applyMaskMixShader[shader_i]) {
         return _imp->applyMaskMixShader[shader_i];
     }
@@ -524,9 +520,13 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
 }
 
 boost::shared_ptr<GLShader>
-OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA)
+OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
+                                                      bool doG,
+                                                      bool doB,
+                                                      bool doA)
 {
     int index = 0x0;
+
     if (doR) {
         index |= 0x01;
     }
@@ -579,7 +579,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool d
 #endif
 
     return _imp->copyUnprocessedChannelsShader[index];
-}
+} // OSGLContext::getOrCreateCopyUnprocessedChannelsShader
 
 void
 OSGLContext::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)

@@ -101,15 +101,14 @@ OfxImageEffectInstance::OfxImageEffectInstance(OFX::Host::ImageEffect::ImageEffe
                                                const std::string & context,
                                                bool interactive)
     : OFX::Host::ImageEffect::Instance(plugin, desc, context, interactive)
-      , _ofxEffectInstance()
+    , _ofxEffectInstance()
 {
 }
 
 OfxImageEffectInstance::OfxImageEffectInstance(const OfxImageEffectInstance& other)
-: OFX::Host::ImageEffect::Instance(other)
-, _ofxEffectInstance(other._ofxEffectInstance)
+    : OFX::Host::ImageEffect::Instance(other)
+    , _ofxEffectInstance(other._ofxEffectInstance)
 {
-
 }
 
 OfxImageEffectInstance::~OfxImageEffectInstance()
@@ -590,8 +589,8 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     if ( knob->isAnimationEnabled() ) {
         boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
         if (handler) {
-            QObject::connect( handler.get(), SIGNAL(animationLevelChanged(ViewSpec,int)), ptk,
-                              SLOT(onKnobAnimationLevelChanged(ViewSpec,int)) );
+            QObject::connect( handler.get(), SIGNAL( animationLevelChanged(ViewSpec, int) ), ptk,
+                              SLOT( onKnobAnimationLevelChanged(ViewSpec, int) ) );
         }
     }
 

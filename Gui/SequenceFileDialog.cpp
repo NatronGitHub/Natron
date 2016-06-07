@@ -198,59 +198,59 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
                                         Gui* gui,
                                         bool allowRelativePaths)
     : QDialog(parent)
-      , _filters()
-      , _view(0)
-      , _itemDelegate( new SequenceItemDelegate(this) )
-      , _model()
-      , _favoriteViewModel( new QFileSystemModel() )
-      , _lookinViewModel( new QFileSystemModel() )
-      , _mainLayout(0)
-      , _requestedDir()
-      , _lookInLabel(0)
-      , _lookInCombobox(0)
-      , _previousButton(0)
-      , _nextButton(0)
-      , _upButton(0)
-      , _createDirButton(0)
-      , _openButton(0)
-      , _cancelButton(0)
-      , _addFavoriteButton(0)
-      , _removeFavoriteButton(0)
-      , _selectionLineEdit(0)
-      , _relativeLabel(0)
-      , _relativeChoice(0)
-      , _sequenceButton(0)
-      , _filterLabel(0)
-      , _filterLineEdit(0)
-      , _filterDropDown(0)
-      , _fileExtensionCombo(0)
-      , _buttonsLayout(0)
-      , _centerLayout(0)
-      , _favoriteLayout(0)
-      , _favoriteButtonsLayout(0)
-      , _selectionLayout(0)
-      , _filterLineLayout(0)
-      , _filterLayout(0)
-      , _buttonsWidget(0)
-      , _favoriteWidget(0)
-      , _favoriteButtonsWidget(0)
-      , _selectionWidget(0)
-      , _filterLineWidget(0)
-      , _filterWidget(0)
-      , _favoriteView(0)
-      , _centerSplitter(0)
-      , _history()
-      , _currentHistoryLocation(-1)
-      , _showHiddenAction(0)
-      , _newFolderAction(0)
-      , _dialogMode(mode)
-      , _centerArea(0)
-      , _centerAreaLayout(0)
-      , _togglePreviewButton(0)
-      , _preview()
-      , _wasAutosetProjectFormatEnabled(false)
-      , _gui(gui)
-      , _relativePathsAllowed(allowRelativePaths)
+    , _filters()
+    , _view(0)
+    , _itemDelegate( new SequenceItemDelegate(this) )
+    , _model()
+    , _favoriteViewModel( new QFileSystemModel() )
+    , _lookinViewModel( new QFileSystemModel() )
+    , _mainLayout(0)
+    , _requestedDir()
+    , _lookInLabel(0)
+    , _lookInCombobox(0)
+    , _previousButton(0)
+    , _nextButton(0)
+    , _upButton(0)
+    , _createDirButton(0)
+    , _openButton(0)
+    , _cancelButton(0)
+    , _addFavoriteButton(0)
+    , _removeFavoriteButton(0)
+    , _selectionLineEdit(0)
+    , _relativeLabel(0)
+    , _relativeChoice(0)
+    , _sequenceButton(0)
+    , _filterLabel(0)
+    , _filterLineEdit(0)
+    , _filterDropDown(0)
+    , _fileExtensionCombo(0)
+    , _buttonsLayout(0)
+    , _centerLayout(0)
+    , _favoriteLayout(0)
+    , _favoriteButtonsLayout(0)
+    , _selectionLayout(0)
+    , _filterLineLayout(0)
+    , _filterLayout(0)
+    , _buttonsWidget(0)
+    , _favoriteWidget(0)
+    , _favoriteButtonsWidget(0)
+    , _selectionWidget(0)
+    , _filterLineWidget(0)
+    , _filterWidget(0)
+    , _favoriteView(0)
+    , _centerSplitter(0)
+    , _history()
+    , _currentHistoryLocation(-1)
+    , _showHiddenAction(0)
+    , _newFolderAction(0)
+    , _dialogMode(mode)
+    , _centerArea(0)
+    , _centerAreaLayout(0)
+    , _togglePreviewButton(0)
+    , _preview()
+    , _wasAutosetProjectFormatEnabled(false)
+    , _gui(gui)
+    , _relativePathsAllowed(allowRelativePaths)
 {
     for (U32 i = 0; i < filters.size(); ++i) {
         _filters.push_back( QString::fromUtf8( filters[i].c_str() ) );
@@ -278,7 +278,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _lookInCombobox = new FileDialogComboBox(this, _buttonsWidget);
     _lookInCombobox->setMinimumWidth(200);
     _buttonsLayout->addWidget(_lookInCombobox);
-    QObject::connect( _lookInCombobox, SIGNAL(activated(QString)), this, SLOT(onLookingComboboxChanged(QString)) );
+    QObject::connect( _lookInCombobox, SIGNAL( activated(QString) ), this, SLOT( onLookingComboboxChanged(QString) ) );
     _lookInCombobox->setInsertPolicy(QComboBox::NoInsert);
     _lookInCombobox->setDuplicatesEnabled(false);
 
@@ -292,25 +292,25 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _previousButton->setFixedSize(buttonSize);
     _previousButton->setIconSize(buttonIconSize);
     _buttonsLayout->addWidget(_previousButton);
-    QObject::connect( _previousButton, SIGNAL(clicked()), this, SLOT(previousFolder()) );
+    QObject::connect( _previousButton, SIGNAL( clicked() ), this, SLOT( previousFolder() ) );
 
     _nextButton = new Button(style()->standardIcon(QStyle::SP_ArrowForward), QString(), _buttonsWidget);
     _nextButton->setFixedSize(buttonSize);
     _nextButton->setIconSize(buttonIconSize);
     _buttonsLayout->addWidget(_nextButton);
-    QObject::connect( _nextButton, SIGNAL(clicked()), this, SLOT(nextFolder()) );
+    QObject::connect( _nextButton, SIGNAL( clicked() ), this, SLOT( nextFolder() ) );
 
     _upButton = new Button(style()->standardIcon(QStyle::SP_ArrowUp), QString(), _buttonsWidget);
     _upButton->setIconSize(buttonIconSize);
     _upButton->setFixedSize(buttonSize);
     _buttonsLayout->addWidget(_upButton);
-    QObject::connect( _upButton, SIGNAL(clicked()), this, SLOT(parentFolder()) );
+    QObject::connect( _upButton, SIGNAL( clicked() ), this, SLOT( parentFolder() ) );
 
     _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder), QString(), _buttonsWidget);
     _createDirButton->setIconSize(buttonIconSize);
     _createDirButton->setFixedSize(buttonSize);
     _buttonsLayout->addWidget(_createDirButton);
-    QObject::connect( _createDirButton, SIGNAL(clicked()), this, SLOT(createDir()) );
+    QObject::connect( _createDirButton, SIGNAL( clicked() ), this, SLOT( createDir() ) );
 
     _mainLayout->addWidget(_buttonsWidget);
 
@@ -326,7 +326,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _favoriteWidget->setLayout(_favoriteLayout);
     _favoriteView = new FavoriteView(_gui, this);
     _favoriteView->setFocusPolicy(Qt::NoFocus);
-    QObject::connect( _favoriteView, SIGNAL(urlRequested(QUrl)), this, SLOT(seekUrl(QUrl)) );
+    QObject::connect( _favoriteView, SIGNAL( urlRequested(QUrl) ), this, SLOT( seekUrl(QUrl) ) );
     _favoriteLayout->setSpacing(0);
     _favoriteLayout->setContentsMargins(0, 0, 0, 0);
     _favoriteLayout->addWidget(_favoriteView);
@@ -339,12 +339,12 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _addFavoriteButton = new Button(QString::fromUtf8("+"), this);
     _addFavoriteButton->setMaximumSize(20, 20);
     _favoriteButtonsLayout->addWidget(_addFavoriteButton);
-    QObject::connect( _addFavoriteButton, SIGNAL(clicked()), this, SLOT(addFavorite()) );
+    QObject::connect( _addFavoriteButton, SIGNAL( clicked() ), this, SLOT( addFavorite() ) );
 
     _removeFavoriteButton = new Button(QString::fromUtf8("-"), this);
     _removeFavoriteButton->setMaximumSize(20, 20);
     _favoriteButtonsLayout->addWidget(_removeFavoriteButton);
-    QObject::connect( _removeFavoriteButton, SIGNAL(clicked()), _favoriteView, SLOT(removeEntry()) );
+    QObject::connect( _removeFavoriteButton, SIGNAL( clicked() ), _favoriteView, SLOT( removeEntry() ) );
 
     _favoriteButtonsLayout->addStretch();
 
@@ -363,7 +363,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _selectionLayout->addWidget(_relativeLabel);
 
     _relativeChoice = new ComboBox(_selectionWidget);
-    QObject::connect( _relativeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onRelativeChoiceChanged(int)) );
+    QObject::connect( _relativeChoice, SIGNAL( currentIndexChanged(int) ), this, SLOT( onRelativeChoiceChanged(int) ) );
     _relativeChoice->setToolTip( GuiUtils::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have " "chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), Qt::WhiteSpaceNormal) );
     _selectionLayout->addWidget(_relativeChoice);
     _relativeChoice->addItem( tr("Absolute") );
@@ -391,7 +391,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         _sequenceButton->setCurrentIndex(1);
     }
-    QObject::connect( _sequenceButton, SIGNAL(currentIndexChanged(int)), this, SLOT(sequenceComboBoxSlot(int)) );
+    QObject::connect( _sequenceButton, SIGNAL( currentIndexChanged(int) ), this, SLOT( sequenceComboBoxSlot(int) ) );
     _selectionLayout->addWidget(_sequenceButton);
 
     if ( !isSequenceDialog || (_dialogMode == eFileDialogModeDir) ) {
@@ -414,8 +414,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _view->setModel( _model.get() );
     _view->setItemDelegate( _itemDelegate.get() );
 
-    QObject::connect( _model.get(), SIGNAL(directoryLoaded(QString)), this, SLOT(updateView(QString)) );
-    QObject::connect( _view, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(doubleClickOpen(QModelIndex)) );
+    QObject::connect( _model.get(), SIGNAL( directoryLoaded(QString) ), this, SLOT( updateView(QString) ) );
+    QObject::connect( _view, SIGNAL( doubleClicked(QModelIndex) ), this, SLOT( doubleClickOpen(QModelIndex) ) );
 
     _centerSplitter->addWidget(_view);
 
@@ -430,7 +430,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         icPreview.addPixmap(pixPreviewButtonDisabled, QIcon::Normal, QIcon::Off);
         _togglePreviewButton = new Button(icPreview, QString(), _centerArea);
         _togglePreviewButton->setIconSize(buttonIconSize);
-        QObject::connect( _togglePreviewButton, SIGNAL(clicked(bool)), this, SLOT(onTogglePreviewButtonClicked(bool)) );
+        QObject::connect( _togglePreviewButton, SIGNAL( clicked(bool) ), this, SLOT( onTogglePreviewButtonClicked(bool) ) );
         _togglePreviewButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
         _togglePreviewButton->setCheckable(true);
         _togglePreviewButton->setChecked(false);
@@ -455,9 +455,9 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _selectionLayout->addWidget(_openButton);
 
     if (_dialogMode != eFileDialogModeDir) {
-        QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(openSelectedFiles()) );
+        QObject::connect( _openButton, SIGNAL( clicked() ), this, SLOT( openSelectedFiles() ) );
     } else {
-        QObject::connect( _openButton, SIGNAL(clicked()), this, SLOT(selectDirectory()) );
+        QObject::connect( _openButton, SIGNAL( clicked() ), this, SLOT( selectDirectory() ) );
     }
     _mainLayout->addWidget(_selectionWidget);
 
@@ -488,7 +488,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
             _fileExtensionCombo->addItem( _filters[i] );
         }
         _filterLineLayout->addWidget(_fileExtensionCombo);
-        QObject::connect( _fileExtensionCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onFileExtensionComboChanged(int)) );
+        QObject::connect( _fileExtensionCombo, SIGNAL( currentIndexChanged(int) ), this, SLOT( onFileExtensionComboChanged(int) ) );
         if (isSequenceDialog) {
             int idx = _fileExtensionCombo->itemIndex( QString::fromUtf8("jpg") );
             if (idx >= 0) {
@@ -506,8 +506,8 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         _filterDropDown = new Button(QIcon(pixDropDown), QString(), _filterWidget);
         _filterDropDown->setFixedSize(buttonSize);
         _filterLayout->addWidget(_filterDropDown);
-        QObject::connect( _filterDropDown, SIGNAL(clicked()), this, SLOT(showFilterMenu()) );
-        QObject::connect( _filterLineEdit, SIGNAL(textEdited(QString)), this, SLOT(applyFilter(QString)) );
+        QObject::connect( _filterDropDown, SIGNAL( clicked() ), this, SLOT( showFilterMenu() ) );
+        QObject::connect( _filterLineEdit, SIGNAL( textEdited(QString) ), this, SLOT( applyFilter(QString) ) );
     } else {
         _filterLineLayout->addStretch();
     }
@@ -516,7 +516,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _filterLineLayout->addWidget(_filterWidget);
     _cancelButton = new Button(tr("Cancel"), _filterLineWidget);
     _filterLineLayout->addWidget(_cancelButton);
-    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(cancelSlot()) );
+    QObject::connect( _cancelButton, SIGNAL( clicked() ), this, SLOT( cancelSlot() ) );
 
     _mainLayout->addWidget(_filterLineWidget);
 
@@ -534,17 +534,17 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
 
     QItemSelectionModel *selectionModel = _view->selectionModel();
-    QObject::connect( selectionModel, SIGNAL(selectionChanged(QItemSelection,QItemSelection)), this, SLOT(onSelectionChanged()) );
-    QObject::connect( _selectionLineEdit, SIGNAL(textChanged(QString)), this, SLOT(autoCompleteFileName(QString)) );
+    QObject::connect( selectionModel, SIGNAL( selectionChanged(QItemSelection, QItemSelection) ), this, SLOT( onSelectionChanged() ) );
+    QObject::connect( _selectionLineEdit, SIGNAL( textChanged(QString) ), this, SLOT( autoCompleteFileName(QString) ) );
     if (_dialogMode == eFileDialogModeSave) {
-        QObject::connect( _selectionLineEdit, SIGNAL(textEdited(QString)), this, SLOT(onSelectionLineEditing(QString)) );
+        QObject::connect( _selectionLineEdit, SIGNAL( textEdited(QString) ), this, SLOT( onSelectionLineEditing(QString) ) );
     }
-    QObject::connect( _view, SIGNAL(customContextMenuRequested(QPoint)),
-                      this, SLOT(showContextMenu(QPoint)) );
-    QObject::connect( _model.get(), SIGNAL(rootPathChanged(QString)),
-                      this, SLOT(pathChanged(QString)) );
-    QObject::connect( _view->header(), SIGNAL(sortIndicatorChanged(int,Qt::SortOrder)), this,
-                      SLOT(onHeaderViewSortIndicatorChanged(int,Qt::SortOrder)) );
+    QObject::connect( _view, SIGNAL( customContextMenuRequested(QPoint) ),
+                      this, SLOT( showContextMenu(QPoint) ) );
+    QObject::connect( _model.get(), SIGNAL( rootPathChanged(QString) ),
+                      this, SLOT( pathChanged(QString) ) );
+    QObject::connect( _view->header(), SIGNAL( sortIndicatorChanged(int, Qt::SortOrder) ), this,
+                      SLOT( onHeaderViewSortIndicatorChanged(int, Qt::SortOrder) ) );
 
     createMenuActions();
 
@@ -837,23 +837,23 @@ SequenceFileDialog::createMenuActions()
     QAction *goHomeAction =  new QAction(this);
 
     goHomeAction->setShortcut(Qt::CTRL + Qt::Key_H + Qt::SHIFT);
-    QObject::connect( goHomeAction, SIGNAL(triggered()), this, SLOT(goHome()) );
+    QObject::connect( goHomeAction, SIGNAL( triggered() ), this, SLOT( goHome() ) );
     addAction(goHomeAction);
 
 
     QAction *goToParent =  new QAction(this);
     goToParent->setShortcut(Qt::CTRL + Qt::UpArrow);
-    QObject::connect( goToParent, SIGNAL(triggered()), this, SLOT(parentFolder()) );
+    QObject::connect( goToParent, SIGNAL( triggered() ), this, SLOT( parentFolder() ) );
     addAction(goToParent);
 
     _showHiddenAction = new QAction(this);
     _showHiddenAction->setCheckable(true);
     _showHiddenAction->setText( tr("Show hidden files") );
-    QObject::connect( _showHiddenAction, SIGNAL(triggered()), this, SLOT(showHidden()) );
+    QObject::connect( _showHiddenAction, SIGNAL( triggered() ), this, SLOT( showHidden() ) );
 
     _newFolderAction = new QAction(this);
     _newFolderAction->setText( tr("New folder") );
-    QObject::connect( _newFolderAction, SIGNAL(triggered()), this, SLOT(createDir()) );
+    QObject::connect( _newFolderAction, SIGNAL( triggered() ), this, SLOT( createDir() ) );
 }
 
 void
@@ -1172,7 +1172,7 @@ SequenceDialogView::expandColumnsToFullWidth(int w)
 
 SequenceItemDelegate::SequenceItemDelegate(SequenceFileDialog* fd)
     : QStyledItemDelegate()
-      , _fd(fd)
+    , _fd(fd)
 {
 }
 
@@ -1423,7 +1423,7 @@ SequenceFileDialog::createDir()
 AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
                                      QWidget* parent)
     : QDialog(parent)
-      , _fd(fd)
+    , _fd(fd)
 {
     _mainLayout = new QVBoxLayout(this);
     _mainLayout->setSpacing(0);
@@ -1447,7 +1447,7 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
 
     _openDirButton = new Button(_secondLine);
     _openDirButton->setIcon( QIcon(pix) );
-    QObject::connect( _openDirButton, SIGNAL(clicked()), this, SLOT(openDir()) );
+    QObject::connect( _openDirButton, SIGNAL( clicked() ), this, SLOT( openDir() ) );
     _secondLineLayout->addWidget(_openDirButton);
 
     _mainLayout->addWidget(_secondLine);
@@ -1457,11 +1457,11 @@ AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
     _thirdLine->setLayout(_thirdLineLayout);
 
     _cancelButton = new Button(tr("Cancel"), _thirdLine);
-    QObject::connect( _cancelButton, SIGNAL(clicked()), this, SLOT(reject()) );
+    QObject::connect( _cancelButton, SIGNAL( clicked() ), this, SLOT( reject() ) );
     _thirdLineLayout->addWidget(_cancelButton);
 
     _okButton = new Button(tr("Ok"), _thirdLine);
-    QObject::connect( _okButton, SIGNAL(clicked()), this, SLOT(accept()) );
+    QObject::connect( _okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
     _thirdLineLayout->addWidget(_okButton);
 
     _mainLayout->addWidget(_thirdLine);
@@ -1957,15 +1957,15 @@ SequenceFileDialog::showFilterMenu()
     //QFont font(appFont,appFontSize);
     QFontMetrics fm( font() );
     QAction *startSlash = new QAction(QString::fromUtf8("*/"), this);
-    QObject::connect( startSlash, SIGNAL(triggered()), this, SLOT(starSlashFilterSlot()) );
+    QObject::connect( startSlash, SIGNAL( triggered() ), this, SLOT( starSlashFilterSlot() ) );
     actions.append(startSlash);
 
     QAction *empty = new QAction(QString::fromUtf8("*"), this);
-    QObject::connect( empty, SIGNAL(triggered()), this, SLOT(emptyFilterSlot()) );
+    QObject::connect( empty, SIGNAL( triggered() ), this, SLOT( emptyFilterSlot() ) );
     actions.append(empty);
 
     QAction *dotStar = new QAction(QString::fromUtf8(".*"), this);
-    QObject::connect( dotStar, SIGNAL(triggered()), this, SLOT(dotStarFilterSlot()) );
+    QObject::connect( dotStar, SIGNAL( triggered() ), this, SLOT( dotStarFilterSlot() ) );
     actions.append(dotStar);
 
 
@@ -2016,8 +2016,8 @@ SequenceFileDialog::applyFilter(QString filter)
 UrlModel::UrlModel(const std::map<std::string, std::string>& vars,
                    QObject *parent)
     : QStandardItemModel(parent)
-      , fileSystemModel(0)
-      , envVars(vars)
+    , fileSystemModel(0)
+    , envVars(vars)
 {
 }
 
@@ -2203,21 +2203,21 @@ UrlModel::setFileSystemModel(QFileSystemModel *model)
         return;
     }
     if (fileSystemModel != 0) {
-        disconnect( model, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-                    this, SLOT(dataChanged(QModelIndex,QModelIndex)) );
-        disconnect( model, SIGNAL(layoutChanged()),
-                    this, SLOT(layoutChanged()) );
-        disconnect( model, SIGNAL(rowsRemoved(QModelIndex,int,int)),
-                    this, SLOT(layoutChanged()) );
+        disconnect( model, SIGNAL( dataChanged(QModelIndex, QModelIndex) ),
+                    this, SLOT( dataChanged(QModelIndex, QModelIndex) ) );
+        disconnect( model, SIGNAL( layoutChanged() ),
+                    this, SLOT( layoutChanged() ) );
+        disconnect( model, SIGNAL( rowsRemoved(QModelIndex, int, int) ),
+                    this, SLOT( layoutChanged() ) );
     }
     fileSystemModel = model;
     if (fileSystemModel != 0) {
-        connect( model, SIGNAL(dataChanged(QModelIndex,QModelIndex)),
-                 this, SLOT(dataChanged(QModelIndex,QModelIndex)) );
-        connect( model, SIGNAL(layoutChanged()),
-                 this, SLOT(layoutChanged()) );
-        connect( model, SIGNAL(rowsRemoved(QModelIndex,int,int)),
-                 this, SLOT(layoutChanged()) );
+        connect( model, SIGNAL( dataChanged(QModelIndex, QModelIndex) ),
+                 this, SLOT( dataChanged(QModelIndex, QModelIndex) ) );
+        connect( model, SIGNAL( layoutChanged() ),
+                 this, SLOT( layoutChanged() ) );
+        connect( model, SIGNAL( rowsRemoved(QModelIndex, int, int) ),
+                 this, SLOT( layoutChanged() ) );
     }
     clear();
     insertColumns(0, 1);
@@ -2384,9 +2384,9 @@ FavoriteItemDelegate::paint(QPainter * painter,
 FavoriteView::FavoriteView(Gui* gui,
                            QWidget *parent)
     : QListView(parent)
-      , _gui(gui)
-      , urlModel(0)
-      , _itemDelegate(0)
+    , _gui(gui)
+    , urlModel(0)
+    , _itemDelegate(0)
 {
     // setAttribute(Qt::WA_MacShowFocusRect,0);
 }
@@ -2412,12 +2412,12 @@ FavoriteView::setModelAndUrls(QFileSystemModel *model,
 
     setDragDropMode(QAbstractItemView::DragDrop);
     setContextMenuPolicy(Qt::CustomContextMenu);
-    connect( this, SIGNAL(customContextMenuRequested(QPoint)),
-             this, SLOT(showMenu(QPoint)) );
+    connect( this, SIGNAL( customContextMenuRequested(QPoint) ),
+             this, SLOT( showMenu(QPoint) ) );
     urlModel->setUrls(newUrls);
     setCurrentIndex( this->model()->index(0, 0) );
-    connect( selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
-             this, SLOT(clicked(QModelIndex)) );
+    connect( selectionModel(), SIGNAL( currentChanged(QModelIndex, QModelIndex) ),
+             this, SLOT( clicked(QModelIndex) ) );
 }
 
 FavoriteView::~FavoriteView()
@@ -2435,8 +2435,8 @@ FavoriteView::sizeHint() const
 void
 FavoriteView::selectUrl(const QUrl &url)
 {
-    disconnect( selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
-                this, SLOT(clicked(QModelIndex)) );
+    disconnect( selectionModel(), SIGNAL( currentChanged(QModelIndex, QModelIndex) ),
+                this, SLOT( clicked(QModelIndex) ) );
 
     selectionModel()->clear();
 
@@ -2463,8 +2463,8 @@ FavoriteView::selectUrl(const QUrl &url)
         }
     }
 
-    connect( selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
-             this, SLOT(clicked(QModelIndex)) );
+    connect( selectionModel(), SIGNAL( currentChanged(QModelIndex, QModelIndex) ),
+             this, SLOT( clicked(QModelIndex) ) );
 }
 
 void
@@ -2571,14 +2571,14 @@ FavoriteView::showMenu(const QPoint &position)
         if ( indexAt(position).data(UrlModel::UrlRole).toUrl().path().isEmpty() ) {
             removeAction->setEnabled(false);
         }
-        connect( removeAction, SIGNAL(triggered()), this, SLOT(removeEntry()) );
+        connect( removeAction, SIGNAL( triggered() ), this, SLOT( removeEntry() ) );
         actions.append(removeAction);
 
         QAction *editAction = new QAction(tr("Edit path"), this);
         if ( indexAt(position).data(UrlModel::UrlRole).toUrl().path().isEmpty() ) {
             editAction->setEnabled(false);
         }
-        connect( editAction, SIGNAL(triggered()), this, SLOT(editUrl()) );
+        connect( editAction, SIGNAL( triggered() ), this, SLOT( editUrl() ) );
         actions.append(editAction);
     }
     if (actions.count() > 0) {
@@ -2685,13 +2685,13 @@ FavoriteView::dragEnterEvent(QDragEnterEvent* e)
 FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,
                                        QWidget *parent)
     : QComboBox(parent)
-      , urlModel( new UrlModel(std::map<std::string, std::string>(), this) )
-      , dialog(p)
-      , doResize(false)
+    , urlModel( new UrlModel(std::map<std::string, std::string>(), this) )
+    , dialog(p)
+    , doResize(false)
 {
     urlModel->setFileSystemModel( p->getLookingFileSystemModel() );
     setModel(urlModel);
-    QObject::connect( this, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
+    QObject::connect( this, SIGNAL( currentIndexChanged(int) ), this, SLOT( onCurrentIndexChanged(int) ) );
 }
 
 void

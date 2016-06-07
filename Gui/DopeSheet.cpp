@@ -170,12 +170,12 @@ public:
 DopeSheetPrivate::DopeSheetPrivate(DopeSheetEditor* editor,
                                    DopeSheet *qq)
     : q_ptr(qq),
-      treeItemNodeMap(),
-      selectionModel( new DopeSheetSelectionModel(qq) ),
-      undoStack( new QUndoStack(qq) ),
-      keyframesClipboard(),
-      timeline(),
-      editor(editor)
+    treeItemNodeMap(),
+    selectionModel( new DopeSheetSelectionModel(qq) ),
+    undoStack( new QUndoStack(qq) ),
+    keyframesClipboard(),
+    timeline(),
+    editor(editor)
 {
 }
 
@@ -841,8 +841,8 @@ DopeSheet::renameSelectedNode()
     global.rx() -= sizeH.width() / 2;
     global.ry() -= sizeH.height() / 2;
     QPoint realPos = global;
-    QObject::connect( dialog, SIGNAL(rejected()), this, SLOT(onNodeNameEditDialogFinished()) );
-    QObject::connect( dialog, SIGNAL(accepted()), this, SLOT(onNodeNameEditDialogFinished()) );
+    QObject::connect( dialog, SIGNAL( rejected() ), this, SLOT( onNodeNameEditDialogFinished() ) );
+    QObject::connect( dialog, SIGNAL( accepted() ), this, SLOT( onNodeNameEditDialogFinished() ) );
     dialog->move( realPos.x(), realPos.y() );
     dialog->raise();
     dialog->show();
@@ -950,8 +950,8 @@ boost::shared_ptr<DSNode> DopeSheet::createDSNode(const NodeGuiPtr &nodeGui,
 
     boost::shared_ptr<DSNode> dsNode( new DSNode(this, itemType, nodeGui, nameItem) );
 
-    connect( node.get(), SIGNAL(labelChanged(QString)),
-             this, SLOT(onNodeNameChanged(QString)) );
+    connect( node.get(), SIGNAL( labelChanged(QString) ),
+             this, SLOT( onNodeNameChanged(QString) ) );
 
     return dsNode;
 }
@@ -1000,9 +1000,9 @@ public:
 
 DSKnobPrivate::DSKnobPrivate()
     : dimension(-2),
-      nameItem(0),
-      knobGui(),
-      knob()
+    nameItem(0),
+    knobGui(),
+    knob()
 {}
 
 DSKnobPrivate::~DSKnobPrivate()
@@ -1114,8 +1114,8 @@ class DopeSheetSelectionModelPrivate
 public:
     DopeSheetSelectionModelPrivate()
         : dopeSheet(0)
-          , selectedKeyframes()
-          , selectedRangeNodes()
+        , selectedKeyframes()
+        , selectedRangeNodes()
     {
     }
 
@@ -1415,11 +1415,11 @@ public:
 
 DSNodePrivate::DSNodePrivate()
     : dopeSheetModel(0),
-      nodeType(),
-      nodeGui(),
-      nameItem(0),
-      itemKnobMap(),
-      isSelected(false)
+    nodeType(),
+    nodeGui(),
+    nameItem(0),
+    itemKnobMap(),
+    isSelected(false)
 {}
 
 DSNodePrivate::~DSNodePrivate()
@@ -1502,12 +1502,12 @@ DSNode::DSNode(DopeSheet *model,
             }
         }
 
-        QObject::connect( knobGui.get(), SIGNAL(keyFrameSet()),
-                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()) );
-        QObject::connect( knobGui.get(), SIGNAL(keyFrameRemoved()),
-                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()) );
-        QObject::connect( knobGui.get(), SIGNAL(refreshDopeSheet()),
-                          _imp->dopeSheetModel, SLOT(onKeyframeSetOrRemoved()) );
+        QObject::connect( knobGui.get(), SIGNAL( keyFrameSet() ),
+                          _imp->dopeSheetModel, SLOT( onKeyframeSetOrRemoved() ) );
+        QObject::connect( knobGui.get(), SIGNAL( keyFrameRemoved() ),
+                          _imp->dopeSheetModel, SLOT( onKeyframeSetOrRemoved() ) );
+        QObject::connect( knobGui.get(), SIGNAL( refreshDopeSheet() ),
+                          _imp->dopeSheetModel, SLOT( onKeyframeSetOrRemoved() ) );
     }
 
     // If some subnodes are already in the dope sheet, the connections must be set to update

@@ -112,11 +112,11 @@ class ZoomContext
 public:
     ZoomContext()
         : _zoomLeft(0.)
-          , _zoomBottom(0.)
-          , _zoomFactor(1.)
-          , _zoomAspectRatio(1.)
-          , _screenWidth(0)
-          , _screenHeight(0)
+        , _zoomBottom(0.)
+        , _zoomFactor(1.)
+        , _zoomAspectRatio(1.)
+        , _screenWidth(0)
+        , _screenHeight(0)
     {
     }
 

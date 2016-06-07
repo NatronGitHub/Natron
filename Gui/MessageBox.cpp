@@ -62,15 +62,15 @@ struct MessageBoxPrivate
 
     MessageBoxPrivate(MessageBox::MessageBoxTypeEnum type)
         : type(type)
-          , mainLayout(0)
-          , vLayout(0)
-          , infoLabel(0)
-          , vContainer(0)
-          , questionLabel(0)
-          , infoEdit(0)
-          , checkbox(0)
-          , buttons(0)
-          , clickedButton(0)
+        , mainLayout(0)
+        , vLayout(0)
+        , infoLabel(0)
+        , vContainer(0)
+        , questionLabel(0)
+        , infoEdit(0)
+        , checkbox(0)
+        , buttons(0)
+        , clickedButton(0)
     {
     }
 
@@ -89,7 +89,7 @@ MessageBox::MessageBox(const QString & title,
                        StandardButtonEnum defaultButton,
                        QWidget* parent)
     : QDialog(parent, Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint | Qt::WindowStaysOnTopHint)
-      , _imp( new MessageBoxPrivate(type) )
+    , _imp( new MessageBoxPrivate(type) )
 {
     init(title, message, buttons, defaultButton);
 }
@@ -157,8 +157,8 @@ MessageBox::init(const QString & title,
         defaultB->setFocus();
     }
     _imp->buttons->setCenterButtons( style()->styleHint(QStyle::SH_MessageBox_CenterButtons, 0, this) );
-    QObject::connect( _imp->buttons, SIGNAL(clicked(QAbstractButton*)),
-                      this, SLOT(onButtonClicked(QAbstractButton*)) );
+    QObject::connect( _imp->buttons, SIGNAL( clicked(QAbstractButton*) ),
+                      this, SLOT( onButtonClicked(QAbstractButton*) ) );
     _imp->vLayout->addWidget(_imp->buttons);
 
     _imp->mainLayout->addWidget(_imp->infoLabel);

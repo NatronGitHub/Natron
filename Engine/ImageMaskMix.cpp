@@ -254,7 +254,6 @@ Image::applyMaskMix(const RectI& roi,
         glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 
-
         shader->bind();
         shader->setUniform("originalImageTex", 1);
         shader->setUniform("maskImageTex", 2);

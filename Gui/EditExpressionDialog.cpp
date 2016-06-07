@@ -99,8 +99,8 @@ EditExpressionDialog::EditExpressionDialog(Gui* gui,
                                            const KnobGuiPtr& knob,
                                            QWidget* parent)
     : EditScriptDialog(gui, parent)
-      , _dimension(dimension)
-      , _knob(knob)
+    , _dimension(dimension)
+    , _knob(knob)
 {
 }
 

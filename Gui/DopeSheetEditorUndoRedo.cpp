@@ -159,10 +159,10 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
                                                      DopeSheetEditor *model,
                                                      QUndoCommand *parent)
     : QUndoCommand(parent),
-      _keys(keys),
-      _nodes(),
-      _dt(dt),
-      _model(model)
+    _keys(keys),
+    _nodes(),
+    _dt(dt),
+    _model(model)
 {
     setText( tr("Move selected keys") );
     std::set<NodePtr > nodesSet;
@@ -329,9 +329,9 @@ DSTransformKeysCommand::DSTransformKeysCommand(const DSKeyPtrList &keys,
                                                DopeSheetEditor *model,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
-      , _firstRedoCalled(false)
-      , _transform(transform)
-      , _model(model)
+    , _firstRedoCalled(false)
+    , _transform(transform)
+    , _model(model)
 {
     for (DSKeyPtrList::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         boost::shared_ptr<DSKnob> knobContext = (*it)->context.lock();
@@ -494,9 +494,9 @@ DSLeftTrimReaderCommand::DSLeftTrimReaderCommand(const boost::shared_ptr<DSNode>
                                                  double newTime,
                                                  QUndoCommand *parent)
     : QUndoCommand(parent),
-      _readerContext(reader),
-      _oldTime(oldTime),
-      _newTime(newTime)
+    _readerContext(reader),
+    _oldTime(oldTime),
+    _newTime(newTime)
 {
     setText( tr("Trim left") );
 }
@@ -581,9 +581,9 @@ DSRightTrimReaderCommand::DSRightTrimReaderCommand(const boost::shared_ptr<DSNod
                                                    DopeSheetEditor * /*model*/,
                                                    QUndoCommand *parent)
     : QUndoCommand(parent),
-      _readerContext(reader),
-      _oldTime(oldTime),
-      _newTime(newTime)
+    _readerContext(reader),
+    _oldTime(oldTime),
+    _newTime(newTime)
 {
     setText( tr("Trim right") );
 }
@@ -667,9 +667,9 @@ DSSlipReaderCommand::DSSlipReaderCommand(const boost::shared_ptr<DSNode> &dsNode
                                          DopeSheetEditor *model,
                                          QUndoCommand *parent)
     : QUndoCommand(parent),
-      _readerContext(dsNodeReader),
-      _dt(dt),
-      _model(model)
+    _readerContext(dsNodeReader),
+    _dt(dt),
+    _model(model)
 {
     setText( tr("Slip reader") );
 }
@@ -747,10 +747,10 @@ DSSlipReaderCommand::slipReader(double dt)
        for nothing.
      */
     DopeSheetView* view = _model->getDopesheetView();
-    QObject::disconnect( lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                         view, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
-    QObject::disconnect( startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                         view, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
+    QObject::disconnect( lastFrameKnob->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
+                         view, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
+    QObject::disconnect( startingTimeKnob->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
+                         view, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
     KnobHolder *holder = lastFrameKnob->getHolder();
     EffectInstance *effectInstance = dynamic_cast<EffectInstance *>(holder);
     assert(effectInstance);
@@ -771,10 +771,10 @@ DSSlipReaderCommand::slipReader(double dt)
     effectInstance->endChanges();
 
 
-    QObject::connect( lastFrameKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                      view, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
-    QObject::connect( startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
-                      view, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
+    QObject::connect( lastFrameKnob->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
+                      view, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
+    QObject::connect( startingTimeKnob->getSignalSlotHandler().get(), SIGNAL( valueChanged(ViewSpec, int, int) ),
+                      view, SLOT( onRangeNodeChanged(ViewSpec, int, int) ) );
 
     view->update();
 } // DSSlipReaderCommand::slipReader
@@ -785,8 +785,8 @@ DSRemoveKeysCommand::DSRemoveKeysCommand(const std::vector<DopeSheetKey> &keys,
                                          DopeSheetEditor *model,
                                          QUndoCommand *parent)
     : QUndoCommand(parent),
-      _keys(keys),
-      _model(model)
+    _keys(keys),
+    _model(model)
 {
     setText( tr("Delete selected keyframes") );
 }
@@ -832,8 +832,8 @@ DSSetSelectedKeysInterpolationCommand::DSSetSelectedKeysInterpolationCommand(con
                                                                              DopeSheetEditor *model,
                                                                              QUndoCommand *parent)
     : QUndoCommand(parent),
-      _changes(changes),
-      _model(model)
+    _changes(changes),
+    _model(model)
 {
     setText( tr("Set selected keys interpolation") );
 }
@@ -877,10 +877,10 @@ DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
                                        DopeSheetEditor *model,
                                        QUndoCommand *parent)
     : QUndoCommand(parent),
-      _refTime(0),
-      _refKeyindex(-1),
-      _keys(),
-      _model(model)
+    _refTime(0),
+    _refKeyindex(-1),
+    _keys(),
+    _model(model)
 {
     _refTime = _model->getTimelineCurrentTime();
     setText( tr("Paste keyframes") );

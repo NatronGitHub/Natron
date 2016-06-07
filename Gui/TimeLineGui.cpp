@@ -76,8 +76,8 @@ struct TimeLineZoomContext
 {
     TimeLineZoomContext()
         : bottom(0.)
-          , left(0.)
-          , zoomFactor(1.)
+        , left(0.)
+        , zoomFactor(1.)
     {
     }
 
@@ -95,7 +95,7 @@ struct CachedFrame
     CachedFrame(SequenceTime t,
                 StorageModeEnum m)
         : time(t)
-          , mode(m)
+        , mode(m)
     {
     }
 };
@@ -142,26 +142,26 @@ struct TimelineGuiPrivate
                        Gui* gui,
                        ViewerTab* viewerTab)
         : parent(qq)
-          , viewer(viewer)
-          , viewerTab(viewerTab)
-          , timeline()
-          , gui(gui)
-          , alphaCursor(false)
-          , lastMouseEventWidgetCoord()
-          , state(eTimelineStateIdle)
-          , mousePressX(0)
-          , mouseMoveX(0)
-          , tlZoomCtx()
-          , textRenderer()
-          , font(appFont, appFontSize)
-          , firstPaint(true)
-          , cachedFrames()
-          , boundariesMutex()
-          , leftBoundary(0)
-          , rightBoundary(0)
-          , frameRangeEditedMutex()
-          , isFrameRangeEdited(false)
-          , seekingTimeline(false)
+        , viewer(viewer)
+        , viewerTab(viewerTab)
+        , timeline()
+        , gui(gui)
+        , alphaCursor(false)
+        , lastMouseEventWidgetCoord()
+        , state(eTimelineStateIdle)
+        , mousePressX(0)
+        , mouseMoveX(0)
+        , tlZoomCtx()
+        , textRenderer()
+        , font(appFont, appFontSize)
+        , firstPaint(true)
+        , cachedFrames()
+        , boundariesMutex()
+        , leftBoundary(0)
+        , rightBoundary(0)
+        , frameRangeEditedMutex()
+        , isFrameRangeEdited(false)
+        , seekingTimeline(false)
     {
     }
 
@@ -191,7 +191,7 @@ TimeLineGui::TimeLineGui(ViewerInstance* viewer,
                          Gui* gui,
                          ViewerTab* viewerTab)
     : QGLWidget(viewerTab)
-      , _imp( new TimelineGuiPrivate(this, viewer, gui, viewerTab) )
+    , _imp( new TimelineGuiPrivate(this, viewer, gui, viewerTab) )
 {
     setTimeline(timeline);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
@@ -210,15 +210,15 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     assert(app);
     if (_imp->timeline) {
         //connect the internal timeline to the gui
-        QObject::disconnect( _imp->timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)) );
+        QObject::disconnect( _imp->timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ), this, SLOT( onFrameChanged(SequenceTime, int) ) );
 
         //connect the gui to the internal timeline
-        QObject::disconnect( app.get(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()) );
+        QObject::disconnect( app.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ) );
     }
 
     //connect the internal timeline to the gui
-    QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onFrameChanged(SequenceTime,int)), Qt::UniqueConnection );
-    QObject::connect( app.get(), SIGNAL(keyframeIndicatorsChanged()), this, SLOT(onKeyframesIndicatorsChanged()), Qt::UniqueConnection );
+    QObject::connect( timeline.get(), SIGNAL( frameChanged(SequenceTime, int) ), this, SLOT( onFrameChanged(SequenceTime, int) ), Qt::UniqueConnection );
+    QObject::connect( app.get(), SIGNAL( keyframeIndicatorsChanged() ), this, SLOT( onKeyframesIndicatorsChanged() ), Qt::UniqueConnection );
 
     _imp->timeline = timeline;
 }
@@ -245,7 +245,7 @@ void
 TimeLineGui::resizeGL(int width,
                       int height)
 {
-    if (!appPTR->isOpenGLLoaded()) {
+    if ( !appPTR->isOpenGLLoaded() ) {
         return;
     }
 
@@ -269,13 +269,13 @@ struct TimeLineKey
     explicit TimeLineKey(SequenceTime t,
                          bool isUserKey = false)
         : time(t)
-          , isUserKey(isUserKey)
+        , isUserKey(isUserKey)
     {
     }
 
     explicit TimeLineKey()
         : time(0)
-          , isUserKey(false)
+        , isUserKey(false)
     {
     }
 };
@@ -297,11 +297,11 @@ TimeLineGui::paintGL()
     if (!_imp->gui) {
         return;
     }
-    if (!appPTR->isOpenGLLoaded()) {
+    if ( !appPTR->isOpenGLLoaded() ) {
         return;
     }
 
-    
+
     glCheckError();
 
     SequenceTime leftBound, rightBound;
@@ -1188,12 +1188,12 @@ TimeLineGui::connectSlotsToViewerCache()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::connect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
-    QObject::connect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
-    QObject::connect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
-                      SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
-    QObject::connect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
-    QObject::connect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
+    QObject::connect( emitter.get(), SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
+    QObject::connect( emitter.get(), SIGNAL( removedEntry(SequenceTime, int) ), this, SLOT( onCachedFrameRemoved(SequenceTime, int) ) );
+    QObject::connect( emitter.get(), SIGNAL( entryStorageChanged(SequenceTime, int, int) ), this,
+                      SLOT( onCachedFrameStorageChanged(SequenceTime, int, int) ) );
+    QObject::connect( emitter.get(), SIGNAL( clearedDiskPortion() ), this, SLOT( onDiskCacheCleared() ) );
+    QObject::connect( emitter.get(), SIGNAL( clearedInMemoryPortion() ), this, SLOT( onMemoryCacheCleared() ) );
 }
 
 void
@@ -1203,12 +1203,12 @@ TimeLineGui::disconnectSlotsFromViewerCache()
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
     boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::disconnect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
-    QObject::disconnect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
-    QObject::disconnect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
-                         SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
-    QObject::disconnect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
-    QObject::disconnect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
+    QObject::disconnect( emitter.get(), SIGNAL( addedEntry(SequenceTime) ), this, SLOT( onCachedFrameAdded(SequenceTime) ) );
+    QObject::disconnect( emitter.get(), SIGNAL( removedEntry(SequenceTime, int) ), this, SLOT( onCachedFrameRemoved(SequenceTime, int) ) );
+    QObject::disconnect( emitter.get(), SIGNAL( entryStorageChanged(SequenceTime, int, int) ), this,
+                         SLOT( onCachedFrameStorageChanged(SequenceTime, int, int) ) );
+    QObject::disconnect( emitter.get(), SIGNAL( clearedDiskPortion() ), this, SLOT( onDiskCacheCleared() ) );
+    QObject::disconnect( emitter.get(), SIGNAL( clearedInMemoryPortion() ), this, SLOT( onMemoryCacheCleared() ) );
 }
 
 bool

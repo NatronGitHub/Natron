@@ -50,8 +50,8 @@ public:
 
     ComputePreviewRequest()
         : GenericThreadStartArgs()
-          , time(0)
-          , node()
+        , time(0)
+        , node()
     {}
 
     virtual ~ComputePreviewRequest()
@@ -71,7 +71,7 @@ struct PreviewThreadPrivate
 
 PreviewThread::PreviewThread()
     : GenericSchedulerThread()
-      , _imp( new PreviewThreadPrivate() )
+    , _imp( new PreviewThreadPrivate() )
 {
     setThreadName("PreviewThread");
 }
