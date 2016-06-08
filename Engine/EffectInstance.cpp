@@ -1413,9 +1413,9 @@ getOrCreateFromCacheInternal(const ImageKey & key,
         assert(params->getStorageInfo().mode != eStorageModeGLTex);
 
         if (params->getStorageInfo().mode == eStorageModeRAM) {
-            AppManager::getImageFromCacheOrCreate(key, params, image);
+            appPTR->getImageOrCreate(key, params, image);
         } else if (params->getStorageInfo().mode == eStorageModeDisk) {
-            AppManager::getImageFromDiskCacheOrCreate(key, params, image);
+            appPTR->getImageOrCreate_diskCache(key, params, image);
         }
 
         if (!*image) {
@@ -1568,9 +1568,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
     if (!isCached) {
         // For textures, we lookup for a RAM image, if found we convert it to a texture
         if ( (storage == eStorageModeRAM) || (storage == eStorageModeGLTex) ) {
-            isCached = AppManager::getImageFromCache(key, &cachedImages);
+            isCached = appPTR->getImage(key, &cachedImages);
         } else if (storage == eStorageModeDisk) {
-            isCached = AppManager::getImageFromDiskCache(key, &cachedImages);
+            isCached = appPTR->getImage_diskCache(key, &cachedImages);
         }
     }
 
@@ -2631,6 +2631,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             assert(actionArgs.outputPlanes.size() == 1);
 
             const ImagePtr& mainImagePlane = actionArgs.outputPlanes.front().second;
+            assert(mainImagePlane->getStorageMode() == eStorageModeGLTex);
             textureTarget = mainImagePlane->getGLTextureTarget();
             glEnable(textureTarget);
             glActiveTexture(GL_TEXTURE0);

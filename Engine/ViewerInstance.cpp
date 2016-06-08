@@ -524,8 +524,8 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
             if (args[i] && args[i]->params) {
                 for (std::list<UpdateViewerParams::CachedTile>::iterator it = args[i]->params->tiles.begin(); it != args[i]->params->tiles.end(); ++it) {
                     if (it->cachedData) {
-                        it->cachedData->setAborted(true);
-                        appPTR->removeFromViewerCache(it->cachedData);
+                        //it->cachedData->setAborted(true);
+                        //appPTR->removeFromViewerCache(it->cachedData);
                         it->cachedData.reset();
                     }
                 }
@@ -647,8 +647,8 @@ ViewerInstance::renderViewer(ViewIdx view,
                 if (args[i] && args[i]->params) {
                     for (std::list<UpdateViewerParams::CachedTile>::iterator it = args[i]->params->tiles.begin(); it != args[i]->params->tiles.end(); ++it) {
                         if (it->cachedData) {
-                            it->cachedData->setAborted(true);
-                            appPTR->removeFromViewerCache(it->cachedData);
+                            //it->cachedData->setAborted(true);
+                            //appPTR->removeFromViewerCache(it->cachedData);
                             it->cachedData.reset();
                         }
                     }
@@ -1001,6 +1001,8 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
     }
     outArgs->params->nbCachedTile = 0;
     if (useCache) {
+        FrameEntryLocker entryLocker(_imp.get());
+
         for (std::list<UpdateViewerParams::CachedTile>::iterator it = outArgs->params->tiles.begin(); it != outArgs->params->tiles.end(); ++it) {
             FrameKey key(getNode().get(),
                          outArgs->params->time,
@@ -1019,7 +1021,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                          outArgs->params->depth == eImageBitDepthFloat,
                          isDraftMode);
             std::list<FrameEntryPtr> entries;
-            bool hasTextureCached = AppManager::getTextureFromCache(key, &entries);
+            bool hasTextureCached = appPTR->getTexture(key, &entries);
             if ( stats  && stats->isInDepthProfilingEnabled() ) {
                 if (hasTextureCached) {
                     stats->addCacheInfosForNode(getNode(), true, false);
@@ -1046,20 +1048,22 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 
 
             if (foundCachedEntry) {
-                //  Make sure we have the lock on the texture because it may be in the cache already
-                // but not yet allocated.
-                FrameEntryLocker entryLocker( _imp.get() );
-                if ( !entryLocker.tryLock(foundCachedEntry) ) {
+
+                // If the tile is cached and we got it that means rendering is done
+                entryLocker.lock(foundCachedEntry);
+
+                /*if ( !entryLocker.tryLock(foundCachedEntry) ) {
                     // Another thread is rendering it, just return it is not useful to keep this thread waiting.
                     return eViewerRenderRetCodeRedraw;
-                }
-                if ( foundCachedEntry->getAborted() ) {
+                }*/
+
+                /*if ( foundCachedEntry->getAborted() ) {
                     // The thread rendering the frame entry might have been aborted and the entry removed from the cache
                     // but another thread might successfully have found it in the cache. This flag is to notify it the frame
 
                     // is invalid.
                     return eViewerRenderRetCodeRedraw;
-                }
+                }*/
 
 
                 // The data will be valid as long as the cachedFrame shared pointer use_count is gt 1
@@ -1519,6 +1523,19 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             return eViewerRenderRetCodeRedraw;
         }
 
+        const bool viewerRenderRoiOnly = !useTextureCache;
+        ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
+
+        if ( ( (inArgs.channels == eDisplayChannelsA) && ( (alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)colorImage->getComponentsCount() ) ) ) ||
+            ( ( inArgs.channels == eDisplayChannelsMatte) && ( ( alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)alphaImage->getComponentsCount() ) ) ) ) {
+            return eViewerRenderRetCodeBlack;
+        }
+
+
+        assert( ( inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount() ) ||
+               ( inArgs.channels == eDisplayChannelsMatte && ( ( alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount() ) || !alphaImage ) ) );
+
+
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
         splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
@@ -1685,7 +1702,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                      inArgs.params->depth == eImageBitDepthFloat,
                                      inArgs.draftModeEnabled);
                         boost::shared_ptr<FrameParams> cachedFrameParams( new FrameParams( bounds, key.getBitDepth(), it->rect, ImagePtr() ) );
-                        bool cached = AppManager::getTextureFromCacheOrCreate(key, cachedFrameParams, &it->cachedData);
+                        bool cached = appPTR->getTextureOrCreate(key, cachedFrameParams, &entryLocker, &it->cachedData);
                         if (!it->cachedData) {
                             std::size_t size = cachedFrameParams->getStorageInfo().numComponents * cachedFrameParams->getStorageInfo().dataTypeSize * cachedFrameParams->getStorageInfo().bounds.area();
                             QString s = tr("Failed to allocate a texture of %1.").arg( printAsRAM(size) );
@@ -1694,11 +1711,14 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                             return eViewerRenderRetCodeFail;
                         }
 
-                        entryLocker.lock(it->cachedData);
-
                         ///The entry has already been locked by the cache
                         if (!cached) {
                             it->cachedData->allocateMemory();
+                        } else {
+                            // If the tile is cached and we got it that means rendering is done
+                            entryLocker.lock(it->cachedData);
+                            it->isCached = true;
+                            continue;
                         }
 
 
@@ -1713,7 +1733,14 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                         unCachedTiles.push_back(*it);
                     }
                 }
+
+                // If the program crashes here that means the condition viewerRenderRoI.contains(it->rect) was not fullfilled. it->rect is the tile rectangle and is directly computed
+                // from the RoI on the Viewer (which is computed from the RoD), in the function getViewerRoIAndTexture().
+                // The viewerRenderRoI is that exact RoI computed from the function getViewerRoIAndTexture() intersected to the rendered image bounds.
+                // So if this assertion fails, that means that the image bounds are smaller that the actual image size that was advertized by the plug-in in getRegionOfDefinition originally.
+                // The issue is then to understand why getRegionOfDefinition() returned 2 different values (one in getViewerRoIAndTexture() and one in renderRoI).
                 assert(it->cachedData);
+
                 if (it->cachedData) {
                     it->cachedData->setInternalImage(colorImage);
                 }
@@ -1724,17 +1751,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
            If we are not using the texture cache, there is a unique tile which has the required texture size on the viewer, so we render the RoI instead
            of just the tile portion in the render function
          */
-        const bool viewerRenderRoiOnly = !useTextureCache;
-        ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
-
-        if ( ( (inArgs.channels == eDisplayChannelsA) && ( (alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)colorImage->getComponentsCount() ) ) ) ||
-             ( ( inArgs.channels == eDisplayChannelsMatte) && ( ( alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)alphaImage->getComponentsCount() ) ) ) ) {
-            return eViewerRenderRetCodeBlack;
-        }
-
-
-        assert( ( inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount() ) ||
-                ( inArgs.channels == eDisplayChannelsMatte && ( ( alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount() ) || !alphaImage ) ) );
 
 
         //If we are painting, only render the portion needed

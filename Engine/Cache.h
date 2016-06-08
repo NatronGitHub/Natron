@@ -562,6 +562,7 @@ private:
 
     void createInternal(const typename EntryType::key_type & key,
                         const ParamsTypePtr & params,
+                        ImageLockerHelper<EntryType>* entryLocker,
                         EntryTypePtr* returnValue) const
     {
         //_lock must not be taken here
@@ -650,6 +651,11 @@ private:
             }
 
             if (*returnValue) {
+
+                // If there is a lock, lock it before exposing the entry to other threads
+                if (entryLocker) {
+                    entryLocker->lock(*returnValue);
+                }
                 sealEntry(*returnValue, true);
             }
         }
@@ -708,7 +714,7 @@ public:
      * @param params The non unique parameters. They do not help to identify they entry, rather
      * this class can be used to cache other parameters along with the value_type.
      *
-     * @param imageLocker A pointer to an ImageLockerI which will lock the image if it was freshly
+     * @param imageLocker A pointer to an ImageLockerHelperBase which will lock the image if it was freshly
      * created so that you can call allocateMemory() safely without another thread accessing it.
      *
      * @param [out] returnValue The returnValue, contains the cache entry.
@@ -723,6 +729,7 @@ public:
      **/
     bool getOrCreate(const typename EntryType::key_type & key,
                      const ParamsTypePtr & params,
+                     ImageLockerHelper<EntryType>* locker,
                      EntryTypePtr* returnValue) const
     {
         ///Make sure the shared_ptrs live in this list and are destroyed not while under the lock
@@ -747,7 +754,7 @@ public:
                 }
             }
 
-            createInternal(key, params, returnValue);
+            createInternal(key, params, locker, returnValue);
 
             return false;
         } // getlocker

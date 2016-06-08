@@ -2042,7 +2042,7 @@ AppManager::getImageOrCreate(const ImageKey & key,
                              const boost::shared_ptr<ImageParams>& params,
                              boost::shared_ptr<Image>* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key, params, returnValue);
+    return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
@@ -2057,7 +2057,7 @@ AppManager::getImageOrCreate_diskCache(const ImageKey & key,
                                        const boost::shared_ptr<ImageParams>& params,
                                        boost::shared_ptr<Image>* returnValue) const
 {
-    return _imp->_diskCache->getOrCreate(key, params, returnValue);
+    return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
@@ -2075,9 +2075,10 @@ AppManager::getTexture(const FrameKey & key,
 bool
 AppManager::getTextureOrCreate(const FrameKey & key,
                                const boost::shared_ptr<FrameParams>& params,
+                               FrameEntryLocker* locker,
                                FrameEntryPtr* returnValue) const
 {
-    return _imp->_viewerCache->getOrCreate(key, params, returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params, locker, returnValue);
 }
 
 bool

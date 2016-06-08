@@ -2792,7 +2792,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
        it once, which is fine.
      */
     QWriteLocker k(&_imp->cacheAccessMutex);
-    AppManager::getImageFromCacheOrCreate(*key, params, &image);
+    appPTR->getImageOrCreate(*key, params, &image);
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
