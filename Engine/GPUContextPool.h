@@ -42,8 +42,6 @@ public:
 
     ~GPUContextPool();
 
-    static int getIdealContextCount();
-
 
     //////////////////////////////// OpenGL related /////////////////////////////////
 

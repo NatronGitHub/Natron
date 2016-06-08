@@ -539,6 +539,8 @@ public:
 
     const std::list<OpenGLRendererInfo>& getOpenGLRenderers() const;
 
+    void refreshOpenGLRenderingFlagOnAllInstances();
+
     /**
      * @brief Returns true if we could correctly fetch needed OpenGL functions and extensions
      **/

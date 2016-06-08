@@ -820,6 +820,7 @@ Node::load(const CreateNodeArgs& args)
        Set modifiable props
      */
     refreshDynamicProperties();
+    onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
 
     if ( isTrackerNodePlugin() ) {
         _imp->isMultiInstance = true;
@@ -973,10 +974,26 @@ Node::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 PluginOpenGLRenderSupport
 Node::getCurrentOpenGLRenderSupport() const
 {
+
     if (_imp->plugin) {
         PluginOpenGLRenderSupport pluginProp = _imp->plugin->getPluginOpenGLRenderSupport();
         if (pluginProp != ePluginOpenGLRenderSupportYes) {
             return pluginProp;
+        }
+    }
+
+    if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
+        return ePluginOpenGLRenderSupportNone;
+    }
+
+    // Ok still turned on, check the value of the opengl support knob in the Node page
+    boost::shared_ptr<KnobChoice> openglSupportKnob = _imp->openglRenderingEnabledKnob.lock();
+    if (openglSupportKnob) {
+        int index = openglSupportKnob->getValue();
+        if (index == 1) {
+            return ePluginOpenGLRenderSupportNone;
+        } else if (index == 2 && getApp()->isBackground()) {
+            return ePluginOpenGLRenderSupportNone;
         }
     }
 
@@ -1043,17 +1060,6 @@ Node::refreshDynamicProperties()
         if (_imp->plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
             // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
             pluginGLSupport = _imp->effect->supportsOpenGLRender();
-            
-            // Ok still turned on, check the value of the opengl support knob in the Node page
-            boost::shared_ptr<KnobChoice> openglSupportKnob = _imp->openglRenderingEnabledKnob.lock();
-            if (openglSupportKnob) {
-                int index = openglSupportKnob->getValue();
-                if (index == 1) {
-                    pluginGLSupport = ePluginOpenGLRenderSupportNone;
-                } else if (index == 2 && getApp()->isBackground()) {
-                    pluginGLSupport = ePluginOpenGLRenderSupportNone;
-                }
-            }
         }
     }
 
@@ -3402,7 +3408,7 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         }
 
         openglRenderingKnob->setName("enableGPURendering");
-        openglRenderingKnob->setHintToolTip( tr("Select when to activate GPU rendering for this node") );
+        openglRenderingKnob->setHintToolTip( tr("Select when to activate GPU rendering for this node. Note that if the GPU Rendering parameter in the Project settings is set to disabled then GPU rendering will not be activated regardless of that value.") );
         settingsPage->addKnob(openglRenderingKnob);
         _imp->openglRenderingEnabledKnob = openglRenderingKnob;
     }
@@ -8543,13 +8549,18 @@ void
 Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
 {
     bool enabled = activated;
+    boost::shared_ptr<KnobChoice> k = _imp->openglRenderingEnabledKnob.lock();
     if (enabled) {
-        boost::shared_ptr<KnobChoice> k = _imp->openglRenderingEnabledKnob.lock();
         if (k) {
+            k->setAllDimensionsEnabled(true);
             int thisKnobIndex = k->getValue();
             if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
                 enabled = false;
             }
+        }
+    } else {
+        if (k) {
+            k->setAllDimensionsEnabled(true);
         }
     }
     _imp->effect->onEnableOpenGLKnobValueChanged(enabled);

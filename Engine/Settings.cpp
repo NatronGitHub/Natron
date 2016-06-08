@@ -417,6 +417,19 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     _availableOpenGLRenderers->setSecret(renderers.size() == 1);
 }
 
+bool
+Settings::isOpenGLRenderingEnabled() const
+{
+    int index = _enableOpenGL->getValue();
+    return index == 0 || (index == 2 && !appPTR->isBackground());
+}
+
+int
+Settings::getMaxOpenGLContexts() const
+{
+    return _nOpenGLContexts->getValue();
+}
+
 GLRendererID
 Settings::getActiveOpenGLRendererID() const
 {
@@ -454,6 +467,32 @@ Settings::initializeKnobsGPU()
     _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
     _availableOpenGLRenderers->setHintToolTip( tr("Select the renderer that will be used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
     _gpuPage->addKnob(_availableOpenGLRenderers);
+
+    _nOpenGLContexts = AppManager::createKnob<KnobInt>( this, tr("Num. OpenGL Context") );
+    _nOpenGLContexts->setName("maxOpenGLContexts");
+    _nOpenGLContexts->setMinimum(1);
+    _nOpenGLContexts->setDisplayMinimum(1);
+    _nOpenGLContexts->setDisplayMaximum(8);
+    _nOpenGLContexts->setMaximum(8);
+    _nOpenGLContexts->setHintToolTip( tr("This is the number of OpenGL contexts that will be created to perform OpenGL rendering. Each OpenGL context can be attached to a CPU thread allowing for more frames to be rendered concurrently. Increasing the value of this parameter may increase performances for graphs with mixed CPU/GPU nodes but can drastically reduce performances if too many OpenGL contexts are active at once.") );
+    _gpuPage->addKnob(_nOpenGLContexts);
+
+
+    _enableOpenGL = AppManager::createKnob<KnobChoice>( this, tr("OpenGL Rendering") );
+    _enableOpenGL->setName("enableOpenGLRendering");
+    {
+        std::vector<std::string> entries;
+        std::vector<std::string> helps;
+        entries.push_back("Enabled");
+        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        entries.push_back("Disabled");
+        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back("Disabled if background");
+        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+        _enableOpenGL->populateChoices(entries, helps);
+    }
+    _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
+    _gpuPage->addKnob(_enableOpenGL);
 }
 
 void
@@ -1405,7 +1444,7 @@ Settings::setDefaultValues()
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders->setDefaultValue(0, 0);
 #endif
-
+    _nOpenGLContexts->setDefaultValue(2);
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false, 0);
@@ -2233,6 +2272,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->reloadScriptEditorFonts();
     } else if ( k == _pluginUseImageCopyForSource.get() ) {
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
+    } else if ( k == _enableOpenGL.get() ) {
+        appPTR->refreshOpenGLRenderingFlagOnAllInstances();
     } else {
         ret = false;
     }

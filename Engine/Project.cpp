@@ -828,8 +828,11 @@ Project::initializeKnobs()
         _imp->gpuSupport->populateChoices(entries, helps);
     }
     _imp->gpuSupport->setAnimationEnabled(false);
-    _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins") );
+    _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
     _imp->gpuSupport->setEvaluateOnChange(false);
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        _imp->gpuSupport->setAllDimensionsEnabled(false);
+    }
     page->addKnob(_imp->gpuSupport);
 
     boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
@@ -1095,6 +1098,9 @@ Project::getProjectFormatAtIndex(int index,
 bool
 Project::isOpenGLRenderActivated() const
 {
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        return false;
+    }
     int index =  _imp->gpuSupport->getValue();
     return index == 0 || (index == 2 && !getApp()->isBackground());
 }
@@ -1173,6 +1179,9 @@ Project::getProjectViewsCount() const
 bool
 Project::isGPURenderingEnabledInProject() const
 {
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        return false;
+    }
     int index = _imp->gpuSupport->getValue();
 
     if (index == 0) {
@@ -1502,19 +1511,31 @@ Project::onKnobValueChanged(KnobI* knob,
         Q_EMIT frameRangeChanged(first, last);
     } else if ( knob == _imp->gpuSupport.get() ) {
 
-        int index = _imp->gpuSupport->getValue();
-        bool activated = index == 0 || (index == 2 && !getApp()->isBackground());
-        NodesList allNodes;
-        getNodes_recursive(allNodes, false);
-        for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
-            (*it)->onOpenGLEnabledKnobChangedOnProject(activated);
-        }
+        refreshOpenGLRenderingFlagOnNodes();
     } else {
         ret = false;
     }
 
     return ret;
 } // Project::onKnobValueChanged
+
+void
+Project::refreshOpenGLRenderingFlagOnNodes()
+{
+    bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
+    if (!activated) {
+        _imp->gpuSupport->setAllDimensionsEnabled(false);
+    } else {
+        _imp->gpuSupport->setAllDimensionsEnabled(true);
+        int index =  _imp->gpuSupport->getValue();
+        activated = index == 0 || (index == 2 && !getApp()->isBackground());
+    }
+    NodesList allNodes;
+    getNodes_recursive(allNodes, false);
+    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        (*it)->onOpenGLEnabledKnobChangedOnProject(activated);
+    }
+}
 
 bool
 Project::isLoadingProject() const

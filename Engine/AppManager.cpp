@@ -3242,6 +3242,14 @@ AppManager::getGPUContextPool() const
 }
 
 void
+AppManager::refreshOpenGLRenderingFlagOnAllInstances()
+{
+    for (std::size_t i = 0; i < _imp->_appInstances.size(); ++i) {
+        _imp->_appInstances[i]->getProject()->refreshOpenGLRenderingFlagOnNodes();
+    }
+}
+
+void
 Dialogs::errorDialog(const std::string & title,
                      const std::string & message,
                      bool useHtml)

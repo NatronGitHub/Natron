@@ -298,6 +298,8 @@ public:
 
     bool isOpenGLRenderActivated() const;
 
+    void refreshOpenGLRenderingFlagOnNodes();
+
 private:
 
     virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;

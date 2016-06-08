@@ -356,6 +356,10 @@ public:
 
     void populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers);
 
+    bool isOpenGLRenderingEnabled() const;
+
+    int getMaxOpenGLContexts() const;
+
 Q_SIGNALS:
 
     void settingChanged(KnobI* knob);
@@ -426,6 +430,9 @@ private:
     boost::shared_ptr<KnobPage> _gpuPage;
     boost::shared_ptr<KnobString> _openglRendererString;
     boost::shared_ptr<KnobChoice> _availableOpenGLRenderers;
+    boost::shared_ptr<KnobInt> _nOpenGLContexts;
+    boost::shared_ptr<KnobChoice> _enableOpenGL;
+
 
 
     // General/Projects setup
