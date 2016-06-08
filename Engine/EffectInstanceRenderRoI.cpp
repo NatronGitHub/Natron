@@ -958,6 +958,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////End cache lookup//////////////////////////////////////////////////////////
 
+    /// Release the context from this thread as it may have been used  when calling getImageFromCacheAndConvertIfNeeded
+    /// This will enable all threads to be concurrent again to render input images
+    glContextLocker.reset();
+
     if ( framesNeeded->empty() ) {
         if (requestPassData) {
             *framesNeeded = requestPassData->globalData.frameViewsNeeded;
@@ -1261,7 +1265,20 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Redo - cache lookup if memory almost full //////////////////////////////////////////////
 
 
+    // Ok make the gl context current again as we may use it for getImageFromCacheAndConvertIfNeeded and to allocate the texture
+
+    if (planesToRender->useOpenGL && !glContextLocker) {
+        // Make the OpenGL context current to this thread
+        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                       , frameArgs->time
+#endif
+                                                       ) );
+    }
     if (redoCacheLookup) {
+
+
+
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
             /*
              * If the plane is the color plane, we might have to convert between components, hence we always
@@ -1367,6 +1384,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
             }
         }
+
     } // if (redoCacheLookup) {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1378,6 +1396,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     ///For all planes, if needed allocate the associated image
     if (hasSomethingToRender) {
+
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin();
              it != planesToRender->planes.end(); ++it) {
             const ImageComponents *components = 0;
@@ -1736,6 +1755,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     // If the caller is not multiplanar, for the color plane we remap it to the components metadata obtained from the metadata pass, otherwise we stick to returning
     //bool callerIsMultiplanar = args.caller ? args.caller->isMultiPlanar() : false;
 
+
+    if (args.mustReturnOpenGLTexture  && (storage != eStorageModeGLTex) && !glContextLocker && !planesToRender->planes.empty()) {
+        // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
+        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                       , frameArgs->time
+#endif
+                                                       ) );
+    }
     //bool multiplanar = isMultiPlanar();
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         //If we have worked on a local swaped image, swap it in the cache
@@ -1790,8 +1818,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             StorageModeEnum storage = it->second.downscaleImage->getStorageMode();
             if ( args.mustReturnOpenGLTexture && (storage != eStorageModeGLTex) ) {
+                assert(glContextLocker);
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
             } else if ( !args.mustReturnOpenGLTexture && (storage == eStorageModeGLTex) ) {
+                assert(glContextLocker);
                 it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage);
             }
 
