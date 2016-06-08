@@ -561,7 +561,6 @@ public:
 
     bool hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError = 0) const;
 
-
     QString getOpenGLVersion() const;
 
     QString getBoostVersion() const;

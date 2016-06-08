@@ -58,6 +58,9 @@ struct GPUContextPoolPrivate
     // protected by contextPoolMutex
     int maxContexts;
 
+    int currentOpenGLRendererMaxTexSize;
+
+
     GPUContextPoolPrivate()
         : contextPoolMutex()
         , glContextPool()
@@ -69,6 +72,7 @@ struct GPUContextPoolPrivate
 #endif
         , glShareContext()
         , maxContexts( GPUContextPool::getIdealContextCount() )
+        , currentOpenGLRendererMaxTexSize(0)
     {
     }
 };
@@ -100,6 +104,13 @@ GPUContextPool::getIdealContextCount()
 
     return appPTR->getHardwareIdealThreadCount();
 #endif
+}
+
+int
+GPUContextPool::getCurrentOpenGLRendererMaxTextureSize() const
+{
+    QMutexLocker k(&_imp->contextPoolMutex);
+    return _imp->currentOpenGLRendererMaxTexSize;
 }
 
 OSGLContextPtr
@@ -159,6 +170,13 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 
 #endif //NATRON_RENDER_SHARED_CONTEXT
     assert(newContext);
+
+    if (settings) {
+        if (!_imp->currentOpenGLRendererMaxTexSize) {
+            newContext->setContextCurrentNoRender();
+            glGetIntegerv(GL_MAX_TEXTURE_SIZE, &_imp->currentOpenGLRendererMaxTexSize);
+        }
+    }
 
     // If this is the first context, set it as the sharing context
     if (!shareContext) {

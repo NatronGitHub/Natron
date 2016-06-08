@@ -861,14 +861,7 @@ EffectInstance::getImage(int inputNb,
         return ImagePtr();
     }
 
-    boost::scoped_ptr<OSGLContextAttacher> glContextAttacher;
-    if (glContext && returnOpenGLTexture && renderInfo) {
-        glContextAttacher.reset( new OSGLContextAttacher(glContext, renderInfo
-#ifdef DEBUG
-                                                         , time
-#endif
-                                                         ) );
-    }
+
 
     RectD inputRoD;
     bool inputRoDSet = false;
@@ -1550,6 +1543,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     const ImageComponents & nodePrefComps,
                                                     const EffectInstance::InputImagesMap & inputImages,
                                                     const boost::shared_ptr<RenderStats> & stats,
+                                                    const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
                                                     boost::shared_ptr<Image>* image)
 {
     ImageList cachedImages;
@@ -1718,6 +1712,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
 
             if (storage == eStorageModeGLTex) {
+                assert(glContextAttacher);
+                glContextAttacher->attach();
                 // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
                 // needed then reading it back to put it in the CPU image would take much more effort than just computing
                 // the GPU image.
@@ -1739,6 +1735,8 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 (*image)->allocateMemory();
 
                 if (storage == eStorageModeGLTex) {
+                    assert(glContextAttacher);
+                    glContextAttacher->attach();
                     // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
                     // needed then reading it back to put it in the CPU image would take much more effort than just computing
                     // the GPU image.
@@ -2408,6 +2406,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                          , frameArgs->time
 #endif
                                                          ) );
+        glContextAttacher->attach();
 
 
         GLuint fboID = glContext->getFBOId();

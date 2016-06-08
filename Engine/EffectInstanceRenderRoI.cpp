@@ -67,6 +67,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/GPUContextPool.h"
 #include "Engine/PluginMemory.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
@@ -725,7 +726,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
     StorageModeEnum storage = eStorageModeRAM;
-    boost::scoped_ptr<OSGLContextAttacher> glContextLocker;
+    boost::shared_ptr<OSGLContextAttacher> glContextLocker;
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
@@ -775,10 +776,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             // Ensure that the texture will be at least smaller than the maximum OpenGL texture size
             if (storage == eStorageModeGLTex) {
-                int maxSize;
-                glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
-                if ( (roi.width() >= maxSize) ||
-                     ( roi.height() >= maxSize) ) {
+                int maxTextureSize = appPTR->getGPUContextPool()->getCurrentOpenGLRendererMaxTextureSize();
+                if ( (roi.width() >= maxTextureSize) ||
+                     ( roi.height() >= maxTextureSize) ) {
                     // Fallback on CPU rendering since the image is larger than the maximum allowed OpenGL texture size
                     storage = eStorageModeRAM;
                     glContextLocker.reset();
@@ -896,6 +896,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         *components,
                                                         args.inputImagesList,
                                                         frameArgs->stats,
+                                                        glContextLocker,
                                                         &plane.fullscaleImage);
                     if (plane.fullscaleImage) {
                         break;
@@ -960,7 +961,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     /// Release the context from this thread as it may have been used  when calling getImageFromCacheAndConvertIfNeeded
     /// This will enable all threads to be concurrent again to render input images
-    glContextLocker.reset();
+    if (glContextLocker) {
+        glContextLocker->dettach();
+    }
 
     if ( framesNeeded->empty() ) {
         if (requestPassData) {
@@ -1265,19 +1268,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Redo - cache lookup if memory almost full //////////////////////////////////////////////
 
 
-    // Ok make the gl context current again as we may use it for getImageFromCacheAndConvertIfNeeded and to allocate the texture
-
-    if (planesToRender->useOpenGL && !glContextLocker) {
-        // Make the OpenGL context current to this thread
-        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                       , frameArgs->time
-#endif
-                                                       ) );
-    }
     if (redoCacheLookup) {
-
-
 
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
             /*
@@ -1306,7 +1297,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                 &rod, roi,
                                                 args.bitdepth, it->first,
                                                 outputDepth, *components,
-                                                args.inputImagesList, frameArgs->stats, &it->second.fullscaleImage);
+                                                args.inputImagesList, frameArgs->stats, glContextLocker, &it->second.fullscaleImage);
 
             ///We must retrieve from the cache exactly the originally retrieved image, otherwise we might have to call  renderInputImagesForRoI
             ///again, which could create a vicious cycle.
@@ -1397,6 +1388,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ///For all planes, if needed allocate the associated image
     if (hasSomethingToRender) {
 
+        if (glContextLocker) {
+            glContextLocker->attach();
+        }
         for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin();
              it != planesToRender->planes.end(); ++it) {
             const ImageComponents *components = 0;
@@ -1755,15 +1749,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     // If the caller is not multiplanar, for the color plane we remap it to the components metadata obtained from the metadata pass, otherwise we stick to returning
     //bool callerIsMultiplanar = args.caller ? args.caller->isMultiPlanar() : false;
 
-
-    if (args.mustReturnOpenGLTexture  && (storage != eStorageModeGLTex) && !glContextLocker && !planesToRender->planes.empty()) {
-        // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
-        glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
-#ifdef DEBUG
-                                                       , frameArgs->time
-#endif
-                                                       ) );
-    }
     //bool multiplanar = isMultiPlanar();
     for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         //If we have worked on a local swaped image, swap it in the cache
@@ -1818,10 +1803,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             StorageModeEnum storage = it->second.downscaleImage->getStorageMode();
             if ( args.mustReturnOpenGLTexture && (storage != eStorageModeGLTex) ) {
-                assert(glContextLocker);
+                if (!glContextLocker) {
+                    // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
+                    glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                                   , frameArgs->time
+#endif
+                                                                   ) );
+                }
+                glContextLocker->attach();
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
             } else if ( !args.mustReturnOpenGLTexture && (storage == eStorageModeGLTex) ) {
                 assert(glContextLocker);
+                glContextLocker->attach();
                 it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage);
             }
 

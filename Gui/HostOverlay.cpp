@@ -266,7 +266,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 
@@ -541,7 +541,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 
@@ -747,7 +747,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 

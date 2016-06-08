@@ -573,6 +573,7 @@ public:
                                              const ImageComponents & nodeComponentsPref,
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
+                                             const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
                                              boost::shared_ptr<Image>* image);
 
     /**

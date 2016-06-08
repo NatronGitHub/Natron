@@ -71,6 +71,12 @@ public:
      **/
     void releaseGLContextFromRender(const OSGLContextPtr& context);
 
+    /**
+     * @brief Returns the max texture size, i.e: the value returned by glGetIntegerv(GL_MAX_TEXTURE_SIZE,&v)
+     * This does not call glGetIntegerv and does not require a context to be bound.
+     **/
+    int getCurrentOpenGLRendererMaxTextureSize() const;
+
     ////////////////////////////////////////////////////////////////
 
     /**

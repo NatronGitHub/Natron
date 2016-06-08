@@ -169,6 +169,7 @@ class NodeMetadata;
 class NodeSerialization;
 class NodeSettingsPanel;
 class OSGLContext;
+class OSGLContextAttacher;
 struct GLRendererID;
 struct OpenGLRendererInfo;
 class OfxClipInstance;

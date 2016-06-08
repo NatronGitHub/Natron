@@ -120,6 +120,7 @@ AppManagerPrivate::AppManagerPrivate()
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
     , renderingContextPool()
+    , openGLRenderers()
 {
     setMaxCacheFiles();
 
