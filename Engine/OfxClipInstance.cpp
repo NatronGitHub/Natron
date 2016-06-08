@@ -904,7 +904,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                                       &comp,
                                       mapImageToClipPref,
                                       false /*dontUpscale*/,
-                                      retTexture != 0,
+                                      retTexture != 0 ? eStorageModeGLTex : eStorageModeRAM,
                                       textureDepth,
                                       &renderWindow,
                                       &transform);

@@ -1095,7 +1095,7 @@ TrackMarker::getMarkerImage(int time,
                                         eImageBitDepthFloat,
                                         false,
                                         node->getEffectInstance().get(),
-                                        false /*returnOpenGlTex*/,
+                                        eStorageModeRAM /*returnOpenGlTex*/,
                                         time);
     std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);

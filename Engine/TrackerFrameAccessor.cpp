@@ -372,7 +372,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         eImageBitDepthFloat,
                                         true,
                                         _imp->context->getNode()->getEffectInstance().get(),
-                                        false /*returnOpenGLTex*/,
+                                        eStorageModeRAM /*returnOpenGLTex*/,
                                         frame);
     std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = _imp->trackerInput->getEffectInstance()->renderRoI(args, &planes);

@@ -1459,7 +1459,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                                     imageDepth,
                                                                     false /*calledFromGetImage*/,
                                                                     this,
-                                                                    false /*renderOpenGL*/,
+                                                                    eStorageModeRAM /*returnStorage*/,
                                                                     inArgs.params->time) );
                 retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);
             }

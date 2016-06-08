@@ -6421,7 +6421,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            depth,
                                                                                                            false,
                                                                                                            effect,
-                                                                                                           false /*returnOpenGLTex*/,
+                                                                                                           eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);

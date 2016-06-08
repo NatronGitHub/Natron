@@ -1433,7 +1433,7 @@ RotoPaint::render(const RenderActionArgs& args)
 
     if ( items.empty() ) {
         RectI bgImgRoI;
-        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, false /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
+        ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
 
         for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
@@ -1482,7 +1482,7 @@ RotoPaint::render(const RenderActionArgs& args)
                                     bgDepth,
                                     false,
                                     this,
-                                    false /*returnOpenGLtex*/,
+                                    eStorageModeRAM /*returnOpenGLtex*/,
                                     args.time);
         std::map<ImageComponents, ImagePtr> rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getEffectInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
@@ -1514,7 +1514,7 @@ RotoPaint::render(const RenderActionArgs& args)
             }
             if (!bgImg) {
                 if (!triedGetImage) {
-                    bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, false /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
+                    bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
                     triedGetImage = true;
                 }
             }

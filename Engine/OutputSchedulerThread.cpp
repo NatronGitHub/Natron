@@ -2336,7 +2336,7 @@ private:
                                                                                                                imageDepth,
                                                                                                                false,
                                                                                                                activeInputToRender.get(),
-                                                                                                               false,
+                                                                                                               eStorageModeRAM,
                                                                                                                time) );
                 EffectInstance::RenderRoIRetCode retCode;
                 retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
@@ -2450,7 +2450,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                                                                        imageDepth,
                                                                                                        false,
                                                                                                        effect.get(),
-                                                                                                       false,
+                                                                                                       eStorageModeRAM,
                                                                                                        frame.time,
                                                                                                        inputImages) );
         try {

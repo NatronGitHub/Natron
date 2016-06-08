@@ -682,7 +682,7 @@ EffectInstance::getImage(int inputNb,
                          const ImageComponents* layer,
                          const bool mapToClipPrefs,
                          const bool dontUpscale,
-                         const bool returnOpenGLTexture,
+                         const StorageModeEnum returnStorage,
                          const ImageBitDepthEnum* /*textureDepth*/, // < ignore requested texture depth because internally we use 32bit fp textures, so we offer the highest possible quality anyway.
                          RectI* roiPixel,
                          boost::shared_ptr<Transform::Matrix3x3>* transform)
@@ -855,7 +855,7 @@ EffectInstance::getImage(int inputNb,
         }
     }
 
-    if ( (!glContext || !renderInfo) && returnOpenGLTexture ) {
+    if ( (!glContext || !renderInfo) && returnStorage == eStorageModeGLTex ) {
         qDebug() << "[BUG]: " << getScriptName_mt_safe().c_str() << "is doing an OpenGL render but no context is bound to the current render.";
 
         return ImagePtr();
@@ -928,7 +928,7 @@ EffectInstance::getImage(int inputNb,
 
 
     ///Does this node supports images at a scale different than 1
-    bool renderFullScaleThenDownscale = (!supportsRenderScale() && mipMapLevel != 0 && !returnOpenGLTexture);
+    bool renderFullScaleThenDownscale = (!supportsRenderScale() && mipMapLevel != 0 && returnStorage == eStorageModeRAM);
 
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;
@@ -1009,7 +1009,7 @@ EffectInstance::getImage(int inputNb,
             tls->currentRenderArgs.inputImages[inputNb].push_back(inputImg);
         }
 
-        if ( returnOpenGLTexture && (inputImg->getStorageMode() != eStorageModeGLTex) ) {
+        if ( returnStorage == eStorageModeGLTex && (inputImg->getStorageMode() != eStorageModeGLTex) ) {
             inputImg = convertRAMImageToOpenGLTexture(inputImg);
         }
 
@@ -1034,7 +1034,7 @@ EffectInstance::getImage(int inputNb,
                                                                     depth,
                                                                     true,
                                                                     this,
-                                                                    returnOpenGLTexture,
+                                                                    returnStorage,
                                                                     thisEffectRenderTime,
                                                                     inputImagesThreadLocal), &inputImages);
 
@@ -1069,7 +1069,7 @@ EffectInstance::getImage(int inputNb,
     ///If the plug-in doesn't support the render scale, but the image is downscaled, up-scale it.
     ///Note that we do NOT cache it because it is really low def!
     ///For OpenGL textures, we do not do it because GL_TEXTURE_2D uses normalized texture coordinates anyway, so any OpenGL plug-in should support render scale.
-    if (!dontUpscale  && renderFullScaleThenDownscale && (inputImgMipMapLevel != 0) && !returnOpenGLTexture) {
+    if (!dontUpscale  && renderFullScaleThenDownscale && (inputImgMipMapLevel != 0) && returnStorage == eStorageModeRAM) {
         assert(inputImgMipMapLevel != 0);
         ///Resize the image according to the requested scale
         ImageBitDepthEnum bitdepth = inputImg->getBitDepth();
@@ -1532,6 +1532,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                                                     StorageModeEnum storage,
+                                                    StorageModeEnum returnStorage,
                                                     const ImageKey & key,
                                                     unsigned int mipMapLevel,
                                                     const RectI* boundsParam,
@@ -1712,15 +1713,22 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
             }
 
             if (storage == eStorageModeGLTex) {
-                assert(glContextAttacher);
-                glContextAttacher->attach();
+
                 // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
                 // needed then reading it back to put it in the CPU image would take much more effort than just computing
                 // the GPU image.
                 std::list<RectI> restToRender;
                 imageToConvert->getRestToRender(roi, restToRender);
                 if ( restToRender.empty() ) {
-                    *image = convertRAMImageToOpenGLTexture(imageToConvert);
+                    if (returnStorage == eStorageModeGLTex) {
+                        assert(glContextAttacher);
+                        glContextAttacher->attach();
+                        *image = convertRAMImageToOpenGLTexture(imageToConvert);
+                    } else {
+                        assert(returnStorage == eStorageModeRAM && (imageToConvert->getStorageMode() == eStorageModeRAM || imageToConvert->getStorageMode() == eStorageModeDisk));
+                        // If renderRoI must return a RAM image, don't convert it back again!
+                        *image = imageToConvert;
+                    }
                 }
             } else {
                 *image = imageToConvert;
@@ -1735,15 +1743,23 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                 (*image)->allocateMemory();
 
                 if (storage == eStorageModeGLTex) {
-                    assert(glContextAttacher);
-                    glContextAttacher->attach();
+
                     // When using the GPU, we dont want to retrieve partially rendered image because rendering the portion
                     // needed then reading it back to put it in the CPU image would take much more effort than just computing
                     // the GPU image.
                     std::list<RectI> restToRender;
                     (*image)->getRestToRender(roi, restToRender);
                     if ( restToRender.empty() ) {
-                        *image = convertRAMImageToOpenGLTexture(*image);
+                        if (returnStorage == eStorageModeGLTex) {
+                            assert(glContextAttacher);
+                            glContextAttacher->attach();
+                            *image = convertRAMImageToOpenGLTexture(*image);
+                        } else {
+                            assert(returnStorage == eStorageModeRAM && (imageToConvert->getStorageMode() == eStorageModeRAM || imageToConvert->getStorageMode() == eStorageModeDisk));
+                            // If renderRoI must return a RAM image, don't convert it back again!
+                            *image = imageToConvert;
+
+                        }
                     }
                 }
             }
@@ -1987,7 +2003,7 @@ EffectInstance::transformInputRois(const EffectInstance* self,
 EffectInstance::RenderRoIRetCode
 EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         bool useTransforms,
-                                        bool renderIsOpenGL,
+                                        StorageModeEnum renderStorageMode,
                                         double time,
                                         ViewIdx view,
                                         const RectD & rod,
@@ -2019,7 +2035,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                               *inputsRoi,
                               inputTransforms,
                               useTransforms,
-                              renderIsOpenGL,
+                              renderStorageMode,
                               mipMapLevel,
                               time,
                               view,
@@ -2440,7 +2456,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                                                                        outputClipPrefDepth,
                                                                                                        false,
                                                                                                        _publicInterface,
-                                                                                                       actionArgs.useOpenGL,
+                                                                                                       planes.useOpenGL ? eStorageModeGLTex : eStorageModeRAM,
                                                                                                        time) );
         if (!tls->currentRenderArgs.identityInput) {
             for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {

@@ -888,7 +888,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 int nLookups = draftModeSupported && frameArgs->draftMode ? 2 : 1;
 
                 for (int n = 0; n < nLookups; ++n) {
-                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
+                    getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, n == 0 ? *nonDraftKey : *key, renderMappedMipMapLevel,
                                                         renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                         &rod, roi,
                                                         args.bitdepth, *it,
@@ -1222,7 +1222,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
             inputCode = renderInputImagesForRoI(requestPassData,
                                                 useTransforms,
-                                                storage == eStorageModeGLTex,
+                                                storage,
                                                 args.time,
                                                 args.view,
                                                 rod,
@@ -1292,7 +1292,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (!components) {
                 continue;
             }
-            getImageFromCacheAndConvertIfNeeded(createInCache, storage, *key, renderMappedMipMapLevel,
+            getImageFromCacheAndConvertIfNeeded(createInCache, storage, args.returnStorage, *key, renderMappedMipMapLevel,
                                                 renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod, roi,
                                                 args.bitdepth, it->first,
@@ -1355,7 +1355,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
                 RenderRoIRetCode inputRetCode = renderInputImagesForRoI(requestPassData,
                                                                         useTransforms,
-                                                                        storage == eStorageModeGLTex,
+                                                                        storage,
                                                                         args.time,
                                                                         args.view,
                                                                         rod,
@@ -1801,8 +1801,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
             assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
 
-            StorageModeEnum storage = it->second.downscaleImage->getStorageMode();
-            if ( args.mustReturnOpenGLTexture && (storage != eStorageModeGLTex) ) {
+            StorageModeEnum imageStorage = it->second.downscaleImage->getStorageMode();
+            if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
                 if (!glContextLocker) {
                     // Make the OpenGL context current to this thread since we may use it for convertRAMImageToOpenGLTexture
                     glContextLocker.reset( new OSGLContextAttacher(glContext, abortInfo
@@ -1813,7 +1813,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 }
                 glContextLocker->attach();
                 it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
-            } else if ( !args.mustReturnOpenGLTexture && (storage == eStorageModeGLTex) ) {
+            } else if ( args.returnStorage != eStorageModeGLTex && (imageStorage == eStorageModeGLTex) ) {
+                assert(args.returnStorage == eStorageModeRAM);
                 assert(glContextLocker);
                 glContextLocker->attach();
                 it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage);

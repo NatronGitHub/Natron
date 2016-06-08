@@ -305,7 +305,7 @@ RotoSmear::render(const RenderActionArgs& args)
         if (strokeIndex == 0) {
             ///For the first multi-stroke, init background
             if ( foundBg != neededComps.end() ) {
-                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, false /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
+                bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
             }
         }
 

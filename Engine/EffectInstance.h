@@ -150,8 +150,8 @@ public:
         bool byPassCache;
         bool calledFromGetImage;
 
-        // True if we need to return an OpenGL texture. If false we must return a RAM image
-        bool mustReturnOpenGLTexture;
+        // Request what kind of storage we need images to be in return of renderRoI
+        StorageModeEnum returnStorage;
 
         // Set to false if you don't want the node to render using the GPU at all
         bool allowGPURendering;
@@ -172,7 +172,7 @@ public:
             , bitdepth(eImageBitDepthFloat)
             , byPassCache(false)
             , calledFromGetImage(false)
-            , mustReturnOpenGLTexture(false)
+            , returnStorage(eStorageModeRAM)
             , allowGPURendering(true)
             , callerRenderTime(0.)
         {
@@ -189,7 +189,7 @@ public:
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
                        const EffectInstance* caller,
-                       bool renderOpenGLTexture,
+                       StorageModeEnum returnStorage,
                        double callerRenderTime,
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
             : time(time_)
@@ -204,7 +204,7 @@ public:
             , bitdepth(bitdepth_)
             , byPassCache(byPassCache_)
             , calledFromGetImage(calledFromGetImage)
-            , mustReturnOpenGLTexture(renderOpenGLTexture)
+            , returnStorage(returnStorage)
             , allowGPURendering(true)
             , callerRenderTime(callerRenderTime)
         {
@@ -562,6 +562,7 @@ public:
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
                                              StorageModeEnum storage,
+                                             StorageModeEnum returnStorage,
                                              const ImageKey & key,
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
@@ -693,7 +694,7 @@ public:
                                                                const RoIMap & inputRois,
                                                                const boost::shared_ptr<InputMatrixMap> & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
-                                                               bool renderIsOpenGL, // if the render of this node is in OpenGL
+                                                               StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
                                                                unsigned int originalMipMapLevel,         // roi functor specific
                                                                double time,
                                                                ViewIdx view,
@@ -1038,7 +1039,7 @@ public:
                                       const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
                                       const bool mapToClipPrefs,
                                       const bool dontUpscale,
-                                      const bool returnOpenGLTexture,
+                                      const StorageModeEnum returnStorage,
                                       const ImageBitDepthEnum* textureDepth,
                                       RectI* roiPixel,
                                       boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
@@ -2115,7 +2116,7 @@ private:
     /// \returns false if rendering was aborted
     RenderRoIRetCode renderInputImagesForRoI(const FrameViewRequest* request,
                                              bool useTransforms,
-                                             bool renderIsOpenGL,
+                                             StorageModeEnum renderStorageMode,
                                              double time,
                                              ViewIdx view,
                                              const RectD & rod,
