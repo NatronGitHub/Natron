@@ -296,6 +296,8 @@ public:
      **/
     bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
 
+    bool isOpenGLRenderActivated() const;
+
 private:
 
     virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;

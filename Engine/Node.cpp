@@ -8463,6 +8463,19 @@ Node::onEffectKnobValueChanged(KnobI* what,
                 break;
         }
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
+    } else if ( what == _imp->openglRenderingEnabledKnob.lock().get() ) {
+        bool enabled = true;
+        int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
+        if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
+            enabled = false;
+        }
+        if (enabled) {
+            // Check value on project now
+            if (!getApp()->getProject()->isOpenGLRenderActivated()) {
+                enabled = false;
+            }
+        }
+        _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
     } else {
         ret = false;
     }
@@ -8522,6 +8535,20 @@ Node::onEffectKnobValueChanged(KnobI* what,
 
     return ret;
 } // Node::onEffectKnobValueChanged
+
+void
+Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
+{
+    bool enabled = activated;
+    if (enabled) {
+        int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
+        if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
+            enabled = false;
+        }
+    }
+    _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
+
+}
 
 bool
 Node::getSelectedLayerChoiceRaw(int inputNb,

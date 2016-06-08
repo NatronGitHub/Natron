@@ -1092,6 +1092,13 @@ Project::getProjectFormatAtIndex(int index,
     return _imp->findFormat(index, f);
 }
 
+bool
+Project::isOpenGLRenderActivated() const
+{
+    int index =  _imp->gpuSupport->getValue();
+    return index == 0 || (index == 2 && !getApp()->isBackground());
+}
+
 int
 Project::currentFrame() const
 {
@@ -1493,6 +1500,15 @@ Project::onKnobValueChanged(KnobI* knob,
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
+    } else if ( knob == _imp->gpuSupport.get() ) {
+
+        int index = _imp->gpuSupport->getValue();
+        bool activated = index == 0 || (index == 2 && !getApp()->isBackground());
+        NodesList allNodes;
+        getNodes_recursive(allNodes, false);
+        for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+            (*it)->onOpenGLEnabledKnobChangedOnProject(activated);
+        }
     } else {
         ret = false;
     }

@@ -560,6 +560,8 @@ public:
 
     bool isSettingsPanelMinimized() const;
 
+    void onOpenGLEnabledKnobChangedOnProject(bool activated);
+
 private:
 
     bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);

@@ -146,6 +146,8 @@ public Q_SLOTS:
 
     void onProjectFrameRangeChanged(int, int);
 
+    void onKeyframeChangesUpdateTimerTimeout();
+
 private:
 
     void setBoundariesInternal(SequenceTime first, SequenceTime last, bool emitSignal);

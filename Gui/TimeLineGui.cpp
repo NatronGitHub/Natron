@@ -35,6 +35,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
+#include <QtCore/QTimer>
+
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Cache.h"
@@ -137,6 +139,10 @@ struct TimelineGuiPrivate
     bool isFrameRangeEdited;
     bool seekingTimeline;
 
+    // Use a timer to refresh the timeline on a timed basis rather than for each change
+    // so that we limit the amount of redraws
+    QTimer keyframeChangesUpdateTimer;
+
     TimelineGuiPrivate(TimeLineGui *qq,
                        ViewerInstance* viewer,
                        Gui* gui,
@@ -162,6 +168,7 @@ struct TimelineGuiPrivate
         , frameRangeEditedMutex()
         , isFrameRangeEdited(false)
         , seekingTimeline(false)
+        , keyframeChangesUpdateTimer()
     {
     }
 
@@ -184,6 +191,13 @@ struct TimelineGuiPrivate
             }
         }
     }
+
+    void startKeyframeChangesTimer()
+    {
+        if (!keyframeChangesUpdateTimer.isActive()) {
+            keyframeChangesUpdateTimer.start(200);
+        }
+    }
 };
 
 TimeLineGui::TimeLineGui(ViewerInstance* viewer,
@@ -196,6 +210,9 @@ TimeLineGui::TimeLineGui(ViewerInstance* viewer,
     setTimeline(timeline);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
+
+    _imp->keyframeChangesUpdateTimer.setSingleShot(true);
+    connect(&_imp->keyframeChangesUpdateTimer, SIGNAL(timeout()), this, SLOT(onKeyframeChangesUpdateTimerTimeout()));
 }
 
 TimeLineGui::~TimeLineGui()
@@ -1178,6 +1195,12 @@ TimeLineGui::toWidgetCoordinates(double x,
 void
 TimeLineGui::onKeyframesIndicatorsChanged()
 {
+    _imp->startKeyframeChangesTimer();
+}
+
+void
+TimeLineGui::onKeyframeChangesUpdateTimerTimeout()
+{
     update();
 }
 
@@ -1243,7 +1266,7 @@ TimeLineGui::onCachedFrameRemoved(SequenceTime time,
             break;
         }
     }
-    update();
+    _imp->startKeyframeChangesTimer();
 }
 
 void
@@ -1271,7 +1294,7 @@ TimeLineGui::onMemoryCacheCleared()
         }
     }
     _imp->cachedFrames = copy;
-    update();
+    _imp->startKeyframeChangesTimer();
 }
 
 void
@@ -1285,14 +1308,14 @@ TimeLineGui::onDiskCacheCleared()
         }
     }
     _imp->cachedFrames = copy;
-    update();
+    _imp->startKeyframeChangesTimer();
 }
 
 void
 TimeLineGui::clearCachedFrames()
 {
     _imp->cachedFrames.clear();
-    update();
+    _imp->startKeyframeChangesTimer();
 }
 
 void

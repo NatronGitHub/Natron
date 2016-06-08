@@ -1293,6 +1293,11 @@ public:
         return ePluginOpenGLRenderSupportNone;
     }
 
+    virtual void onEnableOpenGLKnobValueChanged(bool /*activated*/)
+    {
+
+    }
+
     /**
      * @brief If this effect is a writer then the file path corresponding to the output images path will be fed
      * with the content of pattern.
