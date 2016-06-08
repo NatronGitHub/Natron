@@ -55,6 +55,11 @@
 //
 //========================================================================
 
+#include <cstddef>
+#include <string>
+#include <vector>
+#include <list>
+
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
