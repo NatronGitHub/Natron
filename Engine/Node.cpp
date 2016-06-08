@@ -3166,8 +3166,10 @@ Node::makeInfoForInput(int inputNumber) const
                 }
             }
             if ( next != availableComps.end() ) {
-                if ( (origin.get() != this) || (inputNumber == -1) ) {
-                    ss << ", ";
+                if (origin) {
+                    if ( (origin.get() != this) || (inputNumber == -1) ) {
+                        ss << ", ";
+                    }
                 }
                 ++next;
             }

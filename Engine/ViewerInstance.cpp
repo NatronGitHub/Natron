@@ -1717,6 +1717,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                         } else {
                             // If the tile is cached and we got it that means rendering is done
                             entryLocker.lock(it->cachedData);
+                            it->ramBuffer = it->cachedData->data();
                             it->isCached = true;
                             continue;
                         }
