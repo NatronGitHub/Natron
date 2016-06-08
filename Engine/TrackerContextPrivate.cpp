@@ -386,6 +386,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         transformTypeKnob->populateChoices(choices, helps);
     }
+    transformTypeKnob->setDefaultValue(1);
     transformType = transformTypeKnob;
     transformPage->addKnob(transformTypeKnob);
 
