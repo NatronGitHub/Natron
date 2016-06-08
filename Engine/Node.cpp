@@ -8448,7 +8448,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         std::string cacheInfo = makeCacheInfo();
         ssinfo << cacheInfo << "<br />";
         ssinfo << "<b>OpenGL Rendering Support:</b>: ";
-        PluginOpenGLRenderSupport glSupport = _imp->effect->supportsOpenGLRender();
+        PluginOpenGLRenderSupport glSupport = getCurrentOpenGLRenderSupport();
         switch (glSupport) {
             case ePluginOpenGLRenderSupportNone:
                 ssinfo << "No";
@@ -8541,13 +8541,16 @@ Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
 {
     bool enabled = activated;
     if (enabled) {
-        int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
-        if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
-            enabled = false;
+        boost::shared_ptr<KnobChoice> k = _imp->openglRenderingEnabledKnob.lock();
+        if (k) {
+            int thisKnobIndex = k->getValue();
+            if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
+                enabled = false;
+            }
         }
     }
     _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
-
+    
 }
 
 bool
