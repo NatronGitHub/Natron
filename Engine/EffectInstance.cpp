@@ -1456,7 +1456,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
     info.mode = eStorageModeRAM;
 
     ImagePtr ramImage;
-    getOrCreateFromCacheInternal(image->getKey(), params, true, &ramImage);
+    getOrCreateFromCacheInternal(image->getKey(), params, true /*useCache*/, &ramImage);
     if (!ramImage) {
         return ramImage;
     }
@@ -1468,6 +1468,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
     }
 
     ramImage->pasteFrom(*image, image->getBounds(), false, context);
+    ramImage->markForRendered(image->getBounds());
 
     return ramImage;
 }
@@ -1681,7 +1682,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
 
 
                 boost::shared_ptr<Image> img;
-                getOrCreateFromCacheInternal(key, imageParams, useCache, &img);
+                getOrCreateFromCacheInternal(key, imageParams, imageToConvert->usesBitMap(), &img);
                 if (!img) {
                     return;
                 }
@@ -1703,7 +1704,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     imageToConvert->downscaleMipMap( rod,
                                                      dstRoi,
                                                      imageToConvert->getMipMapLevel(), img->getMipMapLevel(),
-                                                     useCache && imageToConvert->usesBitMap(),
+                                                     imageToConvert->usesBitMap(),
                                                      img.get() );
                 } else {
                     img->pasteFrom(*imageToConvert, imgToConvertBounds);
@@ -1750,16 +1751,15 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
                     std::list<RectI> restToRender;
                     (*image)->getRestToRender(roi, restToRender);
                     if ( restToRender.empty() ) {
+                        // If renderRoI must return a RAM image, don't convert it back again!
                         if (returnStorage == eStorageModeGLTex) {
                             assert(glContextAttacher);
                             glContextAttacher->attach();
                             *image = convertRAMImageToOpenGLTexture(*image);
-                        } else {
-                            assert(returnStorage == eStorageModeRAM && (imageToConvert->getStorageMode() == eStorageModeRAM || imageToConvert->getStorageMode() == eStorageModeDisk));
-                            // If renderRoI must return a RAM image, don't convert it back again!
-                            *image = imageToConvert;
-
                         }
+                    } else {
+                        image->reset();
+                        return;
                     }
                 }
             }

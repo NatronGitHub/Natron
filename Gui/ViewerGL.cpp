@@ -2622,7 +2622,7 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
         return false;
     }
     RectI roi = getImageRectangleDisplayedRoundedToTileSize(_imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0);
-    if (roi != _imp->lastTextureTransferRoI[texIndex]) {
+    if (!_imp->lastTextureTransferRoI[texIndex].contains(roi)) {
         return false;
     }
 
