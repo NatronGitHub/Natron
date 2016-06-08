@@ -3111,7 +3111,7 @@ Node::makeCacheInfo() const
     QString ramSizeStr = printAsRAM( (U64)ram );
     QString diskSizeStr = printAsRAM( (U64)disk );
     std::stringstream ss;
-    ss << "<b><font color=\"green\">Cache occupancy:</font></b> RAM: " << ramSizeStr.toStdString() << " / Disk: " << diskSizeStr.toStdString();
+    ss << "<b><font color=\"green\">Cache occupancy:</font></b> RAM: <font color=#c8c8c8>" << ramSizeStr.toStdString() << "</font> / Disk: <font color=#c8c8c8>" << diskSizeStr.toStdString() << "</font>";
 
     return ss.str();
 }
@@ -3150,7 +3150,7 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b><font color=\"orange\">" << inputName << ":" << "</font></b><br />";
     }
     { // image format
-        ss << "<b>Image format: </b>";
+        ss << "<b>Image planes: </b><font color=#c8c8c8>";
         EffectInstance::ComponentsAvailableMap availableComps;
         input->getComponentsAvailable(true, true, time, &availableComps);
         EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
@@ -3160,8 +3160,8 @@ Node::makeInfoForInput(int inputNumber) const
         for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it != availableComps.end(); ++it) {
             NodePtr origin = it->second.lock();
             if ( (origin.get() != this) || (inputNumber == -1) ) {
-                ss << Image::getFormatString(it->first, depth);
                 if (origin) {
+                    ss << Image::getFormatString(it->first, depth);
                     ss << " (from " << origin->getLabel_mt_safe() << ")";
                 }
             }
@@ -3172,7 +3172,7 @@ Node::makeInfoForInput(int inputNumber) const
                 ++next;
             }
         }
-        ss << "<br />";
+        ss << "</font><br />";
     }
     { // premult
         ImagePremultiplicationEnum premult = input->getPremult();
@@ -3188,20 +3188,20 @@ Node::makeInfoForInput(int inputNumber) const
             premultStr = "unpremultiplied";
             break;
         }
-        ss << "<b>Alpha premultiplication: </b>" << premultStr << "<br />";
+        ss << "<b>Alpha premultiplication: </b><font color=#c8c8c8>" << premultStr << "</font><br />";
     }
     { // par
         double par = input->getAspectRatio(-1);
-        ss << "<b>Pixel aspect ratio: </b>" << par << "<br />";
+        ss << "<b>Pixel aspect ratio: </b><font color=#c8c8c8>" << par << "</font><br />";
     }
     { // fps
         double fps = input->getFrameRate();
-        ss << "<b>Frame rate:</b> " << fps << "fps<br />";
+        ss << "<b>Frame rate:</b> <font color=#c8c8c8>" << fps << "fps</font><br />";
     }
     {
         double first = 1., last = 1.;
         input->getFrameRange_public(getHashValue(), &first, &last);
-        ss << "<b>Frame range:</b> " << first << " - " << last << "<br />";
+        ss << "<b>Frame range:</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
     }
     {
         RenderScale scale(1.);
@@ -3211,8 +3211,8 @@ Node::makeInfoForInput(int inputNumber) const
                                                               time,
                                                               scale, ViewIdx(0), &rod, &isProjectFormat);
         if (stat != eStatusFailed) {
-            ss << "<b>Region of Definition (at t=" << time << "):</b> ";
-            ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << "<br />";
+            ss << "<b>Region of Definition (at t=" << time << "):</b> <font color=#c8c8c8>";
+            ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << "</font><br />";
         }
     }
 
@@ -8447,7 +8447,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ssinfo << outputInfo << "<br />";
         std::string cacheInfo = makeCacheInfo();
         ssinfo << cacheInfo << "<br />";
-        ssinfo << "<b>OpenGL Rendering Support:</b>: ";
+        ssinfo << "<b>OpenGL Rendering Support:</b>: <font color=#c8c8c8>";
         PluginOpenGLRenderSupport glSupport = getCurrentOpenGLRenderSupport();
         switch (glSupport) {
             case ePluginOpenGLRenderSupportNone:
@@ -8462,6 +8462,7 @@ Node::onEffectKnobValueChanged(KnobI* what,
             default:
                 break;
         }
+        ssinfo << "</font>";
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
     } else if ( what == _imp->openglRenderingEnabledKnob.lock().get() ) {
         bool enabled = true;
