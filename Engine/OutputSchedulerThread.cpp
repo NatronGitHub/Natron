@@ -2549,7 +2549,7 @@ DefaultScheduler::aboutToStartRender()
     // Activate the internal writer node for a write node
     WriteNode* isWriter = dynamic_cast<WriteNode*>( effect.get() );
     if (isWriter) {
-        isWriter->renderSequenceStarted();
+        isWriter->onSequenceRenderStarted();
     }
 
     std::string cb = effect->getNode()->getBeforeRenderCallback();
@@ -2616,12 +2616,6 @@ DefaultScheduler::onRenderStopped(bool aborted)
     }
 
     effect->notifyRenderFinished();
-
-    // Deactivate the internal writer node for a write node
-    WriteNode* isWriter = dynamic_cast<WriteNode*>( effect.get() );
-    if (isWriter) {
-        isWriter->renderSequenceEnd();
-    }
 
     std::string cb = effect->getNode()->getAfterRenderCallback();
     if ( !cb.empty() ) {

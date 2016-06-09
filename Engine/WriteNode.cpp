@@ -47,6 +47,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
@@ -902,6 +903,11 @@ void
 WriteNode::onEffectCreated(bool mayCreateFileDialog,
                            const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues)
 {
+
+    boost::shared_ptr<RenderEngine> engine = getRenderEngine();
+    assert(engine);
+    QObject::connect(engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinished()));
+
     if ( !_imp->renderButtonKnob.lock() ) {
         _imp->renderButtonKnob = boost::dynamic_pointer_cast<KnobButton>( getKnobByName("startRender") );
         assert( _imp->renderButtonKnob.lock() );
@@ -1011,6 +1017,8 @@ WriteNode::knobChanged(KnobI* k,
     } else if ( k == _imp->readBackKnob.lock().get() ) {
         clearPersistentMessage(false);
         bool readFile = _imp->readBackKnob.lock()->getValue();
+        boost::shared_ptr<KnobButton> button = _imp->renderButtonKnob.lock();
+        button->setAllDimensionsEnabled(!readFile);
         if (readFile) {
             boost::shared_ptr<KnobOutputFile> fileKnob = _imp->outputFileKnob.lock();
             assert(fileKnob);
@@ -1063,8 +1071,9 @@ WriteNode::getFrameRange(double *first,
     }
 }
 
+
 void
-WriteNode::renderSequenceStarted()
+WriteNode::onSequenceRenderStarted()
 {
     NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
 
@@ -1080,7 +1089,7 @@ WriteNode::renderSequenceStarted()
 }
 
 void
-WriteNode::renderSequenceEnd()
+WriteNode::onSequenceRenderFinished()
 {
     NodePtr writerNodePlugin = _imp->embeddedPlugin.lock();
 
