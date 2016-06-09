@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxHost.h"
@@ -159,6 +160,8 @@ public:
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobWPtr> invalidExprKnobs;
 
+    ProjectBeingLoadedInfo projectBeingLoaded;
+
     AppInstancePrivate(int appID,
                        AppInstance* app)
 
@@ -175,6 +178,7 @@ public:
         , activeRenders()
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
+        , projectBeingLoaded()
     {
     }
 
@@ -202,6 +206,20 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance()
 {
     _imp->_currentProject->clearNodes(false);
+}
+
+const ProjectBeingLoadedInfo&
+AppInstance::getProjectBeingLoadedInfo() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->projectBeingLoaded;
+}
+
+void
+AppInstance::setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->projectBeingLoaded = info;
 }
 
 const std::list<NodePtr>&

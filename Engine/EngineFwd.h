@@ -192,6 +192,7 @@ class PrecompNode;
 class ProcessHandler;
 class ProcessInputChannel;
 class Project;
+struct ProjectBeingLoadedInfo;
 class ProjectSerialization;
 class RectD;
 class RectI;

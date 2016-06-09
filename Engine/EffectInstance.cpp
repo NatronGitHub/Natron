@@ -1531,7 +1531,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 } // convertRAMImageToOpenGLTexture
 
 void
-EffectInstance::getImageFromCacheAndConvertIfNeeded(bool useCache,
+EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     StorageModeEnum storage,
                                                     StorageModeEnum returnStorage,
                                                     const ImageKey & key,

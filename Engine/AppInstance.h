@@ -465,6 +465,9 @@ public:
     void removeRenderFromQueue(OutputEffectInstance* writer);
     virtual void reloadScriptEditorFonts() {}
 
+    const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
+    void setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info);
+
 public Q_SLOTS:
 
     void quit();

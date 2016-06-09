@@ -314,7 +314,6 @@ Project::loadProjectInternal(const QString & path,
             iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
             ProjectSerialization projectSerializationObj( getApp() );
             iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-
             ret = load(projectSerializationObj, name, path, mustSave);
         } // __raii_loadingProjectInternal__
 
@@ -322,6 +321,13 @@ Project::loadProjectInternal(const QString & path,
             getApp()->loadProjectGui(iArchive);
         }
     } catch (...) {
+        const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+        if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
+            QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(NATRON_VERSION_MAJOR).arg(NATRON_VERSION_MINOR).arg(NATRON_VERSION_REVISION).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+            throw std::runtime_error(message.toStdString());
+        }
         throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
     }
 
