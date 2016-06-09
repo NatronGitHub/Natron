@@ -423,14 +423,17 @@ ReadNodePrivate::createDefaultReadNode()
     args.fixedName = QString::fromUtf8("defaultReadNodeReader");
     //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
 
+
+    NodePtr node  = _publicInterface->getApp()->createNode(args);
+
+    if (!node) {
+        QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
+        throw std::runtime_error( error.toStdString() );
+    }
+
     {
         QMutexLocker k(&embeddedPluginMutex);
-        embeddedPlugin = _publicInterface->getApp()->createNode(args);
-
-        if (!embeddedPlugin) {
-            QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
-            throw std::runtime_error( error.toStdString() );
-        }
+        embeddedPlugin = node;
     }
 
     //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
