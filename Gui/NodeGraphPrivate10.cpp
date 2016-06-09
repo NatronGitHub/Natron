@@ -124,9 +124,11 @@ NodeGraphPrivate::pasteNodesInternal(const NodeClipBoard & clipboard,
         }
 
 
-        if (clipboard.nodes.size() > 1) {
+        if (newNodesList.size() > 1) {
             ///Only compute datas if we're pasting more than 1 node
             _publicInterface->getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
+        } else if (newNodesList.size() == 1) {
+            newNodesList.front()->getNode()->getEffectInstance()->refreshMetaDatas_public(true);
         }
 
         if (useUndoCommand) {
