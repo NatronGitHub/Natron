@@ -353,6 +353,19 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(resetTrack);
     _imp->ui->resetTrackButton = resetTrack;
 
+    boost::shared_ptr<KnobInt> magWindow = AppManager::createKnob<KnobInt>( this, tr(kTrackerUIParamMagWindowSizeLabel) );
+    magWindow->setInViewerContextLabel(tr(kTrackerUIParamMagWindowSizeLabel));
+    magWindow->setName(kTrackerUIParamMagWindowSize);
+    magWindow->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
+    magWindow->setEvaluateOnChange(false);
+    magWindow->setSecretByDefault(true);
+    magWindow->setDefaultValue(200);
+    magWindow->setMinimum(10);
+    magWindow->setMaximum(10000);
+    addOverlaySlaveParam(magWindow);
+    trackingPage->addKnob(magWindow);
+    _imp->ui->magWindowPxSizeKnob = magWindow;
+
 
     addKnobToViewerUI(addMarker);
     addMarker->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
@@ -390,7 +403,8 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(resetOffset);
     resetOffset->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(resetTrack);
-
+    resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(magWindow);
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );
@@ -658,6 +672,13 @@ TrackerNode::onKnobsLoaded()
 
     ctx->setUpdateViewer( _imp->ui->updateViewerButton.lock()->getValue() );
     ctx->setCenterOnTrack( _imp->ui->centerViewerButton.lock()->getValue() );
+}
+
+void
+TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
+{
+    NodeGroup::evaluate(isSignificant, refreshMetadatas);
+    _imp->ui->refreshSelectedMarkerTexture();
 }
 
 void
@@ -2048,8 +2069,11 @@ TrackerNode::onOverlayPenMotion(double time,
         case eMouseStateDraggingSelectedMarkerResizeAnchor: {
             QPointF lastPosWidget = overlay->toWidgetCoordinates(_imp->ui->lastMousePos);
             double dx = viewportPos.x() - lastPosWidget.x();
-            _imp->ui->selectedMarkerWidth += dx;
-            _imp->ui->selectedMarkerWidth = std::max(_imp->ui->selectedMarkerWidth, 10);
+            boost::shared_ptr<KnobInt> knob = _imp->ui->magWindowPxSizeKnob.lock();
+            int value = knob->getValue();
+            value += dx;
+            value = std::max(value, 10);
+            knob->setValue(value);
             didSomething = true;
             break;
         }

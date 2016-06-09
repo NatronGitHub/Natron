@@ -89,7 +89,6 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     , selectedMarkerTextureRoI()
     , selectedMarker()
     , pboID(0)
-    , selectedMarkerWidth(SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX)
     , imageGetterWatcher()
     , showMarkerTexture(false)
     , selectedMarkerScale()
@@ -546,6 +545,7 @@ void
 TrackerNodeInteract::computeSelectedMarkerCanonicalRect(RectD* rect) const
 {
     assert(selectedMarkerTexture);
+    int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
     computeTextureCanonicalRect(*selectedMarkerTexture, 0, selectedMarkerWidth, rect);
 }
 
@@ -667,6 +667,8 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     boost::shared_ptr<KnobDouble> searchWndBtmLeft = marker->getSearchWindowBottomLeftKnob();
     boost::shared_ptr<KnobDouble> searchWndTopRight = marker->getSearchWindowTopRightKnob();
     int fontHeight = overlay->getWidgetFontHeight();
+
+    int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
     double xOffsetPixels = selectedMarkerWidth;
     QPointF viewerTopLeftCanonical = overlay->toCanonicalCoordinates( QPointF(0, 0.) );
 

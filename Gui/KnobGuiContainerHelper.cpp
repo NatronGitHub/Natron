@@ -198,6 +198,10 @@ KnobGuiContainerHelper::setCurrentPage(const KnobPageGuiPtr& curPage)
 KnobPageGuiPtr
 KnobGuiContainerHelper::getOrCreatePage(const boost::shared_ptr<KnobPage>& page)
 {
+
+    if (!page || page->getIsToolBar()) {
+        return KnobPageGuiPtr();
+    }
     if ( !isPagingEnabled() && (_imp->pages.size() > 0) ) {
         return _imp->pages.begin()->second;
     }
@@ -441,7 +445,9 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         boost::shared_ptr<KnobPage> isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
         if (isPage) {
-            pages.push_back(isPage);
+            if (!isPage->getIsToolBar()) {
+                pages.push_back(isPage);
+            }
         } else {
             regularKnobs.push_back(knobs[i]);
         }
@@ -636,8 +642,9 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
         assert(isTopLevelParentAPage);
 
         KnobPageGuiPtr page = getOrCreatePage(isTopLevelParentAPage);
-        assert(page);
-
+        if (!page) {
+            return ret;
+        }
         ///retrieve the form layout
         QGridLayout* layout = page->gridLayout;
 

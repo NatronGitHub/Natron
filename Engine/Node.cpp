@@ -3168,7 +3168,9 @@ Node::makeInfoForInput(int inputNumber) const
             if ( (origin.get() != this) || (inputNumber == -1) ) {
                 if (origin) {
                     ss << Image::getFormatString(it->first, depth);
-                    ss << " (from " << origin->getLabel_mt_safe() << ")";
+                    if (inputNumber != -1) {
+                        ss << " (from " << origin->getLabel_mt_safe() << ")";
+                    }
                 }
             }
             if ( next != availableComps.end() ) {

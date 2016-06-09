@@ -1730,6 +1730,14 @@ protected:
      **/
     virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
 
+
+    /**
+    * @brief Must be implemented to evaluate a value change
+    * made to a knob(e.g: force a new render).
+    * @param knob[in] The knob whose value changed.
+    **/
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
 private:
 
     EffectInstPtr getOrCreateRenderInstance();
@@ -1764,12 +1772,6 @@ private:
     virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& /*data*/) { return eStatusReplyDefault; }
 
 
-    /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
-     **/
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
 
     void getComponentsAvailableRecursive(bool useLayerChoice,
                                          bool useThisNodeComponentsNeeded,

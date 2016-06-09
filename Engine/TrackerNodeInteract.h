@@ -50,8 +50,6 @@
 //Controls how many center keyframes should be displayed before and after the time displayed
 #define MAX_CENTER_POINTS_DISPLAYED 50
 
-#define SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX 200
-
 #define SELECTED_MARKER_KEYFRAME_WIDTH_SCREEN_PX 75
 #define MAX_TRACK_KEYS_TO_DISPLAY 10
 
@@ -140,6 +138,10 @@
 #define kTrackerUIParamResetTrack "resetTrack"
 #define kTrackerUIParamResetTrackLabel "Reset Track"
 #define kTrackerUIParamResetTrackHint "Reset pattern, search window and track animation for the selected tracks"
+
+#define kTrackerUIParamMagWindowSize "magWindowSize"
+#define kTrackerUIParamMagWindowSizeLabel "Mag. Window Size"
+#define kTrackerUIParamMagWindowSizeHint "The size of the selected track magnification winow in pixels"
 
 // Right click menu
 #define kTrackerUIParamRightClickMenu kNatronOfxParamRightClickMenu
@@ -329,6 +331,7 @@ public:
     boost::weak_ptr<KnobButton> resetOffsetButton;
     boost::weak_ptr<KnobButton> resetTrackButton;
     boost::weak_ptr<KnobButton> showCorrelationButton;
+    boost::weak_ptr<KnobInt> magWindowPxSizeKnob;
 
 
     // Track range dialog
@@ -368,7 +371,6 @@ public:
     //If theres a single selection, this points to it
     boost::weak_ptr<TrackMarker> selectedMarker;
     GLuint pboID;
-    int selectedMarkerWidth;
     TrackWatcherPtr imageGetterWatcher;
     bool showMarkerTexture;
     RenderScale selectedMarkerScale;
