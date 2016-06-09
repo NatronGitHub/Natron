@@ -193,6 +193,7 @@ struct ReadNodePrivate
 
 public:
     ReadNode* _publicInterface;
+    QMutex embeddedPluginMutex;
     NodePtr embeddedPlugin;
     std::list<boost::shared_ptr<KnobSerialization> > genericKnobsSerialization;
     boost::weak_ptr<KnobFile> inputFileKnob;
@@ -210,6 +211,7 @@ public:
 
     ReadNodePrivate(ReadNode* publicInterface)
         : _publicInterface(publicInterface)
+        , embeddedPluginMutex()
         , embeddedPlugin()
         , genericKnobsSerialization()
         , inputFileKnob()
@@ -286,12 +288,14 @@ ReadNode::~ReadNode()
 NodePtr
 ReadNode::getEmbeddedReader() const
 {
+    QMutexLocker k(&_imp->embeddedPluginMutex);
     return _imp->embeddedPlugin;
 }
 
 void
 ReadNode::setEmbeddedReader(const NodePtr& node)
 {
+    QMutexLocker k(&_imp->embeddedPluginMutex);
     _imp->embeddedPlugin = node;
 }
 
@@ -404,6 +408,7 @@ ReadNodePrivate::destroyReadNode()
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
 
+    QMutexLocker k(&embeddedPluginMutex);
     embeddedPlugin.reset();
 } // ReadNodePrivate::destroyReadNode
 
@@ -417,13 +422,16 @@ ReadNodePrivate::createDefaultReadNode()
     args.ioContainer = _publicInterface->getNode();
     args.fixedName = QString::fromUtf8("defaultReadNodeReader");
     //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
-    embeddedPlugin = _publicInterface->getApp()->createNode(args);
 
-    if (!embeddedPlugin) {
-        QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
-        throw std::runtime_error( error.toStdString() );
+    {
+        QMutexLocker k(&embeddedPluginMutex);
+        embeddedPlugin = _publicInterface->getApp()->createNode(args);
+
+        if (!embeddedPlugin) {
+            QString error = tr("The IO.ofx.bundle OpenFX plug-in is required to use this node, make sure it is installed.");
+            throw std::runtime_error( error.toStdString() );
+        }
     }
-
 
     //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
     _publicInterface->getNode()->declarePythonFields();
@@ -447,7 +455,8 @@ ReadNodePrivate::checkDecoderCreated(double time,
 
         return false;
     }
-    if (!embeddedPlugin) {
+
+    if (!_publicInterface->getEmbeddedReader()) {
         QString s = tr("Decoder was not created for %1, check that the file exists and its format is supported.").arg( QString::fromUtf8( pattern.c_str() ) );
         _publicInterface->setPersistentMessage( eMessageTypeError, s.toStdString() );
 
@@ -523,6 +532,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     }
 
 
+    NodePtr node;
     //Find the appropriate reader
     if (readerPluginID.empty() && !serialization) {
         //Couldn't find any reader
@@ -558,7 +568,14 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             Node::getOriginalFrameRangeForReader(readerPluginID, canonicalFilename, &firstFrame, &lastFrame);
             args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
         }
-        embeddedPlugin = _publicInterface->getApp()->createNode(args);
+
+
+        node = _publicInterface->getApp()->createNode(args);
+        {
+            QMutexLocker k(&embeddedPluginMutex);
+            embeddedPlugin = node;
+        }
+
         if (pluginIDKnob) {
             pluginIDKnob->setValue(readerPluginID);
         }
@@ -569,9 +586,12 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
         _publicInterface->getNode()->declarePythonFields();
     }
-    if (!embeddedPlugin) {
+
+
+    if (!node) {
         defaultFallback = true;
     }
+
 
     if (defaultFallback) {
         createDefaultReadNode();
@@ -592,7 +612,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
 
-    KnobPtr knob = embeddedPlugin ? embeddedPlugin->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         inputFileKnob = boost::dynamic_pointer_cast<KnobFile>(knob);
     }
@@ -686,37 +706,43 @@ ReadNode::isOutput() const
 bool
 ReadNode::isMultiPlanar() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->isMultiPlanar() : EffectInstance::isMultiPlanar();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->isMultiPlanar() : EffectInstance::isMultiPlanar();
 }
 
 bool
 ReadNode::isViewAware() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->isViewAware() : EffectInstance::isViewAware();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->isViewAware() : EffectInstance::isViewAware();
 }
 
 bool
 ReadNode::supportsTiles() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->supportsTiles() : EffectInstance::supportsTiles();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->supportsTiles() : EffectInstance::supportsTiles();
 }
 
 bool
 ReadNode::supportsMultiResolution() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->supportsMultiResolution() : EffectInstance::supportsMultiResolution();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->supportsMultiResolution() : EffectInstance::supportsMultiResolution();
 }
 
 bool
 ReadNode::supportsMultipleClipsBitDepth() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->supportsMultipleClipsBitDepth() : EffectInstance::supportsMultipleClipsBitDepth();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->supportsMultipleClipsBitDepth() : EffectInstance::supportsMultipleClipsBitDepth();
 }
 
 RenderSafetyEnum
 ReadNode::renderThreadSafety() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->renderThreadSafety() : eRenderSafetyFullySafe;
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->renderThreadSafety() : eRenderSafetyFullySafe;
 }
 
 bool
@@ -728,19 +754,22 @@ ReadNode::getCanTransform() const
 SequentialPreferenceEnum
 ReadNode::getSequentialPreference() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->getSequentialPreference() : EffectInstance::getSequentialPreference();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->getSequentialPreference() : EffectInstance::getSequentialPreference();
 }
 
 EffectInstance::ViewInvarianceLevel
 ReadNode::isViewInvariant() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->isViewInvariant() : EffectInstance::isViewInvariant();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->isViewInvariant() : EffectInstance::isViewInvariant();
 }
 
 EffectInstance::PassThroughEnum
 ReadNode::isPassThroughForNonRenderedPlanes() const
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->isPassThroughForNonRenderedPlanes() : EffectInstance::isPassThroughForNonRenderedPlanes();
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->isPassThroughForNonRenderedPlanes() : EffectInstance::isPassThroughForNonRenderedPlanes();
 }
 
 bool
@@ -815,8 +844,9 @@ void
 ReadNode::addAcceptedComponents(int inputNb,
                                 std::list<ImageComponents>* comps)
 {
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->addAcceptedComponents(inputNb, comps);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->addAcceptedComponents(inputNb, comps);
     } else {
         comps->push_back( ImageComponents::getRGBAComponents() );
     }
@@ -825,8 +855,9 @@ ReadNode::addAcceptedComponents(int inputNb,
 void
 ReadNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 {
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->addSupportedBitDepth(depths);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->addSupportedBitDepth(depths);
     } else {
         depths->push_back(eImageBitDepthFloat);
     }
@@ -835,30 +866,34 @@ ReadNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 ReadNode::onInputChanged(int inputNo)
 {
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->onInputChanged(inputNo);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->onInputChanged(inputNo);
     }
 }
 
 void
 ReadNode::purgeCaches()
 {
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->purgeCaches();
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->purgeCaches();
     }
 }
 
 StatusEnum
 ReadNode::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    return _imp->embeddedPlugin ? _imp->embeddedPlugin->getEffectInstance()->getPreferredMetaDatas(metadata) : EffectInstance::getPreferredMetaDatas(metadata);
+    NodePtr p = getEmbeddedReader();
+    return p ? p->getEffectInstance()->getPreferredMetaDatas(metadata) : EffectInstance::getPreferredMetaDatas(metadata);
 }
 
 void
 ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
 {
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->onMetaDatasRefreshed(metadata);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->onMetaDatasRefreshed(metadata);
     }
 }
 
@@ -906,7 +941,8 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
                           const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues)
 {
     //If we already loaded the Reader, do not do anything
-    if (_imp->embeddedPlugin) {
+    NodePtr p = getEmbeddedReader();
+    if (p) {
         return;
     }
     bool throwErrors = false;
@@ -957,9 +993,16 @@ ReadNode::knobChanged(KnobI* k,
     bool ret =  true;
 
     if ( ( k == _imp->inputFileKnob.lock().get() ) && (reason != eValueChangedReasonTimeChanged) ) {
+
+        NodePtr hasMaster = getNode()->getMasterNode();
+        if (hasMaster) {
+            // Unslave all knobs since we are going to remove some and recreate others
+            unslaveAllKnobs();
+        }
         if (_imp->creatingReadNode) {
-            if (_imp->embeddedPlugin) {
-                _imp->embeddedPlugin->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
+            NodePtr p = getEmbeddedReader();
+            if (p) {
+                p->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
             }
 
             return false;
@@ -977,6 +1020,9 @@ ReadNode::knobChanged(KnobI* k,
             _imp->createReadNode( false, filename, boost::shared_ptr<NodeSerialization>() );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
+        }
+        if (hasMaster) {
+            slaveAllKnobs(hasMaster->getEffectInstance().get(), false);
         }
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
@@ -997,12 +1043,13 @@ ReadNode::knobChanged(KnobI* k,
             setPersistentMessage( eMessageTypeError, e.what() );
         }
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
-        if (!_imp->embeddedPlugin) {
+        NodePtr p = getEmbeddedReader();
+        if (!p) {
             return false;
         }
 
 
-        KnobPtr hasMetaDatasKnob = _imp->embeddedPlugin->getKnobByName("showMetadata");
+        KnobPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
         if (hasMetaDatasKnob) {
             KnobButton* showMetasKnob = dynamic_cast<KnobButton*>( hasMetaDatasKnob.get() );
             if (showMetasKnob) {
@@ -1010,7 +1057,7 @@ ReadNode::knobChanged(KnobI* k,
             }
         } else {
             QString ffprobePath = ReadNodePrivate::getFFProbeBinaryPath();
-            if ( (_imp->embeddedPlugin->getPluginID() == PLUGINID_OFX_READFFMPEG) && QFile::exists(ffprobePath) ) {
+            if ( (p->getPluginID() == PLUGINID_OFX_READFFMPEG) && QFile::exists(ffprobePath) ) {
                 QProcess proc;
                 QStringList ffprobeArgs;
                 ffprobeArgs << QString::fromUtf8("-show_streams");
@@ -1029,8 +1076,10 @@ ReadNode::knobChanged(KnobI* k,
     } else {
         ret = false;
     }
-    if (!ret && _imp->embeddedPlugin) {
-        ret |= _imp->embeddedPlugin->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
+
+    NodePtr p = getEmbeddedReader();
+    if (!ret && p) {
+        ret |= p->getEffectInstance()->knobChanged(k, reason, view, time, originatedFromMainThread);
     }
 
     return ret;
@@ -1046,8 +1095,9 @@ ReadNode::getRegionOfDefinition(U64 hash,
     if ( !_imp->checkDecoderCreated(time, view) ) {
         return eStatusFailed;
     }
-    if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->getRegionOfDefinition(hash, time, scale, view, rod);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        return p->getEffectInstance()->getRegionOfDefinition(hash, time, scale, view, rod);
     } else {
         return eStatusFailed;
     }
@@ -1057,8 +1107,9 @@ void
 ReadNode::getFrameRange(double *first,
                         double *last)
 {
-    if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->getFrameRange(first, last);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        return p->getEffectInstance()->getFrameRange(first, last);
     } else {
         *first = *last = 1;
     }
@@ -1072,8 +1123,9 @@ ReadNode::getComponentsNeededAndProduced(double time,
                                          int* passThroughView,
                                          NodePtr* passThroughInput)
 {
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
     }
 }
 
@@ -1090,8 +1142,9 @@ ReadNode::beginSequenceRender(double first,
                               bool isOpenGLRender,
                               const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
-    if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
     } else {
         return eStatusFailed;
     }
@@ -1110,8 +1163,9 @@ ReadNode::endSequenceRender(double first,
                             bool isOpenGLRender,
                             const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
-    if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
     } else {
         return eStatusFailed;
     }
@@ -1124,8 +1178,9 @@ ReadNode::render(const RenderActionArgs& args)
         return eStatusFailed;
     }
 
-    if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->render(args);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        return p->getEffectInstance()->render(args);
     } else {
         return eStatusFailed;
     }
@@ -1139,8 +1194,9 @@ ReadNode::getRegionsOfInterest(double time,
                                ViewIdx view,
                                RoIMap* ret)
 {
-    if (_imp->embeddedPlugin) {
-        _imp->embeddedPlugin->getEffectInstance()->getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, ret);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, ret);
     }
 }
 
@@ -1148,8 +1204,9 @@ FramesNeededMap
 ReadNode::getFramesNeeded(double time,
                           ViewIdx view)
 {
-    if (_imp->embeddedPlugin) {
-        return _imp->embeddedPlugin->getEffectInstance()->getFramesNeeded(time, view);
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        return p->getEffectInstance()->getFramesNeeded(time, view);
     } else {
         return FramesNeededMap();
     }

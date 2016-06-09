@@ -6142,8 +6142,6 @@ void
 Node::destroyNodeInternal(bool fromDest,
                           bool autoReconnect)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-
     if (!_imp->effect) {
         return;
     }
@@ -7108,13 +7106,13 @@ Node::onAllKnobsSlaved(bool isSlave,
             }
             QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
             QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
-            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
+            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         }
     } else {
         NodePtr master = getMasterNode();
         QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
         QObject::disconnect( master.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
-        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
+        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         {
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode.reset();

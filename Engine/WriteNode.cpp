@@ -967,6 +967,11 @@ WriteNode::knobChanged(KnobI* k,
 
             return false;
         }
+
+        NodePtr hasMaster = getNode()->getMasterNode();
+        if (hasMaster) {
+            unslaveAllKnobs();
+        }
         try {
             _imp->refreshPluginSelectorKnob();
         } catch (const std::exception& e) {
@@ -981,6 +986,9 @@ WriteNode::knobChanged(KnobI* k,
             _imp->createWriteNode( false, filename, boost::shared_ptr<NodeSerialization>() );
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
+        }
+        if (hasMaster) {
+            slaveAllKnobs(hasMaster->getEffectInstance().get(), false);
         }
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();

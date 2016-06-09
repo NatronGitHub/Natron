@@ -5411,7 +5411,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->checkAnimationLevel(it->view, dimension);
         }
 
-        if ( !it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked() ) {
+        if ( !it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked() && firstKnobReason != eValueChangedReasonTimeChanged) {
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }
