@@ -1544,7 +1544,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
             internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
-            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel].lock() ) {
+            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] ) {
                 Q_EMIT imageChanged(textureIndex, false);
             } else {
                 Q_EMIT imageChanged(textureIndex, true);
@@ -4047,7 +4047,7 @@ ViewerGL::getLastRenderedImage(int textureIndex) const
     }
     QMutexLocker l(&_imp->lastRenderedImageMutex);
     for (U32 i = 0; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
-        ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
+        ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
         if (mipmap) {
             return mipmap;
         }
@@ -4070,7 +4070,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     QMutexLocker l(&_imp->lastRenderedImageMutex);
     assert(_imp->displayTextures[textureIndex].lastRenderedTiles.size() > mipMapLevel);
 
-    ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel].lock();
+    ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel];
     if (mipmap) {
         return mipmap;
     }
@@ -4078,7 +4078,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
     //Find an image at higher scale
     if (mipMapLevel > 0) {
         for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
-            mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
+            mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
             if (mipmap) {
                 return mipmap;
             }
@@ -4087,7 +4087,7 @@ ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
 
     //Find an image at lower scale
     for (U32 i = mipMapLevel + 1; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
-        mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i].lock();
+        mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
         if (mipmap) {
             return mipmap;
         }
