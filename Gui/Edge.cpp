@@ -224,6 +224,12 @@ Edge::setAngle(double a)
 }
 
 void
+Edge::setLabel(const QString &label)
+{
+    _imp->label->setText(label);
+}
+
+void
 Edge::turnOnRenderingColor()
 {
     _imp->useRenderingColor = true;

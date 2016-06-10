@@ -390,6 +390,8 @@ public:
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
 
+    void setInputLabel(int inputNb, const std::string& label);
+
     int getInputNumberFromLabel(const std::string& inputLabel) const;
 
     bool isInputConnected(int inputNb) const;
@@ -1384,6 +1386,8 @@ Q_SIGNALS:
 
     void inputsInitialized();
 
+    void inputLabelChanged(int, QString);
+
     void knobsInitialized();
 
     /*
@@ -1404,7 +1408,7 @@ Q_SIGNALS:
 
     void labelChanged(QString);
     void scriptNameChanged(QString);
-    void inputLabelChanged(int, QString);
+    void inputEdgeLabelChanged(int, QString);
 
     void refreshEdgesGUI();
 

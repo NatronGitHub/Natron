@@ -424,6 +424,8 @@ protected:
 
 public Q_SLOTS:
 
+    void onInputLabelChanged(int inputNb,const QString& label);
+
     void onRightClickActionTriggered();
 
     void onRightClickMenuKnobPopulated();

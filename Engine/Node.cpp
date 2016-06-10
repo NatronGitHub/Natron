@@ -4861,6 +4861,29 @@ Node::getInputLabel(int inputNb) const
     return _imp->inputLabels[inputNb];
 }
 
+void
+Node::setInputLabel(int inputNb, const std::string& label)
+{
+    {
+        QMutexLocker l(&_imp->inputsLabelsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputLabels.size() ) ) {
+            throw std::invalid_argument("Index out of range");
+        }
+        _imp->inputLabels[inputNb] = label;
+    }
+    std::map<int, MaskSelector>::iterator foundMask = _imp->maskSelectors.find(inputNb);
+    if (foundMask != _imp->maskSelectors.end()) {
+        foundMask->second.channel.lock()->setLabel(label);
+    }
+
+    std::map<int, ChannelSelector>::iterator foundChannel = _imp->channelsSelectors.find(inputNb);
+    if (foundChannel != _imp->channelsSelectors.end()) {
+        foundChannel->second.layer.lock()->setLabel(label + std::string(" Layer"));
+    }
+
+    Q_EMIT inputEdgeLabelChanged(inputNb, QString::fromUtf8(label.c_str()));
+}
+
 int
 Node::getInputNumberFromLabel(const std::string& inputLabel) const
 {
