@@ -545,6 +545,14 @@ OfxPushButtonInstance::setEnabled()
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
+void
+OfxPushButtonInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+
 // callback which should set secret state as appropriate
 void
 OfxPushButtonInstance::setSecret()
