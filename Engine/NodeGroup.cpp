@@ -1571,16 +1571,21 @@ escapeString(const std::string& str)
 
 #define ESC(s) escapeString(s)
 
+
+/* *INDENT-OFF* */
+
 #define WRITE_STATIC_LINE(line) ts << line "\n"
-        #define WRITE_INDENT(x) \
+#define WRITE_INDENT(x)                                 \
     for (int _i = 0; _i < x; ++_i) { ts << "    "; }
-        #define WRITE_STRING(str) ts << str << "\n"
+#define WRITE_STRING(str) ts << str << "\n"
 //#define NUM(n) QString::number(n)
 #define NUM_INT(n) QString::number(n, 10)
 #define NUM_COLOR(n) QString::number(n, 'g', 4)
 #define NUM_PIXEL(n) QString::number(n, 'f', 0)
 #define NUM_VALUE(n) QString::number(n, 'g', 16)
 #define NUM_TIME(n) QString::number(n, 'g', 16)
+
+/* *INDENT-ON* */
 
 static bool
 exportKnobValues(int indentLevel,
