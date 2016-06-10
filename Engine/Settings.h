@@ -360,6 +360,8 @@ public:
 
     int getMaxOpenGLContexts() const;
 
+    bool isDriveLetterToUNCPathConversionEnabled() const;
+
 Q_SIGNALS:
 
     void settingChanged(KnobI* knob);
@@ -440,6 +442,7 @@ private:
     boost::shared_ptr<KnobBool> _firstReadSetProjectFormat;
     boost::shared_ptr<KnobBool> _autoPreviewEnabledForNewProjects;
     boost::shared_ptr<KnobBool> _fixPathsOnProjectPathChanged;
+    boost::shared_ptr<KnobBool> _enableMappingFromDriveLettersToUNCShareNames;
 
     // General/Documentation
     boost::shared_ptr<KnobPage> _documentationPage;
