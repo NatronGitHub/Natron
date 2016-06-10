@@ -607,8 +607,9 @@ AppManager::loadInternal(const CLArgs& cl)
                      << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
                 ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
         }
-        _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
     }
+    _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
+
 
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();

@@ -403,9 +403,13 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
 {
     if ( renderers.empty() ) {
         _availableOpenGLRenderers->setSecret(true);
-
+        _nOpenGLContexts->setSecret(true);
+        _enableOpenGL->setSecret(true);
         return;
     }
+
+    _nOpenGLContexts->setSecret(false);
+    _enableOpenGL->setSecret(false);
 
     std::vector<std::string> entries( renderers.size() );
     int i = 0;
@@ -420,6 +424,9 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
 bool
 Settings::isOpenGLRenderingEnabled() const
 {
+    if (_enableOpenGL->getIsSecret()) {
+        return false;
+    }
     int index = _enableOpenGL->getValue();
     return index == 0 || (index == 2 && !appPTR->isBackground());
 }
