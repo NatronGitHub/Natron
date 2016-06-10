@@ -1820,10 +1820,14 @@ void
 AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
 {
     RenderQueueItem nextWork;
+
+    // Do not make the process die under the mutex otherwise we may deadlock
+    boost::shared_ptr<ProcessHandler> processDying;
     {
         QMutexLocker k(&_imp->renderQueueMutex);
         for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ++it) {
             if (it->work.writer == finishedWriter) {
+                processDying = it->process;
                 _imp->activeRenders.erase(it);
                 break;
             }
@@ -1835,6 +1839,7 @@ AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
             return;
         }
     }
+    processDying.reset();
 
     _imp->startRenderingFullSequence(false, nextWork);
 }

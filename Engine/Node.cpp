@@ -10278,7 +10278,9 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
 {
     std::vector<std::string> args;
     std::string error;
-
+    if (!_publicInterface->isPartOfProject()) {
+        return;
+    }
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
@@ -10408,6 +10410,10 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 void
 Node::Implementation::runOnNodeDeleteCB()
 {
+
+    if (!_publicInterface->isPartOfProject()) {
+        return;
+    }
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeDeleteCB();
     boost::shared_ptr<NodeCollection> group = _publicInterface->getGroup();
 

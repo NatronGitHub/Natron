@@ -78,6 +78,8 @@ PreviewThread::PreviewThread()
 
 PreviewThread::~PreviewThread()
 {
+    quitThread(false);
+    waitForThreadToQuit_enforce_blocking();
 }
 
 void
