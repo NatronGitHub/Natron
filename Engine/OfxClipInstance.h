@@ -69,6 +69,15 @@ public:
 
     virtual ~OfxClipInstance();
 
+    // callback which should update label
+    void setLabel() OVERRIDE FINAL;
+
+    // callback which should set secret state as appropriate
+    void setSecret() OVERRIDE FINAL;
+
+    // callback which should update hint
+    void setHint() OVERRIDE FINAL;
+
     bool getIsOptional() const;
     bool getIsMask() const;
 

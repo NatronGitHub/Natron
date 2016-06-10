@@ -102,6 +102,28 @@ OfxClipInstance::~OfxClipInstance()
 {
 }
 
+// callback which should update label
+void
+OfxClipInstance::setLabel()
+{
+#pragma message WARN("TODO: OfxClipInstance::setLabel()")
+    qDebug() << "OfxClipInstance::setLabel" << getLabel().c_str();
+}
+
+// callback which should set secret state as appropriate
+void OfxClipInstance::setSecret()
+{
+#pragma message WARN("TODO: OfxClipInstance::setSecret()")
+    qDebug() << "OfxClipInstance::setSecret" << isSecret();
+}
+
+// callback which should update hint
+void OfxClipInstance::setHint()
+{
+#pragma message WARN("TODO: OfxClipInstance::setHint()")
+    qDebug() << "OfxClipInstance::setHint" << getHint().c_str();
+}
+
 bool
 OfxClipInstance::getIsOptional() const
 {
