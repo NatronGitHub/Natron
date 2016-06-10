@@ -34,6 +34,7 @@
 #include <QtCore/QReadWriteLock>
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
+#include <QtCore/QRegexp>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
@@ -173,75 +174,74 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
         viewsToRender.push_back(mainView);
     }
 
+    KnobPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+    KnobOutputFile* outputFileName = outputFileNameKnob ? dynamic_cast<KnobOutputFile*>( outputFileNameKnob.get() ) : 0;
+    assert(outputFileName);
+    std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
+
     if ( isViewAware() ) {
         //If the Writer is view aware, check if it wants to render all views at once or not
-        KnobPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
-        if (outputFileNameKnob) {
-            KnobOutputFile* outputFileName = dynamic_cast<KnobOutputFile*>( outputFileNameKnob.get() );
-            assert(outputFileName);
-            if (outputFileName) {
-                std::string pattern = outputFileName->getValue();
-                std::size_t foundViewPattern = pattern.find_first_of("%v");
-                if (foundViewPattern == std::string::npos) {
-                    foundViewPattern = pattern.find_first_of("%V");
-                }
-                if (foundViewPattern == std::string::npos) {
-                    ///No view pattern
-                    ///all views will be overwritten to the same file
-                    ///If this is WriteOIIO, check the parameter "viewsSelector" to determine if the user wants to encode all
-                    ///views to a single file or not
-                    KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
-                    bool hasViewChoice = false;
-                    if ( viewsKnob && !viewsKnob->getIsSecret() ) {
-                        KnobChoice* viewsChoice = dynamic_cast<KnobChoice*>( viewsKnob.get() );
-                        if (viewsChoice) {
-                            hasViewChoice = true;
-                            int viewChoice_i = viewsChoice->getValue();
-                            if (viewChoice_i == 0) { // the "All" choice
-                                viewsToRender.clear();
-                                // note: if the plugin renders all views to a single file, then rendering view 0 will do the job.
-                                viewsToRender.push_back( ViewIdx(0) );
-                            } else {
-                                //The user has specified a view
-                                viewsToRender.clear();
-                                assert(viewChoice_i >= 1);
-                                viewsToRender.push_back( ViewIdx(viewChoice_i - 1) );
-                            }
-                        }
-                    }
-                    if (!hasViewChoice) {
-                        if (viewsToRender.size() > 1) {
-                            std::string mainViewName;
-                            const std::vector<std::string>& viewNames = getApp()->getProject()->getProjectViewNames();
-                            if ( mainView < (int)viewNames.size() ) {
-                                mainViewName = viewNames[mainView];
-                            }
-                            QString message = tr("%1 does not support multi-view, only the view %2 will be rendered.")
-                                              .arg( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ) )
-                                              .arg( QString::fromUtf8( mainViewName.c_str() ) );
-                            if (!renderController) {
-                                message.append( QChar::fromLatin1('\n') );
-                                message.append( QString::fromUtf8("You can use the %v or %V indicator in the filename to render to separate files.\n"
-                                                                  "Would you like to continue?") );
-                                StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
-                                if (rep != eStandardButtonOk) {
-                                    return;
-                                }
-                            } else {
-                                Dialogs::warningDialog( tr("Multi-view support").toStdString(), message.toStdString() );
-                            }
-                        }
-                        //Render the main-view only...
+        std::size_t foundViewPattern = pattern.find_first_of("%v");
+        if (foundViewPattern == std::string::npos) {
+            foundViewPattern = pattern.find_first_of("%V");
+        }
+        if (foundViewPattern == std::string::npos) {
+            ///No view pattern
+            ///all views will be overwritten to the same file
+            ///If this is WriteOIIO, check the parameter "viewsSelector" to determine if the user wants to encode all
+            ///views to a single file or not
+            KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+            bool hasViewChoice = false;
+            if ( viewsKnob && !viewsKnob->getIsSecret() ) {
+                KnobChoice* viewsChoice = dynamic_cast<KnobChoice*>( viewsKnob.get() );
+                if (viewsChoice) {
+                    hasViewChoice = true;
+                    int viewChoice_i = viewsChoice->getValue();
+                    if (viewChoice_i == 0) { // the "All" choice
                         viewsToRender.clear();
-                        viewsToRender.push_back(mainView);
+                        // note: if the plugin renders all views to a single file, then rendering view 0 will do the job.
+                        viewsToRender.push_back( ViewIdx(0) );
+                    } else {
+                        //The user has specified a view
+                        viewsToRender.clear();
+                        assert(viewChoice_i >= 1);
+                        viewsToRender.push_back( ViewIdx(viewChoice_i - 1) );
                     }
-                } else {
-                    ///The user wants to write each view into a separate file
-                    ///This will disregard the content of kWriteOIIOParamViewsSelector and the Writer
-                    ///should write one view per-file.
                 }
             }
+            if (!hasViewChoice) {
+                if (viewsToRender.size() > 1) {
+                    std::string mainViewName;
+                    const std::vector<std::string>& viewNames = getApp()->getProject()->getProjectViewNames();
+                    if ( mainView < (int)viewNames.size() ) {
+                        mainViewName = viewNames[mainView];
+                    }
+                    QString message = tr("%1 does not support multi-view, only the view %2 will be rendered.")
+                    .arg( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ) )
+                    .arg( QString::fromUtf8( mainViewName.c_str() ) );
+                    if (!renderController) {
+                        message.append( QChar::fromLatin1('\n') );
+                        message.append( QString::fromUtf8("You can use the %v or %V indicator in the filename to render to separate files.\n"
+                                                          "Would you like to continue?") );
+                        StandardButtonEnum rep = Dialogs::questionDialog(tr("Multi-view support").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                        if (rep != eStandardButtonOk) {
+                            return;
+                        }
+                    } else {
+                        Dialogs::warningDialog( tr("Multi-view support").toStdString(), message.toStdString() );
+                    }
+                }
+                //Render the main-view only...
+                viewsToRender.clear();
+                viewsToRender.push_back(mainView);
+            }
+        } else {
+            ///The user wants to write each view into a separate file
+            ///This will disregard the content of kWriteOIIOParamViewsSelector and the Writer
+            ///should write one view per-file.
         }
+
+
     } else { // !isViewAware
         if (viewsToRender.size() > 1) {
             std::string mainViewName;
@@ -269,7 +269,27 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
         }
     }
 
+    if (first != last && !isVideoWriter()) {
+        // We render a sequence, check that the user wants to render multiple images
+        // Look first for # character
+        std::size_t foundHash = pattern.find_first_of("#");
+        if (foundHash == std::string::npos) {
+            // Look for printf style numbering
+            QRegExp exp(QString::fromUtf8("%[0-9]*d"));
+            QString qp(QString::fromUtf8(pattern.c_str()));
+            if (!qp.contains(exp)) {
+                QString message = tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times, would you like to continue?").arg(first).arg(last);
+                StandardButtonEnum rep = Dialogs::questionDialog(tr("Image Sequence").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                if (rep != eStandardButtonOk) {
+                    // Notify progress that we were aborted
+                    getRenderEngine()->s_renderFinished(1);
 
+                    return;
+                }
+
+            }
+        }
+    }
     RenderSequenceArgs args;
     {
         QMutexLocker k(&_outputEffectDataLock);

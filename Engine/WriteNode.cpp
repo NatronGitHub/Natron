@@ -32,6 +32,19 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
+// /opt/local/include/boost/serialization/smart_cast.hpp:254:25: warning: unused parameter 'u' [-Wunused-parameter]
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+// /usr/local/include/boost/serialization/shared_ptr.hpp:112:5: warning: unused typedef 'boost_static_assert_typedef_112' [-Wunused-local-typedef]
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/version.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
+#endif
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
@@ -332,6 +345,13 @@ WriteNodePrivate::cloneGenericKnobs()
                 } else {
                     (*it2)->clone( serializedKnob.get() );
                 }
+                (*it2)->setSecret( serializedKnob->getIsSecret() );
+                if ( (*it2)->getDimension() == serializedKnob->getDimension() ) {
+                    for (int i = 0; i < (*it2)->getDimension(); ++i) {
+                        (*it2)->setEnabled( i, serializedKnob->isEnabled(i) );
+                    }
+                }
+
                 break;
             }
         }
@@ -347,43 +367,75 @@ WriteNodePrivate::destroyWriteNode()
 
     genericKnobsSerialization.clear();
 
-    for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( !(*it)->isDeclaredByPlugin() ) {
-            continue;
-        }
+    std::string serializationString;
+    try {
+        std::ostringstream ss;
+        boost::archive::xml_oarchive oArchive(ss);
+        std::list<boost::shared_ptr<KnobSerialization> > serialized;
+        for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            if ( !(*it)->isDeclaredByPlugin() ) {
+                continue;
+            }
 
-        //If it is a knob of this WriteNode, ignore it
-        bool isWriteNodeKnob = false;
-        for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
-            if (it2->lock() == *it) {
-                isWriteNodeKnob = true;
-                break;
+            //If it is a knob of this WriteNode, ignore it
+            bool isWriteNodeKnob = false;
+            for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = writeNodeKnobs.begin(); it2 != writeNodeKnobs.end(); ++it2) {
+                if (it2->lock() == *it) {
+                    isWriteNodeKnob = true;
+                    break;
+                }
+            }
+            if (isWriteNodeKnob) {
+                continue;
+            }
+
+            //Keep pages around they will be re-used
+            KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+            if (isPage) {
+                continue;
+            }
+
+            //This is a knob of the Writer plug-in
+
+            //Serialize generic knobs and keep them around until we create a new Writer plug-in
+            bool mustSerializeKnob;
+            bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
+            if (isGeneric && mustSerializeKnob) {
+                boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
+                serialized.push_back(s);
+            }
+            if (!isGeneric) {
+                _publicInterface->deleteKnob(it->get(), false);
             }
         }
-        if (isWriteNodeKnob) {
-            continue;
-        }
 
-        //Keep pages around they will be re-used
-        KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-        if (isPage) {
-            continue;
-        }
+        int n = (int)serialized.size();
+        oArchive << boost::serialization::make_nvp("numItems", n);
+        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = serialized.begin(); it!= serialized.end(); ++it) {
+            oArchive << boost::serialization::make_nvp("item", **it);
 
-        //This is a knob of the Writer plug-in
+        }
+        serializationString = ss.str();
 
-        //Serialize generic knobs and keep them around until we create a new Writer plug-in
-        bool mustSerializeKnob;
-        bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
-        if (isGeneric && mustSerializeKnob) {
-            boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
-            genericKnobsSerialization.push_back(s);
-        }
-        if (!isGeneric) {
-            _publicInterface->deleteKnob(it->get(), false);
-        }
+    } catch (...) {
+        assert(false);
     }
 
+    try {
+        std::stringstream ss(serializationString);
+        boost::archive::xml_iarchive iArchive(ss);
+        int n ;
+        iArchive >> boost::serialization::make_nvp("numItems", n);
+        for (int i = 0; i < n; ++i) {
+            boost::shared_ptr<KnobSerialization> s(new KnobSerialization);
+            iArchive >> boost::serialization::make_nvp("item", *s);
+            genericKnobsSerialization.push_back(s);
+
+        }
+    } catch (...) {
+        assert(false);
+    }
+    
 
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
