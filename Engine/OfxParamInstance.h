@@ -179,6 +179,7 @@ public Q_SLOTS:
      */
     void onEvaluateOnChangeChanged(bool evaluate);
     void onSecretChanged();
+    void onHintTooltipChanged();
     void onEnabledChanged();
     void onLabelChanged();
     void onDisplayMinMaxChanged(double min, double max, int index);
@@ -228,6 +229,8 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
 
+    virtual void setHint() OVERRIDE FINAL;
+
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
@@ -258,7 +261,7 @@ public:
     virtual void setDisplayRange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
@@ -295,7 +298,7 @@ public:
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
@@ -337,7 +340,7 @@ public:
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
 
@@ -378,7 +381,7 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set option as appropriate
     virtual void setOption(int num) OVERRIDE FINAL;
 
@@ -417,7 +420,7 @@ public:
 
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
@@ -462,7 +465,7 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
@@ -504,7 +507,7 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
@@ -545,7 +548,7 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
@@ -588,7 +591,7 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
@@ -630,7 +633,7 @@ public:
 
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
@@ -673,7 +676,7 @@ public:
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
 
@@ -693,7 +696,7 @@ public:
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
@@ -733,7 +736,7 @@ public:
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
 
@@ -791,7 +794,7 @@ public:
     /// see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#ArchitectureStrings
     virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE FINAL;
 
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
 
@@ -843,7 +846,7 @@ public:
     {
         return (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
     }
-
+    virtual void setHint() OVERRIDE FINAL;
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
 
