@@ -1965,12 +1965,19 @@ OfxEffectInstance::render(const RenderActionArgs& args)
             QString err;
             if (stat == kOfxStatErrImageFormat) {
                 err = tr("Bad image format was supplied by %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) );
+                setPersistentMessage( eMessageTypeError, err.toStdString() );
             } else if (stat == kOfxStatErrMemory) {
                 err = tr("Out of memory!");
+                setPersistentMessage( eMessageTypeError, err.toStdString() );
             } else {
-                err = tr("Unknown failure reason.");
+                QString existingMessage;
+                int type;
+                getNode()->getPersistentMessage(&existingMessage, &type);
+                if (existingMessage.isEmpty()) {
+                    err = tr("Unknown failure reason.");
+                }
             }
-            setPersistentMessage( eMessageTypeError, err.toStdString() );
+
         }
 
         return eStatusFailed;
