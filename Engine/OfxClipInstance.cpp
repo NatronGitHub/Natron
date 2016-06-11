@@ -747,7 +747,7 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
     if (time != time) {
         // time is NaN
 
-        return NULL;
+        return false;
     }
 
     if ( isOutput() ) {
