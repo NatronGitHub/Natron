@@ -15,7 +15,13 @@ include(../../libs.pri)
 include(../../config.pri)
 
 CONFIG -= warn_on
-QMAKE_CXXFLAGS += -Wno-macro-redefined
+# disable preprocessor warnings (-Wno-macro-redefined just appeared in recent compilers)
+*g++* {
+  QMAKE_CXXFLAGS += -Wp,-w
+}
+*clang* {
+  QMAKE_CXXFLAGS += -Wp,-w
+}
 
 win32 {
 SOURCES += \

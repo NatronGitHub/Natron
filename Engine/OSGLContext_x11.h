@@ -75,9 +75,7 @@ public:
     void swapInterval(int interval);
 
 private:
-
-
-    friend class OSGLContext_x11Private;
+    friend struct OSGLContext_x11Private;
     boost::scoped_ptr<OSGLContext_x11Private> _imp;
 };
 
