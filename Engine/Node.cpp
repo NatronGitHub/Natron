@@ -4873,6 +4873,19 @@ Node::getInputLabel(int inputNb) const
     return _imp->inputLabels[inputNb];
 }
 
+std::string
+Node::getInputHint(int inputNb) const
+{
+    assert(_imp->inputsInitialized);
+
+    QMutexLocker l(&_imp->inputsLabelsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputHints.size() ) ) {
+        throw std::invalid_argument("Index out of range");
+    }
+
+    return _imp->inputHints[inputNb];
+}
+
 void
 Node::setInputLabel(int inputNb, const std::string& label)
 {

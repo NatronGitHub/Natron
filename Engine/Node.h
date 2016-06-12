@@ -390,6 +390,8 @@ public:
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
 
+    std::string getInputHint(int inputNb) const;
+
     void setInputLabel(int inputNb, const std::string& label);
 
     void setInputHint(int inputNb, const std::string& hint);
