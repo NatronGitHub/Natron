@@ -1816,7 +1816,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             } else if ( args.returnStorage != eStorageModeGLTex && (imageStorage == eStorageModeGLTex) ) {
                 assert(args.returnStorage == eStorageModeRAM);
                 assert(glContextLocker);
-                glContextLocker->attach();
+                if (glContextLocker) {
+                    glContextLocker->attach();
+                }
                 it->second.downscaleImage = convertOpenGLTextureToCachedRAMImage(it->second.downscaleImage);
             }
 

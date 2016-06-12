@@ -943,15 +943,16 @@ Bezier::addControlPointAfterIndex(int index,
 
             Point p0f;
             Point p1f;
-            if (prevF != _imp->featherPoints.end() && *prevF) {
+            if (useFeatherPoints() && prevF != _imp->featherPoints.end() && *prevF) {
                 (*prevF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p0f.x, &p0f.y);
                 (*prevF)->getRightBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p1f.x, &p1f.y);
             } else {
                 p0f = p0;
                 p1f = p1;
             }
-            Point p2f, p3f;
-            if (nextF != _imp->featherPoints.end() && *nextF) {
+            Point p2f;
+            Point p3f;
+            if (useFeatherPoints() && nextF != _imp->featherPoints.end() && *nextF) {
                 (*nextF)->getPositionAtTime(useGuiCurve, *it, ViewIdx(0), &p3f.x, &p3f.y);
                 (*nextF)->getLeftBezierPointAtTime(useGuiCurve, *it, ViewIdx(0), &p2f.x, &p2f.y);
             } else {
