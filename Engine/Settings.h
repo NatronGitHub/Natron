@@ -98,8 +98,6 @@ public:
 
     double getRamMaximumPercent() const;
 
-    double getRamPlaybackMaximumPercent() const;
-
     U64 getMaximumViewerDiskCacheSize() const;
 
     U64 getMaximumDiskCacheNodeSize() const;
@@ -474,7 +472,6 @@ private:
     boost::shared_ptr<KnobPage> _cachingTab;
     boost::shared_ptr<KnobBool> _aggressiveCaching;
     ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
-    boost::shared_ptr<KnobInt> _maxPlayBackPercent;
     boost::shared_ptr<KnobString> _maxPlaybackLabel;
 
     ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited

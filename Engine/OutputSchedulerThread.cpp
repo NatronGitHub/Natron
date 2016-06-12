@@ -3655,7 +3655,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         while ( found == _imp->producedFrames.end() ) {
             state = resolveState();
             if ( (state == eThreadStateStopped) || (state == eThreadStateAborted) ) {
-                _imp->producedFrames.clear();
+                //_imp->producedFrames.clear();
                 break;
             }
             _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
@@ -3683,7 +3683,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
             //    ++found;
             //    _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //} else {
-            _imp->producedFrames.erase(found);
+            _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //}
         } else {
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER

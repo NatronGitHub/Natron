@@ -176,7 +176,6 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
 
     KnobPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
     KnobOutputFile* outputFileName = outputFileNameKnob ? dynamic_cast<KnobOutputFile*>( outputFileNameKnob.get() ) : 0;
-    assert(outputFileName);
     std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
 
     if ( isViewAware() ) {
@@ -269,7 +268,7 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
         }
     }
 
-    if (first != last && !isVideoWriter()) {
+    if (first != last && !isVideoWriter() && isWriter()) {
         // We render a sequence, check that the user wants to render multiple images
         // Look first for # character
         std::size_t foundHash = pattern.find_first_of("#");

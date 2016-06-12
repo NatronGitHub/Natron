@@ -78,7 +78,7 @@ public:
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & pixelRod, const double par, unsigned int mipMapLevel) = 0;
     virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel,
-                                                              std::vector<RectI>* tiles) = 0;
+                                                              std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) = 0;
     virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) = 0;
 
     /**
@@ -111,7 +111,8 @@ public:
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             size_t bytesCount,
                                             const RectI &roiRoundedToTileSize,
-                                            const TextureRect & region,
+                                            const RectI& roi,
+                                            const TextureRect & tileRect,
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
@@ -121,7 +122,6 @@ public:
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
-                                               const RectI& viewerRoI,
                                                double par,
                                                ImageBitDepthEnum depth,
                                                unsigned int mipMapLevel,

@@ -32,6 +32,7 @@
 #include <fstream>
 #include <functional>
 #include <list>
+#include <set>
 #include <cstddef>
 #include <utility>
 #include <algorithm> // min, max
@@ -63,6 +64,8 @@ GCC_DIAG_ON(deprecated)
 
 //Beyond that percentage of occupation, the cache will start evicting LRU entries
 #define NATRON_CACHE_LIMIT_PERCENT 0.9
+
+#define NATRON_TILE_CACHE_FILE_SIZE_BYTES 2000000000
 
 ///When defined, number of opened files, memory size and disk size of the cache are printed whenever there's activity.
 //#define NATRON_DEBUG_CACHE
@@ -379,7 +382,7 @@ class Cache
     : public CacheAPI
 {
     friend class CacheCleanerThread;
-
+    friend class Cache;
 public:
 
     typedef typename EntryType::hash_type hash_type;
@@ -471,6 +474,7 @@ private:
     mutable QMutex _lock; //protects _memoryCache & _diskCache
     mutable QMutex _getLock;  //prevents get() and getOrCreate() to be called simultaneously
 
+
     /*These 2 are mutable because we need to modify the LRU list even
          when we call get() and we want this function to be const.*/
     mutable CacheContainer _memoryCache;
@@ -489,16 +493,23 @@ private:
     mutable QWaitCondition _memoryFullCondition; //< protected by _sizeLock
     mutable CacheCleanerThread _cleanerThread;
 
+    // If tiled, the cache will consist only of a few large files that each contain tiles of the same size.
+    // This is useful to cache chunks of data that always have the same size.
+    mutable QMutex _tileCacheMutex;
+    bool _isTiled;
+    std::size_t _tileByteSize;
+
+
+    // Used when the cache is tiled
+    std::set<TileCacheFilePtr> _cacheFiles;
 public:
 
 
-    Cache(const std::string & cacheName
-          ,
-          unsigned int version
-          ,
-          U64 maximumCacheSize      // total size
-          ,
-          double maximumInMemoryPercentage)      //how much should live in RAM
+    Cache(const std::string & cacheName,
+          unsigned int version,
+          U64 maximumCacheSize,      // total size
+          double maximumInMemoryPercentage //how much should live in RAM
+          )
         : CacheAPI()
         , _maximumInMemorySize(maximumCacheSize * maximumInMemoryPercentage)
         , _maximumCacheSize(maximumCacheSize)
@@ -517,6 +528,10 @@ public:
         , _deleterThread(this)
         , _memoryFullCondition()
         , _cleanerThread(this)
+        , _tileCacheMutex()
+        , _isTiled(false)
+        , _tileByteSize(0)
+        , _cacheFiles()
     {
     }
 
@@ -528,6 +543,32 @@ public:
         _memoryCache.clear();
         _diskCache.clear();
     }
+
+    virtual bool isTileCache() const OVERRIDE FINAL
+    {
+        QMutexLocker k(&_tileCacheMutex);
+        return _isTiled;
+    }
+
+    virtual std::size_t getTileSizeBytes() const OVERRIDE FINAL
+    {
+        QMutexLocker k(&_tileCacheMutex);
+        return _tileByteSize;
+    }
+
+    /**
+     * @brief Set the cache to be in tile mode.
+     * If tiled, the cache will consist only of a few large files that each contain tiles of the same size.
+     * This is useful to cache chunks of data that always have the same size.
+     **/
+    void setTiled(bool tiled, std::size_t tileByteSize)
+    {
+        QMutexLocker k(&_tileCacheMutex);
+        _isTiled = tiled;
+        _tileByteSize = tileByteSize;
+        _cacheFiles.clear();
+    }
+
 
     void waitForDeleterThread()
     {
@@ -560,6 +601,142 @@ public:
 
 private:
 
+
+
+    virtual TileCacheFilePtr getTileCacheFile(const std::string& filepath, std::size_t dataOffset) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        QMutexLocker k(&_tileCacheMutex);
+        assert(_isTiled);
+        if (!_isTiled) {
+            throw std::logic_error("allocTile() but cache is not tiled!");
+        }
+        for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+            if ((*it)->file->path() == filepath) {
+                int index = dataOffset / _tileByteSize;
+
+                // The dataOffset should be a multiple of the tile size
+                assert(_tileByteSize * index == dataOffset);
+                assert(!(*it)->usedTiles[index]);
+                (*it)->usedTiles[index] = true;
+                return *it;
+            }
+        }
+        if (!fileExists(filepath)) {
+            return TileCacheFilePtr();
+        } else {
+            TileCacheFilePtr ret(new TileCacheFile);
+            ret->file.reset(new MemoryFile(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail) );
+            std::size_t nTilesPerFile = std::floor( ( (double)NATRON_TILE_CACHE_FILE_SIZE_BYTES ) / _tileByteSize );
+            ret->usedTiles.resize(nTilesPerFile, false);
+            int index = dataOffset / _tileByteSize;
+
+            // The dataOffset should be a multiple of the tile size
+            assert(_tileByteSize * index == dataOffset);
+            assert(index >= 0 && index < (int)ret->usedTiles.size());
+            assert(!ret->usedTiles[index]);
+            ret->usedTiles[index] = true;
+            _cacheFiles.insert(ret);
+            return ret;
+
+        }
+
+    }
+
+    /**
+     * @brief Relevant only for tiled caches. This will allocate the memory required for a tile in the cache and lock it.
+     * Note that the calling entry should have exactly the size of a tile in the cache.
+     * In return, a pointer to a memory file is returned and the output parameter dataOffset will be set to the offset - in bytes - where the
+     * contiguous memory block for this tile begin relative to the start of the data of the memory file.
+     * This function may throw exceptions in case of failure.
+     * To retrieve the exact pointer of the block of memory for this tile use tileFile->file->data() + dataOffset
+     **/
+    virtual TileCacheFilePtr allocTile(std::size_t *dataOffset) OVERRIDE FINAL
+    {
+
+        QMutexLocker k(&_tileCacheMutex);
+
+        assert(_isTiled);
+        if (!_isTiled) {
+            throw std::logic_error("allocTile() but cache is not tiled!");
+        }
+        // First, search for a file with available space.
+        // If not found create one
+        TileCacheFilePtr foundAvailableFile;
+        int foundTileIndex = -1;
+        for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+            for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
+                if (!(*it)->usedTiles[i])  {
+                    foundTileIndex = i;
+                    *dataOffset = i * _tileByteSize;
+                    break;
+                }
+            }
+            if (foundTileIndex != -1) {
+                foundAvailableFile = *it;
+                break;
+            }
+        }
+
+        if (!foundAvailableFile) {
+            // Create a file if all space is taken
+            foundAvailableFile.reset(new TileCacheFile());
+            int nCacheFiles = (int)_cacheFiles.size();
+            std::stringstream cacheFilePathSs;
+            cacheFilePathSs << getCachePath().toStdString() << "/CachePart" << nCacheFiles;
+            std::string cacheFilePath = cacheFilePathSs.str();
+            foundAvailableFile->file.reset(new MemoryFile(cacheFilePath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate));
+
+            std::size_t nTilesPerFile = std::floor(((double)NATRON_TILE_CACHE_FILE_SIZE_BYTES) / _tileByteSize);
+            std::size_t cacheFileSize = nTilesPerFile * _tileByteSize;
+            foundAvailableFile->file->resize(cacheFileSize);
+            foundAvailableFile->usedTiles.resize(nTilesPerFile, false);
+            *dataOffset = 0;
+            foundTileIndex = 0;
+            _cacheFiles.insert(foundAvailableFile);
+        }
+
+
+        foundAvailableFile->usedTiles[foundTileIndex] = true;
+        return foundAvailableFile;
+    }
+
+            /**
+             * @brief Free a tile from the cache that was previously allocated with allocTile. It will be made available again for other entries.
+             **/
+    virtual void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset) OVERRIDE FINAL
+    {
+        QMutexLocker k(&_tileCacheMutex);
+
+        assert(_isTiled);
+        if (!_isTiled) {
+            throw std::logic_error("allocTile() but cache is not tiled!");
+        }
+        std::set<TileCacheFilePtr>::iterator foundTileFile = _cacheFiles.find(file);
+        assert(foundTileFile != _cacheFiles.end());
+        if (foundTileFile == _cacheFiles.end()) {
+            return;
+        }
+        int index = dataOffset / _tileByteSize;
+
+        // The dataOffset should be a multiple of the tile size
+        assert(_tileByteSize * index == dataOffset);
+        assert(index >= 0 && index < (int)(*foundTileFile)->usedTiles.size());
+        assert((*foundTileFile)->usedTiles[index]);
+        (*foundTileFile)->usedTiles[index] = false;
+
+        // If the file does not have any tile associated, remove it
+        // A use_count of 2 means that the tile file is only referenced by the cache itself and the entry calling
+        // the freeTile() function, hence once its freed, no tile should be using it anymore
+        if ((*foundTileFile).use_count() <= 2) {
+            // Do not remove the file if we are tearing down the cache
+            if (!_tearingDown) {
+                (*foundTileFile)->file->remove();
+            }
+            _cacheFiles.erase(foundTileFile);
+        }
+    }
+
+
     void createInternal(const typename EntryType::key_type & key,
                         const ParamsTypePtr & params,
                         ImageLockerHelper<EntryType>* entryLocker,
@@ -574,7 +751,7 @@ private:
         ///Just in case, we don't allow more than X files to be removed at once.
         int safeCounter = 0;
         ///If too many files are opened, fall-back on RAM storage.
-        while (appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000) {
+        while (!_isTiled && appPTR->isNCacheFilesOpenedCapped() && safeCounter < 1000) {
 #ifdef NATRON_DEBUG_CACHE
             qDebug() << "Reached maximum cache files opened limit,clearing last recently used one...";
 #endif
@@ -598,7 +775,7 @@ private:
             ///Also if the total free RAM is under the limit of the system free RAM to keep free, erase LRU entries.
             while (occupationPercentage > NATRON_CACHE_LIMIT_PERCENT) {
                 std::list<EntryTypePtr> deleted;
-                if ( !tryEvictEntry(deleted) ) {
+                if ( !tryEvictInMemoryEntry(deleted) ) {
                     break;
                 }
 
@@ -639,6 +816,40 @@ private:
                 occupationPercentage =  _maximumCacheSize == 0 ? 0.99 : (double)_memoryCacheSize / _maximumCacheSize;
             }
         }
+        if (_isTiled) {
+
+            QMutexLocker locker(&_lock);
+            // For tiled caches, we insert directly into the disk cache, so make sure there is room for it
+            std::list<EntryTypePtr> entriesToBeDeleted;
+            U64 diskCacheSize, maximumDiskCacheSize;
+            {
+                QMutexLocker k(&_sizeLock);
+                diskCacheSize = _diskCacheSize;
+                maximumDiskCacheSize = std::max( (std::size_t)1, _maximumCacheSize - _maximumInMemorySize );
+            }
+            double diskPercentage = (double)diskCacheSize / maximumDiskCacheSize;
+            while (diskPercentage >= NATRON_CACHE_LIMIT_PERCENT) {
+                std::list<EntryTypePtr> deleted;
+                if ( !tryEvictDiskEntry(deleted) ) {
+                    break;
+                }
+
+                for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
+                    diskCacheSize -= (*it)->size();
+                    entriesToBeDeleted.push_back(*it);
+                }
+                diskPercentage = (double)diskCacheSize / maximumDiskCacheSize;
+            }
+            if ( !entriesToBeDeleted.empty() ) {
+                ///Launch a separate thread whose function will be to delete all the entries to be deleted
+                _deleterThread.appendToQueue(entriesToBeDeleted);
+
+                ///Clearing the list here will not delete the objects pointing to by the shared_ptr's because we made a copy
+                ///that the separate thread will delete
+                entriesToBeDeleted.clear();
+            }
+
+        }
         {
             QMutexLocker locker(&_lock);
 
@@ -650,13 +861,16 @@ private:
                 *returnValue = EntryTypePtr();
             }
 
+            // For a tiled cache, all entries must have the same size
+            assert(!_isTiled || (*returnValue)->getSizeInBytesFromParams() == _tileByteSize);
+
             if (*returnValue) {
 
                 // If there is a lock, lock it before exposing the entry to other threads
                 if (entryLocker) {
                     entryLocker->lock(*returnValue);
                 }
-                sealEntry(*returnValue, true);
+                sealEntry(*returnValue, _isTiled ? false : true);
             }
         }
     } // createInternal
@@ -775,7 +989,7 @@ public:
         QMutexLocker locker(&_lock);
         std::pair<hash_type, EntryTypePtr> evictedFromMemory = _memoryCache.evict();
         while (evictedFromMemory.second) {
-            if ( evictedFromMemory.second->isStoredOnDisk() ) {
+            if ( !_isTiled && evictedFromMemory.second->isStoredOnDisk() ) {
                 evictedFromMemory.second->removeAnyBackingFile();
             }
             evictedFromMemory = _memoryCache.evict();
@@ -806,7 +1020,9 @@ public:
         //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
         //we'll let the user of these entries purge the extra entries left in the cache later on
         while (evictedFromDisk.second) {
-            evictedFromDisk.second->removeAnyBackingFile();
+            if (!_isTiled) {
+                evictedFromDisk.second->removeAnyBackingFile();
+            }
             evictedFromDisk = _diskCache.evict();
         }
 
@@ -827,8 +1043,10 @@ public:
         QMutexLocker locker(&_lock);
         std::pair<hash_type, EntryTypePtr> evictedFromMemory = _memoryCache.evict();
         while (evictedFromMemory.second) {
-            ///move back the entry on disk if it can be store on disk
-            if ( evictedFromMemory.second->isStoredOnDisk() ) {
+            // Move back the entry on disk if it can be store on disk
+            // For tiled caches, the tile is sharing the same file with other entries
+            // so we cannot close it, just remove the entry
+            if ( evictedFromMemory.second->isStoredOnDisk() && !_isTiled) {
                 evictedFromMemory.second->deallocate();
                 /*insert it back into the disk portion */
 
@@ -892,7 +1110,7 @@ public:
             double occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
             while (occupationPercentage >= NATRON_CACHE_LIMIT_PERCENT) {
                 std::list<EntryTypePtr> deleted;
-                if ( !tryEvictEntry(deleted) ) {
+                if ( !tryEvictInMemoryEntry(deleted) ) {
                     break;
                 }
 
@@ -904,6 +1122,28 @@ public:
                 }
                 occupationPercentage = (double)memoryCacheSize / maximumInMemorySize;
             }
+
+            U64 diskCacheSize, maximumDiskCacheSize;
+            {
+                QMutexLocker k(&_sizeLock);
+                diskCacheSize = _diskCacheSize;
+                maximumDiskCacheSize = std::max( (std::size_t)1, _maximumCacheSize - _maximumInMemorySize );
+            }
+            double diskPercentage = (double)diskCacheSize / maximumDiskCacheSize;
+            while (diskCacheSize >= NATRON_CACHE_LIMIT_PERCENT) {
+                std::list<EntryTypePtr> deleted;
+                if ( !tryEvictDiskEntry(deleted) ) {
+                    break;
+                }
+
+                for (typename std::list<EntryTypePtr>::iterator it = deleted.begin(); it != deleted.end(); ++it) {
+                    diskCacheSize -= (*it)->size();
+                    entriesToBeDeleted.push_back(*it);
+                }
+                diskPercentage = (double)diskCacheSize / maximumDiskCacheSize;
+            }
+            
+
         }
     }
 
@@ -939,7 +1179,7 @@ public:
         bool ret;
         {
             QMutexLocker locker(&_lock);
-            ret = tryEvictEntry(entriesToBeDeleted);
+            ret = tryEvictInMemoryEntry(entriesToBeDeleted);
         }
 
         return ret;
@@ -952,20 +1192,10 @@ public:
      **/
     bool evictLRUDiskEntry() const
     {
+
         QMutexLocker locker(&_lock);
-        std::pair<hash_type, EntryTypePtr> evicted = _diskCache.evict();
-
-        //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
-        //we'll let the user of these entries purge the extra entries left in the cache later on
-        if (!evicted.second) {
-            return false;
-        }
-        /*if it is stored on disk, remove it from memory*/
-
-        assert( evicted.second.unique() );
-        evicted.second->removeAnyBackingFile();
-
-        return true;
+        std::list<EntryTypePtr> entriesToBeDeleted;
+        return tryEvictDiskEntry(entriesToBeDeleted);
     }
 
     /**
@@ -1005,12 +1235,21 @@ public:
         ///lock should already be taken.
         QMutexLocker k(&_sizeLock);
 
-        _memoryCacheSize += size;
+        if (storage == eStorageModeDisk) {
+            if (_isTiled) {
+                // For tile caches, we do not control which portion of the cache is in memory, so just keep track of the disk portion
+                _diskCacheSize += size;
+            } else {
+                _memoryCacheSize += size;
+                appPTR->increaseNCacheFilesOpened();
+            }
+        } else {
+            _memoryCacheSize += size;
+        }
+
         _signalEmitter->emitAddedEntry(time);
 
-        if (storage == eStorageModeDisk) {
-            appPTR->increaseNCacheFilesOpened();
-        }
+
 #ifdef NATRON_DEBUG_CACHE
         qDebug() << cacheName().c_str() << " memory size: " << printAsRAM(_memoryCacheSize);
 #endif
@@ -1057,6 +1296,8 @@ public:
                                            double time,
                                            std::size_t size) const OVERRIDE FINAL
     {
+        assert(!_isTiled);
+
         if (_tearingDown) {
             return;
         }
@@ -1095,6 +1336,7 @@ public:
 
     virtual void backingFileClosed() const OVERRIDE FINAL
     {
+        assert(!_isTiled);
         appPTR->decreaseNCacheFilesOpened();
     }
 
@@ -1426,59 +1668,66 @@ private:
                 for (typename std::list<EntryTypePtr>::iterator it = ret.begin();
                      it != ret.end(); ++it) {
                     if ( (*it)->getKey() == key ) {
+
+
                         /*If we found 1 entry in the list that has exactly the same key params,
-                           we re-open the mapping to the RAM put the entry
-                           back into the memoryCache.*/
+                         we re-open the mapping to the RAM put the entry
+                         back into the memoryCache.*/
+                        if (!_isTiled) {
+                            try {
+                                (*it)->reOpenFileMapping();
+                            } catch (const std::exception & e) {
+                                qDebug() << "Error while reopening cache file: " << e.what();
+                                ret.erase(it);
 
-                        try {
-                            (*it)->reOpenFileMapping();
-                        } catch (const std::exception & e) {
-                            qDebug() << "Error while reopening cache file: " << e.what();
-                            ret.erase(it);
+                                return false;
+                            } catch (...) {
+                                qDebug() << "Error while reopening cache file";
+                                ret.erase(it);
 
-                            return false;
-                        } catch (...) {
-                            qDebug() << "Error while reopening cache file";
-                            ret.erase(it);
-
-                            return false;
-                        }
-
-                        //put it back into the RAM
-                        _memoryCache.insert( (*it)->getHashKey(), *it );
-
-
-                        U64 memoryCacheSize, maximumInMemorySize;
-                        {
-                            QMutexLocker k(&_sizeLock);
-                            memoryCacheSize = _memoryCacheSize;
-                            maximumInMemorySize = _maximumInMemorySize;
-                        }
-                        std::list<EntryTypePtr> entriesToBeDeleted;
-
-                        //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
-                        while (memoryCacheSize > maximumInMemorySize) {
-                            if ( !tryEvictEntry(entriesToBeDeleted) ) {
-                                break;
+                                return false;
                             }
 
+                            //put it back into the RAM
+                            _memoryCache.insert( (*it)->getHashKey(), *it );
+
+
+                            U64 memoryCacheSize, maximumInMemorySize;
                             {
                                 QMutexLocker k(&_sizeLock);
                                 memoryCacheSize = _memoryCacheSize;
                                 maximumInMemorySize = _maximumInMemorySize;
                             }
-                        }
+                            std::list<EntryTypePtr> entriesToBeDeleted;
 
+                            //now clear extra entries from the disk cache so it doesn't exceed the RAM limit.
+                            while (memoryCacheSize > maximumInMemorySize) {
+                                if ( !tryEvictInMemoryEntry(entriesToBeDeleted) ) {
+                                    break;
+                                }
+
+                                {
+                                    QMutexLocker k(&_sizeLock);
+                                    memoryCacheSize = _memoryCacheSize;
+                                    maximumInMemorySize = _maximumInMemorySize;
+                                }
+                            }
+                        }
+                        
                         returnValue->push_back(*it);
-                        ret.erase(it);
                         ///Q_EMIT te added signal otherwise when first reading something that's already cached
                         ///the timeline wouldn't update
                         if (_signalEmitter) {
                             _signalEmitter->emitAddedEntry( key.getTime() );
                         }
 
-                        ///Remove it from the disk cache
-                        _diskCache.erase(diskCached);
+                        if (!_isTiled) {
+
+                            ret.erase(it);
+
+                            ///Remove it from the disk cache
+                            _diskCache.erase(diskCached);
+                        }
 
                         return true;
                     }
@@ -1520,7 +1769,7 @@ private:
         }
     }
 
-    bool tryEvictEntry(std::list<EntryTypePtr> & entriesToBeDeleted) const
+    bool tryEvictInMemoryEntry(std::list<EntryTypePtr> & entriesToBeDeleted) const
     {
         assert( !_lock.tryLock() );
         std::pair<hash_type, EntryTypePtr> evicted = _memoryCache.evict();
@@ -1529,11 +1778,14 @@ private:
         if (!evicted.second) {
             return false;
         }
-        /*if it is stored on disk, remove it from memory*/
 
-        if ( !evicted.second->isStoredOnDisk() ) {
+        // If it is stored on disk, remove it from memory
+        // If the cache is tiled, the entry is sharing the same file with other entries so we cannot close the file.
+        // Just deallocate it
+        if ( !evicted.second->isStoredOnDisk()) {
             entriesToBeDeleted.push_back(evicted.second);
         } else {
+
             assert( evicted.second.unique() );
 
             ///This is EXPENSIVE! it calls msync
@@ -1586,6 +1838,25 @@ private:
 
         return true;
     } // tryEvictEntry
+
+    bool tryEvictDiskEntry(std::list<EntryTypePtr> & entriesToBeDeleted) const
+    {
+
+        assert( !_lock.tryLock() );
+        std::pair<hash_type, EntryTypePtr> evicted = _diskCache.evict();
+        //if the cache couldn't evict that means all entries are used somewhere and we shall not remove them!
+        //we'll let the user of these entries purge the extra entries left in the cache later on
+        if (!evicted.second) {
+            return false;
+        }
+        if (!_isTiled) {
+            // Erase the file from the disk if we reach the limit.
+            evicted.second->removeAnyBackingFile();
+        }
+        entriesToBeDeleted.push_back(evicted.second);
+        return true;
+    }
+
 };
 
 NATRON_NAMESPACE_EXIT;

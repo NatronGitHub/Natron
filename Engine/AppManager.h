@@ -208,6 +208,7 @@ public:
 
 
     U64 getCachesTotalMemorySize() const;
+    U64 getCachesTotalDiskSize() const;
     boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
@@ -215,8 +216,6 @@ public:
     void setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size);
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
-
-    void setPlaybackCacheMaximumSize(double p);
 
     void removeFromNodeCache(const boost::shared_ptr<Image> & image);
     void removeFromViewerCache(const FrameEntryPtr & texture);
@@ -575,6 +574,8 @@ public Q_SLOTS:
     {
         exitApp(true);
     }
+
+    void onViewerTileCacheSizeChanged();
 
     void toggleAutoHideGraphInputs();
 

@@ -120,8 +120,9 @@ public:
      * @brief Ensures that the texture is of size texRect and of the given type
      * @returns True if something changed, false otherwise
      * Note: Internally this function calls glTexImage2D to reallocate the texture buffer
+     * @param originalRAMBuffer Optional pointer to a mapped PBO for asynchronous texture upload
      */
-    bool ensureTextureHasSize(const TextureRect& texRect, const unsigned char* originalRAMBuffer = 0);
+    bool ensureTextureHasSize(const TextureRect& texRect, const unsigned char* originalRAMBuffer);
 
     /**
      * @brief Update the texture with the currently bound PBO across the given rectangle.

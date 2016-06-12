@@ -132,7 +132,7 @@ public:
      **/
     virtual RectI getImageRectangleDisplayed(const RectI & imageRoD, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
     virtual RectI getExactImageRectangleDisplayed(const RectD & rod, const double par, unsigned int mipMapLevel) OVERRIDE FINAL;
-    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel, std::vector<RectI>* tiles) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual RectI getImageRectangleDisplayedRoundedToTileSize(const RectD & rod, const double par, unsigned int mipMapLevel, std::vector<RectI>* tiles, std::vector<RectI>* tilesRounded, int *tileSize, RectI* roiNotRounded) OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
      * of the ViewerGL.
@@ -172,7 +172,8 @@ public:
     virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
                                             size_t bytesCount,
                                             const RectI &roiRoundedToTileSize,
-                                            const TextureRect & region,
+                                            const RectI& roi,
+                                            const TextureRect & tileRect,
                                             int textureIndex,
                                             bool isPartialRect,
                                             bool isFirstTile,
@@ -182,7 +183,6 @@ public:
                                                const ImagePtr& image,
                                                int time,
                                                const RectD& rod,
-                                               const RectI& viewerRoI,
                                                double par,
                                                ImageBitDepthEnum depth,
                                                unsigned int mipMapLevel,

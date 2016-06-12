@@ -193,7 +193,7 @@ Project::loadProject(const QString & path,
                      bool isUntitledAutosave,
                      bool attemptToLoadAutosave)
 {
-    reset(false);
+    reset(false, true);
 
     try {
         QString realPath = path;
@@ -1737,7 +1737,7 @@ Project::autoSavesDir()
 void
 Project::resetProject()
 {
-    reset(false);
+    reset(false, true);
     if ( !getApp()->isBackground() ) {
         createViewer();
     }
@@ -1762,7 +1762,7 @@ public:
 };
 
 void
-Project::reset(bool aboutToQuit)
+Project::reset(bool aboutToQuit, bool blocking)
 {
     assert( QThread::currentThread() == qApp->thread() );
     {
@@ -1770,9 +1770,20 @@ Project::reset(bool aboutToQuit)
         _imp->projectClosing = true;
     }
 
-    boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
-    args->aboutToQuit = aboutToQuit;
-    if ( !quitAnyProcessingForAllNodes(this, args) ) {
+    if (!blocking) {
+        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        args->aboutToQuit = aboutToQuit;
+        if ( !quitAnyProcessingForAllNodes(this, args) ) {
+            doResetEnd(aboutToQuit);
+        }
+    } else {
+        {
+            NodesList nodesToWatch;
+            getNodes_recursive(nodesToWatch, false);
+            for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+                (*it)->quitAnyProcessing_blocking(false);
+            }
+        }
         doResetEnd(aboutToQuit);
     }
 } // Project::reset

@@ -1225,21 +1225,6 @@ Settings::initializeKnobsCaching()
     _maxRAMLabel->setAsLabel();
     _cachingTab->addKnob(_maxRAMLabel);
 
-    _maxPlayBackPercent = AppManager::createKnob<KnobInt>( this, tr("Playback cache RAM percentage (% of maximum RAM used for caching)") );
-    _maxPlayBackPercent->setName("maxPlaybackPercent");
-    _maxPlayBackPercent->disableSlider();
-    _maxPlayBackPercent->setMinimum(0);
-    _maxPlayBackPercent->setMaximum(100);
-    _maxPlayBackPercent->setHintToolTip( tr("This setting indicates the percentage of the maximum RAM used for caching "
-                                            "dedicated to the playback cache. This is available for debugging purposes.") );
-    _maxPlayBackPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_maxPlayBackPercent);
-
-    _maxPlaybackLabel = AppManager::createKnob<KnobString>( this, std::string() );
-    _maxPlaybackLabel->setName("maxPlaybackLabel");
-    _maxPlaybackLabel->setIsPersistant(false);
-    _maxPlaybackLabel->setAsLabel();
-    _cachingTab->addKnob(_maxPlaybackLabel);
 
     _unreachableRAMPercent = AppManager::createKnob<KnobInt>( this, tr("System RAM to keep free (% of total RAM)") );
     _unreachableRAMPercent->setName("unreachableRAMPercent");
@@ -1420,14 +1405,11 @@ Settings::initializeKnobsPython()
 void
 Settings::setCachingLabels()
 {
-    int maxPlaybackPercent = _maxPlayBackPercent->getValue();
     int maxTotalRam = _maxRAMPercent->getValue();
     U64 systemTotalRam = getSystemTotalRAM();
     U64 maxRAM = (U64)( ( (double)maxTotalRam / 100. ) * systemTotalRam );
 
     _maxRAMLabel->setValue( printAsRAM(maxRAM).toStdString() );
-    _maxPlaybackLabel->setValue( printAsRAM( (U64)( maxRAM * ( (double)maxPlaybackPercent / 100. ) ) ).toStdString() );
-
     _unreachableRAMLabel->setValue( printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString() );
 }
 
@@ -1497,7 +1479,6 @@ Settings::setDefaultValues()
 
     _aggressiveCaching->setDefaultValue(false);
     _maxRAMPercent->setDefaultValue(50, 0);
-    _maxPlayBackPercent->setDefaultValue(25, 0);
     _unreachableRAMPercent->setDefaultValue(5);
     _maxViewerDiskCacheGB->setDefaultValue(5, 0);
     _maxDiskCacheNodeGB->setDefaultValue(10, 0);
@@ -2177,11 +2158,6 @@ Settings::onKnobValueChanged(KnobI* k,
             appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
         }
         setCachingLabels();
-    } else if ( k == _maxPlayBackPercent.get() ) {
-        if (!_restoringSettings) {
-            appPTR->setPlaybackCacheMaximumSize( getRamPlaybackMaximumPercent() );
-        }
-        setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
         appPTR->setDiskCacheLocation( QString::fromUtf8( _diskCachePath->getValue().c_str() ) );
     } else if ( k == _wipeDiskCache.get() ) {
@@ -2231,7 +2207,7 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
         appPTR->onCheckerboardSettingsChanged();
     } else if ( k == _powerOf2Tiling.get() ) {
-        appPTR->clearViewerCache();
+        appPTR->onViewerTileCacheSizeChanged();
     } else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
@@ -2397,12 +2373,6 @@ double
 Settings::getRamMaximumPercent() const
 {
     return (double)_maxRAMPercent->getValue() / 100.;
-}
-
-double
-Settings::getRamPlaybackMaximumPercent() const
-{
-    return (double)_maxPlayBackPercent->getValue() / 100.;
 }
 
 U64
