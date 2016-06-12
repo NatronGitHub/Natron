@@ -262,6 +262,7 @@ public:
     virtual void setRange() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
@@ -299,6 +300,7 @@ public:
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
@@ -341,6 +343,7 @@ public:
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
 
@@ -382,6 +385,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     // callback which should set option as appropriate
     virtual void setOption(int num) OVERRIDE FINAL;
 
@@ -421,6 +425,7 @@ public:
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
@@ -466,6 +471,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
@@ -508,6 +514,7 @@ public:
     virtual void setDisplayRange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
@@ -549,6 +556,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
@@ -592,6 +600,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
@@ -634,6 +643,7 @@ public:
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
@@ -737,6 +747,7 @@ public:
     virtual void setEnabled() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
 
@@ -795,6 +806,7 @@ public:
     virtual OfxStatus getV(OfxTime time, va_list arg) OVERRIDE FINAL;
 
     virtual void setHint() OVERRIDE FINAL;
+    virtual void setDefault() OVERRIDE FINAL;
     // callback which should set enabled state as appropriate
     virtual void setEnabled() OVERRIDE FINAL;
 
