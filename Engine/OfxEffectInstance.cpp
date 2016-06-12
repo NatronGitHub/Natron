@@ -201,6 +201,8 @@ struct OfxEffectInstancePrivate
         bool mask;
         bool rotoBrush;
         OfxClipInstance* clip;
+        std::string label,hint;
+        bool visible;
     };
 
     std::vector<ClipsInfo> clipsInfos;
@@ -421,6 +423,9 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
             for (unsigned i = 0; i < clips.size(); ++i) {
                 _imp->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip( clips[i]->getName() ) );
+                _imp->clipsInfos[i].label = _imp->clipsInfos[i].clip->getLabel();
+                _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
+                _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
                 assert(_imp->clipsInfos[i].clip);
             }
 
@@ -986,8 +991,44 @@ OfxEffectInstance::getPluginGrouping(std::list<std::string>* grouping) const
     }
 }
 
+void
+OfxEffectInstance::onClipLabelChanged(int inputNb, const std::string& label)
+{
+    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
+    _imp->clipsInfos[inputNb].label = label;
+    getNode()->setInputLabel(inputNb, label);
+}
+
+void
+OfxEffectInstance::onClipHintChanged(int inputNb, const std::string& hint)
+{
+    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
+    _imp->clipsInfos[inputNb].hint = hint;
+    getNode()->setInputHint(inputNb, hint);
+}
+
+void
+OfxEffectInstance::onClipSecretChanged(int inputNb, bool isSecret)
+{
+    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
+    _imp->clipsInfos[inputNb].visible = !isSecret;
+    getNode()->setInputVisible(inputNb, !isSecret);
+}
+
 std::string
 OfxEffectInstance::getInputLabel(int inputNb) const
+{
+    assert(_imp->context != eContextNone);
+    assert( inputNb >= 0 &&  inputNb < (int)_imp->clipsInfos.size() );
+    if (_imp->context != eContextReader) {
+        return _imp->clipsInfos[inputNb].clip->getShortLabel();
+    } else {
+        return NATRON_READER_INPUT_NAME;
+    }
+}
+
+std::string
+OfxEffectInstance::getInputHint(int inputNb) const
 {
     assert(_imp->context != eContextNone);
     assert( inputNb >= 0 &&  inputNb < (int)_imp->clipsInfos.size() );

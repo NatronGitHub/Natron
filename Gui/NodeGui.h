@@ -426,6 +426,8 @@ public Q_SLOTS:
 
     void onInputLabelChanged(int inputNb,const QString& label);
 
+    void onInputVisibilityChanged(int inputNb);
+
     void onRightClickActionTriggered();
 
     void onRightClickMenuKnobPopulated();

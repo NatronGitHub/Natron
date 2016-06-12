@@ -246,6 +246,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(rightClickMenuKnobPopulated()), this, SLOT(onRightClickMenuKnobPopulated()) );
     QObject::connect( internalNode.get(), SIGNAL(inputEdgeLabelChanged(int, QString)), this, SLOT(onInputLabelChanged(int,QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(inputVisibilityChanged(int)), this, SLOT(onInputVisibilityChanged(int)) );
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
@@ -3968,6 +3969,12 @@ NodeGui::onInputLabelChanged(int inputNb,const QString& label)
     if (_inputEdges[inputNb]) {
         _inputEdges[inputNb]->setLabel(label);
     }
+}
+
+void
+NodeGui::onInputVisibilityChanged(int /*inputNb*/)
+{
+    refreshEdgesVisility();
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -490,6 +490,11 @@ public:
     virtual std::string getInputLabel(int inputNb) const WARN_UNUSED_RETURN;
 
     /**
+     * @brief Return a string indicating the purpose of the given input. It is used for the user documentation.
+     **/
+    virtual std::string getInputHint(int inputNb) const WARN_UNUSED_RETURN;
+
+    /**
      * @brief Must be implemented to give the plugin internal id(i.e: net.sf.openfx:invertPlugin)
      **/
     virtual std::string getPluginID() const WARN_UNUSED_RETURN = 0;

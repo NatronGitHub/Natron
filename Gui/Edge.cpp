@@ -312,6 +312,11 @@ Edge::computeVisibility(bool hovered) const
         return false;
     }
 
+    bool inputVisibleInternally = dst ? dst->getNode()->isInputVisible(_imp->inputNb) : true;
+    if (!inputVisibleInternally) {
+        return false;
+    }
+
     ///Determine whether the edge should be visible or not
     bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
     if ( (_imp->isRotoMask || hideInputsKnobValue) && !_imp->isOutputEdge ) {

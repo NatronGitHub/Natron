@@ -396,7 +396,9 @@ public:
     std::list<ImageComponents> outputComponents;
     mutable QMutex nameMutex;
     mutable QMutex inputsLabelsMutex;
-    std::vector<std::string> inputLabels; // inputs name
+    std::vector<std::string> inputLabels; // inputs name, protected by inputsLabelsMutex
+    std::vector<std::string> inputHints; // protected by inputsLabelsMutex
+    std::vector<bool> inputsVisibility; // protected by inputsMutex
     std::string scriptName; //node name internally and as visible to python
     std::string label; // node label as visible in the GUI
 
@@ -4694,8 +4696,10 @@ Node::initializeInputs()
     {
         QMutexLocker k(&_imp->inputsLabelsMutex);
         _imp->inputLabels.resize(inputCount);
+        _imp->inputHints.resize(inputCount);
         for (int i = 0; i < inputCount; ++i) {
             _imp->inputLabels[i] = _imp->effect->getInputLabel(i);
+            _imp->inputHints[i] = _imp->effect->getInputHint(i);
         }
     }
     {
@@ -4705,9 +4709,12 @@ Node::initializeInputs()
     {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
+
+        std::vector<bool> oldInputsVisibility = _imp->inputsVisibility;
         _imp->inputIsRenderingCounter.resize(inputCount);
         _imp->inputs.resize(inputCount);
         _imp->guiInputs.resize(inputCount);
+        _imp->inputsVisibility.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         for (int i = 0; i < inputCount; ++i) {
             if ( i < (int)oldInputs.size() ) {
@@ -4716,6 +4723,11 @@ Node::initializeInputs()
             } else {
                 _imp->inputs[i].reset();
                 _imp->guiInputs[i].reset();
+            }
+            if (i < (int) oldInputsVisibility.size()) {
+                _imp->inputsVisibility[i] = oldInputsVisibility[i];
+            } else {
+                _imp->inputsVisibility[i] = true;
             }
         }
 
@@ -4883,6 +4895,45 @@ Node::setInputLabel(int inputNb, const std::string& label)
 
     Q_EMIT inputEdgeLabelChanged(inputNb, QString::fromUtf8(label.c_str()));
 }
+
+void
+Node::setInputHint(int inputNb, const std::string& hint)
+{
+    {
+        QMutexLocker l(&_imp->inputsLabelsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputHints.size() ) ) {
+            throw std::invalid_argument("Index out of range");
+        }
+        _imp->inputHints[inputNb] = hint;
+    }
+}
+
+bool
+Node::isInputVisible(int inputNb) const
+{
+    QMutexLocker k(&_imp->inputsMutex);
+    if (inputNb >= 0 && inputNb < (int)_imp->inputsVisibility.size()) {
+        return _imp->inputsVisibility[inputNb];
+    } else {
+        throw std::invalid_argument("Index out of range");
+    }
+    return false;
+}
+
+void
+Node::setInputVisible(int inputNb, bool visible)
+{
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        if (inputNb >= 0 && inputNb < (int)_imp->inputsVisibility.size()) {
+            _imp->inputsVisibility[inputNb] = visible;
+        } else {
+            throw std::invalid_argument("Index out of range");
+        }
+    }
+    Q_EMIT inputVisibilityChanged(inputNb);
+}
+
 
 int
 Node::getInputNumberFromLabel(const std::string& inputLabel) const

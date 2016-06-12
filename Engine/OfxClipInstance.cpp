@@ -106,22 +106,37 @@ OfxClipInstance::~OfxClipInstance()
 void
 OfxClipInstance::setLabel()
 {
-#pragma message WARN("TODO: OfxClipInstance::setLabel()")
-    qDebug() << "OfxClipInstance::setLabel" << getLabel().c_str();
+    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    if (effect) {
+        int inputNb = getInputNb();
+        if (inputNb >= 0) {
+            effect->onClipLabelChanged(inputNb, getLabel());
+        }
+    }
 }
 
 // callback which should set secret state as appropriate
 void OfxClipInstance::setSecret()
 {
-#pragma message WARN("TODO: OfxClipInstance::setSecret()")
-    qDebug() << "OfxClipInstance::setSecret" << isSecret();
+    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    if (effect) {
+        int inputNb = getInputNb();
+        if (inputNb >= 0) {
+            effect->onClipSecretChanged(inputNb, isSecret());
+        }
+    }
 }
 
 // callback which should update hint
 void OfxClipInstance::setHint()
 {
-#pragma message WARN("TODO: OfxClipInstance::setHint()")
-    qDebug() << "OfxClipInstance::setHint" << getHint().c_str();
+    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    if (effect) {
+        int inputNb = getInputNb();
+        if (inputNb >= 0) {
+            effect->onClipHintChanged(inputNb, getHint());
+        }
+    }
 }
 
 bool

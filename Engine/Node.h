@@ -392,6 +392,12 @@ public:
 
     void setInputLabel(int inputNb, const std::string& label);
 
+    void setInputHint(int inputNb, const std::string& hint);
+
+    bool isInputVisible(int inputNb) const;
+
+    void setInputVisible(int inputNb, bool visible);
+
     int getInputNumberFromLabel(const std::string& inputLabel) const;
 
     bool isInputConnected(int inputNb) const;
@@ -1409,6 +1415,8 @@ Q_SIGNALS:
     void labelChanged(QString);
     void scriptNameChanged(QString);
     void inputEdgeLabelChanged(int, QString);
+
+    void inputVisibilityChanged(int);
 
     void refreshEdgesGUI();
 

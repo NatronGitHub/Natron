@@ -553,6 +553,12 @@ EffectInstance::getInputLabel(int inputNb) const
     return out;
 }
 
+std::string
+EffectInstance::getInputHint(int inputNb) const
+{
+    return std::string();
+}
+
 bool
 EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 const ViewIdx view,
