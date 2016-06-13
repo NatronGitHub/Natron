@@ -341,8 +341,8 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     if (polygonMode == eDrawPolygonModeWhole) {
         const double pixelCenterOffset = 0.5;
         // draw vertices at the center of the first and last pixel in the texture, with the same texture coordinates
-        rectClippedToRoI.x1 += pixelCenterOffset;
-        rectClippedToRoI.x2 -= pixelCenterOffset;
+        rectClippedToRoI.x1 += pixelCenterOffset * par;
+        rectClippedToRoI.x2 -= pixelCenterOffset * par;
         rectClippedToRoI.y1 += pixelCenterOffset;
         rectClippedToRoI.y2 -= pixelCenterOffset;
         ///Vertices are in canonical coords
