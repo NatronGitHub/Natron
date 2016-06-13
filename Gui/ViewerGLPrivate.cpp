@@ -339,13 +339,19 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     }
 
     if (polygonMode == eDrawPolygonModeWhole) {
+        const double pixelCenterOffset = 0.5;
+        // draw vertices at the center of the first and last pixel in the texture, with the same texture coordinates
+        rectClippedToRoI.x1 += pixelCenterOffset;
+        rectClippedToRoI.x2 -= pixelCenterOffset;
+        rectClippedToRoI.y1 += pixelCenterOffset;
+        rectClippedToRoI.y2 -= pixelCenterOffset;
         ///Vertices are in canonical coords
         GLfloat vertices[32] = {
             (GLfloat)rod.left(), (GLfloat)rod.top(),    //0
-            (GLfloat)rectClippedToRoI.x1, (GLfloat)rod.top(),          //1
-            (GLfloat)rectClippedToRoI.x2, (GLfloat)rod.top(),    //2
+            (GLfloat)rectClippedToRoI.x1 + pixelCenterOffset, (GLfloat)rod.top(),          //1
+            (GLfloat)rectClippedToRoI.x2 - pixelCenterOffset, (GLfloat)rod.top(),    //2
             (GLfloat)rod.right(), (GLfloat)rod.top(),   //3
-            (GLfloat)rod.left(), (GLfloat)rectClippedToRoI.y2, //4
+            (GLfloat)rod.left(), (GLfloat)rectClippedToRoI.y2 - pixelCenterOffset, //4
             (GLfloat)rectClippedToRoI.x1,  (GLfloat)rectClippedToRoI.y2,       //5
             (GLfloat)rectClippedToRoI.x2,  (GLfloat)rectClippedToRoI.y2, //6
             (GLfloat)rod.right(), (GLfloat)rectClippedToRoI.y2, //7
@@ -363,11 +369,10 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         //        GLfloat texTop =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(r.h /** r.closestPo2*/);
         //        GLfloat texLeft = 0;
         //        GLfloat texRight = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(r.w /** r.closestPo2*/);
-        const double pixelCenterOffset = 1;
-        GLfloat texBottom = (GLfloat)(rectClippedToRoI.y1 + pixelCenterOffset - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
-        GLfloat texTop = (GLfloat)(rectClippedToRoI.y2 - pixelCenterOffset - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
-        GLfloat texLeft = (GLfloat)(rectClippedToRoI.x1 + pixelCenterOffset - canonicalRoIRoundedToTileSize.x1)  / canonicalRoIRoundedToTileSize.width();
-        GLfloat texRight = (GLfloat)(rectClippedToRoI.x2 - pixelCenterOffset - canonicalRoIRoundedToTileSize.x1)  / canonicalRoIRoundedToTileSize.width();
+        GLfloat texBottom = (GLfloat)(rectClippedToRoI.y1 - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
+        GLfloat texTop = (GLfloat)(rectClippedToRoI.y2 - canonicalRoIRoundedToTileSize.y1)  / canonicalRoIRoundedToTileSize.height();
+        GLfloat texLeft = (GLfloat)(rectClippedToRoI.x1 - canonicalRoIRoundedToTileSize.x1)  / canonicalRoIRoundedToTileSize.width();
+        GLfloat texRight = (GLfloat)(rectClippedToRoI.x2 - canonicalRoIRoundedToTileSize.x1)  / canonicalRoIRoundedToTileSize.width();
         GLfloat renderingTextureCoordinates[32] = {
             texLeft, texTop,   //0
             texLeft, texTop,   //1
