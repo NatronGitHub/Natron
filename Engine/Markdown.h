@@ -49,6 +49,7 @@ public:
 
     static QString convert2html(QString markdown);
     static QString genPluginKnobsTable(QVector<QStringList> items);
+    static QString genInputKnobsTable(QVector<QStringList> items);
     static QString parseCustomLinksForHTML(QString markdown);
 };
 

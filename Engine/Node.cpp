@@ -4178,6 +4178,7 @@ Node::makeHTMLDocumentation(bool genHTML,
     int minorVersion = getMinorVersion();
     QStringList pluginGroup;
     bool pluginDescriptionMarkdown = false;
+    QVector<QStringList> inputs;
 
     {
         QMutexLocker k(&_imp->pluginPythonModuleMutex);
@@ -4188,7 +4189,16 @@ Node::makeHTMLDocumentation(bool genHTML,
         pluginIcon = _imp->plugin->getIconFilePath();
         pluginGroup = _imp->plugin->getGrouping();
         pluginDescriptionMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
+
+        for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
+            QStringList input;
+            input << QString::fromStdString( _imp->effect->getInputHint(i) ) << QString::fromStdString( _imp->effect->getInputLabel(i) );
+            if ( !input.isEmpty() ) {
+                inputs.push_back(input);
+            }
+        }
     }
+
     QString extraMarkdown;
     QString pluginMD = pluginIcon;
     pluginMD.replace( QString::fromUtf8(".png"), QString::fromUtf8(".md") );
@@ -4383,6 +4393,32 @@ Node::makeHTMLDocumentation(bool genHTML,
 
     if (genHTML) {
         ts << "</table>";
+
+        // add inputs
+        if ( !inputs.isEmpty() ) {
+            ts << "<br><br>";
+            ts << "<table class=\"knobsTable\">";
+            ts << "<tr>";
+            ts << "<td class=\"knobsTableHeader\">";
+            ts << tr("Node Input");
+            ts << "</td>";
+            ts << "<td class=\"knobsTableHeader\">";
+            ts << tr("Description");
+            ts << "</td>";
+            ts << "</tr>";
+            Q_FOREACH(const QStringList &input, inputs) {
+                ts << "<tr>";
+                ts << "<td class=\"knobsTableValueLabel\">";
+                ts << input.at(0);
+                ts << "</td>";
+                ts << "<td class=\"knobsTableValueLabel\">";
+                ts << input.at(1);
+                ts << "</td>";
+                ts << "</tr>";
+            }
+            ts << "</table>";
+        }
+
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
             ts << Markdown::convert2html(extraMarkdown);
@@ -4392,6 +4428,11 @@ Node::makeHTMLDocumentation(bool genHTML,
         // create markdown table
         if (items.size() > 0) {
             ts << Markdown::genPluginKnobsTable(items);
+        }
+        // create markdown table for inputs
+        if (inputs.size() > 0) {
+            ts << "\n";
+            ts << Markdown::genInputKnobsTable(inputs);
         }
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
