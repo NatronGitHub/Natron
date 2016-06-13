@@ -67,31 +67,34 @@ NATRON_NAMESPACE_ENTER;
  */
 template<typename EntryType>
 void
-Cache<EntryType>::save(CacheTOC* tableOfContents)
+Cache<EntryType>::save(CacheTOC* tableOfContents, bool async)
 {
     clearInMemoryPortion(false);
-    QMutexLocker l(&_lock);     // must be locked
+    {
+        QMutexLocker l(&_lock);     // must be locked
 
-    for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
-        std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
-        for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
-            if ( (*it2)->isStoredOnDisk() ) {
-                SerializedEntry serialization;
-                serialization.hash = (*it2)->getHashKey();
-                serialization.params = (*it2)->getParams();
-                serialization.key = (*it2)->getKey();
-                serialization.size = (*it2)->dataSize();
-                serialization.filePath = (*it2)->getFilePath();
-                serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
-                tableOfContents->push_back(serialization);
+        for (CacheIterator it = _diskCache.begin(); it != _diskCache.end(); ++it) {
+            std::list<EntryTypePtr> & listOfValues  = getValueFromIterator(it);
+            for (typename std::list<EntryTypePtr>::const_iterator it2 = listOfValues.begin(); it2 != listOfValues.end(); ++it2) {
+                if ( (*it2)->isStoredOnDisk() ) {
+                    SerializedEntry serialization;
+                    serialization.hash = (*it2)->getHashKey();
+                    serialization.params = (*it2)->getParams();
+                    serialization.key = (*it2)->getKey();
+                    serialization.size = (*it2)->dataSize();
+                    serialization.filePath = (*it2)->getFilePath();
+                    serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
+                    tableOfContents->push_back(serialization);
 #ifdef DEBUG
-                if ( !_isTiled && !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
-                    qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
-                }
+                    if ( !_isTiled && !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
+                        qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+                    }
 #endif
+                }
             }
         }
     }
+    syncTileCache(async);
 }
 
 /*Restores the cache from disk.*/

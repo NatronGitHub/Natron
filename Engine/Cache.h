@@ -502,6 +502,10 @@ private:
 
     // Used when the cache is tiled
     std::set<TileCacheFilePtr> _cacheFiles;
+
+    // When set these are used for fast search of a free tile
+    boost::weak_ptr<TileCacheFile> _nextAvailableCacheFile;
+    int _nextAvailableCacheFileIndex;
 public:
 
 
@@ -532,6 +536,8 @@ public:
         , _isTiled(false)
         , _tileByteSize(0)
         , _cacheFiles()
+        , _nextAvailableCacheFile()
+        , _nextAvailableCacheFileIndex(-1)
     {
     }
 
@@ -663,6 +669,17 @@ private:
         // If not found create one
         TileCacheFilePtr foundAvailableFile;
         int foundTileIndex = -1;
+        {
+            foundAvailableFile = _nextAvailableCacheFile.lock();
+            if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile) {
+                foundTileIndex = _nextAvailableCacheFileIndex;
+                _nextAvailableCacheFileIndex = -1;
+                _nextAvailableCacheFile.reset();
+            } else {
+                foundTileIndex = -1;
+                foundAvailableFile.reset();
+            }
+        }
         for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
             for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
                 if (!(*it)->usedTiles[i])  {
@@ -693,6 +710,8 @@ private:
             *dataOffset = 0;
             foundTileIndex = 0;
             _cacheFiles.insert(foundAvailableFile);
+            _nextAvailableCacheFile = foundAvailableFile;
+            _nextAvailableCacheFileIndex = 1;
         }
 
 
@@ -733,6 +752,9 @@ private:
                 (*foundTileFile)->file->remove();
             }
             _cacheFiles.erase(foundTileFile);
+        } else {
+            _nextAvailableCacheFile = *foundTileFile;
+            _nextAvailableCacheFileIndex = index;
         }
     }
 
@@ -1510,11 +1532,20 @@ public:
 
     /*Saves cache to disk as a settings file.
      */
-    void save(CacheTOC* tableOfContents);
+    void save(CacheTOC* tableOfContents, bool async);
 
 
     /*Restores the cache from disk.*/
     void restore(const CacheTOC & tableOfContents);
+
+    /* Synchronize internal storage for tiled cache on disk*/
+    void syncTileCache(bool asynchronous) const
+    {
+        QMutexLocker k(&_tileCacheMutex);
+        for (std::set<TileCacheFilePtr>::const_iterator it = _cacheFiles.begin(); it!=_cacheFiles.end(); ++it) {
+            (*it)->file->flush(asynchronous);
+        }
+    }
 
     void removeAllEntriesWithDifferentNodeHashForHolderPublic(const CacheEntryHolder* holder,
                                                               U64 nodeHash)

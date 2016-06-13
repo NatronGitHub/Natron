@@ -565,7 +565,7 @@ public:
             }
         } else if (_storageMode == eStorageModeDisk) {
             if (_backingFile) {
-                bool flushOk = _backingFile->flush();
+                bool flushOk = _backingFile->flush(false);
                 _backingFile.reset();
                 if (!flushOk) {
                     throw std::runtime_error("Failed to flush RAM data to backing file.");

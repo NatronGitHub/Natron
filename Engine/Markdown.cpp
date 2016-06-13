@@ -55,7 +55,7 @@ Markdown::convert2html(const QString& markdown)
         qDebug() << "md2" << markdownClean;
 
         hoedown_html_flags flags = HOEDOWN_HTML_SKIP_HTML;
-        hoedown_extensions extensions = HOEDOWN_EXT_AUTOLINK;
+        hoedown_extensions extensions = (hoedown_extensions)(HOEDOWN_EXT_BLOCK|HOEDOWN_EXT_SPAN|HOEDOWN_EXT_FLAGS);
         size_t max_nesting = 16;
         hoedown_renderer *renderer = hoedown_html_renderer_new(flags, 0);
         hoedown_document *document = hoedown_document_new(renderer, extensions, max_nesting);
@@ -242,6 +242,122 @@ Markdown::genPluginKnobsTable(const QVector<QStringList>& items)
 
     return ret;
 } // Markdown::genPluginKnobsTable
+
+
+QString
+Markdown::genInputKnobsTable(const QVector<QStringList>& items)
+{
+    QString ret;
+    QTextStream ts(&ret);
+
+    if (items.size() > 0) {
+        int header1Length = 0;
+        int header2Length = 0;
+        int headerTotal = 0;
+        int headerPadding = 4;
+        int headerCap = 60;
+        QString header1Text = tr("Node Input");
+        QString header2Text = tr("Description");
+
+        // get sizes
+        Q_FOREACH(const QStringList &item, items) {
+            int header1Count = item.at(0).count() + headerPadding + header1Text.count();
+
+            if (header1Count > headerCap) {
+                header1Count = headerCap;
+            }
+            if (header1Count > header1Length) {
+                header1Length = header1Count;
+            }
+            int header2Count = item.at(1).count() + headerPadding + header2Text.count();
+            if (header2Count > headerCap) {
+                header2Count = headerCap;
+            }
+            if (header2Count > header2Length) {
+                header2Length = header2Count;
+            }
+        }
+        headerTotal = (header1Length + header2Length) - 2;
+        int header1Split = header1Length;
+
+        // table top
+        ts << "+";
+        for (int i = 0; i < headerTotal; ++i) {
+            if (i == header1Split) {
+                ts << "+";
+            } else {
+                ts << "-";
+            }
+        }
+        ts << "+\n";
+
+        // header text
+        ts << "| " << header1Text;
+        for (int i = 0; i < headerTotal; ++i) {
+            if (i == ( header1Split - header1Text.count() ) - 1) {
+                ts << "| " << header2Text;
+            } else {
+                ts << " ";
+            }
+        }
+        ts << "|\n";
+
+        // header bottom
+        ts << "+";
+        for (int i = 0; i < headerTotal; ++i) {
+            if (i == header1Split) {
+                ts << "+";
+            } else {
+                ts << "=";
+            }
+        }
+        ts << "+\n";
+
+        // table rows
+        Q_FOREACH(const QStringList &item, items) {
+            QString col1 = item.at(0);
+
+            if (col1.count() < header1Length) {
+                for (int i = col1.count(); i < header1Length - 1; ++i) {
+                    col1.append( QString::fromUtf8(" ") );
+                }
+            } else if (col1.count() > header1Length) {
+                col1.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
+                col1 = col1.left(header1Length - 6);
+                col1.append( QString::fromUtf8(" ... ") );
+            }
+            col1.append( QString::fromUtf8("|") );
+
+            QString col2 = item.at(1);
+            if (col2.count() < header2Length) {
+                for (int i = col2.count(); i < header2Length - 1; ++i) {
+                    col2.append( QString::fromUtf8(" ") );
+                }
+                col2.append( QString::fromUtf8("|\n") );
+            } else {
+                col2.replace( QString::fromUtf8("\n"), QString::fromUtf8("") );
+                col2.append( QString::fromUtf8("|\n") );
+            }
+
+            ts << "| ";
+            ts << col1 << col2;
+
+            // table end
+            ts << "+";
+            for (int i = 0; i < headerTotal; ++i) {
+                if (i == header1Split) {
+                    ts << "+";
+                } else {
+                    ts << "-";
+                }
+            }
+            ts << "+\n";
+        }
+    }
+
+    return ret;
+} // Markdown::genInputsKnobsTable
+
 
 QString
 Markdown::parseCustomLinksForHTML(const QString& markdown)

@@ -50,6 +50,7 @@ public:
     static QString convert2html(const QString& markdown);
     static QString genPluginKnobsTable(const QVector<QStringList>& items);
     static QString parseCustomLinksForHTML(const QString& markdown);
+    static QString genInputKnobsTable(const QVector<QStringList>& items);
 };
 
 NATRON_NAMESPACE_EXIT;
