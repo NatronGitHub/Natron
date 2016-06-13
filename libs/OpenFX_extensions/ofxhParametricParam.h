@@ -129,6 +129,31 @@ public:
                                  int    nthCtl,
                                  double *key,
                                  double *value);
+
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+    /** @brief Returns the left and right derivatives pair of the nth control point.
+     This is an ERROR to call this function if a custom interpolator has been set on the parametric param with the
+     kOfxParamParametricInterpolationCustomInterpCallbackV1 property.
+
+     NEW in V2
+
+     \arg param                 handle to the parametric parameter
+     \arg curveIndex            which dimension to check
+     \arg nthCtl                the nth control point to get the value of
+     \arg leftDerivative        pointer to a double where the value of the left derivative of the nthCtl control point will be returned
+     \arg rightDerivative       pointer to a double where the value of the right derivative of the nthCtl control point will be returned
+
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     */
+    virtual OfxStatus getNthControlPointDerivatives(int curveIndex,
+                                                    double time,
+                                                    int nthCtl,
+                                                    double *leftDerivative,
+                                                    double *rightDerivative);
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
     
     /** @brief Modifies an existing control point on a curve
      
@@ -158,7 +183,56 @@ public:
                                  bool addAnimationKey
                                  );
 
-    
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+    /** @brief Modifies an existing control point on a curve
+
+     NEW in V2
+
+     \arg param                 handle to the parametric parameter
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg nthCtl                the control point to modify
+     \arg interpolation         the interpolation of the control point
+
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrValue      - the host does not know this interpolation type. This must be one of the interpolation modes advertised by the host with the kOfxHostPropSupportedParametricInterpolations property
+     - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+     - ::kOfxStatErrUnknown    - if the type is unknown
+     */
+    virtual OfxStatus setNthControlPointInterpolation(int  curveIndex,
+                                                      double time,
+                                                      int   nthCtl,
+                                                      const char* interpolation);
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
+
+    /** @brief Adds a control point to the curve.
+
+     \arg param                 handle to the parametric parameter
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg key                   key of the control point
+     \arg value                 value of the control point
+     \arg addAnimationKey       if the param is an animatable, setting this to true will
+     force an animation keyframe to be set as well as a curve key,
+     otherwise if false, a key will only be added if the curve is already
+     animating.
+
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+     - ::kOfxStatErrUnknown    - if the type is unknown
+
+     This will add a new control point to the given dimension of a parametric parameter. If a key exists
+     sufficiently close to 'key', then it will be set to the indicated control point.
+     */
+    virtual OfxStatus addControlPoint(int   curveIndex,
+                                      double time,
+                                      double key,
+                                      double value,
+                                      bool addAnimationKey);
+
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
     /** @brief Adds a control point to the curve.
      
      \arg curveIndex            which dimension to set
@@ -181,8 +255,9 @@ public:
                               double time,
                               double key,
                               double value,
+                              const char* interpolationMode,
                               bool addAnimationKey);
-
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
     
     
     /** @brief Deletes the nth control point from a parametric param.

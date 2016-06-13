@@ -554,7 +554,7 @@ EffectInstance::getInputLabel(int inputNb) const
 }
 
 std::string
-EffectInstance::getInputHint(int inputNb) const
+EffectInstance::getInputHint(int /*inputNb*/) const
 {
     return std::string();
 }
