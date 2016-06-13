@@ -30,8 +30,9 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
-#include <QTextStream>
-#include <QRegExp>
+#include <QtCore/QDebug>
+#include <QtCore/QTextStream>
+#include <QtCore/QRegExp>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -45,12 +46,13 @@ Markdown::Markdown()
 
 // Converts markdown to html
 QString
-Markdown::convert2html(QString markdown)
+Markdown::convert2html(const QString& markdown)
 {
     QString html;
 
     if ( !markdown.isEmpty() ) {
-        markdown = parseCustomLinksForHTML(markdown);
+        QString markdownClean = parseCustomLinksForHTML(markdown);
+        qDebug() << "md2" << markdownClean;
 
         hoedown_html_flags flags = HOEDOWN_HTML_SKIP_HTML;
         hoedown_extensions extensions = HOEDOWN_EXT_AUTOLINK;
@@ -58,7 +60,8 @@ Markdown::convert2html(QString markdown)
         hoedown_renderer *renderer = hoedown_html_renderer_new(flags, 0);
         hoedown_document *document = hoedown_document_new(renderer, extensions, max_nesting);
         hoedown_buffer *result = hoedown_buffer_new(max_nesting);
-        hoedown_document_render( document, result, reinterpret_cast<const uint8_t*>(&markdown.toStdString()[0]), markdown.toStdString().size() );
+        std::string markdownStr = markdownClean.toStdString();
+        hoedown_document_render( document, result, reinterpret_cast<const uint8_t*>(&markdownStr[0]), markdownStr.size() );
 
         std::ostringstream convert;
         for (size_t x = 0; x < result->size; x++) {
@@ -79,7 +82,7 @@ Markdown::convert2html(QString markdown)
 // for use with pandoc (which converts the markdown to rst for use in sphinx/rtd)
 // Only used as an intermediate, so the table does not look good in plaintext.
 QString
-Markdown::genPluginKnobsTable(QVector<QStringList> items)
+Markdown::genPluginKnobsTable(const QVector<QStringList>& items)
 {
     QString ret;
     QTextStream ts(&ret);
@@ -241,20 +244,11 @@ Markdown::genPluginKnobsTable(QVector<QStringList> items)
 } // Markdown::genPluginKnobsTable
 
 QString
-Markdown::parseCustomLinksForHTML(QString markdown)
+Markdown::parseCustomLinksForHTML(const QString& markdown)
 {
-    QString result;
-
-    if ( !markdown.isEmpty() ) {
-        QStringList split = markdown.split( QString::fromUtf8("\n") );
-        Q_FOREACH(const QString &line_const, split) {
-            QString line( line_const + QChar::fromAscii('\n') );
-
-            if ( line.contains( QString::fromUtf8("|html::") ) && line.contains( QString::fromUtf8("|rst::") ) ) {
-                line.replace( QString::fromUtf8("|html::"), QString::fromUtf8("") ).replace( QRegExp( QString::fromUtf8("\\|\\|rst::.*\\|") ), QString::fromUtf8("") );
-            }
-        }
-    }
+    QString result = markdown;
+    QRegExp rx( QString::fromUtf8("(\\|html::[^|]*\\|)\\|rst::[^|]*\\|") );
+    result.replace( rx, QString::fromUtf8("\\1") );
 
     return result;
 }
