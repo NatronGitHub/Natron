@@ -349,14 +349,20 @@ MemoryFilePrivate::closeMapping()
 }
 
 bool
-MemoryFile::flush()
+MemoryFile::flush(bool async)
 {
 #if defined(__NATRON_UNIX__)
-
-    return ::msync(_imp->data, _imp->size, MS_SYNC) == 0;
+    if (async) {
+        return ::msync(_imp->data, _imp->size, MS_ASYNC) == 0;
+    } else {
+        return ::msync(_imp->data, _imp->size, MS_SYNC) == 0;
+    }
 #elif defined(__NATRON_WIN32__)
-
-    return ::FlushViewOfFile(_imp->data, _imp->size) != 0;
+    bool ret =  (bool)::FlushViewOfFile(_imp->data, _imp->size) != 0;
+    if (ret && !async) {
+        ret = (bool)::FlushFileBuffers(_imp->file_handle);
+    }
+    return ret;
 #endif
 }
 

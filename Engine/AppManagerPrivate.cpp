@@ -277,7 +277,7 @@ AppManagerPrivate::declareSettingsToPython()
 
 template <typename T>
 void
-saveCache(Cache<T>* cache)
+saveCache(Cache<T>* cache, bool async)
 {
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     FStreamsSupport::ofstream ofile;
@@ -291,7 +291,7 @@ saveCache(Cache<T>* cache)
 
 
     typename Cache<T>::CacheTOC toc;
-    cache->save(&toc);
+    cache->save(&toc, async);
     unsigned int version = cache->cacheVersion();
     try {
         boost::archive::binary_oarchive oArchive(ofile);
@@ -303,10 +303,10 @@ saveCache(Cache<T>* cache)
 }
 
 void
-AppManagerPrivate::saveCaches()
+AppManagerPrivate::saveCaches(bool async)
 {
-    saveCache<FrameEntry>( _viewerCache.get() );
-    saveCache<Image>( _diskCache.get() );
+    saveCache<FrameEntry>( _viewerCache.get(), async );
+    saveCache<Image>( _diskCache.get(), async );
 } // saveCaches
 
 template <typename T>

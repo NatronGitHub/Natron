@@ -216,7 +216,7 @@ setSigSegvSignal()
 void
 AppManager::saveCaches() const
 {
-    _imp->saveCaches();
+    _imp->saveCaches(true);
 }
 
 int
@@ -360,7 +360,7 @@ AppManager::~AppManager()
     _imp->_backgroundIPC.reset();
 
     try {
-        _imp->saveCaches();
+        _imp->saveCaches(false);
     } catch (std::runtime_error) {
         // ignore errors
     }

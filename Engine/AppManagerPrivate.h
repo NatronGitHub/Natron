@@ -180,7 +180,7 @@ public:
 
     void loadBuiltinFormats();
 
-    void saveCaches();
+    void saveCaches(bool async);
 
     void restoreCaches();
 

@@ -135,7 +135,7 @@ public:
     /**
      * @brief Ensures that the backing file is in sync. with the data in memory
      **/
-    bool flush();
+    bool flush(bool async);
 
     /**
      * @brief Returns the filepath of the backing file.
