@@ -29,8 +29,8 @@ touch dummy.ntp
 "$NATRON_BIN" --export-docs "$TMP_FOLDER" dummy.ntp
 cd "$TMP_FOLDER" || exit 1
 
-for i in *.md;do $PANDOC $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
-for i in plugins/*.md;do $PANDOC $i --columns=1000 -o `echo $i|sed 's/.md/.rst/'`;done
+for i in *.md;do $PANDOC $i -o `echo $i|sed 's/.md/.rst/'`;done
+for i in plugins/*.md;do $PANDOC $i -o `echo $i|sed 's/.md/.rst/'`;done
 
 for y in *.rst; do
   if [ ! -f "$DOC_FOLDER/source/${y}" ]; then
