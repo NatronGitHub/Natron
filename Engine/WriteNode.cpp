@@ -318,6 +318,33 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
         }
     }
 
+    // Find the separatorKnob in the page and if the next parameter is also a separator, hide it
+    int foundSep = -1;
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        if (children[i]== separatorKnob.lock()) {
+            foundSep = i;
+            break;
+        }
+    }
+    if (foundSep != -1) {
+        ++foundSep;
+        if (foundSep < children.size()) {
+            bool isSecret = children[foundSep]->getIsSecret();
+            while (isSecret && foundSep < children.size()) {
+                ++foundSep;
+                isSecret = children[foundSep]->getIsSecret();
+            }
+            if (foundSep < children.size()) {
+                separatorKnob.lock()->setSecret(dynamic_cast<KnobSeparator*>(children[foundSep].get()));
+            } else {
+                separatorKnob.lock()->setSecret(true);
+            }
+
+        } else {
+            separatorKnob.lock()->setSecret(true);
+        }
+    }
+
     //Set the render button as the last knob
     boost::shared_ptr<KnobButton> renderB = renderButtonKnob.lock();
     if (renderB) {
@@ -1008,6 +1035,7 @@ WriteNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& se
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization
     _imp->createWriteNode(false, filename, serialization);
+    _imp->refreshPluginSelectorKnob();
 }
 
 bool
