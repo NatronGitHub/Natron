@@ -88,6 +88,7 @@ NATRON_NAMESPACE_ENTER;
 #define kParamAfter "after"
 #define kParamTimeDomainUserEdited "timeDomainUserEdited"
 #define kParamFilePremult "filePremult"
+#define kParamOutputPremult "outputPremult"
 #define kParamOutputComponents "outputComponents"
 #define kParamInputSpaceLabel "File Colorspace"
 #define kParamFrameRate "frameRate"
@@ -132,6 +133,7 @@ static GenericKnob genericReaderKnobNames[] =
     {kParamAfter, true},
     {kParamTimeDomainUserEdited, false},
     {kParamFilePremult, false},
+    {kParamOutputPremult, false},
     {kParamOutputComponents, false},
     {kParamInputSpaceLabel, false},
     {kParamFrameRate, false},
@@ -345,6 +347,34 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
             KnobPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
+        }
+    }
+
+    children = isPage->getChildren();
+    // Find the separatorKnob in the page and if the next parameter is also a separator, hide it
+    int foundSep = -1;
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        if (children[i]== separatorKnob.lock()) {
+            foundSep = i;
+            break;
+        }
+    }
+    if (foundSep != -1) {
+        ++foundSep;
+        if (foundSep < children.size()) {
+            bool isSecret = children[foundSep]->getIsSecret();
+            while (isSecret && foundSep < children.size()) {
+                ++foundSep;
+                isSecret = children[foundSep]->getIsSecret();
+            }
+            if (foundSep < children.size()) {
+                separatorKnob.lock()->setSecret(dynamic_cast<KnobSeparator*>(children[foundSep].get()));
+            } else {
+                separatorKnob.lock()->setSecret(true);
+            }
+            
+        } else {
+            separatorKnob.lock()->setSecret(true);
         }
     }
 }
@@ -640,8 +670,6 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             pluginIDKnob->setValue(readerPluginID);
         }
         placeReadNodeKnobsInPage();
-        separatorKnob.lock()->setSecret(false);
-
 
         //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
         _publicInterface->getNode()->declarePythonFields();

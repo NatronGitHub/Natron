@@ -167,13 +167,15 @@ WriteNode::isBundledWriter(const std::string& pluginID,
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
         return boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
-               boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM);
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG);
     }
 
     return pluginID == PLUGINID_OFX_WRITEOIIO ||
-           pluginID == PLUGINID_OFX_WRITEFFMPEG ||
-           pluginID == PLUGINID_OFX_WRITEPFM;
+    pluginID == PLUGINID_OFX_WRITEFFMPEG ||
+    pluginID == PLUGINID_OFX_WRITEPFM ||
+    pluginID == PLUGINID_OFX_WRITEPNG;
 }
 
 bool
@@ -313,6 +315,33 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
             KnobPtr knob = it->lock();
             isPage->insertKnob(index, knob);
             ++index;
+        }
+    }
+
+    // Find the separatorKnob in the page and if the next parameter is also a separator, hide it
+    int foundSep = -1;
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        if (children[i]== separatorKnob.lock()) {
+            foundSep = i;
+            break;
+        }
+    }
+    if (foundSep != -1) {
+        ++foundSep;
+        if (foundSep < children.size()) {
+            bool isSecret = children[foundSep]->getIsSecret();
+            while (isSecret && foundSep < children.size()) {
+                ++foundSep;
+                isSecret = children[foundSep]->getIsSecret();
+            }
+            if (foundSep < children.size()) {
+                separatorKnob.lock()->setSecret(dynamic_cast<KnobSeparator*>(children[foundSep].get()));
+            } else {
+                separatorKnob.lock()->setSecret(true);
+            }
+
+        } else {
+            separatorKnob.lock()->setSecret(true);
         }
     }
 
@@ -757,7 +786,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
 
-    KnobPtr knob = _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         outputFileKnob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     }
@@ -889,13 +918,14 @@ WriteNode::initializeKnobs()
 
 
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(this, tr(kNatronWriteParamFrameStepLabel), 1, false);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>( this, tr(kNatronWriteParamFrameStepLabel) );
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
+    controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
         std::vector< KnobPtr > children = mainPage->getChildren();
         bool foundLastFrame = false;
@@ -1005,6 +1035,7 @@ WriteNode::onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& se
     std::string filename = getFileNameFromSerialization( serialization->getKnobsValues() );
     //Create the Reader with the serialization
     _imp->createWriteNode(false, filename, serialization);
+    _imp->refreshPluginSelectorKnob();
 }
 
 bool

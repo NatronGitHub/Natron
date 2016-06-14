@@ -504,7 +504,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            throw std::runtime_error("Could not create effect instance for plugin");
+            QString message;
+            int type;
+            NodePtr messageContainer = getNode();
+#ifdef NATRON_ENABLE_IO_META_NODES
+            NodePtr ioContainer = messageContainer->getIOContainer();
+            if (ioContainer) {
+                messageContainer = ioContainer;
+            }
+#endif
+            messageContainer->getPersistentMessage(&message, &type);
+            if (message.isEmpty()) {
+                throw std::runtime_error("Could not create effect instance for plugin");
+            } else {
+                throw std::runtime_error(message.toStdString());
+            }
         }
 
         OfxPointD scaleOne;
