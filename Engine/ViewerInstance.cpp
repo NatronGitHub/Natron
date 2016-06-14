@@ -1567,16 +1567,14 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             updateParams->mustFreeRamBuffer = true;
             updateParams->isPartialRect = true;
             UpdateViewerParams::CachedTile tile;
-            tile.rect.x1 = viewerRenderRoI.x1;
-            tile.rect.x2 = viewerRenderRoI.x2;
-            tile.rect.y1 = viewerRenderRoI.y1;
-            tile.rect.y2 = viewerRenderRoI.y2;
+            tile.rect = viewerRenderRoI;
+            tile.rectRounded = viewerRenderRoI;
             std::size_t pixelSize = 4;
             if (updateParams->depth == eImageBitDepthFloat) {
                 pixelSize *= sizeof(float);
             }
-            std::size_t dstRowSize = inArgs.params->tileSize * pixelSize;
-            tile.bytesCount = inArgs.params->tileSize * dstRowSize;
+            std::size_t dstRowSize = tile.rect.width() * pixelSize;
+            tile.bytesCount = tile.rect.height() * dstRowSize;
             tile.ramBuffer =  (unsigned char*)malloc(tile.bytesCount);
             updateParams->tiles.clear();
             updateParams->tiles.push_back(tile);

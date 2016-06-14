@@ -52,7 +52,6 @@ Markdown::convert2html(const QString& markdown)
 
     if ( !markdown.isEmpty() ) {
         QString markdownClean = parseCustomLinksForHTML(markdown);
-        qDebug() << "md2" << markdownClean;
 
         hoedown_html_flags flags = HOEDOWN_HTML_SKIP_HTML;
         hoedown_extensions extensions = (hoedown_extensions)(HOEDOWN_EXT_BLOCK|HOEDOWN_EXT_SPAN|HOEDOWN_EXT_FLAGS);

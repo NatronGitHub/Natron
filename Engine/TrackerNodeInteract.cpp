@@ -1414,7 +1414,13 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
         _p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
         double time = _p->publicInterface->getCurrentTime();
         bool createkey = createKeyOnMoveButton.lock()->getValue();
+
+        int hasMovedMarker = false;
         for (std::list< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+
+            if (!(*it)->isEnabled(time)) {
+                continue;
+            }
             boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
             boost::shared_ptr<KnobDouble> patternCorners[4];
             patternCorners[0] = (*it)->getPatternBtmLeftKnob();
@@ -1434,10 +1440,11 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
             if (createkey) {
                 (*it)->setUserKeyframe(time);
             }
+            hasMovedMarker = true;
         }
         refreshSelectedMarkerTexture();
 
-        return true;
+        return hasMovedMarker;
     }
 
     return false;

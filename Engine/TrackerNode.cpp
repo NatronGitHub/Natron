@@ -561,6 +561,9 @@ TrackerNode::knobChanged(KnobI* k,
     if (!ctx) {
         return false;
     }
+
+    ctx->onKnobsLoaded();
+    
     bool ret = true;
     if ( k == _imp->ui->trackRangeDialogOkButton.lock().get() ) {
         int first = _imp->ui->trackRangeDialogFirstFrame.lock()->getValue();

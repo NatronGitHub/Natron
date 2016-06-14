@@ -1855,12 +1855,18 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
                 }
             }
 
+
+
+            lastValidFrame = cur;
+
+
+
             // We don't have any successful track, stop
             if (allTrackFailed) {
                 break;
             }
 
-            lastValidFrame = cur;
+
 
             cur += frameStep;
 
