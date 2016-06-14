@@ -331,6 +331,17 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     settingsPage->addKnob(enableTrackKnob);
     activateTrack = enableTrackKnob;
     perTrackKnobs.push_back(enableTrackKnob);
+    
+    boost::shared_ptr<KnobBool> autoKeyEnabledKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kTrackerParamAutoKeyEnabledLabel), 1, false);
+    autoKeyEnabledKnob->setName(kTrackerParamAutoKeyEnabled);
+    autoKeyEnabledKnob->setHintToolTip( tr(kTrackerParamAutoKeyEnabledHint) );
+    autoKeyEnabledKnob->setAnimationEnabled(false);
+    autoKeyEnabledKnob->setDefaultValue(false);
+    autoKeyEnabledKnob->setEvaluateOnChange(false);
+    settingsPage->addKnob(autoKeyEnabledKnob);
+    autoKeyEnabled = autoKeyEnabledKnob;
+
+    
 
     boost::shared_ptr<KnobChoice> motionModelKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kTrackerParamMotionModelLabel), 1, false);
     motionModelKnob->setName(kTrackerParamMotionModel);
@@ -1126,6 +1137,8 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     formatWidth = f.width();
     formatHeight = f.height();
 
+    bool autoKeyingOnEnabledParamEnabled = _imp->autoKeyEnabled.lock()->getValue();
+    
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
     boost::shared_ptr<TrackerFrameAccessor> accessor( new TrackerFrameAccessor(this, enabledChannels, formatHeight) );
     boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
@@ -1144,6 +1157,11 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
      */
     int trackIndex = 0;
     for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it, ++trackIndex) {
+        
+        if (autoKeyingOnEnabledParamEnabled) {
+            (*it)->setEnabledAtTime(start, true);
+        }
+        
         boost::shared_ptr<TrackMarkerAndOptions> t(new TrackMarkerAndOptions);
         t->natronMarker = *it;
 
@@ -1252,11 +1270,11 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         trackAndOptions.push_back(t);
     }
 
-
+    
     /*
        Launch tracking in the scheduler thread.
      */
-    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight) );
+    boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, getNode()->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
     _imp->scheduler.track(args);
 } // TrackerContext::trackMarkers
 

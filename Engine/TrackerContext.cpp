@@ -449,7 +449,6 @@ TrackerContext::trackSelectedMarkers(int start,
              it != _imp->selectedMarkers.end(); ++it) {
             double time = (*it)->getCurrentTime();
             if ( (*it)->isEnabled(time) ) {
-                (*it)->setEnabledAtTime(time, true);
                 markers.push_back(*it);
             }
         }
@@ -1488,6 +1487,8 @@ struct TrackArgsPrivate
     //Store the format size because LibMV internally has a top-down Y axis
     double formatWidth, formatHeight;
     mutable QMutex autoTrackMutex;
+    
+    bool autoKeyingOnEnabledParamEnabled;
 
     TrackArgsPrivate()
         : start(0)
@@ -1500,6 +1501,7 @@ struct TrackArgsPrivate
         , tracks()
         , formatWidth(0)
         , formatHeight(0)
+        , autoKeyingOnEnabledParamEnabled(false)
     {
     }
 };
@@ -1518,7 +1520,8 @@ TrackArgs::TrackArgs(int start,
                      const boost::shared_ptr<TrackerFrameAccessor>& fa,
                      const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
                      double formatWidth,
-                     double formatHeight)
+                     double formatHeight,
+                     bool autoKeyEnabled)
     : GenericThreadStartArgs()
     , _imp( new TrackArgsPrivate() )
 {
@@ -1532,6 +1535,7 @@ TrackArgs::TrackArgs(int start,
     _imp->tracks = tracks;
     _imp->formatWidth = formatWidth;
     _imp->formatHeight = formatHeight;
+    _imp->autoKeyingOnEnabledParamEnabled = autoKeyEnabled;
 }
 
 TrackArgs::~TrackArgs()
@@ -1558,6 +1562,13 @@ TrackArgs::operator=(const TrackArgs& other)
     _imp->tracks = other._imp->tracks;
     _imp->formatWidth = other._imp->formatWidth;
     _imp->formatHeight = other._imp->formatHeight;
+    _imp->autoKeyingOnEnabledParamEnabled = other._imp->autoKeyingOnEnabledParamEnabled;
+}
+
+bool
+TrackArgs::isAutoKeyingEnabledParamEnabled() const
+{
+    return _imp->autoKeyingOnEnabledParamEnabled;
 }
 
 double
@@ -1729,7 +1740,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     }
 
     // Disable the marker since it failed to track
-    if (!ret) {
+    if (!ret && args.isAutoKeyingEnabledParamEnabled()) {
         track->natronMarker->setEnabledAtTime(time, false);
     }
 
