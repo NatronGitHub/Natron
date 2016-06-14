@@ -4232,9 +4232,9 @@ Node::makeHTMLDocumentation(bool genHTML,
     if (genHTML) {
         ts << "</ul></div>";
         ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
-        ts << "<h1>" << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "</h1>";
+        ts << "<h1>" << pluginLabel << "</h1><p>" << tr("This documentation is for version %2.%3 of %1.").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "</p>";
     } else {
-        ts << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "\n==========\n\n";
+        ts << pluginLabel << "\n==========\n" << tr("This documentation is for version %2.%3 of %1.").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n";
         if (hasImg) {
             ts << "![](" << pluginID << ".png)";
             ts << "\n\n";
