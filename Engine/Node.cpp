@@ -4347,11 +4347,17 @@ Node::makeDocumentation(bool genHTML) const
         Q_FOREACH(const QStringList &input, inputs) {
             QString inputName = input.at(0);
             inputName.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
+            if (inputName.isEmpty()) {
+                inputName = QString::fromUtf8("&nbsp;");
+            }
 
             QString inputDesc = input.at(1);
             inputDesc.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
+            if (inputDesc.isEmpty()) {
+                inputDesc = QString::fromUtf8("&nbsp;");
+            }
 
-            ms << inputName << " | | | " << inputDesc << "\n";
+            ms << inputName << " | &nbsp; | &nbsp; | " << inputDesc << "\n";
         }
     }
 
