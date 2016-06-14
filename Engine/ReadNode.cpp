@@ -88,6 +88,7 @@ NATRON_NAMESPACE_ENTER;
 #define kParamAfter "after"
 #define kParamTimeDomainUserEdited "timeDomainUserEdited"
 #define kParamFilePremult "filePremult"
+#define kParamOutputPremult "outputPremult"
 #define kParamOutputComponents "outputComponents"
 #define kParamInputSpaceLabel "File Colorspace"
 #define kParamFrameRate "frameRate"
@@ -132,6 +133,7 @@ static GenericKnob genericReaderKnobNames[] =
     {kParamAfter, true},
     {kParamTimeDomainUserEdited, false},
     {kParamFilePremult, false},
+    {kParamOutputPremult, false},
     {kParamOutputComponents, false},
     {kParamInputSpaceLabel, false},
     {kParamFrameRate, false},

@@ -167,13 +167,15 @@ WriteNode::isBundledWriter(const std::string& pluginID,
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
         return boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
-               boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM);
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
+        boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG);
     }
 
     return pluginID == PLUGINID_OFX_WRITEOIIO ||
-           pluginID == PLUGINID_OFX_WRITEFFMPEG ||
-           pluginID == PLUGINID_OFX_WRITEPFM;
+    pluginID == PLUGINID_OFX_WRITEFFMPEG ||
+    pluginID == PLUGINID_OFX_WRITEPFM ||
+    pluginID == PLUGINID_OFX_WRITEPNG;
 }
 
 bool
@@ -757,7 +759,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
 
-    KnobPtr knob = _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
+    KnobPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
         outputFileKnob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
     }
@@ -889,13 +891,14 @@ WriteNode::initializeKnobs()
 
 
     ///Find a  "lastFrame" parameter and add it after it
-    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>(this, tr(kNatronWriteParamFrameStepLabel), 1, false);
+    boost::shared_ptr<KnobInt> frameIncrKnob = AppManager::createKnob<KnobInt>( this, tr(kNatronWriteParamFrameStepLabel) );
 
     frameIncrKnob->setName(kNatronWriteParamFrameStep);
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setMinimum(1);
     frameIncrKnob->setDefaultValue(1);
+    controlpage->addKnob(frameIncrKnob);
     /*if (mainPage) {
         std::vector< KnobPtr > children = mainPage->getChildren();
         bool foundLastFrame = false;

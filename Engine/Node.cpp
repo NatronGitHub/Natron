@@ -4083,7 +4083,11 @@ Node::Implementation::createChannelSelector(int inputNb,
 int
 Node::getFrameStepKnobValue() const
 {
-    boost::shared_ptr<KnobInt> k = _imp->frameIncrKnob.lock();
+    KnobPtr knob = getKnobByName(kNatronWriteParamFrameStep);
+    if (!knob) {
+        return 1;
+    }
+    KnobInt* k = dynamic_cast<KnobInt*>(knob.get());
 
     if (!k) {
         return 1;
