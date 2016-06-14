@@ -1384,17 +1384,14 @@ AppInstance::exportDocs(const QString path)
                                 mdDir.mkdir(path);
                             }
 
-                            bool hasImg = false;
                             QFile imgFile( plugin->getIconFilePath() );
                             if ( imgFile.exists() ) {
                                 if ( !imgFile.copy( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".png") ) ) {
                                     std::cout << "ERROR: failed to copy image" << imgFile.fileName().toStdString() << std::endl;
-                                } else {
-                                    hasImg = true;
                                 }
                             }
 
-                            QString md = node->makeHTMLDocumentation(false, hasImg);
+                            QString md = node->makeDocumentation(false);
                             QFile mdFile( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".md") );
                             if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
                                 QTextStream out(&mdFile);
