@@ -77,7 +77,8 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 bool
 DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
                                  double /*time*/,
-                                 ViewIdx /*view*/) const
+                                 ViewIdx /*view*/,
+                                 int /*visitsCount*/) const
 {
     return true;
 }

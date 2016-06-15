@@ -249,7 +249,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
         frameArgs.reset(new ParallelRenderArgs);
-
+        {
+            NodesWList outputs;
+            getNode()->getOutputs_mt_safe(outputs);
+            frameArgs->visitsCount = (int)outputs.size();
+        }
         frameArgs->time = args.time;
         frameArgs->nodeHash = getHash();
         frameArgs->view = args.view;
@@ -765,9 +769,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             // Also, if the render time is different from the caller render time, don't render using OpenGL otherwise we could computed this render multiple times.
 
             if (storage == eStorageModeGLTex) {
-                NodesWList outputNodes;
-                getNode()->getOutputs_mt_safe(outputNodes);
-                if ( (outputNodes.size() > 1) ||
+                if ( (frameArgs->visitsCount > 1) ||
                      ( args.time != args.callerRenderTime) ) {
                     storage = eStorageModeRAM;
                     glContextLocker.reset();
@@ -812,7 +814,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         createInCache = false;
     } else {
         // in Analysis, the node upstream of te analysis node should always cache
-        createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view);
+        createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance().get() == args.caller) ? true : shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
     }
     ///Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
     bool renderScaleOneUpstreamIfRenderScaleSupportDisabled = false;

@@ -361,13 +361,13 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
     }
     if (foundSep != -1) {
         ++foundSep;
-        if (foundSep < children.size()) {
+        if (foundSep < (int)children.size()) {
             bool isSecret = children[foundSep]->getIsSecret();
-            while (isSecret && foundSep < children.size()) {
+            while (isSecret && foundSep < (int)children.size()) {
                 ++foundSep;
                 isSecret = children[foundSep]->getIsSecret();
             }
-            if (foundSep < children.size()) {
+            if (foundSep < (int)children.size()) {
                 separatorKnob.lock()->setSecret(dynamic_cast<KnobSeparator*>(children[foundSep].get()));
             } else {
                 separatorKnob.lock()->setSecret(true);

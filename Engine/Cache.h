@@ -382,7 +382,6 @@ class Cache
     : public CacheAPI
 {
     friend class CacheCleanerThread;
-    friend class Cache;
 public:
 
     typedef typename EntryType::hash_type hash_type;

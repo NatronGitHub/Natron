@@ -608,23 +608,16 @@ NodeFrameRequest::getFrameViewCanonicalRoI(double time,
 
 struct FindDependenciesNode
 {
-    NodePtr node;
     bool recursed;
+    int visitCounter;
 
     FindDependenciesNode()
-        : node(), recursed(false) {}
+        : recursed(false), visitCounter(0) {}
 };
 
-struct FindDependenciesNode_compare
-{
-    bool operator() (const FindDependenciesNode & lhs,
-                     const FindDependenciesNode & rhs) const
-    {
-        return lhs.node < rhs.node;
-    }
-};
 
-typedef std::set<FindDependenciesNode, FindDependenciesNode_compare> FindDependenciesSet;
+typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
+
 
 /**
  * @brief Builds a list with all nodes upstream of the given node (including this node) and all its dependencies through expressions as well (which
@@ -632,7 +625,7 @@ typedef std::set<FindDependenciesNode, FindDependenciesNode_compare> FindDepende
  **/
 static void
 getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
-                                                      FindDependenciesSet& finalNodes)
+                                                      FindDependenciesMap& finalNodes)
 {
     //There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
     //want to recurse upstream for them too
@@ -642,26 +635,28 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
         return;
     }
 
-    for (FindDependenciesSet::iterator it = finalNodes.begin(); it != finalNodes.end(); ++it) {
-        if (it->node == node) {
-            if (it->recursed) {
+    {
+        FindDependenciesMap::iterator found = finalNodes.find(node);
+        if (found != finalNodes.end()) {
+            if (found->second.recursed) {
+                ++found->second.visitCounter;
                 //We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
                 return;
             } else {
                 //Now we set the recurse flag below
-                finalNodes.erase(it);
+                finalNodes.erase(found);
                 foundButDidntRecursivelyCallUpstream = true;
-                break;
             }
+
         }
     }
-
+    
     {
         //Add this node to the set
         FindDependenciesNode n;
-        n.node = node;
         n.recursed = true;
-        finalNodes.insert(n);
+        n.visitCounter = 1;
+        finalNodes.insert(std::make_pair(node,n));
     }
 
     //If we already called it, don't do it again
@@ -672,9 +667,9 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
         //Also add all expression dependencies but mark them as we did not recursed on them yet
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
             FindDependenciesNode n;
-            n.node = *it;
             n.recursed = false;
-            finalNodes.insert(n);
+            n.visitCounter = 1;
+            finalNodes.insert(std::make_pair(node, n));
         }
     }
 
@@ -687,17 +682,6 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
     }
 } // getAllUpstreamNodesRecursiveWithDependencies_internal
 
-static void
-getAllUpstreamNodesRecursiveWithDependencies(const NodePtr& node,
-                                             NodesList& finalNodes)
-{
-    FindDependenciesSet tmp;
-
-    getAllUpstreamNodesRecursiveWithDependencies_internal(node, tmp);
-    for (FindDependenciesSet::iterator it = tmp.begin(); it != tmp.end(); ++it) {
-        finalNodes.push_back(it->node);
-    }
-}
 
 ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                                                    ViewIdx view,
@@ -728,39 +712,47 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
-    getAllUpstreamNodesRecursiveWithDependencies(treeRoot, nodes);
+    FindDependenciesMap dependenciesMap;
+    getAllUpstreamNodesRecursiveWithDependencies_internal(treeRoot, dependenciesMap);
 
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        assert(*it);
 
-        EffectInstPtr liveInstance = (*it)->getEffectInstance();
+    for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {
+
+        const NodePtr& node = it->first;
+        nodes.push_back(node);
+
+        EffectInstPtr liveInstance = node->getEffectInstance();
         assert(liveInstance);
-        bool duringPaintStrokeCreation = activeRotoPaintNode && (*it)->isDuringPaintStrokeCreation();
-        RenderSafetyEnum safety = (*it)->getCurrentRenderThreadSafety();
-        PluginOpenGLRenderSupport glSupport = (*it)->getCurrentOpenGLRenderSupport();
+        bool duringPaintStrokeCreation = activeRotoPaintNode && node->isDuringPaintStrokeCreation();
+        RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
+        PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
         NodesList rotoPaintNodes;
-        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
+        boost::shared_ptr<RotoContext> roto = node->getRotoContext();
         if (roto) {
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         }
 
         {
-            U64 nodeHash = (*it)->getHashValue();
+            U64 nodeHash = node->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
-                                                   abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
+                                                   abortInfo, treeRoot, it->second.visitCounter, boost::shared_ptr<NodeFrameRequest>(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             U64 nodeHash = (*it2)->getHashValue();
 
+            // For rotopaint nodes, since the tree internally is always the same for all renders (it does'nt depend where the viewer is connected) the visits count is the  number of output nodes
+            NodesWList outputs;
+            (*it2)->getOutputs_mt_safe(outputs);
+            int visitsCounter = (int)outputs.size();
 
-            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, visitsCounter, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
         }
 
-        if ( (*it)->isMultiInstance() ) {
+        if ( node->isMultiInstance() ) {
             ///If the node has children, set the thread-local storage on them too, even if they do not render, it can be useful for expressions
             ///on parameters.
             NodesList children;
-            (*it)->getChildrenMultiInstance(&children);
+            node->getChildrenMultiInstance(&children);
             for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
                 U64 nodeHash = (*it2)->getHashValue();
 
@@ -769,12 +761,12 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
                 PluginOpenGLRenderSupport childGlSupport = (*it2)->getCurrentOpenGLRenderSupport();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, childGlSupport, doNanHandling, draftMode, stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, 1, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, childGlSupport, doNanHandling, draftMode, stats);
             }
         }
 
 
-        /* NodeGroup* isGrp = (*it)->isEffectGroup();
+        /* NodeGroup* isGrp = node->isEffectGroup();
            if (isGrp) {
              isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode,stats);
            }*/
@@ -885,6 +877,7 @@ ParallelRenderArgs::ParallelRenderArgs()
     , view(0)
     , abortInfo()
     , treeRoot()
+    , visitsCount(0)
     , rotoPaintNodes()
     , stats()
     , openGLContext()

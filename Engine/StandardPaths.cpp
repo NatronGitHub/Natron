@@ -30,9 +30,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 #include <QtCore/QString>
-#if QT_VERSION < 0x050000
-
-#else
+#if QT_VERSION >= 0x050000
 #include <QStandardPaths>
 #endif
 
@@ -41,10 +39,7 @@
 #ifdef __NATRON_WIN32__
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
-
-#ifdef __NATRON_OSX__
-#include <CoreServices/CoreServices.h>
-#elif defined(__NATRON_WIN32__)
+#if defined(__NATRON_WIN32__)
 #include <windows.h>
 #include <IntShCut.h>
 #include <ShlObj.h>
@@ -75,8 +70,8 @@ StandardPaths::StandardPaths()
 }
 
 #if QT_VERSION < 0x050000
-static void
-appendOrganizationAndApp(QString &path)
+void
+StandardPaths::appendOrganizationAndApp(QString &path)
 {
 #ifndef QT_BOOTSTRAPPED
     const QString org = QCoreApplication::organizationName();
@@ -97,97 +92,7 @@ appendOrganizationAndApp(QString &path)
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-#ifdef __NATRON_OSX__
-CLANG_DIAG_OFF(deprecated)
-
-static
-OSType
-translateLocation(StandardPaths::StandardLocationEnum type)
-{
-    switch (type) {
-    case StandardPaths::eStandardLocationConfig:
-
-        return kPreferencesFolderType;
-    case StandardPaths::eStandardLocationDesktop:
-
-        return kDesktopFolderType;
-    case StandardPaths::eStandardLocationDownload: // needs NSSearchPathForDirectoriesInDomains with NSDownloadsDirectory
-    // which needs an objective-C *.mm file...
-    case StandardPaths::eStandardLocationDocuments:
-
-        return kDocumentsFolderType;
-    case StandardPaths::eStandardLocationFonts:
-        // There are at least two different font directories on the mac: /Library/Fonts and ~/Library/Fonts.
-
-        // To select a specific one we have to specify a different first parameter when calling FSFindFolder.
-        return kFontsFolderType;
-    case StandardPaths::eStandardLocationApplications:
-
-        return kApplicationsFolderType;
-    case StandardPaths::eStandardLocationMusic:
-
-        return kMusicDocumentsFolderType;
-    case StandardPaths::eStandardLocationMovies:
-
-        return kMovieDocumentsFolderType;
-    case StandardPaths::eStandardLocationPictures:
-
-        return kPictureDocumentsFolderType;
-    case StandardPaths::eStandardLocationTemp:
-
-        return kTemporaryFolderType;
-    case StandardPaths::eStandardLocationGenericData:
-    case StandardPaths::eStandardLocationRuntime:
-    case StandardPaths::eStandardLocationData:
-
-        return kApplicationSupportFolderType;
-    case StandardPaths::eStandardLocationGenericCache:
-    case StandardPaths::eStandardLocationCache:
-
-        return kCachedDataFolderType;
-    default:
-
-        return kDesktopFolderType;
-    }
-}
-
-/*
-     Constructs a full unicode path from a FSRef.
- */
-static QString
-getFullPath(const FSRef &ref)
-{
-    QByteArray ba(2048, 0);
-
-    if (FSRefMakePath( &ref, reinterpret_cast<UInt8 *>( ba.data() ), ba.size() ) == noErr) {
-        return QString::fromUtf8( ba.constData() ).normalized(QString::NormalizationForm_C);
-    }
-
-    return QString();
-}
-
-static QString
-macLocation(StandardPaths::StandardLocationEnum type,
-            short domain)
-{
-    // http://developer.apple.com/documentation/Carbon/Reference/Folder_Manager/Reference/reference.html
-    FSRef ref;
-    OSErr err = FSFindFolder(domain, translateLocation(type), false, &ref);
-
-    if (err) {
-        return QString();
-    }
-
-    QString path = getFullPath(ref);
-
-    if ( (type == StandardPaths::eStandardLocationData) || (type == StandardPaths::eStandardLocationCache) ) {
-        appendOrganizationAndApp(path);
-    }
-
-    return path;
-}
-
-#elif defined(__NATRON_WIN32__)
+#ifdef __NATRON_WIN32__
 static QString
 qSystemDirectory()
 {
@@ -317,24 +222,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
 {
 #if QT_VERSION < 0x050000
 #ifdef __NATRON_OSX__
-    switch (type) {
-    case eStandardLocationHome:
-
-        return QDir::homePath();
-    case eStandardLocationTemp:
-
-        return QDir::tempPath();
-    case eStandardLocationGenericData:
-    case eStandardLocationData:
-    case eStandardLocationGenericCache:
-    case eStandardLocationCache:
-    case eStandardLocationRuntime:
-
-        return macLocation(type, kUserDomain);
-    default:
-
-        return macLocation(type, kOnAppropriateDisk);
-    }
+    return writableLocation_mac_qt4(type);
 #elif defined(__NATRON_LINUX__)
     switch (type) {
     case eStandardLocationHome:

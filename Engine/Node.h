@@ -585,7 +585,7 @@ public:
 
     bool isUserSelected() const;
 
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.

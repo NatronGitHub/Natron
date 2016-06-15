@@ -645,6 +645,7 @@ public:
                                   U64 nodeHash,
                                   const AbortableRenderInfoPtr& abortInfo,
                                   const NodePtr & treeRoot,
+                                  int visitsCount,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                   const OSGLContextPtr& glContext,
                                   int textureIndex,
@@ -1051,7 +1052,7 @@ public:
                                       RectI* roiPixel,
                                       boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
     virtual void aboutToRestoreDefaultValues() OVERRIDE FINAL;
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view) const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.

@@ -243,6 +243,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          U64 nodeHash,
                                          const AbortableRenderInfoPtr& abortInfo,
                                          const NodePtr & treeRoot,
+                                         int visitsCount,
                                          const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                          const OSGLContextPtr& glContext,
                                          int textureIndex,
@@ -274,6 +275,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
     assert(abortInfo);
     args->abortInfo = abortInfo;
     args->treeRoot = treeRoot;
+    args->visitsCount = visitsCount;
     args->textureIndex = textureIndex;
     args->isAnalysis = isAnalysis;
     args->isDuringPaintStrokeCreation = isDuringPaintStrokeCreation;
@@ -481,11 +483,12 @@ EffectInstance::aborted() const
 bool
 EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                                   double time,
-                                  ViewIdx view) const
+                                  ViewIdx view,
+                                  int visitsCount) const
 {
     NodePtr n = _node.lock();
 
-    return n->shouldCacheOutput(isFrameVaryingOrAnimated, time, view);
+    return n->shouldCacheOutput(isFrameVaryingOrAnimated, time, view, visitsCount);
 }
 
 U64

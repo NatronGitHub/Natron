@@ -550,9 +550,10 @@ OTHER_FILES += \
 # SHIBOKEN.clean = dummy # don't remove the %_wrapper.cpp file by "make clean"
 
 # QMAKE_EXTRA_COMPILERS += SHIBOKEN
-
 macx {
 OBJECTIVE_SOURCES += \
-    QUrlFix.mm \
-    OSGLContext_mac.mm
+    $$PWD/../Engine/OSGLContext_mac.mm \
+    $$PWD/../Global/ProcInfo_mac.mm \
+    $$PWD/../Engine/QUrlFix.mm \
+    $$PWD/../Engine/StandardPaths_mac.mm
 }

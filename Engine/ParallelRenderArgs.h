@@ -102,6 +102,10 @@ struct ParallelRenderArgs
     ///A pointer to the node that requested the current render.
     NodePtr treeRoot;
 
+    ///In the tree originating from the root treeRoot, how many times this node is visited ? this is used to determine
+    ///if we should cache the output and whether we should do GPU rendering or not
+    int visitsCount;
+
     ///List of the nodes in the rotopaint tree
     NodesList rotoPaintNodes;
 

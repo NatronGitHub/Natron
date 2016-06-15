@@ -398,8 +398,7 @@ Resources/Images/natronIcon256_windows.ico \
 Resources/Images/splashscreen.svg \
     Resources/Images/prevUserKey.png
 
-
 macx {
 OBJECTIVE_SOURCES += \
-    QtMac.mm
+    $$PWD/../Gui/QtMac.mm
 }

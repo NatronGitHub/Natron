@@ -9579,7 +9579,8 @@ addIdentityNodesRecursively(const Node* caller,
 bool
 Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                         double time,
-                        ViewIdx view) const
+                        ViewIdx view,
+                        int /*visitsCount*/) const
 {
     /*
      * Here is a list of reasons when caching is enabled for a node:
