@@ -730,10 +730,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
-    }
-    // Enable GPU render if the plug-in cannot render another way or if all conditions are met
-    else if ( glContext && ( (openGLSupport == ePluginOpenGLRenderSupportNeeded) ||
+    } else if ( glContext && ( (openGLSupport == ePluginOpenGLRenderSupportNeeded) ||
                              ( ( openGLSupport == ePluginOpenGLRenderSupportYes) && args.allowGPURendering) ) ) {
+        // Enable GPU render if the plug-in cannot render another way or if all conditions are met
 
         if (openGLSupport == ePluginOpenGLRenderSupportNeeded && !getNode()->getPlugin()->isOpenGLEnabled()) {
             QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
@@ -767,6 +766,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             if (storage == eStorageModeGLTex) {
                 NodesWList outputNodes;
                 getNode()->getOutputs_mt_safe(outputNodes);
+#pragma message WARN("this should only consider outputs that are actually used for this render. do a depth-first search from the render end point, and disable opengl on nodes that are traversed twice (no need to continue traversal), see https://github.com/MrKepzie/Natron/issues/1345")
                 if ( (outputNodes.size() > 1) ||
                      ( args.time != args.callerRenderTime) ) {
                     storage = eStorageModeRAM;
