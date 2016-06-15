@@ -4703,6 +4703,12 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         {
             RECURSIVE_ACTION();
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
+            // Map to a plug-in known reason
+            if (reason == eValueChangedReasonNatronGuiEdited) {
+                reason = eValueChangedReasonUserEdited;
+            } else if (reason == eValueChangedReasonNatronInternalEdited) {
+                reason = eValueChangedReasonUserEdited;
+            }
             ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
         }
     }
