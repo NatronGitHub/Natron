@@ -4311,10 +4311,28 @@ Node::makeDocumentation(bool genHTML) const
     ms << pluginDescription << "\n\n";
 
     // create markdown table
+    ms << tr("Inputs & Controls") << "\n----------\n\n";
+    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
+    ms << "--- | --- | --- | ---\n";
+
+    if (inputs.size() > 0) {
+        Q_FOREACH(const QStringList &input, inputs) {
+            QString inputName = input.at(0);
+            inputName.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
+            if (inputName.isEmpty()) {
+                inputName = QString::fromUtf8("&nbsp;");
+            }
+
+            QString inputDesc = input.at(1);
+            inputDesc.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
+            if (inputDesc.isEmpty()) {
+                inputDesc = QString::fromUtf8("&nbsp;");
+            }
+
+            ms << inputName << " | &nbsp; | &nbsp; | " << inputDesc << "\n";
+        }
+    }
     if (items.size() > 0) {
-        ms << tr("Inputs & Controls") << "\n----------\n\n";
-        ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
-        ms << "--- | --- | --- | ---\n";
         Q_FOREACH(const QStringList &item, items) {
             QString itemLabel = item.at(0);
             itemLabel.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
@@ -4341,23 +4359,6 @@ Node::makeDocumentation(bool genHTML) const
             }
 
             ms << itemLabel << " | " << itemScript << " | " << itemDefault << " | " << itemFunction << "\n";
-        }
-    }
-    if ( (items.size() > 0) && (inputs.size() > 0) ) {
-        Q_FOREACH(const QStringList &input, inputs) {
-            QString inputName = input.at(0);
-            inputName.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputName.isEmpty()) {
-                inputName = QString::fromUtf8("&nbsp;");
-            }
-
-            QString inputDesc = input.at(1);
-            inputDesc.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputDesc.isEmpty()) {
-                inputDesc = QString::fromUtf8("&nbsp;");
-            }
-
-            ms << inputName << " | &nbsp; | &nbsp; | " << inputDesc << "\n";
         }
     }
 
