@@ -29,6 +29,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <cstring> // for std::memcpy
+#include <cfloat> // DBL_MAX
 
 #include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -82,6 +83,25 @@ NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 using boost::shared_ptr;
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+struct MinMaxVal {
+    MinMaxVal(double min_, double max_)
+    : min(min_)
+    , max(max_)
+    {
+    }
+    MinMaxVal()
+    : min(DBL_MAX)
+    , max(-DBL_MAX)
+    {
+    }
+
+    double min;
+    double max;
+};
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static void scaleToTexture8bits(const RectI& roi,
                                 const RenderViewerArgs & args,
@@ -92,7 +112,7 @@ static void scaleToTexture32bits(const RectI& roi,
                                  const RenderViewerArgs & args,
                                  const UpdateViewerParams::CachedTile& tile,
                                  float *output);
-static std::pair<double, double>findAutoContrastVminVmax(boost::shared_ptr<const Image> inputImage,
+static MinMaxVal findAutoContrastVminVmax(boost::shared_ptr<const Image> inputImage,
                                                          DisplayChannelsEnum channels,
                                                          const RectI & rect);
 static void renderFunctor(const RectI& roi,
@@ -1782,9 +1802,9 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         if (singleThreaded) {
             if (inArgs.autoContrast && !inArgs.isDoingPartialUpdates) {
                 double vmin, vmax;
-                std::pair<double, double> vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
-                vmin = vMinMax.first;
-                vmax = vMinMax.second;
+                MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
+                vmin = vMinMax.min;
+                vmax = vMinMax.max;
 
                 ///if vmax - vmin is greater than 1 the gain will be really small and we won't see
                 ///anything in the image
@@ -1828,25 +1848,24 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                 double vmax = -std::numeric_limits<double>::infinity();
 
                 if (runInCurrentThread) {
-                    std::pair<double, double> vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
-                    vmin = vMinMax.first;
-                    vmax = vMinMax.second;
+                    MinMaxVal vMinMax = findAutoContrastVminVmax(colorImage, inArgs.channels, viewerRenderRoI);
+                    vmin = vMinMax.min;
+                    vmax = vMinMax.max;
                 } else {
                     std::vector<RectI> splitRects = viewerRenderRoI.splitIntoSmallerRects( appPTR->getHardwareIdealThreadCount() );
-                    QFuture<std::pair<double, double> > future = QtConcurrent::mapped( splitRects,
+                    QFuture<MinMaxVal> future = QtConcurrent::mapped( splitRects,
                                                                                        boost::bind(findAutoContrastVminVmax,
                                                                                                    colorImage,
                                                                                                    inArgs.channels,
                                                                                                    _1) );
                     future.waitForFinished();
-
-                    std::pair<double, double> vMinMax;
-                    Q_FOREACH ( vMinMax, future.results() ) {
-                        if (vMinMax.first < vmin) {
-                            vmin = vMinMax.first;
+                    QList<MinMaxVal> results = future.results();
+                    Q_FOREACH (const MinMaxVal &vMinMax, results) {
+                        if (vMinMax.min < vmin) {
+                            vmin = vMinMax.min;
                         }
-                        if (vMinMax.second > vmax) {
-                            vmax = vMinMax.second;
+                        if (vMinMax.max > vmax) {
+                            vmax = vMinMax.max;
                         }
                     }
                 } // runInCurrentThread
@@ -1965,7 +1984,7 @@ renderFunctor(const RectI& roi,
 }
 
 inline
-std::pair<double, double>
+MinMaxVal
 findAutoContrastVminVmax_generic(boost::shared_ptr<const Image> inputImage,
                                  int nComps,
                                  DisplayChannelsEnum channels,
@@ -2052,11 +2071,11 @@ findAutoContrastVminVmax_generic(boost::shared_ptr<const Image> inputImage,
         }
     }
 
-    return std::make_pair(localVmin, localVmax);
+    return MinMaxVal(localVmin, localVmax);
 } // findAutoContrastVminVmax_generic
 
 template <int nComps>
-std::pair<double, double>
+MinMaxVal
 findAutoContrastVminVmax_internal(boost::shared_ptr<const Image> inputImage,
                                   DisplayChannelsEnum channels,
                                   const RectI & rect)
@@ -2064,7 +2083,7 @@ findAutoContrastVminVmax_internal(boost::shared_ptr<const Image> inputImage,
     return findAutoContrastVminVmax_generic(inputImage, nComps, channels, rect);
 }
 
-std::pair<double, double>
+MinMaxVal
 findAutoContrastVminVmax(boost::shared_ptr<const Image> inputImage,
                          DisplayChannelsEnum channels,
                          const RectI & rect)
