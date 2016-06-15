@@ -616,13 +616,13 @@ Gui::keyPressEvent(QKeyEvent* e)
             const std::list<ViewerTab*>& viewers = getViewersList();
             bool viewerTabHasFocus = false;
             for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-                if ( (*it)->hasFocus() || ( (_imp->currentPanelFocus == *it) && !_imp->keyPressEventHasVisitedFocusWidget ) ) {
+                if ( (*it)->hasFocus() || (_imp->currentPanelFocus == *it) ) {
                     viewerTabHasFocus = true;
                     break;
                 }
             }
             //Plug-ins did not yet receive a keyDown event for this modifier, send it
-            if (!viewers.empty() && !viewerTabHasFocus) {
+            if ((!viewers.empty() && (!viewerTabHasFocus || !_imp->keyPressEventHasVisitedFocusWidget))) {
                 //Increment a recursion counter because the handler of the focus widget might toss it back to us
                 ++_imp->currentPanelFocusEventRecursion;
                 //If a panel as the click focus, try to send the event to it

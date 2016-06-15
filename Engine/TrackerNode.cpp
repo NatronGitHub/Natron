@@ -736,7 +736,7 @@ TrackerNode::drawOverlay(double time,
         Point selectedSearchTopRight;
 
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
-            bool isEnabled = (*it)->isEnabled((*it)->getCurrentTime());
+            bool isEnabled = (*it)->isEnabled(time);
 
             double thisMarkerColor[3];
             if (!isEnabled) {
