@@ -14,7 +14,6 @@ Contents:
     plugins/net.fxarena.openfx.Oilpaint.rst
     plugins/net.fxarena.openfx.Polar.rst
     plugins/net.fxarena.openfx.Polaroid.rst
-    plugins/net.fxarena.openfx.PovRay.rst
     plugins/net.fxarena.openfx.Reflection.rst
     plugins/net.fxarena.openfx.Roll.rst
     plugins/net.fxarena.openfx.Sketch.rst

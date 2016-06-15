@@ -8,10 +8,8 @@ Contents:
 
     plugins/fr.inria.built-in.Roto.rst
     plugins/fr.inria.built-in.RotoPaint.rst
-    plugins/fr.inria.openfx.OIIOText.rst
     plugins/fr.inria.openfx.TextFX.rst
     plugins/net.fxarena.openfx.Text.rst
-    plugins/net.fxarena.openfx.TextPango.rst
     plugins/net.sf.cimg.CImgNoise.rst
     plugins/net.sf.cimg.CImgPlasma.rst
     plugins/net.sf.openfx.Noise.rst
