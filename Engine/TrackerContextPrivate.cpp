@@ -269,7 +269,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     maxErrorKnob->setAnimationEnabled(false);
     maxErrorKnob->setMinimum(0.);
     maxErrorKnob->setMaximum(1.);
-    maxErrorKnob->setDefaultValue(0.2);
+    maxErrorKnob->setDefaultValue(0.25);
     maxErrorKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(maxErrorKnob);
     maxError = maxErrorKnob;
@@ -314,6 +314,32 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     preBlurSigmaKnob->setEvaluateOnChange(false);
     settingsPage->addKnob(preBlurSigmaKnob);
     preBlurSigma = preBlurSigmaKnob;
+
+    boost::shared_ptr<KnobInt> defPatternWinSizeKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamDefaultMarkerPatternWinSizeLabel), 1, false);
+    defPatternWinSizeKnob->setName(kTrackerParamDefaultMarkerPatternWinSize);
+    defPatternWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerPatternWinSizeLabel));
+    defPatternWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerPatternWinSizeHint) );
+    defPatternWinSizeKnob->setAnimationEnabled(false);
+    defPatternWinSizeKnob->setMinimum(1);
+    defPatternWinSizeKnob->disableSlider();
+    defPatternWinSizeKnob->setAddNewLine(false);
+    defPatternWinSizeKnob->setEvaluateOnChange(false);
+    defPatternWinSizeKnob->setDefaultValue(21);
+    settingsPage->addKnob(defPatternWinSizeKnob);
+    defaultPatternWinSize = defPatternWinSizeKnob;
+
+    boost::shared_ptr<KnobInt> defSearchWinSizeKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kTrackerParamDefaultMarkerSearchWinSizeLabel), 1, false);
+    defSearchWinSizeKnob->setName(kTrackerParamDefaultMarkerSearchWinSize);
+    defSearchWinSizeKnob->setInViewerContextLabel(tr(kTrackerParamDefaultMarkerSearchWinSizeLabel));
+    defSearchWinSizeKnob->setHintToolTip( tr(kTrackerParamDefaultMarkerSearchWinSizeHint) );
+    defSearchWinSizeKnob->setAnimationEnabled(false);
+    defSearchWinSizeKnob->setMinimum(1);
+    defSearchWinSizeKnob->disableSlider();
+    defSearchWinSizeKnob->setEvaluateOnChange(false);
+    defSearchWinSizeKnob->setDefaultValue(71);
+    settingsPage->addKnob(defSearchWinSizeKnob);
+    defaultSearchWinSize = defSearchWinSizeKnob;
+
 
     boost::shared_ptr<KnobSeparator>  perTrackSeparatorKnob = AppManager::createKnob<KnobSeparator>(effect.get(), tr(kTrackerParamPerTrackParamsSeparatorLabel), 3);
     perTrackSeparatorKnob->setName(kTrackerParamPerTrackParamsSeparator);

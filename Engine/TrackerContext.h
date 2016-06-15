@@ -135,7 +135,11 @@ public:
     boost::shared_ptr<Node> getNode() const;
     boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
     boost::shared_ptr<KnobBool> getEnabledKnob() const;
-    boost::shared_ptr<KnobPage> getTrackingPageKnbo() const;
+    boost::shared_ptr<KnobPage> getTrackingPageKnob() const;
+
+    boost::shared_ptr<KnobInt> getDefaultMarkerPatternWinSizeKnob() const;
+
+    boost::shared_ptr<KnobInt> getDefaultMarkerSearchWinSizeKnob() const;
 
     bool isTrackerPMEnabled() const;
 

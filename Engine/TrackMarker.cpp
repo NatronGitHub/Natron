@@ -117,47 +117,57 @@ TrackMarker::~TrackMarker()
 void
 TrackMarker::initializeKnobs()
 {
+    boost::shared_ptr<TrackerContext> context = _imp->context.lock();
+    boost::shared_ptr<KnobInt> defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
+    boost::shared_ptr<KnobInt> defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
+
+    int patternHalfSize = defPatternSizeKnob->getValue();
+    patternHalfSize = std::ceil((patternHalfSize + 1) / 2);
+
+    int searchHalfSize = defSearchSizeKnob->getValue();
+    searchHalfSize = std::ceil((searchHalfSize - 1) / 2);
+
     boost::shared_ptr<KnobDouble> swbbtmLeft = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamSearchWndBtmLeftLabel), 2, false);
 
     swbbtmLeft->setName(kTrackerParamSearchWndBtmLeft);
-    swbbtmLeft->setDefaultValue(-25, 0);
-    swbbtmLeft->setDefaultValue(-25, 1);
+    swbbtmLeft->setDefaultValue(-searchHalfSize, 0);
+    swbbtmLeft->setDefaultValue(-searchHalfSize, 1);
     swbbtmLeft->setHintToolTip( tr(kTrackerParamSearchWndBtmLeftHint) );
     _imp->searchWindowBtmLeft = swbbtmLeft;
 
     boost::shared_ptr<KnobDouble> swbtRight = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamSearchWndTopRightLabel), 2, false);
     swbtRight->setName(kTrackerParamSearchWndTopRight);
-    swbtRight->setDefaultValue(25, 0);
-    swbtRight->setDefaultValue(25, 1);
+    swbtRight->setDefaultValue(searchHalfSize, 0);
+    swbtRight->setDefaultValue(searchHalfSize, 1);
     swbtRight->setHintToolTip( tr(kTrackerParamSearchWndTopRightHint) );
     _imp->searchWindowTopRight = swbtRight;
 
 
     boost::shared_ptr<KnobDouble> ptLeft = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternTopLeftLabel), 2, false);
     ptLeft->setName(kTrackerParamPatternTopLeft);
-    ptLeft->setDefaultValue(-15, 0);
-    ptLeft->setDefaultValue(15, 1);
+    ptLeft->setDefaultValue(-patternHalfSize, 0);
+    ptLeft->setDefaultValue(patternHalfSize, 1);
     ptLeft->setHintToolTip( tr(kTrackerParamPatternTopLeftHint) );
     _imp->patternTopLeft = ptLeft;
 
     boost::shared_ptr<KnobDouble> ptRight = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternTopRightLabel), 2, false);
     ptRight->setName(kTrackerParamPatternTopRight);
-    ptRight->setDefaultValue(15, 0);
-    ptRight->setDefaultValue(15, 1);
+    ptRight->setDefaultValue(patternHalfSize, 0);
+    ptRight->setDefaultValue(patternHalfSize, 1);
     ptRight->setHintToolTip( tr(kTrackerParamPatternTopRightHint) );
     _imp->patternTopRight = ptRight;
 
     boost::shared_ptr<KnobDouble> pBRight = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternBtmRightLabel), 2, false);
     pBRight->setName(kTrackerParamPatternBtmRight);
-    pBRight->setDefaultValue(15, 0);
-    pBRight->setDefaultValue(-15, 1);
+    pBRight->setDefaultValue(patternHalfSize, 0);
+    pBRight->setDefaultValue(-patternHalfSize, 1);
     pBRight->setHintToolTip( tr(kTrackerParamPatternBtmRightHint) );
     _imp->patternBtmRight = pBRight;
 
     boost::shared_ptr<KnobDouble> pBLeft = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamPatternBtmLeftLabel), 2, false);
     pBLeft->setName(kTrackerParamPatternBtmLeft);
-    pBLeft->setDefaultValue(-15, 0);
-    pBLeft->setDefaultValue(-15, 1);
+    pBLeft->setDefaultValue(-patternHalfSize, 0);
+    pBLeft->setDefaultValue(-patternHalfSize, 1);
     pBLeft->setHintToolTip( tr(kTrackerParamPatternBtmLeftHint) );
     _imp->patternBtmLeft = pBLeft;
 

@@ -2330,6 +2330,7 @@ public:
     bool isInitializingKnobs() const;
 
     void addKnobToViewerUI(const KnobPtr& knob);
+    bool isInViewerUIKnob(const KnobPtr& knob) const;
     KnobsVec getViewerUIKnobs() const;
 
 protected:

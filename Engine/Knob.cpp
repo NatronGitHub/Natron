@@ -4635,6 +4635,18 @@ KnobHolder::addKnobToViewerUI(const KnobPtr& knob)
     _imp->knobsWithViewerUI.push_back(knob);
 }
 
+bool
+KnobHolder::isInViewerUIKnob(const KnobPtr& knob) const
+{
+    for (std::vector<KnobWPtr>::const_iterator it = _imp->knobsWithViewerUI.begin(); it!=_imp->knobsWithViewerUI.end(); ++it) {
+        KnobPtr p = it->lock();
+        if (p == knob) {
+            return true;
+        }
+    }
+    return false;
+}
+
 KnobsVec
 KnobHolder::getViewerUIKnobs() const
 {

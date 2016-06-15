@@ -391,9 +391,21 @@ TrackerContext::getEnabledKnob() const
 }
 
 boost::shared_ptr<KnobPage>
-TrackerContext::getTrackingPageKnbo() const
+TrackerContext::getTrackingPageKnob() const
 {
     return _imp->trackingPageKnob.lock();
+}
+
+boost::shared_ptr<KnobInt>
+TrackerContext::getDefaultMarkerPatternWinSizeKnob() const
+{
+    return _imp->defaultPatternWinSize.lock();
+}
+
+boost::shared_ptr<KnobInt>
+TrackerContext::getDefaultMarkerSearchWinSizeKnob() const
+{
+    return _imp->defaultSearchWinSize.lock();
 }
 
 bool

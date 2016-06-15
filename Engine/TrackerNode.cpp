@@ -127,7 +127,7 @@ void
 TrackerNode::initializeKnobs()
 {
     boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
-    boost::shared_ptr<KnobPage> trackingPage = context->getTrackingPageKnbo();
+    boost::shared_ptr<KnobPage> trackingPage = context->getTrackingPageKnob();
     boost::shared_ptr<KnobButton> addMarker = AppManager::createKnob<KnobButton>( this, tr(kTrackerUIParamAddTrackLabel) );
 
     addMarker->setName(kTrackerUIParamAddTrack);
@@ -405,6 +405,8 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(resetTrack);
     resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
     addKnobToViewerUI(magWindow);
+    addKnobToViewerUI(context->getDefaultMarkerPatternWinSizeKnob());
+    addKnobToViewerUI(context->getDefaultMarkerSearchWinSizeKnob());
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );
@@ -720,7 +722,7 @@ TrackerNode::drawOverlay(double time,
         context->getSelectedMarkers(&selectedMarkers);
         context->getAllMarkers(&allMarkers);
 
-        bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
+        bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
         bool showErrorColor = _imp->ui->showCorrelationButton.lock()->getValue();
         TrackMarkerPtr selectedMarker = _imp->ui->selectedMarker.lock();
         bool selectedFound = false;
@@ -734,8 +736,17 @@ TrackerNode::drawOverlay(double time,
         Point selectedSearchTopRight;
 
         for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
-            if ( !(*it)->isEnabled( (*it)->getCurrentTime() ) ) {
-                continue;
+            bool isEnabled = (*it)->isEnabled((*it)->getCurrentTime());
+
+            double thisMarkerColor[3];
+            if (!isEnabled) {
+                for (int i = 0; i < 3; ++i) {
+                    thisMarkerColor[i] = markerColor[i] / 2.;
+                }
+            } else {
+                for (int i = 0; i < 3; ++i) {
+                    thisMarkerColor[i] = markerColor[i];
+                }
             }
 
             bool isHoverMarker = *it == _imp->ui->hoverMarker;
@@ -771,7 +782,7 @@ TrackerNode::drawOverlay(double time,
                     if (l == 0) {
                         glColor4d(0., 0., 0., 1.);
                     } else {
-                        glColor4f(markerColor[0], markerColor[1], markerColor[2], 1.);
+                        glColor4f(thisMarkerColor[0], thisMarkerColor[1], thisMarkerColor[2], 1.);
                     }
 
 
@@ -868,6 +879,10 @@ TrackerNode::drawOverlay(double time,
                 const QPointF outterMidTopExt   = TrackerNodeInteract::computeMidPointExtent(searchTopRight, searchTopLeft,  outterMidTop,   handleSize);
                 const QPointF outterMidBtmExt   = TrackerNodeInteract::computeMidPointExtent(searchBtmLeft,  searchBtmRight, outterMidBtm,   handleSize);
                 std::string name = (*it)->getLabel();
+                if (!isEnabled) {
+                    name += ' ';
+                    name += tr("(disabled)").toStdString();
+                }
                 std::map<int, std::pair<Point, double> > centerPoints;
                 int floorTime = std::floor(time + 0.5);
                 boost::shared_ptr<Curve> xCurve = centerKnob->getCurve(ViewSpec::current(), 0);
@@ -944,7 +959,7 @@ TrackerNode::drawOverlay(double time,
                     glDisable(GL_POINT_SMOOTH);
 
 
-                    glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                    glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     glBegin(GL_LINE_LOOP);
                     glVertex2d( topLeft.x(), topLeft.y() );
                     glVertex2d( topRight.x(), topRight.y() );
@@ -966,7 +981,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringCenter) || (_imp->ui->eventState == eMouseStateDraggingCenter) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( center.x(), center.y() );
 
@@ -1051,7 +1066,7 @@ TrackerNode::drawOverlay(double time,
 
                     if ( (offset.x() != 0) || (offset.y() != 0) ) {
                         glBegin(GL_LINES);
-                        glColor3f( (float)markerColor[0] * l * 0.5, (float)markerColor[1] * l * 0.5, (float)markerColor[2] * l * 0.5 );
+                        glColor3f( (float)thisMarkerColor[0] * l * 0.5, (float)thisMarkerColor[1] * l * 0.5, (float)thisMarkerColor[2] * l * 0.5 );
                         glVertex2d( center.x(), center.y() );
                         glVertex2d( center.x() + offset.x(), center.y() + offset.y() );
                         glEnd();
@@ -1063,7 +1078,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidLeft) || (_imp->ui->eventState == eMouseStateDraggingInnerMidLeft) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( innerMidLeft.x(), innerMidLeft.y() );
                     glVertex2d( innerMidLeftExt.x(), innerMidLeftExt.y() );
@@ -1071,7 +1086,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerTopMid) || (_imp->ui->eventState == eMouseStateDraggingInnerTopMid) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( innerMidTop.x(), innerMidTop.y() );
                     glVertex2d( innerMidTopExt.x(), innerMidTopExt.y() );
@@ -1079,7 +1094,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerMidRight) || (_imp->ui->eventState == eMouseStateDraggingInnerMidRight) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( innerMidRight.x(), innerMidRight.y() );
                     glVertex2d( innerMidRightExt.x(), innerMidRightExt.y() );
@@ -1087,7 +1102,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringInnerBtmMid) || (_imp->ui->eventState == eMouseStateDraggingInnerBtmMid) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( innerMidBtm.x(), innerMidBtm.y() );
                     glVertex2d( innerMidBtmExt.x(), innerMidBtmExt.y() );
@@ -1097,7 +1112,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidLeft) || (_imp->ui->eventState == eMouseStateDraggingOuterMidLeft) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( outterMidLeft.x(), outterMidLeft.y() );
                     glVertex2d( outterMidLeftExt.x(), outterMidLeftExt.y() );
@@ -1105,7 +1120,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterTopMid) || (_imp->ui->eventState == eMouseStateDraggingOuterTopMid) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( outterMidTop.x(), outterMidTop.y() );
                     glVertex2d( outterMidTopExt.x(), outterMidTopExt.y() );
@@ -1113,7 +1128,7 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterMidRight) || (_imp->ui->eventState == eMouseStateDraggingOuterMidRight) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( outterMidRight.x(), outterMidRight.y() );
                     glVertex2d( outterMidRightExt.x(), outterMidRightExt.y() );
@@ -1121,13 +1136,13 @@ TrackerNode::drawOverlay(double time,
                     if ( isHoverOrDraggedMarker && ( (_imp->ui->hoverState == eDrawStateHoveringOuterBtmMid) || (_imp->ui->eventState == eMouseStateDraggingOuterBtmMid) ) ) {
                         glColor3f(0.f * l, 1.f * l, 0.f * l);
                     } else {
-                        glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                        glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
                     }
                     glVertex2d( outterMidBtm.x(), outterMidBtm.y() );
                     glVertex2d( outterMidBtmExt.x(), outterMidBtmExt.y() );
                     glEnd();
 
-                    glColor3f( (float)markerColor[0] * l, (float)markerColor[1] * l, (float)markerColor[2] * l );
+                    glColor3f( (float)thisMarkerColor[0] * l, (float)thisMarkerColor[1] * l, (float)thisMarkerColor[2] * l );
 
                     overlay->renderText( center.x(), center.y(), name, markerColor[0], markerColor[1], markerColor[2]);
                 } // for (int l = 0; l < 2; ++l) {
@@ -1207,7 +1222,7 @@ TrackerNode::onOverlayPenDown(double time,
     std::vector<TrackMarkerPtr > allMarkers;
     context->getAllMarkers(&allMarkers);
 
-    bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
+    bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
     for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
         if (!(*it)->isEnabled(time) || trackingPageSecret) {
             continue;
@@ -1456,7 +1471,7 @@ TrackerNode::onOverlayPenMotion(double time,
 
     std::vector<TrackMarkerPtr > allMarkers;
     context->getAllMarkers(&allMarkers);
-    bool trackingPageSecret = context->getTrackingPageKnbo()->getIsSecret();
+    bool trackingPageSecret = context->getTrackingPageKnob()->getIsSecret();
     bool hoverProcess = false;
     for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it != allMarkers.end(); ++it) {
         if (!(*it)->isEnabled(time) || trackingPageSecret) {
@@ -2220,7 +2235,7 @@ TrackerNode::onOverlayKeyDown(double /*time*/,
         isAlt = true;
     }
 
-    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
+    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnob()->getIsSecret();
 
     if ( !trackingPageSecret && _imp->ui->controlDown && _imp->ui->altDown && !_imp->ui->shiftDown && (isCtrl || isAlt) ) {
         _imp->ui->clickToAddTrackEnabled = true;
@@ -2308,7 +2323,7 @@ TrackerNode::onOverlayFocusLost(double /*time*/,
 void
 TrackerNode::onInteractViewportSelectionCleared()
 {
-    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
+    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnob()->getIsSecret();
 
     if (trackingPageSecret) {
         return;
@@ -2326,7 +2341,7 @@ TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
     }
 
 
-    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnbo()->getIsSecret();
+    bool trackingPageSecret = getNode()->getTrackerContext()->getTrackingPageKnob()->getIsSecret();
     if (trackingPageSecret) {
         return;
     }

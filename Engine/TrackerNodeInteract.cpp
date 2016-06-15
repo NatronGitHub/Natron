@@ -1512,155 +1512,192 @@ TrackerNodeInteract::transformPattern(double time,
             patternPoints[1].rx() += delta.x;
             patternPoints[1].ry() += delta.y;
 
-            patternPoints[0].rx() += delta.x;
-            patternPoints[0].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[0].rx() += delta.x;
+                patternPoints[0].ry() -= delta.y;
 
-            patternPoints[2].rx() -= delta.x;
-            patternPoints[2].ry() += delta.y;
+                patternPoints[2].rx() -= delta.x;
+                patternPoints[2].ry() += delta.y;
 
-            patternPoints[3].rx() -= delta.x;
-            patternPoints[3].ry() -= delta.y;
+                patternPoints[3].rx() -= delta.x;
+                patternPoints[3].ry() -= delta.y;
+            }
         }
 
         searchPoints[1].rx() += delta.x;
         searchPoints[1].ry() += delta.y;
 
-        searchPoints[0].rx() += delta.x;
-        searchPoints[0].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[0].rx() += delta.x;
+            searchPoints[0].ry() -= delta.y;
 
-        searchPoints[2].rx() -= delta.x;
-        searchPoints[2].ry() += delta.y;
+            searchPoints[2].rx() -= delta.x;
+            searchPoints[2].ry() += delta.y;
 
-        searchPoints[3].rx() -= delta.x;
-        searchPoints[3].ry() -= delta.y;
+            searchPoints[3].rx() -= delta.x;
+            searchPoints[3].ry() -= delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerBtmRight) ||
-                ( state == eMouseStateDraggingOuterBtmRight) ) {
+               ( state == eMouseStateDraggingOuterBtmRight) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() -= delta.x;
-            patternPoints[1].ry() += delta.y;
 
-            patternPoints[0].rx() -= delta.x;
-            patternPoints[0].ry() -= delta.y;
 
             patternPoints[2].rx() += delta.x;
             patternPoints[2].ry() += delta.y;
 
-            patternPoints[3].rx() += delta.x;
-            patternPoints[3].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].rx() -= delta.x;
+                patternPoints[1].ry() += delta.y;
+
+                patternPoints[0].rx() -= delta.x;
+                patternPoints[0].ry() -= delta.y;
+
+                patternPoints[3].rx() += delta.x;
+                patternPoints[3].ry() -= delta.y;
+            }
         }
 
-        searchPoints[1].rx() -= delta.x;
-        searchPoints[1].ry() += delta.y;
-
-        searchPoints[0].rx() -= delta.x;
-        searchPoints[0].ry() -= delta.y;
 
         searchPoints[2].rx() += delta.x;
         searchPoints[2].ry() += delta.y;
 
-        searchPoints[3].rx() += delta.x;
-        searchPoints[3].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].rx() -= delta.x;
+            searchPoints[1].ry() += delta.y;
+
+            searchPoints[0].rx() -= delta.x;
+            searchPoints[0].ry() -= delta.y;
+
+            searchPoints[3].rx() += delta.x;
+            searchPoints[3].ry() -= delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerTopRight) ||
-                ( state == eMouseStateDraggingOuterTopRight) ) {
+               ( state == eMouseStateDraggingOuterTopRight) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() -= delta.x;
-            patternPoints[1].ry() -= delta.y;
 
-            patternPoints[0].rx() -= delta.x;
-            patternPoints[0].ry() += delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].rx() -= delta.x;
+                patternPoints[1].ry() -= delta.y;
 
-            patternPoints[2].rx() += delta.x;
-            patternPoints[2].ry() -= delta.y;
+                patternPoints[0].rx() -= delta.x;
+                patternPoints[0].ry() += delta.y;
+
+                patternPoints[2].rx() += delta.x;
+                patternPoints[2].ry() -= delta.y;
+            }
 
             patternPoints[3].rx() += delta.x;
             patternPoints[3].ry() += delta.y;
         }
 
-        searchPoints[1].rx() -= delta.x;
-        searchPoints[1].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].rx() -= delta.x;
+            searchPoints[1].ry() -= delta.y;
 
-        searchPoints[0].rx() -= delta.x;
-        searchPoints[0].ry() += delta.y;
+            searchPoints[0].rx() -= delta.x;
+            searchPoints[0].ry() += delta.y;
 
-        searchPoints[2].rx() += delta.x;
-        searchPoints[2].ry() -= delta.y;
-
+            searchPoints[2].rx() += delta.x;
+            searchPoints[2].ry() -= delta.y;
+        }
+        
         searchPoints[3].rx() += delta.x;
         searchPoints[3].ry() += delta.y;
     } else if ( (state == eMouseStateDraggingInnerTopLeft) ||
-                ( state == eMouseStateDraggingOuterTopLeft) ) {
+               ( state == eMouseStateDraggingOuterTopLeft) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() += delta.x;
-            patternPoints[1].ry() -= delta.y;
-
             patternPoints[0].rx() += delta.x;
             patternPoints[0].ry() += delta.y;
 
-            patternPoints[2].rx() -= delta.x;
-            patternPoints[2].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].rx() += delta.x;
+                patternPoints[1].ry() -= delta.y;
 
-            patternPoints[3].rx() -= delta.x;
-            patternPoints[3].ry() += delta.y;
+                patternPoints[2].rx() -= delta.x;
+                patternPoints[2].ry() -= delta.y;
+
+                patternPoints[3].rx() -= delta.x;
+                patternPoints[3].ry() += delta.y;
+            }
         }
-
-        searchPoints[1].rx() += delta.x;
-        searchPoints[1].ry() -= delta.y;
 
         searchPoints[0].rx() += delta.x;
         searchPoints[0].ry() += delta.y;
 
-        searchPoints[2].rx() -= delta.x;
-        searchPoints[2].ry() -= delta.y;
 
-        searchPoints[3].rx() -= delta.x;
-        searchPoints[3].ry() += delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].rx() += delta.x;
+            searchPoints[1].ry() -= delta.y;
+
+            searchPoints[2].rx() -= delta.x;
+            searchPoints[2].ry() -= delta.y;
+
+            searchPoints[3].rx() -= delta.x;
+            searchPoints[3].ry() += delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerBtmMid) ||
-                ( state == eMouseStateDraggingOuterBtmMid) ) {
+               ( state == eMouseStateDraggingOuterBtmMid) ) {
         if (transformPatternCorners) {
             patternPoints[1].ry() += delta.y;
             patternPoints[2].ry() += delta.y;
-            patternPoints[0].ry() -= delta.y;
-            patternPoints[3].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[0].ry() -= delta.y;
+                patternPoints[3].ry() -= delta.y;
+            }
         }
         searchPoints[1].ry() += delta.y;
         searchPoints[2].ry() += delta.y;
-        searchPoints[0].ry() -= delta.y;
-        searchPoints[3].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[0].ry() -= delta.y;
+            searchPoints[3].ry() -= delta.y;
+        }
     } else if ( (state == eMouseStateDraggingInnerTopMid) ||
                 ( state == eMouseStateDraggingOuterTopMid) ) {
         if (transformPatternCorners) {
-            patternPoints[1].ry() -= delta.y;
-            patternPoints[2].ry() -= delta.y;
+            if (controlDown == 0) {
+                patternPoints[1].ry() -= delta.y;
+                patternPoints[2].ry() -= delta.y;
+            }
             patternPoints[0].ry() += delta.y;
             patternPoints[3].ry() += delta.y;
         }
-        searchPoints[1].ry() -= delta.y;
-        searchPoints[2].ry() -= delta.y;
+        if (controlDown == 0) {
+            searchPoints[1].ry() -= delta.y;
+            searchPoints[2].ry() -= delta.y;
+        }
         searchPoints[0].ry() += delta.y;
         searchPoints[3].ry() += delta.y;
     } else if ( (state == eMouseStateDraggingInnerMidLeft) ||
                 ( state == eMouseStateDraggingOuterMidLeft) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() += delta.x;
-            patternPoints[2].rx() -= delta.x;
             patternPoints[0].rx() += delta.x;
-            patternPoints[3].rx() -= delta.x;
+            patternPoints[1].rx() += delta.x;
+            if (controlDown == 0) {
+                patternPoints[2].rx() -= delta.x;
+                patternPoints[3].rx() -= delta.x;
+            }
         }
-        searchPoints[1].rx() += delta.x;
-        searchPoints[2].rx() -= delta.x;
         searchPoints[0].rx() += delta.x;
-        searchPoints[3].rx() -= delta.x;
+        searchPoints[1].rx() += delta.x;
+        if (controlDown == 0) {
+            searchPoints[2].rx() -= delta.x;
+            searchPoints[3].rx() -= delta.x;
+        }
     } else if ( (state == eMouseStateDraggingInnerMidRight) ||
                 ( state == eMouseStateDraggingOuterMidRight) ) {
         if (transformPatternCorners) {
-            patternPoints[1].rx() -= delta.x;
+            if (controlDown == 0) {
+                patternPoints[0].rx() -= delta.x;
+                patternPoints[1].rx() -= delta.x;
+            }
             patternPoints[2].rx() += delta.x;
-            patternPoints[0].rx() -= delta.x;
             patternPoints[3].rx() += delta.x;
         }
-        searchPoints[1].rx() -= delta.x;
+        if (controlDown == 0) {
+            searchPoints[0].rx() -= delta.x;
+            searchPoints[1].rx() -= delta.x;
+        }
         searchPoints[2].rx() += delta.x;
-        searchPoints[0].rx() -= delta.x;
         searchPoints[3].rx() += delta.x;
     }
 

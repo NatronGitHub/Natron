@@ -109,6 +109,14 @@ GCC_DIAG_ON(unused-parameter)
     "position of the patch on the destination image and the reference patch needed to declare tracking success." \
     "The error is 1 minus the normalized cross-correlation score."
 
+#define kTrackerParamDefaultMarkerPatternWinSize "defPatternWinSize"
+#define kTrackerParamDefaultMarkerPatternWinSizeLabel "Default Pattern Size"
+#define kTrackerParamDefaultMarkerPatternWinSizeHint "The size in pixels of the pattern that created markers will have by default"
+
+#define kTrackerParamDefaultMarkerSearchWinSize "defSearchWinSize"
+#define kTrackerParamDefaultMarkerSearchWinSizeLabel "Default Search Area Size"
+#define kTrackerParamDefaultMarkerSearchWinSizeHint "The size in pixels of the search window that created markers will have by default"
+
 #define kTrackerParamMaximumIteration "maxIterations"
 #define kTrackerParamMaximumIterationLabel "Maximum iterations"
 #define kTrackerParamMaximumIterationHint "Maximum number of iterations the algorithm will run for the inner minimization " \
@@ -355,6 +363,7 @@ public:
     boost::weak_ptr<KnobBool> enableTrackRed, enableTrackGreen, enableTrackBlue;
     boost::weak_ptr<KnobDouble> maxError;
     boost::weak_ptr<KnobInt> maxIterations;
+    boost::weak_ptr<KnobInt> defaultSearchWinSize, defaultPatternWinSize;
     boost::weak_ptr<KnobBool> bruteForcePreTrack, useNormalizedIntensities;
     boost::weak_ptr<KnobDouble> preBlurSigma;
     boost::weak_ptr<KnobSeparator> perTrackParamsSeparator;
