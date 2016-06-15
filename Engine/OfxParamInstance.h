@@ -137,12 +137,12 @@ public:
     {
         std::string label = param->getLabel();
 
-        if ( label.empty() ) {
+        /*if ( label.empty() ) {
             label = param->getShortLabel();
         }
         if ( label.empty() ) {
             label = param->getLongLabel();
-        }
+        }*/
 
         return label;
     }
