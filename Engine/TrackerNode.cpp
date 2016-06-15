@@ -353,6 +353,19 @@ TrackerNode::initializeKnobs()
     trackingPage->addKnob(resetTrack);
     _imp->ui->resetTrackButton = resetTrack;
 
+    boost::shared_ptr<KnobInt> magWindow = AppManager::createKnob<KnobInt>( this, tr(kTrackerUIParamMagWindowSizeLabel) );
+    magWindow->setInViewerContextLabel(tr(kTrackerUIParamMagWindowSizeLabel));
+    magWindow->setName(kTrackerUIParamMagWindowSize);
+    magWindow->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
+    magWindow->setEvaluateOnChange(false);
+    magWindow->setSecretByDefault(true);
+    magWindow->setDefaultValue(200);
+    magWindow->setMinimum(10);
+    magWindow->setMaximum(10000);
+    addOverlaySlaveParam(magWindow);
+    trackingPage->addKnob(magWindow);
+    _imp->ui->magWindowPxSizeKnob = magWindow;
+
 
     addKnobToViewerUI(addMarker);
     addMarker->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
@@ -390,7 +403,8 @@ TrackerNode::initializeKnobs()
     addKnobToViewerUI(resetOffset);
     resetOffset->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(resetTrack);
-
+    resetTrack->setInViewerContextItemSpacing(NATRON_TRACKER_UI_BUTTONS_CATEGORIES_SPACING);
+    addKnobToViewerUI(magWindow);
 
     context->setUpdateViewer( updateViewer->getValue() );
     context->setCenterOnTrack( centerViewer->getValue() );
@@ -547,6 +561,9 @@ TrackerNode::knobChanged(KnobI* k,
     if (!ctx) {
         return false;
     }
+
+    ctx->onKnobsLoaded();
+    
     bool ret = true;
     if ( k == _imp->ui->trackRangeDialogOkButton.lock().get() ) {
         int first = _imp->ui->trackRangeDialogFirstFrame.lock()->getValue();
@@ -658,6 +675,13 @@ TrackerNode::onKnobsLoaded()
 
     ctx->setUpdateViewer( _imp->ui->updateViewerButton.lock()->getValue() );
     ctx->setCenterOnTrack( _imp->ui->centerViewerButton.lock()->getValue() );
+}
+
+void
+TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
+{
+    NodeGroup::evaluate(isSignificant, refreshMetadatas);
+    _imp->ui->refreshSelectedMarkerTexture();
 }
 
 void
@@ -1635,6 +1659,17 @@ TrackerNode::onOverlayPenMotion(double time,
         case eMouseStateDraggingCenter:
         case eMouseStateDraggingOffset: {
             assert(_imp->ui->interactMarker);
+            if (!centerKnob || !offsetKnob) {
+                didSomething = false;
+                break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
+            }
+
             if (_imp->ui->eventState == eMouseStateDraggingOffset) {
                 offsetKnob->setValues(offsetKnob->getValueAtTime(time, 0) + delta.x,
                                       offsetKnob->getValueAtTime(time, 1) + delta.y,
@@ -1667,9 +1702,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             int index = 0;
             if (_imp->ui->eventState == eMouseStateDraggingInnerBtmLeft) {
@@ -1759,9 +1800,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -1815,9 +1862,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -1877,9 +1930,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -1936,9 +1995,15 @@ TrackerNode::onOverlayPenMotion(double time,
                 didSomething = true;
                 break;
             }
-            if (!searchWndBtmLeft || !searchWndTopRight) {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
                 didSomething = false;
                 break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
             }
             Point center;
             center.x = centerKnob->getValueAtTime(time, 0);
@@ -2007,8 +2072,11 @@ TrackerNode::onOverlayPenMotion(double time,
         case eMouseStateDraggingSelectedMarkerResizeAnchor: {
             QPointF lastPosWidget = overlay->toWidgetCoordinates(_imp->ui->lastMousePos);
             double dx = viewportPos.x() - lastPosWidget.x();
-            _imp->ui->selectedMarkerWidth += dx;
-            _imp->ui->selectedMarkerWidth = std::max(_imp->ui->selectedMarkerWidth, 10);
+            boost::shared_ptr<KnobInt> knob = _imp->ui->magWindowPxSizeKnob.lock();
+            int value = knob->getValue();
+            value += dx;
+            value = std::max(value, 10);
+            knob->setValue(value);
             didSomething = true;
             break;
         }
@@ -2021,6 +2089,11 @@ TrackerNode::onOverlayPenMotion(double time,
             boost::shared_ptr<KnobDouble> offsetKnob = marker->getOffsetKnob();
             boost::shared_ptr<KnobDouble> searchBtmLeft = marker->getSearchWindowBottomLeftKnob();
             boost::shared_ptr<KnobDouble> searchTopRight = marker->getSearchWindowTopRightKnob();
+            if (!centerKnob || !offsetKnob || !searchBtmLeft || !searchTopRight) {
+                didSomething = false;
+                break;
+            }
+
             Point center, offset, btmLeft, topRight;
             center.x = centerKnob->getValueAtTime(time, 0);
             center.y = centerKnob->getValueAtTime(time, 1);
@@ -2050,6 +2123,16 @@ TrackerNode::onOverlayPenMotion(double time,
             break;
         }
         case eMouseStateDraggingSelectedMarker: {
+            if (!centerKnob || !offsetKnob || !searchWndBtmLeft || !searchWndTopRight) {
+                didSomething = false;
+                break;
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (!patternCorners[i]) {
+                    didSomething = false;
+                    break;
+                }
+            }
             double x = centerKnob->getValueAtTime(time, 0);
             double y = centerKnob->getValueAtTime(time, 1);
             double dx = delta.x *  _imp->ui->selectedMarkerScale.x;

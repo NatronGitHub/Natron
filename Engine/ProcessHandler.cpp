@@ -69,6 +69,7 @@ ProcessHandler::ProcessHandler(const QString & projectPath,
     {
 #if defined(Q_OS_UNIX)
         QTemporaryFile tmpf(tmpFileName);
+        tmpf.open();
         tmpFileName = tmpf.fileName();
         tmpf.remove();
 #else
@@ -383,6 +384,7 @@ ProcessInputChannel::initialize()
     {
 #if defined(Q_OS_UNIX)
         QTemporaryFile tmpf(tmpFileName);
+        tmpf.open();
         tmpFileName = tmpf.fileName();
         tmpf.remove();
 #else

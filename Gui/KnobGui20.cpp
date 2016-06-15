@@ -930,6 +930,8 @@ KnobGui::onLabelChanged()
         std::string descriptionLabel = getDescriptionLabel();
         _imp->descriptionLabel->setText_overload( QString::fromUtf8( descriptionLabel.c_str() ) );
         onLabelChangedInternal();
+    } else {
+        onLabelChangedInternal();
     }
 }
 

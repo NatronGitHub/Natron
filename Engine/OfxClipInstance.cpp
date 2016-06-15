@@ -102,6 +102,43 @@ OfxClipInstance::~OfxClipInstance()
 {
 }
 
+// callback which should update label
+void
+OfxClipInstance::setLabel()
+{
+    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    if (effect) {
+        int inputNb = getInputNb();
+        if (inputNb >= 0) {
+            effect->onClipLabelChanged(inputNb, getLabel());
+        }
+    }
+}
+
+// callback which should set secret state as appropriate
+void OfxClipInstance::setSecret()
+{
+    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    if (effect) {
+        int inputNb = getInputNb();
+        if (inputNb >= 0) {
+            effect->onClipSecretChanged(inputNb, isSecret());
+        }
+    }
+}
+
+// callback which should update hint
+void OfxClipInstance::setHint()
+{
+    boost::shared_ptr<OfxEffectInstance> effect = _imp->nodeInstance.lock();
+    if (effect) {
+        int inputNb = getInputNb();
+        if (inputNb >= 0) {
+            effect->onClipHintChanged(inputNb, getHint());
+        }
+    }
+}
+
 bool
 OfxClipInstance::getIsOptional() const
 {
@@ -725,7 +762,7 @@ OfxClipInstance::getImagePlaneInternal(OfxTime time,
     if (time != time) {
         // time is NaN
 
-        return NULL;
+        return false;
     }
 
     if ( isOutput() ) {
@@ -904,7 +941,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
                                       &comp,
                                       mapImageToClipPref,
                                       false /*dontUpscale*/,
-                                      retTexture != 0,
+                                      retTexture != 0 ? eStorageModeGLTex : eStorageModeRAM,
                                       textureDepth,
                                       &renderWindow,
                                       &transform);

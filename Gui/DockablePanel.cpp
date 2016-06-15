@@ -125,9 +125,7 @@ DockablePanel::DockablePanel(Gui* gui,
         }
 
         const Plugin* plugin = isEffect->getNode()->getPlugin();
-        pluginLabelVersioned = plugin->getPluginLabel();
-        QString toAppend = QString::fromUtf8(" version %1.%2").arg( plugin->getMajorVersion() ).arg( plugin->getMinorVersion() );
-        pluginLabelVersioned.append(toAppend);
+        pluginLabelVersioned = tr("%1 version %2.%3").arg( plugin->getPluginLabel() ).arg( plugin->getMajorVersion() ).arg( plugin->getMinorVersion() );
     }
     MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
     if (isMultiInstance) {
@@ -591,9 +589,7 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
                                      unsigned int version)
 {
     if (_imp->_iconLabel) {
-        QString pluginLabelVersioned = QString::fromUtf8( pluginLabel.c_str() );
-        QString toAppend = QString::fromUtf8(" version %1").arg(version);
-        pluginLabelVersioned.append(toAppend);
+        QString pluginLabelVersioned = tr("%1 version %2").arg( QString::fromUtf8( pluginLabel.c_str() ) ).arg(version);
         _imp->_iconLabel->setToolTip(pluginLabelVersioned);
     }
     if (_imp->_helpButton) {
@@ -858,16 +854,13 @@ DockablePanel::helpString() const
     if (iseffect) {
         //Prepend the plugin ID
         if ( !_imp->_pluginID.isEmpty() ) {
-            QString pluginLabelVersioned(_imp->_pluginID);
-            QString toAppend = QString::fromUtf8(" version %1.%2").arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
-            if (isMarkdown) {
-                toAppend.append( QString::fromUtf8("\n=========\n\n") );
-            }
-            pluginLabelVersioned.append(toAppend);
-
+            QString pluginLabelVersioned = tr("%1 version %2.%3")
+                                            .arg(_imp->_pluginID)
+                                            .arg(_imp->_pluginVersionMajor)
+                                            .arg(_imp->_pluginVersionMinor);
             if ( !pluginLabelVersioned.isEmpty() ) {
                 if (isMarkdown) {
-                    tt.prepend(pluginLabelVersioned);
+                    tt.prepend(pluginLabelVersioned + QString::fromUtf8("\n=========\n\n"));
                 } else {
                     QString toPrepend = QString::fromUtf8("<p><b>");
                     toPrepend.append(pluginLabelVersioned);
@@ -1066,10 +1059,7 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     } else {
         Q_EMIT maximized();
     }
-    _imp->_tabWidget->setVisible(!_imp->_minimized);
-    if (_imp->_verticalColorBar) {
-        _imp->_verticalColorBar->setVisible(!_imp->_minimized);
-    }
+    _imp->_rightContainer->setVisible(!_imp->_minimized);
     std::vector<QWidget*> _panels;
     for (int i = 0; i < _imp->_container->count(); ++i) {
         if ( QWidget * myItem = dynamic_cast <QWidget*>( _imp->_container->itemAt(i) ) ) {

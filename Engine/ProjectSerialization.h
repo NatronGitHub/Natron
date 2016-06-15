@@ -49,6 +49,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Global/GitVersion.h"
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
+#include "Engine/AppInstance.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
@@ -62,9 +63,18 @@ GCC_DIAG_ON(unused-parameter)
 #define PROJECT_SERIALIZATION_REMOVES_NODE_COUNTERS 3
 #define PROJECT_SERIALIZATION_REMOVES_TIMELINE_BOUNDS 4
 #define PROJECT_SERIALIZATION_INTRODUCES_GROUPS 5
-#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_INTRODUCES_GROUPS
+#define PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION 6
+#define PROJECT_SERIALIZATION_VERSION PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION
 
 NATRON_NAMESPACE_ENTER;
+
+struct ProjectBeingLoadedInfo
+{
+    int vMajor,vMinor,vRev;
+    std::string gitBranch,gitCommit;
+    std::string osStr;
+    int bits;
+};
 
 class ProjectSerialization
 {
@@ -75,6 +85,8 @@ class ProjectSerialization
     qint64 _creationDate;
     AppInstWPtr _app;
     unsigned int _version;
+
+    ProjectBeingLoadedInfo _projectLoadedInfo;
 
 public:
 
@@ -93,6 +105,11 @@ public:
     unsigned int getVersion() const
     {
         return _version;
+    }
+
+    const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const
+    {
+        return _projectLoadedInfo;
     }
 
     void initialize(const Project* project);
@@ -127,7 +144,7 @@ public:
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        std::string natronVersion(NATRON_APPLICATION_NAME);
+        /*std::string natronVersion(NATRON_APPLICATION_NAME);
 
         natronVersion.append(" v" NATRON_VERSION_STRING);
         natronVersion.append(" from git branch " GIT_BRANCH);
@@ -141,7 +158,32 @@ public:
         natronVersion.append("  Linux ");
 #endif
         natronVersion.append(isApplication32Bits() ? "32bit" : "64bit");
-        ar & ::boost::serialization::make_nvp("NatronVersion", natronVersion);
+        ar & ::boost::serialization::make_nvp("NatronVersion", natronVersion);*/
+        int vMajor = NATRON_VERSION_MAJOR;
+        int vMinor = NATRON_VERSION_MINOR;
+        int vRev = NATRON_VERSION_REVISION;
+        ar & ::boost::serialization::make_nvp("VersionMajor", vMajor);
+        ar & ::boost::serialization::make_nvp("VersionMinor", vMinor);
+        ar & ::boost::serialization::make_nvp("VersionRev", vRev);
+        std::string gitBranchStr(GIT_BRANCH);
+        ar & ::boost::serialization::make_nvp("GitBranch", gitBranchStr);
+
+        std::string gitCommitStr(GIT_COMMIT);
+        ar & ::boost::serialization::make_nvp("GitCommit", gitCommitStr);
+
+        std::string osString;
+#ifdef __NATRON_WIN32__
+        osString.append("Windows");
+#elif defined(__NATRON_OSX__)
+        osString.append("MacOSX");
+#elif defined(__NATRON_LINUX__)
+        osString.append("Linux");
+#endif
+        ar & ::boost::serialization::make_nvp("OS", osString);
+
+        int bits = isApplication32Bits() ? 32 : 64;
+        ar & ::boost::serialization::make_nvp("Bits", bits);
+
         ar & ::boost::serialization::make_nvp("NodesCollection", _nodes);
         int knobsCount = _projectKnobs.size();
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
@@ -160,7 +202,7 @@ public:
               const unsigned int version)
     {
         _version = version;
-        if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION) {
+        if (version >= PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION && version < PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION) {
             std::string natronVersion;
             ar & ::boost::serialization::make_nvp("NatronVersion", natronVersion);
             std::string toFind(NATRON_APPLICATION_NAME " v");
@@ -186,6 +228,20 @@ public:
                     }
                 }
             }
+        }
+
+        if (version >= PROJECT_SERIALIZATION_CHANGE_VERSION_SERIALIZATION) {
+            ar & ::boost::serialization::make_nvp("VersionMajor", _projectLoadedInfo.vMajor);
+            ar & ::boost::serialization::make_nvp("VersionMinor", _projectLoadedInfo.vMinor);
+            ar & ::boost::serialization::make_nvp("VersionRev", _projectLoadedInfo.vRev);
+            ar & ::boost::serialization::make_nvp("GitBranch", _projectLoadedInfo.gitBranch);
+            ar & ::boost::serialization::make_nvp("GitCommit", _projectLoadedInfo.gitCommit);
+            ar & ::boost::serialization::make_nvp("OS", _projectLoadedInfo.osStr);
+            ar & ::boost::serialization::make_nvp("Bits", _projectLoadedInfo.bits);
+            AppInstPtr app = _app.lock();
+            assert(app);
+            app->setProjectBeingLoadedInfo(_projectLoadedInfo);
+
         }
 
         if (version < PROJECT_SERIALIZATION_INTRODUCES_GROUPS) {

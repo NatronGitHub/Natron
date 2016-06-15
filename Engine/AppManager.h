@@ -49,6 +49,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
+#include "Engine/ImageLocker.h"
 #include "Engine/EngineFwd.h"
 
 /*macro to get the unique pointer to the controler*/
@@ -172,7 +173,6 @@ public:
     const AppInstanceVec& getAppInstances() const WARN_UNUSED_RETURN;
     AppInstPtr getTopLevelInstance () const WARN_UNUSED_RETURN;
     const PluginsMap & getPluginsList() const WARN_UNUSED_RETURN;
-    QMutex* getMutexForPlugin(const QString & pluginId, int major, int minor) const WARN_UNUSED_RETURN;
     Plugin* getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
@@ -199,52 +199,16 @@ public:
     bool getImageOrCreate_diskCache(const ImageKey & key, const boost::shared_ptr<ImageParams>& params,
                                     boost::shared_ptr<Image>* returnValue) const;
 
-    static bool getImageFromCache(const ImageKey & key,
-                                  std::list<boost::shared_ptr<Image> >* returnValue)
-    {
-        return appPTR->getImage(key, returnValue);
-    }
-
-    static bool getImageFromCacheOrCreate(const ImageKey & key,
-                                          const boost::shared_ptr<ImageParams>& params,
-                                          boost::shared_ptr<Image>* returnValue)
-    {
-        return appPTR->getImageOrCreate(key, params, returnValue);
-    }
-
-    static bool getImageFromDiskCache(const ImageKey & key,
-                                      std::list<boost::shared_ptr<Image> >* returnValue)
-    {
-        return appPTR->getImage_diskCache(key, returnValue);
-    }
-
-    static bool getImageFromDiskCacheOrCreate(const ImageKey & key,
-                                              const boost::shared_ptr<ImageParams>& params,
-                                              boost::shared_ptr<Image>* returnValue)
-    {
-        return appPTR->getImageOrCreate_diskCache(key, params, returnValue);
-    }
-
     bool getTexture(const FrameKey & key,
                     std::list<FrameEntryPtr>* returnValue) const;
 
     bool getTextureOrCreate(const FrameKey & key, const boost::shared_ptr<FrameParams>& params,
+                            FrameEntryLocker* locker,
                             FrameEntryPtr* returnValue) const;
 
-    static bool getTextureFromCache(const FrameKey & key,
-                                    std::list<FrameEntryPtr>* returnValue)
-    {
-        return appPTR->getTexture(key, returnValue);
-    }
-
-    static bool getTextureFromCacheOrCreate(const FrameKey & key,
-                                            const boost::shared_ptr<FrameParams> &params,
-                                            FrameEntryPtr* returnValue)
-    {
-        return appPTR->getTextureOrCreate(key, params, returnValue);
-    }
 
     U64 getCachesTotalMemorySize() const;
+    U64 getCachesTotalDiskSize() const;
     boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
 
     void setApplicationsCachesMaximumMemoryPercent(double p);
@@ -252,8 +216,6 @@ public:
     void setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size);
 
     void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
-
-    void setPlaybackCacheMaximumSize(double p);
 
     void removeFromNodeCache(const boost::shared_ptr<Image> & image);
     void removeFromViewerCache(const FrameEntryPtr & texture);
@@ -562,7 +524,6 @@ public:
 
     bool hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError = 0) const;
 
-
     QString getOpenGLVersion() const;
 
     QString getBoostVersion() const;
@@ -576,6 +537,8 @@ public:
     bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
 
     const std::list<OpenGLRendererInfo>& getOpenGLRenderers() const;
+
+    void refreshOpenGLRenderingFlagOnAllInstances();
 
     /**
      * @brief Returns true if we could correctly fetch needed OpenGL functions and extensions
@@ -611,6 +574,8 @@ public Q_SLOTS:
     {
         exitApp(true);
     }
+
+    void onViewerTileCacheSizeChanged();
 
     void toggleAutoHideGraphInputs();
 

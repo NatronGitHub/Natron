@@ -162,6 +162,7 @@ public:
     virtual std::string getPluginDescription() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isPluginDescriptionInMarkdown() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputRotoBrush(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -287,7 +288,7 @@ public:
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
+    virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
 
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
@@ -297,6 +298,9 @@ public:
 
     int getClipInputNumber(const OfxClipInstance* clip) const;
 
+    void onClipLabelChanged(int inputNb, const std::string& label);
+    void onClipHintChanged(int inputNb, const std::string& hint);
+    void onClipSecretChanged(int inputNb, bool isSecret);
 public Q_SLOTS:
 
     void onSyncPrivateDataRequested();

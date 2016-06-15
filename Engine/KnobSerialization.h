@@ -209,16 +209,25 @@ struct ValueSerialization
     std::string _expression;
     bool _exprHasRetVar;
 
+    ValueSerialization();
+
     ///Load
     ValueSerialization(KnobSerializationBase* serialization,
                        const KnobPtr & knob,
                        int dimension);
+    void initForLoad(KnobSerializationBase* serialization,
+                     const KnobPtr & knob,
+                     int dimension);
 
     ///Save
     ValueSerialization(const KnobPtr & knob,
                        int dimension,
                        bool exprHasRetVar,
                        const std::string& expr);
+    void initForSave(const KnobPtr & knob,
+                     int dimension,
+                     bool exprHasRetVar,
+                     const std::string& expr);
 
     void setChoiceExtraLabel(const std::string& label);
 
@@ -426,6 +435,8 @@ class KnobSerialization
     bool _animationEnabled;
     std::string _tooltip;
     bool _useHostOverlay;
+    mutable std::vector<ValueSerialization> _values;
+
     virtual void setChoiceExtraString(const std::string& label) OVERRIDE FINAL;
 
     friend class ::boost::serialization::access;
@@ -445,9 +456,10 @@ class KnobSerialization
         ar & ::boost::serialization::make_nvp("Secret", secret);
         ar & ::boost::serialization::make_nvp("MasterIsAlias", _masterIsAlias);
 
+        assert((int)_values.size() == _dimension);
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(_knob, i, _expressions[i].second, _expressions[i].first);
-            ar & ::boost::serialization::make_nvp("item", vs);
+            _values[i].initForSave(_knob, i , _expressions[i].second, _expressions[i].first);
+            ar & ::boost::serialization::make_nvp("item", _values[i]);
         }
 
         ////restore extra datas
@@ -535,6 +547,7 @@ class KnobSerialization
         ar & ::boost::serialization::make_nvp("Name", name);
         ar & ::boost::serialization::make_nvp("Type", _typeName);
         ar & ::boost::serialization::make_nvp("Dimension", _dimension);
+        _values.resize(_dimension);
         KnobPtr created = createKnob(_typeName, _dimension);
         if (!created) {
             return;
@@ -563,10 +576,10 @@ class KnobSerialization
         }
 
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            ValueSerialization vs(this, _knob, i);
-            ar & ::boost::serialization::make_nvp("item", vs);
-            _masters.push_back(vs._master);
-            _expressions.push_back( std::make_pair(vs._expression, vs._exprHasRetVar) );
+            _values[i].initForLoad(this, _knob, i);
+            ar & ::boost::serialization::make_nvp("item", _values[i]);
+            _masters.push_back(_values[i]._master);
+            _expressions.push_back( std::make_pair(_values[i]._expression, _values[i]._exprHasRetVar) );
         }
 
         ////restore extra datas
@@ -737,6 +750,8 @@ public:
 
         _typeName = knob->typeName();
         _dimension = knob->getDimension();
+
+        _values.resize(_dimension);
 
         for (int i = 0; i < _dimension; ++i) {
             _expressions.push_back( std::make_pair( knob->getExpression(i), knob->isExpressionUsingRetVariable(i) ) );

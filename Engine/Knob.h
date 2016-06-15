@@ -2377,7 +2377,7 @@ public:
      * Should be called prior to changing the state of the user interface that could impact the
      * final image.
      **/
-    virtual void abortAnyEvaluation() {}
+    virtual void abortAnyEvaluation(bool keepOldestRender = true) { Q_UNUSED(keepOldestRender); }
 
     /**
      * @brief Dequeues all values set in the queues for all knobs

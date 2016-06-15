@@ -296,6 +296,10 @@ public:
      **/
     bool quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver, const WatcherCallerArgsPtr& args);
 
+    bool isOpenGLRenderActivated() const;
+
+    void refreshOpenGLRenderingFlagOnNodes();
+
 private:
 
     virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
@@ -325,7 +329,7 @@ public:
 
     void closeProject(bool aboutToQuit)
     {
-        reset(aboutToQuit);
+        reset(aboutToQuit, false);
     }
 
     void closeProject_blocking(bool aboutToQuit);
@@ -382,7 +386,7 @@ private:
     /**
      * @brief Resets the project state clearing all nodes and the project name.
      **/
-    void reset(bool aboutToQuit);
+    void reset(bool aboutToQuit, bool blocking);
 
     void doResetEnd(bool aboutToQuit);
 

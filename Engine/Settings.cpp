@@ -403,9 +403,13 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
 {
     if ( renderers.empty() ) {
         _availableOpenGLRenderers->setSecret(true);
-
+        _nOpenGLContexts->setSecret(true);
+        _enableOpenGL->setSecret(true);
         return;
     }
+
+    _nOpenGLContexts->setSecret(false);
+    _enableOpenGL->setSecret(false);
 
     std::vector<std::string> entries( renderers.size() );
     int i = 0;
@@ -415,6 +419,22 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     }
     _availableOpenGLRenderers->populateChoices(entries);
     _availableOpenGLRenderers->setSecret(renderers.size() == 1);
+}
+
+bool
+Settings::isOpenGLRenderingEnabled() const
+{
+    if (_enableOpenGL->getIsSecret()) {
+        return false;
+    }
+    int index = _enableOpenGL->getValue();
+    return index == 0 || (index == 2 && !appPTR->isBackground());
+}
+
+int
+Settings::getMaxOpenGLContexts() const
+{
+    return _nOpenGLContexts->getValue();
 }
 
 GLRendererID
@@ -431,7 +451,7 @@ Settings::getActiveOpenGLRendererID() const
         return GLRendererID();
     }
     int i = 0;
-    for (std::list<OpenGLRendererInfo>::const_iterator it; it != renderers.end(); ++it, ++i) {
+    for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
         if (i == activeIndex) {
             return it->rendererID;
         }
@@ -454,6 +474,32 @@ Settings::initializeKnobsGPU()
     _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
     _availableOpenGLRenderers->setHintToolTip( tr("Select the renderer that will be used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
     _gpuPage->addKnob(_availableOpenGLRenderers);
+
+    _nOpenGLContexts = AppManager::createKnob<KnobInt>( this, tr("Num. OpenGL Context") );
+    _nOpenGLContexts->setName("maxOpenGLContexts");
+    _nOpenGLContexts->setMinimum(1);
+    _nOpenGLContexts->setDisplayMinimum(1);
+    _nOpenGLContexts->setDisplayMaximum(8);
+    _nOpenGLContexts->setMaximum(8);
+    _nOpenGLContexts->setHintToolTip( tr("This is the number of OpenGL contexts that will be created to perform OpenGL rendering. Each OpenGL context can be attached to a CPU thread allowing for more frames to be rendered concurrently. Increasing the value of this parameter may increase performances for graphs with mixed CPU/GPU nodes but can drastically reduce performances if too many OpenGL contexts are active at once.") );
+    _gpuPage->addKnob(_nOpenGLContexts);
+
+
+    _enableOpenGL = AppManager::createKnob<KnobChoice>( this, tr("OpenGL Rendering") );
+    _enableOpenGL->setName("enableOpenGLRendering");
+    {
+        std::vector<std::string> entries;
+        std::vector<std::string> helps;
+        entries.push_back("Enabled");
+        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        entries.push_back("Disabled");
+        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back("Disabled if background");
+        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+        _enableOpenGL->populateChoices(entries, helps);
+    }
+    _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
+    _gpuPage->addKnob(_enableOpenGL);
 }
 
 void
@@ -480,6 +526,14 @@ Settings::initializeKnobsProjectSetup()
     _fixPathsOnProjectPathChanged->setName("autoFixRelativePaths");
 
     _projectsPage->addKnob(_fixPathsOnProjectPathChanged);
+
+    _enableMappingFromDriveLettersToUNCShareNames = AppManager::createKnob<KnobBool>( this, tr("Use drive letters instead of server names (Windows only)") );
+    _enableMappingFromDriveLettersToUNCShareNames->setHintToolTip( tr("This is only relevant for Windows: If checked, %1 will not convert a path starting with a drive letter from the file dialog to a network share name. You may use this if for example you want to share a same project with several users across facilities with different servers but where users have all the same drive attached to a server.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _enableMappingFromDriveLettersToUNCShareNames->setName("useDriveLetters");
+#ifndef __NATRON_WIN32__
+    _enableMappingFromDriveLettersToUNCShareNames->setAllDimensionsEnabled(false);
+#endif
+    _projectsPage->addKnob(_enableMappingFromDriveLettersToUNCShareNames);
 }
 
 void
@@ -1171,21 +1225,6 @@ Settings::initializeKnobsCaching()
     _maxRAMLabel->setAsLabel();
     _cachingTab->addKnob(_maxRAMLabel);
 
-    _maxPlayBackPercent = AppManager::createKnob<KnobInt>( this, tr("Playback cache RAM percentage (% of maximum RAM used for caching)") );
-    _maxPlayBackPercent->setName("maxPlaybackPercent");
-    _maxPlayBackPercent->disableSlider();
-    _maxPlayBackPercent->setMinimum(0);
-    _maxPlayBackPercent->setMaximum(100);
-    _maxPlayBackPercent->setHintToolTip( tr("This setting indicates the percentage of the maximum RAM used for caching "
-                                            "dedicated to the playback cache. This is available for debugging purposes.") );
-    _maxPlayBackPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_maxPlayBackPercent);
-
-    _maxPlaybackLabel = AppManager::createKnob<KnobString>( this, std::string() );
-    _maxPlaybackLabel->setName("maxPlaybackLabel");
-    _maxPlaybackLabel->setIsPersistant(false);
-    _maxPlaybackLabel->setAsLabel();
-    _cachingTab->addKnob(_maxPlaybackLabel);
 
     _unreachableRAMPercent = AppManager::createKnob<KnobInt>( this, tr("System RAM to keep free (% of total RAM)") );
     _unreachableRAMPercent->setName("unreachableRAMPercent");
@@ -1366,14 +1405,11 @@ Settings::initializeKnobsPython()
 void
 Settings::setCachingLabels()
 {
-    int maxPlaybackPercent = _maxPlayBackPercent->getValue();
     int maxTotalRam = _maxRAMPercent->getValue();
     U64 systemTotalRam = getSystemTotalRAM();
     U64 maxRAM = (U64)( ( (double)maxTotalRam / 100. ) * systemTotalRam );
 
     _maxRAMLabel->setValue( printAsRAM(maxRAM).toStdString() );
-    _maxPlaybackLabel->setValue( printAsRAM( (U64)( maxRAM * ( (double)maxPlaybackPercent / 100. ) ) ).toStdString() );
-
     _unreachableRAMLabel->setValue( printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString() );
 }
 
@@ -1405,7 +1441,7 @@ Settings::setDefaultValues()
 #ifndef NATRON_PLAYBACK_USES_THREAD_POOL
     _numberOfParallelRenders->setDefaultValue(0, 0);
 #endif
-
+    _nOpenGLContexts->setDefaultValue(2);
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false, 0);
@@ -1443,7 +1479,6 @@ Settings::setDefaultValues()
 
     _aggressiveCaching->setDefaultValue(false);
     _maxRAMPercent->setDefaultValue(50, 0);
-    _maxPlayBackPercent->setDefaultValue(25, 0);
     _unreachableRAMPercent->setDefaultValue(5);
     _maxViewerDiskCacheGB->setDefaultValue(5, 0);
     _maxDiskCacheNodeGB->setDefaultValue(10, 0);
@@ -2123,11 +2158,6 @@ Settings::onKnobValueChanged(KnobI* k,
             appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
         }
         setCachingLabels();
-    } else if ( k == _maxPlayBackPercent.get() ) {
-        if (!_restoringSettings) {
-            appPTR->setPlaybackCacheMaximumSize( getRamPlaybackMaximumPercent() );
-        }
-        setCachingLabels();
     } else if ( k == _diskCachePath.get() ) {
         appPTR->setDiskCacheLocation( QString::fromUtf8( _diskCachePath->getValue().c_str() ) );
     } else if ( k == _wipeDiskCache.get() ) {
@@ -2177,7 +2207,7 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
         appPTR->onCheckerboardSettingsChanged();
     } else if ( k == _powerOf2Tiling.get() ) {
-        appPTR->clearViewerCache();
+        appPTR->onViewerTileCacheSizeChanged();
     } else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
@@ -2233,6 +2263,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->reloadScriptEditorFonts();
     } else if ( k == _pluginUseImageCopyForSource.get() ) {
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
+    } else if ( k == _enableOpenGL.get() ) {
+        appPTR->refreshOpenGLRenderingFlagOnAllInstances();
     } else {
         ret = false;
     }
@@ -2341,12 +2373,6 @@ double
 Settings::getRamMaximumPercent() const
 {
     return (double)_maxRAMPercent->getValue() / 100.;
-}
-
-double
-Settings::getRamPlaybackMaximumPercent() const
-{
-    return (double)_maxPlayBackPercent->getValue() / 100.;
 }
 
 U64
@@ -3520,6 +3546,12 @@ Settings::isFileDialogEnabledForNewWriters() const
 
     return true;
 #endif
+}
+
+bool
+Settings::isDriveLetterToUNCPathConversionEnabled() const
+{
+    return !_enableMappingFromDriveLettersToUNCShareNames->getValue();
 }
 
 NATRON_NAMESPACE_EXIT;

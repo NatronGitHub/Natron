@@ -410,7 +410,7 @@ protected:
 
 private:
 
-    virtual void onAbortRequested() OVERRIDE FINAL;
+    virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
     virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
 
     /**
@@ -572,7 +572,7 @@ private:
 
     virtual void onWaitForAbortCompleted() OVERRIDE FINAL;
     virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
-    virtual void onAbortRequested() OVERRIDE FINAL;
+    virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
     virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
     virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
 
@@ -719,11 +719,11 @@ public:
      * The AutoRestart version attempts to restart the playback upon a call to renderCurrentFrame
      **/
     bool abortRenderingAutoRestart();
-    bool abortRenderingNoRestart();
+    bool abortRenderingNoRestart(bool keepOldestRender = true);
 
 private:
 
-    bool abortRenderingInternal();
+    bool abortRenderingInternal(bool keepOldestRender);
 
 public:
 

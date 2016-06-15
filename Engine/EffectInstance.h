@@ -85,6 +85,8 @@
 #define PLUGINID_OFX_READSVG      "net.fxarena.openfx.ReadSVG"
 #define PLUGINID_OFX_READORA      "fr.inria.openfx.OpenRaster"
 #define PLUGINID_OFX_READCDR      "fr.inria.openfx.ReadCDR"
+#define PLUGINID_OFX_READPNG      "fr.inria.openfx.ReadPNG"
+#define PLUGINID_OFX_WRITEPNG     "fr.inria.openfx.WritePNG"
 
 #define PLUGINID_NATRON_VIEWER    (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.Viewer")
 #define PLUGINID_NATRON_DISKCACHE (NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.DiskCache")
@@ -150,8 +152,8 @@ public:
         bool byPassCache;
         bool calledFromGetImage;
 
-        // True if we need to return an OpenGL texture. If false we must return a RAM image
-        bool mustReturnOpenGLTexture;
+        // Request what kind of storage we need images to be in return of renderRoI
+        StorageModeEnum returnStorage;
 
         // Set to false if you don't want the node to render using the GPU at all
         bool allowGPURendering;
@@ -172,7 +174,7 @@ public:
             , bitdepth(eImageBitDepthFloat)
             , byPassCache(false)
             , calledFromGetImage(false)
-            , mustReturnOpenGLTexture(false)
+            , returnStorage(eStorageModeRAM)
             , allowGPURendering(true)
             , callerRenderTime(0.)
         {
@@ -189,7 +191,7 @@ public:
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
                        const EffectInstance* caller,
-                       bool renderOpenGLTexture,
+                       StorageModeEnum returnStorage,
                        double callerRenderTime,
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
             : time(time_)
@@ -204,7 +206,7 @@ public:
             , bitdepth(bitdepth_)
             , byPassCache(byPassCache_)
             , calledFromGetImage(calledFromGetImage)
-            , mustReturnOpenGLTexture(renderOpenGLTexture)
+            , returnStorage(returnStorage)
             , allowGPURendering(true)
             , callerRenderTime(callerRenderTime)
         {
@@ -490,6 +492,11 @@ public:
     virtual std::string getInputLabel(int inputNb) const WARN_UNUSED_RETURN;
 
     /**
+     * @brief Return a string indicating the purpose of the given input. It is used for the user documentation.
+     **/
+    virtual std::string getInputHint(int inputNb) const WARN_UNUSED_RETURN;
+
+    /**
      * @brief Must be implemented to give the plugin internal id(i.e: net.sf.openfx:invertPlugin)
      **/
     virtual std::string getPluginID() const WARN_UNUSED_RETURN = 0;
@@ -562,6 +569,7 @@ public:
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
                                              StorageModeEnum storage,
+                                             StorageModeEnum returnStorage,
                                              const ImageKey & key,
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
@@ -573,6 +581,7 @@ public:
                                              const ImageComponents & nodeComponentsPref,
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
+                                             const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
                                              boost::shared_ptr<Image>* image);
 
     /**
@@ -692,7 +701,7 @@ public:
                                                                const RoIMap & inputRois,
                                                                const boost::shared_ptr<InputMatrixMap> & reroutesMap,
                                                                bool useTransforms,         // roi functor specific
-                                                               bool renderIsOpenGL, // if the render of this node is in OpenGL
+                                                               StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
                                                                unsigned int originalMipMapLevel,         // roi functor specific
                                                                double time,
                                                                ViewIdx view,
@@ -826,7 +835,7 @@ public:
     virtual bool tryLock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual void unlock(const boost::shared_ptr<Image> & entry) OVERRIDE FINAL;
     virtual bool canSetValue() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void abortAnyEvaluation() OVERRIDE FINAL;
+    virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const
@@ -1037,7 +1046,7 @@ public:
                                       const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
                                       const bool mapToClipPrefs,
                                       const bool dontUpscale,
-                                      const bool returnOpenGLTexture,
+                                      const StorageModeEnum returnStorage,
                                       const ImageBitDepthEnum* textureDepth,
                                       RectI* roiPixel,
                                       boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
@@ -1291,6 +1300,11 @@ public:
     virtual PluginOpenGLRenderSupport supportsOpenGLRender() const
     {
         return ePluginOpenGLRenderSupportNone;
+    }
+
+    virtual void onEnableOpenGLKnobValueChanged(bool /*activated*/)
+    {
+
     }
 
     /**
@@ -1723,6 +1737,14 @@ protected:
      **/
     virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
 
+
+    /**
+    * @brief Must be implemented to evaluate a value change
+    * made to a knob(e.g: force a new render).
+    * @param knob[in] The knob whose value changed.
+    **/
+    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
+
 private:
 
     EffectInstPtr getOrCreateRenderInstance();
@@ -1757,12 +1779,6 @@ private:
     virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& /*data*/) { return eStatusReplyDefault; }
 
 
-    /**
-     * @brief Must be implemented to evaluate a value change
-     * made to a knob(e.g: force a new render).
-     * @param knob[in] The knob whose value changed.
-     **/
-    virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
 
     void getComponentsAvailableRecursive(bool useLayerChoice,
                                          bool useThisNodeComponentsNeeded,
@@ -2109,7 +2125,7 @@ private:
     /// \returns false if rendering was aborted
     RenderRoIRetCode renderInputImagesForRoI(const FrameViewRequest* request,
                                              bool useTransforms,
-                                             bool renderIsOpenGL,
+                                             StorageModeEnum renderStorageMode,
                                              double time,
                                              ViewIdx view,
                                              const RectD & rod,

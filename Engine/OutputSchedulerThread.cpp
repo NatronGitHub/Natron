@@ -1448,7 +1448,7 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
 } // OutputSchedulerThread::threadLoopOnce
 
 void
-OutputSchedulerThread::onAbortRequested()
+OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
 {
     ///We make sure the render-threads don't wait for the main-thread to process a frame
     ///This function (abortRendering) was probably called from a user event that was posted earlier in the
@@ -2336,7 +2336,7 @@ private:
                                                                                                                imageDepth,
                                                                                                                false,
                                                                                                                activeInputToRender.get(),
-                                                                                                               false,
+                                                                                                               eStorageModeRAM,
                                                                                                                time) );
                 EffectInstance::RenderRoIRetCode retCode;
                 retCode = activeInputToRender->renderRoI(*renderArgs, &planes);
@@ -2450,7 +2450,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                                                                        imageDepth,
                                                                                                        false,
                                                                                                        effect.get(),
-                                                                                                       false,
+                                                                                                       eStorageModeRAM,
                                                                                                        frame.time,
                                                                                                        inputImages) );
         try {
@@ -2549,7 +2549,7 @@ DefaultScheduler::aboutToStartRender()
     // Activate the internal writer node for a write node
     WriteNode* isWriter = dynamic_cast<WriteNode*>( effect.get() );
     if (isWriter) {
-        isWriter->renderSequenceStarted();
+        isWriter->onSequenceRenderStarted();
     }
 
     std::string cb = effect->getNode()->getBeforeRenderCallback();
@@ -2616,12 +2616,6 @@ DefaultScheduler::onRenderStopped(bool aborted)
     }
 
     effect->notifyRenderFinished();
-
-    // Deactivate the internal writer node for a write node
-    WriteNode* isWriter = dynamic_cast<WriteNode*>( effect.get() );
-    if (isWriter) {
-        isWriter->renderSequenceEnd();
-    }
 
     std::string cb = effect->getNode()->getAfterRenderCallback();
     if ( !cb.empty() ) {
@@ -3177,26 +3171,26 @@ RenderEngine::waitForEngineToQuit_enforce_blocking()
 }
 
 bool
-RenderEngine::abortRenderingInternal( )
+RenderEngine::abortRenderingInternal(bool keepOldestRender)
 {
     bool ret = false;
 
     if (_imp->currentFrameScheduler) {
-        ret |= _imp->currentFrameScheduler->abortThreadedTask();
+        ret |= _imp->currentFrameScheduler->abortThreadedTask(keepOldestRender);
     }
 
     if ( _imp->scheduler && _imp->scheduler->isWorking() ) {
         //If any playback active, abort it
-        ret |= _imp->scheduler->abortThreadedTask();
+        ret |= _imp->scheduler->abortThreadedTask(keepOldestRender);
     }
 
     return ret;
 }
 
 bool
-RenderEngine::abortRenderingNoRestart()
+RenderEngine::abortRenderingNoRestart(bool keepOldestRender)
 {
-    if ( abortRenderingInternal() ) {
+    if ( abortRenderingInternal(keepOldestRender) ) {
         setPlaybackAutoRestartEnabled(false);
 
         return true;
@@ -3208,7 +3202,7 @@ RenderEngine::abortRenderingNoRestart()
 bool
 RenderEngine::abortRenderingAutoRestart()
 {
-    if ( abortRenderingInternal() ) {
+    if ( abortRenderingInternal(true) ) {
         return true;
     }
 
@@ -3661,7 +3655,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         while ( found == _imp->producedFrames.end() ) {
             state = resolveState();
             if ( (state == eThreadStateStopped) || (state == eThreadStateAborted) ) {
-                _imp->producedFrames.clear();
+                //_imp->producedFrames.clear();
                 break;
             }
             _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
@@ -3689,7 +3683,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
             //    ++found;
             //    _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //} else {
-            _imp->producedFrames.erase(found);
+            _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //}
         } else {
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
@@ -3758,7 +3752,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
 }
 
 void
-ViewerCurrentFrameRequestScheduler::onAbortRequested()
+ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
 {
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
     qDebug() << getThreadName().c_str() << "Received abort request";
@@ -3766,7 +3760,7 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested()
     //This will make all processing nodes that call the abort() function return true
     //This function marks all active renders of the viewer as aborted (except the oldest one)
     //and each node actually check if the render has been aborted in EffectInstance::Implementation::aborted()
-    _imp->viewer->markAllOnGoingRendersAsAborted();
+    _imp->viewer->markAllOnGoingRendersAsAborted(keepOldestRender);
     _imp->backupThread.abortThreadedTask();
 }
 

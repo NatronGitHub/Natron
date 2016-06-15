@@ -258,7 +258,9 @@ NodeGraph::updateCacheSizeText()
     QString oldText = _imp->_cacheSizeText->text();
     quint64 cacheSize = appPTR->getCachesTotalMemorySize();
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
-    QString newText = tr("Memory cache size: ") + cacheSizeStr;
+    quint64 diskSize = appPTR->getCachesTotalDiskSize();
+    QString diskCacheSizeStr = QDirModelPrivate_size(diskSize);
+    QString newText = tr("Memory cache: %1 / Disk cache: %2").arg(cacheSizeStr).arg(diskCacheSizeStr);
     if (newText != oldText) {
         _imp->_cacheSizeText->setText(newText);
     }

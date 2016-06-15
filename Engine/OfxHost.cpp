@@ -295,7 +295,11 @@ OfxHost::setProperties()
     _properties.setIntProperty(kOfxParamHostPropPageRowColumnCount, 0, 1 );
     _properties.setIntProperty(kOfxImageEffectInstancePropSequentialRender, 2); // OFX 1.2
 #ifdef OFX_SUPPORTS_OPENGLRENDER
-    _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true"); // OFX 1.3
+    if (appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "true"); // OFX 1.3
+    } else {
+        _properties.setStringProperty(kOfxImageEffectPropOpenGLRenderSupported, "false"); // OFX 1.3
+    }
 #endif
     _properties.setIntProperty(kOfxImageEffectPropRenderQualityDraft, 1); // OFX 1.4
     _properties.setStringProperty(kOfxImageEffectHostPropNativeOrigin, kOfxHostNativeOriginBottomLeft); // OFX 1.4
@@ -906,6 +910,19 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         if (isInternalOnly) {
             natronPlugin->setForInternalUseOnly(true);
         }
+
+        PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
+        {
+            const std::string& str = p->getDescriptor().getProps().getStringProperty(kOfxImageEffectPropOpenGLRenderSupported);
+            if (str == "false") {
+                glSupport = ePluginOpenGLRenderSupportNone;
+            } else if (str == "needed") {
+                glSupport = ePluginOpenGLRenderSupportNeeded;
+            } else if (str == "true") {
+                glSupport = ePluginOpenGLRenderSupportYes;
+            }
+        }
+        natronPlugin->setOpenGLRenderSupport(glSupport);
 
         natronPlugin->setOfxPlugin(p);
 

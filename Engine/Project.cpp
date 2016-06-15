@@ -193,7 +193,7 @@ Project::loadProject(const QString & path,
                      bool isUntitledAutosave,
                      bool attemptToLoadAutosave)
 {
-    reset(false);
+    reset(false, true);
 
     try {
         QString realPath = path;
@@ -314,7 +314,6 @@ Project::loadProjectInternal(const QString & path,
             iArchive >> boost::serialization::make_nvp("Background_project", bgProject);
             ProjectSerialization projectSerializationObj( getApp() );
             iArchive >> boost::serialization::make_nvp("Project", projectSerializationObj);
-
             ret = load(projectSerializationObj, name, path, mustSave);
         } // __raii_loadingProjectInternal__
 
@@ -322,6 +321,13 @@ Project::loadProjectInternal(const QString & path,
             getApp()->loadProjectGui(iArchive);
         }
     } catch (...) {
+        const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+        if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
+            (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
+            QString message = tr("This project was saved with a more recent version (%1.%2.%3) of %4. Projects are not forward compatible and may only be opened in a version of %4 equal or more recent than the version that saved it.").arg(NATRON_VERSION_MAJOR).arg(NATRON_VERSION_MINOR).arg(NATRON_VERSION_REVISION).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
+            throw std::runtime_error(message.toStdString());
+        }
         throw std::runtime_error( tr("Unrecognized or damaged project file").toStdString() );
     }
 
@@ -828,8 +834,11 @@ Project::initializeKnobs()
         _imp->gpuSupport->populateChoices(entries, helps);
     }
     _imp->gpuSupport->setAnimationEnabled(false);
-    _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins") );
+    _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
     _imp->gpuSupport->setEvaluateOnChange(false);
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        _imp->gpuSupport->setAllDimensionsEnabled(false);
+    }
     page->addKnob(_imp->gpuSupport);
 
     boost::shared_ptr<KnobPage> viewsPage = AppManager::createKnob<KnobPage>( this, tr("Views") );
@@ -1092,6 +1101,16 @@ Project::getProjectFormatAtIndex(int index,
     return _imp->findFormat(index, f);
 }
 
+bool
+Project::isOpenGLRenderActivated() const
+{
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        return false;
+    }
+    int index =  _imp->gpuSupport->getValue();
+    return index == 0 || (index == 2 && !getApp()->isBackground());
+}
+
 int
 Project::currentFrame() const
 {
@@ -1166,6 +1185,9 @@ Project::getProjectViewsCount() const
 bool
 Project::isGPURenderingEnabledInProject() const
 {
+    if (!appPTR->getCurrentSettings()->isOpenGLRenderingEnabled()) {
+        return false;
+    }
     int index = _imp->gpuSupport->getValue();
 
     if (index == 0) {
@@ -1493,12 +1515,33 @@ Project::onKnobValueChanged(KnobI* knob,
         int first = _imp->frameRange->getValue(0);
         int last = _imp->frameRange->getValue(1);
         Q_EMIT frameRangeChanged(first, last);
+    } else if ( knob == _imp->gpuSupport.get() ) {
+
+        refreshOpenGLRenderingFlagOnNodes();
     } else {
         ret = false;
     }
 
     return ret;
 } // Project::onKnobValueChanged
+
+void
+Project::refreshOpenGLRenderingFlagOnNodes()
+{
+    bool activated = appPTR->getCurrentSettings()->isOpenGLRenderingEnabled();
+    if (!activated) {
+        _imp->gpuSupport->setAllDimensionsEnabled(false);
+    } else {
+        _imp->gpuSupport->setAllDimensionsEnabled(true);
+        int index =  _imp->gpuSupport->getValue();
+        activated = index == 0 || (index == 2 && !getApp()->isBackground());
+    }
+    NodesList allNodes;
+    getNodes_recursive(allNodes, false);
+    for (NodesList::iterator it = allNodes.begin(); it!=allNodes.end(); ++it) {
+        (*it)->onOpenGLEnabledKnobChangedOnProject(activated);
+    }
+}
 
 bool
 Project::isLoadingProject() const
@@ -1694,7 +1737,7 @@ Project::autoSavesDir()
 void
 Project::resetProject()
 {
-    reset(false);
+    reset(false, true);
     if ( !getApp()->isBackground() ) {
         createViewer();
     }
@@ -1719,7 +1762,7 @@ public:
 };
 
 void
-Project::reset(bool aboutToQuit)
+Project::reset(bool aboutToQuit, bool blocking)
 {
     assert( QThread::currentThread() == qApp->thread() );
     {
@@ -1727,9 +1770,20 @@ Project::reset(bool aboutToQuit)
         _imp->projectClosing = true;
     }
 
-    boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
-    args->aboutToQuit = aboutToQuit;
-    if ( !quitAnyProcessingForAllNodes(this, args) ) {
+    if (!blocking) {
+        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        args->aboutToQuit = aboutToQuit;
+        if ( !quitAnyProcessingForAllNodes(this, args) ) {
+            doResetEnd(aboutToQuit);
+        }
+    } else {
+        {
+            NodesList nodesToWatch;
+            getNodes_recursive(nodesToWatch, false);
+            for (NodesList::const_iterator it = nodesToWatch.begin(); it != nodesToWatch.end(); ++it) {
+                (*it)->quitAnyProcessing_blocking(false);
+            }
+        }
         doResetEnd(aboutToQuit);
     }
 } // Project::reset

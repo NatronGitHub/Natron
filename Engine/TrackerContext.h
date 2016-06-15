@@ -432,12 +432,15 @@ public:
               const boost::shared_ptr<TrackerFrameAccessor>& fa,
               const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
               double formatWidth,
-              double formatHeight);
+              double formatHeight,
+              bool autoKeyEnabled);
 
     TrackArgs(const TrackArgs& other);
     void operator=(const TrackArgs& other);
 
     virtual ~TrackArgs();
+    
+    bool isAutoKeyingEnabledParamEnabled() const;
 
     double getFormatHeight() const;
     double getFormatWidth() const;

@@ -108,6 +108,11 @@ public:
 
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+public Q_SLOTS:
+
+    void onSequenceRenderStarted();
+    void onSequenceRenderFinished();
+
 private:
 
     virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;

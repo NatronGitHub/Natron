@@ -2338,6 +2338,10 @@ KnobHelper::validateExpression(const std::string& expression,
                                bool hasRetVariable,
                                std::string* resultAsString)
 {
+
+#ifdef NATRON_RUN_WITHOUT_PYTHON
+    throw std::invalid_argument("NATRON_RUN_WITHOUT_PYTHON is defined");
+#endif
     PythonGILLocker pgl;
 
     if ( expression.empty() ) {
@@ -5411,7 +5415,7 @@ KnobHolder::endChanges(bool discardRendering)
             it->knob->checkAnimationLevel(it->view, dimension);
         }
 
-        if ( !it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked() ) {
+        if ( !it->valueChangeBlocked && !it->knob->isListenersNotificationBlocked() && firstKnobReason != eValueChangedReasonTimeChanged) {
             it->knob->refreshListenersAfterValueChange(it->view, it->originalReason, dimension);
         }
     }

@@ -41,6 +41,17 @@
 
 NATRON_NAMESPACE_ENTER;
 
+ValueSerialization::ValueSerialization()
+: _serialization(0)
+, _knob()
+, _dimension(0)
+, _master()
+, _expression()
+, _exprHasRetVar(false)
+{
+
+}
+
 ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
                                        const KnobPtr & knob,
                                        int dimension)
@@ -53,17 +64,41 @@ ValueSerialization::ValueSerialization(KnobSerializationBase* serialization,
 {
 }
 
+void
+ValueSerialization::initForLoad(KnobSerializationBase* serialization,
+                 const KnobPtr & knob,
+                 int dimension)
+{
+    _serialization = serialization;
+    _knob = knob;
+    _dimension = dimension;
+}
+
 ValueSerialization::ValueSerialization(const KnobPtr & knob,
                                        int dimension,
                                        bool exprHasRetVar,
                                        const std::string& expr)
     : _serialization(0)
-    , _knob(knob)
-    , _dimension(dimension)
+    , _knob()
+    , _dimension(0)
     , _master()
-    , _expression(expr)
-    , _exprHasRetVar(exprHasRetVar)
+    , _expression()
+    , _exprHasRetVar(false)
 {
+    initForSave(knob, dimension, exprHasRetVar, expr);
+}
+
+void
+ValueSerialization::initForSave(const KnobPtr & knob,
+                 int dimension,
+                 bool exprHasRetVar,
+                 const std::string& expr)
+{
+    _knob = knob;
+    _dimension = dimension;
+    _expression = expr;
+    _exprHasRetVar = exprHasRetVar;
+
     std::pair< int, KnobPtr > m = knob->getMaster(dimension);
 
     if ( m.second && !knob->isMastersPersistenceIgnored() ) {
@@ -83,6 +118,7 @@ ValueSerialization::ValueSerialization(const KnobPtr & knob,
     } else {
         _master.masterDimension = -1;
     }
+
 }
 
 void

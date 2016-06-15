@@ -127,6 +127,14 @@ GCC_DIAG_ON(unused-parameter)
 #define kTrackerParamPreBlurSigmaLabel "Pre-blur sigma"
 #define kTrackerParamPreBlurSigmaHint "The size in pixels of the blur kernel used to both smooth the image and take the image derivative."
 
+
+#define kTrackerParamAutoKeyEnabled "autoKeyEnabled"
+#define kTrackerParamAutoKeyEnabledLabel "Animate Enabled"
+#define kTrackerParamAutoKeyEnabledHint "When checked, the \"Enabled\" parameter will be keyframed automatically when a track fails. " \
+"This is useful for example if you have a scene with a moving camera that you want to stabilize: You place track markers, and when " \
+"the tracker looses them, they get disabled automatically and you can place new ones. A disabled marker will not be taken into account"\
+" when computing the resulting Transform to stabilize/match-move."
+
 #define kTrackerParamPerTrackParamsSeparator "perTrackParams"
 #define kTrackerParamPerTrackParamsSeparatorLabel "Per-Track Parameters"
 
@@ -351,6 +359,7 @@ public:
     boost::weak_ptr<KnobDouble> preBlurSigma;
     boost::weak_ptr<KnobSeparator> perTrackParamsSeparator;
     boost::weak_ptr<KnobBool> activateTrack;
+    boost::weak_ptr<KnobBool> autoKeyEnabled;
     boost::weak_ptr<KnobChoice> motionModel;
     boost::weak_ptr<KnobSeparator> exportDataSep;
     boost::weak_ptr<KnobBool> exportLink;

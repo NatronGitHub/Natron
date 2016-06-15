@@ -55,6 +55,11 @@
 //
 //========================================================================
 
+#include <cstddef>
+#include <string>
+#include <vector>
+#include <list>
+
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
@@ -217,16 +222,13 @@ private:
  **/
 class OSGLContextAttacher
 {
-    boost::weak_ptr<OSGLContext> _c;
+    OSGLContextPtr _c;
     AbortableRenderInfoWPtr _a;
-
+#ifdef DEBUG
+    double _frameTime;
+#endif
+    bool _attached;
 public:
-
-    OSGLContextAttacher()
-        : _c()
-        , _a()
-    {
-    }
 
     OSGLContextAttacher(const OSGLContextPtr& c,
                         const AbortableRenderInfoPtr& render
@@ -235,38 +237,41 @@ public:
                         double frameTime
 #endif
                         )
-    {
-        init(c, render
+    : _c(c)
+    , _a(render)
 #ifdef DEBUG
-             , frameTime
+    , _frameTime(frameTime)
 #endif
-             );
+    , _attached(false)
+    {
+
     }
 
-    void init(const OSGLContextPtr& c,
-              const AbortableRenderInfoPtr& render
-#ifdef DEBUG
-              ,
-              double frameTime
-#endif
-              )
+    void attach()
     {
-        _c = c;
-        _a = render;
-        c->setContextCurrent(render
+        if (!_attached) {
+            _c->setContextCurrent(_a.lock()
 #ifdef DEBUG
-                             , frameTime
+                                 , _frameTime
 #endif
-                             );
+                                 );
+            _attached = true;
+        }
     }
+
+    void dettach()
+    {
+
+        if (_attached) {
+            _c->unsetCurrentContext( _a.lock() );
+            _attached = false;
+        }
+    }
+
 
     ~OSGLContextAttacher()
     {
-        OSGLContextPtr c = _c.lock();
-
-        if (c) {
-            c->unsetCurrentContext( _a.lock() );
-        }
+        dettach();
     }
 };
 

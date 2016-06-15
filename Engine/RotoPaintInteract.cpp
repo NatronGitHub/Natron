@@ -803,10 +803,6 @@ RotoPaintInteract::computeSelectedCpsBBOX()
     }
 
     double time = p->publicInterface->getCurrentTime();
-    std::pair<double, double> pixelScale;
-
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-
 
     double l = INT_MAX, r = INT_MIN, b = INT_MAX, t = INT_MIN;
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {

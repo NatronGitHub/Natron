@@ -2710,7 +2710,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
 
     {
         QReadLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), boost::shared_ptr<OSGLContextAttacher>(), &image);
     }
 
     if (image) {
@@ -2792,7 +2792,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
        it once, which is fine.
      */
     QWriteLocker k(&_imp->cacheAccessMutex);
-    AppManager::getImageFromCacheOrCreate(*key, params, &image);
+    appPTR->getImageOrCreate(*key, params, &image);
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";

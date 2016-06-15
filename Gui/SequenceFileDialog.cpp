@@ -1845,8 +1845,10 @@ SequenceFileDialog::selectedFiles()
     }
 
 #ifdef __NATRON_WIN32__
-    QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( selection.c_str() ) );
-    selection = ret.toStdString();
+    if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
+        QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( selection.c_str() ) );
+        selection = ret.toStdString();
+    }
 #endif
 
     return selection;
@@ -1871,7 +1873,9 @@ SequenceFileDialog::filesToSave()
     }
 
 #ifdef __NATRON_WIN32__
-    ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(ret);
+    if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
+        ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName(ret);
+    }
 #endif
 
     return ret.toStdString();
@@ -1898,8 +1902,10 @@ SequenceFileDialog::selectedDirectory() const
 
 
 #ifdef __NATRON_WIN32__
-    QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( path.c_str() ) );
-    path = ret.toStdString();
+    if (appPTR->getCurrentSettings()->isDriveLetterToUNCPathConversionEnabled()) {
+        QString ret = FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName( QString::fromUtf8( path.c_str() ) );
+        path = ret.toStdString();
+    }
 #endif
 
     return path;

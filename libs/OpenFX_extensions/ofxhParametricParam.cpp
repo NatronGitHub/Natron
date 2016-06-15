@@ -210,6 +210,17 @@ OfxStatus ParametricInstance::getNthControlPoint(int /*curveIndex*/,
     return kOfxStatErrMissingHostFeature;
 }
 
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+OfxStatus ParametricInstance::getNthControlPointDerivatives(int /*curveIndex*/,
+                                            double /*time*/,
+                                            int /*nthCtl*/,
+                                            double */*leftDerivative*/,
+                                            double */*rightDerivative*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
+
 OfxStatus ParametricInstance::setNthControlPoint(int   /*curveIndex*/,
                                                  double /*time*/,
                                                  int   /*nthCtl*/,
@@ -221,13 +232,33 @@ OfxStatus ParametricInstance::setNthControlPoint(int   /*curveIndex*/,
     return kOfxStatErrMissingHostFeature;
 }
 
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+OfxStatus ParametricInstance::setNthControlPointInterpolation(int  /*curveIndex*/,
+                                              double /*time*/,
+                                              int   /*nthCtl*/,
+                                              const char* /*interpolation*/)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+
 OfxStatus ParametricInstance::addControlPoint(int   /*curveIndex*/,
                                               double /*time*/,
                                               double /*key*/,
                                               double /*value*/,
+                                              const char* /*interpolationMode*/,
                                               bool /*addAnimationKey*/)
 {
     return kOfxStatErrMissingHostFeature;
+}
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
+
+OfxStatus ParametricInstance::addControlPoint(int   /*curveIndex*/,
+                                                  double /*time*/,
+                                                  double /*key*/,
+                                                  double /*value*/,
+                                                  bool /*addAnimationKey*/)
+{
+        return kOfxStatErrMissingHostFeature;
 }
 
 OfxStatus  ParametricInstance::deleteControlPoint(int   /*curveIndex*/,int/*  nthCtl*/)
@@ -458,6 +489,34 @@ static  OfxStatus parametricParamGetNthControlPoint(OfxParamHandle param,
     return stat;
 }
 
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+/** @brief Returns the left and right derivatives pair of the nth control point.
+     This is an ERROR to call this function if a custom interpolator has been set on the parametric param with the
+     kOfxParamParametricInterpolationCustomInterpCallbackV1 property.
+
+     NEW in V2
+
+     \arg param                 handle to the parametric parameter
+     \arg curveIndex            which dimension to check
+     \arg nthCtl                the nth control point to get the value of
+     \arg leftDerivative        pointer to a double where the value of the left derivative of the nthCtl control point will be returned
+     \arg rightDerivative       pointer to a double where the value of the right derivative of the nthCtl control point will be returned
+
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+     - ::kOfxStatErrUnknown    - if the type is unknown
+*/
+static OfxStatus parametricParamGetNthControlPointDerivatives(OfxParamHandle param,
+                                                              int    curveIndex,
+                                                              double time,
+                                                              int    nthCtl,
+                                                              double *leftDerivative,
+                                                              double *rightDerivative)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
 
 /** @brief Modifies an existing control point on a curve
 
@@ -487,7 +546,7 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
                                                    int   nthCtl,
                                                    double key,
                                                    double value,
-                                                   bool addAnimationKey){
+                                                   bool addAnimationKey) {
 #   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamSetNthControlPoint - " << param << " ...";
 #   endif
@@ -558,6 +617,173 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
     return stat;
 }
 
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+/** @brief Modifies an existing control point on a curve
+
+     NEW in V2
+
+     \arg param                 handle to the parametric parameter
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg nthCtl                the control point to modify
+     \arg interpolation         the interpolation of the control point
+
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrValue      - the host does not know this interpolation type. This must be one of the interpolation modes advertised by the host with the kOfxHostPropSupportedParametricInterpolations property
+     - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+     - ::kOfxStatErrUnknown    - if the type is unknown
+*/
+static OfxStatus parametricParamSetNthControlPointInterpolation(OfxParamHandle param,
+                                                                int   curveIndex,
+                                                                double time,
+                                                                int   nthCtl,
+                                                                const char* interpolationMode)
+{
+    return kOfxStatErrMissingHostFeature;
+}
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
+
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+/** @brief Adds a control point to the curve.
+
+     This was modified in V2 with the introduction of the interpolationMode parameter
+
+     \arg param                 handle to the parametric parameter
+     \arg curveIndex            which dimension to set
+     \arg time                  the time to set the value at
+     \arg key                   key of the control point
+     \arg value                 value of the control point
+     \arg interpolationMode     the interpolation of the control point, By default the value should be kOfxHostParametricInterpolationDefault
+     \arg addAnimationKey       if the param is an animatable, setting this to true will
+     force an animation keyframe to be set as well as a curve key,
+     otherwise if false, a key will only be added if the curve is already
+     animating.
+
+     @returns
+     - ::kOfxStatOK            - all was fine
+     - ::kOfxStatErrValue      - the host does not know this interpolation type. This must be one of the interpolation modes advertised by the host with the kOfxHostPropSupportedParametricInterpolations property
+     - ::kOfxStatErrBadHandle  - if the paramter handle was invalid
+     - ::kOfxStatErrUnknown    - if the type is unknown
+
+     This will add a new control point to the given dimension of a parametric parameter. If a key exists
+     sufficiently close to 'key', then it will be set to the indicated control point.
+    */
+static OfxStatus parametricParamAddControlPointV2(OfxParamHandle param,
+                                                int   curveIndex,
+                                                double time,
+                                                double key,
+                                                double value,
+                                                const char* interpolationMode,
+                                                bool addAnimationKey) {
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << "OFX: parametricParamAddControlPoint - " << param << " ...";
+#   endif
+    Param::Base *base = reinterpret_cast<Param::Base*>(param);
+    if(!base || !base->verifyMagic()) {
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#       endif
+        return kOfxStatErrBadHandle;
+    }
+
+
+    OfxStatus stat = kOfxStatErrUnsupported;
+
+
+    ParametricInstance* instance = dynamic_cast<ParametricInstance*>(base);
+    ///if the handle is an instance call the virtual function, otherwise store a new double3D property
+    /// to indicate a new control point was added.
+    if (instance) {
+        if (!instance->isInitialized()) {
+#           ifdef OFX_DEBUG_PARAMETERS
+            std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#           endif
+            return kOfxStatErrBadHandle;
+        }
+
+        stat = instance->addControlPoint(curveIndex, time, key, value, interpolationMode, addAnimationKey);
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(stat) << std::endl;
+#       endif
+        return stat;
+    }
+
+    Param::Descriptor* descriptor = dynamic_cast<Param::Descriptor*>(base);
+    //if it's also not a descriptor this is a bad pointer then
+    if (!descriptor) {
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#       endif
+        return kOfxStatErrBadHandle;
+    }
+
+    Property::Set &descProps = descriptor->getProperties();
+    int curveCount = descProps.getIntProperty(kOfxParamPropParametricDimension);
+    if (curveIndex < 0 || curveIndex >= curveCount ) {
+#       ifdef OFX_DEBUG_PARAMETERS
+        std::cout << ' ' << StatStr(kOfxStatErrBadHandle) << std::endl;
+#       endif
+        return kOfxStatErrBadIndex;
+    }
+
+    ///check whether the property already exists in the property set
+    std::stringstream name;
+    name << kOfxParamPropControlPoints << '_' << curveIndex;
+    std::string namestr = name.str();
+    BezierCP cp = { key, value };
+
+    if (!descProps.fetchProperty(namestr)) {
+        // the property does not exist, create it
+        const Property::PropSpec parametricControlPoints = {namestr.c_str(), Property::eDouble, 0, false, ""};
+        descProps.createProperty(parametricControlPoints);
+        descProps.setDoublePropertyN(namestr, &cp.key, 2);
+    } else {
+        //the property already exists
+        int cpsCount = descProps.getDimension(name.str()) / 2;
+        //if the property exists it must be > 0 !
+        assert(cpsCount > 0);
+
+        //get the existing cps
+        ControlPointV cps(cpsCount);
+        descProps.getDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+
+        // Note: an optimal implementation could work on a std::set (which is an ordered container),
+        // but we propose this suboptimal implementation based on std::vector, given the fact that
+        // there are usually not many control points.
+
+        // if this key or the next one is almost equal, then replace it:
+        // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxParametricParameterSuiteV1_parametricParamAddControlPoint
+        // "If a key exists sufficiently close to 'key', then it will be set to the indicated control point."
+        // As a definition of "sufficiently close", we use:
+        // "the distance to the closest key is less than 1/10000 of the parametric range"
+        double paramMin = descProps.getDoubleProperty(kOfxParamPropParametricRange, 0);
+        double paramMax = descProps.getDoubleProperty(kOfxParamPropParametricRange, 1);
+        double paramEps = 1e-4 * std::abs(paramMax - paramMin);
+        // std::lower_bound finds the element in a sorted vector in logarithmic time
+        ControlPointV::iterator it = std::lower_bound(cps.begin(), cps.end(), cp, ControlPoint_MuchLessThan(paramEps));
+        // lower_bound returned the first element for which the key is >= cp.key-paramEps.
+        // now check that its key is also <= cp.key+paramEps
+        if (it != cps.end() && it->key <= cp.key + paramEps) {
+            // found a "sufficiently close" element, replace it
+            *it = cp;
+        } else {
+            // insert it
+            cps.insert(it, cp);
+        }
+        //set back the property
+        descProps.setDoublePropertyN(namestr, &cps[0].key, cps.size()*2);
+    }
+
+    stat = kOfxStatOK;
+
+#   ifdef OFX_DEBUG_PARAMETERS
+    std::cout << ' ' << StatStr(stat) << std::endl;
+#   endif
+    return stat;
+
+}
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
 
 /** @brief Adds a control point to the curve.
 
@@ -578,13 +804,13 @@ static OfxStatus parametricParamSetNthControlPoint(OfxParamHandle param,
              
              This will add a new control point to the given dimension of a parametric parameter. If a key exists
              sufficiently close to 'key', then it will be set to the indicated control point.
-             */
+*/
 static OfxStatus parametricParamAddControlPoint(OfxParamHandle param,
                                                 int   curveIndex,
                                                 double time,
                                                 double key,
                                                 double value,
-                                                bool addAnimationKey){
+                                                bool addAnimationKey) {
 #   ifdef OFX_DEBUG_PARAMETERS
     std::cout << "OFX: parametricParamAddControlPoint - " << param << " ...";
 #   endif
@@ -854,13 +1080,31 @@ static OfxParametricParameterSuiteV1 gSuite = {
     parametricParamDeleteAllControlPoints
 };
 
-
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+static OfxParametricParameterSuiteV2 gSuite2 = {
+        parametricParamGetValue,
+        parametricParamGetNControlPoints,
+        parametricParamGetNthControlPoint,
+        parametricParamGetNthControlPointDerivatives,
+        parametricParamSetNthControlPoint,
+        parametricParamSetNthControlPointInterpolation,
+        parametricParamAddControlPointV2,
+        parametricParamDeleteControlPoint,
+        parametricParamDeleteAllControlPoints
+};
+#endif // #ifdef OFX_SUPPORTS_PARAMETRIC_V2
 
 /// return the OFX function suite that manages parametric params
 void *GetSuite(int version)
 {
-    if(version == 1)
+    if (version == 1) {
         return (void *)(&gSuite);
+    }
+#ifdef OFX_SUPPORTS_PARAMETRIC_V2
+    else if (version == 2) {
+        return (void *)(&gSuite2);
+    }
+#endif
     return NULL;
 }
 

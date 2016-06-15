@@ -87,6 +87,7 @@ public Q_SLOTS:
 
 private:
 
+    virtual void onLabelChangedInternal() OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

@@ -216,7 +216,7 @@ setSigSegvSignal()
 void
 AppManager::saveCaches() const
 {
-    _imp->saveCaches();
+    _imp->saveCaches(true);
 }
 
 int
@@ -360,7 +360,7 @@ AppManager::~AppManager()
     _imp->_backgroundIPC.reset();
 
     try {
-        _imp->saveCaches();
+        _imp->saveCaches(false);
     } catch (std::runtime_error) {
         // ignore errors
     }
@@ -607,8 +607,9 @@ AppManager::loadInternal(const CLArgs& cl)
                      << ", OpenGL Version:" << it->glVersionString.c_str() << ", Max. Texture Size" << it->maxTextureSize <<
                 ",Max GPU Memory:" << printAsRAM(it->maxMemBytes);;
         }
-        _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
     }
+    _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
+
 
     ///Call restore after initializing knobs
     _imp->_settings->restoreSettings();
@@ -736,14 +737,13 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
     try {
         size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-        U64 maxViewerDiskCache = _imp->_settings->getMaximumViewerDiskCacheSize();
-        U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-        U64 viewerCacheSize = maxViewerDiskCache + playbackSize;
+        U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
         U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM - playbackSize, 1.) );
+        _imp->_nodeCache.reset( new Cache<Image>("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
         _imp->_diskCache.reset( new Cache<Image>("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, (double)playbackSize / (double)viewerCacheSize) );
+        _imp->_viewerCache.reset( new Cache<FrameEntry>("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
+        _imp->setViewerCacheTileSize();
     } catch (std::logic_error) {
         // ignore
     }
@@ -854,6 +854,34 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
         return true;
     }
 } // AppManager::loadInternalAfterInitGui
+
+void
+AppManager::onViewerTileCacheSizeChanged()
+{
+    _imp->_viewerCache->clear();
+    _imp->setViewerCacheTileSize();
+}
+
+void
+AppManagerPrivate::setViewerCacheTileSize()
+{
+    std::size_t tileSize =  (std::size_t)std::pow( 2., (double)_settings->getViewerTilesPowerOf2() );
+
+    // Viewer tiles are always RGBA
+    tileSize = tileSize * tileSize * 4;
+
+
+    ImageBitDepthEnum viewerDepth = _settings->getViewersBitDepth();
+    switch (viewerDepth) {
+        case eImageBitDepthFloat:
+        case eImageBitDepthHalf:
+            tileSize *= sizeof(float);
+            break;
+        default:
+            break;
+    }
+    _viewerCache->setTiled(true, tileSize);
+}
 
 AppInstPtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
@@ -1056,9 +1084,9 @@ AppManager::wipeAndCreateDiskCacheStructure()
     clearAllCaches();
 
     assert(_imp->_diskCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath() );
+    _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath(), false );
     assert(_imp->_viewerCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() );
+    _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
 }
 
 AppInstPtr
@@ -1118,40 +1146,21 @@ void
 AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
 {
     size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
-    U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
 
-    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
+    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
     _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
-    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
 void
 AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
 {
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
-    U64 playbackSize = maxCacheRAM * _imp->_settings->getRamPlaybackMaximumPercent();
-
     _imp->_viewerCache->setMaximumCacheSize(size);
-    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)size );
 }
 
 void
 AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
 {
     _imp->_diskCache->setMaximumCacheSize(size);
-}
-
-void
-AppManager::setPlaybackCacheMaximumSize(double p)
-{
-    size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM_conditionnally();
-    U64 playbackSize = maxCacheRAM * p;
-
-    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM - playbackSize);
-    _imp->_nodeCache->setMaximumInMemorySize(1);
-    U64 maxDiskCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
-    _imp->_viewerCache->setMaximumInMemorySize( (double)playbackSize / (double)maxDiskCacheSize );
 }
 
 void
@@ -1280,6 +1289,9 @@ AppManager::registerBuiltInPlugin(const QString& iconPath,
     std::list<PluginActionShortcut> shortcuts;
     node->getPluginShortcuts(&shortcuts);
     p->setShorcuts(shortcuts);
+
+    PluginOpenGLRenderSupport glSupport = node->supportsOpenGLRender();
+    p->setOpenGLRenderSupport(glSupport);
 
     if (internalUseOnly) {
         p->setForInternalUseOnly(true);
@@ -1792,22 +1804,6 @@ AppManager::getPluginsList() const
     return _imp->_plugins;
 }
 
-QMutex*
-AppManager::getMutexForPlugin(const QString & pluginId,
-                              int major,
-                              int /*minor*/) const
-{
-    for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginMajorsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( ( (*it2)->getPluginID() == pluginId ) && ( (*it2)->getMajorVersion() == major ) ) {
-                return (*it2)->getPluginLock();
-            }
-        }
-    }
-    std::string exc("Couldn't find a plugin named ");
-    exc.append( pluginId.toStdString() );
-    throw std::invalid_argument(exc);
-}
 
 const std::vector<Format> &
 AppManager::getFormats() const
@@ -2055,7 +2051,7 @@ AppManager::getImageOrCreate(const ImageKey & key,
                              const boost::shared_ptr<ImageParams>& params,
                              boost::shared_ptr<Image>* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key, params, returnValue);
+    return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
@@ -2070,7 +2066,7 @@ AppManager::getImageOrCreate_diskCache(const ImageKey & key,
                                        const boost::shared_ptr<ImageParams>& params,
                                        boost::shared_ptr<Image>* returnValue) const
 {
-    return _imp->_diskCache->getOrCreate(key, params, returnValue);
+    return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
@@ -2088,9 +2084,10 @@ AppManager::getTexture(const FrameKey & key,
 bool
 AppManager::getTextureOrCreate(const FrameKey & key,
                                const boost::shared_ptr<FrameParams>& params,
+                               FrameEntryLocker* locker,
                                FrameEntryPtr* returnValue) const
 {
-    return _imp->_viewerCache->getOrCreate(key, params, returnValue);
+    return _imp->_viewerCache->getOrCreate(key, params, locker, returnValue);
 }
 
 bool
@@ -2102,7 +2099,13 @@ AppManager::isAggressiveCachingEnabled() const
 U64
 AppManager::getCachesTotalMemorySize() const
 {
-    return _imp->_viewerCache->getMemoryCacheSize() + _imp->_nodeCache->getMemoryCacheSize();
+    return  _imp->_nodeCache->getMemoryCacheSize();
+}
+
+U64
+AppManager::getCachesTotalDiskSize() const
+{
+    return  _imp->_diskCache->getDiskCacheSize() + _imp->_viewerCache->getDiskCacheSize();
 }
 
 boost::shared_ptr<CacheSignalEmitter>
@@ -2381,31 +2384,16 @@ AppManager::checkCacheFreeMemoryIsGoodEnough()
     ///Before allocating the memory check that there's enough space to fit in memory
     size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
     size_t totalFreeRAM = getAmountFreePhysicalRAM();
-    double playbackRAMPercent = appPTR->getCurrentSettings()->getRamPlaybackMaximumPercent();
 
     while (totalFreeRAM <= systemRAMToKeepFree) {
-        size_t nodeCacheSize =  _imp->_nodeCache->getMemoryCacheSize();
-        size_t viewerRamCacheSize =  _imp->_viewerCache->getMemoryCacheSize();
-
-        ///If the viewer cache represents more memory than the node cache, clear some of the viewer cache
-        if ( (nodeCacheSize == 0) || ( (viewerRamCacheSize / (double)nodeCacheSize) > playbackRAMPercent ) ) {
 #ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
-                     << ", clearing least recently used ViewerCache texture...";
+        qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
+        << ", clearing least recently used NodeCache image...";
 #endif
-
-            if ( !_imp->_viewerCache->evictLRUInMemoryEntry() ) {
-                break;
-            }
-        } else {
-#ifdef NATRON_DEBUG_CACHE
-            qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
-                     << ", clearing least recently used NodeCache image...";
-#endif
-            if ( !_imp->_nodeCache->evictLRUInMemoryEntry() ) {
-                break;
-            }
+        if ( !_imp->_nodeCache->evictLRUInMemoryEntry() ) {
+            break;
         }
+
 
         totalFreeRAM = getAmountFreePhysicalRAM();
     }
@@ -3251,6 +3239,14 @@ GPUContextPool*
 AppManager::getGPUContextPool() const
 {
     return _imp->renderingContextPool.get();
+}
+
+void
+AppManager::refreshOpenGLRenderingFlagOnAllInstances()
+{
+    for (std::size_t i = 0; i < _imp->_appInstances.size(); ++i) {
+        _imp->_appInstances[i]->getProject()->refreshOpenGLRenderingFlagOnNodes();
+    }
 }
 
 void

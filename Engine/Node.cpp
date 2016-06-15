@@ -396,7 +396,9 @@ public:
     std::list<ImageComponents> outputComponents;
     mutable QMutex nameMutex;
     mutable QMutex inputsLabelsMutex;
-    std::vector<std::string> inputLabels; // inputs name
+    std::vector<std::string> inputLabels; // inputs name, protected by inputsLabelsMutex
+    std::vector<std::string> inputHints; // protected by inputsLabelsMutex
+    std::vector<bool> inputsVisibility; // protected by inputsMutex
     std::string scriptName; //node name internally and as visible to python
     std::string label; // node label as visible in the GUI
 
@@ -446,6 +448,7 @@ public:
     boost::weak_ptr<KnobString> nodeLabelKnob;
     boost::weak_ptr<KnobBool> previewEnabledKnob;
     boost::weak_ptr<KnobBool> disableNodeKnob;
+    boost::weak_ptr<KnobChoice> openglRenderingEnabledKnob;
     boost::weak_ptr<KnobInt> lifeTimeKnob;
     boost::weak_ptr<KnobBool> enableLifeTimeKnob;
     boost::weak_ptr<KnobString> knobChangedCallback;
@@ -819,6 +822,7 @@ Node::load(const CreateNodeArgs& args)
        Set modifiable props
      */
     refreshDynamicProperties();
+    onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
 
     if ( isTrackerNodePlugin() ) {
         _imp->isMultiInstance = true;
@@ -972,6 +976,30 @@ Node::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
 PluginOpenGLRenderSupport
 Node::getCurrentOpenGLRenderSupport() const
 {
+
+    if (_imp->plugin) {
+        PluginOpenGLRenderSupport pluginProp = _imp->plugin->getPluginOpenGLRenderSupport();
+        if (pluginProp != ePluginOpenGLRenderSupportYes) {
+            return pluginProp;
+        }
+    }
+
+    if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
+        return ePluginOpenGLRenderSupportNone;
+    }
+
+    // Ok still turned on, check the value of the opengl support knob in the Node page
+    boost::shared_ptr<KnobChoice> openglSupportKnob = _imp->openglRenderingEnabledKnob.lock();
+    if (openglSupportKnob) {
+        int index = openglSupportKnob->getValue();
+        if (index == 1) {
+            return ePluginOpenGLRenderSupportNone;
+        } else if (index == 2 && getApp()->isBackground()) {
+            return ePluginOpenGLRenderSupportNone;
+        }
+    }
+
+    // Descriptor returned that it supported OpenGL, let's see if it turned off/on in the instance the OpenGL rendering
     QMutexLocker k(&_imp->pluginsPropMutex);
 
     return _imp->currentSupportOpenGLRender;
@@ -1028,7 +1056,17 @@ Node::getCurrentCanTransform() const
 void
 Node::refreshDynamicProperties()
 {
-    setCurrentOpenGLRenderSupport( _imp->effect->supportsOpenGLRender() );
+    PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
+    if (_imp->plugin) {
+        pluginGLSupport = _imp->plugin->getPluginOpenGLRenderSupport();
+        if (_imp->plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
+            // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
+            pluginGLSupport = _imp->effect->supportsOpenGLRender();
+        }
+    }
+
+
+    setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canTransform = _imp->effect->getCanTransform();
@@ -2220,7 +2258,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (data && createdKnob) {
                     KnobChoice* sKnobChoice = dynamic_cast<KnobChoice*>( sKnob.get() );
                     if (sKnobChoice) {
-                        createdKnob->choiceRestoration(dynamic_cast<KnobChoice*>( sKnob.get() ), data);
+                        createdKnob->choiceRestoration(sKnobChoice, data);
                     }
                 }
             } else {
@@ -3081,7 +3119,7 @@ Node::makeCacheInfo() const
     QString ramSizeStr = printAsRAM( (U64)ram );
     QString diskSizeStr = printAsRAM( (U64)disk );
     std::stringstream ss;
-    ss << "<b><font color=\"green\">Cache occupancy:</font></b> RAM: " << ramSizeStr.toStdString() << " / Disk: " << diskSizeStr.toStdString();
+    ss << "<b><font color=\"green\">Cache occupancy:</font></b> RAM: <font color=#c8c8c8>" << ramSizeStr.toStdString() << "</font> / Disk: <font color=#c8c8c8>" << diskSizeStr.toStdString() << "</font>";
 
     return ss.str();
 }
@@ -3120,7 +3158,7 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b><font color=\"orange\">" << inputName << ":" << "</font></b><br />";
     }
     { // image format
-        ss << "<b>Image format: </b>";
+        ss << "<b>Image planes: </b><font color=#c8c8c8>";
         EffectInstance::ComponentsAvailableMap availableComps;
         input->getComponentsAvailable(true, true, time, &availableComps);
         EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
@@ -3130,19 +3168,23 @@ Node::makeInfoForInput(int inputNumber) const
         for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it != availableComps.end(); ++it) {
             NodePtr origin = it->second.lock();
             if ( (origin.get() != this) || (inputNumber == -1) ) {
-                ss << Image::getFormatString(it->first, depth);
                 if (origin) {
-                    ss << " (from " << origin->getLabel_mt_safe() << ")";
+                    ss << Image::getFormatString(it->first, depth);
+                    if (inputNumber != -1) {
+                        ss << " (from " << origin->getLabel_mt_safe() << ")";
+                    }
                 }
             }
             if ( next != availableComps.end() ) {
-                if ( (origin.get() != this) || (inputNumber == -1) ) {
-                    ss << ", ";
+                if (origin) {
+                    if ( (origin.get() != this) || (inputNumber == -1) ) {
+                        ss << ", ";
+                    }
                 }
                 ++next;
             }
         }
-        ss << "<br />";
+        ss << "</font><br />";
     }
     { // premult
         ImagePremultiplicationEnum premult = input->getPremult();
@@ -3158,20 +3200,20 @@ Node::makeInfoForInput(int inputNumber) const
             premultStr = "unpremultiplied";
             break;
         }
-        ss << "<b>Alpha premultiplication: </b>" << premultStr << "<br />";
+        ss << "<b>Alpha premultiplication: </b><font color=#c8c8c8>" << premultStr << "</font><br />";
     }
     { // par
         double par = input->getAspectRatio(-1);
-        ss << "<b>Pixel aspect ratio: </b>" << par << "<br />";
+        ss << "<b>Pixel aspect ratio: </b><font color=#c8c8c8>" << par << "</font><br />";
     }
     { // fps
         double fps = input->getFrameRate();
-        ss << "<b>Frame rate:</b> " << fps << "fps<br />";
+        ss << "<b>Frame rate:</b> <font color=#c8c8c8>" << fps << "fps</font><br />";
     }
     {
         double first = 1., last = 1.;
         input->getFrameRange_public(getHashValue(), &first, &last);
-        ss << "<b>Frame range:</b> " << first << " - " << last << "<br />";
+        ss << "<b>Frame range:</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
     }
     {
         RenderScale scale(1.);
@@ -3181,8 +3223,8 @@ Node::makeInfoForInput(int inputNumber) const
                                                               time,
                                                               scale, ViewIdx(0), &rod, &isProjectFormat);
         if (stat != eStatusFailed) {
-            ss << "<b>Region of Definition (at t=" << time << "):</b> ";
-            ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << "<br />";
+            ss << "<b>Region of Definition (at t=" << time << "):</b> <font color=#c8c8c8>";
+            ss << "left = " << rod.x1 << " bottom = " << rod.y1 << " right = " << rod.x2 << " top = " << rod.y2 << "</font><br />";
         }
     }
 
@@ -3300,13 +3342,13 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
     boost::shared_ptr<KnobBool> disableNodeKnob = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Disable"), 1, false);
     assert(disableNodeKnob);
     disableNodeKnob->setAnimationEnabled(false);
-    disableNodeKnob->setDefaultValue(false);
     disableNodeKnob->setIsMetadataSlave(true);
     disableNodeKnob->setName(kDisableNodeKnobName);
     disableNodeKnob->setAddNewLine(false);
     disableNodeKnob->setHintToolTip( tr("When disabled, this node acts as a pass through.") );
     settingsPage->addKnob(disableNodeKnob);
     _imp->disableNodeKnob = disableNodeKnob;
+
 
 
     boost::shared_ptr<KnobBool> useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect.get(), tr("Render high def. upstream"), 1, false);
@@ -3348,6 +3390,33 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
                                                "Outside of this frame range, it behaves as if the Disable parameter is checked") );
     settingsPage->addKnob(enableLifetimeNodeKnob);
     _imp->enableLifeTimeKnob = enableLifetimeNodeKnob;
+
+    PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
+    if (_imp->plugin && _imp->plugin->isOpenGLEnabled()) {
+        glSupport = _imp->plugin->getPluginOpenGLRenderSupport();
+    }
+    if (glSupport != ePluginOpenGLRenderSupportNone) {
+        boost::shared_ptr<KnobChoice> openglRenderingKnob = AppManager::createKnob<KnobChoice>(_imp->effect.get(), tr("GPU Rendering"), 1, false);
+        assert(openglRenderingKnob);
+        openglRenderingKnob->setAnimationEnabled(false);
+        {
+            std::vector<std::string> entries;
+            std::vector<std::string> helps;
+            entries.push_back("Enabled");
+            helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+            entries.push_back("Disabled");
+            helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+            entries.push_back("Disabled if background");
+            helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+            openglRenderingKnob->populateChoices(entries, helps);
+        }
+
+        openglRenderingKnob->setName("enableGPURendering");
+        openglRenderingKnob->setHintToolTip( tr("Select when to activate GPU rendering for this node. Note that if the GPU Rendering parameter in the Project settings is set to disabled then GPU rendering will not be activated regardless of that value.") );
+        settingsPage->addKnob(openglRenderingKnob);
+        _imp->openglRenderingEnabledKnob = openglRenderingKnob;
+    }
+
 
     boost::shared_ptr<KnobString> knobChangedCallback = AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After param changed callback"), 1, false);
     knobChangedCallback->setHintToolTip( tr("Set here the name of a function defined in Python which will be called for each  "
@@ -4014,7 +4083,11 @@ Node::Implementation::createChannelSelector(int inputNb,
 int
 Node::getFrameStepKnobValue() const
 {
-    boost::shared_ptr<KnobInt> k = _imp->frameIncrKnob.lock();
+    KnobPtr knob = getKnobByName(kNatronWriteParamFrameStep);
+    if (!knob) {
+        return 1;
+    }
+    KnobInt* k = dynamic_cast<KnobInt*>(knob.get());
 
     if (!k) {
         return 1;
@@ -4109,6 +4182,7 @@ Node::makeHTMLDocumentation(bool genHTML,
     int minorVersion = getMinorVersion();
     QStringList pluginGroup;
     bool pluginDescriptionMarkdown = false;
+    QVector<QStringList> inputs;
 
     {
         QMutexLocker k(&_imp->pluginPythonModuleMutex);
@@ -4119,7 +4193,16 @@ Node::makeHTMLDocumentation(bool genHTML,
         pluginIcon = _imp->plugin->getIconFilePath();
         pluginGroup = _imp->plugin->getGrouping();
         pluginDescriptionMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
+
+        for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
+            QStringList input;
+            input << QString::fromStdString( _imp->effect->getInputHint(i) ) << QString::fromStdString( _imp->effect->getInputLabel(i) );
+            if ( !input.isEmpty() ) {
+                inputs.push_back(input);
+            }
+        }
     }
+
     QString extraMarkdown;
     QString pluginMD = pluginIcon;
     pluginMD.replace( QString::fromUtf8(".png"), QString::fromUtf8(".md") );
@@ -4153,9 +4236,9 @@ Node::makeHTMLDocumentation(bool genHTML,
     if (genHTML) {
         ts << "</ul></div>";
         ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
-        ts << "<h1>" << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "</h1>";
+        ts << "<h1>" << pluginLabel << "</h1><p>" << tr("This documentation is for version %2.%3 of %1.").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "</p>";
     } else {
-        ts << pluginLabel << " " << versionString << " " << majorVersion << "." << minorVersion << "\n==========\n\n";
+        ts << pluginLabel << "\n==========\n" << tr("This documentation is for version %2.%3 of %1.").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n";
         if (hasImg) {
             ts << "![](" << pluginID << ".png)";
             ts << "\n\n";
@@ -4314,6 +4397,32 @@ Node::makeHTMLDocumentation(bool genHTML,
 
     if (genHTML) {
         ts << "</table>";
+
+        // add inputs
+        if ( !inputs.isEmpty() ) {
+            ts << "<br><br>";
+            ts << "<table class=\"knobsTable\">";
+            ts << "<tr>";
+            ts << "<td class=\"knobsTableHeader\">";
+            ts << tr("Node Input");
+            ts << "</td>";
+            ts << "<td class=\"knobsTableHeader\">";
+            ts << tr("Description");
+            ts << "</td>";
+            ts << "</tr>";
+            Q_FOREACH(const QStringList &input, inputs) {
+                ts << "<tr>";
+                ts << "<td class=\"knobsTableValueLabel\">";
+                ts << input.at(0);
+                ts << "</td>";
+                ts << "<td class=\"knobsTableValueLabel\">";
+                ts << input.at(1);
+                ts << "</td>";
+                ts << "</tr>";
+            }
+            ts << "</table>";
+        }
+
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
             ts << Markdown::convert2html(extraMarkdown);
@@ -4323,6 +4432,11 @@ Node::makeHTMLDocumentation(bool genHTML,
         // create markdown table
         if (items.size() > 0) {
             ts << Markdown::genPluginKnobsTable(items);
+        }
+        // create markdown table for inputs
+        if (inputs.size() > 0) {
+            ts << "\n";
+            ts << Markdown::genInputKnobsTable(inputs);
         }
         // add extra markdown if available
         if ( !extraMarkdown.isEmpty() ) {
@@ -4627,8 +4741,10 @@ Node::initializeInputs()
     {
         QMutexLocker k(&_imp->inputsLabelsMutex);
         _imp->inputLabels.resize(inputCount);
+        _imp->inputHints.resize(inputCount);
         for (int i = 0; i < inputCount; ++i) {
             _imp->inputLabels[i] = _imp->effect->getInputLabel(i);
+            _imp->inputHints[i] = _imp->effect->getInputHint(i);
         }
     }
     {
@@ -4638,9 +4754,12 @@ Node::initializeInputs()
     {
         QMutexLocker l(&_imp->inputsMutex);
         oldInputs = _imp->inputs;
+
+        std::vector<bool> oldInputsVisibility = _imp->inputsVisibility;
         _imp->inputIsRenderingCounter.resize(inputCount);
         _imp->inputs.resize(inputCount);
         _imp->guiInputs.resize(inputCount);
+        _imp->inputsVisibility.resize(inputCount);
         ///if we added inputs, just set to NULL the new inputs, and add their label to the labels map
         for (int i = 0; i < inputCount; ++i) {
             if ( i < (int)oldInputs.size() ) {
@@ -4649,6 +4768,11 @@ Node::initializeInputs()
             } else {
                 _imp->inputs[i].reset();
                 _imp->guiInputs[i].reset();
+            }
+            if (i < (int) oldInputsVisibility.size()) {
+                _imp->inputsVisibility[i] = oldInputsVisibility[i];
+            } else {
+                _imp->inputsVisibility[i] = true;
             }
         }
 
@@ -4793,6 +4917,81 @@ Node::getInputLabel(int inputNb) const
 
     return _imp->inputLabels[inputNb];
 }
+
+std::string
+Node::getInputHint(int inputNb) const
+{
+    assert(_imp->inputsInitialized);
+
+    QMutexLocker l(&_imp->inputsLabelsMutex);
+    if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputHints.size() ) ) {
+        throw std::invalid_argument("Index out of range");
+    }
+
+    return _imp->inputHints[inputNb];
+}
+
+void
+Node::setInputLabel(int inputNb, const std::string& label)
+{
+    {
+        QMutexLocker l(&_imp->inputsLabelsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputLabels.size() ) ) {
+            throw std::invalid_argument("Index out of range");
+        }
+        _imp->inputLabels[inputNb] = label;
+    }
+    std::map<int, MaskSelector>::iterator foundMask = _imp->maskSelectors.find(inputNb);
+    if (foundMask != _imp->maskSelectors.end()) {
+        foundMask->second.channel.lock()->setLabel(label);
+    }
+
+    std::map<int, ChannelSelector>::iterator foundChannel = _imp->channelsSelectors.find(inputNb);
+    if (foundChannel != _imp->channelsSelectors.end()) {
+        foundChannel->second.layer.lock()->setLabel(label + std::string(" Layer"));
+    }
+
+    Q_EMIT inputEdgeLabelChanged(inputNb, QString::fromUtf8(label.c_str()));
+}
+
+void
+Node::setInputHint(int inputNb, const std::string& hint)
+{
+    {
+        QMutexLocker l(&_imp->inputsLabelsMutex);
+        if ( (inputNb < 0) || ( inputNb >= (int)_imp->inputHints.size() ) ) {
+            throw std::invalid_argument("Index out of range");
+        }
+        _imp->inputHints[inputNb] = hint;
+    }
+}
+
+bool
+Node::isInputVisible(int inputNb) const
+{
+    QMutexLocker k(&_imp->inputsMutex);
+    if (inputNb >= 0 && inputNb < (int)_imp->inputsVisibility.size()) {
+        return _imp->inputsVisibility[inputNb];
+    } else {
+        throw std::invalid_argument("Index out of range");
+    }
+    return false;
+}
+
+void
+Node::setInputVisible(int inputNb, bool visible)
+{
+    {
+        QMutexLocker k(&_imp->inputsMutex);
+        if (inputNb >= 0 && inputNb < (int)_imp->inputsVisibility.size()) {
+            _imp->inputsVisibility[inputNb] = visible;
+        } else {
+            throw std::invalid_argument("Index out of range");
+        }
+    }
+    Q_EMIT inputVisibilityChanged(inputNb);
+}
+
 
 int
 Node::getInputNumberFromLabel(const std::string& inputLabel) const
@@ -5177,14 +5376,12 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
 }
 
 bool
-Node::replaceInput(const NodePtr& input,
-                   int inputNumber)
+Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     assert(input);
-
     ///Check for cycles: they are forbidden in the graph
     if ( !checkIfConnectingInputIsOk( input.get() ) ) {
         return false;
@@ -5204,8 +5401,6 @@ Node::replaceInput(const NodePtr& input,
         }
     }
 
-    bool useGuiInputs = isNodeRendering();
-    _imp->effect->abortAnyEvaluation();
     {
         ///Check for invalid index
         QMutexLocker l(&_imp->inputsMutex);
@@ -5266,8 +5461,19 @@ Node::replaceInput(const NodePtr& input,
     if (mustCallEnd) {
         endInputEdition(true);
     }
-
+    
     return true;
+}
+
+bool
+Node::replaceInput(const NodePtr& input,
+                   int inputNumber)
+{
+
+
+    bool useGuiInputs = isNodeRendering();
+    _imp->effect->abortAnyEvaluation();
+    return replaceInputInternal(input, inputNumber, useGuiInputs);
 } // Node::replaceInput
 
 void
@@ -5487,14 +5693,12 @@ Node::disconnectInput(int inputNumber)
 } // Node::disconnectInput
 
 int
-Node::disconnectInput(Node* input)
+Node::disconnectInputInternal(Node* input, bool useGuiValues)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     int found = -1;
-    bool useGuiValues = isNodeRendering();
-    _imp->effect->abortAnyEvaluation();
     NodePtr inputShared;
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -5558,8 +5762,17 @@ Node::disconnectInput(Node* input)
 
         return found;
     }
-
+    
     return -1;
+}
+
+int
+Node::disconnectInput(Node* input)
+{
+
+    bool useGuiValues = isNodeRendering();
+    _imp->effect->abortAnyEvaluation();
+    return disconnectInputInternal(input, useGuiValues);
 } // Node::disconnectInput
 
 int
@@ -5646,6 +5859,24 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     }
     //first tell the gui to clear any persistent message linked to this node
     clearPersistentMessage(false);
+
+
+
+    bool beingDestroyed;
+    {
+        QMutexLocker k(&_imp->isBeingDestroyedMutex);
+        beingDestroyed = _imp->isBeingDestroyed;
+    }
+
+
+    ///kill any thread it could have started
+    ///Commented-out: If we were to undo the deactivate we don't want all threads to be
+    ///exited, just exit them when the effect is really deleted instead
+    //quitAnyProcessing();
+    if (!beingDestroyed) {
+        _imp->effect->abortAnyEvaluation(false /*keepOldestRender*/);
+        _imp->abortPreview_non_blocking();
+    }
 
     boost::shared_ptr<NodeCollection> parentCol = getGroup();
 
@@ -5794,32 +6025,17 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
                 ///reconnect if inputToConnectTo is not null
                 if (inputToConnectTo) {
-                    output->replaceInput(inputToConnectTo, inputNb);
+                    output->replaceInputInternal(inputToConnectTo, inputNb, false);
                 } else {
-                    ignore_result( output->disconnectInput(this) );
+                    ignore_result( output->disconnectInputInternal(this, false) );
                 }
             }
         }
     }
 
-
-    bool beingDestroyed;
-    {
-        QMutexLocker k(&_imp->isBeingDestroyedMutex);
-        beingDestroyed = _imp->isBeingDestroyed;
-    }
-
     // If the effect was doing OpenGL rendering and had context(s) bound, dettach them.
     _imp->effect->dettachAllOpenGLContexts();
 
-    ///kill any thread it could have started
-    ///Commented-out: If we were to undo the deactivate we don't want all threads to be
-    ///exited, just exit them when the effect is really deleted instead
-    //quitAnyProcessing();
-    if (!beingDestroyed) {
-        _imp->effect->abortAnyEvaluation();
-        _imp->abortPreview_non_blocking();
-    }
 
     ///Free all memory used by the plug-in.
 
@@ -6058,8 +6274,6 @@ void
 Node::destroyNodeInternal(bool fromDest,
                           bool autoReconnect)
 {
-    assert( QThread::currentThread() == qApp->thread() );
-
     if (!_imp->effect) {
         return;
     }
@@ -6347,7 +6561,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            depth,
                                                                                                            false,
                                                                                                            effect,
-                                                                                                           false /*returnOpenGLTex*/,
+                                                                                                           eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
             EffectInstance::RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);
@@ -7024,13 +7238,13 @@ Node::onAllKnobsSlaved(bool isSlave,
             }
             QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
             QObject::connect( masterNode.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
-            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
+            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         }
     } else {
         NodePtr master = getMasterNode();
         QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
         QObject::disconnect( master.get(), SIGNAL(knobsAgeChanged(U64)), this, SLOT(setKnobsAge(U64)) );
-        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(int)), this, SLOT(refreshPreviewImage(int)) );
+        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
         {
             QMutexLocker l(&_imp->masterNodeMutex);
             _imp->masterNode.reset();
@@ -8373,8 +8587,8 @@ Node::onEffectKnobValueChanged(KnobI* what,
         ssinfo << outputInfo << "<br />";
         std::string cacheInfo = makeCacheInfo();
         ssinfo << cacheInfo << "<br />";
-        ssinfo << "<b>OpenGL Rendering Support:</b>: ";
-        PluginOpenGLRenderSupport glSupport = _imp->effect->supportsOpenGLRender();
+        ssinfo << "<b>OpenGL Rendering Support:</b>: <font color=#c8c8c8>";
+        PluginOpenGLRenderSupport glSupport = getCurrentOpenGLRenderSupport();
         switch (glSupport) {
             case ePluginOpenGLRenderSupportNone:
                 ssinfo << "No";
@@ -8388,7 +8602,21 @@ Node::onEffectKnobValueChanged(KnobI* what,
             default:
                 break;
         }
+        ssinfo << "</font>";
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
+    } else if ( what == _imp->openglRenderingEnabledKnob.lock().get() ) {
+        bool enabled = true;
+        int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
+        if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
+            enabled = false;
+        }
+        if (enabled) {
+            // Check value on project now
+            if (!getApp()->getProject()->isOpenGLRenderActivated()) {
+                enabled = false;
+            }
+        }
+        _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
     } else {
         ret = false;
     }
@@ -8448,6 +8676,28 @@ Node::onEffectKnobValueChanged(KnobI* what,
 
     return ret;
 } // Node::onEffectKnobValueChanged
+
+void
+Node::onOpenGLEnabledKnobChangedOnProject(bool activated)
+{
+    bool enabled = activated;
+    boost::shared_ptr<KnobChoice> k = _imp->openglRenderingEnabledKnob.lock();
+    if (enabled) {
+        if (k) {
+            k->setAllDimensionsEnabled(true);
+            int thisKnobIndex = k->getValue();
+            if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
+                enabled = false;
+            }
+        }
+    } else {
+        if (k) {
+            k->setAllDimensionsEnabled(true);
+        }
+    }
+    _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
+    
+}
 
 bool
 Node::getSelectedLayerChoiceRaw(int inputNb,
@@ -10137,7 +10387,9 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
 {
     std::vector<std::string> args;
     std::string error;
-
+    if (!_publicInterface->isPartOfProject()) {
+        return;
+    }
     try {
         NATRON_PYTHON_NAMESPACE::getFunctionArguments(cb, &error, &args);
     } catch (const std::exception& e) {
@@ -10267,6 +10519,10 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 void
 Node::Implementation::runOnNodeDeleteCB()
 {
+
+    if (!_publicInterface->isPartOfProject()) {
+        return;
+    }
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeDeleteCB();
     boost::shared_ptr<NodeCollection> group = _publicInterface->getGroup();
 

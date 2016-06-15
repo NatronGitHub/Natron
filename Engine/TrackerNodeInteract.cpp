@@ -89,7 +89,6 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     , selectedMarkerTextureRoI()
     , selectedMarker()
     , pboID(0)
-    , selectedMarkerWidth(SELECTED_MARKER_WINDOW_BASE_WIDTH_SCREEN_PX)
     , imageGetterWatcher()
     , showMarkerTexture(false)
     , selectedMarkerScale()
@@ -546,6 +545,7 @@ void
 TrackerNodeInteract::computeSelectedMarkerCanonicalRect(RectD* rect) const
 {
     assert(selectedMarkerTexture);
+    int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
     computeTextureCanonicalRect(*selectedMarkerTexture, 0, selectedMarkerWidth, rect);
 }
 
@@ -667,6 +667,8 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
     boost::shared_ptr<KnobDouble> searchWndBtmLeft = marker->getSearchWindowBottomLeftKnob();
     boost::shared_ptr<KnobDouble> searchWndTopRight = marker->getSearchWindowTopRightKnob();
     int fontHeight = overlay->getWidgetFontHeight();
+
+    int selectedMarkerWidth = magWindowPxSizeKnob.lock()->getValue();
     double xOffsetPixels = selectedMarkerWidth;
     QPointF viewerTopLeftCanonical = overlay->toCanonicalCoordinates( QPointF(0, 0.) );
 
@@ -1412,7 +1414,13 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
         _p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
         double time = _p->publicInterface->getCurrentTime();
         bool createkey = createKeyOnMoveButton.lock()->getValue();
+
+        int hasMovedMarker = false;
         for (std::list< TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
+
+            if (!(*it)->isEnabled(time)) {
+                continue;
+            }
             boost::shared_ptr<KnobDouble> centerKnob = (*it)->getCenterKnob();
             boost::shared_ptr<KnobDouble> patternCorners[4];
             patternCorners[0] = (*it)->getPatternBtmLeftKnob();
@@ -1432,10 +1440,11 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
             if (createkey) {
                 (*it)->setUserKeyframe(time);
             }
+            hasMovedMarker = true;
         }
         refreshSelectedMarkerTexture();
 
-        return true;
+        return hasMovedMarker;
     }
 
     return false;

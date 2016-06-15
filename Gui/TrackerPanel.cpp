@@ -1050,7 +1050,7 @@ TrackerPanel::onAverageButtonClicked()
             avgCenter.x += markCenter->getValueAtTime(t, 0);
             avgCenter.y += markCenter->getValueAtTime(t, 1);
 
-#ifdef AVERAGE_ALSO_PATTERN_QUAD
+#        ifdef AVERAGE_ALSO_PATTERN_QUAD
             avgTopLeft.x += markTopLeft->getValueAtTime(t, 0);
             avgTopLeft.y += markTopLeft->getValueAtTime(t, 1);
 
@@ -1062,30 +1062,33 @@ TrackerPanel::onAverageButtonClicked()
 
             avgBtmLeft.x += markBtmLeft->getValueAtTime(t, 0);
             avgBtmLeft.y += markBtmLeft->getValueAtTime(t, 1);
-#endif
+#         endif
         }
 
-        avgCenter.x /= markers.size();
-        avgCenter.y /= markers.size();
+        int n = markers.size();
+        if (n) {
+            avgCenter.x /= n;
+            avgCenter.y /= n;
 
-#ifdef AVERAGE_ALSO_PATTERN_QUAD
-        avgTopLeft.x /= markers.size();
-        avgTopLeft.y /= markers.size();
+#         ifdef AVERAGE_ALSO_PATTERN_QUAD
+            avgTopLeft.x /= n;
+            avgTopLeft.y /= n;
 
-        avgTopRight.x /= markers.size();
-        avgTopRight.y /= markers.size();
+            avgTopRight.x /= n;
+            avgTopRight.y /= n;
 
-        avgBtmRight.x /= markers.size();
-        avgBtmRight.y /= markers.size();
+            avgBtmRight.x /= n;
+            avgBtmRight.y /= n;
 
-        avgBtmLeft.x /= markers.size();
-        avgBtmLeft.y /= markers.size();
-#endif
+            avgBtmLeft.x /= n;
+            avgBtmLeft.y /= n;
+#         endif
+        }
 
         if (!hasKeyFrame) {
             centerKnob->setValue(avgCenter.x, ViewSpec(0), 0);
             centerKnob->setValue(avgCenter.y, ViewSpec(0), 1);
-#ifdef AVERAGE_ALSO_PATTERN_QUAD
+#         ifdef AVERAGE_ALSO_PATTERN_QUAD
             topLeftKnob->setValue(avgTopLeft.x, ViewSpec(0), 0);
             topLeftKnob->setValue(avgTopLeft.y, ViewSpec(0), 1);
             topRightKnob->setValue(avgTopRight.x, ViewSpec(0), 0);
@@ -1094,12 +1097,12 @@ TrackerPanel::onAverageButtonClicked()
             btmRightKnob->setValue(avgBtmRight.y, ViewSpec(0), 1);
             btmLeftKnob->setValue(avgBtmLeft.x, ViewSpec(0), 0);
             btmLeftKnob->setValue(avgBtmLeft.y, ViewSpec(0), 1);
-#endif
+#         endif
             break;
         } else {
             centerKnob->setValueAtTime(t, avgCenter.x, ViewSpec(0), 0);
             centerKnob->setValueAtTime(t, avgCenter.y, ViewSpec(0), 1);
-#ifdef AVERAGE_ALSO_PATTERN_QUAD
+#         ifdef AVERAGE_ALSO_PATTERN_QUAD
             topLeftKnob->setValueAtTime(t, avgTopLeft.x, ViewSpec(0), 0);
             topLeftKnob->setValueAtTime(t, avgTopLeft.y, ViewSpec(0), 1);
             topRightKnob->setValueAtTime(t, avgTopRight.x, ViewSpec(0), 0);
@@ -1108,7 +1111,7 @@ TrackerPanel::onAverageButtonClicked()
             btmRightKnob->setValueAtTime(t, avgBtmRight.y, ViewSpec(0), 1);
             btmLeftKnob->setValueAtTime(t, avgBtmLeft.x, ViewSpec(0), 0);
             btmLeftKnob->setValueAtTime(t, avgBtmLeft.y, ViewSpec(0), 1);
-#endif
+#         endif
         }
     }
 } // TrackerPanel::onAverageButtonClicked

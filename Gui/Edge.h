@@ -112,6 +112,8 @@ public:
 
     bool isNearbyBendPoint(const QPointF & scenePoint);
 
+    void setLabel(const QString &label);
+
     /**
      * @brief Refresh the Edge properties such as dashed state, optional state, visibility etc...
      * @param hovered True if the mouse is hovering the dst node (the node holding this edge)

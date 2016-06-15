@@ -120,6 +120,7 @@ AppManagerPrivate::AppManagerPrivate()
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
     , renderingContextPool()
+    , openGLRenderers()
 {
     setMaxCacheFiles();
 
@@ -276,7 +277,7 @@ AppManagerPrivate::declareSettingsToPython()
 
 template <typename T>
 void
-saveCache(Cache<T>* cache)
+saveCache(Cache<T>* cache, bool async)
 {
     std::string cacheRestoreFilePath = cache->getRestoreFilePath();
     FStreamsSupport::ofstream ofile;
@@ -290,7 +291,7 @@ saveCache(Cache<T>* cache)
 
 
     typename Cache<T>::CacheTOC toc;
-    cache->save(&toc);
+    cache->save(&toc, async);
     unsigned int version = cache->cacheVersion();
     try {
         boost::archive::binary_oarchive oArchive(ofile);
@@ -302,10 +303,10 @@ saveCache(Cache<T>* cache)
 }
 
 void
-AppManagerPrivate::saveCaches()
+AppManagerPrivate::saveCaches(bool async)
 {
-    saveCache<FrameEntry>( _viewerCache.get() );
-    saveCache<Image>( _diskCache.get() );
+    saveCache<FrameEntry>( _viewerCache.get(), async );
+    saveCache<Image>( _diskCache.get(), async );
 } // saveCaches
 
 template <typename T>
@@ -313,7 +314,7 @@ void
 restoreCache(AppManagerPrivate* p,
              Cache<T>* cache)
 {
-    if ( p->checkForCacheDiskStructure( cache->getCachePath() ) ) {
+    if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
         std::string settingsFilePath = cache->getRestoreFilePath();
         FStreamsSupport::ifstream ifile;
         FStreamsSupport::open(&ifile, settingsFilePath);
@@ -333,11 +334,11 @@ restoreCache(AppManagerPrivate* p,
             if ( cacheVersion == cache->cacheVersion() ) {
                 iArchive >> tableOfContents;
             } else {
-                p->cleanUpCacheDiskStructure( cache->getCachePath() );
+                p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
             }
         } catch (const std::exception & e) {
             qDebug() << "Exception when reading disk cache TOC:" << e.what();
-            p->cleanUpCacheDiskStructure( cache->getCachePath() );
+            p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
 
             return;
         }
@@ -359,7 +360,7 @@ AppManagerPrivate::restoreCaches()
 } // restoreCaches
 
 bool
-AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
+AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool isTiled)
 {
     QString settingsFilePath = cachePath;
 
@@ -370,49 +371,51 @@ AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath)
     settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
 
     if ( !QFile::exists(settingsFilePath) ) {
-        cleanUpCacheDiskStructure(cachePath);
+        cleanUpCacheDiskStructure(cachePath, isTiled);
 
         return false;
     }
-    QDir directory(cachePath);
-    QStringList files = directory.entryList(QDir::AllDirs);
+
+    if (!isTiled) {
+        QDir directory(cachePath);
+        QStringList files = directory.entryList(QDir::AllDirs);
 
 
-    /*Now counting actual data files in the cache*/
-    /*check if there's 256 subfolders, otherwise reset cache.*/
-    int count = 0; // -1 because of the restoreFile
-    int subFolderCount = 0;
-    Q_FOREACH(const QString &file, files) {
-        QString subFolder(cachePath);
+        /*Now counting actual data files in the cache*/
+        /*check if there's 256 subfolders, otherwise reset cache.*/
+        int count = 0; // -1 because of the restoreFile
+        int subFolderCount = 0;
+        Q_FOREACH(const QString &file, files) {
+            QString subFolder(cachePath);
 
-        subFolder.append( QDir::separator() );
-        subFolder.append(file);
-        if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
-            continue;
-        }
-        QDir d(subFolder);
-        if ( d.exists() ) {
-            ++subFolderCount;
-            QStringList items = d.entryList();
-            for (int j = 0; j < items.size(); ++j) {
-                if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
-                    ++count;
+            subFolder.append( QDir::separator() );
+            subFolder.append(file);
+            if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
+                continue;
+            }
+            QDir d(subFolder);
+            if ( d.exists() ) {
+                ++subFolderCount;
+                QStringList items = d.entryList();
+                for (int j = 0; j < items.size(); ++j) {
+                    if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
+                        ++count;
+                    }
                 }
             }
         }
+        if (subFolderCount < 256) {
+            qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
+            cleanUpCacheDiskStructure(cachePath, isTiled);
+            
+            return false;
+        }
     }
-    if (subFolderCount < 256) {
-        qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
-        cleanUpCacheDiskStructure(cachePath);
-
-        return false;
-    }
-
     return true;
 } // AppManagerPrivate::checkForCacheDiskStructure
 
 void
-AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
+AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled)
 {
     /*re-create cache*/
 
@@ -434,13 +437,15 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath)
             cacheFolder.rmdir(e);
         }
     }
-    for (U32 i = 0x00; i <= 0xF; ++i) {
-        for (U32 j = 0x00; j <= 0xF; ++j) {
-            std::ostringstream oss;
-            oss << std::hex <<  i;
-            oss << std::hex << j;
-            std::string str = oss.str();
-            cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+    if (!isTiled) {
+        for (U32 i = 0x00; i <= 0xF; ++i) {
+            for (U32 j = 0x00; j <= 0xF; ++j) {
+                std::ostringstream oss;
+                oss << std::hex <<  i;
+                oss << std::hex << j;
+                std::string str = oss.str();
+                cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
+            }
         }
     }
 }

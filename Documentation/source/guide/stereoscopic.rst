@@ -14,6 +14,23 @@ Upon importing an EXR file containing multiple views within the file, Natron wil
 
 .. image:: _images/multiview02.png
 
+If clicking yes,  Natron will create the missing views in the project:
+
+.. image:: _images/multiview08.png
+
+
+You can remove the “Main” view if needed (in our case it does not make sense to leave it in the project). You can do so by clicking either Remove and selecting the “Main” view or clicking “Setup views for stereo”: 
+
+.. image:: _images/multiview09.png
+
+The Read node will have a special “V” mark on its top-left corner, indicating that it has multiple views available. When hovering the “V” indicator with the mouse, more informations are available regarding which views are present in this Read node
+
+.. image:: _images/multiview10.png
+
+Hovering your mouse over the Output Layer parameter will detail which layer is available in which view:
+
+.. image:: _images/multiview11.png
+
 When the project has multiple views available, each viewer will have a drop-down with available views. You can select with view to display:
 
 .. image:: _images/multiview03.png
@@ -21,6 +38,20 @@ When the project has multiple views available, each viewer will have a drop-down
 If we take a look at our Read node's properties, you can see that we have 2 layers in this file: RGBA and depth. Layers may sometimes not be present in all views in the file, but the Read node will show the union of all layers available across all views:
 
 .. image:: _images/multiview04.png
+
+
+Joining separate views
+----------------------
+
+In Natron you can join different simple-view files to a multiple-view stream by using the JoinViews node, like this:
+
+.. image:: _images/multiview12.png
+
+Export
+------
+
+Exporting multi-view files in Natron can be done multiple ways: Either you want to have a separate file for each view, or you want all views to be in the same file. The later is only supported by the EXR file format.
+When exporting to EXR, the Write node properties panel will have an extra “Views” parameter:
 
 .. image:: _images/multiview05.png
 
@@ -36,34 +67,6 @@ Another interesting parameter controls how the EXR/TIFF file is written, this is
 
 .. image:: _images/multiview07.png
 
-If clicking yes,  Natron will create the missing views in the project:
-
-.. image:: _images/multiview08.png
-
-You can remove the “Main” view if needed (in our case it does not make sense to leave it in the project). You can do so by clicking either Remove and selecting the “Main” view or clicking “Setup views for stereo”: 
-
-.. image:: _images/multiview09.png
-
-The Read node will have a special “V” mark on its top-left corner, indicating that it has multiple views available. When hovering the “V” indicator with the mouse, more informations are available regarding which views are present in this Read node
-
-.. image:: _images/multiview10.png
-
-Hovering your mouse over the Output Layer parameter will detail which layer is available in which view:
-
-.. image:: _images/multiview11.png
-
-Joining separate views
-----------------------
-
-In Natron you can join different simple-view files to a multiple-view stream by using the JoinViews node, like this:
-
-.. image:: _images/multiview12.png
-
-Export
-------
-
-Exporting multi-view files in Natron can be done multiple ways: Either you want to have a separate file for each view, or you want all views to be in the same file. The later is only supported by the EXR file format.
-When exporting to EXR, the Write node properties panel will have an extra “Views” parameter:
 
 When set to “Single Part”, the Write node will aggregate all views requested to render in a single “part” of the file. Single part files are what is written by OpenEXR 1.x applications, thus selecting “Single Part” ensures compatibility with other applications that do not support OpenEXR 2.
 

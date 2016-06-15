@@ -185,11 +185,9 @@ public:
 
     NodeRenderWatcher(const NodesList& nodes)
         : GenericWatcher()
-        , _nodes()
+        , _nodes(nodes)
     {
-        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            _nodes.push_back(*it);
-        }
+
     }
 
     virtual ~NodeRenderWatcher()
@@ -199,7 +197,7 @@ public:
 private:
 
     virtual void handleBlockingTask(int taskID) OVERRIDE FINAL;
-    NodesWList _nodes;
+    NodesList _nodes;
 };
 
 

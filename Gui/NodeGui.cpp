@@ -245,6 +245,8 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(hideInputsKnobChanged(bool)), this, SLOT(onHideInputsKnobValueChanged(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(availableViewsChanged()), this, SLOT(onAvailableViewsChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(rightClickMenuKnobPopulated()), this, SLOT(onRightClickMenuKnobPopulated()) );
+    QObject::connect( internalNode.get(), SIGNAL(inputEdgeLabelChanged(int, QString)), this, SLOT(onInputLabelChanged(int,QString)) );
+    QObject::connect( internalNode.get(), SIGNAL(inputVisibilityChanged(int)), this, SLOT(onInputVisibilityChanged(int)) );
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
@@ -3955,6 +3957,24 @@ NodeGui::onRightClickActionTriggered()
     } else {
         button->trigger();
     }
+}
+
+void
+NodeGui::onInputLabelChanged(int inputNb,const QString& label)
+{
+    if (inputNb < 0 || inputNb >= (int)_inputEdges.size()) {
+        return;
+    }
+    assert(_inputEdges[inputNb]);
+    if (_inputEdges[inputNb]) {
+        _inputEdges[inputNb]->setLabel(label);
+    }
+}
+
+void
+NodeGui::onInputVisibilityChanged(int /*inputNb*/)
+{
+    refreshEdgesVisility();
 }
 
 NATRON_NAMESPACE_EXIT;

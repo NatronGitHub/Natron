@@ -180,13 +180,13 @@ public:
 
     void loadBuiltinFormats();
 
-    void saveCaches();
+    void saveCaches(bool async);
 
     void restoreCaches();
 
-    bool checkForCacheDiskStructure(const QString & cachePath);
+    bool checkForCacheDiskStructure(const QString & cachePath, bool isTiled);
 
-    void cleanUpCacheDiskStructure(const QString & cachePath);
+    void cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled);
 
     /**
      * @brief Called on startup to initialize the max opened files
@@ -208,6 +208,8 @@ public:
     void initGLAPISpecific();
 
     void tearDownGL();
+
+    void setViewerCacheTileSize();
 };
 
 NATRON_NAMESPACE_EXIT;

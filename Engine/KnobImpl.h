@@ -1994,7 +1994,7 @@ Knob<T>::setDefaultValue(const T & v,
         QMutexLocker l(&_valueMutex);
         _defaultValues[dimension] = v;
     }
-    resetToDefaultValue(dimension);
+    resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 template <typename T>

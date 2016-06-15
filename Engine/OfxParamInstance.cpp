@@ -346,6 +346,7 @@ OfxParamToKnob::connectDynamicProperties()
     QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(onEnabledChanged()) );
     QObject::connect( handler, SIGNAL(displayMinMaxChanged(double,double,int)), this, SLOT(onDisplayMinMaxChanged(double,double,int)) );
     QObject::connect( handler, SIGNAL(minMaxChanged(double,double,int)), this, SLOT(onMinMaxChanged(double,double,int)) );
+    QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHintTooltipChanged()) );
 }
 
 void
@@ -449,6 +450,20 @@ OfxParamToKnob::onSecretChanged()
 }
 
 void
+OfxParamToKnob::onHintTooltipChanged()
+{
+    DYNAMIC_PROPERTY_CHECK();
+
+    OFX::Host::Param::Instance* param = getOfxParam();
+    assert(param);
+    KnobPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+    param->getProperties().setStringProperty( kOfxParamPropHint, knob->getHintToolTip() );
+}
+
+void
 OfxParamToKnob::onEnabledChanged()
 {
     DYNAMIC_PROPERTY_CHECK();
@@ -529,6 +544,14 @@ OfxPushButtonInstance::setEnabled()
     DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
+
+void
+OfxPushButtonInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
 
 // callback which should set secret state as appropriate
 void
@@ -645,6 +668,20 @@ OfxIntegerInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
+}
+
+void
+OfxIntegerInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxIntegerInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
 }
 
 void
@@ -872,6 +909,20 @@ OfxDoubleInstance::setEnabled()
     _knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
+void
+OfxDoubleInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxDoubleInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), 0);
+}
+
 // callback which should set secret state as appropriate
 void
 OfxDoubleInstance::setSecret()
@@ -1049,6 +1100,20 @@ OfxBooleanInstance::setSecret()
 }
 
 void
+OfxBooleanInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxBooleanInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
+}
+
+void
 OfxBooleanInstance::setLabel()
 {
     DYNAMIC_PROPERTY_CHECK();
@@ -1218,6 +1283,21 @@ OfxChoiceInstance::set(OfxTime time,
     } else {
         return kOfxStatErrBadIndex;
     }
+}
+
+void
+OfxChoiceInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+
+void
+OfxChoiceInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
 }
 
 // callback which should set enabled state as appropriate
@@ -1505,6 +1585,23 @@ OfxRGBAInstance::setLabel()
 }
 
 void
+OfxRGBAInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxRGBAInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), 0);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 1), 1);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 2), 2);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 3), 3);
+}
+
+void
 OfxRGBAInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
@@ -1701,6 +1798,22 @@ OfxRGBInstance::integrate(OfxTime time1,
     b = color->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 2);
 
     return kOfxStatOK;
+}
+
+void
+OfxRGBInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxRGBInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), 0);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 1), 1);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 2), 2);
 }
 
 // callback which should set enabled state as appropriate
@@ -1983,6 +2096,21 @@ OfxDouble2DInstance::integrate(OfxTime time1,
     x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 1 + _startIndex);
 
     return kOfxStatOK;
+}
+
+void
+OfxDouble2DInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxDouble2DInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), 0);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 1), 1);
 }
 
 // callback which should set enabled state as appropriate
@@ -2292,6 +2420,21 @@ OfxInteger2DInstance::setRange()
 }
 
 void
+OfxInteger2DInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxInteger2DInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 1), 1);
+}
+
+void
 OfxInteger2DInstance::setEvaluateOnChange()
 {
     DYNAMIC_PROPERTY_CHECK();
@@ -2506,6 +2649,22 @@ OfxDouble3DInstance::integrate(OfxTime time1,
     x3 = knob->getIntegrateFromTimeToTime(time1, time2, ViewSpec::current(), 2 + _startIndex);
 
     return kOfxStatOK;
+}
+
+void
+OfxDouble3DInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxDouble3DInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 0), 0);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 1), 1);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getDoubleProperty(kOfxParamPropDefault, 2), 2);
 }
 
 // callback which should set enabled state as appropriate
@@ -2738,6 +2897,22 @@ OfxInteger3DInstance::set(OfxTime time,
     return kOfxStatOK;
 }
 
+void
+OfxInteger3DInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
+void
+OfxInteger3DInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 0), 0);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 1), 1);
+    _knob.lock()->setDefaultValueWithoutApplying(_properties.getIntProperty(kOfxParamPropDefault, 2), 2);
+}
+
 // callback which should set enabled state as appropriate
 void
 OfxInteger3DInstance::setEnabled()
@@ -2885,6 +3060,13 @@ OfxGroupInstance::getKnob() const
 }
 
 void
+OfxGroupInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _groupKnob.lock()->setHintToolTip(getHint());
+}
+
+void
 OfxGroupInstance::setEnabled()
 {
     DYNAMIC_PROPERTY_CHECK();
@@ -2936,6 +3118,13 @@ OfxPageInstance::setSecret()
 {
     DYNAMIC_PROPERTY_CHECK();
     _pageKnob.lock()->setAllDimensionsEnabled( getSecret() );
+}
+
+void
+OfxPageInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _pageKnob.lock()->setHintToolTip(getHint());
 }
 
 void
@@ -3024,7 +3213,7 @@ OfxStringInstance::OfxStringInstance(const boost::shared_ptr<OfxEffectInstance>&
             _imp->stringKnob.lock()->setAsMultiLine();
         }
     }
-    std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault).c_str();
+    std::string defaultVal = properties.getStringProperty(kOfxParamPropDefault);
     if ( !defaultVal.empty() ) {
         if ( _imp->fileKnob.lock() ) {
             projectEnvVar_setProxy(defaultVal);
@@ -3246,6 +3435,43 @@ OfxStringInstance::setEnabled()
     }
     if ( _imp->pathKnob.lock() ) {
         _imp->pathKnob.lock()->setAllDimensionsEnabled( getEnabled() );
+    }
+}
+
+void
+OfxStringInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    if ( _imp->fileKnob.lock() ) {
+        _imp->fileKnob.lock()->setHintToolTip(getHint());
+    }
+    if ( _imp->outputFileKnob.lock() ) {
+        _imp->outputFileKnob.lock()->setHintToolTip(getHint());
+    }
+    if ( _imp->stringKnob.lock() ) {
+        _imp->stringKnob.lock()->setHintToolTip(getHint());
+    }
+    if ( _imp->pathKnob.lock() ) {
+        _imp->pathKnob.lock()->setHintToolTip(getHint());
+    }
+}
+
+void
+OfxStringInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    const std::string& v = _properties.getStringProperty(kOfxParamPropDefault, 0);
+    if ( _imp->fileKnob.lock() ) {
+        _imp->fileKnob.lock()->setDefaultValueWithoutApplying(v, 0);
+    }
+    if ( _imp->outputFileKnob.lock() ) {
+        _imp->outputFileKnob.lock()->setDefaultValueWithoutApplying(v, 0);
+    }
+    if ( _imp->stringKnob.lock() ) {
+        _imp->stringKnob.lock()->setDefaultValueWithoutApplying(v, 0);
+    }
+    if ( _imp->pathKnob.lock() ) {
+        _imp->pathKnob.lock()->setDefaultValueWithoutApplying(v, 0);
     }
 }
 
@@ -3536,6 +3762,21 @@ OfxCustomInstance::setEnabled()
     //_imp->knob.lock()->setAllDimensionsEnabled( getEnabled() );
 }
 
+void
+OfxCustomInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setHintToolTip(getHint());
+}
+
+
+void
+OfxCustomInstance::setDefault()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _imp->knob.lock()->setDefaultValueWithoutApplying(_properties.getStringProperty(kOfxParamPropDefault, 0), 0);
+}
+
 // callback which should set secret state as appropriate
 void
 OfxCustomInstance::setSecret()
@@ -3659,6 +3900,14 @@ OfxParametricInstance::setSecret()
     DYNAMIC_PROPERTY_CHECK();
     _knob.lock()->setSecret( getSecret() );
 }
+
+void
+OfxParametricInstance::setHint()
+{
+    DYNAMIC_PROPERTY_CHECK();
+    _knob.lock()->setHintToolTip(getHint());
+}
+
 
 void
 OfxParametricInstance::setEvaluateOnChange()

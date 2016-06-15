@@ -58,7 +58,6 @@
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
 
-
 NATRON_NAMESPACE_ENTER;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,6 +135,222 @@ public:
     }
 };
 
+// This is a cache file with a fixed size that is a multiple of the tileByteSize.
+// A bitset represents the allocated tiles in the file.
+// A value of true means that a tile is used by a cache entry.
+struct TileCacheFile
+{
+    boost::shared_ptr<MemoryFile> file;
+    std::vector<bool> usedTiles;
+};
+
+typedef boost::shared_ptr<TileCacheFile> TileCacheFilePtr;
+
+/**
+ * @brief Defines the API of the Cache as seen by the cache entries
+ **/
+class CacheAPI
+{
+public:
+    virtual ~CacheAPI() {}
+
+    /**
+     * @brief Returns the path to the cache location on disk
+     **/
+    virtual QString getCachePath() const = 0;
+
+    /**
+     * @brief Return true if the cache is tiled
+     **/
+    virtual bool isTileCache() const = 0;
+
+    /**
+     * @brief Returns the number of bytes occupied by a tile in the cache
+     **/
+    virtual std::size_t getTileSizeBytes() const = 0;
+
+    /**
+     * @brief To be called by a CacheEntry whenever it's size is changed.
+     * This way the cache can keep track of the real memory footprint.
+     **/
+    virtual void notifyEntrySizeChanged(size_t oldSize, size_t newSize) const = 0;
+
+    /**
+     * @brief To be called by a CacheEntry on allocation.
+     **/
+    virtual void notifyEntryAllocated(double time, size_t size, StorageModeEnum storage) const = 0;
+
+    /**
+     * @brief To be called by a CacheEntry on destruction.
+     **/
+    virtual void notifyEntryDestroyed(double time, size_t size, StorageModeEnum storage) const = 0;
+
+    /**
+     * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new iamge
+     **/
+    virtual void notifyMemoryDeallocated() const = 0;
+
+    /**
+     * @brief To be called when a backing file has been closed
+     **/
+    virtual void backingFileClosed() const = 0;
+
+    /**
+     * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
+     * it is reallocated in the RAM.
+     **/
+    virtual void notifyEntryStorageChanged(StorageModeEnum oldStorage, StorageModeEnum newStorage,
+                                           double time, size_t size) const = 0;
+
+    /**
+     * @brief Remove from the cache all entries that matches the holderID and have a different nodeHash than the given one.
+     * @param removeAll If true, remove even entries that match the nodeHash
+     **/
+    virtual void removeAllEntriesWithDifferentNodeHashForHolderPrivate(const std::string& holderID, U64 nodeHash, bool removeAll) = 0;
+
+    /**
+     * @brief Relevant only for tiled caches. This will allocate the memory required for a tile in the cache and lock it.
+     * Note that the calling entry should have exactly the size of a tile in the cache.
+     * In return, a pointer to a memory file is returned and the output parameter dataOffset will be set to the offset - in bytes - where the
+     * contiguous memory block for this tile begin relative to the start of the data of the memory file.
+     * This function may throw exceptions in case of failure.
+     * To retrieve the exact pointer of the block of memory for this tile use tileFile->file->data() + dataOffset
+     **/
+    virtual TileCacheFilePtr allocTile(std::size_t *dataOffset) = 0;
+
+    /**
+     * @brief Return a pointer to the tile cache file from its filepath
+     **/
+    virtual TileCacheFilePtr getTileCacheFile(const std::string& filepath,std::size_t dataOffset) = 0;
+
+    /**
+     * @brief Free a tile from the cache that was previously allocated with allocTile. It will be made available again for other entries.
+     **/
+    virtual void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset) = 0;
+
+#ifdef DEBUG
+    static bool checkFileNameMatchesHash(const std::string &originalFileName,
+                                         U64 hash)
+    {
+        std::string filename = originalFileName;
+        std::string path = SequenceParsing::removePath(filename);
+        //remove extension from filename
+        {
+            size_t lastdot = filename.find_last_of('.');
+            if (lastdot != std::string::npos) {
+                filename.erase(lastdot, std::string::npos);
+            }
+        }
+
+        //remove index if it has one
+        {
+            std::size_t foundSep = filename.find_last_of('_');
+            if (foundSep != std::string::npos) {
+                filename.erase(foundSep, std::string::npos);
+            }
+        }
+        QString hashKeyStr = QString::fromUtf8( filename.c_str() );
+
+        //prepend the 2 digits of the containing directory
+        {
+            if (path.size() > 0) {
+                if ( (path[path.size() - 1] == '\\') || (path[path.size() - 1] == '/') ) {
+                    path.erase(path.size() - 1, 1);
+                }
+
+                std::size_t foundSep = path.find_last_of('/');
+                if (foundSep == std::string::npos) {
+                    foundSep = path.find_last_of('\\');
+                }
+                assert(foundSep != std::string::npos);
+                std::string enclosingDirName = path.substr(foundSep + 1, std::string::npos);
+                hashKeyStr.prepend( QString::fromUtf8( enclosingDirName.c_str() ) );
+            }
+        }
+        U64 hashKey = hashKeyStr.toULongLong(0, 16); //< to hex (base 16)
+
+        if (hashKey == hash) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+#endif
+
+    static bool fileExists(const std::string& filename)
+    {
+#ifdef _WIN32
+        WIN32_FIND_DATAW FindFileData;
+        std::wstring wpath = Global::utf8_to_utf16 (filename);
+        HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData);
+        if (handle != INVALID_HANDLE_VALUE) {
+            FindClose(handle);
+
+            return true;
+        }
+
+        return false;
+#else
+        // on Unix platforms passing in UTF-8 works
+        std::ifstream fs( filename.c_str() );
+
+        return fs.is_open() && fs.good();
+#endif
+    }
+};
+
+class AbstractCacheEntryBase : boost::noncopyable
+{
+public:
+
+    AbstractCacheEntryBase()
+    {
+
+    }
+
+    virtual ~AbstractCacheEntryBase()
+    {
+
+    }
+
+    virtual TileCacheFilePtr allocTile(std::size_t *dataOffset) = 0;
+    virtual void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset) = 0;
+    virtual TileCacheFilePtr getTileCacheFile(const std::string& filepath, std::size_t dataOffset) = 0;
+    virtual std::size_t getCacheTileSizeBytes() const = 0;
+
+    virtual size_t size() const = 0;
+    virtual double getTime() const = 0;
+    virtual U64 getElementsCountFromParams() const = 0;
+};
+
+
+/** @brief Abstract interface for cache entries.
+ * KeyType must inherit KeyHelper
+ **/
+template<typename KeyType>
+class AbstractCacheEntry : public AbstractCacheEntryBase
+{
+public:
+
+    typedef typename KeyType::hash_type hash_type;
+    typedef KeyType key_type;
+
+    AbstractCacheEntry()
+    : AbstractCacheEntryBase()
+    {
+    };
+
+    virtual ~AbstractCacheEntry()
+    {
+    }
+
+    virtual const KeyType & getKey() const = 0;
+    virtual hash_type getHashKey() const = 0;
+
+
+};
+
 /** @brief Buffer represents  an internal buffer that can be allocated on different devices.
  * For now the class is simple and can only be either on disk using mmap or in RAM using malloc.
  * The cost parameter given to the allocate() function is a hint that the Buffer classes uses
@@ -160,6 +375,9 @@ public:
         : _path()
         , _buffer()
         , _backingFile()
+        , _entry(0)
+        , _cacheFile()
+        , _cacheFileDataOffset(0)
         , _storageMode(eStorageModeRAM)
     {
     }
@@ -193,8 +411,7 @@ public:
         try {
             _backingFile.reset( new MemoryFile(_path, MemoryFile::eFileOpenModeEnumIfExistsKeepElseCreate) );
         } catch (const std::runtime_error & r) {
-            std::cout << r.what() << std::endl;
-
+            qDebug() << r.what();
             // if opening the file mapping failed, just call allocate again, but this time on RAM!
             _backingFile.reset();
             _path.clear();
@@ -253,7 +470,19 @@ public:
         TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);
 
         // This calls glTexImage2D and allocates a RGBA image
-        _glTexture->ensureTextureHasSize(r);
+        _glTexture->ensureTextureHasSize(r, 0);
+    }
+
+    void allocateTileCache(AbstractCacheEntryBase* entry)
+    {
+        _storageMode = eStorageModeDisk;
+        _entry = entry;
+        try {
+            _cacheFile = entry->allocTile(&_cacheFileDataOffset);
+            _path = _cacheFile->file->path();
+        } catch (...) {
+            allocateRAM(entry->getElementsCountFromParams());
+        }
     }
 
     /**
@@ -298,6 +527,11 @@ public:
         return _path;
     }
 
+    std::size_t getOffsetInFile() const
+    {
+        return _cacheFileDataOffset;
+    }
+
     void reOpenFileMapping() const
     {
         assert(!_backingFile && _storageMode == eStorageModeDisk);
@@ -309,8 +543,16 @@ public:
         }
     }
 
-    void restoreBufferFromFile(const std::string & path)
+    void restoreBufferFromFile(const std::string & path, std::size_t dataOffset, AbstractCacheEntryBase* entry, bool isTileCache)
     {
+        _entry = entry;
+        if (isTileCache) {
+            _cacheFile = entry->getTileCacheFile(path, dataOffset);
+            if (!_cacheFile) {
+                throw std::runtime_error("Unexisting file " + path);
+            }
+            _cacheFileDataOffset = dataOffset;
+        }
         _path = path;
         _storageMode = eStorageModeDisk;
     }
@@ -323,11 +565,15 @@ public:
             }
         } else if (_storageMode == eStorageModeDisk) {
             if (_backingFile) {
-                bool flushOk = _backingFile->flush();
+                bool flushOk = _backingFile->flush(false);
                 _backingFile.reset();
                 if (!flushOk) {
                     throw std::runtime_error("Failed to flush RAM data to backing file.");
                 }
+            } else if (_cacheFile) {
+                assert(_entry);
+                _entry->freeTile(_cacheFile, _cacheFileDataOffset);
+                _cacheFile.reset();
             }
         } else if (_storageMode == eStorageModeGLTex) {
             if (_glTexture) {
@@ -338,7 +584,7 @@ public:
 
     bool removeAnyBackingFile() const
     {
-        if (_storageMode == eStorageModeDisk) {
+        if (_storageMode == eStorageModeDisk && !_cacheFile) {
             if (_backingFile) {
                 _backingFile->remove();
                 _backingFile.reset();
@@ -363,7 +609,14 @@ public:
         if (_storageMode == eStorageModeRAM) {
             return _buffer ? _buffer->size() * sizeof(DataType) : 0;
         } else if (_storageMode == eStorageModeDisk) {
-            return _backingFile ? _backingFile->size() : 0;
+            if (_backingFile) {
+                return _backingFile->size();
+            } else if (_cacheFile) {
+                assert(_entry);
+                return _entry->getCacheTileSizeBytes();
+            } else {
+                return 0;
+            }
         } else if (_storageMode == eStorageModeGLTex) {
             return _glTexture ? _glTexture->getSize() : 0;
         }
@@ -373,7 +626,7 @@ public:
 
     bool isAllocated() const
     {
-        return (_buffer && _buffer->size() > 0) || ( _backingFile && _backingFile->data() ) || _glTexture;
+        return (_buffer && _buffer->size() > 0) || ( _backingFile && _backingFile->data() ) || _cacheFile || _glTexture;
     }
 
     DataType* writable()
@@ -381,6 +634,8 @@ public:
         if (_storageMode == eStorageModeDisk) {
             if (_backingFile) {
                 return (DataType*)_backingFile->data();
+            } else if (_cacheFile) {
+                return (DataType*)(_cacheFile->file->data() + _cacheFileDataOffset);
             } else {
                 return NULL;
             }
@@ -395,7 +650,13 @@ public:
     const DataType* readable() const
     {
         if (_storageMode == eStorageModeDisk) {
-            return _backingFile ? (const DataType*)_backingFile->data() : 0;
+            if (_backingFile) {
+                return (const DataType*)_backingFile->data();
+            } else if (_cacheFile) {
+                return (const DataType*)(_cacheFile->file->data() + _cacheFileDataOffset);
+            } else {
+                return 0;
+            }
         } else if (_storageMode == eStorageModeRAM) {
             return _buffer ? _buffer->getData() : NULL;
         } else {
@@ -443,6 +704,11 @@ private:
        change the underlying data*/
     mutable boost::scoped_ptr<MemoryFile> _backingFile;
 
+    // Set if the cache is a tile cache
+    AbstractCacheEntryBase* _entry;
+    TileCacheFilePtr _cacheFile;
+    std::size_t _cacheFileDataOffset;
+
     // Used when we store images as OpenGL textures
     boost::scoped_ptr<Texture> _glTexture;
     StorageModeEnum _storageMode;
@@ -450,136 +716,8 @@ private:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////CACHE ENTRY////////////////////////////////////////////////////
-/**
- * @brief Defines the API of the Cache as seen by the cache entries
- **/
-class CacheAPI
-{
-public:
-    virtual ~CacheAPI() {}
-
-    /**
-     * @brief Returns the path to the cache location on disk
-     **/
-    virtual QString getCachePath() const = 0;
-
-    /**
-     * @brief To be called by a CacheEntry whenever it's size is changed.
-     * This way the cache can keep track of the real memory footprint.
-     **/
-    virtual void notifyEntrySizeChanged(size_t oldSize, size_t newSize) const = 0;
-
-    /**
-     * @brief To be called by a CacheEntry on allocation.
-     **/
-    virtual void notifyEntryAllocated(double time, size_t size, StorageModeEnum storage) const = 0;
-
-    /**
-     * @brief To be called by a CacheEntry on destruction.
-     **/
-    virtual void notifyEntryDestroyed(double time, size_t size, StorageModeEnum storage) const = 0;
-
-    /**
-     * @brief Called by the Cache deleter thread to wake up sleeping threads that were attempting to create a new iamge
-     **/
-    virtual void notifyMemoryDeallocated() const = 0;
-
-    /**
-     * @brief To be called when a backing file has been closed
-     **/
-    virtual void backingFileClosed() const = 0;
-
-    /**
-     * @brief To be called whenever an entry is deallocated from memory and put back on disk or whenever
-     * it is reallocated in the RAM.
-     **/
-    virtual void notifyEntryStorageChanged(StorageModeEnum oldStorage, StorageModeEnum newStorage,
-                                           double time, size_t size) const = 0;
-
-    /**
-     * @brief Remove from the cache all entries that matches the holderID and have a different nodeHash than the given one.
-     * @param removeAll If true, remove even entries that match the nodeHash
-     **/
-    virtual void removeAllEntriesWithDifferentNodeHashForHolderPrivate(const std::string& holderID, U64 nodeHash, bool removeAll) = 0;
 
 
-#ifdef DEBUG
-    static bool checkFileNameMatchesHash(const std::string &originalFileName,
-                                         U64 hash)
-    {
-        std::string filename = originalFileName;
-        std::string path = SequenceParsing::removePath(filename);
-        //remove extension from filename
-        {
-            size_t lastdot = filename.find_last_of('.');
-            if (lastdot != std::string::npos) {
-                filename.erase(lastdot, std::string::npos);
-            }
-        }
-
-        //remove index if it has one
-        {
-            std::size_t foundSep = filename.find_last_of('_');
-            if (foundSep != std::string::npos) {
-                filename.erase(foundSep, std::string::npos);
-            }
-        }
-        QString hashKeyStr = QString::fromUtf8( filename.c_str() );
-
-        //prepend the 2 digits of the containing directory
-        {
-            if (path.size() > 0) {
-                if ( (path[path.size() - 1] == '\\') || (path[path.size() - 1] == '/') ) {
-                    path.erase(path.size() - 1, 1);
-                }
-
-                std::size_t foundSep = path.find_last_of('/');
-                if (foundSep == std::string::npos) {
-                    foundSep = path.find_last_of('\\');
-                }
-                assert(foundSep != std::string::npos);
-                std::string enclosingDirName = path.substr(foundSep + 1, std::string::npos);
-                hashKeyStr.prepend( QString::fromUtf8( enclosingDirName.c_str() ) );
-            }
-        }
-        U64 hashKey = hashKeyStr.toULongLong(0, 16); //< to hex (base 16)
-
-        if (hashKey == hash) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-#endif
-};
-
-
-/** @brief Abstract interface for cache entries.
- * KeyType must inherit KeyHelper
- **/
-template<typename KeyType>
-class AbstractCacheEntry
-    : boost::noncopyable
-{
-public:
-
-    typedef typename KeyType::hash_type hash_type;
-    typedef KeyType key_type;
-
-    AbstractCacheEntry()
-    {
-    };
-
-    virtual ~AbstractCacheEntry()
-    {
-    }
-
-    virtual const KeyType & getKey() const = 0;
-    virtual hash_type getHashKey() const = 0;
-    virtual size_t size() const = 0;
-    virtual double getTime() const = 0;
-};
 
 
 /** @brief Implements AbstractCacheEntry. This class represents a combinaison of
@@ -687,8 +825,7 @@ public:
     /**
      * @brief To be called for disk-cached entries when restoring them from a file.
      **/
-    void restoreMetaDataFromFile(std::size_t size,
-                                 const std::string& filePath)
+    void restoreMetaDataFromFile(std::size_t size, const std::string& filePath, std::size_t dataOffset)
     {
         const CacheEntryStorageInfo& storageInfo = _params->getStorageInfo();
 
@@ -699,13 +836,17 @@ public:
         {
             QWriteLocker k(&_entryLock);
 
-            restoreBufferFromFile(filePath);
+            restoreBufferFromFile(filePath, dataOffset);
 
             onMemoryAllocated(true);
         }
 
         if (_cache) {
-            _cache->notifyEntryStorageChanged(eStorageModeNone, eStorageModeDisk, getTime(), size);
+            if (_cache->isTileCache()) {
+                _cache->notifyEntryAllocated(getTime(), size, eStorageModeDisk);
+            } else {
+                _cache->notifyEntryStorageChanged(eStorageModeNone, eStorageModeDisk, getTime(), size);
+            }
         }
     }
 
@@ -771,6 +912,9 @@ public:
      **/
     void reOpenFileMapping() const
     {
+        if (_cache && _cache->isTileCache()) {
+            return;
+        }
         {
             QWriteLocker k(&_entryLock);
             _data.reOpenFileMapping();
@@ -798,7 +942,11 @@ public:
             const CacheEntryStorageInfo& info = _params->getStorageInfo();
             if (info.mode == eStorageModeDisk) {
                 if (dataAllocated) {
-                    _cache->notifyEntryStorageChanged( eStorageModeRAM, eStorageModeDisk, time, sz );
+                    if (_cache->isTileCache()) {
+                         _cache->notifyEntryDestroyed(time, sz, eStorageModeDisk);
+                    } else {
+                        _cache->notifyEntryStorageChanged( eStorageModeRAM, eStorageModeDisk, time, sz );
+                    }
                 }
             } else if (info.mode == eStorageModeRAM) {
                 if (dataAllocated) {
@@ -839,6 +987,12 @@ public:
         return r;
     }
 
+    std::size_t getOffsetInFile() const
+    {
+        return _data.getOffsetInFile();
+    }
+
+
     bool isStoredOnDisk() const
     {
         return _data.getStorageMode() == eStorageModeDisk;
@@ -856,7 +1010,7 @@ public:
      **/
     void removeAnyBackingFile() const
     {
-        if ( !isStoredOnDisk() ) {
+        if ( !isStoredOnDisk() || _cache->isTileCache()) {
             return;
         }
 
@@ -898,7 +1052,12 @@ public:
         return _params;
     }
 
-    U64 getElementsCountFromParams() const
+    std::size_t getSizeInBytesFromParams() const
+    {
+        return getElementsCountFromParams() * sizeof(DataType);
+    }
+
+    virtual U64 getElementsCountFromParams() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         const CacheEntryStorageInfo& info = _params->getStorageInfo();
 
@@ -930,6 +1089,12 @@ public:
         return _data.getGLTextureTarget();
     }
 
+    virtual std::size_t getCacheTileSizeBytes() const OVERRIDE FINAL
+    {
+        assert(_cache);
+        return _cache->getTileSizeBytes();
+    }
+
 protected:
 
 
@@ -945,26 +1110,25 @@ protected:
 
 private:
 
-    static bool fileExists(const std::string& filename)
+    virtual TileCacheFilePtr allocTile(std::size_t *dataOffset) OVERRIDE FINAL
     {
-#ifdef _WIN32
-        WIN32_FIND_DATAW FindFileData;
-        std::wstring wpath = Global::utf8_to_utf16 (filename);
-        HANDLE handle = FindFirstFileW(wpath.c_str(), &FindFileData);
-        if (handle != INVALID_HANDLE_VALUE) {
-            FindClose(handle);
-
-            return true;
-        }
-
-        return false;
-#else
-        // on Unix platforms passing in UTF-8 works
-        std::ifstream fs( filename.c_str() );
-
-        return fs.is_open() && fs.good();
-#endif
+        assert(_cache);
+        return const_cast<CacheAPI*>(_cache)->allocTile(dataOffset);
     }
+
+    virtual void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset) OVERRIDE FINAL
+    {
+        assert(_cache);
+        const_cast<CacheAPI*>(_cache)->freeTile(file,dataOffset);
+    }
+
+    virtual TileCacheFilePtr getTileCacheFile(const std::string& filepath, std::size_t dataOffset) OVERRIDE FINAL
+    {
+        assert(_cache);
+        return const_cast<CacheAPI*>(_cache)->getTileCacheFile(filepath, dataOffset);
+    }
+
+
 
     /** @brief This function is called in allocateMeory(...) and before the object is exposed
      * to other threads. Hence this function doesn't need locking mechanism at all.
@@ -976,42 +1140,46 @@ private:
         CacheEntryStorageInfo& info = _params->getStorageInfo();
 
         if (info.mode == eStorageModeDisk) {
-            std::string fileName;
+            if (_cache->isTileCache()) {
+                _data.allocateTileCache(this);
+            } else {
+                std::string fileName;
 
-            typename AbstractCacheEntry<KeyType>::hash_type hashKey = getHashKey();
+                typename AbstractCacheEntry<KeyType>::hash_type hashKey = getHashKey();
 
-            assert(_cache);
-            std::string cachePath = _cache->getCachePath().toStdString();
-            cachePath += '/';
+                assert(_cache);
+                std::string cachePath = _cache->getCachePath().toStdString();
+                cachePath += '/';
 
-            try {
-                fileName = generateStringFromHash(cachePath, hashKey);
-            } catch (const std::invalid_argument & e) {
-                std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
+                try {
+                    fileName = generateStringFromHash(cachePath, hashKey);
+                } catch (const std::invalid_argument & e) {
+                    std::cout << "Path is empty but required for disk caching: " << e.what() << std::endl;
 
-                return;
-            }
+                    return;
+                }
 
-            assert( !fileName.empty() );
-            //Check if the filename already exists, if so append a 0-based index after the hash (separated by a '_')
-            //and try again
-            int index = 0;
-            if ( fileExists(fileName) ) {
-                fileName.insert(fileName.size() - 4, "_0");
-            }
-            while ( fileExists(fileName) ) {
-                ++index;
-                std::stringstream ss;
-                ss << index;
-                fileName.replace( fileName.size() - 1, std::string::npos, ss.str() );
-            }
+                assert( !fileName.empty() );
+                //Check if the filename already exists, if so append a 0-based index after the hash (separated by a '_')
+                //and try again
+                int index = 0;
+                if ( CacheAPI::fileExists(fileName) ) {
+                    fileName.insert(fileName.size() - 4, "_0");
+                }
+                while ( CacheAPI::fileExists(fileName) ) {
+                    ++index;
+                    std::stringstream ss;
+                    ss << index;
+                    fileName.replace( fileName.size() - 1, std::string::npos, ss.str() );
+                }
 #ifdef DEBUG
-            if ( !CacheAPI::checkFileNameMatchesHash(fileName, hashKey) ) {
-                qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
-            }
+                if ( !CacheAPI::checkFileNameMatchesHash(fileName, hashKey) ) {
+                    qDebug() << "WARNING: Cache entry filename is not the same as the serialized hash key";
+                }
 #endif
-            U64 count = getElementsCountFromParams();
-            _data.allocateMMAP(count, fileName);
+                U64 count = getElementsCountFromParams();
+                _data.allocateMMAP(count, fileName);
+            }
         } else if (info.mode == eStorageModeRAM) {
             U64 count = getElementsCountFromParams();
             _data.allocateRAM(count);
@@ -1025,15 +1193,19 @@ private:
      * We must ensure that this function is called ONLY by allocateMemory(), that's why
      * it is private.
      **/
-    void restoreBufferFromFile(const std::string & path)
+    void restoreBufferFromFile(const std::string & path, std::size_t offset)
     {
-        if ( !fileExists(path) ) {
+
+        bool isTileCache = _cache && _cache->isTileCache();
+        if (!isTileCache && !CacheAPI::fileExists(path) ) {
             throw std::runtime_error("Cache restore, no such file: " + path);
         }
-        _data.restoreBufferFromFile(path);
+        _data.restoreBufferFromFile(path, offset, this, isTileCache);
     }
 
 protected:
+
+    friend class Buffer<DataType>;
 
     KeyType _key;
     boost::shared_ptr<ParamsType> _params;

@@ -321,14 +321,15 @@ GenericSchedulerThread::getThreadState() const
 }
 
 bool
-GenericSchedulerThread::abortThreadedTask()
+GenericSchedulerThread::abortThreadedTask(bool keepOldestRender)
 {
     if ( !isRunning() ) {
         return false;
     }
 
     ThreadStateEnum state = getThreadState();
-    if ( (state == eThreadStateAborted) || (state == eThreadStateIdle) ) {
+    bool shouldRequestAbort = state != eThreadStateAborted && state != eThreadStateIdle;
+    if ( keepOldestRender && !shouldRequestAbort ) {
         return false;
     }
 
@@ -337,17 +338,19 @@ GenericSchedulerThread::abortThreadedTask()
 
 
         // We are already aborting
-        if (_imp->abortRequested > 0) {
+        if (_imp->abortRequested > 0 && keepOldestRender) {
             return false;
         }
 
 #ifdef TRACE_GENERIC_SCHEDULER_THREAD
         qDebug() << QThread::currentThread() << ": Aborting task on" <<  getThreadName().c_str();
 #endif
-        ++_imp->abortRequested;
+        if (shouldRequestAbort) {
+            ++_imp->abortRequested;
+        }
     }
 
-    onAbortRequested();
+    onAbortRequested(keepOldestRender);
 
     return true;
 }

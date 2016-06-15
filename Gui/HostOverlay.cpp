@@ -253,12 +253,12 @@ public:
 
     double pointSize() const
     {
-        return 5;
+        return TO_DPIX(5);
     }
 
     double pointTolerance() const
     {
-        return 6.;
+        return TO_DPIX(12.);
     }
 
     bool getInteractive(double time) const
@@ -266,7 +266,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 
@@ -541,7 +541,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 
@@ -677,9 +677,9 @@ public:
         return false;
     }
 
-    static double pointSize() { return 5.; }
+    static double pointSize() { return TO_DPIX(5.); }
 
-    static double pointTolerance() { return 6.; }
+    static double pointTolerance() { return TO_DPIX(12.); }
 
     static bool isNearby(const QPointF & p,
                          double x,
@@ -747,7 +747,7 @@ public:
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
         } else {
-            return appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
+            return !appPTR->getCurrentSettings()->getRenderOnEditingFinishedOnly();
         }
     }
 

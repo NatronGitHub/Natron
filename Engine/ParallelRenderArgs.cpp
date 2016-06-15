@@ -51,7 +51,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const RoIMap& inputRois,
                                    const boost::shared_ptr<InputMatrixMap>& reroutesMap,
                                    bool useTransforms, // roi functor specific
-                                   bool renderIsOpenGL, // if the render of this node is in OpenGL
+                                   StorageModeEnum renderStorageMode, // if the render of this node is in OpenGL
                                    unsigned int originalMipMapLevel, // roi functor specific
                                    double time,
                                    ViewIdx view,
@@ -283,7 +283,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                          inputPrefDepth,
                                                                                          false,
                                                                                          effect.get(),
-                                                                                         renderIsOpenGL /*returnOpenGLTex*/,
+                                                                                         renderStorageMode /*returnStorage*/,
                                                                                          time /*callerRenderTime*/) );
 
                                     EffectInstance::RenderRoIRetCode ret;
@@ -513,7 +513,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                                               fvPerRequestData.inputsRoi,
                                                               fvRequest->globalData.transforms,
                                                               useTransforms,
-                                                              false /*renderIsOpenGL*/,
+                                                              eStorageModeRAM /*returnStorage*/,
                                                               originalMipMapLevel,
                                                               time,
                                                               view,

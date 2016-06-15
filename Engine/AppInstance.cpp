@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/GroupOutput.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxHost.h"
@@ -159,6 +160,8 @@ public:
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobWPtr> invalidExprKnobs;
 
+    ProjectBeingLoadedInfo projectBeingLoaded;
+
     AppInstancePrivate(int appID,
                        AppInstance* app)
 
@@ -175,6 +178,7 @@ public:
         , activeRenders()
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
+        , projectBeingLoaded()
     {
     }
 
@@ -202,6 +206,20 @@ AppInstance::AppInstance(int appID)
 AppInstance::~AppInstance()
 {
     _imp->_currentProject->clearNodes(false);
+}
+
+const ProjectBeingLoadedInfo&
+AppInstance::getProjectBeingLoadedInfo() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->projectBeingLoaded;
+}
+
+void
+AppInstance::setProjectBeingLoadedInfo(const ProjectBeingLoadedInfo& info)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->projectBeingLoaded = info;
 }
 
 const std::list<NodePtr>&
@@ -1802,10 +1820,14 @@ void
 AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
 {
     RenderQueueItem nextWork;
+
+    // Do not make the process die under the mutex otherwise we may deadlock
+    boost::shared_ptr<ProcessHandler> processDying;
     {
         QMutexLocker k(&_imp->renderQueueMutex);
         for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ++it) {
             if (it->work.writer == finishedWriter) {
+                processDying = it->process;
                 _imp->activeRenders.erase(it);
                 break;
             }
@@ -1817,6 +1839,7 @@ AppInstance::startNextQueuedRender(OutputEffectInstance* finishedWriter)
             return;
         }
     }
+    processDying.reset();
 
     _imp->startRenderingFullSequence(false, nextWork);
 }

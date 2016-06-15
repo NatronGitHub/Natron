@@ -390,6 +390,16 @@ public:
     const std::vector<std::string> & getInputLabels() const;
     std::string getInputLabel(int inputNb) const;
 
+    std::string getInputHint(int inputNb) const;
+
+    void setInputLabel(int inputNb, const std::string& label);
+
+    void setInputHint(int inputNb, const std::string& hint);
+
+    bool isInputVisible(int inputNb) const;
+
+    void setInputVisible(int inputNb, bool visible);
+
     int getInputNumberFromLabel(const std::string& inputLabel) const;
 
     bool isInputConnected(int inputNb) const;
@@ -560,7 +570,13 @@ public:
 
     bool isSettingsPanelMinimized() const;
 
+    void onOpenGLEnabledKnobChangedOnProject(bool activated);
+
 private:
+
+    bool replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiValues);
+
+    int disconnectInputInternal(Node* input, bool useGuiInputs);
 
 
     bool isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const;
@@ -1378,6 +1394,8 @@ Q_SIGNALS:
 
     void inputsInitialized();
 
+    void inputLabelChanged(int, QString);
+
     void knobsInitialized();
 
     /*
@@ -1398,7 +1416,9 @@ Q_SIGNALS:
 
     void labelChanged(QString);
     void scriptNameChanged(QString);
-    void inputLabelChanged(int, QString);
+    void inputEdgeLabelChanged(int, QString);
+
+    void inputVisibilityChanged(int);
 
     void refreshEdgesGUI();
 

@@ -56,8 +56,6 @@ public:
                const boost::shared_ptr<FrameParams> &  params,
                const CacheAPI* cache)
         : CacheEntryHelper<U8, FrameKey, FrameParams>(key, params, cache)
-        , _abortedMutex()
-        , _aborted(false)
     {
     }
 
@@ -79,19 +77,6 @@ public:
 
     void copy(const FrameEntry& other);
 
-    void setAborted(bool aborted)
-    {
-        QMutexLocker k(&_abortedMutex);
-
-        _aborted = aborted;
-    }
-
-    bool getAborted() const
-    {
-        QMutexLocker k(&_abortedMutex);
-
-        return _aborted;
-    }
 
     ImagePtr getInternalImage() const
     {
@@ -107,13 +92,8 @@ public:
         _params->setInternalImage(image);
     }
 
-private:
 
-    ///The thread rendering the frame entry might have been aborted and the entry removed from the cache
-    ///but another thread might successfully have found it in the cache. This flag is to notify it the frame
-    ///is invalid.
-    mutable QMutex _abortedMutex;
-    bool _aborted;
+
 };
 
 NATRON_NAMESPACE_EXIT;
