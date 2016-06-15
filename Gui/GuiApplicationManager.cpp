@@ -847,7 +847,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
     fontFilenames << fontResource.arg( QString::fromUtf8("DroidSans") );
     fontFilenames << fontResource.arg( QString::fromUtf8("DroidSans-Bold") );
-    Q_FOREACH (QString fontFilename, fontFilenames) {
+    Q_FOREACH (const QString &fontFilename, fontFilenames) {
         int fontID = QFontDatabase::addApplicationFont(fontFilename);
 
         qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);

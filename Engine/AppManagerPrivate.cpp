@@ -433,7 +433,7 @@ AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isT
     QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
     // if not 256 subdirs, we re-create the cache
     if (etr.size() < 256) {
-        Q_FOREACH (QString e, etr) {
+        Q_FOREACH (const QString &e, etr) {
             cacheFolder.rmdir(e);
         }
     }
