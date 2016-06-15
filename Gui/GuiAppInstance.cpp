@@ -889,7 +889,7 @@ GuiAppInstance::projectFormatChanged(const Format& /*f*/)
 bool
 GuiAppInstance::isGuiFrozen() const
 {
-    return _imp->_gui->isGUIFrozen();
+    return _imp->_gui ? _imp->_gui->isGUIFrozen() : false;
 }
 
 void
