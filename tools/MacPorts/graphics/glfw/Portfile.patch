@@ -1,6 +1,6 @@
---- Portfile.orig	2016-06-07 09:14:29.000000000 +0200
-+++ Portfile	2016-06-07 09:14:38.000000000 +0200
-@@ -64,7 +64,10 @@
+--- Portfile.orig	2016-06-15 11:20:56.000000000 +0200
++++ Portfile	2016-06-15 11:21:04.000000000 +0200
+@@ -77,7 +77,10 @@
  configure.args      -DBUILD_SHARED_LIBS=on \
                      -DGLFW_BUILD_EXAMPLES=off \
                      -DGLFW_BUILD_TESTS=off \
@@ -12,7 +12,7 @@
  
  # remove top-level library path, such that internal libraries are used
  # instead of any already-installed ones.
-@@ -82,6 +85,23 @@
+@@ -95,6 +98,23 @@
      configure.args-append -DDOXYGEN_EXECUTABLE=
  }
  
