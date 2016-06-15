@@ -1957,6 +1957,10 @@ public:
      **/
     void setDefaultValue(const T & v, int dimension = 0);
     void setDefaultValueWithoutApplying(const T& v, int dimension = 0);
+    void setDefaultValuesWithoutApplying(const T& v1, const T& v2);
+    void setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3);
+    void setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3, const T& v4);
+
 
     //////////////////////////////////////////////////////////////////////
     ///////////////////////////////////

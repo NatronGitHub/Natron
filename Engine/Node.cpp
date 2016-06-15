@@ -1758,7 +1758,7 @@ Node::restoreSublabel()
 void
 Node::loadKnob(const KnobPtr & knob,
                const std::list< boost::shared_ptr<KnobSerialization> > & knobsValues,
-               bool updateKnobGui)
+               bool /*updateKnobGui*/)
 {
     ///try to find a serialized value for this knob
     bool found = false;
@@ -1775,6 +1775,8 @@ Node::loadKnob(const KnobPtr & knob,
             if ( knob->typeName() != serializedKnob->typeName() ) {
                 continue;
             }
+
+            knob->cloneDefaultValues( serializedKnob.get() );
 
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
             if (isChoice) {
@@ -1798,17 +1800,13 @@ Node::loadKnob(const KnobPtr & knob,
                 if ( serializedKnob->getDimension() < knob->getDimension() ) {
                     int nSerDims = serializedKnob->getDimension();
                     for (int i = 0; i < nSerDims; ++i) {
-                        knob->clone(serializedKnob.get(), i);
+                        knob->cloneAndUpdateGui(serializedKnob.get(), i);
                     }
                     for (int i = nSerDims; i < knob->getDimension(); ++i) {
-                        knob->clone(serializedKnob.get(), i, nSerDims - 1);
+                        knob->cloneAndUpdateGui(serializedKnob.get(), i, nSerDims - 1);
                     }
                 } else {
-                    if (updateKnobGui) {
-                        knob->cloneAndUpdateGui( serializedKnob.get() );
-                    } else {
-                        knob->clone(serializedKnob);
-                    }
+                    knob->cloneAndUpdateGui( serializedKnob.get() );
                 }
                 knob->setSecret( serializedKnob->getIsSecret() );
                 if ( knob->getDimension() == serializedKnob->getDimension() ) {
@@ -1839,11 +1837,8 @@ Node::loadKnob(const KnobPtr & knob,
                      ( isB && ( (*it)->getName() == kNatronOfxParamProcessB ) ) ||
                      ( isA && ( (*it)->getName() == kNatronOfxParamProcessA ) ) ) {
                     KnobPtr serializedKnob = (*it)->getKnob();
-                    if (updateKnobGui) {
-                        knob->cloneAndUpdateGui( serializedKnob.get() );
-                    } else {
-                        knob->clone(serializedKnob);
-                    }
+                    knob->cloneAndUpdateGui( serializedKnob.get() );
+
                     knob->setSecret( serializedKnob->getIsSecret() );
                     if ( knob->getDimension() == serializedKnob->getDimension() ) {
                         for (int i = 0; i < knob->getDimension(); ++i) {

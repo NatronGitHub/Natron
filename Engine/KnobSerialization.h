@@ -68,14 +68,16 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define KNOB_SERIALIZATION_INTRODUCES_DISPLAY_MIN_MAX 10
 #define KNOB_SERIALIZATION_INTRODUCES_ALIAS 11
 #define KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS 12
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS
+#define KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES 13
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
 #define VALUE_SERIALIZATION_REMOVES_EXTRA_DATA 4
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS_RESULTS 5
 #define VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS 6
-#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_REMOVES_EXPRESSIONS_RESULTS
+#define VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES 7
+#define VALUE_SERIALIZATION_VERSION VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES
 
 #define MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME 2
 #define MASTER_SERIALIZATION_VERSION MASTER_SERIALIZATION_INTRODUCE_MASTER_TRACK_NAME
@@ -257,24 +259,34 @@ struct ValueSerialization
 
         if (isInt && !isChoice) {
             int v = isInt->getValue(_dimension);
+            int defV = isInt->getDefaultValue(_dimension);
             ar & ::boost::serialization::make_nvp("Value", v);
+            ar & ::boost::serialization::make_nvp("Default", defV);
         } else if (isBool && !isPage && !isGrp && !isSep && !btn) {
             bool v = isBool->getValue(_dimension);
+            bool defV = isBool->getDefaultValue(_dimension);
             ar & ::boost::serialization::make_nvp("Value", v);
+            ar & ::boost::serialization::make_nvp("Default", defV);
         } else if (isDouble && !isParametric) {
             double v = isDouble->getValue(_dimension);
+            double defV = isDouble->getDefaultValue(_dimension);
             ar & ::boost::serialization::make_nvp("Value", v);
+            ar & ::boost::serialization::make_nvp("Default", defV);
         } else if (isChoice) {
             int v = isChoice->getValue(_dimension);
+            int defV = isChoice->getDefaultValue(_dimension);
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
             std::string label;
             if ( ( v < (int)entries.size() ) && (v >= 0) ) {
                 label = entries[v];
             }
             ar & ::boost::serialization::make_nvp("Value", v);
+            ar & ::boost::serialization::make_nvp("Default", defV);
         } else if (isString) {
             std::string v = isString->getValue(_dimension);
+            std::string defV = isString->getDefaultValue(_dimension);
             ar & ::boost::serialization::make_nvp("Value", v);
+            ar & ::boost::serialization::make_nvp("Default", defV);
         }
 
         bool hasMaster = _knob->isSlave(_dimension);
@@ -330,14 +342,29 @@ struct ValueSerialization
             int v;
             ar & ::boost::serialization::make_nvp("Value", v);
             isInt->setValue(v, ViewSpec::all(), _dimension);
+            if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                int defV;
+                ar & ::boost::serialization::make_nvp("Default", defV);
+                isInt->setDefaultValueWithoutApplying(v, _dimension);
+            }
         } else if (isBool && !isGrp && !isPage && !isSep && !btn) {
             bool v;
             ar & ::boost::serialization::make_nvp("Value", v);
             isBool->setValue(v, ViewSpec::all(), _dimension);
+            if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                bool defV;
+                ar & ::boost::serialization::make_nvp("Default", defV);
+                isBool->setDefaultValueWithoutApplying(v, _dimension);
+            }
         } else if (isDouble && !isParametric) {
             double v;
             ar & ::boost::serialization::make_nvp("Value", v);
             isDouble->setValue(v, ViewSpec::all(), _dimension);
+            if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                double defV;
+                ar & ::boost::serialization::make_nvp("Default", defV);
+                isDouble->setDefaultValueWithoutApplying(v, _dimension);
+            }
         } else if (isChoice) {
             int v;
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -350,10 +377,20 @@ struct ValueSerialization
                 }
             }
             isChoice->setValue(v, ViewIdx(0), _dimension);
+            if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                int defV;
+                ar & ::boost::serialization::make_nvp("Default", defV);
+                isChoice->setDefaultValueWithoutApplying(v, _dimension);
+            }
         } else if (isString && !isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value", v);
             isString->setValue(v, ViewIdx(0), _dimension);
+            if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                std::string defV;
+                ar & ::boost::serialization::make_nvp("Default", defV);
+                isString->setDefaultValueWithoutApplying(v, _dimension);
+            }
         } else if (isFile) {
             std::string v;
             ar & ::boost::serialization::make_nvp("Value", v);
@@ -367,6 +404,11 @@ struct ValueSerialization
                                                               &v);
             }
             isFile->setValue(v, ViewIdx(0), _dimension);
+            if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                std::string defV;
+                ar & ::boost::serialization::make_nvp("Default", defV);
+                isFile->setDefaultValueWithoutApplying(v, _dimension);
+            }
         }
 
         ///We cannot restore the master yet. It has to be done in another pass.
@@ -513,27 +555,6 @@ class KnobSerialization
             if ( isDouble && (isDouble->getDimension() == 2) ) {
                 bool useOverlay = isDouble->getHasHostOverlayHandle();
                 ar & ::boost::serialization::make_nvp("HasOverlayHandle", useOverlay);
-            }
-
-            Knob<double>* isDbl = dynamic_cast<Knob<double>*>( _knob.get() );
-            Knob<int>* isInt = dynamic_cast<Knob<int>*>( _knob.get() );
-            KnobBool* isBool = dynamic_cast<KnobBool*>( _knob.get() );
-            Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( _knob.get() );
-
-            for (int i = 0; i < _knob->getDimension(); ++i) {
-                if (isDbl) {
-                    double def = isDbl->getDefaultValue(i);
-                    ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                } else if (isInt) {
-                    int def = isInt->getDefaultValue(i);
-                    ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                } else if (isBool) {
-                    bool def = isBool->getDefaultValue(i);
-                    ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                } else if (isStr) {
-                    std::string def = isStr->getDefaultValue(i);
-                    ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                }
             }
         }
     } // save
@@ -690,7 +711,7 @@ class KnobSerialization
                     ar & ::boost::serialization::make_nvp("HasOverlayHandle", _useHostOverlay);
                 }
 
-                if (version >= KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
+                if (version >= KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES && version < KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES) {
                     Knob<double>* isDoubleVal = dynamic_cast<Knob<double>*>( _knob.get() );
                     Knob<int>* isIntVal = dynamic_cast<Knob<int>*>( _knob.get() );
                     KnobBool* isBool = dynamic_cast<KnobBool*>( _knob.get() );
@@ -700,19 +721,15 @@ class KnobSerialization
                         if (isDoubleVal) {
                             double def;
                             ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                            isDoubleVal->setDefaultValueWithoutApplying(def, i);
                         } else if (isIntVal) {
                             int def;
                             ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                            isIntVal->setDefaultValueWithoutApplying(def, i);
                         } else if (isBool) {
                             bool def;
                             ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                            isBool->setDefaultValueWithoutApplying(def, i);
                         } else if (isStr) {
                             std::string def;
                             ar & ::boost::serialization::make_nvp("DefaultValue", def);
-                            isStr->setDefaultValueWithoutApplying(def, i);
                         }
                     }
                 }

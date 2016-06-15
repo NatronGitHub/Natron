@@ -2007,7 +2007,51 @@ Knob<T>::setDefaultValueWithoutApplying(const T& v,
         QMutexLocker l(&_valueMutex);
         _defaultValues[dimension] = v;
     }
+    computeHasModifications();
 }
+
+template <typename T>
+void
+Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2)
+{
+    assert(getDimension() == 2);
+    {
+        QMutexLocker l(&_valueMutex);
+        _defaultValues[0] = v1;
+        _defaultValues[1] = v2;
+    }
+    computeHasModifications();
+}
+
+template <typename T>
+void
+Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3)
+{
+    assert(getDimension() == 3);
+    {
+        QMutexLocker l(&_valueMutex);
+        _defaultValues[0] = v1;
+        _defaultValues[1] = v2;
+        _defaultValues[2] = v3;
+    }
+    computeHasModifications();
+}
+
+template <typename T>
+void
+Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3, const T& v4)
+{
+    assert(getDimension() == 4);
+    {
+        QMutexLocker l(&_valueMutex);
+        _defaultValues[0] = v1;
+        _defaultValues[1] = v2;
+        _defaultValues[2] = v3;
+        _defaultValues[3] = v4;
+    }
+    computeHasModifications();
+}
+
 
 template<typename T>
 void
@@ -2680,7 +2724,7 @@ Knob<T>::cloneDefaultValues(KnobI* other)
     }
 
     for (int i = 0; i < dims; ++i) {
-        setDefaultValue(otherT->getDefaultValue(i), i);
+        setDefaultValueWithoutApplying(otherT->getDefaultValue(i), i);
     }
 }
 
