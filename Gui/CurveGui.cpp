@@ -87,8 +87,7 @@ CurveGui::nextPointForSegment(const double x1,
 
 
     if (x1 < xminCurveWidgetCoord) {
-#pragma message WARN("BUG: kOfxFlagInfiniteMin/Max is for rectangles only, not values or ranges")
-        if ( ( curveYRange.min <= kOfxFlagInfiniteMin) && ( curveYRange.max >= kOfxFlagInfiniteMax) ) {
+        if ( ( curveYRange.min == INT_MIN || curveYRange.min == -std::numeric_limits<double>::infinity()) && ( curveYRange.max == INT_MAX || curveYRange.max == std::numeric_limits<double>::infinity()) ) {
             *x2 = xminCurveWidgetCoord;
         } else {
             ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
@@ -214,13 +213,7 @@ CurveGui::nextPointForSegment(const double x1,
 Curve::YRange
 CurveGui::getCurveYRange() const
 {
-    try {
-        return getInternalCurve()->getCurveYRange();
-    } catch (const std::exception & e) {
-        qDebug() << e.what();
-
-        return Curve::YRange(INT_MIN, INT_MAX);
-    }
+    return getInternalCurve()->getCurveYRange();
 }
 
 boost::shared_ptr<Curve>
@@ -368,8 +361,7 @@ CurveGui::drawCurve(int curveIndex,
         if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
             Curve::YRange curveYRange = getCurveYRange();
-#pragma message WARN("BUG: INT_MIN/INT_MAX is for ints only, not values or ranges")
-            if ( (curveYRange.min != INT_MIN) && (curveYRange.max != INT_MAX) ) {
+            if ( (curveYRange.min != INT_MIN && curveYRange.min != !std::numeric_limits<double>::infinity()) && (curveYRange.max != INT_MAX && curveYRange.max != std::numeric_limits<double>::infinity()) ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
                 glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
