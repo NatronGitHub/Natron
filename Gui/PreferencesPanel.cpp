@@ -1096,7 +1096,7 @@ void
 PreferencesPanel::openHelp()
 {
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
-    int serverPort = appPTR->getCurrentSettings()->getServerPort();
+    int serverPort = appPTR->getDocumentationServerPort();
     QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_prefs.html");
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
 

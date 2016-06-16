@@ -2453,7 +2453,37 @@ QString
 Settings::makeHTMLDocumentation(bool genHTML) const
 {
     QString ret;
+    QString markdown;
     QTextStream ts(&ret);
+    QTextStream ms(&markdown);
+
+    ms << tr("Preferences") << "\n==========\n\n";
+
+    const KnobsVec& knobs = getKnobs_mt_safe();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        if ( (*it)->getDefaultIsSecret() ) {
+            continue;
+        }
+        //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
+        QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
+        QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
+        KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+        KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
+        if (isPage) {
+            if (isPage->getParentKnob()) {
+                ms << "### " << knobLabel << "\n\n";
+            } else {
+                ms << knobLabel << "\n----------\n\n";
+            }
+        } else if (isSep) {
+            ms << "**" << knobLabel << "**\n\n";
+        } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
+            if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
+                ms << "**" << knobLabel << "**\n\n";
+                ms << knobHint << "\n\n";
+            }
+        }
+    }
 
     if (genHTML) {
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n";
@@ -2465,52 +2495,11 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "<li><a href=\"/index.html\">" << tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) << "</a> &raquo;</li>\n";
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
-        ts << "<div class=\"section\">\n<h1>" << tr("Preferences") << "</h1>\n";
-    } else {
-        ts << tr("Preferences") << "\n==========\n\n";
-    }
-
-    const KnobsVec& knobs = getKnobs_mt_safe();
-    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if ( (*it)->getDefaultIsSecret() ) {
-            continue;
-        }
-        QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
-        QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
-        QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
-        KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
-        KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
-
-        if (isPage) {
-            if (genHTML) {
-                ts << "<h2 id='" << knobScriptName << "'>" << knobLabel << "</h2>\n";
-            } else {
-                ts << knobLabel << "\n----------\n\n";
-            }
-        } else if (isSep) {
-            if (genHTML) {
-                ts << "<h3 id='" << knobScriptName << "'>" << knobLabel << "</h3>\n";
-            } else {
-                //ts << knobLabel << "\n----------\n\n";
-                ts << "**" << knobLabel << "**\n\n";
-            }
-        } else if ( !knobLabel.isEmpty() && !knobHint.isEmpty() ) {
-            if ( ( knobLabel != QString::fromUtf8("Enabled") ) && ( knobLabel != QString::fromUtf8("Zoom support") ) ) {
-                if (genHTML) {
-                    ts << "<h4 id='" << knobScriptName << "'>" << knobLabel << "</h4>\n";
-                    //Markdown markdown;
-                    //ts << markdown.convert2html(knobHint);
-                    ts << "<p>" << knobHint << "</p>\n";
-                } else {
-                    ts << "**" << knobLabel << "**\n\n";
-                    ts << knobHint << "\n\n";
-                }
-            }
-        }
-    }
-
-    if (genHTML) {
+        ts << "<div class=\"section\">\n";
+        ts << Markdown::convert2html(markdown);
         ts << "</div>\n</div>\n</div>\n<div class=\"clearer\"></div>\n</div>\n<div class=\"footer\"></div>\n</body>\n</html>\n";
+    } else {
+        ts << markdown;
     }
 
     return ret;
