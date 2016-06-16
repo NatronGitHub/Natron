@@ -4310,10 +4310,9 @@ Node::makeDocumentation(bool genHTML) const
     ms << pluginDescription << "\n\n";
 
     // create markdown table
-    ms << tr("Inputs & Controls") << "\n----------\n\n";
-    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
-    ms << "--- | --- | --- | ---\n";
-
+    ms << tr("Inputs") << "\n----------\n\n";
+    ms << tr("Input") << " | " << tr("Description")<< "\n";
+    ms << "--- | ---\n";
     if (inputs.size() > 0) {
         Q_FOREACH(const QStringList &input, inputs) {
             QString inputName = input.at(0);
@@ -4328,9 +4327,12 @@ Node::makeDocumentation(bool genHTML) const
                 inputDesc = QString::fromUtf8("&nbsp;");
             }
 
-            ms << inputName << " | &nbsp; | &nbsp; | " << inputDesc << "\n";
+            ms << inputName << " | " << inputDesc << "\n";
         }
     }
+    ms << tr("Controls") << "\n----------\n\n";
+    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
+    ms << "--- | --- | --- | ---\n";
     if (items.size() > 0) {
         Q_FOREACH(const QStringList &item, items) {
             QString itemLabel = item.at(0);
