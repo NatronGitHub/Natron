@@ -1593,7 +1593,7 @@ bool
 Curve::mustClamp() const
 {
     // PRIVATE - should not lock
-    return _imp->owner || hasYRange();
+    return _imp->owner && hasYRange();
 }
 
 void
