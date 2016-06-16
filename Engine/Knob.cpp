@@ -4135,15 +4135,18 @@ bool
 KnobHelper::hasModificationsForSerialization() const
 {
     bool enabledChanged = false;
-
+    bool defValueChanged = false;
     for (int i = 0; i < getDimension(); ++i) {
         if ( isEnabled(i) != isDefaultEnabled(i) ) {
             enabledChanged = true;
         }
+        if (hasDefaultValueChanged(i)) {
+            defValueChanged = true;
+        }
     }
 
     return hasModifications() ||
-           getIsSecret() != getDefaultIsSecret() || enabledChanged;
+           getIsSecret() != getDefaultIsSecret() || enabledChanged || defValueChanged;
 }
 
 bool

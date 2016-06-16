@@ -1557,7 +1557,7 @@ protected:
 
     virtual bool setHasModifications(int dimension, bool value, bool lock) OVERRIDE FINAL;
 
-
+    virtual bool hasDefaultValueChanged(int dimension) const = 0;
     /**
      * @brief Protected so the implementation of unSlave can actually use this to reset the master pointer
      **/
@@ -1952,6 +1952,8 @@ public:
     std::vector<T> getDefaultValues_mt_safe() const WARN_UNUSED_RETURN;
     T getDefaultValue(int dimension) const WARN_UNUSED_RETURN;
 
+    bool isDefaultValueSet(int dimension) const WARN_UNUSED_RETURN;
+
     /**
      * @brief Set a default value and set the knob value to it for the particular dimension.
      **/
@@ -2040,6 +2042,8 @@ protected:
     virtual void resetExtraToDefaultValue(int /*dimension*/) {}
 
 private:
+
+    virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
 
     void initMinMax();
 
@@ -2160,7 +2164,13 @@ private:
     ///Here is all the stuff we couldn't get rid of the template parameter
     mutable QMutex _valueMutex; //< protects _values & _guiValues & _defaultValues & ExprResults
     std::vector<T> _values, _guiValues;
-    std::vector<T> _defaultValues;
+
+    struct DefaultValue
+    {
+        T initialValue,value;
+        bool defaultValueSet;
+    };
+    std::vector<DefaultValue> _defaultValues;
     mutable ExprResults _exprRes;
 
     //Only for double and int

@@ -1086,6 +1086,10 @@ WriteNode::knobChanged(KnobI* k,
             return false;
         }
 
+        if (entry == "Default") {
+            entry.clear();
+        }
+
         pluginIDKnob->setValue(entry);
 
         boost::shared_ptr<KnobOutputFile> fileKnob = _imp->outputFileKnob.lock();

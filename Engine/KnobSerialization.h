@@ -345,7 +345,7 @@ struct ValueSerialization
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
                 int defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
-                isInt->setDefaultValueWithoutApplying(v, _dimension);
+                isInt->setDefaultValueWithoutApplying(defV, _dimension);
             }
         } else if (isBool && !isGrp && !isPage && !isSep && !btn) {
             bool v;
@@ -354,7 +354,7 @@ struct ValueSerialization
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
                 bool defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
-                isBool->setDefaultValueWithoutApplying(v, _dimension);
+                isBool->setDefaultValueWithoutApplying(defV, _dimension);
             }
         } else if (isDouble && !isParametric) {
             double v;
@@ -363,7 +363,7 @@ struct ValueSerialization
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
                 double defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
-                isDouble->setDefaultValueWithoutApplying(v, _dimension);
+                isDouble->setDefaultValueWithoutApplying(defV, _dimension);
             }
         } else if (isChoice) {
             int v;
@@ -380,7 +380,7 @@ struct ValueSerialization
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
                 int defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
-                isChoice->setDefaultValueWithoutApplying(v, _dimension);
+                isChoice->setDefaultValueWithoutApplying(defV, _dimension);
             }
         } else if (isString && !isFile) {
             std::string v;
@@ -389,7 +389,7 @@ struct ValueSerialization
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
                 std::string defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
-                isString->setDefaultValueWithoutApplying(v, _dimension);
+                isString->setDefaultValueWithoutApplying(defV, _dimension);
             }
         } else if (isFile) {
             std::string v;
@@ -407,7 +407,7 @@ struct ValueSerialization
             if (version >= VALUE_SERIALIZATION_INTRODUCES_DEFAULT_VALUES) {
                 std::string defV;
                 ar & ::boost::serialization::make_nvp("Default", defV);
-                isFile->setDefaultValueWithoutApplying(v, _dimension);
+                isFile->setDefaultValueWithoutApplying(defV, _dimension);
             }
         }
 

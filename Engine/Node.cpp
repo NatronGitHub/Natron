@@ -1776,6 +1776,10 @@ Node::loadKnob(const KnobPtr & knob,
                 continue;
             }
 
+            if (knob->getName() == "filename") {
+                assert(true);
+            }
+
             knob->cloneDefaultValues( serializedKnob.get() );
 
             KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );

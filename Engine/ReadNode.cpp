@@ -1119,6 +1119,10 @@ ReadNode::knobChanged(KnobI* k,
             return false;
         }
 
+        if (entry == "Default") {
+            entry.clear();
+        }
+
         pluginIDKnob->setValue(entry);
 
         boost::shared_ptr<KnobFile> fileKnob = _imp->inputFileKnob.lock();

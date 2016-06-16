@@ -1971,8 +1971,12 @@ std::vector<T>
 Knob<T>::getDefaultValues_mt_safe() const
 {
     QMutexLocker l(&_valueMutex);
-
-    return _defaultValues;
+    int dims = getDimension();
+    std::vector<T> ret(dims);
+    for (int i = 0; i < dims; ++i) {
+        ret[i] = _defaultValues[i].value;
+    }
+    return ret;
 }
 
 template<typename T>
@@ -1981,7 +1985,23 @@ Knob<T>::getDefaultValue(int dimension) const
 {
     QMutexLocker l(&_valueMutex);
 
-    return _defaultValues[dimension];
+    return _defaultValues[dimension].value;
+}
+
+template<typename T>
+bool
+Knob<T>::hasDefaultValueChanged(int dimension) const
+{
+    QMutexLocker l(&_valueMutex);
+    return _defaultValues[dimension].initialValue != _defaultValues[dimension].value;
+}
+
+template<typename T>
+bool
+Knob<T>::isDefaultValueSet(int dimension) const
+{
+    QMutexLocker l(&_valueMutex);
+    return _defaultValues[dimension].defaultValueSet;
 }
 
 template<typename T>
@@ -1992,7 +2012,11 @@ Knob<T>::setDefaultValue(const T & v,
     assert( dimension < getDimension() );
     {
         QMutexLocker l(&_valueMutex);
-        _defaultValues[dimension] = v;
+        _defaultValues[dimension].value = v;
+        if (!_defaultValues[dimension].defaultValueSet) {
+            _defaultValues[dimension].defaultValueSet = true;
+            _defaultValues[dimension].initialValue = v;
+        }
     }
     resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
@@ -2005,7 +2029,12 @@ Knob<T>::setDefaultValueWithoutApplying(const T& v,
     assert( dimension < getDimension() );
     {
         QMutexLocker l(&_valueMutex);
-        _defaultValues[dimension] = v;
+        _defaultValues[dimension].value = v;
+        if (!_defaultValues[dimension].defaultValueSet) {
+            _defaultValues[dimension].defaultValueSet = true;
+            _defaultValues[dimension].initialValue = v;
+        }
+
     }
     computeHasModifications();
 }
@@ -2017,8 +2046,18 @@ Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2)
     assert(getDimension() == 2);
     {
         QMutexLocker l(&_valueMutex);
-        _defaultValues[0] = v1;
-        _defaultValues[1] = v2;
+        _defaultValues[0].value = v1;
+        if (!_defaultValues[0].defaultValueSet) {
+            _defaultValues[0].defaultValueSet = true;
+            _defaultValues[0].initialValue = v1;
+        }
+
+        _defaultValues[1].value = v2;
+        if (!_defaultValues[1].defaultValueSet) {
+            _defaultValues[1].defaultValueSet = true;
+            _defaultValues[1].initialValue = v2;
+        }
+
     }
     computeHasModifications();
 }
@@ -2030,9 +2069,24 @@ Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3)
     assert(getDimension() == 3);
     {
         QMutexLocker l(&_valueMutex);
-        _defaultValues[0] = v1;
-        _defaultValues[1] = v2;
-        _defaultValues[2] = v3;
+        _defaultValues[0].value = v1;
+        if (!_defaultValues[0].defaultValueSet) {
+            _defaultValues[0].defaultValueSet = true;
+            _defaultValues[0].initialValue = v1;
+        }
+
+        _defaultValues[1].value = v2;
+        if (!_defaultValues[1].defaultValueSet) {
+            _defaultValues[1].defaultValueSet = true;
+            _defaultValues[1].initialValue = v2;
+        }
+
+        _defaultValues[2].value = v3;
+        if (!_defaultValues[2].defaultValueSet) {
+            _defaultValues[2].defaultValueSet = true;
+            _defaultValues[2].initialValue = v3;
+        }
+
     }
     computeHasModifications();
 }
@@ -2044,10 +2098,30 @@ Knob<T>::setDefaultValuesWithoutApplying(const T& v1, const T& v2, const T& v3, 
     assert(getDimension() == 4);
     {
         QMutexLocker l(&_valueMutex);
-        _defaultValues[0] = v1;
-        _defaultValues[1] = v2;
-        _defaultValues[2] = v3;
-        _defaultValues[3] = v4;
+        _defaultValues[0].value = v1;
+        if (!_defaultValues[0].defaultValueSet) {
+            _defaultValues[0].defaultValueSet = true;
+            _defaultValues[0].initialValue = v1;
+        }
+
+        _defaultValues[1].value = v2;
+        if (!_defaultValues[1].defaultValueSet) {
+            _defaultValues[1].defaultValueSet = true;
+            _defaultValues[1].initialValue = v2;
+        }
+
+        _defaultValues[2].value = v3;
+        if (!_defaultValues[2].defaultValueSet) {
+            _defaultValues[2].defaultValueSet = true;
+            _defaultValues[2].initialValue = v3;
+        }
+
+        _defaultValues[3].value = v4;
+        if (!_defaultValues[3].defaultValueSet) {
+            _defaultValues[3].defaultValueSet = true;
+            _defaultValues[3].initialValue = v4;
+        }
+
     }
     computeHasModifications();
 }
@@ -2060,7 +2134,8 @@ Knob<T>::populate()
     for (int i = 0; i < getDimension(); ++i) {
         _values[i] = T();
         _guiValues[i] = T();
-        _defaultValues[i] = T();
+        _defaultValues[i].value = T();
+        _defaultValues[i].defaultValueSet = false;
     }
     KnobHelper::populate();
 }
@@ -2345,7 +2420,7 @@ Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
     T defaultV;
     {
         QMutexLocker l(&_valueMutex);
-        defaultV = _defaultValues[dimension];
+        defaultV = _defaultValues[dimension].value;
     }
 
     clearExpression(dimension, true);
@@ -2397,7 +2472,7 @@ Knob<double>::resetToDefaultValue(int dimension)
 
     {
         QMutexLocker l(&_valueMutex);
-        def = _defaultValues[dimension];
+        def = _defaultValues[dimension].value;
     }
 
     resetExtraToDefaultValue(dimension);
@@ -2723,8 +2798,15 @@ Knob<T>::cloneDefaultValues(KnobI* other)
         return;
     }
 
+    std::vector<DefaultValue> otherDef;
+    {
+        QMutexLocker l(&otherT->_valueMutex);
+        otherDef = otherT->_defaultValues;
+    }
     for (int i = 0; i < dims; ++i) {
-        setDefaultValueWithoutApplying(otherT->getDefaultValue(i), i);
+        if (otherDef[i].defaultValueSet) {
+            setDefaultValueWithoutApplying(otherDef[i].value, i);
+        }
     }
 }
 
@@ -2842,7 +2924,7 @@ Knob<T>::computeHasModifications()
         ///Check expressions too in the future
         if (!hasModif) {
             QMutexLocker k(&_valueMutex);
-            if ( computeValuesHaveModifications(i, _values[i], _defaultValues[i]) ) {
+            if ( computeValuesHaveModifications(i, _values[i], _defaultValues[i].value) ) {
                 hasModif = true;
             }
         }
