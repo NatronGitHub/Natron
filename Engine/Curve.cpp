@@ -1049,6 +1049,12 @@ std::pair<double, double>  Curve::getCurveYRange() const
             std::pair<double, double> ret;
             ret.first = isDouble->getMinimum(_imp->dimensionInOwner);
             ret.second = isDouble->getMaximum(_imp->dimensionInOwner);
+            if (ret.first <= -DBL_MAX) {
+                ret.first = -std::numeric_limits<double>::infinity();
+            }
+            if (ret.second >= DBL_MAX) {
+                ret.second = std::numeric_limits<double>::infinity();
+            }
 
             return ret;
         } else if (isInt) {
