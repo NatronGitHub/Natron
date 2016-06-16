@@ -1040,7 +1040,7 @@ std::pair<double, double>  Curve::getCurveYRange() const
     QMutexLocker l(&_imp->_lock);
 
     if ( !mustClamp() ) {
-        throw std::logic_error("Curve::getCurveYRange() called for a curve without owner or Y range");
+        return std::make_pair( (double)INT_MIN, (double)INT_MAX );
     }
     if (_imp->owner) {
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
