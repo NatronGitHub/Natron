@@ -38,6 +38,7 @@
 
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Engine/AppInstance.h"
+#include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 
@@ -161,11 +162,8 @@ DocumentationManager::handler(QHttpRequest *req,
                         }
 
                         if (plugin) {
-                            QString isPyPlug = plugin->getPythonModule();
-                            if ( !isPyPlug.isEmpty() ) { // loading pyplugs crash, so redirect to group
-                                pluginID = QString::fromUtf8("fr.inria.built-in.Group");
-                            }
-                            CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
+        
+                            CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, appPTR->getTopLevelInstance()->getProject() );
                             args.createGui = false;
                             args.addToProject = false;
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);

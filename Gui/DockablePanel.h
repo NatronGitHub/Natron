@@ -134,6 +134,8 @@ public:
 
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+
+    FloatingWidget* getFloatingWindow() const;
 public:
 
 
@@ -192,7 +194,7 @@ public Q_SLOTS:
 
     void onLineEditNameEditingFinished();
 
-    void floatPanel();
+    FloatingWidget* floatPanel();
 
     void onColorButtonClicked();
 

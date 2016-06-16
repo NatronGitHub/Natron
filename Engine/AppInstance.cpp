@@ -880,7 +880,9 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
             if ( (reason == eCreateNodeReasonUserCreate) || (reason == eCreateNodeReasonInternal) ) {
                 std::string containerName;
                 try {
-                    group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(), &containerName);
+                    if (group) {
+                        group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(), &containerName);
+                    }
                     containerNode->setScriptName(containerName);
                     containerNode->setLabel(containerName);
                 } catch (...) {

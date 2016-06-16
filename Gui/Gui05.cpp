@@ -44,6 +44,7 @@
 
 #include "Gui/AboutWindow.h"
 #include "Gui/AutoHideToolBar.h"
+#include "Gui/DockablePanel.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
 #include "Gui/FloatingWidget.h"
@@ -119,14 +120,16 @@ Gui::setupUi()
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
-    createDefaultLayoutInternal(false);
-
     boost::shared_ptr<Project> project = getApp()->getProject();
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(project,
                               _imp->_layoutPropertiesBin,
                               this);
+
+
+    createDefaultLayoutInternal(false);
+
 
     initProjectGuiKnobs();
 
@@ -325,12 +328,20 @@ Gui::wipeLayout()
     }
     std::list<FloatingWidget*> floatingWidgets = getFloatingWindows();
 
+    FloatingWidget* projectFW = _imp->_projectGui->getPanel()->getFloatingWindow();
     for (std::list<FloatingWidget*>::const_iterator it = floatingWidgets.begin(); it != floatingWidgets.end(); ++it) {
-        (*it)->deleteLater();
+        if (!projectFW || (*it) != projectFW) {
+            (*it)->deleteLater();
+        }
     }
     {
         QMutexLocker k(&_imp->_floatingWindowMutex);
         _imp->_floatingWindows.clear();
+
+        // Re-add the project window
+        if (projectFW) {
+            _imp->_floatingWindows.push_back(projectFW);
+        }
     }
 
 

@@ -1074,7 +1074,13 @@ DockablePanel::minimizeOrMaximize(bool toggled)
     update();
 }
 
-void
+FloatingWidget*
+DockablePanel::getFloatingWindow() const
+{
+    return _imp->_floatingWidget;
+}
+
+FloatingWidget*
 DockablePanel::floatPanel()
 {
     _imp->_floating = !_imp->_floating;
@@ -1105,6 +1111,7 @@ DockablePanel::floatPanel()
         _imp->_floatingWidget = 0;
     }
     getGui()->buildTabFocusOrderPropertiesBin();
+    return _imp->_floatingWidget;
 }
 
 void
