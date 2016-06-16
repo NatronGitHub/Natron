@@ -698,10 +698,10 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
     double xCurve, yCurve;
     Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
     if ( foundCurveNearby != _imp->_curves.end() ) {
-        std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
-        if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
+        Curve::YRange yRange = (*foundCurveNearby)->getCurveYRange();
+        if ( (yCurve < yRange.min) || (yCurve > yRange.max) ) {
             QString err =  tr("Out of curve y range ") +
-                          QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
+                          QString::fromUtf8("[%1 - %2]").arg(yRange.min).arg(yRange.max);
             Dialogs::warningDialog( "", err.toStdString() );
             e->accept();
 
@@ -782,10 +782,10 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         if ( modCASIsControlAlt(e) ) {
             _imp->selectCurve(*foundCurveNearby);
 
-            std::pair<double, double> yRange = (*foundCurveNearby)->getCurveYRange();
-            if ( (yCurve < yRange.first) || (yCurve > yRange.second) ) {
+            Curve::YRange yRange = (*foundCurveNearby)->getCurveYRange();
+            if ( (yCurve < yRange.min) || (yCurve > yRange.max) ) {
                 QString err =  tr("Out of curve y range ") +
-                              QString::fromUtf8("[%1 - %2]").arg(yRange.first).arg(yRange.second);
+                              QString::fromUtf8("[%1 - %2]").arg(yRange.min).arg(yRange.max);
                 Dialogs::warningDialog( "", err.toStdString() );
                 e->accept();
 

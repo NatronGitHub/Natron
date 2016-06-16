@@ -425,9 +425,9 @@ EditKeyFrameDialog::EditKeyFrameDialog(EditModeEnum mode,
             _imp->ySpinbox->setMinimum(0);
             _imp->ySpinbox->setMaximum(1);
         } else {
-            std::pair<double, double> range = key->curve->getCurveYRange();
-            _imp->ySpinbox->setMinimum(range.first);
-            _imp->ySpinbox->setMaximum(range.second);
+            Curve::YRange range = key->curve->getCurveYRange();
+            _imp->ySpinbox->setMinimum(range.min);
+            _imp->ySpinbox->setMaximum(range.max);
         }
 
         _imp->ySpinbox->setValue(_imp->originalY);

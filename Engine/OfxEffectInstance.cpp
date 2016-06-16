@@ -197,11 +197,23 @@ struct OfxEffectInstancePrivate
     ContextEnum context;
     struct ClipsInfo
     {
+        ClipsInfo()
+            : optional(false)
+            , mask(false)
+            , rotoBrush(false)
+            , clip(NULL)
+            , label()
+            , hint()
+            , visible(true)
+        {
+        }
+
         bool optional;
         bool mask;
         bool rotoBrush;
         OfxClipInstance* clip;
-        std::string label,hint;
+        std::string label;
+        std::string hint;
         bool visible;
     };
 
@@ -384,10 +396,11 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
         _imp->clipsInfos.resize( clips.size() );
         for (unsigned i = 0; i < clips.size(); ++i) {
             OfxEffectInstancePrivate::ClipsInfo info;
-            info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.optional = clips[i]->isOptional() || info.rotoBrush;
             info.mask = clips[i]->isMask();
+            info.rotoBrush = clips[i]->getName() == CLIP_OFX_ROTO && getNode()->isRotoNode();
             info.clip = NULL;
+            // label, hint, visible are set below
             _imp->clipsInfos[i] = info;
         }
 
