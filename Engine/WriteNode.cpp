@@ -330,7 +330,7 @@ WriteNodePrivate::placeWriteNodeKnobsInPage()
         ++foundSep;
         if (foundSep < (int)children.size()) {
             bool isSecret = children[foundSep]->getIsSecret();
-            while (isSecret && (int)foundSep < children.size()) {
+            while (isSecret && foundSep < (int)children.size()) {
                 ++foundSep;
                 isSecret = children[foundSep]->getIsSecret();
             }
