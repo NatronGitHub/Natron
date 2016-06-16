@@ -4195,7 +4195,7 @@ Node::makeDocumentation(bool genHTML) const
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
-            input << QString::fromStdString( _imp->effect->getInputHint(i) ) << QString::fromStdString( _imp->effect->getInputLabel(i) );
+            input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) );
             if ( !input.isEmpty() ) {
                 inputs.push_back(input);
             }
