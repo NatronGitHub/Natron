@@ -906,13 +906,13 @@ Curve::getDerivativeAt(double t) const
     double d;
 
     if ( mustClamp() ) {
-        std::pair<double, double> minmax = getCurveYRange();
+        Curve::YRange minmax = getCurveYRange();
         d = Interpolation::derive_clamp(tcur, vcur,
                                         vcurDerivRight,
                                         vnextDerivLeft,
                                         tnext, vnext,
                                         t,
-                                        minmax.first, minmax.second,
+                                        minmax.min, minmax.max,
                                         interp,
                                         interpNext);
     } else {
@@ -976,13 +976,13 @@ Curve::getIntegrateFromTo(double t1,
     while (itup != _imp->keyFrames.end() && itup->getTime() < t2) {
         // add integral from t1 to itup->getTime() to sum
         if ( mustClamp() ) {
-            std::pair<double, double> minmax = getCurveYRange();
+            Curve::YRange minmax = getCurveYRange();
             sum += Interpolation::integrate_clamp(tcur, vcur,
                                                   vcurDerivRight,
                                                   vnextDerivLeft,
                                                   tnext, vnext,
                                                   t1, itup->getTime(),
-                                                  minmax.first, minmax.second,
+                                                  minmax.min, minmax.max,
                                                   interp,
                                                   interpNext);
         } else {
@@ -1013,13 +1013,13 @@ Curve::getIntegrateFromTo(double t1,
     assert( itup == _imp->keyFrames.end() || t2 <= itup->getTime() );
     // add integral from t1 to t2 to sum
     if ( mustClamp() ) {
-        std::pair<double, double> minmax = getCurveYRange();
+        Curve::YRange minmax = getCurveYRange();
         sum += Interpolation::integrate_clamp(tcur, vcur,
                                               vcurDerivRight,
                                               vnextDerivLeft,
                                               tnext, vnext,
                                               t1, t2,
-                                              minmax.first, minmax.second,
+                                              minmax.min, minmax.max,
                                               interp,
                                               interpNext);
     } else {
@@ -1035,41 +1035,39 @@ Curve::getIntegrateFromTo(double t1,
     return opposite ? -sum : sum;
 } // getIntegrateFromTo
 
-std::pair<double, double>  Curve::getCurveYRange() const
+Curve::YRange Curve::getCurveYRange() const
 {
     QMutexLocker l(&_imp->_lock);
 
     if ( !mustClamp() ) {
-        return std::make_pair( (double)INT_MIN, (double)INT_MAX );
+        return YRange( -std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() );
     }
     if (_imp->owner) {
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>(_imp->owner);
         Knob<int>* isInt = dynamic_cast<Knob<int>*>(_imp->owner);
         if (isDouble) {
-            std::pair<double, double> ret;
-            ret.first = isDouble->getMinimum(_imp->dimensionInOwner);
-            ret.second = isDouble->getMaximum(_imp->dimensionInOwner);
-            if (ret.first <= -DBL_MAX) {
-                ret.first = -std::numeric_limits<double>::infinity();
+            double min = isDouble->getMinimum(_imp->dimensionInOwner);
+            if (min <= -DBL_MAX) {
+                min = -std::numeric_limits<double>::infinity();
             }
-            if (ret.second >= DBL_MAX) {
-                ret.second = std::numeric_limits<double>::infinity();
+            double max = isDouble->getMaximum(_imp->dimensionInOwner);
+            if (max >= DBL_MAX) {
+                max = std::numeric_limits<double>::infinity();
             }
 
-            return ret;
+            return YRange(min, max);
         } else if (isInt) {
-            std::pair<double, double> ret;
-            ret.first = isInt->getMinimum(_imp->dimensionInOwner);
-            ret.second = isInt->getMaximum(_imp->dimensionInOwner);
+            double min = isInt->getMinimum(_imp->dimensionInOwner);
+            double max = isInt->getMaximum(_imp->dimensionInOwner);
 
-            return ret;
+            return YRange(min, max);
         } else {
-            return std::make_pair( (double)INT_MIN, (double)INT_MAX );
+            return YRange( (double)INT_MIN, (double)INT_MAX );
         }
     }
     assert( hasYRange() );
 
-    return std::make_pair(_imp->yMin, _imp->yMax);
+    return YRange(_imp->yMin, _imp->yMax);
 }
 
 double
@@ -1077,12 +1075,12 @@ Curve::clampValueToCurveYRange(double v) const
 {
     // PRIVATE - should not lock
     ////clamp to min/max if the owner of the curve is a Double or Int knob.
-    std::pair<double, double> minmax = getCurveYRange();
+    YRange minmax = getCurveYRange();
 
-    if (v > minmax.second) {
-        return minmax.second;
-    } else if (v < minmax.first) {
-        return minmax.first;
+    if (v > minmax.max) {
+        return minmax.max;
+    } else if (v < minmax.min) {
+        return minmax.max;
     }
 
     return v;

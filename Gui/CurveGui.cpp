@@ -72,7 +72,7 @@ void
 CurveGui::nextPointForSegment(const double x1,
                               const KeyFrameSet & keys,
                               const std::list<double>& keysWidgetCoords,
-                              const std::pair<double, double>& curveYRange,
+                              const Curve::YRange& curveYRange,
                               const double xminCurveWidgetCoord,
                               const double xmaxCurveWidgetCoord,
                               KeyFrameSet::const_iterator* lastUpperIt,
@@ -87,7 +87,8 @@ CurveGui::nextPointForSegment(const double x1,
 
 
     if (x1 < xminCurveWidgetCoord) {
-        if ( ( curveYRange.first <= kOfxFlagInfiniteMin) && ( curveYRange.second >= kOfxFlagInfiniteMax) ) {
+#pragma message WARN("BUG: kOfxFlagInfiniteMin/Max is for rectangles only, not values or ranges")
+        if ( ( curveYRange.min <= kOfxFlagInfiniteMin) && ( curveYRange.max >= kOfxFlagInfiniteMax) ) {
             *x2 = xminCurveWidgetCoord;
         } else {
             ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
@@ -104,10 +105,10 @@ CurveGui::nextPointForSegment(const double x1,
                     *x2 = xminCurveWidgetCoord;
                 } else {
                     double b = firstKf->getValue() - firstKf->getLeftDerivative() * firstKf->getTime();
-                    *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.first - b) / firstKf->getLeftDerivative(), 0 ).x();
+                    *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.min - b) / firstKf->getLeftDerivative(), 0 ).x();
                     if ( (x1 >= *x2) || (*x2 > xminCurveWidgetCoord) ) {
                         ///do the same wit hthe max axis
-                        *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.second - b) / firstKf->getLeftDerivative(), 0 ).x();
+                        *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.max - b) / firstKf->getLeftDerivative(), 0 ).x();
 
                         if ( (x1 >= *x2) || (*x2 > xminCurveWidgetCoord) ) {
                             /// ok the curve doesn't intersect the min/max axis
@@ -118,7 +119,7 @@ CurveGui::nextPointForSegment(const double x1,
             }
         }
     } else if (x1 >= xmaxCurveWidgetCoord) {
-        if ( (curveYRange.first <= kOfxFlagInfiniteMin) && (curveYRange.second >= kOfxFlagInfiniteMax) ) {
+        if ( (curveYRange.min <= kOfxFlagInfiniteMin) && (curveYRange.max >= kOfxFlagInfiniteMax) ) {
             *x2 = _curveWidget->width() - 1;
         } else {
             ///the curve has a min/max, find out the slope of the curve so we know whether the curve intersects
@@ -135,10 +136,10 @@ CurveGui::nextPointForSegment(const double x1,
                     *x2 = _curveWidget->width() - 1;
                 } else {
                     double b = lastKf->getValue() - lastKf->getRightDerivative() * lastKf->getTime();
-                    *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.first - b) / lastKf->getRightDerivative(), 0 ).x();
+                    *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.min - b) / lastKf->getRightDerivative(), 0 ).x();
                     if ( (x1 >= *x2) || (*x2 < xmaxCurveWidgetCoord) ) {
                         ///do the same wit hthe min axis
-                        *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.second - b) / lastKf->getRightDerivative(), 0 ).x();
+                        *x2 = _curveWidget->toWidgetCoordinates( (curveYRange.max - b) / lastKf->getRightDerivative(), 0 ).x();
 
                         if ( (x1 >= *x2) || (*x2 < xmaxCurveWidgetCoord) ) {
                             /// ok the curve doesn't intersect the min/max axis
@@ -210,7 +211,7 @@ CurveGui::nextPointForSegment(const double x1,
     *isx1Key = false;
 } // nextPointForSegment
 
-std::pair<double, double>
+Curve::YRange
 CurveGui::getCurveYRange() const
 {
     try {
@@ -218,7 +219,7 @@ CurveGui::getCurveYRange() const
     } catch (const std::exception & e) {
         qDebug() << e.what();
 
-        return std::make_pair(INT_MIN, INT_MAX);
+        return Curve::YRange(INT_MIN, INT_MAX);
     }
 }
 
@@ -326,7 +327,7 @@ CurveGui::drawCurve(int curveIndex,
                 keysWidgetCoords.push_back(widgetCoord);
             }
 
-            std::pair<double, double> curveYRange = getCurveYRange();
+            Curve::YRange curveYRange = getCurveYRange();
             bool isX1AKey = false;
             KeyFrame x1Key;
             std::list<double>::const_iterator lastUpperItCoords = keysWidgetCoords.end();
@@ -366,23 +367,24 @@ CurveGui::drawCurve(int curveIndex,
 
         if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
-            std::pair<double, double> curveYRange = getCurveYRange();
-            if ( (curveYRange.first != INT_MIN) && (curveYRange.second != INT_MAX) ) {
+            Curve::YRange curveYRange = getCurveYRange();
+#pragma message WARN("BUG: INT_MIN/INT_MAX is for ints only, not values or ranges")
+            if ( (curveYRange.min != INT_MIN) && (curveYRange.max != INT_MAX) ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
                 glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
                 glBegin(GL_LINES);
-                glVertex2d(btmLeft.x(), curveYRange.first);
-                glVertex2d(topRight.x(), curveYRange.first);
-                glVertex2d(btmLeft.x(), curveYRange.second);
-                glVertex2d(topRight.x(), curveYRange.second);
+                glVertex2d(btmLeft.x(), curveYRange.min);
+                glVertex2d(topRight.x(), curveYRange.min);
+                glVertex2d(btmLeft.x(), curveYRange.max);
+                glVertex2d(topRight.x(), curveYRange.max);
                 glEnd();
                 glColor4d(1., 1., 1., 1.);
 
                 double xText = _curveWidget->toZoomCoordinates(10, 0).x();
 
-                _curveWidget->renderText( xText, curveYRange.first, QString::fromUtf8("min"), minMaxColor, _curveWidget->font() );
-                _curveWidget->renderText( xText, curveYRange.second, QString::fromUtf8("max"), minMaxColor, _curveWidget->font() );
+                _curveWidget->renderText( xText, curveYRange.min, tr("min"), minMaxColor, _curveWidget->font() );
+                _curveWidget->renderText( xText, curveYRange.max, tr("max"), minMaxColor, _curveWidget->font() );
             }
         }
 
@@ -758,12 +760,12 @@ BezierCPCurveGui::evaluate(bool /*useExpr*/,
     }
 }
 
-std::pair<double, double>
+Curve::YRange
 BezierCPCurveGui::getCurveYRange() const
 {
     int keys = _bezier->getKeyframesCount();
 
-    return std::make_pair(0, keys - 1);
+    return Curve::YRange(0, keys - 1);
 }
 
 KeyFrameSet

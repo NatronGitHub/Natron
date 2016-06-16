@@ -139,7 +139,16 @@ class Curve
     };
 
 public:
+    struct YRange {
+        YRange(double min_, double max_)
+            : min(min_)
+            , max(max_)
+        {
+        }
 
+        double min;
+        double max;
+    };
 
     /**
      * @brief An empty curve, held by no one. This constructor is used by the serialization.
@@ -276,7 +285,7 @@ public:
 
     void setCurveInterpolation(KeyframeTypeEnum interp);
 
-    std::pair<double, double> getCurveYRange() const WARN_UNUSED_RETURN;
+    YRange getCurveYRange() const WARN_UNUSED_RETURN;
 
     int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
 
@@ -295,7 +304,7 @@ private:
     KeyFrameSet::const_iterator atIndex(int index) const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
-    std::pair<double, double> getCurveYRange_internal() const WARN_UNUSED_RETURN;
+    YRange getCurveYRange_internal() const WARN_UNUSED_RETURN;
 
     void removeKeyFrame(KeyFrameSet::const_iterator it);
 
