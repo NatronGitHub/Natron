@@ -265,14 +265,10 @@ AddFormatDialog::getFormat() const
     return Format(0, 0, w, h, name.toStdString(), pa);
 }
 
-#ifdef DEBUG
-#pragma message WARN("no version in ProjectGui serialization: this is dangerous")
-#endif
+// Version is handled in ProjectGuiSerialization
 template<>
 void
-ProjectGui::save<boost::archive::xml_oarchive
-                 >(boost::archive::xml_oarchive & archive/*,
-                                                            const unsigned int version*/) const
+ProjectGui::save<boost::archive::xml_oarchive>(boost::archive::xml_oarchive & archive) const
 {
     ProjectGuiSerialization projectGuiSerializationObj;
 
@@ -439,9 +435,7 @@ loadNodeGuiSerialization(Gui* gui,
 
 template<>
 void
-ProjectGui::load<boost::archive::xml_iarchive
-                 >(boost::archive::xml_iarchive & archive/*,
-                                                            const unsigned int version*/)
+ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive::xml_iarchive & archive)
 {
     ProjectGuiSerialization obj;
 
@@ -567,7 +561,8 @@ ProjectGui::load<boost::archive::xml_iarchive
 
     _gui->getApp()->updateProjectLoadStatus( tr("Restoring layout") );
 
-    bool loadWorkspace = appPTR->getCurrentSettings()->getLoadProjectWorkspce();
+    // For auto-saves, always load the workspace
+    bool loadWorkspace = isAutosave || appPTR->getCurrentSettings()->getLoadProjectWorkspce();
     if (loadWorkspace) {
         _gui->restoreLayout( true, obj.getVersion() < PROJECT_GUI_SERIALIZATION_MAJOR_OVERHAUL, obj.getGuiLayout() );
     }

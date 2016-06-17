@@ -305,7 +305,7 @@ public:
 
     static QPixmap screenShot(QWidget* w);
 
-    void loadProjectGui(boost::archive::xml_iarchive & obj) const;
+    void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const;
 
     void saveProjectGui(boost::archive::xml_oarchive & archive);
 

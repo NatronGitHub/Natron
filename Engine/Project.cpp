@@ -314,7 +314,7 @@ Project::loadProjectInternal(const QString & path,
         } // __raii_loadingProjectInternal__
 
         if (!bgProject) {
-            getApp()->loadProjectGui(iArchive);
+            getApp()->loadProjectGui(isAutoSave, iArchive);
         }
     } catch (...) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();

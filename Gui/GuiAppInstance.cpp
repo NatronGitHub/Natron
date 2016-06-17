@@ -772,9 +772,9 @@ GuiAppInstance::isShowingDialog() const
 }
 
 void
-GuiAppInstance::loadProjectGui(boost::archive::xml_iarchive & archive) const
+GuiAppInstance::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & archive) const
 {
-    _imp->_gui->loadProjectGui(archive);
+    _imp->_gui->loadProjectGui(isAutosave, archive);
 }
 
 void
