@@ -500,7 +500,6 @@ class KnobSerialization
 
         assert((int)_values.size() == _dimension);
         for (int i = 0; i < _knob->getDimension(); ++i) {
-            _values[i].initForSave(_knob, i , _expressions[i].second, _expressions[i].first);
             ar & ::boost::serialization::make_nvp("item", _values[i]);
         }
 
@@ -772,7 +771,11 @@ public:
 
         for (int i = 0; i < _dimension; ++i) {
             _expressions.push_back( std::make_pair( knob->getExpression(i), knob->isExpressionUsingRetVariable(i) ) );
+            _values[i].initForSave(_knob, i , _expressions[i].second, _expressions[i].first);
+            _masters.push_back(_values[i]._master);
         }
+
+
 
         _masterIsAlias = knob->getAliasMaster().get() != 0;
 

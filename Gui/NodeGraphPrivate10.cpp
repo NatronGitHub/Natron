@@ -264,11 +264,13 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
             }
         }
         restoreConnections(nodes, newNodes, *oldNewScriptNameMapping);
+
+
+        //Restore links once all children are created for alias knobs/expressions
+        n->restoreKnobsLinks(*internalSerialization, allNodes, *oldNewScriptNameMapping);
+
     }
 
-
-    //Restore links once all children are created for alias knobs/expressions
-    n->restoreKnobsLinks(*internalSerialization, allNodes, *oldNewScriptNameMapping);
 
     return gui;
 } // NodeGraphPrivate::pasteNode

@@ -1550,7 +1550,8 @@ GroupFromSelectionCommand::undo()
                                          true,
                                          false,
                                          true,
-                                         true);
+                                         true,
+                                         false);
 
     _isRedone = false;
 }
@@ -1744,10 +1745,11 @@ GroupFromSelectionCommand::redo()
 
     for (NodesGuiList::iterator it = originalNodes.begin(); it != originalNodes.end(); ++it) {
         (*it)->getNode()->deactivate(NodesList(),
-                                    true,
-                                    false,
-                                    true,
-                                    false);
+                                     true,
+                                     false,
+                                     true,
+                                     false,
+                                     false);
     }
 
     std::list<NodeGuiPtr> nodesToSelect;
@@ -1994,7 +1996,7 @@ InlineGroupCommand::undo()
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();
                 if (node) {
-                    node->getNode()->deactivate(NodesList(), false, false, true, false);
+                    node->getNode()->deactivate(NodesList(), false, false, true, false, false);
                 }
             }
         }
@@ -2022,7 +2024,7 @@ InlineGroupCommand::redo()
             for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
                 viewers.insert(*it2);
             }
-            groupNode->getNode()->deactivate(NodesList(), true, false, true, false);
+            groupNode->getNode()->deactivate(NodesList(), true, false, true, false, false);
             for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
                  it2 != it->inlinedNodes.end(); ++it2) {
                 NodeGuiPtr node = (*it2).lock();

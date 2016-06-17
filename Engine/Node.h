@@ -688,7 +688,8 @@ public:
                     bool disconnectAll = true,
                     bool reconnect = true,
                     bool hideGui = true,
-                    bool triggerRender = true);
+                    bool triggerRender = true,
+                    bool unslaveKnobs = true);
 
 
     /* @brief Make this node active. It will appear

@@ -5819,7 +5819,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                  bool disconnectAll,
                  bool reconnect,
                  bool hideGui,
-                 bool triggerRender)
+                 bool triggerRender,
+                 bool unslaveKnobs)
 {
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -5851,60 +5852,61 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     boost::shared_ptr<NodeCollection> parentCol = getGroup();
 
 
-    ///For all knobs that have listeners, invalidate expressions
-    NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>( parentCol.get() );
-    const KnobsVec & knobs = getKnobs();
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobI::ListenerDimsMap listeners;
-        knobs[i]->getListeners(listeners);
-        for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            KnobPtr listener = it->first.lock();
-            if (!listener) {
-                continue;
-            }
-            KnobHolder* holder = listener->getHolder();
-            if (!holder) {
-                continue;
-            }
-            if ( ( holder == _imp->effect.get() ) || (holder == isParentGroup) ) {
-                continue;
-            }
-
-            EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
-            if (!isEffect) {
-                continue;
-            }
-
-            boost::shared_ptr<NodeCollection> effectParent = isEffect->getNode()->getGroup();
-            if (!effectParent) {
-                continue;
-            }
-            NodeGroup* isEffectParentGroup = dynamic_cast<NodeGroup*>( effectParent.get() );
-            if ( isEffectParentGroup && ( isEffectParentGroup == _imp->effect.get() ) ) {
-                continue;
-            }
-
-            isEffect->beginChanges();
-            for (int dim = 0; dim < listener->getDimension(); ++dim) {
-                std::pair<int, KnobPtr > master = listener->getMaster(dim);
-                if (master.second == knobs[i]) {
-                    listener->unSlave(dim, true);
+    if (unslaveKnobs) {
+        ///For all knobs that have listeners, invalidate expressions
+        NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>( parentCol.get() );
+        const KnobsVec & knobs = getKnobs();
+        for (U32 i = 0; i < knobs.size(); ++i) {
+            KnobI::ListenerDimsMap listeners;
+            knobs[i]->getListeners(listeners);
+            for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+                KnobPtr listener = it->first.lock();
+                if (!listener) {
+                    continue;
+                }
+                KnobHolder* holder = listener->getHolder();
+                if (!holder) {
+                    continue;
+                }
+                if ( ( holder == _imp->effect.get() ) || (holder == isParentGroup) ) {
+                    continue;
                 }
 
-                std::string hasExpr = listener->getExpression(dim);
-                if ( !hasExpr.empty() ) {
-                    std::stringstream ss;
-                    ss << tr("Missing node ").toStdString();
-                    ss << getFullyQualifiedName();
-                    ss << ' ';
-                    ss << tr("in expression.").toStdString();
-                    listener->setExpressionInvalid( dim, false, ss.str() );
+                EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
+                if (!isEffect) {
+                    continue;
                 }
+
+                boost::shared_ptr<NodeCollection> effectParent = isEffect->getNode()->getGroup();
+                if (!effectParent) {
+                    continue;
+                }
+                NodeGroup* isEffectParentGroup = dynamic_cast<NodeGroup*>( effectParent.get() );
+                if ( isEffectParentGroup && ( isEffectParentGroup == _imp->effect.get() ) ) {
+                    continue;
+                }
+
+                isEffect->beginChanges();
+                for (int dim = 0; dim < listener->getDimension(); ++dim) {
+                    std::pair<int, KnobPtr > master = listener->getMaster(dim);
+                    if (master.second == knobs[i]) {
+                        listener->unSlave(dim, true);
+                    }
+
+                    std::string hasExpr = listener->getExpression(dim);
+                    if ( !hasExpr.empty() ) {
+                        std::stringstream ss;
+                        ss << tr("Missing node ").toStdString();
+                        ss << getFullyQualifiedName();
+                        ss << ' ';
+                        ss << tr("in expression.").toStdString();
+                        listener->setExpressionInvalid( dim, false, ss.str() );
+                    }
+                }
+                isEffect->endChanges(true);
             }
-            isEffect->endChanges(true);
         }
     }
-
 
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node
     ///this node is the node the outputs should attempt to connect to

@@ -663,6 +663,21 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
 
         ///Now that all nodes have been duplicated, try to restore nodes connections
         _imp->restoreConnections(clipboard.nodes, createdNodes, oldNewScriptNamesMapping);
+
+        //Restore links once all children are created for alias knobs/expressions
+        NodesList allNodes;
+        group->getActiveNodes(&allNodes);
+        // If the group is a Group node, append to all nodes reachable through links
+        NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
+        if (isGroupNode) {
+            allNodes.push_back(isGroupNode->getNode());
+        }
+
+        std::list<boost::shared_ptr<NodeSerialization> >::const_iterator itSerialization = clipboard.nodes.begin();
+        for (std::list<std::pair<std::string, NodeGuiPtr > > ::iterator it = createdNodes.begin(); it != createdNodes.end(); ++it, ++itSerialization) {
+            it->second->getNode()->restoreKnobsLinks(**itSerialization, allNodes, oldNewScriptNamesMapping);
+        }
+
     }
 
     getGui()->getApp()->getProject()->forceComputeInputDependentDataOnAllTrees();
