@@ -98,7 +98,7 @@ Gui::Gui(const GuiAppInstPtr& app,
                       SLOT(onDoDialogWithStopAskingCheckbox(int,QString,QString,bool,StandardButtons,int)) );
     QObject::connect( app.get(), SIGNAL(pluginsPopulated()), this, SLOT(addToolButttonsToToolBar()) );
     QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
-
+    QObject::connect (this, SIGNAL(s_showLogOnMainThread()), this, SLOT(onShowLogOnMainThreadReceived()));
 
     setAcceptDrops(true);
 }
@@ -106,6 +106,7 @@ Gui::Gui(const GuiAppInstPtr& app,
 Gui::~Gui()
 {
     _imp->_nodeGraphArea->invalidateAllNodesParenting();
+    delete _imp->_errorLog;
     delete _imp->_projectGui;
     delete _imp->_undoStacksGroup;
     _imp->_viewerTabs.clear();

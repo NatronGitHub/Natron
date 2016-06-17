@@ -221,7 +221,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                              " exist in the loaded plug-ins.")
                           .arg( QString::fromUtf8( pluginID.c_str() ) )
                           .arg(majorVersion).arg(minorVersion) );
-            appPTR->writeToErrorLog_mt_safe(text);
+            appPTR->writeToErrorLog_mt_safe(tr("Project"),text);
             mustShowErrorsLog = true;
             continue;
         } else {
@@ -238,7 +238,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                               .arg(minorVersion)
                               .arg( n->getPlugin()->getMajorVersion() )
                               .arg( n->getPlugin()->getMinorVersion() ) );
-                appPTR->writeToErrorLog_mt_safe(text);
+                appPTR->writeToErrorLog_mt_safe(tr("Project"),text);
                 mustShowErrorsLog = true;
             }
         }
@@ -295,7 +295,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             NodePtr masterNode = it->first->getApp()->getNodeByFullySpecifiedName(masterNodeName);
 
             if (!masterNode) {
-                appPTR->writeToErrorLog_mt_safe( tr("Cannot restore the link between %1 and %2.")
+                appPTR->writeToErrorLog_mt_safe( tr("Project"), tr("Cannot restore the link between %1 and %2.")
                                                  .arg( QString::fromUtf8( it->second->getNodeScriptName().c_str() ) )
                                                  .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
                 mustShowErrorsLog = true;
@@ -332,7 +332,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
+                    appPTR->writeToErrorLog_mt_safe( tr("Project"),QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {
@@ -388,7 +388,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 int index = it->first->getInputNumberFromLabel(it2->first);
                 if (index == -1) {
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
+                    appPTR->writeToErrorLog_mt_safe( tr("Project"), QString::fromUtf8("Could not find input named ") + QString::fromUtf8( it2->first.c_str() ) );
                     continue;
                 }
                 if ( !it2->second.empty() && !group->connectNodes(index, it2->second, it->first) ) {

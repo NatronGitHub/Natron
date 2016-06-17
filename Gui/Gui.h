@@ -559,8 +559,11 @@ Q_SIGNALS:
 
     void s_doProgressUpdateOnMainThread(KnobHolder* effect, double t);
 
+    void s_showLogOnMainThread();
+
 public Q_SLOTS:
 
+    void onShowLogOnMainThreadReceived();
 
     ///Called whenever the time changes on the timeline
     void renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time, int reason);

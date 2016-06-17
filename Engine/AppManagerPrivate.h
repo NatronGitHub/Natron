@@ -99,7 +99,7 @@ public:
     QString _binaryPath; //< the path to the application's binary
     U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
     mutable QMutex errorLogMutex;
-    QString errorLog;
+    std::list<LogEntry> errorLog;
     size_t maxCacheFiles; //< the maximum number of files the application can open for caching. This is the hard limit * 0.9
     size_t currentCacheFilesCount; //< the number of cache files currently opened in the application
     mutable QMutex currentCacheFilesCountMutex; //< protects currentCacheFilesCount

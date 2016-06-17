@@ -857,7 +857,7 @@ Node::load(const CreateNodeArgs& args)
             try {
                 setScriptName( args.fixedName.toStdString() );
             } catch (...) {
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8("Could not set node name to ") + args.fixedName);
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()), tr("Could not set node name to %1").arg(args.fixedName));
             }
         }
         if (!isMultiInstanceChild && _imp->isMultiInstance) {
@@ -1871,8 +1871,13 @@ Node::Implementation::restoreKnobLinksRecursive(const GroupKnobSerialization* gr
         } else if (isRegular) {
             KnobPtr knob =  _publicInterface->getKnobByName( isRegular->getName() );
             if (!knob) {
-                QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
-                appPTR->writeToErrorLog_mt_safe(err);
+                LogEntry::LogEntryColor c;
+                if (_publicInterface->getColor(&c.r, &c.g, &c.b)) {
+                    c.colorSet = true;
+                }
+
+                QString err = tr("Could not find a parameter named %1").arg( QString::fromUtf8( (*it)->getName().c_str() ) );
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( _publicInterface->getScriptName_mt_safe().c_str() ),err, false, c);
                 continue;
             }
             isRegular->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
@@ -1894,8 +1899,13 @@ Node::restoreKnobsLinks(const NodeSerialization & serialization,
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         KnobPtr knob = getKnobByName( (*it)->getName() );
         if (!knob) {
-            QString err = tr("%1: Could not find a parameter named %2").arg( QString::fromUtf8( getScriptName_mt_safe().c_str() ) ).arg( QString::fromUtf8( (*it)->getName().c_str() ) );
-            appPTR->writeToErrorLog_mt_safe(err);
+            LogEntry::LogEntryColor c;
+            if (getColor(&c.r, &c.g, &c.b)) {
+                c.colorSet = true;
+            }
+
+            QString err = tr("Could not find a parameter named %1").arg( QString::fromUtf8( (*it)->getName().c_str() ) );
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getScriptName_mt_safe().c_str() ),err, false, c);
             continue;
         }
         (*it)->restoreKnobLinks(knob, allNodes, oldNewScriptNamesMapping);
@@ -2959,12 +2969,16 @@ Node::setNameInternal(const std::string& name,
         }
     }
     if (onlySpaces) {
-        std::string err = tr("The name must at least contain a character").toStdString();
+        QString err = tr("The name must at least contain a character");
         if (throwErrors) {
-            throw std::runtime_error(err);
+            throw std::runtime_error(err.toStdString());
         } else {
-            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( err.c_str() ) );
-            std::cerr << err << std::endl;
+            LogEntry::LogEntryColor c;
+            if (getColor(&c.r, &c.g, &c.b)) {
+                c.colorSet = true;
+            }
+            appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()),err, false, c);
+            std::cerr << err.toStdString() << std::endl;
 
             return;
         }
@@ -2976,7 +2990,11 @@ Node::setNameInternal(const std::string& name,
             try {
                 collection->checkNodeName(this, name, false, false, &newName);
             } catch (const std::exception& e) {
-                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( e.what() ) );
+                LogEntry::LogEntryColor c;
+                if (getColor(&c.r, &c.g, &c.b)) {
+                    c.colorSet = true;
+                }
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()) ,QString::fromUtf8( e.what() ), false, c );
                 std::cerr << e.what() << std::endl;
 
                 return;
@@ -3004,7 +3022,11 @@ Node::setNameInternal(const std::string& name,
                 throw std::runtime_error( ss.str() );
             } else {
                 std::string err = ss.str();
-                appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( err.c_str() ) );
+                LogEntry::LogEntryColor c;
+                if (getColor(&c.r, &c.g, &c.b)) {
+                    c.colorSet = true;
+                }
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(oldName.c_str()), QString::fromUtf8( err.c_str() ), false, c );
                 std::cerr << err << std::endl;
 
                 return;
@@ -6800,11 +6822,15 @@ Node::message(MessageTypeEnum type,
     // See https://github.com/MrKepzie/Natron/issues/1313
     // Messages posted from a separate thread should be logged and not show a pop-up
     if ( QThread::currentThread() != qApp->thread() ) {
-        QString message = QString::fromUtf8( getLabel_mt_safe().c_str() );
-        message += QString::fromUtf8(": ");
-        message += QString::fromUtf8( content.c_str() );
-        appPTR->writeToErrorLog_mt_safe(message);
 
+        LogEntry::LogEntryColor c;
+        if (getColor(&c.r, &c.g, &c.b)) {
+            c.colorSet = true;
+        }
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( getLabel_mt_safe().c_str() ), QString::fromUtf8( content.c_str() ), false, c);
+        if (type == eMessageTypeError) {
+            appPTR->showErrorLog();
+        }
         return true;
     }
 
@@ -9981,7 +10007,7 @@ Node::getSize(double* w,
     }
 }
 
-void
+bool
 Node::getColor(double* r,
                double *g,
                double* b) const
@@ -9990,10 +10016,12 @@ Node::getColor(double* r,
 
     if (gui) {
         gui->getColor(r, g, b);
+        return true;
     } else {
         *r = 0.;
         *g = 0.;
         *b = 0.;
+        return false;
     }
 }
 

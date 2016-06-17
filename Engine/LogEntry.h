@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_LogWindow_h
-#define Gui_LogWindow_h
+#ifndef LOGENTRY_H
+#define LOGENTRY_H
+
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,59 +26,40 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include <QString>
 
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QDialog>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class LogWindow
-    : public QWidget
+struct LogEntry
 {
-    Q_OBJECT
 
-    QVBoxLayout* mainLayout;
-    QTextBrowser* textBrowser;
-    Button* okButton;
-    Button* clearButton;
+    struct LogEntryColor {
+        double r,g,b;
+        bool colorSet;
 
-public:
+        LogEntryColor()
+        : r(0)
+        , g(0)
+        , b(0)
+        , colorSet(false) {}
+    };
+    // A String identifying the context of the message, e.g: the name of a node or when loading a project, etc..
+    QString context;
 
-    LogWindow(QWidget* parent = 0);
+    // The actual message
+    QString message;
 
-    void displayLog(const std::list<LogEntry>& log);
+    // If true, the message is assumed to using html syntax
+    bool isHtml;
 
-public Q_SLOTS:
+    // Color identifying the entry
+    LogEntryColor color;
 
-    void onClearButtonClicked();
-
-    void onOkButtonClicked();
-};
-
-class LogWindowModal
-: public QDialog
-{
-    Q_OBJECT
-
-    QVBoxLayout* mainLayout;
-    QTextBrowser* textBrowser;
-    Button* okButton;
-
-public:
-
-    LogWindowModal(const QString& log, QWidget* parent = 0);
-
-public Q_SLOTS:
-
-    void onOkButtonClicked();
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Gui_LogWindow_h
+
+#endif // LOGENTRY_H

@@ -280,8 +280,8 @@ KnobSerialization::restoreExpressions(const KnobPtr & knob,
             }
         }
     } catch (const std::exception& e) {
-        QString err = QString::fromUtf8("Failed to restore expression on %1: %2").arg( QString::fromUtf8( knob->getName().c_str() ) ).arg( QString::fromUtf8( e.what() ) );
-        appPTR->writeToErrorLog_mt_safe(err);
+        QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ),err);
     }
 }
 

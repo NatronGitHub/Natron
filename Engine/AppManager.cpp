@@ -1325,8 +1325,8 @@ AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
     }
 }
 
-static bool
-findAndRunScriptFile(const QString& path,
+bool
+AppManager::findAndRunScriptFile(const QString& path,
                      const QStringList& files,
                      const QString& script)
 {
@@ -1385,11 +1385,8 @@ findAndRunScriptFile(const QString& path,
 
 
                 if ( !error.empty() ) {
-                    QString message( QString::fromUtf8("Failed to load ") );
-                    message.append(absolutePath);
-                    message.append( QString::fromUtf8(": ") );
-                    message.append( QString::fromUtf8( error.c_str() ) );
-                    appPTR->writeToErrorLog_mt_safe(message);
+                    QString message(tr("Failed to load %1: %2").arg(absolutePath).arg(QString::fromUtf8( error.c_str() )) );
+                    appPTR->writeToErrorLog_mt_safe(tr("Python Script"), message, false);
                     std::cerr << message.toStdString() << std::endl;
 
                     return false;
@@ -1512,8 +1509,8 @@ addToPythonPathFunctor(const QDir& directory)
     }
 }
 
-static void
-findAllScriptsRecursive(const QDir& directory,
+void
+AppManager::findAllScriptsRecursive(const QDir& directory,
                         QStringList& allPlugins,
                         QStringList *foundInit,
                         QStringList *foundInitGui)
@@ -1582,12 +1579,12 @@ AppManager::loadPythonGroups()
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
+            QString message = tr("Failed to import PySide.QtCore, make sure it is bundled with your Natron installation "
                                      "or reachable through the Python path. "
                                      "Note that Natron disables usage "
-                                     "of site-packages).").toStdString();
-            std::cerr << message << std::endl;
-            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+                                 "of site-packages).");
+            std::cerr << message.toStdString() << std::endl;
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtCore"),message);
         }
     }
 
@@ -1600,9 +1597,9 @@ AppManager::loadPythonGroups()
         }
         bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(s, &err, 0);
         if (!ok) {
-            std::string message = tr("Failed to import PySide.QtGui").toStdString();
-            std::cerr << message << std::endl;
-            appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+            QString message = tr("Failed to import PySide.QtGui");
+            std::cerr << message.toStdString() << std::endl;
+            appPTR->writeToErrorLog_mt_safe(QLatin1String("PySide.QtGui"),message);
         }
     }
 
@@ -2276,24 +2273,37 @@ AppManager::getTotalNodesMemoryRegistered() const
     return _imp->_nodesGlobalMemoryUse;
 }
 
-QString
-AppManager::getErrorLog_mt_safe() const
+void
+AppManager::getErrorLog_mt_safe(std::list<LogEntry>* entries) const
 {
     QMutexLocker l(&_imp->errorLogMutex);
-
-    return _imp->errorLog;
+    *entries = _imp->errorLog;
 }
 
 void
-AppManager::writeToErrorLog_mt_safe(const QString & str)
+AppManager::writeToErrorLog_mt_safe(const QString& context, const QString & str, bool isHtml, const LogEntry::LogEntryColor& color)
 {
     QMutexLocker l(&_imp->errorLogMutex);
-
-    _imp->errorLog.append( str + QChar::fromLatin1('\n') + QChar::fromLatin1('\n') );
+    LogEntry e;
+    e.context = context;
+    e.message = str;
+    e.isHtml = isHtml;
+    e.color = color;
+    _imp->errorLog.push_back(e);
 }
 
 void
-AppManager::clearOfxLog_mt_safe()
+AppManager::showErrorLog()
+{
+    std::list<LogEntry> log;
+    getErrorLog_mt_safe(&log);
+    for (std::list<LogEntry>::iterator it = log.begin(); it != log.end(); ++it) {
+        std::cout << it->context.toStdString() << ": " << it->message.toStdString() <<  std::endl;
+    }
+}
+
+void
+AppManager::clearErrorLog_mt_safe()
 {
     QMutexLocker l(&_imp->errorLogMutex);
 
@@ -3641,8 +3651,8 @@ getGroupInfosInternal(const std::string& modulePath,
     std::string toRun = script.arg( QString::fromUtf8( pythonModule.c_str() ) ).toStdString();
     std::string err;
     if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(toRun, &err, 0) ) {
-        QString logStr = QCoreApplication::translate("AppManager", "%1 was not recognized as a PyPlug: %2").arg( QString::fromUtf8( pythonModule.c_str() ) ).arg( QString::fromUtf8( err.c_str() ) );
-        appPTR->writeToErrorLog_mt_safe(logStr);
+        QString logStr = QCoreApplication::translate("AppManager", "Was not recognized as a PyPlug: %1").arg( QString::fromUtf8( err.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(pythonModule.c_str()), logStr);
 
         return false;
     }

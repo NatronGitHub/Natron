@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
+#include <QThread>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>
@@ -113,13 +114,27 @@ Gui::setUndoRedoStackLimit(int limit)
 }
 
 void
+Gui::onShowLogOnMainThreadReceived()
+{
+    std::list<LogEntry> log;
+    appPTR->getErrorLog_mt_safe(&log);
+    assert(_imp->_errorLog);
+    _imp->_errorLog->displayLog(log);
+
+    if (!_imp->_errorLog->isVisible()) {
+        _imp->_errorLog->show();
+        _imp->_errorLog->raise();
+    }
+}
+
+void
 Gui::showErrorLog()
 {
-    QString log = appPTR->getErrorLog_mt_safe();
-    LogWindow lw(log, this);
-
-    lw.setWindowTitle( tr("Error Log") );
-    ignore_result( lw.exec() );
+    if (QThread::currentThread() == qApp->thread()) {
+        onShowLogOnMainThreadReceived();
+    } else {
+        Q_EMIT s_showLogOnMainThread();
+    }
 }
 
 void

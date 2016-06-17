@@ -599,7 +599,7 @@ public:
     /**
      * @brief Get the colour of the node as it appears on the nodegraph.
      **/
-    void getColor(double* r, double *g, double* b) const;
+    bool getColor(double* r, double *g, double* b) const;
     void setColor(double r, double g, double b);
 
 

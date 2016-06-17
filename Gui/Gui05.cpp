@@ -127,6 +127,8 @@ Gui::setupUi()
                               _imp->_layoutPropertiesBin,
                               this);
 
+    _imp->_errorLog = new LogWindow(0);
+    _imp->_errorLog->hide();
 
     createDefaultLayoutInternal(false);
 

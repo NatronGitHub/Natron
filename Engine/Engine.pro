@@ -312,6 +312,7 @@ HEADERS += \
     KnobTypes.h \
     LibraryBinary.h \
     Log.h \
+    LogEntry.h \
     LRUHashTable.h \
     Lut.h \
     Markdown.h \

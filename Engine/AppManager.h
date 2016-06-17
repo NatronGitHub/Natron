@@ -50,6 +50,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/ImageLocker.h"
+#include "Engine/LogEntry.h"
 #include "Engine/EngineFwd.h"
 
 /*macro to get the unique pointer to the controler*/
@@ -59,6 +60,8 @@ CLANG_DIAG_ON(deprecated)
 #define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
+
+class QDir;
 
 NATRON_NAMESPACE_ENTER;
 
@@ -302,13 +305,13 @@ public:
     {
     }
 
-    QString getErrorLog_mt_safe() const;
+    void getErrorLog_mt_safe(std::list<LogEntry>* entries) const;
 
-    void writeToErrorLog_mt_safe(const QString & str);
+    void writeToErrorLog_mt_safe(const QString& context, const QString & str, bool isHtml = false, const LogEntry::LogEntryColor& color = LogEntry::LogEntryColor());
 
-    void clearOfxLog_mt_safe();
+    void clearErrorLog_mt_safe();
 
-    virtual void showErrorLog() {}
+    virtual void showErrorLog();
 
     virtual void debugImage(const Image* /*image*/,
                             const RectI& /*roi*/,
@@ -647,6 +650,16 @@ protected:
     bool loadInternalAfterInitGui(const CLArgs& cl);
 
 private:
+
+    void findAllScriptsRecursive(const QDir& directory,
+                            QStringList& allPlugins,
+                            QStringList *foundInit,
+                            QStringList *foundInitGui);
+
+    bool findAndRunScriptFile(const QString& path,
+                         const QStringList& files,
+                         const QString& script);
+
 
     virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
 

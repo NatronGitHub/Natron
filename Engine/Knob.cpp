@@ -2926,14 +2926,12 @@ KnobHelper::setName(const std::string & name,
             PyObject* obj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(newPotentialQualifiedName, appPTR->getMainModule(), &isAttrDefined);
             Q_UNUSED(obj);
             if (isAttrDefined) {
-                std::stringstream ss;
-                ss << "A Python attribute with the same name (" << newPotentialQualifiedName << ") already exists.";
+                QString message = tr("A Python attribute with the name %1 already exists.").arg(QString::fromUtf8(newPotentialQualifiedName.c_str()));
                 if (throwExceptions) {
-                    throw std::runtime_error( ss.str() );
+                    throw std::runtime_error( message.toStdString() );
                 } else {
-                    std::string err = ss.str();
-                    appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( err.c_str() ) );
-                    std::cerr << err << std::endl;
+                    appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getName().c_str()), message );
+                    std::cerr << message.toStdString() << std::endl;
 
                     return;
                 }

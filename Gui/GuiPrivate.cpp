@@ -241,6 +241,7 @@ GuiPrivate::GuiPrivate(const GuiAppInstPtr& app,
     , _floatingWindows()
     , _settingsGui(0)
     , _projectGui(0)
+    , _errorLog(0)
     , _currentlyDraggedPanel(0)
     , _currentlyDraggedPanelInitialSize()
     , _aboutWindow(0)
