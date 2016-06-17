@@ -3082,9 +3082,7 @@ OfxGroupInstance::setOpen()
 {
     DYNAMIC_PROPERTY_CHECK();
     int opened = getProperties().getIntProperty(kOfxParamPropGroupOpen);
-#pragma message WARN("TODO: OfxGroupInstance::setOpen()")
-    qDebug() << "Open:" << opened;
-    //_groupKnob.lock()->setOpen(opened);
+    _groupKnob.lock()->setValue((bool)opened);
 }
 
 ////////////////////////// OfxPageInstance /////////////////////////////////////////////////
