@@ -128,6 +128,7 @@ public:
                    Label* warningIndicator,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
+                   int lastKnobSpacing,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine);
 
     virtual bool shouldAddStretch() const { return true; }

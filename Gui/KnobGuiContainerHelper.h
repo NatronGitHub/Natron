@@ -329,6 +329,7 @@ private:
 
     KnobGuiPtr findKnobGuiOrCreate(const KnobPtr & knob,
                                    bool makeNewLine,
+                                   int lastKnobLineSpacing,
                                    QWidget* lastRowWidget,
                                    const KnobsVec& knobsOnSameLine);
 

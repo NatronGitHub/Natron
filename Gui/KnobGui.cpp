@@ -186,6 +186,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
                    Label* warningIndicator,
                    QHBoxLayout* layout,
                    bool isOnNewLine,
+                   int lastKnobSpacing,
                    const std::vector< boost::shared_ptr< KnobI > > & knobsOnSameLine)
 {
     _imp->guiRemoved = false;
@@ -207,7 +208,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
         if (isViewerParam) {
             spacing = _imp->container->getItemsSpacingOnSameLine();
         } else {
-            spacing = knob->getSpacingBetweenitems();
+            spacing = lastKnobSpacing;//knob->getSpacingBetweenitems();
             // Default sapcing is 0 on knobs, but use the default for the widget container so the UI doesn't appear cluttered
             // The minimum allowed spacing should be 1px
             if (spacing == 0) {

@@ -383,6 +383,7 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
 
     for (KnobsVec::const_iterator it2 = siblingsVec.begin(); it2 != siblingsVec.end(); ++it2) {
         bool makeNewLine = true;
+        int lastKnobSpacing = 0;
         KnobGroup *isGroup = dynamic_cast<KnobGroup*>( it2->get() );
 
         // A vector of all other knobs on the same line
@@ -397,6 +398,7 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
         if (!isGroup) {
             if ( ( prev != siblingsVec.end() ) && !(*prev)->isNewLineActivated() ) {
                 makeNewLine = false;
+                lastKnobSpacing = (*prev)->getSpacingBetweenitems();
             }
             if (isParentGroup) {
                 // If the parent knob is a group, knobs on the same line have to be found in the children
@@ -410,7 +412,7 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
         }
 
         // Create this knob
-        KnobGuiPtr newGui = findKnobGuiOrCreate(*it2, makeNewLine, lastRowWidget, knobsOnSameLine);
+        KnobGuiPtr newGui = findKnobGuiOrCreate(*it2, makeNewLine, lastKnobSpacing, lastRowWidget, knobsOnSameLine);
 
         // Childrens cannot be on the same row than their parent
         if (!isGroup && newGui) {
@@ -454,7 +456,7 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
     }
     for (std::list<boost::shared_ptr<KnobPage> >::iterator it = pages.begin(); it != pages.end(); ++it) {
         // Create page
-        KnobGuiPtr knobGui = findKnobGuiOrCreate( *it, true /*makeNewLine*/, 0 /*lastRowWidget*/, KnobsVec() /*knobsOnSameLine*/);
+        KnobGuiPtr knobGui = findKnobGuiOrCreate( *it, true /*makeNewLine*/, 0/*lastKnobSpacing*/,  0 /*lastRowWidget*/, KnobsVec() /*knobsOnSameLine*/);
         Q_UNUSED(knobGui);
 
         // Create its children
@@ -504,6 +506,7 @@ workAroundGridLayoutBug(QGridLayout* layout)
 KnobGuiPtr
 KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
                                             bool makeNewLine,
+                                            int lastKnobLineSpacing,
                                             QWidget* lastRowWidget,
                                             const KnobsVec& knobsOnSameLine)
 {
@@ -555,7 +558,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
 
     // If this knob is within a group, make sure the group is created so far
     if (parentIsGroup) {
-        parentGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentKnob, true, 0, KnobsVec() ).get() );
+        parentGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentKnob, true, 0, 0, KnobsVec() ).get() );
     }
 
     // So far the knob could have no parent, in which case we force it to be in the default page.
@@ -772,7 +775,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
 
             assert(parentParentIsGroup || parentParentIsPage);
             if (parentParentIsGroup) {
-                KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentParent, true, 0, KnobsVec() ).get() );
+                KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( findKnobGuiOrCreate( parentParent, true, 0,  0, KnobsVec() ).get() );
                 assert(parentParentGroupGui);
                 if (parentParentGroupGui) {
                     TabGroup* groupAsTab = parentParentGroupGui->getOrCreateTabWidget();
@@ -789,7 +792,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
         }
 
         // Fill the fieldLayout with the widgets
-        ret->createGUI(fieldContainer, labelContainer, label, warningLabel, fieldLayout, makeNewLine, knobsOnSameLine);
+        ret->createGUI(fieldContainer, labelContainer, label, warningLabel, fieldLayout, makeNewLine, lastKnobLineSpacing, knobsOnSameLine);
 
         ret->setEnabledSlot();
 
