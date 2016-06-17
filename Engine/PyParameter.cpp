@@ -1702,7 +1702,7 @@ GroupParam::~GroupParam()
 void
 GroupParam::addParam(const Param* param)
 {
-    if ( !param || !param->getInternalKnob()->isUserKnob() || param->getInternalKnob()->getParentKnob() ) {
+    if ( !param || !param->getInternalKnob()->isUserKnob() ) {
         return;
     }
     _groupKnob.lock()->addKnob( param->getInternalKnob() );
@@ -1744,7 +1744,7 @@ PageParam::~PageParam()
 void
 PageParam::addParam(const Param* param)
 {
-    if ( !param || !param->getInternalKnob()->isUserKnob() || param->getInternalKnob()->getParentKnob() ) {
+    if ( !param || !param->getInternalKnob()->isUserKnob() ) {
         return;
     }
     _pageKnob.lock()->addKnob( param->getInternalKnob() );
