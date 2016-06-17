@@ -421,6 +421,13 @@ private:
 
     NodeGraph* _graph;
     std::list<boost::weak_ptr<NodeGui> > _originalNodes;
+    struct OutputLink
+    {
+        int inputIdx;
+        NodeWPtr inputNode;
+    };
+    typedef std::map<NodeWPtr, OutputLink> OutputLinksMap;
+    OutputLinksMap _outputLinks;
     boost::weak_ptr<NodeGui> _group;
     bool _firstRedoCalled;
     bool _isRedone;
