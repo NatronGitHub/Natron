@@ -1418,17 +1418,17 @@ Gui::saveWarning()
 }
 
 void
-Gui::loadProjectGui(boost::archive::xml_iarchive & obj) const
+Gui::loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & obj) const
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->load(obj /*, version*/);
+    _imp->_projectGui->load(isAutosave, obj);
 }
 
 void
 Gui::saveProjectGui(boost::archive::xml_oarchive & archive)
 {
     assert(_imp->_projectGui);
-    _imp->_projectGui->save(archive /*, version*/);
+    _imp->_projectGui->save(archive);
 }
 
 bool

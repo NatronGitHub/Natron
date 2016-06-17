@@ -160,6 +160,7 @@ class KnobSerialization;
 class KnobString;
 class KnobTable;
 class LibraryBinary;
+struct LogEntry;
 class Node;
 class NodeCollection;
 class NodeGroup;

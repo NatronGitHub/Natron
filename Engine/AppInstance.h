@@ -264,7 +264,7 @@ public:
         return eStandardButtonYes;
     }
 
-    virtual void loadProjectGui(boost::archive::xml_iarchive & /*archive*/) const
+    virtual void loadProjectGui(bool isAutosave, boost::archive::xml_iarchive & /*archive*/) const
     {
     }
 

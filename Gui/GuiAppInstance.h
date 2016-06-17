@@ -135,7 +135,7 @@ public:
                                               StandardButtons buttons,
                                               StandardButtonEnum defaultButton,
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void loadProjectGui(boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
+    virtual void loadProjectGui(bool isAutosave,  boost::archive::xml_iarchive & archive) const OVERRIDE FINAL;
     virtual void saveProjectGui(boost::archive::xml_oarchive & archive) OVERRIDE FINAL;
     virtual void notifyRenderStarted(const QString & sequenceName,
                                      int firstFrame, int lastFrame,

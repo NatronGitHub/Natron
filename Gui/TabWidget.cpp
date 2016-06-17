@@ -2008,7 +2008,7 @@ TabWidget::setObjectName_mt_safe(const QString & str)
     std::string err;
     bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0);
     if (!ok) {
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( err.c_str() ) );
+        _imp->gui->getApp()->appendToScriptEditor(err);
     }
 }
 

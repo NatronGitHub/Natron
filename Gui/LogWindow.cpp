@@ -34,22 +34,22 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/Image.h"
 #include "Gui/Button.h"
 #include "Gui/GuiApplicationManager.h" // appPTR
 
 NATRON_NAMESPACE_ENTER;
 
-LogWindow::LogWindow(const QString & log,
-                     QWidget* parent)
-    : QDialog(parent)
+LogWindow::LogWindow(QWidget* parent)
+    : QWidget(parent)
 {
+    setWindowTitle( tr("Error Log") );
+    
     mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     textBrowser = new QTextBrowser(this);
     textBrowser->setOpenExternalLinks(true);
-    textBrowser->setText(log);
-
     mainLayout->addWidget(textBrowser);
 
     QWidget* buttonsContainer = new QWidget(this);
@@ -61,15 +61,91 @@ LogWindow::LogWindow(const QString & log,
     buttonsLayout->addStretch();
     okButton = new Button(tr("Ok"), buttonsContainer);
     buttonsLayout->addWidget(okButton);
-    QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(accept()) );
+    QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
     mainLayout->addWidget(buttonsContainer);
 }
+static void
+replaceLineBreaksWithHtmlParagraph(QString &txt)
+{
+    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br />") );
+}
+
+void
+LogWindow::displayLog(const std::list<LogEntry>& log)
+{
+    if (log.empty()) {
+        textBrowser->clear();
+        return;
+    }
+    QString content;
+    std::list<LogEntry>::const_iterator next = log.begin();
+    ++next;
+
+    for (std::list<LogEntry>::const_iterator it = log.begin(); it!=log.end(); ++it) {
+        int r = Image::clamp(it->color.r * 255., 0., 1.);
+        int g = Image::clamp(it->color.g * 255., 0., 1.);
+        int b = Image::clamp(it->color.b * 255., 0., 1.);
+        content.append(QString::fromUtf8("<font color=rgb(%1,%2,%3)><b>").arg(r).arg(g).arg(b));
+        content.append(it->context);
+        content.append(QLatin1String(": "));
+        content.append(QString::fromUtf8("</b></font>"));
+        if (it->isHtml) {
+            content.append(it->message);
+        } else {
+            QString m(it->message);
+            replaceLineBreaksWithHtmlParagraph(m);
+            content.append(m);
+        }
+        if (next != log.end()) {
+            content.append(QString::fromUtf8("<br />"));
+            content.append(QString::fromUtf8("<br />"));
+            ++next;
+        }
+    }
+    textBrowser->setHtml(content);
+    okButton->setFocus();
+}
+
 
 void
 LogWindow::onClearButtonClicked()
 {
-    appPTR->clearOfxLog_mt_safe();
+    appPTR->clearErrorLog_mt_safe();
     textBrowser->clear();
+}
+
+void
+LogWindow::onOkButtonClicked()
+{
+    hide();
+}
+
+LogWindowModal::LogWindowModal(const QString& log, QWidget* parent)
+: QDialog(parent)
+{
+
+    mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    textBrowser = new QTextBrowser(this);
+    textBrowser->setOpenExternalLinks(true);
+    textBrowser->setPlainText(log);
+    mainLayout->addWidget(textBrowser);
+
+    QWidget* buttonsContainer = new QWidget(this);
+    QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
+    buttonsLayout->addStretch();
+    okButton = new Button(tr("Ok"), buttonsContainer);
+    buttonsLayout->addWidget(okButton);
+    buttonsLayout->addStretch();
+    QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
+    mainLayout->addWidget(buttonsContainer);
+}
+
+void
+LogWindowModal::onOkButtonClicked()
+{
+    hide();
 }
 
 NATRON_NAMESPACE_EXIT;

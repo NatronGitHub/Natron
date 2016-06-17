@@ -499,19 +499,19 @@ OfxHost::vmessage(const char* msgtype,
     std::string type(msgtype);
 
     if (type == kOfxMessageLog) {
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe( tr("Plug-in"), QString::fromUtf8( message.c_str() ) );
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
         //Dialogs::errorDialog(NATRON_APPLICATION_NAME, message);
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe(tr("Plug-in"), QString::fromUtf8( message.c_str() ) );
     } else if (type == kOfxMessageWarning) {
         ///It seems that the only errors or warning that passes here are exceptions thrown by plug-ins
         ///(mainly Sapphire) while aborting a render. Instead of spamming the user of meaningless dialogs,
         ///just write to the log instead.
         //        Dialogs::warningDialog(NATRON_APPLICATION_NAME, message);
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+        appPTR->writeToErrorLog_mt_safe( tr("Plug-in"), QString::fromUtf8( message.c_str() ) );
     } else if (type == kOfxMessageMessage) {
         Dialogs::informationDialog(NATRON_APPLICATION_NAME, message);
     } else if (type == kOfxMessageQuestion) {
@@ -810,7 +810,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
             try {
                 OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
             } catch (const std::exception& e) {
-                appPTR->writeToErrorLog_mt_safe( tr("Failure to read OpenFX plug-ins cache: %1").arg( QString::fromUtf8( e.what() ) ) );
+                appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"),tr("Failure to read OpenFX plug-ins cache: %1").arg( QString::fromUtf8( e.what() ) ) );
             }
         }
     }

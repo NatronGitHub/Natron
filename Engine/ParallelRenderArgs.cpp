@@ -668,7 +668,7 @@ getAllUpstreamNodesRecursiveWithDependencies_internal(const NodePtr& node,
         for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
             FindDependenciesNode n;
             n.recursed = false;
-            n.visitCounter = 1;
+            n.visitCounter = 0;
             finalNodes.insert(std::make_pair(node, n));
         }
     }

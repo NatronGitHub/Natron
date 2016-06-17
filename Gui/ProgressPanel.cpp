@@ -636,9 +636,9 @@ ProgressPanel::onItemRightClicked(TableItem* item)
     }
     if ( (triggered == showLogAction) && showLogAction ) {
         const QString& log = hasProcess->getProcessLog();
-        LogWindow window(log, this);
+        LogWindowModal window(log,this);
         window.setWindowTitle( tr("Background Render Log") );
-        ignore_result( window.exec() );
+        ignore_result(window.exec());
     }
 }
 

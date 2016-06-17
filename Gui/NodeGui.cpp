@@ -123,12 +123,10 @@ using std::make_pair;
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
-static QString
-replaceLineBreaksWithHtmlParagraph(QString txt)
+static void
+replaceLineBreaksWithHtmlParagraph(QString &txt)
 {
-    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br>") );
-
-    return txt;
+    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br >") );
 }
 
 static void
@@ -391,7 +389,7 @@ NodeGui::restoreStateAfterCreation()
     }
     if ( !internalNode->isMultiInstance() ) {
         _nodeLabel = QString::fromUtf8( internalNode->getNodeExtraLabel().c_str() );
-        _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel);
+        replaceLineBreaksWithHtmlParagraph(_nodeLabel);
     }
     ///Refresh the name in the line edit
     onInternalNameChanged( QString::fromUtf8( internalNode->getLabel().c_str() ) );
@@ -2990,7 +2988,7 @@ NodeGui::onNodeExtraLabelChanged(const QString & label)
         ///hence we remove it
         _nodeLabel = KnobGuiString::removeNatronHtmlTag(_nodeLabel);
     }
-    _nodeLabel = replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
+    replaceLineBreaksWithHtmlParagraph(_nodeLabel); ///< maybe we should do this in the knob itself when the user writes ?
     setNameItemHtml(QString::fromUtf8( node->getLabel().c_str() ), _nodeLabel);
 
     //For the merge node, set its operator icon

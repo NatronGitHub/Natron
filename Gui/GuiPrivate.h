@@ -46,6 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/GuiDefines.h"
 #include "Gui/RegisteredTabs.h"
 #include "Gui/GuiFwd.h"
+#include "Gui/LogWindow.h"
 
 
 #define kPropertiesBinName "properties"
@@ -222,6 +223,9 @@ public:
 
     ///The project Gui (stored in the properties pane)
     ProjectGui* _projectGui;
+
+    ///The error log window
+    LogWindow* _errorLog;
 
     ///ptr to the currently dragged tab for d&d purpose.
     PanelWidget* _currentlyDraggedPanel;

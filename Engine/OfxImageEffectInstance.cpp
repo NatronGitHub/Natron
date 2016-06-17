@@ -223,17 +223,24 @@ OfxImageEffectInstance::vmessage(const char* msgtype,
     assert(format);
     std::string message = string_format(format, args);
     std::string type(msgtype);
-
+    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    if (!effect) {
+        return kOfxStatFailed;
+    }
     if (type == kOfxMessageLog) {
-        appPTR->writeToErrorLog_mt_safe( QString::fromUtf8( message.c_str() ) );
+        LogEntry::LogEntryColor c;
+        if (effect->getNode()->getColor(&c.r, &c.g, &c.b)) {
+            c.colorSet = true;
+        }
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(effect->getNode()->getLabel().c_str()), QString::fromUtf8( message.c_str() ), false, c);
     } else if ( (type == kOfxMessageFatal) || (type == kOfxMessageError) ) {
-        _ofxEffectInstance.lock()->message(eMessageTypeError, message);
+        effect->message(eMessageTypeError, message);
     } else if (type == kOfxMessageWarning) {
-        _ofxEffectInstance.lock()->message(eMessageTypeWarning, message);
+        effect->message(eMessageTypeWarning, message);
     } else if (type == kOfxMessageMessage) {
-        _ofxEffectInstance.lock()->message(eMessageTypeInfo, message);
+        effect->message(eMessageTypeInfo, message);
     } else if (type == kOfxMessageQuestion) {
-        if ( _ofxEffectInstance.lock()->message(eMessageTypeQuestion, message) ) {
+        if ( effect->message(eMessageTypeQuestion, message) ) {
             return kOfxStatReplyYes;
         } else {
             return kOfxStatReplyNo;

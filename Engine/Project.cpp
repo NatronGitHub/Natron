@@ -229,11 +229,7 @@ Project::loadProject(const QString & path,
 
         bool mustSave = false;
         if ( !loadProjectInternal(realPath, realName, isAutoSave, isUntitledAutosave, &mustSave) ) {
-            if ( !getApp()->isBackground() ) {
-                appPTR->showErrorLog();
-            } else {
-                std::cerr << appPTR->getErrorLog_mt_safe().toStdString() << std::endl;
-            }
+            appPTR->showErrorLog();
         } else if (mustSave) {
             saveProject(realPath, realName, 0);
         }
@@ -318,7 +314,7 @@ Project::loadProjectInternal(const QString & path,
         } // __raii_loadingProjectInternal__
 
         if (!bgProject) {
-            getApp()->loadProjectGui(iArchive);
+            getApp()->loadProjectGui(isAutoSave, iArchive);
         }
     } catch (...) {
         const ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
