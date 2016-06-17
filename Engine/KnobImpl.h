@@ -2412,6 +2412,46 @@ Knob<std::string>::getIntegrateFromTimeToTime(double /*time1*/,
     throw std::invalid_argument("Knob<string>::getIntegrateFromTimeToTime() not available");
 }
 
+
+template<>
+void
+Knob<double>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
+{
+    KnobI::removeAnimation(ViewSpec::all(), dimension);
+    double defaultV;
+    {
+        QMutexLocker l(&_valueMutex);
+        defaultV = _defaultValues[dimension].value;
+    }
+
+    ///A Knob<double> is not always a KnobDouble (it can also be a KnobColor)
+    KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
+
+
+    clearExpression(dimension, true);
+    resetExtraToDefaultValue(dimension);
+    // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem
+    if (isDouble) {
+        if ( isDouble->getDefaultValuesAreNormalized() ) {
+            if (isDouble->getValueIsNormalized(dimension) == eValueIsNormalizedNone) {
+                // default is normalized, value is non-normalized: denormalize it!
+                double time = getCurrentTime();
+                defaultV = isDouble->denormalize(dimension, time, defaultV);
+            }
+        } else {
+            if (isDouble->getValueIsNormalized(dimension) != eValueIsNormalizedNone) {
+                // default is non-normalized, value is normalized: normalize it!
+                double time = getCurrentTime();
+                defaultV = isDouble->normalize(dimension, time, defaultV);
+            }
+        }
+    }
+    ignore_result( setValue(defaultV, ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault, NULL) );
+    if (_signalSlotHandler) {
+        _signalSlotHandler->s_valueChanged(ViewSpec::all(), dimension, eValueChangedReasonRestoreDefault);
+    }
+}
+
 template<typename T>
 void
 Knob<T>::resetToDefaultValueWithoutSecretNessAndEnabledNess(int dimension)
