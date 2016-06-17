@@ -689,6 +689,7 @@ public:
     virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+    virtual void setOpen() OVERRIDE FINAL;
 
 private:
     boost::weak_ptr<KnobGroup> _groupKnob;
