@@ -1512,7 +1512,11 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     ImagePtr tmpImg;
     if (useTmpImage) {
         tmpImg.reset( new Image( ImageComponents::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM) );
-        tmpImg->pasteFrom(*image, bounds);
+        if (tmpImg->getComponents() == image->getComponents()) {
+            tmpImg->pasteFrom(*image, bounds);
+        } else {
+            image->convertToFormat(bounds, eViewerColorSpaceLinear, eViewerColorSpaceLinear, -1, false, false, tmpImg.get());
+        }
     }
 
     Image::ReadAccess racc( tmpImg ? tmpImg.get() : image.get() );
