@@ -4055,7 +4055,10 @@ EffectInstance::dettachAllOpenGLContexts()
             continue;
         }
         context->setContextCurrentNoRender();
-        dettachOpenGLContext(it->second);
+        if (it->second.use_count() == 1) {
+            // If no render is using it, dettach the context
+            dettachOpenGLContext(it->second);
+        }
     }
     if ( !_imp->attachedContexts.empty() ) {
         OSGLContext::unsetCurrentContextNoRender();
@@ -4067,7 +4070,7 @@ EffectInstance::dettachAllOpenGLContexts()
  * @brief This function calls the impementation specific dettachOpenGLContext()
  **/
 StatusEnum
-EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext)
+EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectInstance::OpenGLContextEffectDataPtr& data)
 {
     NON_RECURSIVE_ACTION();
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
@@ -4076,19 +4079,11 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext)
         locker.reset( new QMutexLocker(&_imp->attachedContextsMutex) );
     }
 
-    bool mustUnlock = false;
-    EffectInstance::OpenGLContextEffectDataPtr data;
+
+    bool mustUnlock = data->getHasTakenLock();
     std::map<boost::weak_ptr<OSGLContext>, EffectInstance::OpenGLContextEffectDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
     if ( found != _imp->attachedContexts.end() ) {
-        data = found->second;
-        mustUnlock = data->getHasTakenLock();
         _imp->attachedContexts.erase(found);
-    } else {
-        if (!concurrentGLRender) {
-            _imp->attachedContextsMutex.unlock();
-        }
-
-        return eStatusOK;
     }
 
     StatusEnum ret = dettachOpenGLContext(data);

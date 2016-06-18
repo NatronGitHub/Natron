@@ -1713,7 +1713,7 @@ public:
     /**
      * @brief This function calls the impementation specific dettachOpenGLContext()
      **/
-    StatusEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext);
+    StatusEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectInstance::OpenGLContextEffectDataPtr& data);
 
     /**
      * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.

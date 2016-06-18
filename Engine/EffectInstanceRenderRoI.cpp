@@ -1630,8 +1630,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                 if (storage == eStorageModeGLTex) {
                     // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
                     // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
-                    if ( planesToRender->glContextData->getHasTakenLock() || !supportsConcurrentOpenGLRenders() ) {
-                        renderInstance->dettachOpenGLContext_public(glContext);
+                    // If we were the last render to use this context, clear the data now
+                    if ( planesToRender->glContextData->getHasTakenLock() || !supportsConcurrentOpenGLRenders() || planesToRender->glContextData.use_count() == 1) {
+                        renderInstance->dettachOpenGLContext_public(glContext, planesToRender->glContextData);
                     }
                 }
             }
