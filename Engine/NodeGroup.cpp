@@ -2455,8 +2455,9 @@ exportKnobLinks(int indentLevel,
             } else {
                 aliasName = groupName + QString::fromUtf8( aliasHolder->getNode()->getScriptName_mt_safe().c_str() );
             }
-            aliasName += QChar::fromLatin1('.');
-            aliasName += QString::fromUtf8( alias->getName().c_str() );
+            aliasName += QString::fromUtf8(".getParam(");
+            aliasName += ESC(QString::fromUtf8( alias->getName().c_str() ));
+            aliasName += QString::fromUtf8(")");
 
             WRITE_INDENT(indentLevel); WRITE_STRING( aliasName + QString::fromUtf8(".setAsAlias(param)") );
         } else {
@@ -2492,8 +2493,9 @@ exportKnobLinks(int indentLevel,
                     } else {
                         masterName = groupName + QString::fromUtf8( masterHolder->getNode()->getScriptName_mt_safe().c_str() );
                     }
-                    masterName += QLatin1Char('.');
-                    masterName += QString::fromUtf8( master.second->getName().c_str() );
+                    masterName += QLatin1String(".getParam(");
+                    masterName += ESC(QString::fromUtf8( master.second->getName().c_str() ));
+                    masterName += QLatin1String(")");
 
 
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.slaveTo(") +  masterName + QString::fromUtf8(", ") +

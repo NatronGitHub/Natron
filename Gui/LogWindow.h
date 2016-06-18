@@ -58,6 +58,10 @@ public Q_SLOTS:
     void onClearButtonClicked();
 
     void onOkButtonClicked();
+
+private:
+
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 class LogWindowModal
@@ -76,6 +80,10 @@ public:
 public Q_SLOTS:
 
     void onOkButtonClicked();
+
+private:
+
+    virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
 };
 
 NATRON_NAMESPACE_EXIT;

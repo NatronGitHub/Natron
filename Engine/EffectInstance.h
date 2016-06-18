@@ -611,6 +611,7 @@ public:
     {
         Node* _node;
         bool _didEmit;
+        bool _didGroupEmit;
 
 public:
 

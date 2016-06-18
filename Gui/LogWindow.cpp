@@ -30,7 +30,9 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QVBoxLayout>
+#include <QScrollBar>
 #include <QTextBrowser>
+#include <QKeyEvent>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -56,10 +58,12 @@ LogWindow::LogWindow(QWidget* parent)
     QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
 
     clearButton = new Button(tr("Clear"), buttonsContainer);
+    clearButton->setFocusPolicy(Qt::TabFocus);
     buttonsLayout->addWidget(clearButton);
     QObject::connect( clearButton, SIGNAL(clicked()), this, SLOT(onClearButtonClicked()) );
     buttonsLayout->addStretch();
     okButton = new Button(tr("Ok"), buttonsContainer);
+    okButton->setFocusPolicy(Qt::TabFocus);
     buttonsLayout->addWidget(okButton);
     QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
     mainLayout->addWidget(buttonsContainer);
@@ -104,6 +108,7 @@ LogWindow::displayLog(const std::list<LogEntry>& log)
     }
     textBrowser->setHtml(content);
     okButton->setFocus();
+    textBrowser->verticalScrollBar()->setValue( textBrowser->verticalScrollBar()->maximum() );
 }
 
 
@@ -118,6 +123,17 @@ void
 LogWindow::onOkButtonClicked()
 {
     hide();
+}
+
+void
+LogWindow::keyPressEvent(QKeyEvent* e)
+{
+    Qt::Key k = (Qt::Key)e->key();
+    if (k == Qt::Key_Return || k == Qt::Key_Enter || k == Qt::Key_Escape) {
+        hide();
+    } else {
+        QWidget::keyPressEvent(e);
+    }
 }
 
 LogWindowModal::LogWindowModal(const QString& log, QWidget* parent)
@@ -136,6 +152,7 @@ LogWindowModal::LogWindowModal(const QString& log, QWidget* parent)
     QHBoxLayout* buttonsLayout = new QHBoxLayout(buttonsContainer);
     buttonsLayout->addStretch();
     okButton = new Button(tr("Ok"), buttonsContainer);
+    okButton->setFocusPolicy(Qt::TabFocus);
     buttonsLayout->addWidget(okButton);
     buttonsLayout->addStretch();
     QObject::connect( okButton, SIGNAL(clicked()), this, SLOT(onOkButtonClicked()) );
@@ -148,6 +165,16 @@ LogWindowModal::onOkButtonClicked()
     hide();
 }
 
+void
+LogWindowModal::keyPressEvent(QKeyEvent* e)
+{
+    Qt::Key k = (Qt::Key)e->key();
+    if (k == Qt::Key_Return || k == Qt::Key_Enter || k == Qt::Key_Escape) {
+        hide();
+    } else {
+        QDialog::keyPressEvent(e);
+    }
+}
 NATRON_NAMESPACE_EXIT;
 
 NATRON_NAMESPACE_USING;

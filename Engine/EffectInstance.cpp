@@ -1384,14 +1384,33 @@ EffectInstance::getFrameRange(double *first,
 
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
     : _node(node)
+    , _didGroupEmit(false)
 {
     _didEmit = node->notifyRenderingStarted();
+
+    // If the node is in a group, notify also the group
+    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    if (group) {
+        NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
+        if (isGroupNode) {
+            _didGroupEmit = isGroupNode->getNode()->notifyRenderingStarted();
+        }
+    }
 }
 
 EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
 {
     if (_didEmit) {
         _node->notifyRenderingEnded();
+    }
+    if (_didGroupEmit) {
+        boost::shared_ptr<NodeCollection> group = _node->getGroup();
+        if (group) {
+            NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
+            if (isGroupNode) {
+                isGroupNode->getNode()->notifyRenderingEnded();
+            }
+        }
     }
 }
 
