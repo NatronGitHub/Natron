@@ -142,18 +142,21 @@ GPUContextPool::attachGLContextToRender(bool checkIfGLLoaded)
 
         // Cycle through all contexts for all renders
         OSGLContextPtr lastContext = _imp->lastUsedGLContext.lock();
-        assert(lastContext);
-        std::set<OSGLContextPtr>::iterator foundLast = _imp->glContextPool.find(lastContext);
-        assert( foundLast != _imp->glContextPool.end() );
-        if ( foundLast == _imp->glContextPool.end() ) {
-            throw std::logic_error("No context to attach");
+        if (!lastContext) {
+            newContext = *_imp->glContextPool.begin();
         } else {
-            std::set<OSGLContextPtr>::iterator next = foundLast;
-            ++next;
-            if ( next == _imp->glContextPool.end() ) {
-                next = _imp->glContextPool.begin();
+            std::set<OSGLContextPtr>::iterator foundLast = _imp->glContextPool.find(lastContext);
+            assert( foundLast != _imp->glContextPool.end() );
+            if ( foundLast == _imp->glContextPool.end() ) {
+                throw std::logic_error("No context to attach");
+            } else {
+                std::set<OSGLContextPtr>::iterator next = foundLast;
+                ++next;
+                if ( next == _imp->glContextPool.end() ) {
+                    next = _imp->glContextPool.begin();
+                }
+                newContext = *next;
             }
-            newContext = *next;
         }
     }
 
