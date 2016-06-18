@@ -89,7 +89,8 @@ LogWindow::displayLog(const std::list<LogEntry>& log)
         int r = Image::clamp(it->color.r * 255., 0., 1.);
         int g = Image::clamp(it->color.g * 255., 0., 1.);
         int b = Image::clamp(it->color.b * 255., 0., 1.);
-        content.append(QString::fromUtf8("<font color=rgb(%1,%2,%3)><b>").arg(r).arg(g).arg(b));
+        QColor c(r,g,b);
+        content.append(QString::fromUtf8("<font color=%1><b>").arg(c.name()));
         content.append(it->context);
         content.append(QLatin1String(": "));
         content.append(QString::fromUtf8("</b></font>"));
