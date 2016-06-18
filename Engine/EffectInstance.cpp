@@ -4060,6 +4060,7 @@ EffectInstance::dettachAllOpenGLContexts()
     if ( !_imp->attachedContexts.empty() ) {
         OSGLContext::unsetCurrentContextNoRender();
     }
+    _imp->attachedContexts.clear();
 }
 
 /**
