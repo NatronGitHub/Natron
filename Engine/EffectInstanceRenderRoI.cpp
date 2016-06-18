@@ -1552,14 +1552,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
              * Reasons to use a render clone is be because a plug-in is eRenderSafetyInstanceSafe or does not support
              * concurrent GL renders.
              **/
-            bool useRenderClone = safety == eRenderSafetyInstanceSafe || (storage == eStorageModeGLTex && !supportsConcurrentOpenGLRenders());
+            bool useRenderClone = safety == eRenderSafetyInstanceSafe || (safety != eRenderSafetyUnsafe && storage == eStorageModeGLTex && !supportsConcurrentOpenGLRenders());
             if (useRenderClone) {
                 renderInstance = getOrCreateRenderInstance();
             } else {
                 renderInstance = shared_from_this();
             }
             assert(renderInstance);
-
 
             if (safety == eRenderSafetyInstanceSafe) {
                 locker.reset( new QMutexLocker( &getNode()->getRenderInstancesSharedMutex() ) );
@@ -1636,7 +1635,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     }
                 }
             }
-
             if (useRenderClone) {
                 releaseRenderInstance(renderInstance);
             }
