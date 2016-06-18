@@ -923,7 +923,9 @@ GuiAppInstance::appendToScriptEditor(const std::string& str)
 void
 GuiAppInstance::printAutoDeclaredVariable(const std::string& str)
 {
-    _imp->_gui->printAutoDeclaredVariable(str);
+    if (_imp->_gui) {
+        _imp->_gui->printAutoDeclaredVariable(str);
+    }
 }
 
 void

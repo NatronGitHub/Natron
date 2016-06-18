@@ -1210,9 +1210,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
         // Add a libmv marker for all keyframes
         for (std::set<int>::iterator it2 = userKeys.begin(); it2 != userKeys.end(); ++it2) {
-            mv::Marker marker;
-            TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
-            trackContext->AddMarker(marker);
+
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
             if ( ( (frameStep > 0) && (*it2 <= start) ) || ( (frameStep < 0) && (*it2 >= start) ) ) {
                 previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, true) );
@@ -1224,38 +1222,65 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         std::set<double> centerKeys;
         t->natronMarker->getCenterKeyframes(&centerKeys);
 
-
         for (std::set<double>::iterator it2 = centerKeys.begin(); it2 != centerKeys.end(); ++it2) {
             if ( userKeys.find(*it2) != userKeys.end() ) {
                 continue;
             }
 
-            mv::Marker marker;
-            TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, *it2, frameStep, formatHeight, &marker);
-            assert(marker.source == mv::Marker::TRACKED);
-            trackContext->AddMarker(marker);
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
             if ( ( ( (frameStep > 0) && (*it2 < start) ) || ( (frameStep < 0) && (*it2 > start) ) ) ) {
                 previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, false) );
             }
         }
 
+
         // Taken from libmv, only initialize the filter to this amount of frames (max)
         const int max_frames_to_predict_from = 20;
         std::list<mv::Marker> previouslyComputedMarkersOrdered;
-        {
-            int i = 0;
-            for (PreviouslyTrackedFrameSet::reverse_iterator it = previousFramesOrdered.rbegin(); it != previousFramesOrdered.rend(); ++it, ++i) {
-                if (i == max_frames_to_predict_from) {
-                    break;
-                }
-                mv::Marker m;
-                if ( trackContext->GetMarker(0, it->frame, trackIndex, &m) ) {
-                    previouslyComputedMarkersOrdered.push_front(m);
-                } else {
-                    assert(false);
+
+        // Find the first keyframe that's not considered to go before start or end
+        PreviouslyTrackedFrameSet::iterator prevFramesIt = previousFramesOrdered.lower_bound(PreviouslyComputedTrackFrame(start, false));
+        if (frameStep < 0) {
+            if (prevFramesIt != previousFramesOrdered.end()) {
+                while (prevFramesIt != previousFramesOrdered.end() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+
+                    mv::Marker mvMarker;
+
+                    TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    trackContext->AddMarker(mvMarker);
+
+                    // insert in the front of the list so that the order is reversed
+                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+                    ++prevFramesIt;
                 }
             }
+            // previouslyComputedMarkersOrdered is now ordererd by decreasing order
+        } else {
+
+            if (prevFramesIt != previousFramesOrdered.end()) {
+                while (prevFramesIt != previousFramesOrdered.begin() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+
+                    mv::Marker mvMarker;
+
+                    TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    trackContext->AddMarker(mvMarker);
+
+                    // insert in the front of the list so that the order is reversed
+                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+                    --prevFramesIt;
+                }
+                if (prevFramesIt == previousFramesOrdered.begin() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
+                    mv::Marker mvMarker;
+
+                    TrackerContextPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    trackContext->AddMarker(mvMarker);
+
+                    // insert in the front of the list so that the order is reversed
+                    previouslyComputedMarkersOrdered.push_front(mvMarker);
+
+                }
+            }
+            // previouslyComputedMarkersOrdered is now ordererd by increasing order
         }
 
 
@@ -1264,29 +1289,15 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
         // Initialise the kalman state with the marker at the position
 
-        if (frameStep > 0) {
-            std::list<mv::Marker>::iterator mIt = previouslyComputedMarkersOrdered.begin();
-            t->mvState.Init(*mIt, frameStep);
-            ++mIt;
-            for (; mIt != previouslyComputedMarkersOrdered.end(); ++mIt) {
-                mv::Marker predictedMarker;
-                if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
-                    break;
-                } else {
-                    t->mvState.Update(*mIt);
-                }
-            }
-        } else {
-            std::list<mv::Marker>::reverse_iterator mIt = previouslyComputedMarkersOrdered.rbegin();
-            t->mvState.Init(*mIt, frameStep);
-            ++mIt;
-            for (; mIt != previouslyComputedMarkersOrdered.rend(); ++mIt) {
-                mv::Marker predictedMarker;
-                if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
-                    break;
-                } else {
-                    t->mvState.Update(*mIt);
-                }
+        std::list<mv::Marker>::iterator mIt = previouslyComputedMarkersOrdered.begin();
+        t->mvState.Init(*mIt, frameStep);
+        ++mIt;
+        for (; mIt != previouslyComputedMarkersOrdered.end(); ++mIt) {
+            mv::Marker predictedMarker;
+            if ( !t->mvState.PredictForward(mIt->frame, &predictedMarker) ) {
+                break;
+            } else {
+                t->mvState.Update(*mIt);
             }
         }
 
