@@ -1338,7 +1338,7 @@ Node::getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const
 void
 Node::declareRotoPythonField()
 {
-    if (!_imp->isPartOfProject) {
+    if (getScriptName_mt_safe().empty()) {
         return;
     }
     assert(_imp->rotoContext);
@@ -1361,7 +1361,7 @@ Node::declareRotoPythonField()
 void
 Node::declareTrackerPythonField()
 {
-    if (!_imp->isPartOfProject) {
+    if (getScriptName_mt_safe().empty()) {
         return;
     }
 
@@ -10159,7 +10159,7 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
 
     return;
 #endif
-    if (!_imp->isPartOfProject) {
+    if (getScriptName_mt_safe().empty()) {
         return;
     }
     PythonGILLocker pgl;
@@ -10195,7 +10195,7 @@ Node::setNodeVariableToPython(const std::string& oldName,
 
     return;
 #endif
-    if (!_imp->isPartOfProject) {
+    if (getScriptName_mt_safe().empty()) {
         return;
     }
     QString appID = QString::fromUtf8( getApp()->getAppIDString().c_str() );
@@ -10217,7 +10217,7 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
 
     return;
 #endif
-    if ( !_imp->isPartOfProject || nodeName.empty() ) {
+   if (getScriptName_mt_safe().empty()) {
         return;
     }
     if ( getParentMultiInstance() ) {
@@ -10253,7 +10253,7 @@ Node::declarePythonFields()
 
     return;
 #endif
-    if (!_imp->isPartOfProject) {
+    if (getScriptName_mt_safe().empty()) {
         return;
     }
     PythonGILLocker pgl;
@@ -10308,7 +10308,7 @@ Node::removeParameterFromPython(const std::string& parameterName)
 
     return;
 #endif
-    if (!_imp->isPartOfProject) {
+    if (getScriptName_mt_safe().empty()) {
         return;
     }
     PythonGILLocker pgl;
@@ -10377,7 +10377,7 @@ Node::Implementation::runOnNodeCreatedCBInternal(const std::string& cb,
 {
     std::vector<std::string> args;
     std::string error;
-    if (!_publicInterface->isPartOfProject()) {
+    if (_publicInterface->getScriptName_mt_safe().empty()) {
         return;
     }
     try {
@@ -10510,7 +10510,7 @@ void
 Node::Implementation::runOnNodeDeleteCB()
 {
 
-    if (!_publicInterface->isPartOfProject()) {
+    if (_publicInterface->getScriptName_mt_safe().empty()) {
         return;
     }
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeDeleteCB();

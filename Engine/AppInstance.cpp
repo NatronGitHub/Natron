@@ -149,6 +149,8 @@ public:
 
     //When a pyplug is created
     int _creatingGroup;
+    // True when a pyplug is being created internally without being shown to the user
+    bool _creatingInternalNode;
 
     //When a node is created, it gets appended to this list (since for a PyPlug more than 1 node can be created)
     std::list<NodePtr> _creatingNodeQueue;
@@ -171,6 +173,7 @@ public:
         , _projectCreatedWithLowerCaseIDs(false)
         , creatingGroupMutex()
         , _creatingGroup(0)
+        , _creatingInternalNode(false)
         , _creatingNodeQueue()
         , _creatingTree(0)
         , renderQueueMutex()
@@ -856,9 +859,7 @@ public:
 
 NodePtr
 AppInstance::createNodeFromPythonModule(Plugin* plugin,
-                                        const boost::shared_ptr<NodeCollection>& group,
-                                        CreateNodeReason reason,
-                                        const boost::shared_ptr<NodeSerialization>& serialization)
+                                        const CreateNodeArgs& args)
 
 {
     /*If the plug-in is a toolset, execute the toolset script and don't actually create a node*/
@@ -867,21 +868,24 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
 
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
+        if (_imp->_creatingGroup == 1) {
+            _imp->_creatingInternalNode = !args.createGui;
+        }
         CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
         NodePtr containerNode;
         if (!istoolsetScript) {
-            CreateNodeArgs groupArgs(QString::fromUtf8(PLUGINID_NATRON_GROUP), reason, group);
-            groupArgs.serialization = serialization;
+            CreateNodeArgs groupArgs = args;
+            groupArgs.pluginID = QString::fromUtf8(PLUGINID_NATRON_GROUP);
             containerNode = createNode(groupArgs);
             if (!containerNode) {
                 return containerNode;
             }
 
-            if ( (reason == eCreateNodeReasonUserCreate) || (reason == eCreateNodeReasonInternal) ) {
+            if ( (args.reason == eCreateNodeReasonUserCreate) || (args.reason == eCreateNodeReasonInternal) ) {
                 std::string containerName;
                 try {
-                    if (group) {
-                        group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(), &containerName);
+                    if (args.group) {
+                        args.group->initNodeName(plugin->getLabelWithoutSuffix().toStdString(), &containerName);
                     }
                     containerNode->setScriptName(containerName);
                     containerNode->setLabel(containerName);
@@ -935,13 +939,13 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
         }
 
         // If there's a serialization, restore the serialization of the group node because the Python script probably overriden any state
-        if (serialization) {
-            containerNode->loadKnobs(*serialization);
+        if (args.serialization) {
+            containerNode->loadKnobs(*args.serialization);
         }
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
 
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    onGroupCreationFinished(node, reason);
+    onGroupCreationFinished(node, args.reason);
 
     return node;
 } // AppInstance::createNodeFromPythonModule
@@ -1151,7 +1155,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     if ( !pythonModule.isEmpty() ) {
         if (args.reason != eCreateNodeReasonCopyPaste) {
             try {
-                return createNodeFromPythonModule(plugin, args.group, args.reason, args.serialization);
+                return createNodeFromPythonModule(plugin, args);
             } catch (const std::exception& e) {
                 Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                      tr("Cannot create PyPlug:").toStdString() + e.what(), false );
@@ -1270,7 +1274,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     NodePtr multiInstanceParent = node->getParentMultiInstance();
 
-    if (args.createGui) {
+
+    // _imp->_creatingInternalNode will be set to false if we created a pyPlug with the flag args.createGui = false
+    const bool createGui = args.createGui && !_imp->_creatingInternalNode;
+    if (createGui) {
         // createNodeGui also sets the filename parameter for reader or writers
         try {
             createNodeGui(node, multiInstanceParent, args);

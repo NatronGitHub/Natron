@@ -518,9 +518,7 @@ private:
                                    const QString &pythonModule);
 
     NodePtr createNodeFromPythonModule(Plugin* plugin,
-                                       const boost::shared_ptr<NodeCollection>& group,
-                                       CreateNodeReason reason,
-                                       const boost::shared_ptr<NodeSerialization>& serialization);
+                                       const CreateNodeArgs& args);
 
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
