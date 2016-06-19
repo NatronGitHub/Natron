@@ -180,6 +180,9 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                             if (rep == eStandardButtonYes) {
                                 pluginID = pythonPluginID;
                                 usingPythonModule = true;
+                            } else {
+                                pluginID = PLUGINID_NATRON_GROUP;
+                                usingPythonModule = false;
                             }
                             moduleUpdatesProcessed->insert( std::make_pair(stdModuleName, rep == eStandardButtonYes) );
                         }
@@ -251,7 +254,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         createdNodes[n] = *it;
 
         const std::list<boost::shared_ptr<NodeSerialization> >& children = (*it)->getNodesCollection();
-        if ( !children.empty() ) {
+        if ( !children.empty() && !usingPythonModule) {
             NodeGroup* isGrp = n->isEffectGroup();
             if (isGrp) {
                 EffectInstPtr sharedEffect = isGrp->shared_from_this();
