@@ -1206,11 +1206,12 @@ public:
 
     bool hasHostOverlayForParam(const KnobI* knob) const;
 
-    void setPluginIconFilePath(const std::string& iconFilePath);
-
-    void setPluginDescription(const std::string& description);
-
-    void setPluginIDAndVersionForGui(const std::list<std::string>& grouping, const std::string& pluginLabel, const std::string& pluginID, unsigned int version);
+    void setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
+                                     const std::string& pluginLabel,
+                                     const std::string& pluginID,
+                                     const std::string& pluginDesc,
+                                     const std::string& pluginIconFilePath,
+                                     unsigned int version);
 
     void setPluginPythonModule(const std::string& pythonModule);
 

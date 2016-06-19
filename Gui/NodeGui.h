@@ -383,9 +383,12 @@ public:
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
     virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void removePositionHostOverlay(KnobI* knob) OVERRIDE FINAL;
-    virtual void setPluginIconFilePath(const std::string& filePath) OVERRIDE FINAL;
-    virtual void setPluginDescription(const std::string& description) OVERRIDE FINAL;
-    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping, const std::string& pluginLabel, const std::string& pluginID, unsigned int version) OVERRIDE FINAL;
+    virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
+                                       const std::string& pluginLabel,
+                                       const std::string& pluginID,
+                                       const std::string& pluginDesc,
+                                       const std::string& pluginIconFilePath,
+                                       unsigned int version) OVERRIDE FINAL;
     virtual void onIdentityStateChanged(int inputNb) OVERRIDE FINAL;
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);

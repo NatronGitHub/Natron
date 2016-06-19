@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGroup.h"
+#include "Engine/Node.h"
 #include "Engine/Settings.h"
 
 #include "Gui/Button.h"
@@ -48,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/LineEdit.h"
 #include "Gui/SequenceFileDialog.h"
 #include "Gui/GuiApplicationManager.h"
+#include "Gui/SpinBox.h"
 #include "Gui/Utils.h" // convertFromPlainText
 #include "Gui/GuiDefines.h"
 
@@ -119,6 +121,8 @@ struct ExportGroupTemplateDialogPrivate
     LineEdit* idEdit;
     Label* groupingLabel;
     LineEdit* groupingEdit;
+    Label* versionLabel;
+    SpinBox* versionSpinbox;
     Label* fileLabel;
     LineEdit* fileEdit;
     Button* openButton;
@@ -139,6 +143,8 @@ struct ExportGroupTemplateDialogPrivate
         , idEdit(0)
         , groupingLabel(0)
         , groupingEdit(0)
+        , versionLabel(0)
+        , versionSpinbox(0)
         , fileLabel(0)
         , fileEdit(0)
         , openButton(0)
@@ -158,6 +164,7 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     , _imp( new ExportGroupTemplateDialogPrivate(group, gui) )
 {
     _imp->mainLayout = new QGridLayout(this);
+
 
 
     _imp->idLabel = new Label(tr("Unique ID"), this);
@@ -192,6 +199,17 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->groupingEdit->setPlaceholderText( QString::fromUtf8("Color/Transform") );
     _imp->groupingEdit->setToolTip(groupingTt);
 
+
+    _imp->versionLabel = new Label(tr("Version"), this);
+    QString versionTt = GuiUtils::convertFromPlainText(tr("The version can be incremented when changing the behaviour of the plug-in. "
+                                                          "If a user is using and old version of this plug-in in a project, if a newer version "
+                                                          "of this plug-in is available, upon opening the project a dialog will ask whether "
+                                                          "the plug-in should update to the newer version in the project or not."), Qt::WhiteSpaceNormal);
+    _imp->versionLabel->setToolTip(versionTt);
+
+    _imp->versionSpinbox = new SpinBox(this, SpinBox::eSpinBoxTypeInt);
+    _imp->versionSpinbox->setMinimum(1);
+    _imp->versionSpinbox->setToolTip(versionTt);
 
     _imp->iconPathLabel = new Label(tr("Icon relative path"), this);
     QString iconTt = GuiUtils::convertFromPlainText(tr("Set here the file path of an optional icon to identify the plug-in. "
@@ -236,14 +254,59 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
     _imp->mainLayout->addWidget(_imp->labelEdit, 1, 1,  1, 2);
     _imp->mainLayout->addWidget(_imp->groupingLabel, 2, 0,  1, 1);
     _imp->mainLayout->addWidget(_imp->groupingEdit, 2, 1,  1, 2);
-    _imp->mainLayout->addWidget(_imp->iconPathLabel, 3, 0, 1, 1);
-    _imp->mainLayout->addWidget(_imp->iconPath, 3, 1, 1, 2);
-    _imp->mainLayout->addWidget(_imp->descriptionLabel, 4, 0, 1, 1);
-    _imp->mainLayout->addWidget(_imp->descriptionEdit, 4, 1, 1, 2);
-    _imp->mainLayout->addWidget(_imp->fileLabel, 5, 0, 1, 1);
-    _imp->mainLayout->addWidget(_imp->fileEdit, 5, 1, 1, 1);
-    _imp->mainLayout->addWidget(_imp->openButton, 5, 2, 1, 1);
-    _imp->mainLayout->addWidget(_imp->buttons, 6, 0, 1, 3);
+    _imp->mainLayout->addWidget(_imp->versionLabel, 3, 0,  1, 1);
+    _imp->mainLayout->addWidget(_imp->versionSpinbox, 3, 1,  1, 1);
+    _imp->mainLayout->addWidget(_imp->iconPathLabel, 4, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->iconPath, 4, 1, 1, 2);
+    _imp->mainLayout->addWidget(_imp->descriptionLabel, 5, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->descriptionEdit, 5, 1, 1, 2);
+    _imp->mainLayout->addWidget(_imp->fileLabel, 6, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->fileEdit, 6, 1, 1, 1);
+    _imp->mainLayout->addWidget(_imp->openButton, 7, 2, 1, 1);
+    _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 3);
+
+    // If this node is already a PyPlug, pre-fill the dialog with existing information
+    NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group);
+    if (isGroupNode) {
+        NodePtr pyPlug = isGroupNode->getNode();
+        std::string pluginID = pyPlug->getPluginID();
+        if (pluginID != PLUGINID_NATRON_GROUP) {
+            // This is a pyplug for sure
+            std::string description = pyPlug->getPluginDescription();
+            std::string label = pyPlug->getPluginLabel();
+            std::string iconFilePath = pyPlug->getPluginIconFilePath();
+            std::string grouping;
+            std::list<std::string> groupingList;
+            pyPlug->getPluginGrouping(&groupingList);
+            if (!groupingList.empty()) {
+                std::list<std::string>::iterator next = groupingList.begin();
+                ++next;
+                for (std::list<std::string>::iterator it = groupingList.begin(); it!=groupingList.end(); ++it) {
+                    grouping.append(*it);
+
+                    if (next != groupingList.end()) {
+                        grouping += '/';
+                        ++next;
+                    }
+                }
+            }
+            int version = pyPlug->getMajorVersion();
+            std::string pluginPath = pyPlug->getPluginPythonModule();
+            {
+                std::size_t foundLastSlash = pluginPath.find_last_of("/");
+                if (foundLastSlash != std::string::npos) {
+                    pluginPath = pluginPath.substr(0, foundLastSlash);
+                }
+            }
+            _imp->idEdit->setText(QString::fromUtf8(pluginID.c_str()));
+            _imp->labelEdit->setText(QString::fromUtf8(label.c_str()));
+            _imp->groupingEdit->setText(QString::fromUtf8(grouping.c_str()));
+            _imp->descriptionEdit->setText(QString::fromUtf8(description.c_str()));
+            _imp->iconPath->setText(QString::fromUtf8(iconFilePath.c_str()));
+            _imp->fileEdit->setText(QString::fromUtf8(pluginPath.c_str()));
+            _imp->versionSpinbox->setValue(version);
+        }
+    }
 
     resize( 400, sizeHint().height() );
 }
@@ -350,9 +413,11 @@ ExportGroupTemplateDialog::onOkClicked()
         return;
     }
 
+    int version = _imp->versionSpinbox->value();
+
     QTextStream ts(&file);
     QString content;
-    _imp->group->exportGroupToPython(pluginID, pluginLabel, description, iconPath, grouping, content);
+    _imp->group->exportGroupToPython(pluginID, pluginLabel, description, iconPath, grouping, version, content);
     ts << content;
 
     accept();

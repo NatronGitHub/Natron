@@ -146,9 +146,10 @@ public:
 
     void setPluginIcon(const QPixmap& pix);
 
-    void setPluginDescription(const std::string& description);
-
-    void setPluginIDAndVersion(const std::string& pluginLabel, const std::string& pluginID, unsigned int version);
+    void setPluginIDAndVersion(const std::string& pluginLabel,
+                               const std::string& pluginID,
+                               const std::string& pluginDesc,
+                               unsigned int version);
 
     virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
     virtual bool isPagingEnabled() const OVERRIDE FINAL;

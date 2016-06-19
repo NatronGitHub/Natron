@@ -3512,11 +3512,22 @@ NodeGui::removePositionHostOverlay(KnobI* knob)
     }
 }
 
+
 void
-NodeGui::setPluginIconFilePath(const std::string& filePath)
+NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
+                               const std::string& pluginLabel,
+                               const std::string& pluginID,
+                               const std::string& pluginDesc,
+                               const std::string& pluginIconFilePath,
+                               unsigned int version)
 {
+    setColorFromGrouping();
+    if ( getSettingPanel() ) {
+        getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, pluginDesc, version);
+    }
+
     boost::shared_ptr<Settings> currentSettings = appPTR->getCurrentSettings();
-    QPixmap p( QString::fromUtf8( filePath.c_str() ) );
+    QPixmap p( QString::fromUtf8( pluginIconFilePath.c_str() ) );
 
     if ( p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph() ) {
         return;
@@ -3559,25 +3570,6 @@ NodeGui::setPluginIconFilePath(const std::string& filePath)
     }
 }
 
-void
-NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
-                               const std::string& pluginLabel,
-                               const std::string& pluginID,
-                               unsigned int version)
-{
-    setColorFromGrouping();
-    if ( getSettingPanel() ) {
-        getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, version);
-    }
-}
-
-void
-NodeGui::setPluginDescription(const std::string& description)
-{
-    if ( getSettingPanel() ) {
-        getSettingPanel()->setPluginDescription(description);
-    }
-}
 
 void
 NodeGui::setOverlayLocked(bool locked)

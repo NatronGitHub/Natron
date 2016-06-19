@@ -586,6 +586,7 @@ DockablePanel::turnOffPages()
 void
 DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
                                      const std::string& pluginID,
+                                     const std::string& pluginDesc,
                                      unsigned int version)
 {
     if (_imp->_iconLabel) {
@@ -593,6 +594,8 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
         _imp->_iconLabel->setToolTip(pluginLabelVersioned);
     }
     if (_imp->_helpButton) {
+        _imp->_helpToolTip = QString::fromUtf8( pluginDesc.c_str() );
+        _imp->_helpButton->setToolTip( helpString() );
         EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
         if (iseffect) {
             _imp->_pluginID = QString::fromUtf8( pluginID.c_str() );
@@ -612,13 +615,6 @@ DockablePanel::setPluginIcon(const QPixmap& pix)
             _imp->_iconLabel->show();
         }
     }
-}
-
-void
-DockablePanel::setPluginDescription(const std::string& description)
-{
-    _imp->_helpToolTip = QString::fromUtf8( description.c_str() );
-    _imp->_helpButton->setToolTip( helpString() );
 }
 
 void
@@ -887,17 +883,17 @@ DockablePanel::showHelp()
     EffectInstance* iseffect = dynamic_cast<EffectInstance*>(_imp->_holder);
 
     if (iseffect) {
-        const Plugin* plugin = iseffect->getNode()->getPlugin();
-        assert(plugin);
-        if (plugin) {
-            int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
-            int serverPort = appPTR->getDocumentationServerPort();
-            if ( (serverPort == 0) && (docSource == 0) ) {
-                docSource = 1;
-            }
-            QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + plugin->getPluginID();
-            QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + plugin->getPluginID() + QString::fromUtf8(".html");
-            switch (docSource) {
+        NodePtr node = iseffect->getNode();
+        std::string pluginLabel = node->getPluginLabel();
+        std::string pluginID = node->getPluginID();
+        int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+        int serverPort = appPTR->getDocumentationServerPort();
+        if ( (serverPort == 0) && (docSource == 0) ) {
+            docSource = 1;
+        }
+        QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + QString::fromUtf8(pluginID.c_str());
+        QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + QString::fromUtf8(pluginID.c_str()) + QString::fromUtf8(".html");
+        switch (docSource) {
             case 0:
                 QDesktopServices::openUrl( QUrl(localUrl) );
                 break;
@@ -905,10 +901,10 @@ DockablePanel::showHelp()
                 QDesktopServices::openUrl( QUrl(remoteUrl) );
                 break;
             case 2:
-                Dialogs::informationDialog(plugin->getPluginLabel().toStdString(), helpString().toStdString(), true);
+                Dialogs::informationDialog(pluginLabel, helpString().toStdString(), true);
                 break;
-            }
         }
+
     }
 }
 

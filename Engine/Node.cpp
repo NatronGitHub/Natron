@@ -189,6 +189,28 @@ struct FormatKnob
     boost::weak_ptr<KnobChoice> formatChoice;
 };
 
+struct PyPlugInfo
+{
+    std::string pluginPythonModule; // the absolute filename of the python script
+
+    //Set to true when the user has edited a PyPlug
+    bool pyplugChangedSinceScript;
+
+    std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
+    std::string pyPlugLabel;
+    std::string pyPlugDesc;
+    std::string pyPlugIconFilePath;
+    std::list<std::string> pyPlugGrouping;
+    int pyPlugVersion;
+
+    PyPlugInfo()
+    : pyplugChangedSinceScript(false)
+    , pyPlugVersion(0)
+    {
+
+    }
+};
+
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
@@ -226,14 +248,8 @@ public:
         , activatedMutex()
         , activated(true)
         , plugin(plugin_)
-        , pluginPythonModuleMutex()
-        , pluginPythonModule()
-        , pyplugChangedSinceScript(false)
-        , pyPlugID()
-        , pyPlugLabel()
-        , pyPlugDesc()
-        , pyPlugGrouping()
-        , pyPlugVersion(0)
+        , pyPluginInfoMutex()
+        , pyPlugInfo()
         , computingPreview(false)
         , previewThreadQuit(false)
         , computingPreviewMutex()
@@ -411,16 +427,8 @@ public:
     mutable QMutex activatedMutex;
     bool activated;
     Plugin* plugin; //< the plugin which stores the function to instantiate the effect
-    mutable QMutex pluginPythonModuleMutex;
-    std::string pluginPythonModule; // the filename of the python script
-
-    //Set to true when the user has edited a PyPlug
-    bool pyplugChangedSinceScript;
-    std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
-    std::string pyPlugLabel;
-    std::string pyPlugDesc;
-    std::list<std::string> pyPlugGrouping;
-    int pyPlugVersion;
+    mutable QMutex pyPluginInfoMutex;
+    PyPlugInfo pyPlugInfo;
     bool computingPreview;
     bool previewThreadQuit;
     mutable QMutex computingPreviewMutex;
@@ -4196,7 +4204,6 @@ Node::makeDocumentation(bool genHTML) const
     QTextStream ts(&ret);
     QTextStream ms(&markdown);
 
-    //bool isPyPlug;
     QString pluginID, pluginLabel, pluginDescription, pluginIcon;
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
@@ -4206,14 +4213,23 @@ Node::makeDocumentation(bool genHTML) const
     QVector<QStringList> items;
 
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        //isPyPlug = !_imp->pyPlugID.empty();
-        pluginID = _imp->pyPlugID.empty() ? _imp->plugin->getPluginID() : QString::fromUtf8( _imp->pyPlugID.c_str() );
-        pluginLabel = _imp->pyPlugLabel.empty() ? _imp->plugin->getPluginLabel() : QString::fromUtf8( _imp->pyPlugLabel.c_str() );
-        pluginDescription = _imp->pyPlugDesc.empty() ? QString::fromUtf8( _imp->effect->getPluginDescription().c_str() ) : QString::fromUtf8( _imp->pyPlugDesc.c_str() );
-        pluginIcon = _imp->plugin->getIconFilePath();
-        pluginGroup = _imp->plugin->getGrouping();
-        //pluginDescriptionMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        bool isPyPlug = !_imp->pyPlugInfo.pyPlugID.empty();
+        if (isPyPlug) {
+            pluginID = QString::fromUtf8( _imp->pyPlugInfo.pyPlugID.c_str() );
+            pluginLabel =  QString::fromUtf8( _imp->pyPlugInfo.pyPlugLabel.c_str() );
+            pluginDescription = QString::fromUtf8( _imp->pyPlugInfo.pyPlugDesc.c_str() );
+            pluginIcon = QString::fromUtf8( _imp->pyPlugInfo.pyPlugIconFilePath.c_str() );
+            for (std::list<std::string>::const_iterator it = _imp->pyPlugInfo.pyPlugGrouping.begin() ; it != _imp->pyPlugInfo.pyPlugGrouping.end(); ++it) {
+                pluginGroup.push_back(QString::fromUtf8(it->c_str()));
+            }
+        } else {
+            pluginID = _imp->plugin->getPluginID();
+            pluginLabel =  _imp->plugin->getPluginLabel();
+            pluginDescription =  QString::fromUtf8( _imp->effect->getPluginDescription().c_str() );
+            pluginIcon = _imp->plugin->getIconFilePath();
+            pluginGroup = _imp->plugin->getGrouping();
+        }
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
@@ -4672,9 +4688,9 @@ int
 Node::getMajorVersion() const
 {
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        if ( !_imp->pyPlugID.empty() ) {
-            return _imp->pyPlugVersion;
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+            return _imp->pyPlugInfo.pyPlugVersion;
         }
     }
     if (!_imp->plugin) {
@@ -4692,8 +4708,8 @@ Node::getMinorVersion() const
         return 0;
     }
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        if ( !_imp->pyPlugID.empty() ) {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
             return 0;
         }
     }
@@ -6684,7 +6700,17 @@ Node::setKnobsFrozen(bool frozen)
 std::string
 Node::getPluginIconFilePath() const
 {
-    return _imp->plugin ? _imp->plugin->getIconFilePath().toStdString() : std::string();
+    if (!_imp->plugin) {
+        return std::string();
+    }
+
+    {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pyPlugIconFilePath.empty() ) {
+            return _imp->pyPlugInfo.pyPlugIconFilePath;
+        }
+    }
+    return _imp->plugin->getIconFilePath().toStdString();
 }
 
 std::string
@@ -6695,9 +6721,9 @@ Node::getPluginID() const
     }
 
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        if ( !_imp->pyPlugID.empty() ) {
-            return _imp->pyPlugID;
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+            return _imp->pyPlugInfo.pyPlugID;
         }
     }
 
@@ -6708,9 +6734,9 @@ std::string
 Node::getPluginLabel() const
 {
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        if ( !_imp->pyPlugLabel.empty() ) {
-            return _imp->pyPlugLabel;
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pyPlugLabel.empty() ) {
+            return _imp->pyPlugInfo.pyPlugLabel;
         }
     }
 
@@ -6721,11 +6747,11 @@ std::string
 Node::getPluginResourcesPath() const
 {
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        if ( !_imp->pluginPythonModule.empty() ) {
-            std::size_t foundSlash = _imp->pluginPythonModule.find_last_of("/");
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pluginPythonModule.empty() ) {
+            std::size_t foundSlash = _imp->pyPlugInfo.pluginPythonModule.find_last_of("/");
             if (foundSlash != std::string::npos) {
-                return _imp->pluginPythonModule.substr(0, foundSlash);
+                return _imp->pyPlugInfo.pluginPythonModule.substr(0, foundSlash);
             }
         }
     }
@@ -6737,9 +6763,9 @@ std::string
 Node::getPluginDescription() const
 {
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        if ( !_imp->pyPlugDesc.empty() ) {
-            return _imp->pyPlugDesc;
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pyPlugID.empty() ) {
+            return _imp->pyPlugInfo.pyPlugDesc;
         }
     }
 
@@ -6750,9 +6776,10 @@ void
 Node::getPluginGrouping(std::list<std::string>* grouping) const
 {
     {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        if ( !_imp->pyPlugGrouping.empty() ) {
-            *grouping =  _imp->pyPlugGrouping;
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        if ( !_imp->pyPlugInfo.pyPlugGrouping.empty() ) {
+            *grouping =  _imp->pyPlugInfo.pyPlugGrouping;
+            return;
         }
     }
     _imp->effect->getPluginGrouping(grouping);
@@ -8167,84 +8194,68 @@ Node::initializeHostOverlays()
 }
 
 void
-Node::setPluginIconFilePath(const std::string& iconFilePath)
-{
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
-
-    if (!nodeGui) {
-        return;
-    }
-    nodeGui->setPluginIconFilePath(iconFilePath);
-}
-
-void
-Node::setPluginDescription(const std::string& description)
-{
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
-
-    if (!nodeGui) {
-        return;
-    }
-    nodeGui->setPluginDescription(description);
-}
-
-void
 Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
                                   const std::string& pluginLabel,
                                   const std::string& pluginID,
+                                  const std::string& pluginDesc,
+                                  const std::string& pluginIconFilePath,
                                   unsigned int version)
 {
     assert( QThread::currentThread() == qApp->thread() );
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+
+    {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
+        _imp->pyPlugInfo.pyPlugVersion = version;
+        _imp->pyPlugInfo.pyPlugID = pluginID;
+        _imp->pyPlugInfo.pyPlugDesc = pluginDesc;
+        _imp->pyPlugInfo.pyPlugLabel = pluginLabel;
+        _imp->pyPlugInfo.pyPlugGrouping = grouping;
+        _imp->pyPlugInfo.pyPlugIconFilePath = pluginIconFilePath;
+    }
+
     if (!nodeGui) {
         return;
     }
 
-    {
-        QMutexLocker k(&_imp->pluginPythonModuleMutex);
-        _imp->pyPlugVersion = version;
-        _imp->pyPlugID = pluginID;
-        _imp->pyPlugLabel = pluginLabel;
-        _imp->pyPlugGrouping = grouping;
-    }
-
-    nodeGui->setPluginIDAndVersion(grouping, pluginLabel, pluginID, version);
+    nodeGui->setPluginIDAndVersion(grouping, pluginLabel, pluginID, pluginDesc, pluginIconFilePath, version);
 }
 
 bool
 Node::hasPyPlugBeenEdited() const
 {
-    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    return _imp->pyplugChangedSinceScript || _imp->pluginPythonModule.empty();
+    return _imp->pyPlugInfo.pyplugChangedSinceScript || _imp->pyPlugInfo.pluginPythonModule.empty();
 }
 
 void
 Node::setPyPlugEdited(bool edited)
 {
-    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    _imp->pyplugChangedSinceScript = edited;
-    _imp->pyPlugID.clear();
-    _imp->pyPlugLabel.clear();
-    _imp->pyPlugDesc.clear();
-    _imp->pyPlugGrouping.clear();
+    _imp->pyPlugInfo.pyplugChangedSinceScript = edited;
+    _imp->pyPlugInfo.pyPlugID.clear();
+    _imp->pyPlugInfo.pyPlugLabel.clear();
+    _imp->pyPlugInfo.pyPlugDesc.clear();
+    _imp->pyPlugInfo.pyPlugGrouping.clear();
+    _imp->pyPlugInfo.pyPlugIconFilePath.clear();
 }
 
 void
 Node::setPluginPythonModule(const std::string& pythonModule)
 {
-    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    _imp->pluginPythonModule = pythonModule;
+    _imp->pyPlugInfo.pluginPythonModule = pythonModule;
 }
 
 std::string
 Node::getPluginPythonModule() const
 {
-    QMutexLocker k(&_imp->pluginPythonModuleMutex);
+    QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    return _imp->pluginPythonModule;
+    return _imp->pyPlugInfo.pluginPythonModule;
 }
 
 bool

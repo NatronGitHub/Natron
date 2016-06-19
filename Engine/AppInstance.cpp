@@ -956,9 +956,6 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
     bool istoolset;
 
     if ( NATRON_PYTHON_NAMESPACE::getGroupInfos(pythonModulePath.toStdString(), pythonModule.toStdString(), &pluginID, &pluginLabel, &iconFilePath, &pluginGrouping, &description, &istoolset, &version) ) {
-        node->setPluginIconFilePath(iconFilePath);
-        node->setPluginDescription(description);
-
         QString groupingStr = QString::fromUtf8( pluginGrouping.c_str() );
         QStringList groupingSplits = groupingStr.split( QLatin1Char('/') );
         std::list<std::string> stdGrouping;
@@ -966,7 +963,7 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
             stdGrouping.push_back( it->toStdString() );
         }
 
-        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, version);
+        node->setPluginIDAndVersionForGui(stdGrouping, pluginLabel, pluginID, description, iconFilePath, version);
         node->setPluginPythonModule( QString( pythonModulePath + pythonModule + QString::fromUtf8(".py") ).toStdString() );
     }
 }

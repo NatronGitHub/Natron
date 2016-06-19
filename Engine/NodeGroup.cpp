@@ -2684,6 +2684,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
                                     const QString& pluginDescription,
                                     const QString& pluginIconPath,
                                     const QString& pluginGrouping,
+                                    int version,
                                     QString& output)
 {
     QString extModule(pluginLabel);
@@ -2723,7 +2724,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
     WRITE_STATIC_LINE("");
 
     WRITE_STATIC_LINE("def getVersion():");
-    WRITE_INDENT(1); WRITE_STRING("return 1");
+    WRITE_INDENT(1); WRITE_STRING(QString::fromUtf8("return ") + NUM_INT(version));
     WRITE_STATIC_LINE("");
 
     if ( !pluginIconPath.isEmpty() ) {
