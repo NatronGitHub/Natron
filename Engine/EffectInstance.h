@@ -577,8 +577,6 @@ public:
                                              const RectI& roi,
                                              ImageBitDepthEnum bitdepth,
                                              const ImageComponents & components,
-                                             ImageBitDepthEnum nodeBitDepthPref,
-                                             const ImageComponents & nodeComponentsPref,
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
                                              const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,

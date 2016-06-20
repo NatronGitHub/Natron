@@ -1531,6 +1531,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     ImagePtr tmpImg;
     if (useTmpImage) {
         tmpImg.reset( new Image( ImageComponents::getRGBAComponents(), image->getRoD(), bounds, 0, image->getPixelAspectRatio(), image->getBitDepth(), image->getPremultiplication(), image->getFieldingOrder(), false, eStorageModeRAM) );
+        tmpImg->setKey(image->getKey());
         if (tmpImg->getComponents() == image->getComponents()) {
             tmpImg->pasteFrom(*image, bounds);
         } else {
@@ -1573,8 +1574,6 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     const RectI& roi,
                                                     ImageBitDepthEnum bitdepth,
                                                     const ImageComponents & components,
-                                                    ImageBitDepthEnum nodePrefDepth,
-                                                    const ImageComponents & nodePrefComps,
                                                     const EffectInstance::InputImagesMap & inputImages,
                                                     const boost::shared_ptr<RenderStats> & stats,
                                                     const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
@@ -1634,10 +1633,10 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
             }
 
             ///Throw away images that are not even what the node want to render
-            if ( ( imgComps.isColorPlane() && nodePrefComps.isColorPlane() && (imgComps != nodePrefComps) ) || (imgDepth != nodePrefDepth) ) {
+            /*if ( ( imgComps.isColorPlane() && nodePrefComps.isColorPlane() && (imgComps != nodePrefComps) ) || (imgDepth != nodePrefDepth) ) {
                 appPTR->removeFromNodeCache(*it);
                 continue;
-            }
+            }*/
 
             bool convertible = imgComps.isConvertibleTo(components);
             if ( (imgMMlevel == mipMapLevel) && convertible &&

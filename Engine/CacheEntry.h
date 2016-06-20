@@ -790,6 +790,10 @@ public:
         _cache = cache;
     }
 
+    void setKey(const KeyType& key) {
+        _key = key;
+    }
+
     /**
      * @brief Allocates the memory required by the cache entry. It allocates enough memory to contain at least the
      * memory specified by the key.

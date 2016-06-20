@@ -196,6 +196,7 @@ EffectInstance::convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                 inputImage->getPremultiplication(),
                                 inputImage->getFieldingOrder(),
                                 false) );
+        tmp->setKey(inputImage->getKey());
         RectI clippedRoi;
         roi.intersect(bounds, &clippedRoi);
 
@@ -893,8 +894,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                         renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                         &rod, roi,
                                                         args.bitdepth, *it,
-                                                        outputDepth,
-                                                        *components,
                                                         args.inputImagesList,
                                                         frameArgs->stats,
                                                         glContextLocker,
@@ -1297,7 +1296,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                 renderFullScaleThenDownscale ? &upscaledImageBounds : &downscaledImageBounds,
                                                 &rod, roi,
                                                 args.bitdepth, it->first,
-                                                outputDepth, *components,
                                                 args.inputImagesList, frameArgs->stats, glContextLocker, &it->second.fullscaleImage);
 
             ///We must retrieve from the cache exactly the originally retrieved image, otherwise we might have to call  renderInputImagesForRoI
@@ -1778,6 +1776,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                            it->second.fullscaleImage->getPremultiplication(),
                                                            it->second.fullscaleImage->getFieldingOrder(),
                                                            false) );
+                it->second.downscaleImage->setKey(it->second.fullscaleImage->getKey());
             }
 
             it->second.fullscaleImage->downscaleMipMap( it->second.fullscaleImage->getRoD(), originalRoI, 0, args.mipMapLevel, false, it->second.downscaleImage.get() );
