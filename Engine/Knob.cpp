@@ -1751,9 +1751,12 @@ KnobHelper::getInViewerContextLabel() const
 void
 KnobHelper::setInViewerContextLabel(const QString& label)
 {
-    QMutexLocker k(&_imp->labelMutex);
+    {
+        QMutexLocker k(&_imp->labelMutex);
 
-    _imp->inViewerContextLabel = label.toStdString();
+        _imp->inViewerContextLabel = label.toStdString();
+    }
+    _signalSlotHandler->s_inViewerContextLabelChanged();
 }
 
 void

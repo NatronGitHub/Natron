@@ -240,6 +240,11 @@ public:
         Q_EMIT labelChanged();
     }
 
+    void s_inViewerContextLabelChanged()
+    {
+        Q_EMIT inViewerContextLabelChanged();
+    }
+
     void s_evaluateOnChangeChanged(bool value)
     {
         Q_EMIT evaluateOnChangeChanged(value);
@@ -343,6 +348,8 @@ Q_SIGNALS:
     void hasModificationsChanged();
 
     void labelChanged();
+
+    void inViewerContextLabelChanged();
 
     void dimensionNameChanged(int dimension);
 };

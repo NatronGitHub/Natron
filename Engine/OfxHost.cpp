@@ -87,6 +87,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
+#include "Global/KeySymbols.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -759,6 +760,70 @@ getCacheFilePath()
     return ofxCacheFilePath;
 }
 
+
+static void
+getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<PluginActionShortcut>* shortcuts)
+{
+    int nDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextDefaultShortcuts);
+    if (nDims == 0) {
+        return;
+    }
+    {
+        // Check that all props have the same dimension
+
+        int nSymDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutSymbol);
+        int nCtrlDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasControlModifier);
+        int nShiftDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier);
+        int nAltDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier);
+        int nMetaDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier);
+
+        if (nSymDims != nDims ||
+            nCtrlDims != nDims ||
+            nShiftDims != nDims ||
+            nAltDims != nDims ||
+            nMetaDims != nDims) {
+            std::cerr << desc.getPlugin()->getIdentifier() << ": Invalid dimension setup of the NatronOfxImageEffectPropInViewerContextDefaultShortcuts property." << std::endl;
+            return;
+        }
+    }
+
+    const std::map<std::string, OFX::Host::Param::Descriptor*> & paramDescriptors = desc.getParams();
+
+    for (int i = 0; i < nDims; ++i) {
+        const std::string& paramName = desc.getProps().getStringProperty(kNatronOfxImageEffectPropInViewerContextDefaultShortcuts, i);
+        int symbol = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutSymbol, i);
+        int hasCtrl = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasControlModifier, i);
+        int hasShift = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier, i);
+        int hasAlt = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier, i);
+        int hasMeta = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier, i);
+
+        std::map<std::string, OFX::Host::Param::Descriptor*>::const_iterator foundParamDesc = paramDescriptors.find(paramName);
+        if (foundParamDesc == paramDescriptors.end()) {
+            // Hmm the plug-in probably wrongly set the kNatronOfxImageEffectPropInViewerContextDefaultShortcuts property
+            std::cerr << desc.getPlugin()->getIdentifier() << ": " << paramName << " was set to the NatronOfxImageEffectPropInViewerContextDefaultShortcuts property but does not appear to exist in the parameters described." << std::endl;
+            continue;
+        }
+
+
+        // The Key enum is a mapping 1:1 of the symbols defined in ofxKeySymbols.h
+        Key eSymbol = (Key)symbol;
+        KeyboardModifiers eMods;
+        if (hasCtrl) {
+            eMods |= eKeyboardModifierControl;
+        }
+        if (hasShift) {
+            eMods |= eKeyboardModifierShift;
+        }
+        if (hasAlt) {
+            eMods |= eKeyboardModifierAlt;
+        }
+        if (hasMeta) {
+            eMods |= eKeyboardModifierMeta;
+        }
+        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), eSymbol, eMods));
+    }
+}
+
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                         IOPluginsMap* writersMap)
@@ -925,6 +990,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         natronPlugin->setOpenGLRenderSupport(glSupport);
 
         natronPlugin->setOfxPlugin(p);
+
+        std::list<PluginActionShortcut> shortcuts;
+        getPluginShortcuts(p->getDescriptor(), &shortcuts);
+        natronPlugin->setShorcuts(shortcuts);
 
         ///if this plugin's descriptor has the kTuttleOfxImageEffectPropSupportedExtensions property,
         ///use it to fill the readersMap and writersMap

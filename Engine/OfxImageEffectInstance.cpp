@@ -445,51 +445,60 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     bool secretByDefault = descriptor.getSecret();
     bool enabledByDefault = descriptor.getEnabled();
 
-    if (descriptor.getType() == kOfxParamTypeInteger) {
+    std::string paramType = descriptor.getType();
+    bool isToggableButton = false;
+    if (paramType == kOfxParamTypeBoolean) {
+        isToggableButton = (bool)descriptor.getProperties().getIntProperty(kNatronOfxBooleanParamPropIsToggableButton);
+        if (isToggableButton) {
+            paramType = kOfxParamTypePushButton;
+        }
+    }
+
+    if (paramType == kOfxParamTypeInteger) {
         OfxIntegerInstance *ret = new OfxIntegerInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeDouble) {
+    } else if (paramType == kOfxParamTypeDouble) {
         OfxDoubleInstance  *ret = new OfxDoubleInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeBoolean) {
+    } else if (paramType == kOfxParamTypeBoolean) {
         OfxBooleanInstance *ret = new OfxBooleanInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeChoice) {
+    } else if (paramType == kOfxParamTypeChoice) {
         OfxChoiceInstance *ret = new OfxChoiceInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeRGBA) {
+    } else if (paramType == kOfxParamTypeRGBA) {
         OfxRGBAInstance *ret = new OfxRGBAInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeRGB) {
+    } else if (paramType == kOfxParamTypeRGB) {
         OfxRGBInstance *ret = new OfxRGBInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeDouble2D) {
+    } else if (paramType == kOfxParamTypeDouble2D) {
         OfxDouble2DInstance *ret = new OfxDouble2DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeInteger2D) {
+    } else if (paramType == kOfxParamTypeInteger2D) {
         OfxInteger2DInstance *ret = new OfxInteger2DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeDouble3D) {
+    } else if (paramType == kOfxParamTypeDouble3D) {
         OfxDouble3DInstance *ret = new OfxDouble3DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeInteger3D) {
+    } else if (paramType == kOfxParamTypeInteger3D) {
         OfxInteger3DInstance *ret = new OfxInteger3DInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeString) {
+    } else if (paramType == kOfxParamTypeString) {
         OfxStringInstance *ret = new OfxStringInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeCustom) {
+    } else if (paramType == kOfxParamTypeCustom) {
         /*
            http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamTypeCustom
 
@@ -504,18 +513,33 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
            Custom parameters are mandatory, as they are simply ASCII C strings. However, animation of custom parameters an support for an in editor interact is optional.
          */
-        //throw std::runtime_error(std::string("Parameter ") + paramName + " has unsupported OFX type " + descriptor.getType());
+        //throw std::runtime_error(std::string("Parameter ") + paramName + " has unsupported OFX type " + paramType);
         secretByDefault = true;
         enabledByDefault = false;
         OfxCustomInstance *ret = new OfxCustomInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         instance = ret;
-    } else if (descriptor.getType() == kOfxParamTypeGroup) {
+    } else if (paramType == kOfxParamTypeGroup) {
         OfxGroupInstance *ret = new OfxGroupInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
+        KnobGroup* isGroup = dynamic_cast<KnobGroup*>(knob.get());
+        assert(isGroup);
+        if (isGroup) {
+            bool haveShortcut = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextCanHaveShortcut);
+            isGroup->setInViewerContextCanHaveShortcut(haveShortcut);
+            bool isInToolbar = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextIsInToolbar);
+            if (isInToolbar) {
+                isGroup->setAsToolButton(true);
+            } else {
+                bool isDialog = (bool)descriptor.getProperties().getIntProperty(kNatronOfxGroupParamPropIsDialog);
+                if (isDialog) {
+                    isGroup->setAsDialog(true);
+                }
+            }
+        }
         instance = ret;
         paramShouldBePersistant = false;
-    } else if (descriptor.getType() == kOfxParamTypePage) {
+    } else if (paramType == kOfxParamTypePage) {
         OfxPageInstance* ret = new OfxPageInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
 #ifdef DEBUG_PAGE
@@ -525,14 +549,34 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             qDebug() << "- " << ret->getProperties().getStringProperty(kOfxParamPropPageChild, i).c_str();
         }
 #endif
+        KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
+        assert(isPage);
+        if (isPage) {
+            bool isInToolbar = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextIsInToolbar);
+            if (isInToolbar) {
+                isPage->setAsToolBar(true);
+            }
+        }
         instance = ret;
         paramShouldBePersistant = false;
-    } else if (descriptor.getType() == kOfxParamTypePushButton) {
+    } else if (paramType == kOfxParamTypePushButton) {
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
+        if (isToggableButton) {
+            KnobButton* isBtn = dynamic_cast<KnobButton*>(knob.get());
+            assert(isBtn);
+            if (isBtn) {
+                isBtn->setCheckable(true);
+                int def = descriptor.getProperties().getIntProperty(kOfxParamPropDefault);
+                isBtn->setValue((bool)def);
+
+                bool haveShortcut = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextCanHaveShortcut);
+                isBtn->setInViewerContextCanHaveShortcut(haveShortcut);
+            }
+        }
         instance = ret;
         //paramShouldBePersistant = false;
-    } else if (descriptor.getType() == kOfxParamTypeParametric) {
+    } else if (paramType == kOfxParamTypeParametric) {
         OfxParametricInstance* ret = new OfxParametricInstance(getOfxEffectInstance(), descriptor);
         OfxStatus stat = ret->defaultInitializeAllCurves(descriptor);
 
@@ -548,7 +592,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
     assert(knob);
     if (!instance) {
-        throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + descriptor.getType() );
+        throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + paramType );
     }
 
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -607,6 +651,28 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     } else if (layoutHint == kOfxParamPropLayoutHintDivider) {
         knob->setAddSeparator(true);
     }
+
+
+    knob->setInViewerContextItemSpacing( descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextLayoutPadWidth) );
+
+    int viewportLayoutHint = descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextLayoutHint);
+    if (viewportLayoutHint == kNatronOfxParamPropInViewerContextLayoutHintAddNewLine) {
+        knob->setInViewerContextNewLineActivated(true);
+    } else if (viewportLayoutHint == kNatronOfxParamPropInViewerContextLayoutHintNormalDivider) {
+        knob->setInViewerContextAddSeparator(true);
+    }
+
+    bool viewportSecret = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextSecret);
+    if (viewportSecret) {
+        knob->setInViewerContextSecret(viewportSecret);
+    }
+
+    const std::string& viewportLabel = descriptor.getProperties().getStringProperty(kNatronOfxParamPropInViewerContextLabel);
+    if (!viewportLabel.empty()) {
+        knob->setInViewerContextLabel(QString::fromUtf8(viewportLabel.c_str()));
+    }
+
+
     knob->setOfxParamHandle( (void*)instance->getHandle() );
 
     bool isInstanceSpecific = descriptor.getProperties().getIntProperty(kNatronOfxParamPropIsInstanceSpecific) != 0;
@@ -781,7 +847,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         boost::shared_ptr<KnobPage> pageKnob = (*itPage)->page;
 
         for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
-            OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(*itParam);
+            OfxParamToKnob* isKnownKnob = *itParam;
             assert(isKnownKnob);
             if (!isKnownKnob) {
                 continue;
@@ -817,6 +883,25 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 }
             } // if (!knob->getParentKnob()) {
         }
+    }
+
+
+    // Add the parameters to the viewport in order
+    int nDims = getProps().getDimension(kNatronOfxImageEffectPropInViewerContextParamsOrder);
+    for (int i = 0; i < nDims; ++i) {
+        const std::string& paramName = getProps().getStringProperty(kNatronOfxImageEffectPropInViewerContextParamsOrder);
+        OFX::Host::Param::Instance* param = getParam(paramName);
+        if (!param) {
+            continue;
+        }
+        OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(param);
+        assert(isKnownKnob);
+        if (isKnownKnob) {
+            KnobPtr knob = isKnownKnob->getKnob();
+            assert(knob);
+            effect->addKnobToViewerUI(knob);
+        }
+
     }
 } // OfxImageEffectInstance::addParamsToTheirParents
 

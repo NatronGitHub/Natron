@@ -276,6 +276,8 @@ public:
     virtual StatusEnum attachOpenGLContext(OpenGLContextEffectDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum dettachOpenGLContext(const OpenGLContextEffectDataPtr& data) OVERRIDE FINAL;
     virtual EffectInstPtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
+    virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
 
 public:
 

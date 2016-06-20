@@ -188,7 +188,8 @@ public Q_SLOTS:
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
     void onChoiceMenuEntryAppended(const QString& entry, const QString& help);
-
+    void onInViewportSecretChanged();
+    void onInViewportLabelChanged();
 protected:
 
     void setDynamicPropertyModified(bool dynamicPropModified)
@@ -231,6 +232,10 @@ public:
 
     virtual void setHint() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
@@ -265,6 +270,11 @@ public:
     virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -309,6 +319,11 @@ public:
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
+
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -349,6 +364,10 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -392,6 +411,11 @@ public:
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
+
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime & time) const OVERRIDE FINAL;
@@ -432,6 +456,10 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -475,6 +503,10 @@ public:
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime & time) const OVERRIDE FINAL;
@@ -517,6 +549,10 @@ public:
     virtual void setDefault() OVERRIDE FINAL;
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -562,6 +598,10 @@ public:
     virtual void setRange() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime & time) const OVERRIDE FINAL;
@@ -606,6 +646,10 @@ public:
     virtual void setDisplayRange() OVERRIDE FINAL;
     virtual void setRange() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime & time) const OVERRIDE FINAL;
@@ -649,6 +693,11 @@ public:
     virtual void setRange() OVERRIDE FINAL;
     virtual void setDisplayRange() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
+
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
     virtual OfxStatus getKeyTime(int nth, OfxTime & time) const OVERRIDE FINAL;
@@ -691,6 +740,11 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setOpen() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
+
 private:
     boost::weak_ptr<KnobGroup> _groupKnob;
 };
@@ -710,6 +764,11 @@ public:
     virtual void setHint() OVERRIDE FINAL;
     // callback which should set secret state as appropriate
     virtual void setSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
@@ -754,6 +813,11 @@ public:
 
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
+
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
 
     ///keyframes support
     virtual OfxStatus getNumKeys(unsigned int &nKeys) const OVERRIDE FINAL;
@@ -815,6 +879,10 @@ public:
     virtual void setSecret() OVERRIDE FINAL;
     virtual void setLabel() OVERRIDE FINAL;
 
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
+
     /// callback which should set evaluate on change
     virtual void setEvaluateOnChange() OVERRIDE FINAL;
     virtual KnobPtr getKnob() const OVERRIDE FINAL;
@@ -868,6 +936,10 @@ public:
 
     /// callback which should update label
     virtual void setLabel() OVERRIDE FINAL;
+
+    virtual void setInViewportSecret() OVERRIDE FINAL;
+
+    virtual void setInViewportLabel() OVERRIDE FINAL;
 
 
     /// callback which should set

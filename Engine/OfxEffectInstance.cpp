@@ -74,6 +74,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Transform.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/UndoCommand.h"
 #ifdef DEBUG
 #include "Engine/TLSHolder.h"
 #endif
@@ -190,6 +191,10 @@ struct OfxEffectInstancePrivate
     boost::scoped_ptr<OfxImageEffectInstance> effect;
     std::string natronPluginID; //< small cache to avoid calls to generateImageEffectClassName
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
+    boost::weak_ptr<KnobString> cursorKnob; // secret knob for ofx effects so they can set the cursor
+    boost::weak_ptr<KnobInt> selectionRectangleStateKnob;
+    boost::weak_ptr<KnobString> undoRedoTextKnob;
+    boost::weak_ptr<KnobBool> undoRedoStateKnob;
     mutable QReadWriteLock preferencesLock;
     mutable QReadWriteLock renderSafetyLock;
     mutable RenderSafetyEnum renderSafety;
@@ -243,6 +248,10 @@ struct OfxEffectInstancePrivate
         : effect()
         , natronPluginID()
         , overlayInteract()
+        , cursorKnob()
+        , selectionRectangleStateKnob()
+        , undoRedoTextKnob()
+        , undoRedoStateKnob()
         , preferencesLock(QReadWriteLock::Recursive)
         , renderSafetyLock()
         , renderSafety(eRenderSafetyUnsafe)
@@ -470,7 +479,36 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             getNode()->initializeInputs();
             getNode()->initializeKnobs(serialization != 0);
 
+            {
+                KnobPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
+                if (foundCursorKnob) {
+                    boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundCursorKnob);
+                    _imp->cursorKnob = isStringKnob;
+                }
+            }
+            
+            {
 
+                KnobPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
+                if (foundSelKnob) {
+                    boost::shared_ptr<KnobInt> isIntKnob = boost::dynamic_pointer_cast<KnobInt>(foundSelKnob);
+                    _imp->selectionRectangleStateKnob = isIntKnob;
+                }
+            }
+            {
+                KnobPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
+                if (foundTextKnob) {
+                    boost::shared_ptr<KnobString> isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundTextKnob);
+                    _imp->undoRedoTextKnob = isStringKnob;
+                }
+            }
+            {
+                KnobPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
+                if (foundUndoRedoKnob) {
+                    boost::shared_ptr<KnobBool> isBool = boost::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
+                    _imp->undoRedoStateKnob = isBool;
+                }
+            }
             ///before calling the createInstanceAction, load values
             if ( serialization && !serialization->isNull() ) {
                 getNode()->loadKnobs(*serialization);
@@ -2421,6 +2459,58 @@ OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedR
     }
 }
 
+class OfxUndoCommand : public UndoCommand
+{
+    boost::weak_ptr<KnobString> _textKnob;
+    boost::weak_ptr<KnobBool> _stateKnob;
+public:
+
+    OfxUndoCommand(const boost::shared_ptr<KnobString>& textKnob, const boost::shared_ptr<KnobBool> &stateKnob)
+    : _textKnob(textKnob)
+    , _stateKnob(stateKnob)
+    {
+        setText(textKnob->getValue());
+        stateKnob->blockValueChanges();
+        stateKnob->setValue(true);
+        stateKnob->unblockValueChanges();
+    }
+
+    virtual ~OfxUndoCommand()
+    {
+
+    }
+
+    /**
+     * @brief Called to redo the action
+     **/
+    virtual void redo() OVERRIDE FINAL
+    {
+        boost::shared_ptr<KnobBool> state = _stateKnob.lock();
+        bool currentValue = state->getValue();
+        assert(!currentValue);
+        state->setValue(true);
+        if (currentValue) {
+            state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
+        }
+    }
+
+    /**
+     * @brief Called to undo the action
+     **/
+    virtual void undo() OVERRIDE FINAL
+    {
+        boost::shared_ptr<KnobBool> state = _stateKnob.lock();
+        bool currentValue = state->getValue();
+        assert(currentValue);
+        state->setValue(false);
+        if (!currentValue) {
+            state->evaluateValueChange(0, 0, ViewSpec(0), eValueChangedReasonUserEdited);
+        }
+    }
+    
+
+};
+
 bool
 OfxEffectInstance::knobChanged(KnobI* k,
                                ValueChangedReasonEnum reason,
@@ -2432,7 +2522,32 @@ OfxEffectInstance::knobChanged(KnobI* k,
         return false;
     }
 
+    {
+        // Handle cursor knob
+        boost::shared_ptr<KnobString> cursorKnob = _imp->cursorKnob.lock();
+        if (k == cursorKnob.get()) {
+            CursorEnum c;
+            std::string cursorStr = cursorKnob->getValue();
+            if (OfxImageEffectInstance::ofxCursorToNatronCursor(cursorStr, &c)) {
+                setCurrentCursor(c);
+            } else {
+                setCurrentCursor(QString::fromUtf8(cursorStr.c_str()));
+            }
+            return true;
+        }
+        boost::shared_ptr<KnobString> undoRedoText = _imp->undoRedoTextKnob.lock();
+        if (k == undoRedoText.get()) {
+            boost::shared_ptr<KnobBool> undoRedoState = _imp->undoRedoStateKnob.lock();
+            assert(undoRedoState);
 
+            if (undoRedoState && reason == eValueChangedReasonPluginEdited) {
+                UndoCommandPtr cmd(new OfxUndoCommand(undoRedoText, undoRedoState));
+                pushUndoCommand(cmd);
+                return true;
+            }
+        }
+
+    }
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     RenderScale renderScale  = getOverlayInteractRenderScale();
@@ -2531,6 +2646,7 @@ OfxEffectInstance::purgeCaches()
 
     Q_UNUSED(stat);
 }
+
 
 int
 OfxEffectInstance::getMajorVersion() const
@@ -3006,6 +3122,32 @@ OfxEffectInstance::dettachOpenGLContext(const EffectInstance::OpenGLContextEffec
     } else {
         return eStatusOK;
     }
+}
+
+void
+OfxEffectInstance::onInteractViewportSelectionCleared()
+{
+    boost::shared_ptr<KnobInt> k = _imp->selectionRectangleStateKnob.lock();
+    if (!k) {
+        return;
+    }
+    double propV[4] = {0, 0, 0, 0};
+    effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+
+    k->setValue(0);
+}
+
+
+void
+OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
+{
+    boost::shared_ptr<KnobInt> k = _imp->selectionRectangleStateKnob.lock();
+    if (!k) {
+        return;
+    }
+    double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
+    effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
+    k->setValue(onRelease ? 2 : 1);
 }
 
 NATRON_NAMESPACE_EXIT;
