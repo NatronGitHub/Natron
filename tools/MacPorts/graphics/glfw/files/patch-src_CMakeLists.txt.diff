@@ -1,0 +1,15 @@
+--- src/CMakeLists.txt.orig	2016-06-16 09:01:30.000000000 -0400
++++ src/CMakeLists.txt	2016-06-16 09:03:11.000000000 -0400
+@@ -96,9 +96,10 @@
+     elseif (APPLE)
+         # Add -fno-common to work around a bug in Apple's GCC
+         target_compile_options(glfw PRIVATE "-fno-common")
+-
+-        set_target_properties(glfw PROPERTIES
++	if (NOT CMAKE_INSTALL_NAME_DIR)
++            set_target_properties(glfw PROPERTIES
+                               INSTALL_NAME_DIR "lib${LIB_SUFFIX}")
++	endif()
+     elseif (UNIX)
+         # Hide symbols not explicitly tagged for export from the shared library
+         target_compile_options(glfw PRIVATE "-fvisibility=hidden")

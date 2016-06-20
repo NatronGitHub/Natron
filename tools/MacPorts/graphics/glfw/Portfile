@@ -1,5 +1,5 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:filetype=tcl:et:sw=4:ts=4:sts=4
-# $Id: Portfile 149284 2016-06-09 17:37:06Z michaelld@macports.org $
+# $Id: Portfile 149391 2016-06-16 13:13:48Z michaelld@macports.org $
 
 PortSystem          1.0
 PortGroup           cmake 1.0
@@ -36,10 +36,10 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    github.setup    glfw glfw d8c278bf529da00df31d125a7ad6291123ade2ef
-    version         20160606
-    checksums       rmd160 f7de6e90e7a775942ad8dc49c3f487dd08e4efe8 \
-                    sha256 15fc3a1aeb3d31e54a512236bda958b9af57aee8ac753593f5dd47aeead4aabb
+    github.setup    glfw glfw f2ba78e04bf8e2cab04388fa8b12c133abb24001
+    version         20160614
+    checksums       rmd160 11360d11e338052aaebf93f3e0dc3a216b9d3a9d \
+                    sha256 1be57641e50c0e5fbc178aa612514e1a6df6067153f699728f0debf172e29ff3
 
     # patch to fix install directory for cmake files and docs
 
@@ -51,18 +51,9 @@ if {${subport} eq ${name}} {
 
 }
 
-# error out if trying to build on OSX 10.6 or earlier; not supported
+# patch to fix install name of library
 
-platform darwin {
-    if {${os.major} < 11} {
-        set os_note "${name} ${version} is designed for OS X 10.7 Lion and newer."
-        notes-append "\n\n${os_note}"
-        pre-fetch {
-            ui_error ${os_note}
-            error "unsupported platform"
-        }
-    }
-}
+patchfiles-append   patch-src_CMakeLists.txt.diff
 
 # use the real home page, not github's
 
@@ -74,13 +65,15 @@ cmake.out_of_source yes
 
 # configuration arguments for MacPorts build
 
-configure.args      -DBUILD_SHARED_LIBS=on \
-                    -DGLFW_BUILD_EXAMPLES=off \
-                    -DGLFW_BUILD_TESTS=off \
-                    -DGLFW_CMAKE_CONFIG_PATH=share \
-                    -DGLFW_USE_CHDIR=on \
-                    -DGLFW_USE_MENUBAR=on \
-                    -DGLFW_USE_RETINA=on
+configure.args-append \
+    -DBUILD_SHARED_LIBS=on \
+    -DGLFW_BUILD_EXAMPLES=off \
+    -DGLFW_BUILD_TESTS=off \
+    -DGLFW_CMAKE_CONFIG_PATH=share \
+    -DGLFW_USE_CHDIR=on \
+    -DGLFW_USE_MENUBAR=on \
+    -DGLFW_USE_RETINA=on
+
 
 # remove top-level library path, such that internal libraries are used
 # instead of any already-installed ones.
@@ -97,6 +90,8 @@ if {[variant_isset docs]} {
 } else {
     configure.args-append -DDOXYGEN_EXECUTABLE=
 }
+
+# error out if trying to build on OSX 10.6 or earlier; not supported
 
 variant nochdir description {disable chdir} {
     configure.args-delete -DGLFW_USE_CHDIR=on
@@ -116,10 +111,12 @@ variant noretina description {disable retina} {
 variant natron conflicts noretina requires nochdir nomenubar description {Natron version} {}
 
 platform darwin {
-    pre-fetch {
-        if {${os.major} < 10} {
-            ui_error "\n\n${name} does not support Mac OS X 10.6 or earlier.\n"
-            return -code error "Unsupported Mac OS X version."
+    if {${os.major} < 11} {
+        set os_note "${name} ${version} is designed for OS X 10.7 Lion and newer."
+        notes-append "\n\n${os_note}"
+        pre-fetch {
+            ui_error ${os_note}
+            error "unsupported platform"
         }
     }
 }

@@ -1,20 +1,21 @@
---- Portfile.orig	2016-06-15 11:20:56.000000000 +0200
-+++ Portfile	2016-06-15 11:21:04.000000000 +0200
-@@ -77,7 +77,10 @@
- configure.args      -DBUILD_SHARED_LIBS=on \
-                     -DGLFW_BUILD_EXAMPLES=off \
-                     -DGLFW_BUILD_TESTS=off \
--                    -DGLFW_CMAKE_CONFIG_PATH=share
-+                    -DGLFW_CMAKE_CONFIG_PATH=share \
-+                    -DGLFW_USE_CHDIR=on \
-+                    -DGLFW_USE_MENUBAR=on \
-+                    -DGLFW_USE_RETINA=on
+--- Portfile.orig	2016-06-20 11:18:29.000000000 +0200
++++ Portfile	2016-06-20 11:19:44.000000000 +0200
+@@ -69,7 +69,11 @@
+     -DBUILD_SHARED_LIBS=on \
+     -DGLFW_BUILD_EXAMPLES=off \
+     -DGLFW_BUILD_TESTS=off \
+-    -DGLFW_CMAKE_CONFIG_PATH=share
++    -DGLFW_CMAKE_CONFIG_PATH=share \
++    -DGLFW_USE_CHDIR=on \
++    -DGLFW_USE_MENUBAR=on \
++    -DGLFW_USE_RETINA=on
++
  
  # remove top-level library path, such that internal libraries are used
  # instead of any already-installed ones.
-@@ -95,6 +98,23 @@
-     configure.args-append -DDOXYGEN_EXECUTABLE=
- }
+@@ -89,6 +93,23 @@
+ 
+ # error out if trying to build on OSX 10.6 or earlier; not supported
  
 +variant nochdir description {disable chdir} {
 +    configure.args-delete -DGLFW_USE_CHDIR=on
@@ -34,5 +35,5 @@
 +variant natron conflicts noretina requires nochdir nomenubar description {Natron version} {}
 +
  platform darwin {
-     pre-fetch {
-         if {${os.major} < 10} {
+     if {${os.major} < 11} {
+         set os_note "${name} ${version} is designed for OS X 10.7 Lion and newer."
