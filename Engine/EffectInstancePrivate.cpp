@@ -445,6 +445,15 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
         thisGroupVar = appID;
     }
 
+    bool alreadyDefined = false;
+    PyObject* nodeObj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(thisNodeVar, NATRON_PYTHON_NAMESPACE::getMainModule(), &alreadyDefined);
+    if (!nodeObj || !alreadyDefined) {
+        return;
+    }
+
+    if (!PyObject_HasAttrString( nodeObj, k->getName().c_str() ) ) {
+        return;
+    }
 
     std::stringstream ss;
     ss << callback << "(" << thisNodeVar << "." << k->getName() << "," << thisNodeVar << "," << thisGroupVar << "," << appID
