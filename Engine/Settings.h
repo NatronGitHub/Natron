@@ -79,6 +79,13 @@ public:
         eKnownHostNameNone,
     };
 
+    enum EnableOpenGLEnum
+    {
+        eEnableOpenGLEnabled = 0,
+        eEnableOpenGLDisabled,
+        eEnableOpenGLDisabledIfBackground,
+    };
+
     Settings();
 
     virtual ~Settings()

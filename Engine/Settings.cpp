@@ -427,8 +427,8 @@ Settings::isOpenGLRenderingEnabled() const
     if (_enableOpenGL->getIsSecret()) {
         return false;
     }
-    int index = _enableOpenGL->getValue();
-    return index == 0 || (index == 2 && !appPTR->isBackground());
+    EnableOpenGLEnum enableOpenGL = (EnableOpenGLEnum)_enableOpenGL->getValue();
+    return enableOpenGL == eEnableOpenGLEnabled || (enableOpenGL == eEnableOpenGLDisabledIfBackground && !appPTR->isBackground());
 }
 
 int
@@ -490,10 +490,13 @@ Settings::initializeKnobsGPU()
     {
         std::vector<std::string> entries;
         std::vector<std::string> helps;
+        assert(entries.size() == (int)eEnableOpenGLEnabled);
         entries.push_back("Enabled");
         helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        assert(entries.size() == (int)eEnableOpenGLDisabled);
         entries.push_back("Disabled");
         helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        assert(entries.size() == (int)eEnableOpenGLDisabledIfBackground);
         entries.push_back("Disabled if background");
         helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
         _enableOpenGL->populateChoices(entries, helps);
@@ -1442,6 +1445,8 @@ Settings::setDefaultValues()
     _numberOfParallelRenders->setDefaultValue(0, 0);
 #endif
     _nOpenGLContexts->setDefaultValue(2);
+#pragma message WARN("enable OpenGL by default after 2.1 release")
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false, 0);
