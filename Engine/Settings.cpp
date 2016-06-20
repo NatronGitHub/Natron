@@ -463,25 +463,25 @@ Settings::getActiveOpenGLRendererID() const
 void
 Settings::initializeKnobsGPU()
 {
-    _gpuPage = AppManager::createKnob<KnobPage>( this, tr("GPU Rendering") );
-    _openglRendererString = AppManager::createKnob<KnobString>( this, tr("Active OpenGL Renderer") );
+    _gpuPage = AppManager::createKnob<KnobPage>( this, tr("GPU rendering") );
+    _openglRendererString = AppManager::createKnob<KnobString>( this, tr("Active OpenGL renderer") );
     _openglRendererString->setName("activeOpenGLRenderer");
-    _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer") );
+    _openglRendererString->setHintToolTip( tr("The currently active OpenGL renderer.") );
     _openglRendererString->setAsLabel();
     _gpuPage->addKnob(_openglRendererString);
 
-    _availableOpenGLRenderers = AppManager::createKnob<KnobChoice>( this, tr("Choose OpenGL Renderer") );
+    _availableOpenGLRenderers = AppManager::createKnob<KnobChoice>( this, tr("OpenGL renderer") );
     _availableOpenGLRenderers->setName("chooseOpenGLRenderer");
-    _availableOpenGLRenderers->setHintToolTip( tr("Select the renderer that will be used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
+    _availableOpenGLRenderers->setHintToolTip( tr("The renderer used to perform OpenGL rendering. Changing the OpenGL renderer requires a restart of the application.") );
     _gpuPage->addKnob(_availableOpenGLRenderers);
 
-    _nOpenGLContexts = AppManager::createKnob<KnobInt>( this, tr("Num. OpenGL Context") );
+    _nOpenGLContexts = AppManager::createKnob<KnobInt>( this, tr("No. of OpenGL Contexts") );
     _nOpenGLContexts->setName("maxOpenGLContexts");
     _nOpenGLContexts->setMinimum(1);
     _nOpenGLContexts->setDisplayMinimum(1);
     _nOpenGLContexts->setDisplayMaximum(8);
     _nOpenGLContexts->setMaximum(8);
-    _nOpenGLContexts->setHintToolTip( tr("This is the number of OpenGL contexts that will be created to perform OpenGL rendering. Each OpenGL context can be attached to a CPU thread allowing for more frames to be rendered concurrently. Increasing the value of this parameter may increase performances for graphs with mixed CPU/GPU nodes but can drastically reduce performances if too many OpenGL contexts are active at once.") );
+    _nOpenGLContexts->setHintToolTip( tr("The number of OpenGL contexts created to perform OpenGL rendering. Each OpenGL context can be attached to a CPU thread, allowing for more frames to be rendered simultaneously. Increasing this value may increase performances for graphs with mixed CPU/GPU nodes but can drastically reduce performances if too many OpenGL contexts are active at once.") );
     _gpuPage->addKnob(_nOpenGLContexts);
 
 
@@ -497,7 +497,7 @@ Settings::initializeKnobsGPU()
         entries.push_back("Disabled");
         helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
         assert(entries.size() == (int)eEnableOpenGLDisabledIfBackground);
-        entries.push_back("Disabled if background");
+        entries.push_back("Disabled If Background");
         helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
         _enableOpenGL->populateChoices(entries, helps);
     }
@@ -512,8 +512,7 @@ Settings::initializeKnobsProjectSetup()
 
     _firstReadSetProjectFormat = AppManager::createKnob<KnobBool>( this, tr("First image read set project format") );
     _firstReadSetProjectFormat->setName("autoProjectFormat");
-    _firstReadSetProjectFormat->setHintToolTip( tr("If checked, the first image you read in the project sets the project format to the "
-                                                   "image size.") );
+    _firstReadSetProjectFormat->setHintToolTip( tr("If checked, the project size is set to this of the first image or video read within the project.") );
     _projectsPage->addKnob(_firstReadSetProjectFormat);
 
 
