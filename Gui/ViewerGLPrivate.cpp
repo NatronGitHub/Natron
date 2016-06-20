@@ -67,7 +67,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , vboTexturesId(0)
     , iboTriangleStripId(0)
     , displayTextures()
-    , displayTextures()
     , partialUpdateTextures()
     , shaderRGB()
     , shaderBlack()

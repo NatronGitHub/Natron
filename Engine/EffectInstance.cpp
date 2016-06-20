@@ -1521,12 +1521,20 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     GLuint pboID = context->getPBOId();
     assert(pboID != 0);
     glEnable(GL_TEXTURE_2D);
+    // bind PBO to update texture source
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
     std::size_t dataSize = bounds.area() * 4 * info.dataTypeSize;
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW);
 
-    void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    // Note that glMapBufferARB() causes sync issue.
+    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+    // until GPU to finish its job. To avoid waiting (idle), you can call
+    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBufferARB() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
+    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
     if (useTmpImage) {
@@ -1543,19 +1551,24 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     const unsigned char* srcdata = racc.pixelAt(bounds.x1, bounds.y1);
     assert(srcdata);
 
-    memcpy(gpuData, srcdata, dataSize);
-
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-
+    GLvoid* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    if (gpuData) {
+            // update data directly on the mapped buffer
+        memcpy(gpuData, srcdata, dataSize);
+        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        assert(result == GL_TRUE);
+        Q_UNUSED(result);
+    }
+    glCheckError();
 
     // The creation of the image will use glTexImage2D and will get filled with the PBO
     ImagePtr gpuImage;
     getOrCreateFromCacheInternal(image->getKey(), params, false /*useCache*/, &gpuImage);
-    if (!gpuImage) {
-        return gpuImage;
-    }
+
+    // it is good idea to release PBOs with ID 0 after use.
+    // Once bound with 0, all pixel operations are back to normal ways.
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    //glBindTexture(GL_TEXTURE_2D, 0); // useless, we didn't bind anything
     glCheckError();
 
 

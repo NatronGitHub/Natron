@@ -1209,24 +1209,43 @@ Image::pasteFrom(const Image & src,
         int target = getGLTextureTarget();
         glEnable(target);
 
+        // bind PBO to update texture source
         glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
         std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
+
+        // Note that glMapBufferARB() causes sync issue.
+        // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+        // until GPU to finish its job. To avoid waiting (idle), you can call
+        // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+        // If you do that, the previous data in PBO will be discarded and
+        // glMapBufferARB() returns a new allocated pointer immediately
+        // even if GPU is still working with the previous data.
         glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
 
+        // map the buffer object into client's memory
         void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
-        tmpImg->pasteFrom(src, roi);
+        assert(gpuData);
+        if (gpuData) {
+            // update data directly on the mapped buffer
+            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+            tmpImg->pasteFrom(src, roi);
 
-        Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
-        const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
-        assert(srcdata);
+            Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
+            const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
+            assert(srcdata);
+            
+            memcpy(gpuData, srcdata, dataSize);
 
-        memcpy(gpuData, srcdata, dataSize);
+            GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+            assert(result == GL_TRUE);
+            Q_UNUSED(result);
+        }
 
-        glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-
+        // bind the texture
         glBindTexture( target, getGLTextureID() );
+        // copy pixels from PBO to texture object
+        // Use offset instead of pointer (last parameter is 0).
         glTexSubImage2D(target,
                         0,              // level
                         roi.x1, roi.y1,               // xoffset, yoffset

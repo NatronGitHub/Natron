@@ -1174,74 +1174,94 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Ima
         glGenBuffers(1, &pboID);
     }
 
+    // bind PBO to update texture source
     glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboID );
+
+    // Note that glMapBufferARB() causes sync issue.
+    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+    // until GPU to finish its job. To avoid waiting (idle), you can call
+    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBufferARB() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+
+    // map the buffer object into client's memory
     GLvoid *buf = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError();
     assert(buf);
+    if (buf) {
+        // update data directly on the mapped buffer
+        if (!image) {
+            int pixelsCount = roi.area();
+            unsigned int* dstPixels = (unsigned int*)buf;
+            for (int i = 0; i < pixelsCount; ++i, ++dstPixels) {
+                *dstPixels = toBGRA(0, 0, 0, 255);
+            }
+        } else {
+            int srcNComps = (int)image->getComponentsCount();
+            assert(srcNComps >= 3);
+            Image::ReadAccess acc( image.get() );
+            const float* srcPixels = (const float*)acc.pixelAt(roi.x1, roi.y1);
+            unsigned int* dstPixels = (unsigned int*)buf;
+            assert(srcPixels);
 
-    if (!image) {
-        int pixelsCount = roi.area();
-        unsigned int* dstPixels = (unsigned int*)buf;
-        for (int i = 0; i < pixelsCount; ++i, ++dstPixels) {
-            *dstPixels = toBGRA(0, 0, 0, 255);
-        }
-    } else {
-        int srcNComps = (int)image->getComponentsCount();
-        assert(srcNComps >= 3);
-        Image::ReadAccess acc( image.get() );
-        const float* srcPixels = (const float*)acc.pixelAt(roi.x1, roi.y1);
-        unsigned int* dstPixels = (unsigned int*)buf;
-        assert(srcPixels);
+            int w = roi.width();
+            int srcRowElements = bounds.width() * srcNComps;
+            const Color::Lut* lut = Color::LutManager::sRGBLut();
+            lut->validate();
+            assert(lut);
 
-        int w = roi.width();
-        int srcRowElements = bounds.width() * srcNComps;
-        const Color::Lut* lut = Color::LutManager::sRGBLut();
-        lut->validate();
-        assert(lut);
+            unsigned char alpha = 255;
 
-        unsigned char alpha = 255;
+            for (int y = roi.y1; y < roi.y2; ++y, dstPixels += w, srcPixels += srcRowElements) {
+                int start = (int)( rand() % (roi.x2 - roi.x1) );
 
-        for (int y = roi.y1; y < roi.y2; ++y, dstPixels += w, srcPixels += srcRowElements) {
-            int start = (int)( rand() % (roi.x2 - roi.x1) );
+                for (int backward = 0; backward < 2; ++backward) {
+                    int index = backward ? start - 1 : start;
+                    assert( backward == 1 || ( index >= 0 && index < (roi.x2 - roi.x1) ) );
+                    unsigned error_r = 0x80;
+                    unsigned error_g = 0x80;
+                    unsigned error_b = 0x80;
 
-            for (int backward = 0; backward < 2; ++backward) {
-                int index = backward ? start - 1 : start;
-                assert( backward == 1 || ( index >= 0 && index < (roi.x2 - roi.x1) ) );
-                unsigned error_r = 0x80;
-                unsigned error_g = 0x80;
-                unsigned error_b = 0x80;
+                    while (index < w && index >= 0) {
+                        float r = srcPixels[index * srcNComps];
+                        float g = srcPixels[index * srcNComps + 1];
+                        float b = srcPixels[index * srcNComps + 2];
 
-                while (index < w && index >= 0) {
-                    float r = srcPixels[index * srcNComps];
-                    float g = srcPixels[index * srcNComps + 1];
-                    float b = srcPixels[index * srcNComps + 2];
+                        error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
+                        error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
+                        error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
+                        assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
 
-                    error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
-                    error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
-                    error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
-                    assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-
-                    dstPixels[index] = toBGRA( (U8)(error_r >> 8),
-                                               (U8)(error_g >> 8),
-                                               (U8)(error_b >> 8),
-                                               alpha );
-
-
-                    if (backward) {
-                        --index;
-                    } else {
-                        ++index;
+                        dstPixels[index] = toBGRA( (U8)(error_r >> 8),
+                                                  (U8)(error_g >> 8),
+                                                  (U8)(error_b >> 8),
+                                                  alpha );
+                        
+                        
+                        if (backward) {
+                            --index;
+                        } else {
+                            ++index;
+                        }
                     }
                 }
             }
         }
+        
+        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        assert(result == GL_TRUE);
+        Q_UNUSED(result);
     }
-
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
     glCheckError();
-    tex->fillOrAllocateTexture(region, RectI(), false);
 
+    // copy pixels from PBO to texture object
+    // using glBindTexture followed by glTexSubImage2D.
+    // Use offset instead of pointer (last parameter is 0).
+    tex->fillOrAllocateTexture(region, RectI(), false, 0);
+
+    // restore previously bound PBO
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
 
     glCheckError();

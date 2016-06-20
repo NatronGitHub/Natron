@@ -131,7 +131,7 @@ public:
      * @param roi if updateOnlyRoi is true, this will be the portion of the texture to update with glTexSubImage2D
      * @param updateOnlyRoI if updateOnlyRoi is true, only the portion defined by roi will be updated on the texture
      **/
-    void fillOrAllocateTexture(const TextureRect & texRect, const RectI& roi, bool updateOnlyRoi, const unsigned char* originalRAMBuffer = 0);
+    void fillOrAllocateTexture(const TextureRect & texRect, const RectI& roi, bool updateOnlyRoi, const unsigned char* originalRAMBuffer);
 
     /**
      * @brief The bounds of the texture

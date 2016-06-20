@@ -1629,19 +1629,38 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
         }
     }
 
+    // bind PBO to update texture source
     glBindBufferARB( GL_PIXEL_UNPACK_BUFFER_ARB, pboId );
+
+    // Note that glMapBufferARB() causes sync issue.
+    // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
+    // until GPU to finish its job. To avoid waiting (idle), you can call
+    // first glBufferDataARB() with NULL pointer before glMapBufferARB().
+    // If you do that, the previous data in PBO will be discarded and
+    // glMapBufferARB() returns a new allocated pointer immediately
+    // even if GPU is still working with the previous data.
     glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
+
+    // map the buffer object into client's memory
     GLvoid *ret = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError();
     assert(ret);
     assert(ramBuffer);
-    std::memcpy(ret, (void*)ramBuffer, bytesCount);
-
-    glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB);
+    if (ret) {
+        // update data directly on the mapped buffer
+        std::memcpy(ret, (void*)ramBuffer, bytesCount);
+        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        assert(result == GL_TRUE);
+        Q_UNUSED(result);
+    }
     glCheckError();
 
-    tex->fillOrAllocateTexture(textureRectangle, tileRect, true);
+    // copy pixels from PBO to texture object
+    // using glBindTexture followed by glTexSubImage2D.
+    // Use offset instead of pointer (last parameter is 0).
+    tex->fillOrAllocateTexture(textureRectangle, tileRect, true, 0);
 
+    // restore previously bound PBO
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
     glCheckError();

@@ -121,7 +121,6 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
             glEnable(_target);
             glBindTexture (_target, _texID);
 
-
             glTexSubImage2D(_target,
                             0,              // level
                             x1, y1,               // xoffset, yoffset
@@ -129,7 +128,6 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                             _format,            // format
                             _glType,       // type
                             originalRAMBuffer);
-
 
             glBindTexture (_target, 0);
             glCheckError();
