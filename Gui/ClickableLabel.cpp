@@ -28,11 +28,13 @@
 
 #include <QApplication>
 #include <QEvent>
+#include <QMouseEvent>
 #include <QStyle>
 
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Label.h"
 #include "Gui/KnobGui.h"
+#include "Gui/GuiMacros.h"
 #include "Gui/KnobWidgetDnD.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -65,7 +67,7 @@ ClickableLabel::ClickableLabel(const QPixmap &icon,
 void
 ClickableLabel::mousePressEvent(QMouseEvent* e)
 {
-    if ( isEnabled() ) {
+    if ( isEnabled() && buttonDownIsLeft(e)) {
         _toggled = !_toggled;
         Q_EMIT clicked(_toggled);
     }

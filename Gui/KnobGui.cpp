@@ -397,11 +397,19 @@ KnobGui::createAnimationMenu(QMenu* menu,
     menu->clear();
     bool dimensionHasKeyframeAtTime = false;
     bool hasAllKeyframesAtTime = true;
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    int nDims = knob->getDimension();
+
+
+    if (dimension == -1 && nDims == 1) {
+        dimension = 0;
+    }
+
+
+    for (int i = 0; i < nDims; ++i) {
         AnimationLevelEnum lvl = knob->getAnimationLevel(i);
         if (lvl != eAnimationLevelOnKeyframe) {
             hasAllKeyframesAtTime = false;
-        } else if ( (dimension == i) && (lvl == eAnimationLevelOnKeyframe) ) {
+        } else if ( dimension == i && (lvl == eAnimationLevelOnKeyframe) ) {
             dimensionHasKeyframeAtTime = true;
         }
     }
@@ -412,7 +420,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     bool isEnabled = true;
     bool dimensionIsSlaved = false;
 
-    for (int i = 0; i < knob->getDimension(); ++i) {
+    for (int i = 0; i < nDims; ++i) {
         if ( knob->isSlave(i) ) {
             hasDimensionSlaved = true;
 
@@ -435,7 +443,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
         }
     }
 
-    bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp() != 0;
+    bool isAppKnob = knob->getHolder() && knob->getHolder()->getApp();
 
     if ( (knob->getDimension() > 1) && knob->isAnimationEnabled() && !hasDimensionSlaved && isAppKnob ) {
         ///Multi-dim actions
