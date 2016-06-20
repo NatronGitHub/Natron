@@ -40,7 +40,9 @@ NATRON_NAMESPACE_ENTER;
 class LogWindow
     : public QWidget
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     QVBoxLayout* mainLayout;
     QTextBrowser* textBrowser;
@@ -67,7 +69,9 @@ private:
 class LogWindowModal
 : public QDialog
 {
+GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
+GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     QVBoxLayout* mainLayout;
     QTextBrowser* textBrowser;
