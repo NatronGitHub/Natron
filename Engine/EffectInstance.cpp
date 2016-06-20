@@ -1554,7 +1554,6 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     if (!gpuImage) {
         return gpuImage;
     }
-
     glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
     glCheckError();
@@ -2704,6 +2703,9 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             // Enable scissor to make the plug-in doesn't render outside of the viewport...
             glEnable(GL_SCISSOR_TEST);
             glScissor( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
+
+            // Ensure that previous asynchronous operations are done (e.g: glTexImage2D) some plug-ins seem to require it (Hitfilm Ignite plugin-s)
+            glFinish();
         }
 
         StatusEnum st = _publicInterface->render_public(actionArgs);
