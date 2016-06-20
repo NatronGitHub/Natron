@@ -1233,7 +1233,7 @@ Image::pasteFrom(const Image & src,
                         roi.width(), roi.height(),
                         src.getGLTextureFormat(),            // format
                         src.getGLTextureType(),       // type
-                        srcdata);
+                        0);
 
         glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
         glBindTexture(target, 0);
