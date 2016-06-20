@@ -620,6 +620,8 @@ private:
 
 
     static double currentTimeForEvent(QInputEvent* e);
+
+private:
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };

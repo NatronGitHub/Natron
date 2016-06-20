@@ -45,6 +45,8 @@ CLANG_DIAG_ON(uninitialized)
 #define WIPE_ROTATE_HANDLE_LENGTH 100.
 #define WIPE_ROTATE_OFFSET 30
 
+#define MAX_MIP_MAP_LEVELS 20
+
 NATRON_NAMESPACE_ENTER;
 
 /*This class is the the core of the viewer : what displays images, overlays, etc...
@@ -94,6 +96,24 @@ enum PickerStateEnum
 
 struct TextureInfo
 {
+    TextureInfo()
+        : texture()
+        , roiNotRoundedToTileSize()
+        , gain(1.)
+        , gamma(1.)
+        , offset(0.)
+        , mipMapLevel(0)
+        , premult(eImagePremultiplicationOpaque)
+        , time(0)
+        , rod()
+        , format()
+        , lastRenderedTiles(MAX_MIP_MAP_LEVELS)
+        , memoryHeldByLastRenderedImages(0)
+        , isPartialImage(false)
+        , isVisible(false)
+    {
+    }
+
     GLTexturePtr texture;
     TextureRect roiNotRoundedToTileSize;
     double gain;

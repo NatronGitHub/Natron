@@ -54,7 +54,6 @@
 #endif
 
 
-#define MAX_MIP_MAP_LEVELS 20
 
 NATRON_NAMESPACE_ENTER;
 
@@ -67,6 +66,7 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , vboVerticesId(0)
     , vboTexturesId(0)
     , iboTriangleStripId(0)
+    , displayTextures()
     , displayTextures()
     , partialUpdateTextures()
     , shaderRGB()
@@ -130,17 +130,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     infoViewer[0] = 0;
     infoViewer[1] = 0;
 
-    for (int i = 0; i < 2; ++i) {
-        displayTextures[i].isPartialImage = false;
-        displayTextures[i].gain = 1.;
-        displayTextures[i].gamma = 1.;
-        displayTextures[i].offset = 0.;
-        displayTextures[i].memoryHeldByLastRenderedImages = 0;
-        displayTextures[i].time = 0;
-        displayTextures[i].mipMapLevel = 0;
-        displayTextures[i].isVisible = false;
-        displayTextures[i].lastRenderedTiles.resize(MAX_MIP_MAP_LEVELS);
-    }
     assert( qApp && qApp->thread() == QThread::currentThread() );
     //menu->setFont( QFont(appFont,appFontSize) );
 
@@ -170,7 +159,7 @@ ViewerGL::Implementation::~Implementation()
     }
     partialUpdateTextures.clear();
 
-    if ( appPTR->isOpenGLLoaded() ) {
+    if ( appPTR && appPTR->isOpenGLLoaded() ) {
         glCheckError();
         for (U32 i = 0; i < this->pboIds.size(); ++i) {
             glDeleteBuffers(1, &this->pboIds[i]);
