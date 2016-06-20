@@ -4140,7 +4140,7 @@ Node::handleFormatKnob(KnobI* knob)
         return false;
     }
     if (choice->getIsSecret()) {
-        return false;
+        return true;
     }
     int curIndex = choice->getValue();
     Format f;
