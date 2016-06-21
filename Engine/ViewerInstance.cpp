@@ -982,7 +982,8 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 it->toPixelEnclosing(mipmapLevel, outArgs->params->pixelAspectRatio, &pixelRect);
                 ///Intersect to the RoI
                 if ( pixelRect.intersect(outArgs->params->roi, &pixelRect) ) {
-                    tile.rect = tile.rectRounded = pixelRect;
+                    tile.rect.set(pixelRect);
+                    tile.rectRounded  = pixelRect;
                     tile.rect.closestPo2 = 1 << mipmapLevel;
                     tile.rect.par = outArgs->params->pixelAspectRatio;
                     tile.bytesCount = tile.rect.area() * 4;
@@ -994,7 +995,8 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 }
             }
         } else {
-            tile.rect = tile.rectRounded = outArgs->params->roi;
+            tile.rect.set(outArgs->params->roi);
+            tile.rectRounded = outArgs->params->roi;
             tile.rect.closestPo2 = 1 << mipmapLevel;
             tile.rect.par = outArgs->params->pixelAspectRatio;
             tile.bytesCount = tile.rect.area() * 4;
@@ -1015,7 +1017,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
         for (std::vector<RectI>::iterator it = tiles.begin(); it != tiles.end(); ++it, ++itRounded) {
             UpdateViewerParams::CachedTile tile;
             tile.rectRounded = *itRounded;
-            tile.rect = *it;
+            tile.rect.set(*it);
             tile.rect.closestPo2 = 1 << mipmapLevel;
             tile.rect.par = outArgs->params->pixelAspectRatio;
             tile.bytesCount = outArgs->params->tileSize * outArgs->params->tileSize * 4; // RGBA
@@ -1591,7 +1593,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             updateParams->mustFreeRamBuffer = true;
             updateParams->isPartialRect = true;
             UpdateViewerParams::CachedTile tile;
-            tile.rect = viewerRenderRoI;
+            tile.rect.set(viewerRenderRoI);
             tile.rectRounded = viewerRenderRoI;
             std::size_t pixelSize = 4;
             if (updateParams->depth == eImageBitDepthFloat) {
@@ -2119,7 +2121,9 @@ scaleToTexture8bits_generic(const RectI& roi,
     Image::ReadAccess acc = Image::ReadAccess( args.inputImage.get() );
     const RectI srcImgBounds = args.inputImage->getBounds();
 
-    assert( (args.renderOnlyRoI && roi.x1 >= tile.rect.x1 && roi.x2 <= tile.rect.x2 && roi.y1 >= tile.rect.y1 && roi.y2 <= tile.rect.y2) || (!args.renderOnlyRoI && tile.rect.x1 >= roi.x1 && tile.rect.x2 <= roi.x2 && tile.rect.y1 >= roi.y1 && tile.rect.y2 <= roi.y2) );
+    if ( (args.renderOnlyRoI && !tile.rect.contains(roi)) || (!args.renderOnlyRoI && !roi.contains(tile.rect)) ) {
+        return;
+    }
     assert(tile.rect.x2 > tile.rect.x1);
 
     int dstRowElements;
@@ -2881,7 +2885,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
             TextureRect texRect;
             texRect.par = it->rect.par;
             texRect.closestPo2 = it->rect.closestPo2;
-            texRect = it->rectRounded;
+            texRect.set(it->rectRounded);
     
             assert(params->roi.contains(texRect));
             uiContext->transferBufferFromRAMtoGPU(it->ramBuffer, it->bytesCount, params->roi, params->roiNotRoundedToTileSize, texRect, params->textureIndex, params->isPartialRect, isFirstTile, &texture);

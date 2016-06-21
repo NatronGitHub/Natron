@@ -1618,8 +1618,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
             Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
             _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
         }
-        textureRectangle = roiRoundedToTileSize;
-        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize = roi;
+        textureRectangle.set(roiRoundedToTileSize);
+        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.set(roi);
         _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.closestPo2 = tileRect.closestPo2;
         _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.par = tileRect.par;
         textureRectangle.par = tileRect.par;
@@ -2664,7 +2664,7 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
     if (!currentTexRoi.contains(roi)) {
         return false;
     }
-    _imp->displayTextures[texIndex].roiNotRoundedToTileSize = roiNotRounded;
+    _imp->displayTextures[texIndex].roiNotRoundedToTileSize.set(roiNotRounded);
 
     return true;
 }
