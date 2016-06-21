@@ -22,6 +22,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <gtest/gtest.h>
 
 #include <QtCore/QString>
