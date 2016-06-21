@@ -163,6 +163,14 @@ unix:LIBS += $$QMAKE_LIBS_DYNLOAD
    }
 }
 
+*clang* {
+  openmp {
+    QMAKE_CXXFLAGS += -fopenmp
+    QMAKE_CFLAGS += -fopenmp
+    QMAKE_LFLAGS += -fopenmp
+   }
+}
+
 macx {
   # Set the pbuilder version to 46, which corresponds to Xcode >= 3.x
   # (else qmake generates an old pbproj on Snow Leopard)
@@ -196,6 +204,11 @@ macx {
 macx-clang-libc++ {
     # in Qt 4.8.7, objective-C misses the stdlib and macos version flags
     QMAKE_OBJECTIVE_CFLAGS += -stdlib=libc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
+}
+
+macx-clang {
+    QMAKE_CXXFLAGS += -stdlib=libstdc++
+    QMAKE_OBJECTIVE_CFLAGS += -stdlib=libstdc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
 }
 
 CONFIG(debug) {
