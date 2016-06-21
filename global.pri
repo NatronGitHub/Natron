@@ -207,8 +207,7 @@ macx-clang-libc++ {
 }
 
 macx-clang {
-    QMAKE_CXXFLAGS += -stdlib=libstdc++
-    QMAKE_OBJECTIVE_CFLAGS += -stdlib=libstdc++ -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
+    QMAKE_OBJECTIVE_CFLAGS += -mmacosx-version-min=$$QMAKE_MACOSX_DEPLOYMENT_TARGET
 }
 
 CONFIG(debug) {
