@@ -3033,6 +3033,8 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         redrawOverlayInteract();
         _imp->ui->evaluateOnPenUp = false;
     }
+
+    bool ret = false;
     _imp->ui->tangentBeingDragged.reset();
     _imp->ui->bezierBeingDragged.reset();
     _imp->ui->cpBeingDragged.first.reset();
@@ -3072,6 +3074,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         context->evaluateNeatStrokeRender();
         setCurrentCursor(eCursorDefault);
         _imp->ui->strokeBeingPaint->setStrokeFinished();
+        ret = true;
     }
 
     _imp->ui->state = eEventStateNone;
@@ -3079,13 +3082,15 @@ RotoPaint::onOverlayPenUp(double /*time*/,
     if ( (_imp->ui->selectedTool == eRotoToolDrawEllipse) || (_imp->ui->selectedTool == eRotoToolDrawRectangle) ) {
         _imp->ui->selectedCps.clear();
         _imp->ui->setCurrentTool( _imp->ui->selectAllAction.lock() );
+        ret = true;
     }
 
     if (_imp->ui->lastTabletDownTriggeredEraser) {
         _imp->ui->setCurrentTool( _imp->ui->lastPaintToolAction.lock() );
+        ret = true;
     }
 
-    return true;
+    return ret;
 } // onOverlayPenUp
 
 bool
