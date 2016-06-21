@@ -1031,15 +1031,19 @@ RotoDrawableItem::isActivated(double time) const
     if ( !isGloballyActivated() ) {
         return false;
     }
-    int lifetime_i = _imp->lifeTime->getValue();
-    if (lifetime_i == 0) {
-        return time == _imp->lifeTimeFrame->getValue();
-    } else if (lifetime_i == 1) {
-        return time <= _imp->lifeTimeFrame->getValue();
-    } else if (lifetime_i == 2) {
-        return time >= _imp->lifeTimeFrame->getValue();
-    } else {
-        return _imp->activated->getValueAtTime(time);
+    try {
+        int lifetime_i = _imp->lifeTime->getValue();
+        if (lifetime_i == 0) {
+            return time == _imp->lifeTimeFrame->getValue();
+        } else if (lifetime_i == 1) {
+            return time <= _imp->lifeTimeFrame->getValue();
+        } else if (lifetime_i == 2) {
+            return time >= _imp->lifeTimeFrame->getValue();
+        } else {
+            return _imp->activated->getValueAtTime(time);
+        }
+    } catch (std::runtime_error) {
+        return false;
     }
 }
 

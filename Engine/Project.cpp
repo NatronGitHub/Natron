@@ -2326,7 +2326,12 @@ Project::onOCIOConfigPathChanged(const std::string& path,
     beginChanges();
 
     try {
-        std::string oldEnv = _imp->envVars->getValue();
+        std::string oldEnv;
+        try {
+            oldEnv = _imp->envVars->getValue();
+        } catch (...) {
+            // ignore
+        }
         std::list<std::vector<std::string> > table;
         _imp->envVars->decodeFromKnobTableFormat(oldEnv, &table);
 

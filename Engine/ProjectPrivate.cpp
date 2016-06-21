@@ -257,7 +257,13 @@ ProjectPrivate::autoSetProjectDirectory(const QString& path)
     if ( !pathCpy.empty() && (pathCpy[pathCpy.size() - 1] == '/') ) {
         pathCpy.erase(pathCpy.size() - 1, 1);
     }
-    std::string env = envVars->getValue();
+    std::string env;
+    try {
+        env = envVars->getValue();
+    } catch (...) {
+        // ignore
+    }
+
     std::list<std::vector<std::string> > table;
     envVars->decodeFromKnobTableFormat(env, &table);
 

@@ -1559,9 +1559,6 @@ GroupFromSelectionCommand::undo()
 void
 GroupFromSelectionCommand::redo()
 {
-
-
-
     // The group position will be at the centroid of all selected nodes
     QPointF groupPosition;
 
@@ -1583,17 +1580,24 @@ GroupFromSelectionCommand::redo()
         groupPosition.ry() /= sz;
     }
 
-
     boost::shared_ptr<NodeGroup> isGrp;
     if (_firstRedoCalled) {
         isGrp = boost::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
+        assert(isGrp);
+        if (!isGrp) {
+            throw std::logic_error("GroupFromSelectionCommand::redo()");
+        }
     } else {
         NodesList internalNewNodes;
         // Create the actual Group node
         CreateNodeArgs groupArgs( QString::fromUtf8(PLUGINID_NATRON_GROUP), eCreateNodeReasonInternal, _graph->getGroup() );
         NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
+
         isGrp = boost::dynamic_pointer_cast<NodeGroup>( containerNode->getEffectInstance()->shared_from_this() );
         assert(isGrp);
+        if (!isGrp) {
+            throw std::logic_error("GroupFromSelectionCommand::redo()");
+        }
         boost::shared_ptr<NodeGuiI> container_i = containerNode->getNodeGui();
         assert(container_i);
         _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
@@ -1602,11 +1606,9 @@ GroupFromSelectionCommand::redo()
         // Set the position of the group
         container_i->setPosition( groupPosition.x(), groupPosition.y() );
 
-
         // Copy all the selected nodes and paste them in the newly created Group
         std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
         _graph->copyNodesAndCreateInGroup(originalNodes, isGrp, newNodes);
-
 
         for (std::list<std::pair<std::string, NodeGuiPtr > >::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
             internalNewNodes.push_back( it->second->getNode() );
@@ -1618,7 +1620,6 @@ GroupFromSelectionCommand::redo()
         bool hasCreatedOutput = false;
         int inputNb = 0;
         for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-
             NodeGuiPtr foundOriginalOutputNode;
             for (NodesGuiList::const_iterator it3 = originalNodes.begin(); it3 != originalNodes.end(); ++it3) {
                 if ( (*it3)->getNode()->getScriptName_mt_safe() == it->output.node->getScriptName_mt_safe() ) {
@@ -1627,6 +1628,9 @@ GroupFromSelectionCommand::redo()
                 }
             }
             assert(foundOriginalOutputNode);
+            if (!foundOriginalOutputNode) {
+                continue;
+            }
 
             // For each input node of each tree branch within the group, add a Input node in input of that branch
             // to actually create the input on the Group node
@@ -1684,9 +1688,8 @@ GroupFromSelectionCommand::redo()
                 } // for all node's inputs
             } // for all inputs in the tree
             //Create only a single output
+
             if (!hasCreatedOutput) {
-
-
                 CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isGrp);
                 NodePtr output = _graph->getGui()->getApp()->createNode(args);
                 try {
@@ -1724,12 +1727,8 @@ GroupFromSelectionCommand::redo()
                 link.inputNode = foundOriginalOutputNode->getNode();
                 link.inputIdx = inputIdx;
             }
-
         } // for all trees
-
     } // !_firstRedoCalled
-
-    assert(isGrp);
 
     if (_firstRedoCalled) {
         for (OutputLinksMap::iterator it = _outputLinks.begin(); it != _outputLinks.end(); ++it) {
