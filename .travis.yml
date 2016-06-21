@@ -108,10 +108,9 @@ matrix:
   exclude:
     - os: osx
       compiler: gcc
-# Uncomment the following if OSX build times out (happens when building with python3)
-#  allow_failures:
-#    - os: osx # we exceed the time limit
-#  fast_finish: true
+  allow_failures:
+    - os: osx # we exceed the time limit
+  fast_finish: true
 
 cache:
   apt: true
