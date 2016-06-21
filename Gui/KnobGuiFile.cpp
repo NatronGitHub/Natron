@@ -249,6 +249,9 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
         return false;
     }
     boost::shared_ptr<KnobFile> knob = _knob.lock();
+    if (!knob) {
+        return false;
+    }
     EffectInstance* effect = dynamic_cast<EffectInstance*>( knob->getHolder() );
     assert(effect);
     if ( !effect || !effect->getNode()->isActivated() ) {

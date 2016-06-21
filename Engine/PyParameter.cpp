@@ -643,7 +643,7 @@ void
 IntParam::setDefaultValue(int value,
                           int dimension)
 {
-    _intKnob.lock()->setDefaultValue(value, dimension);
+    _intKnob.lock()->setDefaultValueWithoutApplying(value, dimension);
 }
 
 int
@@ -655,7 +655,7 @@ IntParam::getDefaultValue(int dimension) const
 void
 IntParam::restoreDefaultValue(int dimension)
 {
-    _intKnob.lock()->resetToDefaultValue(dimension);
+    _intKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 void
@@ -895,7 +895,7 @@ void
 DoubleParam::setDefaultValue(double value,
                              int dimension)
 {
-    _doubleKnob.lock()->setDefaultValue(value, dimension);
+    _doubleKnob.lock()->setDefaultValueWithoutApplying(value, dimension);
 }
 
 double
@@ -907,7 +907,7 @@ DoubleParam::getDefaultValue(int dimension) const
 void
 DoubleParam::restoreDefaultValue(int dimension)
 {
-    _doubleKnob.lock()->resetToDefaultValue(dimension);
+    _doubleKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 void
@@ -1088,7 +1088,7 @@ void
 ColorParam::setDefaultValue(double value,
                             int dimension)
 {
-    _colorKnob.lock()->setDefaultValue(value, dimension);
+    _colorKnob.lock()->setDefaultValueWithoutApplying(value, dimension);
 }
 
 double
@@ -1100,7 +1100,7 @@ ColorParam::getDefaultValue(int dimension) const
 void
 ColorParam::restoreDefaultValue(int dimension)
 {
-    _colorKnob.lock()->resetToDefaultValue(dimension);
+    _colorKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(dimension);
 }
 
 void
@@ -1243,13 +1243,13 @@ ChoiceParam::setValueAtTime(int value,
 void
 ChoiceParam::setDefaultValue(int value)
 {
-    _choiceKnob.lock()->setDefaultValue(value, 0);
+    _choiceKnob.lock()->setDefaultValueWithoutApplying(value, 0);
 }
 
 void
 ChoiceParam::setDefaultValue(const QString& value)
 {
-    _choiceKnob.lock()->setDefaultValueFromLabel( value.toStdString() );
+    _choiceKnob.lock()->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
 }
 
 int
@@ -1261,7 +1261,7 @@ ChoiceParam::getDefaultValue() const
 void
 ChoiceParam::restoreDefaultValue()
 {
-    _choiceKnob.lock()->resetToDefaultValue(0);
+    _choiceKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
 void
@@ -1402,7 +1402,7 @@ BooleanParam::setValueAtTime(bool value,
 void
 BooleanParam::setDefaultValue(bool value)
 {
-    _boolKnob.lock()->setDefaultValue(value, 0);
+    _boolKnob.lock()->setDefaultValueWithoutApplying(value, 0);
 }
 
 bool
@@ -1414,7 +1414,7 @@ BooleanParam::getDefaultValue() const
 void
 BooleanParam::restoreDefaultValue()
 {
-    _boolKnob.lock()->resetToDefaultValue(0);
+    _boolKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
 bool
@@ -1493,7 +1493,7 @@ StringParamBase::setValueAtTime(const QString& value,
 void
 StringParamBase::setDefaultValue(const QString& value)
 {
-    _stringKnob.lock()->setDefaultValue(value.toStdString(), 0);
+    _stringKnob.lock()->setDefaultValueWithoutApplying(value.toStdString(), 0);
 }
 
 QString
@@ -1505,7 +1505,7 @@ StringParamBase::getDefaultValue() const
 void
 StringParamBase::restoreDefaultValue()
 {
-    _stringKnob.lock()->resetToDefaultValue(0);
+    _stringKnob.lock()->resetToDefaultValueWithoutSecretNessAndEnabledNess(0);
 }
 
 QString

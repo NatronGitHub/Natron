@@ -57,7 +57,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
-#define NATRON_PYPLUG_EXPORTER_VERSION 9
+#define NATRON_PYPLUG_EXPORTER_VERSION 10
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1918,6 +1918,7 @@ exportUserKnob(int indentLevel,
                                                          NUM_INT(i) + QString::fromUtf8(")") );
             }
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_INT(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue(") + NUM_INT(i) + QString::fromUtf8(")") );
         }
     } else if (isDouble) {
         QString createToken;
@@ -1964,6 +1965,7 @@ exportUserKnob(int indentLevel,
             }
             if (defaultValues[i] != 0.) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_VALUE(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue(") + NUM_INT(i) + QString::fromUtf8(")") );
             }
         }
     } else if (isBool) {
@@ -1975,6 +1977,7 @@ exportUserKnob(int indentLevel,
 
         if (defaultValues[0]) {
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(True)") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
         }
     } else if (isChoice) {
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createChoiceParam(") +
@@ -2005,12 +2008,14 @@ exportUserKnob(int indentLevel,
             if (defaultValues[0] != 0) {
                 std::string entryStr = isChoice->getEntry(defaultValues[0]);
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(entryStr) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
             }
         } else {
             std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
             assert( (int)defaultValues.size() == isChoice->getDimension() );
             if (defaultValues[0] != 0) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_INT(defaultValues[0]) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()"));
             }
         }
     } else if (isColor) {
@@ -2045,6 +2050,7 @@ exportUserKnob(int indentLevel,
             }
             if (defaultValues[i] != 0.) {
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + NUM_VALUE(defaultValues[i]) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
+                WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue(") + NUM_INT(i) + QString::fromUtf8(")") );
             }
         }
     } else if (isButton) {
@@ -2080,6 +2086,7 @@ exportUserKnob(int indentLevel,
         QString def = QString::fromUtf8( defaultValues[0].c_str() );
         if ( !def.isEmpty() ) {
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
         }
     } else if (isFile) {
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createFileParam(") + ESC( isFile->getName() ) +
@@ -2092,6 +2099,7 @@ exportUserKnob(int indentLevel,
         QString def = QString::fromUtf8( defaultValues[0].c_str() );
         if ( !def.isEmpty() ) {
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue()") + def + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
         }
     } else if (isOutFile) {
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createOutputFileParam(") +
@@ -2106,6 +2114,7 @@ exportUserKnob(int indentLevel,
         QString def = QString::fromUtf8( defaultValues[0].c_str() );
         if ( !def.isEmpty() ) {
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
         }
     } else if (isPath) {
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createPathParam(") +
@@ -2120,6 +2129,7 @@ exportUserKnob(int indentLevel,
         QString def = QString::fromUtf8( defaultValues[0].c_str() );
         if ( !def.isEmpty() ) {
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(def) + QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
         }
     } else if (isGrp) {
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param = ") + fullyQualifiedNodeName + QString::fromUtf8(".createGroupParam(") +

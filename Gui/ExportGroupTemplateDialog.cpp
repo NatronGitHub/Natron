@@ -298,6 +298,15 @@ ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
                     pluginPath = pluginPath.substr(0, foundLastSlash);
                 }
             }
+            {
+                std::size_t foundLastSlash = iconFilePath.find_last_of("/");
+                if (foundLastSlash != std::string::npos) {
+                    iconFilePath = iconFilePath.substr(foundLastSlash + 1);
+                }
+                if (iconFilePath == "group_icon.png") {
+                    iconFilePath.clear();
+                }
+            }
             _imp->idEdit->setText(QString::fromUtf8(pluginID.c_str()));
             _imp->labelEdit->setText(QString::fromUtf8(label.c_str()));
             _imp->groupingEdit->setText(QString::fromUtf8(grouping.c_str()));
