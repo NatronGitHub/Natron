@@ -973,7 +973,6 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
         outArgs->params->roiNotRoundedToTileSize = outArgs->params->roi;
 
         UpdateViewerParams::CachedTile tile;
-        bool tileSet = false;
         if (outArgs->isDoingPartialUpdates) {
             std::list<RectD> partialRects;
             QMutexLocker k(&_imp->viewerParamsMutex);
@@ -984,14 +983,18 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                 ///Intersect to the RoI
                 if ( pixelRect.intersect(outArgs->params->roi, &pixelRect) ) {
                     tile.rect = tile.rectRounded = pixelRect;
-                    tileSet = true;
+                    tile.rect.closestPo2 = 1 << mipmapLevel;
+                    tile.rect.par = outArgs->params->pixelAspectRatio;
+                    tile.bytesCount = tile.rect.area() * 4;
+                    assert(tile.bytesCount > 0);
+                    if (outArgs->params->depth == eImageBitDepthFloat) {
+                        tile.bytesCount *= sizeof(float);
+                    }
+                    outArgs->params->tiles.push_back(tile);
                 }
             }
         } else {
             tile.rect = tile.rectRounded = outArgs->params->roi;
-            tileSet = true;
-        }
-        if (tileSet) {
             tile.rect.closestPo2 = 1 << mipmapLevel;
             tile.rect.par = outArgs->params->pixelAspectRatio;
             tile.bytesCount = tile.rect.area() * 4;
@@ -1001,6 +1004,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
             }
             outArgs->params->tiles.push_back(tile);
         }
+
     } else {
         std::vector<RectI> tiles, tilesRounded;
         outArgs->params->roi = _imp->uiContext->getImageRectangleDisplayedRoundedToTileSize(rod, outArgs->params->pixelAspectRatio, mipmapLevel, &tiles, &tilesRounded, &outArgs->params->tileSize, &outArgs->params->roiNotRoundedToTileSize);

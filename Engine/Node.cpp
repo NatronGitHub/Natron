@@ -2924,7 +2924,7 @@ Node::getLabel_mt_safe() const
 void
 Node::setScriptName_no_error_check(const std::string & name)
 {
-    setNameInternal(name, false, false);
+    setNameInternal(name, false, true);
 }
 
 static void
