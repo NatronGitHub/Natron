@@ -383,3 +383,15 @@ index 743bd12..fc2681f 100644
      const Pair & ids = info.first;
      const IndexT I = ids.first;
      const IndexT J = ids.second;
+diff -ur a/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp b/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp
+--- a/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp	2016-06-21 09:42:47.000000000 +0200
++++ b/libs/openMVG/openMVG/geometry/rigid_transformation3D_srt.hpp	2016-05-20 11:55:42.000000000 +0200
+@@ -31,7 +31,7 @@
+  * \note Need at least 3 points
+  */
+ 
+-static bool FindRTS(const Mat &x1,
++inline bool FindRTS(const Mat &x1,
+   const Mat &x2,
+   double * S,
+   Vec3 * t,
