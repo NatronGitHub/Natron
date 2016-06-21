@@ -956,7 +956,7 @@ DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
         } else {
             for (int j = 0; j < knob->getDimension(); ++j) {
                 if ( (dim == -1) || (j == dim) ) {
-                    knob->deleteValueAtTime(eCurveChangeReasonDopeSheet, setTime, ViewSpec::all(), j);
+                    knob->deleteValueAtTime(eCurveChangeReasonDopeSheet, setTime, ViewSpec::all(), j, i == 0);
                 }
             }
         }

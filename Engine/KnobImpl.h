@@ -2981,6 +2981,18 @@ Knob<T>::computeHasModifications()
     }
 }
 
+template <typename T>
+void
+Knob<T>::copyValuesFromCurve(int dim)
+{
+    double time = getCurrentTime();
+    assert(dim >= 0 && dim < getDimension());
+    T v = getValueAtTime(time, dim);
+    QMutexLocker l(&_valueMutex);
+    _guiValues[dim] = _values[dim] = v;
+
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // KNOBIMPL_H

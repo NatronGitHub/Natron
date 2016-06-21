@@ -708,7 +708,7 @@ void
 KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
                                const std::list<double>& times,
                                ViewSpec view,
-                               int dimension)
+                               int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
     if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
@@ -733,6 +733,11 @@ KnobHelper::deleteValuesAtTime(CurveChangeReason curveChangeReason,
     }
 
     assert(curve);
+
+    // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
+    if (copyCurveValueAtTimeToInternalValue) {
+        copyValuesFromCurve(dimension);
+    }
 
     try {
         for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
@@ -782,7 +787,7 @@ void
 KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
                               double time,
                               ViewSpec view,
-                              int dimension)
+                              int dimension, bool copyCurveValueAtTimeToInternalValue)
 {
     if ( ( dimension > (int)_imp->curves.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::deleteValueAtTime(): Dimension out of range");
@@ -804,6 +809,12 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
     }
 
     assert(curve);
+
+    // We are about to remove the last keyframe, ensure that the internal value of the knob is the one of the animation
+    if (copyCurveValueAtTimeToInternalValue) {
+        copyValuesFromCurve(dimension);
+    }
+
 
     try {
         curve->removeKeyFrameWithTime(time);
@@ -846,9 +857,10 @@ KnobHelper::deleteValueAtTime(CurveChangeReason curveChangeReason,
 void
 KnobHelper::onKeyFrameRemoved(double time,
                               ViewSpec view,
-                              int dimension)
+                              int dimension,
+                              bool copyCurveValueAtTimeToInternalValue)
 {
-    deleteValueAtTime(eCurveChangeReasonInternal, time, view, dimension);
+    deleteValueAtTime(eCurveChangeReasonInternal, time, view, dimension, copyCurveValueAtTimeToInternalValue);
 }
 
 bool
@@ -1387,6 +1399,8 @@ KnobHelper::removeAnimationWithReason(ViewSpec view,
     if ( _signalSlotHandler && (reason != eValueChangedReasonUserEdited) ) {
         _signalSlotHandler->s_animationAboutToBeRemoved(view, dimension);
     }
+
+    copyValuesFromCurve(dimension);
 
     assert(curve);
     if (curve) {

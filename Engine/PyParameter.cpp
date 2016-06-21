@@ -379,7 +379,7 @@ void
 AnimatedParam::deleteValueAtTime(double time,
                                  int dimension)
 {
-    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension);
+    getInternalKnob()->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), dimension, false);
 }
 
 void

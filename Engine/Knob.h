@@ -567,8 +567,8 @@ public:
     /**
      * @brief Removes the keyframe at the given time and dimension if it matches any.
      **/
-    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension) = 0;
-    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) = 0;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) = 0;
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) = 0;
 
 
     /**
@@ -619,7 +619,7 @@ public:
     /**
      * @brief Calls deleteValueAtTime with a reason of eValueChangedReasonUserEdited
      **/
-    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension) = 0;
+    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) = 0;
 
     /**
      * @brief Calls removeAnimation with a reason of eValueChangedReasonUserEdited
@@ -1375,12 +1375,12 @@ private:
 
 
     virtual void removeAnimationWithReason(ViewSpec view, int dimension, ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension) OVERRIDE FINAL;
-    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension) OVERRIDE FINAL;
+    virtual void deleteValueAtTime(CurveChangeReason curveChangeReason, double time, ViewSpec view,  int dimension,bool copyCurveValueAtTimeToInternalValue) OVERRIDE FINAL;
+    virtual void deleteValuesAtTime(CurveChangeReason curveChangeReason, const std::list<double>& times, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) OVERRIDE FINAL;
 
 public:
 
-    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension) OVERRIDE FINAL;
+    virtual void onKeyFrameRemoved(double time, ViewSpec view, int dimension, bool copyCurveValueAtTimeToInternalValue) OVERRIDE FINAL;
     virtual bool moveValueAtTime(CurveChangeReason reason, double time, ViewSpec view, int dimension, double dt, double dv, KeyFrame* newKey) OVERRIDE FINAL;
     virtual bool moveValuesAtTime(CurveChangeReason reason, ViewSpec view,  int dimension, double dt, double dv, std::vector<KeyFrame>* keyframes) OVERRIDE FINAL;
 
@@ -1616,6 +1616,9 @@ public:
     };
 
 protected:
+
+    virtual void copyValuesFromCurve(int /*dim*/) {}
+
 
     virtual void handleSignalSlotsForAliasLink(const KnobPtr& /*alias*/,
                                                bool /*connect*/)
@@ -2050,6 +2053,8 @@ protected:
 
 private:
 
+    virtual void copyValuesFromCurve(int dim) OVERRIDE FINAL;
+
     virtual bool hasDefaultValueChanged(int dimension) const OVERRIDE FINAL;
 
     void initMinMax();
@@ -2090,6 +2095,7 @@ private:
 
         _exprRes[dimension].clear();
     }
+
 
 private:
 

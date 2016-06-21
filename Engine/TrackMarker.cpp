@@ -723,7 +723,7 @@ deleteKnobAnimation(const std::set<int>& userKeyframes,
             break;
         }
         }
-        knob->deleteValuesAtTime(eCurveChangeReasonInternal, toRemove, ViewSpec::all(), i);
+        knob->deleteValuesAtTime(eCurveChangeReasonInternal, toRemove, ViewSpec::all(), i, true);
     }
 }
 

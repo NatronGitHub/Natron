@@ -163,7 +163,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->keyframes[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->keyframes[i].getTime(), ViewIdx(0),  isKnobCurve->getDimension(), i == 0 );
                         }
                     }
                 } else if (isBezierCurve) {
@@ -316,7 +316,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewSpec::all(), isKnobCurve->getDimension() );
+                            isKnobCurve->getInternalKnob()->deleteValueAtTime( eCurveChangeReasonCurveEditor, it->second[i].getTime(), ViewSpec::all(), isKnobCurve->getDimension(), i == 0 );
                         }
                     }
                 } else if (isBezierCurve) {

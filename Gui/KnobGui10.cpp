@@ -426,7 +426,12 @@ KnobGui::removeKeyFrame(double time,
 {
     KnobPtr knob = getKnob();
 
-    knob->onKeyFrameRemoved(time, view, dimension);
+    boost::shared_ptr<Curve> curve = knob->getCurve(view, dimension);
+    bool copyCurveValueAtTimeToInternalValue = false;
+    if (curve) {
+        copyCurveValueAtTimeToInternalValue = curve->getKeyFramesCount() == 1;
+    }
+    knob->onKeyFrameRemoved(time, view, dimension, copyCurveValueAtTimeToInternalValue);
     Q_EMIT keyFrameRemoved();
 
 
@@ -469,7 +474,7 @@ KnobGui::removeKeyframes(const std::vector<KeyFrame>& keys,
 
     knob->beginChanges();
     for (std::size_t i = 0; i < keys.size(); ++i) {
-        knob->onKeyFrameRemoved(keys[i].getTime(), view, dimension);
+        knob->onKeyFrameRemoved(keys[i].getTime(), view, dimension, i == 0);
     }
     knob->endChanges();
     /*assert( knob->getHolder()->getApp() );

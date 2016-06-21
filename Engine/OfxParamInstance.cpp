@@ -234,7 +234,7 @@ deleteKey(const KnobPtr& knob,
     }
     assert(startDim < endDim && startDim >= 0);
     for (int i = startDim; i < endDim; ++i) {
-        knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), i);
+        knob->deleteValueAtTime(eCurveChangeReasonInternal, time, ViewSpec::all(), i, false);
     }
 
     return kOfxStatOK;
