@@ -4494,17 +4494,17 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                 }
             }
 
-            if (ok && !isAll) {
+            if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
+                std::vector<ImageComponents> compVec;
+                compVec.push_back(maskComp);
+                comps->insert( std::make_pair(i, compVec) );
+            } else if (ok && !isAll) {
                 if ( !layer.isColorPlane() ) {
                     compVec.push_back(layer);
                 } else {
                     //Use regular clip preferences
                     compVec.insert( compVec.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
                 }
-            } else if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
-                std::vector<ImageComponents> compVec;
-                compVec.push_back(maskComp);
-                comps->insert( std::make_pair(i, compVec) );
             } else {
                 //Use regular clip preferences
                 compVec.insert( compVec.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
