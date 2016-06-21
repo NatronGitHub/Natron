@@ -672,6 +672,7 @@ private:
             foundAvailableFile = _nextAvailableCacheFile.lock();
             if (_nextAvailableCacheFileIndex != -1 && foundAvailableFile) {
                 foundTileIndex = _nextAvailableCacheFileIndex;
+                *dataOffset = foundTileIndex * _tileByteSize;
                 _nextAvailableCacheFileIndex = -1;
                 _nextAvailableCacheFile.reset();
             } else {
@@ -679,17 +680,19 @@ private:
                 foundAvailableFile.reset();
             }
         }
-        for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
-            for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
-                if (!(*it)->usedTiles[i])  {
-                    foundTileIndex = i;
-                    *dataOffset = i * _tileByteSize;
+        if (foundTileIndex == -1) {
+            for (std::set<TileCacheFilePtr>::iterator it = _cacheFiles.begin(); it != _cacheFiles.end(); ++it) {
+                for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
+                    if (!(*it)->usedTiles[i])  {
+                        foundTileIndex = i;
+                        *dataOffset = i * _tileByteSize;
+                        break;
+                    }
+                }
+                if (foundTileIndex != -1) {
+                    foundAvailableFile = *it;
                     break;
                 }
-            }
-            if (foundTileIndex != -1) {
-                foundAvailableFile = *it;
-                break;
             }
         }
 
