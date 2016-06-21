@@ -188,6 +188,7 @@ RotoPaintInteract::drawSelectedCp(double time,
 
     bool drawLeftHandle = leftDeriv.x != x || leftDeriv.y != y;
     bool drawRightHandle = rightDeriv.y != x || rightDeriv.y != y;
+    glEnable(GL_POINT_SMOOTH);
     glBegin(GL_POINTS);
     if (drawLeftHandle) {
         if (colorLeftTangent) {
@@ -218,6 +219,7 @@ RotoPaintInteract::drawSelectedCp(double time,
         glVertex2d(rightDeriv.x, rightDeriv.y);
     }
     glEnd();
+    glDisable(GL_POINT_SMOOTH);
 } // drawSelectedCp
 
 void

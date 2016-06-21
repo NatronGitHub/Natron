@@ -1638,8 +1638,10 @@ RotoPaint::drawOverlay(double time,
         glEnable(GL_LINE_SMOOTH);
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         glLineWidth(1.5);
-        glEnable(GL_POINT_SMOOTH);
-        glPointSize(7.);
+
+
+        double cpWidth = kControlPointMidSize * 2;
+        glPointSize(cpWidth);
         for (std::list< boost::shared_ptr<RotoDrawableItem> >::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
             if ( !(*it)->isGloballyActivated() ) {
                 continue;
@@ -1758,8 +1760,6 @@ RotoPaint::drawOverlay(double time,
                         continue;
                     }
 
-                    double cpHalfWidth = kControlPointMidSize * pixelScale.first;
-                    double cpHalfHeight = kControlPointMidSize * pixelScale.second;
 
                     glColor3d(0.85, 0.67, 0.);
 
@@ -1843,11 +1843,8 @@ RotoPaint::drawOverlay(double time,
                             }
                         } // for(cpIt)
 
-                        glBegin(GL_POLYGON);
-                        glVertex2f(x - cpHalfWidth, y - cpHalfHeight);
-                        glVertex2f(x + cpHalfWidth, y - cpHalfHeight);
-                        glVertex2f(x + cpHalfWidth, y + cpHalfHeight);
-                        glVertex2f(x - cpHalfWidth, y + cpHalfHeight);
+                        glBegin(GL_POINTS);
+                        glVertex2f(x,y);
                         glEnd();
 
                         if (colorChanged) {
@@ -1876,11 +1873,8 @@ RotoPaint::drawOverlay(double time,
                         }
 
                         if (drawFeather) {
-                            glBegin(GL_POLYGON);
-                            glVertex2f(xF - cpHalfWidth, yF - cpHalfHeight);
-                            glVertex2f(xF + cpHalfWidth, yF - cpHalfHeight);
-                            glVertex2f(xF + cpHalfWidth, yF + cpHalfHeight);
-                            glVertex2f(xF - cpHalfWidth, yF + cpHalfHeight);
+                            glBegin(GL_POINTS);
+                            glVertex2f(xF, yF);
                             glEnd();
 
 
