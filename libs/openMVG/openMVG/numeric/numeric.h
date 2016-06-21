@@ -79,7 +79,6 @@ namespace openMVG {
 
   typedef Eigen::Quaternion<double> Quaternion;
 
-  typedef Eigen::Matrix<double, 2, 2> Mat2;
   typedef Eigen::Matrix<double, 3, 3> Mat3;
 
 #if defined(ENV32BIT)
