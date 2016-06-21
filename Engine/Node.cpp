@@ -661,49 +661,24 @@ Node::isPartOfPrecomp() const
 }
 
 void
-Node::load(const CreateNodeArgs& args)
+Node::initNodeScriptName(const boost::shared_ptr<NodeSerialization>& serialization, const QString& fixedName)
 {
-    ///Called from the main thread. MT-safe
-    assert( QThread::currentThread() == qApp->thread() );
-
-    ///cannot load twice
-    assert(!_imp->effect);
-    _imp->isPartOfProject = args.addToProject;
-
-#ifdef NATRON_ENABLE_IO_META_NODES
-    _imp->ioContainer = args.ioContainer;
-#endif
-
+    /*
+     If the serialization is not null, we are either pasting a node or loading it from a project.
+     */
     boost::shared_ptr<NodeCollection> group = getGroup();
     bool isMultiInstanceChild = false;
-    if ( !args.multiInstanceParentName.empty() ) {
-        _imp->multiInstanceParentName = args.multiInstanceParentName;
+    if ( !_imp->multiInstanceParentName.empty() ) {
         isMultiInstanceChild = true;
-        _imp->isMultiInstance = false;
-        fetchParentMultiInstancePointer();
     }
 
-
-    NodePtr thisShared = shared_from_this();
-    LibraryBinary* binary = _imp->plugin->getLibraryBinary();
-    std::pair<bool, EffectBuilder> func;
-    if (binary) {
-        func = binary->findFunction<EffectBuilder>("BuildEffect");
-    }
-
-    bool nameSet = false;
-    /*
-       If the serialization is not null, we are either pasting a node or loading it from a project.
-     */
-    if (args.serialization) {
-        assert(args.reason == eCreateNodeReasonCopyPaste || args.reason == eCreateNodeReasonProjectLoad);
-
-        if ( group && !group->isCacheIDAlreadyTaken( args.serialization->getCacheID() ) ) {
+    if (serialization) {
+        if ( group && !group->isCacheIDAlreadyTaken( serialization->getCacheID() ) ) {
             QMutexLocker k(&_imp->nameMutex);
-            _imp->cacheID = args.serialization->getCacheID();
+            _imp->cacheID = serialization->getCacheID();
         }
-        if ( /*!dontLoadName && */ !nameSet && args.fixedName.isEmpty() ) {
-            const std::string& baseName = args.serialization->getNodeScriptName();
+        if (fixedName.isEmpty() ) {
+            const std::string& baseName = serialization->getNodeScriptName();
             std::string name = baseName;
             int no = 1;
             do {
@@ -720,10 +695,72 @@ Node::load(const CreateNodeArgs& args)
             //This version of setScriptName will not error if the name is invalid or already taken
             //and will not declare to python the node (because effect is not instanced yet)
             setScriptName_no_error_check(name);
-            setLabel( args.serialization->getNodeLabel() );
-            nameSet = true;
+            setLabel( serialization->getNodeLabel() );
+        }
+    } else {
+        if ( fixedName.isEmpty() ) {
+            std::string name;
+            QString pluginLabel;
+            AppManager::AppTypeEnum appType = appPTR->getAppType();
+            if ( _imp->plugin &&
+                ( ( appType == AppManager::eAppTypeBackground) ||
+                 ( appType == AppManager::eAppTypeGui) ||
+                 ( appType == AppManager::eAppTypeInterpreter) ) ) {
+                    pluginLabel = _imp->plugin->getLabelWithoutSuffix();
+                } else {
+                    pluginLabel = _imp->plugin->getPluginLabel();
+                }
+            try {
+                if (group) {
+                    group->initNodeName(isMultiInstanceChild ? _imp->multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
+                } else {
+                    name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() );
+                }
+            } catch (...) {
+            }
+
+            setNameInternal(name.c_str(), false, true);
+        } else {
+            try {
+                setScriptName( fixedName.toStdString() );
+            } catch (...) {
+                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()), tr("Could not set node name to %1").arg(fixedName));
+            }
         }
     }
+
+}
+
+void
+Node::load(const CreateNodeArgs& args)
+{
+    ///Called from the main thread. MT-safe
+    assert( QThread::currentThread() == qApp->thread() );
+
+    ///cannot load twice
+    assert(!_imp->effect);
+    _imp->isPartOfProject = args.addToProject;
+
+#ifdef NATRON_ENABLE_IO_META_NODES
+    _imp->ioContainer = args.ioContainer;
+#endif
+
+    boost::shared_ptr<NodeCollection> group = getGroup();
+    if ( !args.multiInstanceParentName.empty() ) {
+        _imp->multiInstanceParentName = args.multiInstanceParentName;
+        _imp->isMultiInstance = false;
+        fetchParentMultiInstancePointer();
+    }
+
+
+    NodePtr thisShared = shared_from_this();
+    LibraryBinary* binary = _imp->plugin->getLibraryBinary();
+    std::pair<bool, EffectBuilder> func;
+    if (binary) {
+        func = binary->findFunction<EffectBuilder>("BuildEffect");
+    }
+
+    initNodeScriptName(args.serialization, args.fixedName);
 
 #ifndef NATRON_ENABLE_IO_META_NODES
     bool hasUsedFileDialog = false;
@@ -836,46 +873,9 @@ Node::load(const CreateNodeArgs& args)
         _imp->isMultiInstance = true;
     }
 
-
-    if (!nameSet) {
-        if ( args.fixedName.isEmpty() ) {
-            std::string name;
-            QString pluginLabel;
-            AppManager::AppTypeEnum appType = appPTR->getAppType();
-            if ( _imp->plugin &&
-                 ( ( appType == AppManager::eAppTypeBackground) ||
-                   ( appType == AppManager::eAppTypeGui) ||
-                   ( appType == AppManager::eAppTypeInterpreter) ) ) {
-                pluginLabel = _imp->plugin->getLabelWithoutSuffix();
-            } else {
-                pluginLabel = _imp->plugin->getPluginLabel();
-            }
-            try {
-                if (group) {
-                    group->initNodeName(isMultiInstanceChild ? args.multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
-                } else {
-                    name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() );
-                }
-            } catch (...) {
-            }
-
-            setNameInternal(name.c_str(), false, true);
-            nameSet = true;
-        } else {
-            try {
-                setScriptName( args.fixedName.toStdString() );
-            } catch (...) {
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()), tr("Could not set node name to %1").arg(args.fixedName));
-            }
-        }
-        if (!isMultiInstanceChild && _imp->isMultiInstance) {
-            updateEffectLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
-        }
-    }
-    if (isMultiInstanceChild && !args.serialization) {
-        assert(nameSet);
+    /*if (isMultiInstanceChild && !args.serialization) {
         updateEffectLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
-    }
+    }*/
     restoreSublabel();
 
     if (args.addToProject) {
@@ -3082,18 +3082,19 @@ Node::setNameInternal(const std::string& name,
             declareNodeVariableToPython(fullySpecifiedName);
         }
 
-
-        ///For all knobs that have listeners, change in the expressions of listeners this knob script-name
-        KnobI::ListenerDimsMap dependencies;
-        insertDependenciesRecursive(this, &dependencies);
-        for (KnobI::ListenerDimsMap::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
-            KnobPtr listener = it->first.lock();
-            if (!listener) {
-                continue;
-            }
-            for (std::size_t d = 0; d < it->second.size(); ++d) {
-                if (it->second[d].isListening && it->second[d].isExpr) {
-                    listener->replaceNodeNameInExpression(d, oldName, newName);
+        if (_imp->nodeCreated) {
+            ///For all knobs that have listeners, change in the expressions of listeners this knob script-name
+            KnobI::ListenerDimsMap dependencies;
+            insertDependenciesRecursive(this, &dependencies);
+            for (KnobI::ListenerDimsMap::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
+                KnobPtr listener = it->first.lock();
+                if (!listener) {
+                    continue;
+                }
+                for (std::size_t d = 0; d < it->second.size(); ++d) {
+                    if (it->second[d].isListening && it->second[d].isExpr) {
+                        listener->replaceNodeNameInExpression(d, oldName, newName);
+                    }
                 }
             }
         }

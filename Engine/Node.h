@@ -121,6 +121,9 @@ public:
     void load(const CreateNodeArgs& args);
 
 
+    void initNodeScriptName(const boost::shared_ptr<NodeSerialization>& serialization, const QString& fixedName);
+
+
     ///called by load() and OfxEffectInstance, do not call this!
     void loadKnobs(const NodeSerialization & serialization, bool updateKnobGui = false);
 
