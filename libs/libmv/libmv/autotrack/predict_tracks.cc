@@ -28,7 +28,6 @@
 #include "libmv/base/vector.h"
 #include "libmv/logging/logging.h"
 
-
 namespace mv {
 
 namespace {
@@ -140,8 +139,6 @@ bool OrderByFrameLessThan(const Marker* a, const Marker* b) {
   return a->frame < b-> frame;
 }
 
-
-
 // Predicted must be after the previous markers (in the frame numbering sense).
 void RunPrediction(const vector<Marker*> previous_markers,
                    Marker* predicted_marker) {
@@ -208,7 +205,6 @@ void RunPrediction(const vector<Marker*> previous_markers,
 
 }  // namespace
 
-    
 bool PredictMarkerPosition(const Tracks& tracks, Marker* marker) {
   // Get all markers for this clip and track.
   vector<Marker> markers;
@@ -316,71 +312,70 @@ bool PredictMarkerPosition(const Tracks& tracks, Marker* marker) {
   }
 
 }
-    
-    
-    // Initialize the Kalman state.
+
+// Initialize the Kalman state.
 void KalmanFilterState::Init(const Marker& first_marker, int frameStep) {
-    assert(!_hasInitializedState);
-    _state.mean << first_marker.center.x(), 0, 0,
-    first_marker.center.y(), 0, 0;
-    _state.covariance = Eigen::Matrix<double, 6, 6, Eigen::RowMajor>(
-                                                                     initial_covariance_data);
-    _stateFrame = first_marker.frame;
-    _previousMarker = first_marker;
-    _frameStep = frameStep;
-    _hasInitializedState = true;
+  assert(!_hasInitializedState);
+  _state.mean << first_marker.center.x(), 0, 0,
+      first_marker.center.y(), 0, 0;
+  _state.covariance = Eigen::Matrix<double, 6, 6, Eigen::RowMajor>(
+      initial_covariance_data);
+  _stateFrame = first_marker.frame;
+  _previousMarker = first_marker;
+  _frameStep = frameStep;
+  _hasInitializedState = true;
 }
     
 // predict forward until target_frame is reached
 // previous_marker: previous marker position (predicted or measured)
 bool KalmanFilterState::PredictForward(const int target_frame,
                                       Marker* predicted_marker) {
-    assert(_previousMarker.frame == _stateFrame);
+  assert(_previousMarker.frame == _stateFrame);
 
-    // Step forward predicting the state until target_frame.
-    for (;
-         _stateFrame != target_frame;
-         _stateFrame += _frameStep) {
-        filter.Step(&_state);
-        LG << "Predicted point (frame " << _stateFrame << "): "
-        << _state.mean(0) << ", " << _state.mean(3);
-    }
-    predicted_marker->frame = target_frame;
-    // The x and y positions are at 0 and 3; ignore acceleration and velocity.
-    predicted_marker->center.x() = _state.mean(0);
-    predicted_marker->center.y() = _state.mean(3);
-   
-    // Take the patch from the last marker then shift it to match the prediction.
-    predicted_marker->patch = _previousMarker.patch;
-    Vec2f delta = predicted_marker->center - _previousMarker.center;
-    for (int i = 0; i < 4; ++i) {
-        predicted_marker->patch.coordinates.row(i) += delta;
-    }
-    
-    // Alter the search area as well so it always corresponds to the center.
-    predicted_marker->search_region = _previousMarker.search_region;
-    predicted_marker->search_region.Offset(delta);
-    _previousMarker = *predicted_marker;
-    return _hasInitializedState;
+  // Step forward predicting the state until target_frame.
+  for (;
+       _stateFrame != target_frame;
+       _stateFrame += _frameStep) {
+    filter.Step(&_state);
+    LG << "Predicted point (frame " << _stateFrame << "): "
+       << _state.mean(0) << ", " << _state.mean(3);
+  }
+  predicted_marker->frame = target_frame;
+  // The x and y positions are at 0 and 3; ignore acceleration and velocity.
+  predicted_marker->center.x() = _state.mean(0);
+  predicted_marker->center.y() = _state.mean(3);
+ 
+  // Take the patch from the last marker then shift it to match the prediction.
+  predicted_marker->patch = _previousMarker.patch;
+  Vec2f delta = predicted_marker->center - _previousMarker.center;
+  for (int i = 0; i < 4; ++i) {
+    predicted_marker->patch.coordinates.row(i) += delta;
+  }
+  
+  // Alter the search area as well so it always corresponds to the center.
+  predicted_marker->search_region = _previousMarker.search_region;
+  predicted_marker->search_region.Offset(delta);
+  _previousMarker = *predicted_marker;
+  return _hasInitializedState;
 } // PredictForward
     
-    // returns true if update was succesful
+// returns true if update was succesful
 bool KalmanFilterState::Update(const Marker& measured_marker) {
-    assert(measured_marker.frame == _stateFrame);
-    // Log the error -- not actually used, but interesting.
-    Vec2 error = measured_marker.center.cast<double>() -
-    Vec2(_state.mean(0), _state.mean(3));
-    LG << "Prediction error: ("
-    << error.x() << ", " << error.y() << "); norm: " << error.norm();
-    // Now that the state is predicted in the current frame, update the state
-    // based on the measurement from the current frame.
-    filter.Update(measured_marker.center.cast<double>(),
-                  Eigen::Matrix<double, 2, 2, Eigen::RowMajor>(
-                                                               measurement_covariance_data),
-                  &_state);
-    LG << "Updated point: " << _state.mean(0) << ", " << _state.mean(3);
-    _previousMarker = measured_marker;
-    return true;
+  assert(measured_marker.frame == _stateFrame);
+  // Log the error -- not actually used, but interesting.
+  Vec2 error = measured_marker.center.cast<double>() -
+      Vec2(_state.mean(0), _state.mean(3));
+  LG << "Prediction error: ("
+     << error.x() << ", " << error.y() << "); norm: " << error.norm();
+  // Now that the state is predicted in the current frame, update the state
+  // based on the measurement from the current frame.
+  filter.Update(measured_marker.center.cast<double>(),
+                Eigen::Matrix<double, 2, 2, Eigen::RowMajor>(
+                    measurement_covariance_data),
+                &_state);
+  LG << "Updated point: " << _state.mean(0) << ", " << _state.mean(3);
+  _previousMarker = measured_marker;
+  return true;
 } // Update
 
 }  // namespace mv

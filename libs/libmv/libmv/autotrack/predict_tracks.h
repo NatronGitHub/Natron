@@ -34,25 +34,24 @@ struct Marker;
 typedef mv::KalmanFilter<double, 6, 2> TrackerKalman;
     
 class KalmanFilterState {
-    TrackerKalman::State _state;
-    int _stateFrame;
-    bool _hasInitializedState;
-    int _frameStep;
-    Marker _previousMarker;
+  TrackerKalman::State _state;
+  int _stateFrame;
+  bool _hasInitializedState;
+  int _frameStep;
+  Marker _previousMarker;
     
 public:
+  KalmanFilterState() : _state(), _stateFrame(0), _hasInitializedState(false), _frameStep(1), _previousMarker() {}
     
-    KalmanFilterState() : _state(), _stateFrame(0), _hasInitializedState(false), _frameStep(1), _previousMarker() {}
+  // Initialize the Kalman state.
+  void Init(const Marker& first_marker, int frameStep);
     
-    // Initialize the Kalman state.
-    void Init(const Marker& first_marker, int frameStep);
+  // predict forward until target_frame is reached
+  bool PredictForward(const int target_frame,
+                      Marker* predicted_marker);
     
-    // predict forward until target_frame is reached
-    bool PredictForward(const int target_frame,
-                        Marker* predicted_marker);
-    
-    // returns true if update was succesful
-    bool Update(const Marker& measured_marker);
+  // returns true if update was succesful
+  bool Update(const Marker& measured_marker);
 };
 
 

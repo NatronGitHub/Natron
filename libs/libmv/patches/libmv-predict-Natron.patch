@@ -1,0 +1,634 @@
+diff -ur a/libs/libmv/libmv/autotrack/autotrack.cc b/libs/libmv/libmv/autotrack/autotrack.cc
+--- a/libs/libmv/libmv/autotrack/autotrack.cc	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/autotrack/autotrack.cc	2016-05-20 11:55:42.000000000 +0200
+@@ -115,12 +115,18 @@
+ 
+ bool AutoTrack::TrackMarker(Marker* tracked_marker,
+                             TrackRegionResult* result,
++                            KalmanFilterState* predictionState,
+                             const TrackRegionOptions* track_options) {
++    
+   // Try to predict the location of the second marker.
+-  bool predicted_position = false;
+-  if (PredictMarkerPosition(tracks_, tracked_marker)) {
++    bool predicted_position;
++    if (predictionState) {
++        predicted_position = predictionState->PredictForward(tracked_marker->frame, tracked_marker);
++    } else {
++        predicted_position = PredictMarkerPosition(tracks_, tracked_marker);
++    }
++  if (predicted_position) {
+     LG << "Succesfully predicted!";
+-    predicted_position = true;
+   } else {
+     LG << "Prediction failed; trying to track anyway.";
+   }
+@@ -195,6 +201,11 @@
+   frame_accessor_->ReleaseImage(reference_key);
+   frame_accessor_->ReleaseImage(tracked_key);
+ 
++  // Update the kalman filter with the new measurement
++  if (predictionState && result->is_usable()) {
++    predictionState->Update(*tracked_marker);
++  }
++    
+   // TODO(keir): Possibly the return here should get removed since the results
+   // are part of TrackResult. However, eventually the autotrack stuff will have
+   // extra status (e.g. prediction fail, etc) that should get included.
+@@ -205,7 +216,7 @@
+   tracks_.AddMarker(marker);
+ }
+ 
+-void AutoTrack::SetMarkers(vector<Marker>* markers) {
++void AutoTrack::SetMarkers(TrackMarkersMap* markers) {
+   tracks_.SetMarkers(markers);
+ }
+ 
+diff -ur a/libs/libmv/libmv/autotrack/autotrack.h b/libs/libmv/libmv/autotrack/autotrack.h
+--- a/libs/libmv/libmv/autotrack/autotrack.h	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/autotrack/autotrack.h	2016-05-20 11:55:42.000000000 +0200
+@@ -25,6 +25,7 @@
+ 
+ #include "libmv/autotrack/tracks.h"
+ #include "libmv/autotrack/region.h"
++#include "libmv/autotrack/predict_tracks.h"
+ #include "libmv/tracking/track_region.h"
+ 
+ namespace libmv {
+@@ -90,11 +91,12 @@
+   // Caller maintains ownership of *result and *tracked_marker.
+   bool TrackMarker(Marker* tracked_marker,
+                    TrackRegionResult* result,
++                   KalmanFilterState* predictionState = NULL,
+                    const TrackRegionOptions* track_options=NULL);
+ 
+   // Wrapper around Tracks API; however these may add additional processing.
+   void AddMarker(const Marker& tracked_marker);
+-  void SetMarkers(vector<Marker>* markers);
++  void SetMarkers(TrackMarkersMap* markers);
+   bool GetMarker(int clip, int frame, int track, Marker* marker) const;
+ 
+   // TODO(keir): Implement frame matching! This could be very cool for loop
+diff -ur a/libs/libmv/libmv/autotrack/predict_tracks.cc b/libs/libmv/libmv/autotrack/predict_tracks.cc
+--- a/libs/libmv/libmv/autotrack/predict_tracks.cc	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/autotrack/predict_tracks.cc	2016-06-21 09:13:03.000000000 +0200
+@@ -20,12 +20,13 @@
+ //
+ // Author: mierle@gmail.com (Keir Mierle)
+ 
++#include <cassert>
++
+ #include "libmv/autotrack/marker.h"
+ #include "libmv/autotrack/predict_tracks.h"
+ #include "libmv/autotrack/tracks.h"
+ #include "libmv/base/vector.h"
+ #include "libmv/logging/logging.h"
+-#include "libmv/tracking/kalman_filter.h"
+ 
+ namespace mv {
+ 
+@@ -122,7 +123,6 @@
+   0,  0,  0,  0,  0,  1
+ };
+ 
+-typedef mv::KalmanFilter<double, 6, 2> TrackerKalman;
+ 
+ TrackerKalman filter(state_transition_data,
+                      observation_data,
+@@ -313,4 +313,69 @@
+ 
+ }
+ 
++// Initialize the Kalman state.
++void KalmanFilterState::Init(const Marker& first_marker, int frameStep) {
++  assert(!_hasInitializedState);
++  _state.mean << first_marker.center.x(), 0, 0,
++      first_marker.center.y(), 0, 0;
++  _state.covariance = Eigen::Matrix<double, 6, 6, Eigen::RowMajor>(
++      initial_covariance_data);
++  _stateFrame = first_marker.frame;
++  _previousMarker = first_marker;
++  _frameStep = frameStep;
++  _hasInitializedState = true;
++}
++    
++// predict forward until target_frame is reached
++// previous_marker: previous marker position (predicted or measured)
++bool KalmanFilterState::PredictForward(const int target_frame,
++                                      Marker* predicted_marker) {
++  assert(_previousMarker.frame == _stateFrame);
++
++  // Step forward predicting the state until target_frame.
++  for (;
++       _stateFrame != target_frame;
++       _stateFrame += _frameStep) {
++    filter.Step(&_state);
++    LG << "Predicted point (frame " << _stateFrame << "): "
++       << _state.mean(0) << ", " << _state.mean(3);
++  }
++  predicted_marker->frame = target_frame;
++  // The x and y positions are at 0 and 3; ignore acceleration and velocity.
++  predicted_marker->center.x() = _state.mean(0);
++  predicted_marker->center.y() = _state.mean(3);
++ 
++  // Take the patch from the last marker then shift it to match the prediction.
++  predicted_marker->patch = _previousMarker.patch;
++  Vec2f delta = predicted_marker->center - _previousMarker.center;
++  for (int i = 0; i < 4; ++i) {
++    predicted_marker->patch.coordinates.row(i) += delta;
++  }
++  
++  // Alter the search area as well so it always corresponds to the center.
++  predicted_marker->search_region = _previousMarker.search_region;
++  predicted_marker->search_region.Offset(delta);
++  _previousMarker = *predicted_marker;
++  return _hasInitializedState;
++} // PredictForward
++    
++// returns true if update was succesful
++bool KalmanFilterState::Update(const Marker& measured_marker) {
++  assert(measured_marker.frame == _stateFrame);
++  // Log the error -- not actually used, but interesting.
++  Vec2 error = measured_marker.center.cast<double>() -
++      Vec2(_state.mean(0), _state.mean(3));
++  LG << "Prediction error: ("
++     << error.x() << ", " << error.y() << "); norm: " << error.norm();
++  // Now that the state is predicted in the current frame, update the state
++  // based on the measurement from the current frame.
++  filter.Update(measured_marker.center.cast<double>(),
++                Eigen::Matrix<double, 2, 2, Eigen::RowMajor>(
++                    measurement_covariance_data),
++                &_state);
++  LG << "Updated point: " << _state.mean(0) << ", " << _state.mean(3);
++  _previousMarker = measured_marker;
++  return true;
++} // Update
++
+ }  // namespace mv
+diff -ur a/libs/libmv/libmv/autotrack/predict_tracks.h b/libs/libmv/libmv/autotrack/predict_tracks.h
+--- a/libs/libmv/libmv/autotrack/predict_tracks.h	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/autotrack/predict_tracks.h	2016-06-21 09:13:40.000000000 +0200
+@@ -23,11 +23,39 @@
+ #ifndef LIBMV_AUTOTRACK_PREDICT_TRACKS_H_
+ #define LIBMV_AUTOTRACK_PREDICT_TRACKS_H_
+ 
++#include "libmv/tracking/kalman_filter.h"
++#include "libmv/autotrack/marker.h"
++
+ namespace mv {
+ 
+ class Tracks;
+ struct Marker;
+ 
++typedef mv::KalmanFilter<double, 6, 2> TrackerKalman;
++    
++class KalmanFilterState {
++  TrackerKalman::State _state;
++  int _stateFrame;
++  bool _hasInitializedState;
++  int _frameStep;
++  Marker _previousMarker;
++    
++public:
++  KalmanFilterState() : _state(), _stateFrame(0), _hasInitializedState(false), _frameStep(1), _previousMarker() {}
++    
++  // Initialize the Kalman state.
++  void Init(const Marker& first_marker, int frameStep);
++    
++  // predict forward until target_frame is reached
++  bool PredictForward(const int target_frame,
++                      Marker* predicted_marker);
++    
++  // returns true if update was succesful
++  bool Update(const Marker& measured_marker);
++};
++
++
++    
+ // Predict the position of the given marker, and update it accordingly. The
+ // existing position will be overwritten.
+ bool PredictMarkerPosition(const Tracks& tracks, Marker* marker);
+diff -ur a/libs/libmv/libmv/autotrack/tracks.cc b/libs/libmv/libmv/autotrack/tracks.cc
+--- a/libs/libmv/libmv/autotrack/tracks.cc	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/autotrack/tracks.cc	2016-06-21 09:17:03.000000000 +0200
+@@ -25,6 +25,7 @@
+ #include <algorithm>
+ #include <vector>
+ #include <iterator>
++#include <set>
+ 
+ #include "libmv/numeric/numeric.h"
+ 
+@@ -34,24 +35,34 @@
+   markers_ = other.markers_;
+ }
+ 
+-Tracks::Tracks(const vector<Marker>& markers) : markers_(markers) {}
++Tracks::Tracks(const TrackMarkersMap& markers) : markers_(markers) {}
+ 
+ bool Tracks::GetMarker(int clip, int frame, int track, Marker* marker) const {
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (markers_[i].clip  == clip &&
+-        markers_[i].frame == frame &&
+-        markers_[i].track == track) {
+-      *marker = markers_[i];
+-      return true;
+-    }
++  TrackMarkersMap::const_iterator foundTrack = markers_.find(track);
++  if (foundTrack == markers_.end()) {
++    return false;
++  }
++  ClipMarkersMap::const_iterator foundClip = foundTrack->second.find(clip);
++  if (foundClip == foundTrack->second.end()) {
++    return false;
++  }
++  FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame);
++  if (foundFrame == foundClip->second.end()) {
++    return false;
++  } else {
++    *marker = foundFrame->second;
++    return true;
+   }
+-  return false;
+ }
+ 
+ void Tracks::GetMarkersForTrack(int track, vector<Marker>* markers) const {
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (track == markers_[i].track) {
+-      markers->push_back(markers_[i]);
++  TrackMarkersMap::const_iterator foundTrack = markers_.find(track);
++  if (foundTrack == markers_.end()) {
++    return;
++  }
++  for (ClipMarkersMap::const_iterator it = foundTrack->second.begin(); it != foundTrack->second.end(); ++it) {
++    for (FrameMarkerMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
++      markers->push_back(it2->second);
+     }
+   }
+ }
+@@ -59,131 +70,177 @@
+ void Tracks::GetMarkersForTrackInClip(int clip,
+                                       int track,
+                                       vector<Marker>* markers) const {
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (clip  == markers_[i].clip &&
+-        track == markers_[i].track) {
+-      markers->push_back(markers_[i]);
+-    }
++  TrackMarkersMap::const_iterator foundTrack = markers_.find(track);
++  if (foundTrack == markers_.end()) {
++    return;
++  }
++  ClipMarkersMap::const_iterator foundClip = foundTrack->second.find(clip);
++  if (foundClip == foundTrack->second.end()) {
++    return;
++  }
++  for (FrameMarkerMap::const_iterator it2 = foundClip->second.begin(); it2 != foundClip->second.end(); ++it2) {
++    markers->push_back(it2->second);
+   }
+ }
+ 
+ void Tracks::GetMarkersInFrame(int clip,
+                                int frame,
+                                vector<Marker>* markers) const {
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (markers_[i].clip  == clip &&
+-        markers_[i].frame == frame) {
+-      markers->push_back(markers_[i]);
++  for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
++    ClipMarkersMap::const_iterator foundClip = it->second.find(clip);
++    if (foundClip == it->second.end()) {
++      continue;
++    }
++    FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame);
++    if (foundFrame == foundClip->second.end()) {
++      continue;
++    } else {
++      markers->push_back(foundFrame->second);
+     }
+   }
+ }
+ 
++struct MarkerIteratorCompareLess
++{
++  bool operator() (const FrameMarkerMap::const_iterator & lhs,
++                   const FrameMarkerMap::const_iterator & rhs) const
++  {
++    if (lhs->second.track < rhs->second.track) {
++      return true;
++    } else if (lhs->second.track > rhs->second.track) {
++      return false;
++    } else {
++      if (lhs->second.clip < rhs->second.clip) {
++        return true;
++      } else if (lhs->second.clip > rhs->second.clip) {
++        return false;
++      } else {
++        if (lhs->second.frame < rhs->second.frame) {
++          return true;
++        } else if (lhs->second.frame > rhs->second.frame) {
++          return false;
++        } else {
++          return false;
++        }
++      }
++    }
++  }
++};
++
++typedef std::set<FrameMarkerMap::const_iterator, MarkerIteratorCompareLess> FrameMarkersIteratorSet;
++
+ void Tracks::GetMarkersForTracksInBothImages(int clip1, int frame1,
+                                              int clip2, int frame2,
+                                              vector<Marker>* markers) const {
+-  std::vector<int> image1_tracks;
+-  std::vector<int> image2_tracks;
++  FrameMarkersIteratorSet image1_tracks;
++  FrameMarkersIteratorSet image2_tracks;
+ 
+   // Collect the tracks in each of the two images.
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    int clip = markers_[i].clip;
+-    int frame = markers_[i].frame;
+-    if (clip == clip1 && frame == frame1) {
+-      image1_tracks.push_back(markers_[i].track);
+-    } else if (clip == clip2 && frame == frame2) {
+-      image2_tracks.push_back(markers_[i].track);
++
++  for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
++    ClipMarkersMap::const_iterator foundClip = it->second.find(clip1);
++    if (foundClip == it->second.end()) {
++      continue;
++    }
++    FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame1);
++    if (foundFrame == foundClip->second.end()) {
++      continue;
++    } else {
++      image1_tracks.insert(foundFrame);
++    }
++  }
++
++  for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
++    ClipMarkersMap::const_iterator foundClip = it->second.find(clip2);
++    if (foundClip == it->second.end()) {
++      continue;
++    }
++    FrameMarkerMap::const_iterator foundFrame = foundClip->second.find(frame2);
++    if (foundFrame == foundClip->second.end()) {
++      continue;
++    } else {
++      image2_tracks.insert(foundFrame);
+     }
+   }
+ 
+   // Intersect the two sets to find the tracks of interest.
+-  std::sort(image1_tracks.begin(), image1_tracks.end());
+-  std::sort(image2_tracks.begin(), image2_tracks.end());
+-  std::vector<int> intersection;
+-  std::set_intersection(image1_tracks.begin(), image1_tracks.end(),
+-                        image2_tracks.begin(), image2_tracks.end(),
+-                        std::back_inserter(intersection));
+-
+-  // Scan through and get the relevant tracks from the two images.
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    // Save markers that are in either frame and are in our candidate set.
+-    if (((markers_[i].clip  == clip1 &&
+-          markers_[i].frame == frame1) ||
+-         (markers_[i].clip  == clip2 &&
+-          markers_[i].frame == frame2)) &&
+-         std::binary_search(intersection.begin(),
+-                            intersection.end(),
+-                            markers_[i].track)) {
+-      markers->push_back(markers_[i]);
++
++  for (FrameMarkersIteratorSet::const_iterator it = image1_tracks.begin(); it != image1_tracks.end(); ++it) {
++    FrameMarkersIteratorSet::const_iterator foundInImage2Tracks = image2_tracks.find(*it);
++    if (foundInImage2Tracks != image2_tracks.end()) {
++      markers->push_back((*it)->second);
+     }
+   }
+ }
+ 
+ void Tracks::AddMarker(const Marker& marker) {
+-  // TODO(keir): This is quadratic for repeated insertions. Fix this by adding
+-  // a smarter data structure like a set<>.
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (markers_[i].clip  == marker.clip &&
+-        markers_[i].frame == marker.frame &&
+-        markers_[i].track == marker.track) {
+-      markers_[i] = marker;
+-      return;
+-    }
+-  }
+-  markers_.push_back(marker);
++  ClipMarkersMap& tracks = markers_[marker.track];
++  FrameMarkerMap& frames = tracks[marker.clip];
++  frames[marker.frame] = marker;
+ }
+ 
+-void Tracks::SetMarkers(vector<Marker>* markers) {
++void Tracks::SetMarkers(TrackMarkersMap* markers) {
+   std::swap(markers_, *markers);
+ }
+ 
+ bool Tracks::RemoveMarker(int clip, int frame, int track) {
+-  int size = markers_.size();
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (markers_[i].clip  == clip &&
+-        markers_[i].frame == frame &&
+-        markers_[i].track == track) {
+-      markers_[i] = markers_[size - 1];
+-      markers_.resize(size - 1);
+-      return true;
+-    }
++  TrackMarkersMap::iterator foundTrack = markers_.find(track);
++  if (foundTrack == markers_.end()) {
++    return false;
++  }
++  ClipMarkersMap::iterator foundClip = foundTrack->second.find(clip);
++  if (foundClip == foundTrack->second.end()) {
++    return false;
++  }
++  FrameMarkerMap::iterator foundFrame = foundClip->second.find(frame);
++  if (foundFrame == foundClip->second.end()) {
++    return false;
++  } else {
++    foundClip->second.erase(foundFrame);
++    return true;
+   }
+-  return false;
+ }
+ 
+ void Tracks::RemoveMarkersForTrack(int track) {
+-  int size = 0;
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (markers_[i].track != track) {
+-      markers_[size++] = markers_[i];
+-    }
++  TrackMarkersMap::iterator foundTrack = markers_.find(track);
++  if (foundTrack == markers_.end()) {
++    return;
+   }
+-  markers_.resize(size);
++  markers_.erase(foundTrack);
+ }
+ 
++
+ int Tracks::MaxClip() const {
+   int max_clip = 0;
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    max_clip = std::max(markers_[i].clip, max_clip);
++  for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
++    if (!it->second.empty()) {
++      max_clip = std::max(it->second.rbegin()->first, max_clip);
++    }
+   }
+   return max_clip;
+ }
+ 
+ int Tracks::MaxFrame(int clip) const {
+   int max_frame = 0;
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    if (markers_[i].clip == clip) {
+-      max_frame = std::max(markers_[i].frame, max_frame);
++  for (TrackMarkersMap::const_iterator it = markers_.begin(); it!=markers_.end(); ++it) {
++    ClipMarkersMap::const_iterator foundClip = it->second.find(clip);
++    if (foundClip == it->second.end()) {
++      continue;
++    }
++    if (!foundClip->second.empty()) {
++      max_frame = std::max(foundClip->second.rbegin()->first, max_frame);
+     }
+   }
++
+   return max_frame;
+ }
+ 
+ int Tracks::MaxTrack() const {
+-  int max_track = 0;
+-  for (int i = 0; i < markers_.size(); ++i) {
+-    max_track = std::max(markers_[i].track, max_track);
++  if (!markers_.empty()) {
++    return markers_.rbegin()->first;
++  } else {
++    return 0;
+   }
+-  return max_track;
+ }
+ 
+ int Tracks::NumMarkers() const {
+diff -ur a/libs/libmv/libmv/autotrack/tracks.h b/libs/libmv/libmv/autotrack/tracks.h
+--- a/libs/libmv/libmv/autotrack/tracks.h	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/autotrack/tracks.h	2016-06-21 09:17:36.000000000 +0200
+@@ -23,6 +23,8 @@
+ #ifndef LIBMV_AUTOTRACK_TRACKS_H_
+ #define LIBMV_AUTOTRACK_TRACKS_H_
+ 
++#include <map>
++#include <set>
+ #include "libmv/base/vector.h"
+ #include "libmv/autotrack/marker.h"
+ 
+@@ -30,6 +32,22 @@
+ 
+ using libmv::vector;
+ 
++struct MarkerCompareFrameLess
++{
++  bool operator() (const Marker & lhs,
++                   const Marker & rhs) const
++  {
++    return lhs.frame < rhs.frame;
++  }
++};
++
++// This is a set per track and per clip
++typedef std::set<Marker, MarkerCompareFrameLess> MarkerSet;
++
++typedef std::map<int, Marker> FrameMarkerMap;
++typedef std::map<int, FrameMarkerMap> ClipMarkersMap;
++typedef std::map<int, ClipMarkersMap> TrackMarkersMap;
++
+ // The Tracks container stores correspondences between frames.
+ class Tracks {
+  public:
+@@ -37,7 +55,7 @@
+   Tracks(const Tracks &other);
+ 
+   // Create a tracks object with markers already initialized. Copies markers.
+-  explicit Tracks(const vector<Marker>& markers);
++  explicit Tracks(const TrackMarkersMap& markers);
+ 
+   // All getters append to the output argument vector.
+   bool GetMarker(int clip, int frame, int track, Marker* marker) const;
+@@ -59,7 +77,7 @@
+ 
+   // Moves the contents of *markers over top of the existing markers. This
+   // destroys *markers in the process (but avoids copies).
+-  void SetMarkers(vector<Marker>* markers);
++  void SetMarkers(TrackMarkersMap* markers);
+   bool RemoveMarker(int clip, int frame, int track);
+   void RemoveMarkersForTrack(int track);
+ 
+@@ -68,10 +86,10 @@
+   int MaxTrack() const;
+   int NumMarkers() const;
+ 
+-  const vector<Marker>& markers() const { return markers_; }
++  const TrackMarkersMap& markers() const { return markers_; }
+ 
+  private:
+-  vector<Marker> markers_;
++  TrackMarkersMap markers_;
+ 
+   // TODO(keir): Consider adding access-map data structures to avoid all the
+   // linear lookup penalties for the accessors.
+diff -ur a/libs/libmv/libmv/logging/logging.h b/libs/libmv/libmv/logging/logging.h
+--- a/libs/libmv/libmv/logging/logging.h	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/logging/logging.h	2016-05-20 11:55:42.000000000 +0200
+@@ -23,9 +23,20 @@
+ 
+ #include <glog/logging.h>
+ 
+-#define LG LOG(INFO)
+-#define V0 LOG(INFO)
+-#define V1 LOG(INFO)
+-#define V2 LOG(INFO)
++#ifdef DEBUG
++//#define TRACE_LIB_MV 1
++#endif
++
++#ifdef TRACE_LIB_MV
++#define LIBMV_LOG(severity) DLOG(severity)
++#else
++#define LIBMV_LOG(severity) \
++true ? (void) 0 : google::LogMessageVoidify() & LOG(severity)
++#endif
++
++#define LG LIBMV_LOG(INFO)
++#define V0 LIBMV_LOG(INFO)
++#define V1 LIBMV_LOG(INFO)
++#define V2 LIBMV_LOG(INFO)
+ 
+ #endif  // LIBMV_LOGGING_LOGGING_H
+diff -ur a/libs/libmv/libmv/tracking/track_region.cc b/libs/libmv/libmv/tracking/track_region.cc
+--- a/libs/libmv/libmv/tracking/track_region.cc	2016-03-21 18:40:15.000000000 +0100
++++ b/libs/libmv/libmv/tracking/track_region.cc	2016-06-21 09:18:16.000000000 +0200
+@@ -136,6 +136,7 @@
+       max_iterations(20),
+       use_esm(true),
+       use_brute_initialization(true),
++      attempt_refine_before_brute(true),
+       use_normalized_intensities(false),
+       sigma(0.9),
+       num_extra_points(0),
+@@ -556,7 +557,8 @@
+     double var_y = sYY - sY*sY;
+     double covariance_xy = sXY - sX*sY;
+ 
+-    double correlation = covariance_xy / sqrt(var_x * var_y);
++    double mult = var_x * var_y;
++    double correlation = mult != 0 ? covariance_xy / sqrt(mult) : 1.;
+     LG << "Covariance xy: " << covariance_xy
+        << ", var 1: " << var_x << ", var 2: " << var_y
+        << ", correlation: " << correlation;
