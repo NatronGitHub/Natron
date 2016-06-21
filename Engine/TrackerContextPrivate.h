@@ -41,7 +41,9 @@ GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_ON(unused-function)
 GCC_DIAG_ON(unused-parameter)
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <openMVG/robust_estimation/robust_estimator_Prosac.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QFuture>
 #include <QFutureWatcher>
