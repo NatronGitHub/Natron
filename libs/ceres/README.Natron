@@ -1,0 +1,8 @@
+Project: Ceres Solver
+URL: http://ceres-solver.org/
+Upstream version 1.11 (aef9c9563b08d5f39eee1576af133a84749d1b48)
+Local modifications: ceres-Natron.patch
+
+Extracted from Blender git repository under the extern/ folder.
+Git URL=https://git.blender.org/blender.git
+Git HEAD version=8f04a228f74c06972f94f100e7c787a06f0310e6 (2016-05-24)
