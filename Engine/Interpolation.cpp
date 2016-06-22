@@ -892,11 +892,11 @@ Interpolation::integrate_clamp(double tcur,
    Q3 := P0:
 
    derivativeAtCurRight := dP(0)/(tnext-tcur):
-   curvatureAtCurRight := dP2(0)/(tnext-tcur):
-   curvatureAtNextLeft:= dP2(1)/(tnext - tcur):
+   curvatureAtCurRight := dP2(0)/(tnext-tcur)**2:
+   curvatureAtNextLeft:= dP2(1)/(tnext - tcur)**2:
    derivativeAtCurLeft := dQ(1)/(tcur-tprev):
-   curvatureAtCurLeft:= dQ2(1)/(tcur - tprev):
-   curvatureAtPrevRight:= dQ2(0)/(tcur - tprev):
+   curvatureAtCurLeft:= dQ2(1)/(tcur - tprev)**2:
+   curvatureAtPrevRight:= dQ2(0)/(tcur - tprev)**2:
 
    printf("linear, general case:"):
    solve( {curvatureAtCurRight = 0, curvatureAtCurLeft = 0}, { P0pr, Q3pl });
@@ -1069,18 +1069,21 @@ Interpolation::autoComputeDerivatives(KeyframeTypeEnum interpPrev,
     case eKeyframeTypeCubic:
         /* Cubic means the the 2nd derivative of the cubic curve at the point 'cur' are equal. */
         if ( ( interpPrev == eKeyframeTypeLinear) && ( interpNext == eKeyframeTypeLinear) ) {
-            P0pr = -(double)( (Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (tcur - tprev) ) / 0.2e1;
-            Q3pl = (double)( (Q0 * tnext - Q0 * tcur - P0 * tprev - P3 * tcur + P3 * tprev - P0 * tnext + 2 * P0 * tcur) / (-tnext + tcur) ) / 0.2e1;
+            // cubic, prev and next are linear
+            P0pr = -(Q0 * tnext * tnext - 2 * Q0 * tnext * tcur - 2 * P0 * tcur * tprev + 2 * P3 * tcur * tprev + 2 * P0 * tnext * tcur - P3 * tprev * tprev + P0 * tprev * tprev - P0 * tnext * tnext + Q0 * tcur * tcur - P3 * tcur * tcur) / (tcur - tprev) / (tnext - tprev);
+            Q3pl = (Q0 * tnext * tnext - 2 * Q0 * tnext * tcur - 2 * P0 * tcur * tprev + 2 * P3 * tcur * tprev + 2 * P0 * tnext * tcur - P3 * tprev * tprev + P0 * tprev * tprev - P0 * tnext * tnext + Q0 * tcur * tcur - P3 * tcur * tcur) / (-tnext * tnext + tnext * tcur + tprev * tnext - tcur * tprev);
         } else if (interpPrev == eKeyframeTypeLinear) {
-            P0pr = -(double)( (-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev) ) / 0.7e1;
-            Q3pl = (double)( (-6 * P0 * tprev - 6 * P3 * tcur + 6 * P3 * tprev + 2 * P3pl * tcur - 2 * P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur - 3 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur) ) / 0.7e1;
+            // cubic, prev is linear:
+            P0pr = -(2 * P3pl * tcur * tcur + 3 * P0 * tcur * tcur - 6 * P3 * tcur * tcur + 3 * Q0 * tcur * tcur - 6 * Q0 * tnext * tcur - 4 * P3pl * tcur * tprev - 12 * P0 * tcur * tprev + 6 * P0 * tnext * tcur + 12 * P3 * tcur * tprev + 2 * P3pl * tprev * tprev + 3 * Q0 * tnext * tnext - 6 * P3 * tprev * tprev + 6 * P0 * tprev * tprev - 3 * P0 * tnext * tnext) / (tcur - tprev) / (tcur - 4 * tprev + 3 * tnext);
+            Q3pl = (2 * P3pl * tcur * tcur + 3 * P0 * tcur * tcur - 6 * P3 * tcur * tcur + 3 * Q0 * tcur * tcur - 6 * Q0 * tnext * tcur - 4 * P3pl * tcur * tprev - 12 * P0 * tcur * tprev + 6 * P0 * tnext * tcur + 12 * P3 * tcur * tprev + 2 * P3pl * tprev * tprev + 3 * Q0 * tnext * tnext - 6 * P3 * tprev * tprev + 6 * P0 * tprev * tprev - 3 * P0 * tnext * tnext) / (2 * tnext * tcur - 4 * tcur * tprev + 4 * tprev * tnext + tcur * tcur - 3 * tnext * tnext);
         } else if (interpNext == eKeyframeTypeLinear) {
-            P0pr = -(double)( (-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (tcur - tprev) ) / 0.7e1;
-            Q3pl = (double)( (-3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + 6 * Q0 * tnext - 6 * Q0 * tcur + 2 * Q0pr * tnext - 2 * Q0pr * tcur - 6 * P0 * tnext + 9 * P0 * tcur) / (-tnext + tcur) ) / 0.7e1;
+            // cubic, next is linear:
+            P0pr = -(6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (tcur - tprev) / (tcur - 4 * tnext + 3 * tprev);
+            Q3pl = (6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (-5 * tnext * tcur - 3 * tprev * tnext + 3 * tcur * tprev + 4 * tnext * tnext + tcur * tcur);
         } else {
-            P0pr = -(double)( (6 * P0 * tcur - 3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + P3pl * tcur - P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur + Q0pr * tnext - Q0pr * tcur - 3 * P0 * tnext) / (tcur - tprev) ) / 0.4e1;
-
-            Q3pl = (double)( (6 * P0 * tcur - 3 * P0 * tprev - 3 * P3 * tcur + 3 * P3 * tprev + P3pl * tcur - P3pl * tprev + 3 * Q0 * tnext - 3 * Q0 * tcur + Q0pr * tnext - Q0pr * tcur - 3 * P0 * tnext) / (-tnext + tcur) ) / 0.4e1;
+            // cubic, general case:
+            P0pr = -(6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (tcur - tprev) / (tcur - 4 * tnext + 3 * tprev);
+            Q3pl = (6 * P0 * tcur * tprev - 6 * P3 * tcur * tprev + 12 * Q0 * tnext * tcur + 4 * Q0pr * tnext * tcur - 12 * P0 * tnext * tcur - 2 * Q0pr * tnext * tnext + 3 * P3 * tcur * tcur + 3 * P3 * tprev * tprev - 2 * Q0pr * tcur * tcur + 6 * P0 * tnext * tnext + 3 * P0 * tcur * tcur - 3 * P0 * tprev * tprev - 6 * Q0 * tnext * tnext - 6 * Q0 * tcur * tcur) / (-5 * tnext * tcur - 3 * tprev * tnext + 3 * tcur * tprev + 4 * tnext * tnext + tcur * tcur);
         }
         break;
 
