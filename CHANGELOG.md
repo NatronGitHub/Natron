@@ -6,6 +6,9 @@
 - (beta feature) Shadertoy is a new plugin that allows writing plugins using GLSL fragment shaders. It supports CPU rendering using Mesa.
 - (beta feature) OpenGL rendering is now supported (enable it in Preferences/GPU rendering). Tested with the Shadertoy plugin and the HitFilm Ignite plugins.
 - ColorLookup now has a background that makes it easier to use as a color ramp.
+- (beta feature) TextFX is a new text plugin with more features than the original text node(s).
+- (beta feature) ReadCDR is a new reader plugin that supports CorelDRAW(R) documents.
+- (beta feature) ReadPDF is a new reader plugin that supports PDF documents.
 
 ## Version 2.0.5
 
