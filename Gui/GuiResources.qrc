@@ -48,6 +48,7 @@
         <file alias="LICENSE-libopus.txt">../tools/license/components/LICENSE-libopus.txt</file>
         <file alias="LICENSE-libpng.txt">../tools/license/components/LICENSE-libpng.txt</file>
         <file alias="LICENSE-libspeex.txt">../tools/license/components/LICENSE-libspeex.txt</file>
+        <file alias="LICENSE-libtess.txt">../tools/license/components/LICENSE-libtess.txt</file>
         <file alias="LICENSE-libtheora.txt">../tools/license/components/LICENSE-libtheora.txt</file>
         <file alias="LICENSE-libtiff.txt">../tools/license/components/LICENSE-libtiff.txt</file>
         <file alias="LICENSE-libvorbis.txt">../tools/license/components/LICENSE-libvorbis.txt</file>
