@@ -248,6 +248,8 @@ private:
     const QFont & getFont() const;
     const SelectedKeys & getSelectedKeyFrames() const;
 
+    void addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, double yCurve);
+
 private:
 
 

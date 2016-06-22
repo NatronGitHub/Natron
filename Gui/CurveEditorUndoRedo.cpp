@@ -136,7 +136,8 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                     if (add) {
                         int time = it->keyframes[i].getTime();
                         if (isParametric) {
-                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, it->dimension, it->keyframes[i].getTime(), it->keyframes[i].getValue() );
+                            // keyframes added to parametric params are Cubic by default
+                            StatusEnum st = isParametric->addControlPoint( eValueChangedReasonUserEdited, it->dimension, it->keyframes[i].getTime(), it->keyframes[i].getValue(), eKeyframeTypeCubic );
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
