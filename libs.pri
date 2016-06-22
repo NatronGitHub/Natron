@@ -138,7 +138,7 @@ INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 ################
 # Gui
 static-gui {
-CONFIG += static-engine static-qhttpserver static-hoedown
+CONFIG += static-engine static-qhttpserver static-hoedown static-libtess
 win32-msvc*{
         CONFIG(64bit) {
                 CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../Gui/x64/release/ -lGui
@@ -185,7 +185,7 @@ win32-msvc*{
 # Engine
 
 static-engine {
-CONFIG += static-libmv static-openmvg static-hoedown
+CONFIG += static-libmv static-openmvg static-hoedown static-libtess
 
 win32-msvc*{
         CONFIG(64bit) {
@@ -567,3 +567,47 @@ win32-msvc*{
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/hoedown/build/libhoedown.a
 }
 } # static-hoedown
+
+
+################
+# libtess
+
+static-libtess {
+
+INCLUDEPATH += $$PWD/libs/libtess
+DEPENDPATH += $$OUT_PWD/../libs/libtess
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/x64/release/ -ltess
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/x64/debug/ -ltess
+        } else {
+                CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/win32/release/ -ltess
+                CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/win32/debug/ -ltess
+        }
+} else {
+        win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/ -ltess
+        else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/ -ltess
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/Release/ -ltess
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/Debug/ -ltess
+        else:unix: LIBS += -L$$OUT_PWD/../libs/libtess/build/ -ltess
+}
+
+win32-msvc*{
+        CONFIG(64bit) {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/x64/release/tess.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/x64/debug/tess.lib
+        } else {
+                CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/win32/release/tess.lib
+                CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/win32/debug/tess.lib
+        }
+} else {
+        win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/libtess.a
+        else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/libtess.a
+        else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/release/libtess.lib
+        else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/debug/libtess.lib
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/Release/libtess.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/Debug/libtess.a
+        else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/libtess.a
+}
+} # static-libtess

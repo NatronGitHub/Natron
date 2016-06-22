@@ -34,6 +34,7 @@ SUBDIRS += \
     libs/openMVG \
     libs/qhttpserver \
     libs/hoedown \
+    libs/libtess \
     Engine \
     Renderer \
     Gui \
