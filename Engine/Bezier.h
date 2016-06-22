@@ -63,6 +63,10 @@ NATRON_NAMESPACE_ENTER;
  * has at least a minimum of 1 keyframe.
  **/
 
+struct ParametricPoint
+{
+    double x,y,t;
+};
 
 struct BezierPrivate;
 class Bezier
@@ -355,7 +359,7 @@ public:
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
-                            std::list<Point>* points,
+                            std::list<ParametricPoint>* points,
                             RectD* bbox);
     static void point_line_intersection(const Point &p1,
                                         const Point &p2,
@@ -370,7 +374,7 @@ public:
                                     double time,
                                     unsigned int mipMapLevel,
                                     int nbPointsPerSegment,
-                                    std::list<Point>* points,
+                                    std::list<ParametricPoint>* points,
                                     RectD* bbox) const;
 
     /**
@@ -379,7 +383,7 @@ public:
     void evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiCurves,
                                                  double time,
                                                  unsigned int mipMapLevel,
-                                                 std::list<Point>* points,
+                                                 std::list<ParametricPoint>* points,
                                                  RectD* bbox) const;
 
     /**
@@ -391,7 +395,7 @@ public:
                                                  unsigned int mipMapLevel,
                                                  int nbPointsPerSegment,
                                                  bool evaluateIfEqual,
-                                                 std::list<Point >* points,
+                                                 std::list<ParametricPoint >* points,
                                                  RectD* bbox) const;
 
     /**

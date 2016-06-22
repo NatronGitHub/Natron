@@ -2754,11 +2754,12 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
             }
         }
         if ( isBezier->isOpenBezier() ) {
-            std::list<Point> decastelJauPolygon;
+            std::list<ParametricPoint> decastelJauPolygon;
             isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(false, time, mipmapLevel, &decastelJauPolygon, 0);
             std::list<std::pair<Point, double> > points;
-            for (std::list<Point> ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
-                points.push_back( std::make_pair(*it, 1.) );
+            for (std::list<ParametricPoint> ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
+                Point p = {it->x, it->y};
+                points.push_back( std::make_pair(p, 1.) );
             }
             if ( !points.empty() ) {
                 strokes.push_back(points);
@@ -3284,8 +3285,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
     ///here is the polygon of the feather bezier
     ///This is used only if the feather distance is different of 0 and the feather points equal
     ///the control points in order to still be able to apply the feather distance.
-    std::list<Point> featherPolygon;
-    std::list<Point> bezierPolygon;
+    std::list<ParametricPoint> featherPolygon;
+    std::list<ParametricPoint> bezierPolygon;
     RectD featherPolyBBox;
 
     featherPolyBBox.setupInfinity();
@@ -3301,20 +3302,22 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
     std::list<Point> featherContour;
 
     // prepare iterators
-    std::list<Point>::iterator next = featherPolygon.begin();
+    std::list<ParametricPoint>::iterator next = featherPolygon.begin();
     ++next;  // can only be valid since we assert the list is not empty
     if ( next == featherPolygon.end() ) {
         next = featherPolygon.begin();
     }
-    std::list<Point>::iterator prev = featherPolygon.end();
+    std::list<ParametricPoint>::iterator prev = featherPolygon.end();
     --prev; // can only be valid since we assert the list is not empty
-    std::list<Point>::iterator bezIT = bezierPolygon.begin();
-    std::list<Point>::iterator prevBez = bezierPolygon.end();
+    std::list<ParametricPoint>::iterator bezIT = bezierPolygon.begin();
+    std::list<ParametricPoint>::iterator prevBez = bezierPolygon.end();
     --prevBez; // can only be valid since we assert the list is not empty
 
     // prepare p1
     double absFeatherDist = std::abs(featherDist);
-    Point p1 = *featherPolygon.begin();
+    Point p1;
+    p1.x = featherPolygon.begin()->x;
+    p1.y = featherPolygon.begin()->y;
     double norm = sqrt( (next->x - prev->x) * (next->x - prev->x) + (next->y - prev->y) * (next->y - prev->y) );
     assert(norm != 0);
     double dx = (norm != 0) ? -( (next->y - prev->y) / norm ) : 0;
@@ -3333,7 +3336,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
 
 
     // increment for first iteration
-    std::list<Point>::iterator cur = featherPolygon.begin();
+    std::list<ParametricPoint>::iterator cur = featherPolygon.begin();
     // ++cur, ++prev, ++next, ++bezIT, ++prevBez
     // all should be valid, actually
     assert( cur != featherPolygon.end() &&
@@ -3392,7 +3395,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
             assert(norm != 0);
             dx = -( (next->y - prev->y) / norm );
             dy = ( (next->x - prev->x) / norm );
-            p2 = *cur;
+            p2.x = cur->x;
+            p2.y = cur->y;
 
             if (!clockWise) {
                 p2.x -= dx * absFeatherDist;
@@ -3402,7 +3406,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
                 p2.y += dy * absFeatherDist;
             }
         } else {
-            p2 = origin;
+            p2.x = origin.x;
+            p2.y = origin.y;
         }
         featherContour.push_back(p2);
 

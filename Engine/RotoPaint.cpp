@@ -1695,7 +1695,7 @@ RotoPaint::drawOverlay(double time,
                     continue;
                 }
 
-                std::list< Point > points;
+                std::list< ParametricPoint > points;
                 isBezier->evaluateAtTime_DeCasteljau(true, time, 0, 100, &points, NULL);
 
                 bool locked = (*it)->isLockedRecursive();
@@ -1708,13 +1708,13 @@ RotoPaint::drawOverlay(double time,
                 glColor4dv(curveColor);
 
                 glBegin(GL_LINE_STRIP);
-                for (std::list<Point >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
+                for (std::list<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
                     glVertex2f(it2->x, it2->y);
                 }
                 glEnd();
 
                 ///draw the feather points
-                std::list< Point > featherPoints;
+                std::list< ParametricPoint > featherPoints;
                 RectD featherBBox( std::numeric_limits<double>::infinity(),
                                    std::numeric_limits<double>::infinity(),
                                    -std::numeric_limits<double>::infinity(),
@@ -1730,7 +1730,7 @@ RotoPaint::drawOverlay(double time,
                         glLineStipple(2, 0xAAAA);
                         glEnable(GL_LINE_STIPPLE);
                         glBegin(GL_LINE_STRIP);
-                        for (std::list<Point >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
+                        for (std::list<ParametricPoint >::const_iterator it2 = featherPoints.begin(); it2 != featherPoints.end(); ++it2) {
                             glVertex2f(it2->x, it2->y);
                         }
                         glEnd();
