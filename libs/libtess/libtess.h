@@ -73,6 +73,8 @@ typedef struct libtess_GLUtesselator libtess_GLUtesselator;
 /* Internal convenience typedefs */
 typedef void (LIBTESS__GLUfuncptr)(void);
 
+libtess_GLUtesselator* libtess_gluNewTess( void );
+void libtess_gluDeleteTess( libtess_GLUtesselator *tess );
 void libtess_gluTessBeginContour (libtess_GLUtesselator* tess);
 void libtess_gluTessBeginPolygon (libtess_GLUtesselator* tess, void* data);
 void libtess_gluTessCallback (libtess_GLUtesselator* tess, unsigned int which, LIBTESS__GLUfuncptr CallBackFunc);
@@ -81,7 +83,7 @@ void libtess_gluTessEndPolygon (libtess_GLUtesselator* tess);
 void libtess_gluTessNormal (libtess_GLUtesselator* tess, double valueX, double valueY, double valueZ);
 void libtess_gluTessProperty (libtess_GLUtesselator* tess, unsigned int which, double data);
 void libtess_gluTessVertex (libtess_GLUtesselator* tess, double *location, void* data);
-
+void libtess_gluGetTessProperty( libtess_GLUtesselator *tess, unsigned int which, double *value );
 
 #ifdef __cplusplus
 }

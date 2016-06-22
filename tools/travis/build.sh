@@ -64,6 +64,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     make $J -C libs/openMVG
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
+    make $J -C libs/libtess
     make $J -C HostSupport;
     # don't build parallel on the coverity_scan branch, because we reach the 3GB memory limit
     if [[ ${COVERITY_SCAN_BRANCH} == 1 ]]; then
@@ -99,6 +100,7 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make $J -C libs/openMVG
     make $J -C libs/qhttpserver
     make $J -C libs/hoedown
+    make $J -C libs/libtess
     make $J -C HostSupport;
     make $J -C Engine;
     make $J -C Renderer;

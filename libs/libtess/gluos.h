@@ -35,10 +35,21 @@
 #include <stdio.h>
 #include <malloc.h>
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+
+#ifndef NOGDI
 #define NOGDI
+#endif
+
+#ifndef NOIME
 #define NOIME
+#endif
+
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #ifdef __MINGW64_VERSION_MAJOR
   #undef _WIN32_WINNT

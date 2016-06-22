@@ -94,5 +94,14 @@
 #define gluTessNormal libtess_gluTessNormal
 #define gluTessProperty libtess_gluTessProperty
 #define gluTessVertex libtess_gluTessVertex 
+#define gluGetTessProperty libtess_gluGetTessProperty
+#define gluNewTess libtess_gluNewTess
+#define gluDeleteTess libtess_gluDeleteTess
+
+/*backward compatibility, not exposed in libtess.h*/
+void gluBeginPolygon( GLUtesselator *tess );
+void gluNextContour( GLUtesselator *tess, GLenum type );
+void gluEndPolygon( GLUtesselator *tess );
+
 
 #endif // LIBTESS_INTERNAL_H
