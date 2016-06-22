@@ -359,7 +359,8 @@ public:
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
-                            std::list<ParametricPoint>* points,
+                            std::list<std::list<ParametricPoint> >* points,
+                            std::list<ParametricPoint >* pointsSingleList,
                             RectD* bbox);
     static void point_line_intersection(const Point &p1,
                                         const Point &p2,
@@ -374,8 +375,27 @@ public:
                                     double time,
                                     unsigned int mipMapLevel,
                                     int nbPointsPerSegment,
-                                    std::list<ParametricPoint>* points,
+                                    std::list<std::list<ParametricPoint> >* points,
                                     RectD* bbox) const;
+
+    void evaluateAtTime_DeCasteljau(bool useGuiCurves,
+                                    double time,
+                                    unsigned int mipMapLevel,
+                                    int nbPointsPerSegment,
+                                    std::list<ParametricPoint >* points,
+                                    RectD* bbox) const;
+
+private:
+
+    void evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
+                                    double time,
+                                    unsigned int mipMapLevel,
+                                    int nbPointsPerSegment,
+                                    std::list<std::list<ParametricPoint> >* points,
+                                    std::list<ParametricPoint >* pointsSingleList,
+                                    RectD* bbox) const;
+
+public:
 
     /**
      * @brief Same as evaluateAtTime_DeCasteljau but nbPointsPerSegment is approximated automatically
@@ -383,7 +403,7 @@ public:
     void evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiCurves,
                                                  double time,
                                                  unsigned int mipMapLevel,
-                                                 std::list<ParametricPoint>* points,
+                                                 std::list<std::list<ParametricPoint> >* points,
                                                  RectD* bbox) const;
 
     /**
@@ -395,8 +415,29 @@ public:
                                                  unsigned int mipMapLevel,
                                                  int nbPointsPerSegment,
                                                  bool evaluateIfEqual,
+                                                 std::list<std::list<ParametricPoint>  >* points,
+                                                 RectD* bbox) const;
+
+    void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
+                                                 double time,
+                                                 unsigned int mipMapLevel,
+                                                 int nbPointsPerSegment,
+                                                 bool evaluateIfEqual,
                                                  std::list<ParametricPoint >* points,
                                                  RectD* bbox) const;
+
+private:
+
+    void evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiCurves,
+                                                          double time,
+                                                          unsigned int mipMapLevel,
+                                                          int nbPointsPerSegment,
+                                                          bool evaluateIfEqual,
+                                                          std::list<std::list<ParametricPoint>  >* points,
+                                                          std::list<ParametricPoint >* pointsSingleList,
+                                                          RectD* bbox) const;
+
+public:
 
     /**
      * @brief Returns the bounding box of the bezier. The last value computed by evaluateAtTime_DeCasteljau will be returned,

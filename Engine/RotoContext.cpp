@@ -2754,12 +2754,14 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
             }
         }
         if ( isBezier->isOpenBezier() ) {
-            std::list<ParametricPoint> decastelJauPolygon;
+            std::list<std::list< ParametricPoint> > decastelJauPolygon;
             isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(false, time, mipmapLevel, &decastelJauPolygon, 0);
             std::list<std::pair<Point, double> > points;
-            for (std::list<ParametricPoint> ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
-                Point p = {it->x, it->y};
-                points.push_back( std::make_pair(p, 1.) );
+            for (std::list<std::list< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
+                for (std::list< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+                    Point p = {it2->x, it2->y};
+                    points.push_back( std::make_pair(p, 1.) );
+                }
             }
             if ( !points.empty() ) {
                 strokes.push_back(points);
@@ -3474,6 +3476,87 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
         }
     }  // for each point in polygon
 } // RotoContextPrivate::renderFeather
+
+void
+RotoContextPrivate::computeFeatherTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, std::list<RotoVertex>* mesh)
+{
+    ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
+    ///to the Natron image.
+
+    double fallOffInverse = 1. / fallOff;
+
+    std::list<std::list<ParametricPoint> > featherPolygon;
+    std::list<std::list<ParametricPoint> > bezierPolygon;
+
+    RectD featherPolyBBox;
+    featherPolyBBox.setupInfinity();
+
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel, -1, true, &featherPolygon, &featherPolyBBox);
+    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, -1, &bezierPolygon, NULL);
+
+    assert( !featherPolygon.empty() && !bezierPolygon.empty() && featherPolygon.size() == bezierPolygon.size());
+
+    OfxRGBAColourF innerColor = { shapeColor[0], shapeColor[1], shapeColor[2], 1.};
+    OfxRGBAColourF outterColor = { shapeColor[0], shapeColor[1], shapeColor[2], 0. };
+
+    std::list<std::list<ParametricPoint> >::const_iterator fIt = featherPolygon.begin();
+    for (std::list<std::list<ParametricPoint> > ::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it, ++fIt) {
+
+        std::list<ParametricPoint>::const_iterator bSegmentIt = it->begin();
+        std::list<ParametricPoint>::const_iterator fSegmentIt = fIt->begin();
+
+        assert(!it->empty() && !fIt->empty());
+
+        // initialize the state with a first vertex on the inner contour
+        RotoVertex lastVert;
+        double last_t;
+        {
+            last_t = bSegmentIt->t;
+            lastVert.x = bSegmentIt->x;
+            lastVert.y = bSegmentIt->y;
+            lastVert.color = innerColor;
+            mesh->push_back(lastVert);
+            ++bSegmentIt;
+        }
+        for (;;) {
+
+            double inner_t = (double)INT_MAX;
+            double outter_t = (double)INT_MAX;
+            bool gotOne = false;
+            if (bSegmentIt != it->end()) {
+                inner_t = bSegmentIt->t;
+                gotOne = true;
+            }
+            if (fSegmentIt != fIt->end()) {
+                outter_t = fSegmentIt->t;
+                gotOne = true;
+            }
+
+            if (!gotOne) {
+                break;
+            }
+
+            // Pick the point with the minimum t
+            if (inner_t <= outter_t) {
+                lastVert.x = bSegmentIt->x;
+                lastVert.y = bSegmentIt->y;
+                lastVert.color = innerColor;
+                mesh->push_back(lastVert);
+                 ++bSegmentIt;
+            } else {
+                lastVert.x = fSegmentIt->x;
+                lastVert.y = fSegmentIt->y;
+                lastVert.color = outterColor;
+                mesh->push_back(lastVert);
+                ++fSegmentIt;
+            }
+        }
+
+
+    }
+
+
+} // RotoContextPrivate::computeFeatherTriangles
 
 void
 RotoContextPrivate::renderInternalShape(double time,

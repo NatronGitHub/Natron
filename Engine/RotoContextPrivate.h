@@ -360,6 +360,12 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+struct RotoVertex
+{
+    double x,y;
+    OfxRGBAColourF color;
+};
+
 struct BezierPrivate
 {
     BezierCPs points; //< the control points of the curve
@@ -2168,6 +2174,7 @@ public:
                                unsigned int mipmapLevel);
     static void renderBezier(cairo_t* cr, const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
     static void renderFeather(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
+    static void computeFeatherTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, std::list<RotoVertex>* mesh);
     static void renderInternalShape(double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
     static void bezulate(double time, const BezierCPs& cps, std::list<BezierCPs>* patches);
     static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);
