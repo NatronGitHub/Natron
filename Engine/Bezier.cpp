@@ -92,6 +92,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define M_PI        3.14159265358979323846264338327950288   /* pi             */
 #endif
 
+
+//#define ROTO_BEZIER_EVAL_ITERATIVE
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -420,6 +423,275 @@ Bezier::bezierSegmentListBboxUpdate(bool useGuiCurves,
     } // for()
 }
 
+inline double euclDist(double x1, double y1, double x2, double y2)
+{
+    double dx = x2 - x1;
+    double dy = y2 - y1;
+    return dx * dx + dy * dy;
+}
+
+
+inline void addPointConditionnally(const Point& p, double t, std::list< ParametricPoint >* points)
+{
+    if (points->empty()) {
+        ParametricPoint x;
+        x.x = p.x;
+        x.y = p.y;
+        x.t = t;
+        points->push_back(x);
+    } else {
+        const ParametricPoint& b = points->back();
+        if (b.x != p.x || b.y != p.y) {
+            ParametricPoint x;
+            x.x = p.x;
+            x.y = p.y;
+            x.t = t;
+            points->push_back(x);
+        }
+    }
+}
+
+/**
+ * @brief Recursively subdivide the bezier segment p0,p1,p2,p3 until the cubic curve is assumed to be flat. The errorScale is used to determine the stopping criterion.
+ * The greater it is, the smoother the curve will be.
+ **/
+static void
+recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const Point& p3,
+                        double t_p0, double t_p1, double t_p2, double t_p3,
+                        double errorScale, int recursionLevel, int maxRecursion, std::list< ParametricPoint >* points)
+{
+
+    if (recursionLevel > maxRecursion) {
+        return;
+    }
+    
+    double x12   = (p0.x + p1.x) / 2;
+    double y12   = (p0.y + p1.y) / 2;
+    double x23   = (p1.x + p2.x) / 2;
+    double y23   = (p1.y + p2.y) / 2;
+    double x34   = (p2.x + p3.x) / 2;
+    double y34   = (p2.y + p3.y) / 2;
+    double x123  = (x12 + x23) / 2;
+    double y123  = (y12 + y23) / 2;
+    double x234  = (x23 + x34) / 2;
+    double y234  = (y23 + y34) / 2;
+    double x1234 = (x123 + x234) / 2;
+    double y1234 = (y123 + y234) / 2;
+
+    double t_p12 = (t_p0 + t_p1) / 2.;
+    double t_p23 = (t_p1 + t_p2) / 2.;
+    double t_p34 = (t_p2 + t_p3) / 2;
+    double t_p123 = (t_p12 + t_p23) / 2.;
+    double t_p234 = (t_p23 + t_p34) / 2.;
+    double t_p1234 = (t_p123 + t_p234) / 2.;
+
+    static const double angleToleranceMax = 0.;
+    static const double cuspTolerance = 0.;
+    static const double collinearityEps = 1e-30;
+    static const double angleToleranceEps = 0.01;
+
+    double distanceToleranceSquare = 0.5 / errorScale;
+    distanceToleranceSquare *= distanceToleranceSquare;
+
+
+    // approximate the cubic curve by a straight line
+    // See http://algorithmist.net/docs/subdivision.pdf for stopping criterion
+    double dx = p3.x - p0.x;
+    double dy = p3.y - p0.y;
+
+    double d2 = std::fabs(((p1.x - p3.x) * dy - (p1.y - p3.y) * dx));
+    double d3 = std::fabs(((p2.x - p3.x) * dy - (p2.y - p3.y) * dx));
+
+    double da1, da2;
+
+    double segmentDistanceSq = dx * dx + dy * dy;
+
+    int possibleCases = ((int)(d2 > collinearityEps) << 1) + (int)(d3 > collinearityEps);
+    switch (possibleCases) {
+        case 0: {
+            // collinear OR p0 is p4
+            if (segmentDistanceSq == 0) {
+                d2 = (p1.x - p0.x) * (p1.x - p0.x) + (p1.y - p0.y) * (p1.y - p0.y);
+                d3 = (p3.x - p2.x) * (p3.x - p2.x) + (p3.y - p2.y) * (p3.y - p2.y);
+            } else {
+                segmentDistanceSq  = 1 / segmentDistanceSq;
+                da1 = p1.x - p0.x;
+                da2 = p1.y - p0.y;
+                d2  = segmentDistanceSq * (da1 * dx + da2 * dy);
+                da1 = p2.x - p0.x;
+                da2 = p2.y - p0.y;
+                d3  = segmentDistanceSq * (da1 * dx + da2 * dy);
+                if (d2 > 0 && d2 < 1 && d3 > 0 && d3 < 1) {
+                    // Simple collinear case, 1---2---3---4
+                    return;
+                }
+                if (d2 <= 0) {
+                    d2 = euclDist(p1.x, p1.y, p0.x, p0.y);
+                } else if (d2 >= 1) {
+                    d2 = euclDist(p1.x, p3.x, p1.y, p3.y);
+                } else  {
+                    d2 = euclDist(p1.x, p1.y, p0.x + d2 * dx, p0.y + d2 * dy);
+                }
+
+                if (d3 <= 0) {
+                    d3 = euclDist(p2.x, p0.y, p2.x, p0.y);
+                } else if (d3 >= 1) {
+                    d3 = euclDist(p2.x, p2.y, p3.x, p3.y);
+                } else {
+                    d3 = euclDist(p2.x, p2.y, p0.x + d3 * dx, p0.y + d3 + dy);
+                }
+            }
+            if (d2 > d3) {
+                if (d2 < distanceToleranceSquare) {
+                    addPointConditionnally(p1, t_p1, points);
+                    return;
+                }
+            } else {
+                if (d3 < distanceToleranceSquare) {
+                    addPointConditionnally(p2, t_p2, points);
+                    return;
+                }
+            }
+        }   break;
+        case 1: {
+            // p1,p2,p4 are collinear, p3 is significant
+            if (d3 * d3 <= distanceToleranceSquare * segmentDistanceSq) {
+                if (angleToleranceMax < angleToleranceEps) {
+                    Point p;
+                    p.x = x23;
+                    p.y = y23;
+                    addPointConditionnally(p, t_p23, points);
+                    return;
+                }
+
+                // Check Angle
+                da1 = std::fabs(std::atan2(p3.y - p2.y, p3.x - p2.x) - std::atan2(p2.y - p1.y, p2.x - p1.x));
+                if (da1 >= M_PI) {
+                    da1 = 2. * M_PI - da1;
+                }
+
+                if (da1 < angleToleranceMax) {
+                    addPointConditionnally(p1, t_p1, points);
+                    addPointConditionnally(p2, t_p2, points);
+                    return;
+                }
+
+                if (cuspTolerance != 0.0) {
+                    if (da1 > cuspTolerance) {
+                        addPointConditionnally(p2, t_p2, points);
+                        return;
+                    }
+                }
+            }
+        }   break;
+        case 2: {
+            // p1,p3,p4 are collinear, p2 is significant
+            if (d2 * d2 <= distanceToleranceSquare * segmentDistanceSq) {
+                if (angleToleranceMax < angleToleranceEps) {
+                    Point p;
+                    p.x = x23;
+                    p.y = y23;
+                    addPointConditionnally(p, t_p23, points);
+                    return;
+                }
+                // Check Angle
+                da1 = std::fabs(std::atan2(p2.y - p1.y, p2.x - p1.x) - std::atan2(p1.y - p0.y, p1.x - p0.x));
+                if (da1 >= M_PI) {
+                    da1 = 2 * M_PI - da1;
+                }
+
+                if (da1 < angleToleranceMax) {
+                    addPointConditionnally(p1, t_p1, points);
+                    addPointConditionnally(p2, t_p2, points);
+                    return;
+                }
+
+                if (cuspTolerance != 0.0) {
+                    if (da1 > cuspTolerance) {
+                        addPointConditionnally(p1, t_p1, points);
+                        return;
+                    }
+                }
+
+            }
+        }   break;
+        case 3: {
+            if ((d2 + d3) * (d2 + d3) <= distanceToleranceSquare * segmentDistanceSq) {
+                // Check curvature
+                if (angleToleranceMax < angleToleranceEps) {
+                    Point p;
+                    p.x = x23;
+                    p.y = y23;
+                    addPointConditionnally(p1, t_p1, points);
+                    return;
+                }
+
+                // Handle  cusps
+                double a23 = std::atan2(p2.y - p1.y, p2.x - p1.x);
+                da1 = std::fabs(a23 - std::atan2(p1.y - p0.y, p1.x - p0.x));
+                da2 = std::fabs(std::atan2(p3.y - p2.y, p3.x - p2.x) - a23);
+                if (da1 >= M_PI) {
+                    da1 = 2 * M_PI - da1;
+                }
+                if (da2 >= M_PI) {
+                    da2 = 2 * M_PI - da2;
+                }
+
+                if (da1 + da2 < angleToleranceMax) {
+                    Point p;
+                    p.x = x23;
+                    p.y = y23;
+                    addPointConditionnally(p1, t_p1, points);
+                    return;
+                }
+
+                if (cuspTolerance != 0.0) {
+                    if (da1 > cuspTolerance) {
+                        addPointConditionnally(p1, t_p1, points);
+                        return;
+                    }
+
+                    if (da2 > cuspTolerance) {
+                        addPointConditionnally(p2, t_p2, points);
+                        return;
+                    }
+                }
+            }
+
+        }   break;
+        default:
+            assert(false);
+            break;
+    } // possibleCases
+
+
+    // Subdivide
+    Point p12 = {x12, y12};
+    Point p123 = {x123, y123};
+    Point p1234 = {x1234, y1234};
+    Point p234 = {x234, y234};
+    Point p34 = {x34, y34};
+
+
+    recursiveBezierInternal(p0, p12, p123, p1234, t_p0, t_p12, t_p123, t_p1234, errorScale, recursionLevel + 1, maxRecursion, points);
+    recursiveBezierInternal(p1234, p234, p34, p3, t_p1234, t_p234, t_p34, t_p3, errorScale, recursionLevel + 1, maxRecursion, points);
+}
+
+static void
+recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& p3, double errorScale, int maxRecursion, std::list< ParametricPoint >* points)
+{
+    ParametricPoint p0x,p3x;
+    p0x.x = p0.x;
+    p0x.y = p0.y;
+    p0x.t = 0.;
+    p3x.x = p3.x;
+    p3x.y = p3.y;
+    p3x.t = 1.;
+    points->push_back(p0x);
+    recursiveBezierInternal(p0, p1, p2, p3, 0., 1. / 3., 2. / 3., 1., errorScale, 0, maxRecursion, points);
+    points->push_back(p3x);
+}
+
 // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
 // segment from 'first' to 'last' evaluated at 'time'
 // If nbPointsPerSegment is -1 then it will be automatically computed
@@ -432,7 +704,7 @@ bezierSegmentEval(bool useGuiCurves,
                   unsigned int mipMapLevel,
                   int nbPointsPerSegment,
                   const Transform::Matrix3x3& transform,
-                  std::list< Point >* points, ///< output
+                  std::list< ParametricPoint >* points, ///< output
                   RectD* bbox = NULL) ///< input/output (optional)
 {
     Transform::Point3D p0M, p1M, p2M, p3M;
@@ -475,6 +747,7 @@ bezierSegmentEval(bool useGuiCurves,
         p3.y /= pot;
     }
 
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
     if (nbPointsPerSegment == -1) {
         /*
          * Approximate the necessary number of line segments, using http://antigrain.com/research/adaptive_bezier/
@@ -495,10 +768,19 @@ bezierSegmentEval(bool useGuiCurves,
     double incr = 1. / (double)(nbPointsPerSegment - 1);
     Point cur;
     for (int i = 0; i < nbPointsPerSegment; ++i) {
-        double t = incr * i;
-        Bezier::bezierPoint(p0, p1, p2, p3, t, &cur);
-        points->push_back(cur);
+        ParametricPoint p;
+        p.t = incr * i;
+        Bezier::bezierPoint(p0, p1, p2, p3, p.t, &cur);
+        p.x = cur.x;
+        p.y = cur.y;
+        points->push_back(p);
     }
+#else
+    Q_UNUSED(nbPointsPerSegment);
+    const double errorScale = 10.;
+    static const int maxRecursion = 32;
+    recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
+#endif
     if (bbox) {
         Bezier::bezierPointBboxUpdate(p0,  p1,  p2,  p3, bbox);
     }
@@ -2232,7 +2514,7 @@ Bezier::deCastelJau(bool useGuiCurves,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
-                    std::list<Point>* points,
+                    std::list<ParametricPoint>* points,
                     RectD* bbox)
 {
     BezierCPs::const_iterator next = cps.begin();
@@ -2263,7 +2545,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
                                    unsigned int mipMapLevel,
                                    int nbPointsPerSegment,
-                                   std::list< Point >* points,
+                                   std::list< ParametricPoint >* points,
                                    RectD* bbox) const
 {
     Transform::Matrix3x3 transform;
@@ -2277,7 +2559,7 @@ void
 Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
                                                 double time,
                                                 unsigned int mipMapLevel,
-                                                std::list<Point>* points,
+                                                std::list<ParametricPoint>* points,
                                                 RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau(useGuiPoints, time, mipMapLevel, -1, points, bbox);
@@ -2289,7 +2571,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 unsigned int mipMapLevel,
                                                 int nbPointsPerSegment,
                                                 bool evaluateIfEqual, ///< evaluate only if feather points are different from control points
-                                                std::list< Point >* points, ///< output
+                                                std::list< ParametricPoint >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
     assert( useFeatherPoints() );
