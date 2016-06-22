@@ -319,6 +319,63 @@
 		1EADE5C118AA403700EF3180 /* Engine.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Engine.xcodeproj; path = Engine/Engine.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
+		1EEB0B5B1D1ADF4D00F0D43D /* LICENSE-AGPL-3.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-AGPL-3.0.txt"; sourceTree = "<group>"; };
+		1EEB0B5C1D1ADF4D00F0D43D /* LICENSE-Apache-2.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Apache-2.0.txt"; sourceTree = "<group>"; };
+		1EEB0B5D1D1ADF4D00F0D43D /* LICENSE-Boost.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Boost.txt"; sourceTree = "<group>"; };
+		1EEB0B5E1D1ADF4D00F0D43D /* LICENSE-bzip2.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-bzip2.txt"; sourceTree = "<group>"; };
+		1EEB0B5F1D1ADF4D00F0D43D /* LICENSE-CeresSolver.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-CeresSolver.txt"; sourceTree = "<group>"; };
+		1EEB0B601D1ADF4D00F0D43D /* LICENSE-expat.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-expat.txt"; sourceTree = "<group>"; };
+		1EEB0B611D1ADF4D00F0D43D /* LICENSE-Field3D.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Field3D.txt"; sourceTree = "<group>"; };
+		1EEB0B621D1ADF4D00F0D43D /* LICENSE-fontconfig.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-fontconfig.txt"; sourceTree = "<group>"; };
+		1EEB0B631D1ADF4D00F0D43D /* LICENSE-FreeType.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-FreeType.txt"; sourceTree = "<group>"; };
+		1EEB0B641D1ADF4D00F0D43D /* LICENSE-gflags.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-gflags.txt"; sourceTree = "<group>"; };
+		1EEB0B651D1ADF4D00F0D43D /* LICENSE-GIFLIB.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-GIFLIB.txt"; sourceTree = "<group>"; };
+		1EEB0B661D1ADF4D00F0D43D /* LICENSE-GLAD.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-GLAD.txt"; sourceTree = "<group>"; };
+		1EEB0B671D1ADF4D00F0D43D /* LICENSE-GLFW.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-GLFW.txt"; sourceTree = "<group>"; };
+		1EEB0B681D1ADF4D00F0D43D /* LICENSE-glog.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-glog.txt"; sourceTree = "<group>"; };
+		1EEB0B691D1ADF4D00F0D43D /* LICENSE-GPL-2.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-GPL-2.0.txt"; sourceTree = "<group>"; };
+		1EEB0B6A1D1ADF4D00F0D43D /* LICENSE-HarfBuzz.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-HarfBuzz.txt"; sourceTree = "<group>"; };
+		1EEB0B6B1D1ADF4D00F0D43D /* LICENSE-HDF5.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-HDF5.txt"; sourceTree = "<group>"; };
+		1EEB0B6C1D1ADF4D00F0D43D /* LICENSE-hoedown.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-hoedown.txt"; sourceTree = "<group>"; };
+		1EEB0B6D1D1ADF4D00F0D43D /* LICENSE-ICU.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-ICU.txt"; sourceTree = "<group>"; };
+		1EEB0B6E1D1ADF4D00F0D43D /* LICENSE-ImageMagick.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-ImageMagick.txt"; sourceTree = "<group>"; };
+		1EEB0B6F1D1ADF4D00F0D43D /* LICENSE-JasPer.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-JasPer.txt"; sourceTree = "<group>"; };
+		1EEB0B701D1ADF4D00F0D43D /* LICENSE-LGPL-2.1.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-LGPL-2.1.txt"; sourceTree = "<group>"; };
+		1EEB0B711D1ADF4D00F0D43D /* LICENSE-libedit.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libedit.txt"; sourceTree = "<group>"; };
+		1EEB0B721D1ADF4D00F0D43D /* LICENSE-libffi.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libffi.txt"; sourceTree = "<group>"; };
+		1EEB0B731D1ADF4D00F0D43D /* LICENSE-libjpeg.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libjpeg.txt"; sourceTree = "<group>"; };
+		1EEB0B741D1ADF4D00F0D43D /* LICENSE-libmng.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libmng.txt"; sourceTree = "<group>"; };
+		1EEB0B751D1ADF4D00F0D43D /* LICENSE-libmv.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libmv.txt"; sourceTree = "<group>"; };
+		1EEB0B761D1ADF4D00F0D43D /* LICENSE-libogg.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libogg.txt"; sourceTree = "<group>"; };
+		1EEB0B771D1ADF4D00F0D43D /* LICENSE-libopus.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libopus.txt"; sourceTree = "<group>"; };
+		1EEB0B781D1ADF4D00F0D43D /* LICENSE-libpng.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libpng.txt"; sourceTree = "<group>"; };
+		1EEB0B791D1ADF4D00F0D43D /* LICENSE-libspeex.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libspeex.txt"; sourceTree = "<group>"; };
+		1EEB0B7A1D1ADF4D00F0D43D /* LICENSE-libtheora.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libtheora.txt"; sourceTree = "<group>"; };
+		1EEB0B7B1D1ADF4D00F0D43D /* LICENSE-libtiff.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libtiff.txt"; sourceTree = "<group>"; };
+		1EEB0B7C1D1ADF4D00F0D43D /* LICENSE-libvorbis.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libvorbis.txt"; sourceTree = "<group>"; };
+		1EEB0B7D1D1ADF4D00F0D43D /* LICENSE-libxml.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libxml.txt"; sourceTree = "<group>"; };
+		1EEB0B7E1D1ADF4D00F0D43D /* LICENSE-libxml2.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-libxml2.txt"; sourceTree = "<group>"; };
+		1EEB0B7F1D1ADF4D00F0D43D /* LICENSE-Little-CMS.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Little-CMS.txt"; sourceTree = "<group>"; };
+		1EEB0B801D1ADF4D00F0D43D /* LICENSE-Mesa.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Mesa.txt"; sourceTree = "<group>"; };
+		1EEB0B811D1ADF4D00F0D43D /* LICENSE-MPL-2.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-MPL-2.0.txt"; sourceTree = "<group>"; };
+		1EEB0B821D1ADF4D00F0D43D /* LICENSE-OpenColorIO.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-OpenColorIO.txt"; sourceTree = "<group>"; };
+		1EEB0B831D1ADF4D00F0D43D /* LICENSE-OpenEXR.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-OpenEXR.txt"; sourceTree = "<group>"; };
+		1EEB0B841D1ADF4D00F0D43D /* LICENSE-openfx.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-openfx.txt"; sourceTree = "<group>"; };
+		1EEB0B851D1ADF4D00F0D43D /* LICENSE-openh264.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-openh264.txt"; sourceTree = "<group>"; };
+		1EEB0B861D1ADF4D00F0D43D /* LICENSE-OpenImageIO.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-OpenImageIO.txt"; sourceTree = "<group>"; };
+		1EEB0B871D1ADF4D00F0D43D /* LICENSE-openjpeg.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-openjpeg.txt"; sourceTree = "<group>"; };
+		1EEB0B881D1ADF4D00F0D43D /* LICENSE-OpenSSL.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-OpenSSL.txt"; sourceTree = "<group>"; };
+		1EEB0B891D1ADF4D00F0D43D /* LICENSE-orc.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-orc.txt"; sourceTree = "<group>"; };
+		1EEB0B8A1D1ADF4D00F0D43D /* LICENSE-Pixman.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Pixman.txt"; sourceTree = "<group>"; };
+		1EEB0B8B1D1ADF4D00F0D43D /* LICENSE-Python.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Python.txt"; sourceTree = "<group>"; };
+		1EEB0B8C1D1ADF4D00F0D43D /* LICENSE-qhttpserver.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-qhttpserver.txt"; sourceTree = "<group>"; };
+		1EEB0B8D1D1ADF4D00F0D43D /* LICENSE-Qt-LGPL.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Qt-LGPL.txt"; sourceTree = "<group>"; };
+		1EEB0B8E1D1ADF4D00F0D43D /* LICENSE-Schroedinger.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Schroedinger.txt"; sourceTree = "<group>"; };
+		1EEB0B8F1D1ADF4D00F0D43D /* LICENSE-SeExpr.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-SeExpr.txt"; sourceTree = "<group>"; };
+		1EEB0B901D1ADF4D00F0D43D /* LICENSE-TinyXML.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-TinyXML.txt"; sourceTree = "<group>"; };
+		1EEB0B911D1ADF4D00F0D43D /* LICENSE-webp.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-webp.txt"; sourceTree = "<group>"; };
+		1EEB0B921D1ADF4D00F0D43D /* LICENSE-zlib.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-zlib.txt"; sourceTree = "<group>"; };
+		1EEB0B931D1ADF4D00F0D43D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		ACD67BF71CEC9D0900DD2CFE /* hoedown.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = hoedown.xcodeproj; path = libs/hoedown/hoedown.xcodeproj; sourceTree = "<group>"; };
 		D7A1963F18B2242500F412DA /* HostSupport.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = HostSupport.xcodeproj; path = HostSupport/HostSupport.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -417,6 +474,7 @@
 				1E70D15D1CF33A0C000D2932 /* Natron.rc */,
 				1E70D15E1CF33A0C000D2932 /* OpenColorIO-Configs-README.md */,
 				1E70D1611CF33A0C000D2932 /* README.md */,
+				1EEB0B211D1ADC9A00F0D43D /* components */,
 			);
 			name = Documentation;
 			sourceTree = "<group>";
@@ -464,6 +522,71 @@
 				1EADE5DB18AA403700EF3180 /* Tests */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1EEB0B211D1ADC9A00F0D43D /* components */ = {
+			isa = PBXGroup;
+			children = (
+				1EEB0B931D1ADF4D00F0D43D /* README.md */,
+				1EEB0B5B1D1ADF4D00F0D43D /* LICENSE-AGPL-3.0.txt */,
+				1EEB0B5C1D1ADF4D00F0D43D /* LICENSE-Apache-2.0.txt */,
+				1EEB0B5D1D1ADF4D00F0D43D /* LICENSE-Boost.txt */,
+				1EEB0B5E1D1ADF4D00F0D43D /* LICENSE-bzip2.txt */,
+				1EEB0B5F1D1ADF4D00F0D43D /* LICENSE-CeresSolver.txt */,
+				1EEB0B601D1ADF4D00F0D43D /* LICENSE-expat.txt */,
+				1EEB0B611D1ADF4D00F0D43D /* LICENSE-Field3D.txt */,
+				1EEB0B621D1ADF4D00F0D43D /* LICENSE-fontconfig.txt */,
+				1EEB0B631D1ADF4D00F0D43D /* LICENSE-FreeType.txt */,
+				1EEB0B641D1ADF4D00F0D43D /* LICENSE-gflags.txt */,
+				1EEB0B651D1ADF4D00F0D43D /* LICENSE-GIFLIB.txt */,
+				1EEB0B661D1ADF4D00F0D43D /* LICENSE-GLAD.txt */,
+				1EEB0B671D1ADF4D00F0D43D /* LICENSE-GLFW.txt */,
+				1EEB0B681D1ADF4D00F0D43D /* LICENSE-glog.txt */,
+				1EEB0B691D1ADF4D00F0D43D /* LICENSE-GPL-2.0.txt */,
+				1EEB0B6A1D1ADF4D00F0D43D /* LICENSE-HarfBuzz.txt */,
+				1EEB0B6B1D1ADF4D00F0D43D /* LICENSE-HDF5.txt */,
+				1EEB0B6C1D1ADF4D00F0D43D /* LICENSE-hoedown.txt */,
+				1EEB0B6D1D1ADF4D00F0D43D /* LICENSE-ICU.txt */,
+				1EEB0B6E1D1ADF4D00F0D43D /* LICENSE-ImageMagick.txt */,
+				1EEB0B6F1D1ADF4D00F0D43D /* LICENSE-JasPer.txt */,
+				1EEB0B701D1ADF4D00F0D43D /* LICENSE-LGPL-2.1.txt */,
+				1EEB0B711D1ADF4D00F0D43D /* LICENSE-libedit.txt */,
+				1EEB0B721D1ADF4D00F0D43D /* LICENSE-libffi.txt */,
+				1EEB0B731D1ADF4D00F0D43D /* LICENSE-libjpeg.txt */,
+				1EEB0B741D1ADF4D00F0D43D /* LICENSE-libmng.txt */,
+				1EEB0B751D1ADF4D00F0D43D /* LICENSE-libmv.txt */,
+				1EEB0B761D1ADF4D00F0D43D /* LICENSE-libogg.txt */,
+				1EEB0B771D1ADF4D00F0D43D /* LICENSE-libopus.txt */,
+				1EEB0B781D1ADF4D00F0D43D /* LICENSE-libpng.txt */,
+				1EEB0B791D1ADF4D00F0D43D /* LICENSE-libspeex.txt */,
+				1EEB0B7A1D1ADF4D00F0D43D /* LICENSE-libtheora.txt */,
+				1EEB0B7B1D1ADF4D00F0D43D /* LICENSE-libtiff.txt */,
+				1EEB0B7C1D1ADF4D00F0D43D /* LICENSE-libvorbis.txt */,
+				1EEB0B7D1D1ADF4D00F0D43D /* LICENSE-libxml.txt */,
+				1EEB0B7E1D1ADF4D00F0D43D /* LICENSE-libxml2.txt */,
+				1EEB0B7F1D1ADF4D00F0D43D /* LICENSE-Little-CMS.txt */,
+				1EEB0B801D1ADF4D00F0D43D /* LICENSE-Mesa.txt */,
+				1EEB0B811D1ADF4D00F0D43D /* LICENSE-MPL-2.0.txt */,
+				1EEB0B821D1ADF4D00F0D43D /* LICENSE-OpenColorIO.txt */,
+				1EEB0B831D1ADF4D00F0D43D /* LICENSE-OpenEXR.txt */,
+				1EEB0B841D1ADF4D00F0D43D /* LICENSE-openfx.txt */,
+				1EEB0B851D1ADF4D00F0D43D /* LICENSE-openh264.txt */,
+				1EEB0B861D1ADF4D00F0D43D /* LICENSE-OpenImageIO.txt */,
+				1EEB0B871D1ADF4D00F0D43D /* LICENSE-openjpeg.txt */,
+				1EEB0B881D1ADF4D00F0D43D /* LICENSE-OpenSSL.txt */,
+				1EEB0B891D1ADF4D00F0D43D /* LICENSE-orc.txt */,
+				1EEB0B8A1D1ADF4D00F0D43D /* LICENSE-Pixman.txt */,
+				1EEB0B8B1D1ADF4D00F0D43D /* LICENSE-Python.txt */,
+				1EEB0B8C1D1ADF4D00F0D43D /* LICENSE-qhttpserver.txt */,
+				1EEB0B8D1D1ADF4D00F0D43D /* LICENSE-Qt-LGPL.txt */,
+				1EEB0B8E1D1ADF4D00F0D43D /* LICENSE-Schroedinger.txt */,
+				1EEB0B8F1D1ADF4D00F0D43D /* LICENSE-SeExpr.txt */,
+				1EEB0B901D1ADF4D00F0D43D /* LICENSE-TinyXML.txt */,
+				1EEB0B911D1ADF4D00F0D43D /* LICENSE-webp.txt */,
+				1EEB0B921D1ADF4D00F0D43D /* LICENSE-zlib.txt */,
+			);
+			name = components;
+			path = tools/license/components;
 			sourceTree = "<group>";
 		};
 		ACD67BF81CEC9D0900DD2CFE /* Products */ = {
