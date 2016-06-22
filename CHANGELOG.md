@@ -2,6 +2,11 @@
 
 ## Version 2.1.0
 
+- The point tracker was completely reworked. It now uses libmv (from Blender).
+- (beta feature) Shadertoy is a new plugin that allows writing plugins using GLSL fragment shaders. It supports CPU rendering using Mesa.
+- (beta feature) OpenGL rendering is now supported (enable it in Preferences/GPU rendering). Tested with the Shadertoy plugin and the HitFilm Ignite plugins.
+- ColorLookup now has a background that makes it easier to use as a color ramp.
+
 ## Version 2.0.5
 
 - Viewer: The number keys now always switch input A when not shifted, and B when shifted, even on keyboards where numbers should be shifted (such as French AZERTY).
