@@ -694,33 +694,20 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         return;
     }
 
-    ///We're nearby a curve
+    ////
+    // is the click near a curve?
     double xCurve, yCurve;
     Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
     if ( foundCurveNearby != _imp->_curves.end() ) {
-        Curve::YRange yRange = (*foundCurveNearby)->getCurveYRange();
-        if ( (yCurve < yRange.min) || (yCurve > yRange.max) ) {
-            QString err =  tr("Out of curve y range ") +
-                          QString::fromUtf8("[%1 - %2]").arg(yRange.min).arg(yRange.max);
-            Dialogs::warningDialog( "", err.toStdString() );
-            e->accept();
+        addKey(*foundCurveNearby, xCurve, yCurve);
 
-            return;
-        }
-        std::vector<KeyFrame> keys(1);
-        boost::shared_ptr<Curve> curve = (*foundCurveNearby)->getInternalCurve();
-        if (!curve) {
-            return;
-        }
-        if ( curve->areKeyFramesTimeClampedToIntegers() ) {
-            xCurve = std::floor(xCurve + 0.5);
-        } else if ( curve->areKeyFramesValuesClampedToBooleans() ) {
-            xCurve = double( (bool)xCurve );
-        }
-        keys[0] = KeyFrame(xCurve, yCurve);
+        _imp->_keyDragLastMovement.rx() = 0.;
+        _imp->_keyDragLastMovement.ry() = 0.;
+        _imp->_dragStartPoint = e->pos();
+        _imp->_lastMousePos = e->pos();
+        e->accept();
 
-
-        pushUndoCommand( new AddKeysCommand(this, *foundCurveNearby, keys) );
+        return;
     }
 } // CurveWidget::mouseDoubleClickEvent
 
@@ -774,65 +761,21 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         return;
     }
 
-    ////
-    // is the click near a curve?
-    double xCurve, yCurve;
-    Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
-    if ( foundCurveNearby != _imp->_curves.end() ) {
-        if ( modCASIsControlAlt(e) ) {
-            _imp->selectCurve(*foundCurveNearby);
-
-            Curve::YRange yRange = (*foundCurveNearby)->getCurveYRange();
-            if ( (yCurve < yRange.min) || (yCurve > yRange.max) ) {
-                QString err =  tr("Out of curve y range ") +
-                              QString::fromUtf8("[%1 - %2]").arg(yRange.min).arg(yRange.max);
-                Dialogs::warningDialog( "", err.toStdString() );
-                e->accept();
-
-                return;
-            }
-            std::vector<KeyFrame> keys(1);
-            keys[0] = KeyFrame(xCurve, yCurve);
-            pushUndoCommand( new AddKeysCommand(this, *foundCurveNearby, keys) );
-
-            _imp->_drawSelectedKeyFramesBbox = false;
-            _imp->_mustSetDragOrientation = true;
-            _imp->_state = eEventStateDraggingKeys;
-            setCursor( QCursor(Qt::CrossCursor) );
-
-            _imp->_selectedKeyFrames.clear();
-
-            KeyFrameSet keySet = (*foundCurveNearby)->getInternalCurve()->getKeyFrames_mt_safe();
-            KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, xCurve);
-            assert( foundKey != keySet.end() );
-
-            KeyFrame prevKey, nextKey;
-            bool hasPrev = foundKey != keySet.begin();
-            if (hasPrev) {
-                KeyFrameSet::const_iterator prevIt = foundKey;
-                --prevIt;
-                prevKey = *prevIt;
-            }
-            KeyFrameSet::const_iterator next = foundKey;
-            ++next;
-            bool hasNext = next != keySet.end();
-            if (hasNext) {
-                nextKey = *next;
-            }
-            KeyPtr selected( new SelectedKey(*foundCurveNearby, keys[0], hasPrev, prevKey, hasNext, nextKey) );
-
-            _imp->refreshKeyTangents(selected);
-
-            //insert it into the _selectedKeyFrames
-            _imp->insertSelectedKeyFrameConditionnaly(selected);
-
+    if ( modCASIsControlAlt(e) ) { // Ctrl+Alt (Cmd+Alt on Mac) = insert keyframe
+        ////
+        // is the click near a curve?
+        double xCurve, yCurve;
+        Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
+        if ( foundCurveNearby != _imp->_curves.end() ) {
+            addKey(*foundCurveNearby, xCurve, yCurve);
             _imp->_keyDragLastMovement.rx() = 0.;
             _imp->_keyDragLastMovement.ry() = 0.;
             _imp->_dragStartPoint = e->pos();
             _imp->_lastMousePos = e->pos();
-
-            return;
         }
+        e->accept();
+
+        return;
     }
 
     ////
@@ -844,6 +787,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // no need to set _imp->_dragStartPoint
 
         // no need to update()
+        e->accept();
+
         return;
     } else if ( ( (e->buttons() & Qt::MiddleButton) &&
                   ( ( buttonMetaAlt(e) == Qt::AltModifier) || (e->buttons() & Qt::LeftButton) ) ) ||
@@ -853,6 +798,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_state = eEventStateZooming;
         _imp->_lastMousePos = e->pos();
         _imp->_dragStartPoint = e->pos();
+
+        e->accept();
 
         return;
     }
@@ -889,6 +836,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
             _imp->_lastMousePos = e->pos();
 
             //no need to update()
+            e->accept();
+
             return;
         }
     }
@@ -921,6 +870,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_dragStartPoint = e->pos();
         _imp->_lastMousePos = e->pos();
         update(); // the keyframe changes color and the derivatives must be drawn
+        e->accept();
+
         return;
     }
 
@@ -937,17 +888,24 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         _imp->_lastMousePos = e->pos();
         //no need to set _imp->_dragStartPoint
         update();
+        e->accept();
 
         return;
     }
 
     KeyPtr nearbyKeyText = _imp->isNearbyKeyFrameText( e->pos() );
     if (nearbyKeyText) {
+        // do nothing, doubleclick edits the text
+        e->accept();
+
         return;
     }
 
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> tangentText = _imp->isNearbySelectedTangentText( e->pos() );
     if (tangentText.second) {
+        // do nothing, doubleclick edits the text
+        e->accept();
+
         return;
     }
 
@@ -961,6 +919,8 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
         // no need to set _imp->_dragStartPoint
 
         // no need to update()
+        e->accept();
+
         return;
     }
 
@@ -968,8 +928,12 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     // like centering on it on the viewport or pasting previously copied keyframes.
     // This is kind of the last resort action before the default behaviour (which is to draw
     // a selection rectangle), because we'd rather select a keyframe than the nearby curve
-    if ( foundCurveNearby != _imp->_curves.end() ) {
-        _imp->selectCurve(*foundCurveNearby);
+    {
+        double xCurve, yCurve;
+        Curves::const_iterator foundCurveNearby = _imp->isNearbyCurve( e->pos(), &xCurve, &yCurve );
+        if ( foundCurveNearby != _imp->_curves.end() ) {
+            _imp->selectCurve(*foundCurveNearby);
+        }
     }
 
     ////
@@ -982,6 +946,7 @@ CurveWidget::mousePressEvent(QMouseEvent* e)
     _imp->_lastMousePos = e->pos();
     _imp->_dragStartPoint = e->pos();
     update();
+    e->accept();
 } // mousePressEvent
 
 void
@@ -2264,6 +2229,55 @@ boost::shared_ptr<OfxParamOverlayInteract>
 CurveWidget::getCustomInteract() const
 {
     return _imp->_customInteract.lock();
+}
+
+void
+CurveWidget::addKey(const boost::shared_ptr<CurveGui>& curve, double xCurve, double yCurve)
+{
+    _imp->selectCurve(curve);
+
+    Curve::YRange yRange = curve->getCurveYRange();
+    if ( (yCurve < yRange.min) || (yCurve > yRange.max) ) {
+        QString err =  tr("Out of curve y range ") +
+        QString::fromUtf8("[%1 - %2]").arg(yRange.min).arg(yRange.max);
+        Dialogs::warningDialog( "", err.toStdString() );
+
+        return;
+    }
+    std::vector<KeyFrame> keys(1);
+    keys[0] = KeyFrame(xCurve, yCurve, 0, 0);
+    pushUndoCommand( new AddKeysCommand(this, curve, keys) );
+
+    _imp->_drawSelectedKeyFramesBbox = false;
+    _imp->_mustSetDragOrientation = true;
+    _imp->_state = eEventStateDraggingKeys;
+    setCursor( QCursor(Qt::CrossCursor) );
+
+    _imp->_selectedKeyFrames.clear();
+
+    KeyFrameSet keySet = curve->getInternalCurve()->getKeyFrames_mt_safe();
+    KeyFrameSet::const_iterator foundKey = Curve::findWithTime(keySet, xCurve);
+    assert( foundKey != keySet.end() );
+
+    KeyFrame prevKey, nextKey;
+    bool hasPrev = foundKey != keySet.begin();
+    if (hasPrev) {
+        KeyFrameSet::const_iterator prevIt = foundKey;
+        --prevIt;
+        prevKey = *prevIt;
+    }
+    KeyFrameSet::const_iterator next = foundKey;
+    ++next;
+    bool hasNext = next != keySet.end();
+    if (hasNext) {
+        nextKey = *next;
+    }
+    KeyPtr selected( new SelectedKey(curve, *foundKey, hasPrev, prevKey, hasNext, nextKey) );
+
+    _imp->refreshKeyTangents(selected);
+
+    //insert it into the _selectedKeyFrames
+    _imp->insertSelectedKeyFrameConditionnaly(selected);
 }
 
 NATRON_NAMESPACE_EXIT;
