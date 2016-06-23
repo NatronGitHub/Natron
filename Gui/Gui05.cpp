@@ -27,8 +27,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>

@@ -22,6 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Gui/GuiApplicationManager.h"
 
 #include <cstdio>  // perror
 #include <cstdlib> // exit
@@ -29,13 +30,9 @@
 #include <sstream>
 #include <iostream>
 
-#include "Global/Macros.h"
-
 #include <QCoreApplication>
 
 #include "Engine/CLArgs.h"
-
-#include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_USING
 

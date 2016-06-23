@@ -33,6 +33,7 @@
 #include <pyside.h>
 
 #include "Global/Macros.h"
+
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 GCC_DIAG_OFF(missing-field-initializers)

@@ -46,8 +46,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/AppManager.h"
 #include "Engine/KnobTypes.h"
 
-#include "Global/Macros.h"
-
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiMacros.h"
 #include "Gui/KnobGui.h"

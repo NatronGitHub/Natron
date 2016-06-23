@@ -33,7 +33,6 @@
 #include <list>
 #include <bitset>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 #include <QtCore/QObject>

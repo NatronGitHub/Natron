@@ -26,7 +26,6 @@
 
 #include <stdexcept>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QSplitter>
 #include <QTextBrowser>

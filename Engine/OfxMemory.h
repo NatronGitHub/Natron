@@ -35,8 +35,6 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhMemory.h>
 
-
-#include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

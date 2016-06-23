@@ -39,8 +39,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/Macros.h"
-
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
 #include <QtCore/QTimer>

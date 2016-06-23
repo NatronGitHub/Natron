@@ -32,8 +32,6 @@
 #include <utility>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QtCore/QTextStream>
 #include <QtCore/QSettings>
 #include <QtCore/QFile>

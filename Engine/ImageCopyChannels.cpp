@@ -24,12 +24,11 @@
 
 #include "Image.h"
 
-#include "Global/Macros.h"
-
 #include <cassert>
 #include <stdexcept>
 
 #include <QtCore/QDebug>
+
 #include "Engine/OSGLContext.h"
 #include "Engine/GLShader.h"
 

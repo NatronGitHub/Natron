@@ -24,8 +24,6 @@
 
 #include "OfxHost.h"
 
-#include "Global/Macros.h"
-
 #include <cassert>
 #include <cstdarg>
 #include <memory>
@@ -66,7 +64,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
 
-#include "Global/Macros.h"
 //ofx host support
 #include <ofxhPluginAPICache.h>
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]

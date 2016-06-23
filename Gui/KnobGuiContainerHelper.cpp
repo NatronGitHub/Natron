@@ -22,6 +22,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "KnobGuiContainerHelper.h"
+
+CLANG_DIAG_OFF(deprecated)
+CLANG_DIAG_OFF(uninitialized)
 #include <QScrollArea>
 #include <QGridLayout>
 #include <QVBoxLayout>
@@ -31,8 +35,8 @@
 #include <QApplication>
 #include <QUndoStack>
 #include <QUndoCommand>
-
-#include "KnobGuiContainerHelper.h"
+CLANG_DIAG_ON(deprecated)
+CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Gui/KnobGui.h"

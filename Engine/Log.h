@@ -29,7 +29,6 @@
 
 #ifdef NATRON_LOG
 
-#include "Global/Macros.h"
 #include "Engine/Singleton.h"
 #include "Engine/EngineFwd.h"
 
