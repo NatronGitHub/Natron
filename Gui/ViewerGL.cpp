@@ -3182,9 +3182,11 @@ ViewerGL::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->infoViewer[0]->hideColorAndMouseInfo();
-    _imp->infoViewer[1]->hideColorAndMouseInfo();
-    setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+    if (_imp->pickerState == ePickerStateInactive) {
+        _imp->infoViewer[0]->hideColorAndMouseInfo();
+        _imp->infoViewer[1]->hideColorAndMouseInfo();
+        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+    }
     QGLWidget::leaveEvent(e);
 }
 
@@ -3842,7 +3844,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                ( imgPos.x() >= dispW.right() ) ||
                ( imgPos.y() < dispW.bottom() ) ||
                ( imgPos.y() >= dispW.top() ) ) ) {
-                 if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
+                 if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
                      _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
                  }
                  for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
@@ -3850,7 +3852,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                          (*it)->hideViewerCursor();
                      }
                  }
-                 if (texIndex == 0) {
+                 if (texIndex == 0 && _imp->pickerState == ePickerStateInactive) {
                      setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
                  }
              } else {
@@ -3877,7 +3879,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
             _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
         }
     } else {
-        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
+        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
             _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
         }
         for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
@@ -3885,7 +3887,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                 (*it)->hideViewerCursor();
             }
         }
-        if (texIndex == 0) {
+        if (texIndex == 0 && _imp->pickerState == ePickerStateInactive) {
             setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
