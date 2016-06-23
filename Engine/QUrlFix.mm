@@ -18,7 +18,11 @@
 
 #include "Global/QtCompat.h"
 
-#ifdef Q_OS_MAC
+#if defined(Q_OS_MAC) && QT_VERSION < 0x050000
+
+// in Qt 4.8 QUrl is broken on mac, it returns /.file/id= for local files
+// See https://bugreports.qt.io/browse/QTBUG-40449
+
 #include <Foundation/NSString.h>
 #include <Foundation/NSAutoreleasePool.h>
 #include <Foundation/NSURL.h>
@@ -55,9 +59,6 @@ NSURL *toNSURL(const QUrl &url)
 
 QUrl NATRON_NAMESPACE::QtCompat::toLocalFileUrlFixed(const QUrl& url)
 {
-#if QT_VERSION >= 0x050000
-    return url;
-#endif
     QUrl ret = url;
     NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
     NSURL *nsurl = toNSURL(url);
@@ -66,4 +67,5 @@ QUrl NATRON_NAMESPACE::QtCompat::toLocalFileUrlFixed(const QUrl& url)
     [pool release];
     return ret;
 }
-#endif
+
+#endif // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
