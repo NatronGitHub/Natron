@@ -588,8 +588,8 @@ win32-msvc*{
 } else {
         win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/ -ltess
         else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/ -ltess
-        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/Release/ -ltess
-        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/Debug/ -ltess
+        else:*-xcode:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/Release/ -ltess
+        else:*-xcode:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../libs/libtess/build/Debug/ -ltess
         else:unix: LIBS += -L$$OUT_PWD/../libs/libtess/ -ltess
 }
 
