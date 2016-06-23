@@ -38,8 +38,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/Macros.h"
-
 #ifdef __NATRON_WIN32__
 #include <stdio.h> //for _snprintf
 #include <windows.h> //for GetUserName

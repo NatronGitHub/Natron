@@ -30,8 +30,6 @@
 
 #include <boost/weak_ptr.hpp>
 
-#include "Global/Macros.h"
-
 #include "Engine/KnobTypes.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerContext.h"

@@ -30,8 +30,6 @@
 #include <algorithm> // min, max
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QApplication>
 #include <QVBoxLayout>
 #include <QScrollBar>

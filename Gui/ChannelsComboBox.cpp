@@ -27,8 +27,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
-
 #include <QtCore/QDebug>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF

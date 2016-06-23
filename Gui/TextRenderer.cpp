@@ -28,7 +28,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QString>
@@ -38,7 +37,6 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Global/Macros.h"
 #include "Global/GLIncludes.h" //!<must be included before QGlWidget because of gl.h and glew.h
 CLANG_DIAG_OFF(deprecated)
 #include <QtOpenGL/QGLWidget>

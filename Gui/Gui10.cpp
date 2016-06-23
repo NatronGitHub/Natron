@@ -32,8 +32,6 @@
 
 #include <boost/algorithm/clamp.hpp>
 
-#include "Global/Macros.h"
-
 #include <QApplication> // qApp
 #include <QDesktopWidget>
 

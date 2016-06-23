@@ -27,7 +27,6 @@
 #include <ctime>
 #include <stdexcept>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QPainter>
 #include <QStyleOption>
