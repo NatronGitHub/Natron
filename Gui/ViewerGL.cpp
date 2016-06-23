@@ -698,13 +698,9 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         glCheckErrorIgnoreOSXBug();
 
         if (_imp->pickerState == ePickerStateRectangle) {
-            if ( _imp->viewerTab->getGui()->hasPickers() ) {
                 drawPickerRectangle();
-            }
         } else if (_imp->pickerState == ePickerStatePoint) {
-            if ( _imp->viewerTab->getGui()->hasPickers() ) {
                 drawPickerPixel();
-            }
         }
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
@@ -1822,7 +1818,6 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
-         hasPickers &&
          isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
          displayingImage() ) {
         // picker with single-point selection
@@ -1877,7 +1872,6 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
 
     if ( !overlaysCaught &&
-         hasPickers &&
          isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&
          displayingImage() ) {
         // start picker with rectangle selection (picked color is the average over the rectangle)
@@ -2134,9 +2128,11 @@ ViewerGL::penMotionInternal(int x,
 
     // if the picker was deselected, this fixes the picer State
     // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
-    if ( !gui->hasPickers() ) {
-        _imp->pickerState = ePickerStateInactive;
-    }
+    // Edited: commented-out we need the picker state to be active even if there are no color pickers active because parametric
+    // parameters may use it
+    //if ( !gui->hasPickers() ) {
+    //    _imp->pickerState = ePickerStateInactive;
+    //}
 
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
