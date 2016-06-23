@@ -2562,7 +2562,9 @@ ViewerGL::updateColorPicker(int textureIndex,
         if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
             _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
         }
-        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        if (textureIndex == 0) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        }
         return;
     }
 
@@ -2628,7 +2630,9 @@ ViewerGL::updateColorPicker(int textureIndex,
     }
     if (!picked) {
         _imp->infoViewer[textureIndex]->setColorValid(false);
-        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        if (textureIndex == 0) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        }
     } else {
         _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
         _imp->infoViewer[textureIndex]->setColorValid(true);
@@ -2637,7 +2641,7 @@ ViewerGL::updateColorPicker(int textureIndex,
         }
         _imp->infoViewer[textureIndex]->setColor(r, g, b, a);
 
-        {
+        if (textureIndex == 0) {
             OfxRGBAColourD interactColor = {r,g,b,a};
             setParametricParamsPickerColor(interactColor, true, true);
         }
@@ -3842,26 +3846,30 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                ( imgPos.x() >= dispW.right() ) ||
                ( imgPos.y() < dispW.bottom() ) ||
                ( imgPos.y() >= dispW.top() ) ) ) {
-            if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
-                _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
-            }
-            for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
-                if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
-                    (*it)->hideViewerCursor();
-                }
-            }
-            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
-        } else {
-            if (_imp->pickerState == ePickerStateInactive) {
-                //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
-                updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
+                 if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
+                     _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+                 }
+                 for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+                     if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
+                         (*it)->hideViewerCursor();
+                     }
+                 }
+                 if (texIndex == 0) {
+                     setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+                 }
+             } else {
+                 if (_imp->pickerState == ePickerStateInactive) {
+                     //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
+                     updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
                 // }
             } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
                 if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
                     _imp->infoViewer[texIndex]->showColorAndMouseInfo();
                 }
                 // Show the picker on parametric params without updating the color value
-                setParametricParamsPickerColor(OfxRGBAColourD(), false, true);
+                if (texIndex == 0) {
+                    setParametricParamsPickerColor(OfxRGBAColourD(), false, true);
+                }
             } else {
                 ///unkwn state
                 assert(false);
@@ -3881,7 +3889,9 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                 (*it)->hideViewerCursor();
             }
         }
-        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        if (texIndex == 0) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        }
     }
 } // ViewerGL::updateInfoWidgetColorPickerInternal
 
