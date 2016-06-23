@@ -34,8 +34,6 @@
 #include <string>
 #include <algorithm> // min, max
 
-#include "Global/Macros.h"
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
@@ -47,7 +45,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtCore/QCoreApplication>
 #include <QtCore/QThread>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(mismatched-tags)
 GCC_DIAG_OFF(unused-parameter)
 #include <shiboken.h>

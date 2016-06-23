@@ -22,6 +22,7 @@ Natron binaries include components from the following libraries:
 * openMVG (MPL 2.0) http://imagine.enpc.fr/~moulonp/openMVG/
 * qhttpserver (BSD) https://github.com/nikhilm/qhttpserver
 * hoedown (BSD) https://github.com/hoedown/hoedown
+* libtess (SGI Free Software License B, X11-like) ftp://ftp.freedesktop.org/pub/mesa/glu/
 
 # Additional dependencies
 
@@ -76,6 +77,7 @@ Natron binaries include components from the following libraries:
 * librevenge (MPL 2.0) https://sourceforge.net/p/libwpd/librevenge/
 * libcdr (MPL 2.0) https://github.com/LibreOffice/libcdr
 * libxml (MIT) http://www.xmlsoft.org/
+* poppler (GPL 2.0) https://poppler.freedesktop.org/ (used by openfx-arena via ReadPDF) 
 
 ## Indirect dependencies
 

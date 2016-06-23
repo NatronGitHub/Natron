@@ -177,12 +177,8 @@ platform darwin {
     }
 
     # kCVPixelFormatType_OneComponent8 used in avfoundation indev is only available on 10.8+
-    #if {${os.major} < 12} {
-    #    configure.args-append --disable-indev=avfoundation
-    #}
-    # Video Toolbox was also introduced in 10.8
-    if {[vercmp ${macosx_sdk_version} 10.8] < 0} {
-        configure.args-append --disable-indev=avfoundation --disable-videotoolbox
+    if {${os.major} < 12} {
+        configure.args-append --disable-indev=avfoundation
     }
 }
 

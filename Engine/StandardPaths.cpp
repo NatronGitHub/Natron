@@ -36,10 +36,8 @@
 
 #include "Global/GlobalDefines.h"
 
-#ifdef __NATRON_WIN32__
+#if defined(Q_OS_WIN)
 #include <ofxhUtilities.h> // for wideStringToString
-#endif
-#if defined(__NATRON_WIN32__)
 #include <windows.h>
 #include <IntShCut.h>
 #include <ShlObj.h>
@@ -48,18 +46,21 @@
 #define CSIDL_MYVIDEO 14
 #endif
 #include <QtCore/QFileInfo>
-#elif defined(__NATRON_LINUX__)
+
+#elif defined(Q_OS_LINUX)
 #include <cerrno>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
-
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QTextStream>
 #include <QHash>
 #include <QVarLengthArray>
 CLANG_DIAG_ON(deprecated)
+
+#elif defined(Q_OS_MAC)
+#include <CoreServices/CoreServices.h>
 
 #endif
 
@@ -92,7 +93,7 @@ StandardPaths::appendOrganizationAndApp(QString &path)
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
-#ifdef __NATRON_WIN32__
+#if defined(Q_OS_WIN)
 static QString
 qSystemDirectory()
 {
@@ -183,7 +184,7 @@ convertCharArray(const wchar_t *path)
     return QDir::fromNativeSeparators( QString::fromWCharArray(path) );
 }
 
-#elif defined(__NATRON_LINUX__)
+#elif defined(Q_OS_LINUX)
 //static
 QString
 resolveUserName(uint userId)
@@ -212,7 +213,101 @@ resolveUserName(uint userId)
     return QString();
 }
 
-#endif // ifdef __NATRON_OSX__
+#endif // defined(Q_OS_LINUX)
+
+#if defined(Q_OS_MAC)
+CLANG_DIAG_OFF(deprecated)
+
+static
+OSType
+translateLocation(NATRON_NAMESPACE::StandardPaths::StandardLocationEnum type)
+{
+    switch (type) {
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationConfig:
+
+            return kPreferencesFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationDesktop:
+
+            return kDesktopFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationDownload: // needs NSSearchPathForDirectoriesInDomains with NSDownloadsDirectory
+            // which needs an objective-C *.mm file...
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationDocuments:
+
+            return kDocumentsFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationFonts:
+            // There are at least two different font directories on the mac: /Library/Fonts and ~/Library/Fonts.
+
+            // To select a specific one we have to specify a different first parameter when calling FSFindFolder.
+            return kFontsFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationApplications:
+
+            return kApplicationsFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationMusic:
+
+            return kMusicDocumentsFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationMovies:
+
+            return kMovieDocumentsFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationPictures:
+
+            return kPictureDocumentsFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationTemp:
+
+            return kTemporaryFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationGenericData:
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationRuntime:
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationData:
+
+            return kApplicationSupportFolderType;
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationGenericCache:
+        case NATRON_NAMESPACE::StandardPaths::eStandardLocationCache:
+            
+            return kCachedDataFolderType;
+        default:
+            
+            return kDesktopFolderType;
+    }
+}
+
+
+/*
+ Constructs a full unicode path from a FSRef.
+ */
+static QString
+getFullPath(const FSRef &ref)
+{
+    QByteArray ba(2048, 0);
+
+    if (FSRefMakePath( &ref, reinterpret_cast<UInt8 *>( ba.data() ), ba.size() ) == noErr) {
+        return QString::fromUtf8( ba.constData() ).normalized(QString::NormalizationForm_C);
+    }
+
+    return QString();
+}
+
+
+static QString
+macLocation(NATRON_NAMESPACE::StandardPaths::StandardLocationEnum type, short domain)
+{
+    // http://developer.apple.com/documentation/Carbon/Reference/Folder_Manager/Reference/reference.html
+    FSRef ref;
+    OSErr err = FSFindFolder(domain, translateLocation(type), false, &ref);
+
+    if (err) {
+        return QString();
+    }
+
+    QString path = getFullPath(ref);
+
+    if ( (type == NATRON_NAMESPACE::StandardPaths::eStandardLocationData) || (type == NATRON_NAMESPACE::StandardPaths::eStandardLocationCache) ) {
+        NATRON_NAMESPACE::StandardPaths::appendOrganizationAndApp(path);
+    }
+
+    return path;
+}
+
+CLANG_DIAG_ON(deprecated)
+#endif // defined(Q_OS_MAC)
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -221,9 +316,26 @@ QString
 StandardPaths::writableLocation(StandardLocationEnum type)
 {
 #if QT_VERSION < 0x050000
-#ifdef __NATRON_OSX__
-    return writableLocation_mac_qt4(type);
-#elif defined(__NATRON_LINUX__)
+#if defined(Q_OS_MAC)
+    switch (type) {
+        case eStandardLocationHome:
+
+            return QDir::homePath();
+        case eStandardLocationTemp:
+
+            return QDir::tempPath();
+        case eStandardLocationGenericData:
+        case eStandardLocationData:
+        case eStandardLocationGenericCache:
+        case eStandardLocationCache:
+        case eStandardLocationRuntime:
+
+            return macLocation(type, kUserDomain);
+        default:
+            
+            return macLocation(type, kOnAppropriateDisk);
+    }
+#elif defined(Q_OS_LINUX)
     switch (type) {
     case eStandardLocationHome:
 
@@ -405,7 +517,7 @@ StandardPaths::writableLocation(StandardLocationEnum type)
     }
 
     return path;
-#elif defined(__NATRON_WIN32__)
+#elif defined(Q_OS_WIN)
     QString result;
     static GetSpecialFolderPath SHGetSpecialFolderPath = resolveGetSpecialFolderPath();
     if (!SHGetSpecialFolderPath) {
@@ -503,9 +615,9 @@ StandardPaths::writableLocation(StandardLocationEnum type)
     } // switch
 
     return result;
-#else // ifdef __NATRON_OSX__
+#else
 #error "Unsupported operating system"
-#endif // ifdef __NATRON_OSX__
+#endif 
 
 #else // QT_VERSION >= 0x050000
     QStandardPaths::StandardLocation path;

@@ -24,8 +24,6 @@
 
 #include "OfxHost.h"
 
-#include "Global/Macros.h"
-
 #include <cassert>
 #include <cstdarg>
 #include <memory>
@@ -66,7 +64,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxhUtilities.h> // for wideStringToString
 #endif
 
-#include "Global/Macros.h"
 //ofx host support
 #include <ofxhPluginAPICache.h>
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
@@ -696,6 +693,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(NodePtr node,
                          const NodeSerialization* serialization,
+                         const QString& fixedName,
                          const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                          ,
@@ -716,6 +714,7 @@ OfxHost::createOfxEffect(NodePtr node,
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
     if ( node && !node->getEffectInstance() ) {
         node->setEffect(hostSideEffect);
+        node->initNodeScriptName(serialization, fixedName);
     }
 
     hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization, paramValues

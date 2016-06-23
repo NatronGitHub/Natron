@@ -552,9 +552,10 @@ OTHER_FILES += \
 
 # QMAKE_EXTRA_COMPILERS += SHIBOKEN
 macx {
+
+SOURCES += \
+OSGLContext_mac.cpp
+
 OBJECTIVE_SOURCES += \
-    $$PWD/../Engine/OSGLContext_mac.mm \
-    $$PWD/../Global/ProcInfo_mac.mm \
-    $$PWD/../Engine/QUrlFix.mm \
-    $$PWD/../Engine/StandardPaths_mac.mm
+    QUrlFix.mm
 }

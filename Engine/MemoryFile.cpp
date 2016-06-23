@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Engine/MemoryFile.h"
+#include "MemoryFile.h"
 
 #ifdef __NATRON_WIN32__
 # include <windows.h>
@@ -42,7 +42,6 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #define MIN_FILE_SIZE 4096

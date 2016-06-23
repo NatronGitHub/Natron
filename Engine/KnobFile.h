@@ -39,7 +39,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 
-#include "Global/Macros.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

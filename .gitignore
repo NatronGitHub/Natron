@@ -18,6 +18,8 @@ breakpadclient.pri
 breakpadpro.pri
 google-breakpad/
 libs/hoedown/hoedown.xcodeproj/
+libs/libtess/libtess.xcodeproj/
+libs/libtess/tess.xcodeproj/
 libs/ceres/ceres.xcodeproj/
 libs/openMVG/openMVG.xcodeproj/
 libs/libmv/LibMV.xcodeproj/

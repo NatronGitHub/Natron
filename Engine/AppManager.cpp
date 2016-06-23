@@ -1612,14 +1612,14 @@ AppManager::loadPythonGroups()
         findAllScriptsRecursive(d, allPlugins, &foundInit, &foundInitGui);
     }
     if ( foundInit.isEmpty() ) {
-        QString message = tr("init.py script not loaded");
+        QString message = tr("Info: init.py script not loaded (this is not an error and relevant only if you are using the application's Python functionnalities)");
         appPTR->setLoadingStatus(message);
         if ( !appPTR->isBackground() ) {
             std::cout << message.toStdString() << std::endl;
         }
     } else {
         Q_FOREACH(const QString &found, foundInit) {
-            QString message = tr("init.py script found and loaded at %1").arg(found);
+            QString message = tr("Info: init.py script found and loaded at %1").arg(found);
 
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
@@ -1630,14 +1630,14 @@ AppManager::loadPythonGroups()
 
     if ( !appPTR->isBackground() ) {
         if ( foundInitGui.isEmpty() ) {
-            QString message = tr("initGui.py script not loaded");
+            QString message = tr("Info: initGui.py script not loaded (this is not an error and relevant only if you are using the application's Python functionnalities)");
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;
             }
         } else {
             Q_FOREACH(const QString &found, foundInitGui) {
-                QString message = tr("initGui.py script found and loaded at %1").arg(found);
+                QString message = tr("Info: initGui.py script found and loaded at %1").arg(found);
 
                 appPTR->setLoadingStatus(message);
                 if ( !appPTR->isBackground() ) {
@@ -1922,6 +1922,7 @@ AppManager::getPluginBinary(const QString & pluginId,
 EffectInstPtr
 AppManager::createOFXEffect(NodePtr node,
                             const NodeSerialization* serialization,
+                            const QString& fixedName,
                             const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                             ,
@@ -1930,7 +1931,7 @@ AppManager::createOFXEffect(NodePtr node,
 #endif
                             ) const
 {
-    return _imp->ofxHost->createOfxEffect(node, serialization, paramValues
+    return _imp->ofxHost->createOfxEffect(node, serialization, fixedName, paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                                           , allowFileDialogs,
                                           hasUsedFileDialog

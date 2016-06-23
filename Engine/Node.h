@@ -33,7 +33,6 @@
 #include <list>
 #include <bitset>
 
-#include "Global/Macros.h"
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMetaType>
 #include <QtCore/QObject>
@@ -121,7 +120,7 @@ public:
     void load(const CreateNodeArgs& args);
 
 
-    void initNodeScriptName(const boost::shared_ptr<NodeSerialization>& serialization, const QString& fixedName);
+    void initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName);
 
 
     ///called by load() and OfxEffectInstance, do not call this!

@@ -34,8 +34,6 @@
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
 
-#include "Global/Macros.h"
-
 #include "Engine/CacheEntry.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"

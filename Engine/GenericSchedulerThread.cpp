@@ -522,9 +522,12 @@ GenericSchedulerThread::run()
             qDebug() << getThreadName().c_str() << ": Quitting thread";
 #endif
 
+            QMutexLocker k(&_imp->mustQuitMutex);
+            _imp->mustQuit = false;
+            _imp->mustQuitCond.wakeAll();
             return;
         }
-
+        
         // Reset the abort requested flag:
         // If a thread A called abortThreadedTask() multiple times and the scheduler thread B was running in the meantime, it could very well
         // stop and wait in the startRequestsCond

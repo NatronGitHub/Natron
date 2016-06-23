@@ -1,0 +1,26 @@
+diff --git a/src/libtess/mesh.h b/src/libtess/mesh.h
+index 690c5f2..21533c2 100644
+--- a/src/libtess/mesh.h
++++ b/src/libtess/mesh.h
+@@ -35,7 +35,7 @@
+ #ifndef __mesh_h_
+ #define __mesh_h_
+ 
+-#include <GL/glu.h>
++#include "libtess_internal.h"
+ 
+ typedef struct GLUmesh GLUmesh; 
+ 
+diff --git a/src/libtess/tess.h b/src/libtess/tess.h
+index 1624960..26049da 100644
+--- a/src/libtess/tess.h
++++ b/src/libtess/tess.h
+@@ -35,7 +35,7 @@
+ #ifndef __tess_h_
+ #define __tess_h_
+ 
+-#include <GL/glu.h>
++#include "libtess_internal.h"
+ #include <setjmp.h>
+ #include "mesh.h"
+ #include "dict.h"

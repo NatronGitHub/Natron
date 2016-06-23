@@ -661,7 +661,7 @@ Node::isPartOfPrecomp() const
 }
 
 void
-Node::initNodeScriptName(const boost::shared_ptr<NodeSerialization>& serialization, const QString& fixedName)
+Node::initNodeScriptName(const NodeSerialization* serialization, const QString& fixedName)
 {
     /*
      If the serialization is not null, we are either pasting a node or loading it from a project.
@@ -760,7 +760,6 @@ Node::load(const CreateNodeArgs& args)
         func = binary->findFunction<EffectBuilder>("BuildEffect");
     }
 
-    initNodeScriptName(args.serialization, args.fixedName);
 
 #ifndef NATRON_ENABLE_IO_META_NODES
     bool hasUsedFileDialog = false;
@@ -789,7 +788,8 @@ Node::load(const CreateNodeArgs& args)
             }
         }
 #endif
-
+        initNodeScriptName(args.serialization.get(), args.fixedName);
+        
         _imp->effect->initializeData();
 
         createRotoContextConditionnally();
@@ -838,9 +838,9 @@ Node::load(const CreateNodeArgs& args)
     } else {
         //ofx plugin
 #ifndef NATRON_ENABLE_IO_META_NODES
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.paramValues, canOpenFileDialog, &hasUsedFileDialog);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.fixedName, args.paramValues, canOpenFileDialog, &hasUsedFileDialog);
 #else
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.paramValues);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.fixedName, args.paramValues);
 #endif
         assert(_imp->effect);
     }

@@ -246,7 +246,7 @@ On OS X 10.7 or later:
  
 Then configure using the following qmake command (replace `macx-clang`with `macx-clang-libc++` on OS X 10.9 and later):
 
-    qmake -spec unsupported/macx-clang QMAKE_CXX=clang++-mp-3.8 QMAKE_CXX=clang++-mp-3.8 QMAKE_CC=clang-mp-3.8 QMAKE_OBJECTIVE_CXX=clang++-mp-3.8 QMAKE_OBJECTIVE_CC=clang-mp-3.8 -r CONFIG+=openmp
+    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang QMAKE_CXX=clang++-mp-3.8 QMAKE_CXX=clang++-mp-3.8 QMAKE_CC=clang-mp-3.8 QMAKE_OBJECTIVE_CXX=clang++-mp-3.8 QMAKE_OBJECTIVE_CC=clang-mp-3.8 QMAKE_LD=clang++-mp-3.8 -r CONFIG+=openmp
 
 To build the plugins, use the following command-line (on OS X 10.9 and
 later, remove `-stdlib=libstdc++`):

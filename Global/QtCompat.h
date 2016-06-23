@@ -83,7 +83,7 @@ removeFileExtension(QString & filename)
 
 // in Qt 4.8 QUrl is broken on mac, it returns /.file/id= for local files
 // See https://bugreports.qt.io/browse/QTBUG-40449
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MAC) && QT_VERSION < 0x050000
 //Implementation is in QUrlFix.mm
 QUrl toLocalFileUrlFixed(const QUrl& url);
 #else // #if defined(Q_OS_MAC) && QT_VERSION < 0x050000
