@@ -752,7 +752,8 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             continue;
         }
 
-        OfxPluginEntryPoint* interactEntryPoint = paramToKnob->getCustomOverlayInteractEntryPoint(*it);
+        bool requiresColorPicker;
+        OfxPluginEntryPoint* interactEntryPoint = paramToKnob->getCustomOverlayInteractEntryPoint(*it,&requiresColorPicker);
         if (!interactEntryPoint) {
             continue;
         }
@@ -762,7 +763,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
         interactDesc.describe(8, false);
-        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle() ) );
+        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle(), requiresColorPicker) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }

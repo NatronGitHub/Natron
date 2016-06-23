@@ -55,6 +55,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Project.h"
+#include "Engine/OfxOverlayInteract.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
 #include "Engine/Texture.h"
@@ -73,6 +75,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/KnobGuiParametric.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Shaders.h"
 #include "Gui/TabWidget.h"
@@ -2559,7 +2562,7 @@ ViewerGL::updateColorPicker(int textureIndex,
         if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
             _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
         }
-
+        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         return;
     }
 
@@ -2625,6 +2628,7 @@ ViewerGL::updateColorPicker(int textureIndex,
     }
     if (!picked) {
         _imp->infoViewer[textureIndex]->setColorValid(false);
+        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
     } else {
         _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
         _imp->infoViewer[textureIndex]->setColorValid(true);
@@ -2632,6 +2636,11 @@ ViewerGL::updateColorPicker(int textureIndex,
             _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
         }
         _imp->infoViewer[textureIndex]->setColor(r, g, b, a);
+
+        {
+            OfxRGBAColourD interactColor = {r,g,b,a};
+            setParametricParamsPickerColor(interactColor, true, true);
+        }
 
         std::vector<double> colorVec(4);
         colorVec[0] = r;
@@ -2645,6 +2654,44 @@ ViewerGL::updateColorPicker(int textureIndex,
         }
     }
 } // updateColorPicker
+
+void
+ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setColor, bool hasColor)
+{
+    const std::list<DockablePanel*>& panels = _imp->viewerTab->getGui()->getVisiblePanels();
+    for (std::list<DockablePanel*>::const_iterator it = panels.begin(); it != panels.end(); ++it) {
+        const KnobsGuiMapping& knobs = (*it)->getKnobsMapping();
+        for (KnobsGuiMapping::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+            KnobPtr k = it2->first.lock();
+            if (!k) {
+                continue;
+            }
+            KnobParametric* isParametric = dynamic_cast<KnobParametric*>(k.get());
+            if (!isParametric) {
+                continue;
+            }
+
+            boost::shared_ptr<OfxParamOverlayInteract> interact = isParametric->getCustomInteract();
+            if (!interact) {
+                continue;
+            }
+
+            if (!interact->isColorPickerRequiredForDrawAction()) {
+                continue;
+            }
+            if (!hasColor) {
+                interact->setHasColorPicker(false);
+            } else {
+                if (setColor) {
+                    interact->setLastColorPickerColor(color);
+                }
+                interact->setHasColorPicker(true);
+            }
+
+            it2->second->redraw();
+        }
+    }
+}
 
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
@@ -3137,6 +3184,7 @@ ViewerGL::leaveEvent(QEvent* e)
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _imp->infoViewer[0]->hideColorAndMouseInfo();
     _imp->infoViewer[1]->hideColorAndMouseInfo();
+    setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
     QGLWidget::leaveEvent(e);
 }
 
@@ -3710,8 +3758,13 @@ ViewerGL::pickColorInternal(double x,
             }
             _imp->infoViewer[i]->setColor(r, g, b, a);
             ret = true;
+            {
+                OfxRGBAColourD interactColor = {r,g,b,a};
+                setParametricParamsPickerColor(interactColor, true, true);
+            }
         } else {
             _imp->infoViewer[i]->setColorValid(false);
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 
@@ -3797,6 +3850,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                     (*it)->hideViewerCursor();
                 }
             }
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         } else {
             if (_imp->pickerState == ePickerStateInactive) {
                 //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
@@ -3806,6 +3860,8 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                 if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
                     _imp->infoViewer[texIndex]->showColorAndMouseInfo();
                 }
+                // Show the picker on parametric params without updating the color value
+                setParametricParamsPickerColor(OfxRGBAColourD(), false, true);
             } else {
                 ///unkwn state
                 assert(false);
@@ -3825,6 +3881,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                 (*it)->hideViewerCursor();
             }
         }
+        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
     }
 } // ViewerGL::updateInfoWidgetColorPickerInternal
 
@@ -3869,8 +3926,12 @@ ViewerGL::updateRectangleColorPickerInternal()
             }
             _imp->infoViewer[i]->setColorApproximated(mm > 0);
             _imp->infoViewer[i]->setColor(r, g, b, a);
+
+            OfxRGBAColourD c = {r,g,b,a};
+            setParametricParamsPickerColor(c, true, true);
         } else {
             _imp->infoViewer[i]->setColorValid(false);
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 }

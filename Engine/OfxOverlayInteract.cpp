@@ -205,9 +205,12 @@ OfxOverlayInteract::redraw()
 
 OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                  OFX::Host::Interact::Descriptor &desc,
-                                                 void *effectInstance)
+                                                 void *effectInstance,
+                                                 bool requiresColorPicker)
     : OFX::Host::Interact::Instance(desc, effectInstance)
     , NatronOverlayInteractSupport()
+    , _requiresColorPicker(requiresColorPicker)
+    , _hasColorPicker(false)
 {
     setCallingViewport(knob);
 }

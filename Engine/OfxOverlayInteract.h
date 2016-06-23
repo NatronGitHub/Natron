@@ -261,15 +261,47 @@ public:
 class OfxParamOverlayInteract
     : public OFX::Host::Interact::Instance, public NatronOverlayInteractSupport
 {
+
+    bool _requiresColorPicker;
+    bool _hasColorPicker;
+    OfxRGBAColourD _lastColorPicker;
+
 public:
 
     OfxParamOverlayInteract(KnobI* knob,
                             OFX::Host::Interact::Descriptor &desc,
-                            void *effectInstance);
+                            void *effectInstance,
+                            bool requiresColorPicker);
 
 
     virtual ~OfxParamOverlayInteract()
     {
+    }
+
+
+    bool isColorPickerRequiredForDrawAction() const
+    {
+        return _requiresColorPicker;
+    }
+
+    void setHasColorPicker(bool hasPicker)
+    {
+        _hasColorPicker = hasPicker;
+    }
+
+    bool hasColorPicker() const
+    {
+        return _hasColorPicker;
+    }
+
+    void setLastColorPickerColor(const OfxRGBAColourD& color)
+    {
+        _lastColorPicker = color;
+    }
+
+    const OfxRGBAColourD& getLastColorPickerColor() const
+    {
+        return _lastColorPicker;
     }
 
     /*Swaps the buffer of the attached viewer*/

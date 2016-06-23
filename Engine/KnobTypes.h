@@ -1067,11 +1067,6 @@ public:
 
 Q_SIGNALS:
 
-    //emitted by drawCustomBackground()
-    //if you can't overload drawCustomBackground()
-    void customBackgroundRequested();
-
-    void mustInitializeOverlayInteract(OverlaySupport*);
 
     ///emitted when the state of a curve changed at the indicated dimension
     void curveChanged(int);
