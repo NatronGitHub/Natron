@@ -606,8 +606,8 @@ win32-msvc*{
         else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/libtess.a
         else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/release/libtess.lib
         else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/debug/libtess.lib
-        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/Release/libtess.a
-        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/Debug/libtess.a
+        else:*-xcode:CONFIG(release, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/Release/libtess.a
+        else:*-xcode:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/build/Debug/libtess.a
         else:unix: PRE_TARGETDEPS += $$OUT_PWD/../libs/libtess/libtess.a
 }
 } # static-libtess
