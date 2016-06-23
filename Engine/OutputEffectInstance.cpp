@@ -277,15 +277,20 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             QRegExp exp(QString::fromUtf8("%[0-9]*d"));
             QString qp(QString::fromUtf8(pattern.c_str()));
             if (!qp.contains(exp)) {
-                QString message = tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times, would you like to continue?").arg(first).arg(last);
-                StandardButtonEnum rep = Dialogs::questionDialog(tr("Image Sequence").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
-                if (rep != eStandardButtonOk) {
-                    // Notify progress that we were aborted
-                    getRenderEngine()->s_renderFinished(1);
+                QString message = tr("You are trying to render the frame range [%1 - %2] but you did not specify any hash ('#') character(s) or printf-like format ('%d') for the padding. This will result in the same image being overwritten multiple times.").arg(first).arg(last);
+                if (!renderController) {
+                    message += tr("Would you like to continue?");
+                    StandardButtonEnum rep = Dialogs::questionDialog(tr("Image Sequence").toStdString(), message.toStdString(), false, StandardButtons(eStandardButtonOk | eStandardButtonCancel), eStandardButtonOk);
+                    if (rep != eStandardButtonOk) {
+                        // Notify progress that we were aborted
+                        getRenderEngine()->s_renderFinished(1);
 
-                    return;
+                        return;
+                    }
+                } else {
+                    Dialogs::warningDialog( tr("Image Sequence").toStdString(), message.toStdString() );
                 }
-
+                
             }
         }
     }
