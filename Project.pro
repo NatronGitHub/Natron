@@ -18,28 +18,46 @@
 
 TEMPLATE = subdirs
 
-# build things in the order we give
-CONFIG += ordered
-
 enable-breakpad {
     include(breakpadpro.pri)
 }
 
 SUBDIRS += \
     HostSupport \
-    libs/gflags \
-    libs/glog \
-    libs/ceres \
-    libs/libmv \
-    libs/openMVG \
-    libs/qhttpserver \
-    libs/hoedown \
-    libs/libtess \
+    gflags \
+    glog \
+    ceres \
+    libmv \
+    openMVG \
+    qhttpserver \
+    hoedown \
+    libtess \
     Engine \
     Renderer \
     Gui \
     Tests \
     App
+
+# where to find the sub projects - give the folders
+gflags.subdir      = libs/gflags
+glog.subdir        = libs/glog
+ceres.subdir       = libs/ceres
+libmv.subdir       = libs/libmv
+openMVG.subdir     = libs/openMVG
+qhttpserver.subdir = libs/qhttpserver
+hoedown.subdir     = libs/hoedown
+libtess.subdir     = libs/libtess
+
+# what subproject depends on others
+glog.depends = gflags
+ceres.depends = glog gflags
+libmv.depends = gflags ceres
+openMVG.depends = ceres
+Engine.depends = libmv openMVG HostSupport libtess ceres
+Renderer.depends = Engine
+Gui.depends = Engine qhttpserver
+Tests.depends = Gui Engine
+App.depends = Gui Engine
 
 OTHER_FILES += \
     Global/Enums.h \
