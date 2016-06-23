@@ -3478,12 +3478,14 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
 } // RotoContextPrivate::renderFeather
 
 void
-RotoContextPrivate::computeFeatherTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, std::list<RotoVertex>* mesh)
+RotoContextPrivate::computeFeatherTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel, double featherDist,  std::list<RotoFeatherVertex>* mesh)
 {
     ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
     ///to the Natron image.
 
-    double fallOffInverse = 1. / fallOff;
+    bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
+
+    const double absFeatherDist = std::abs(featherDist);
 
     std::list<std::list<ParametricPoint> > featherPolygon;
     std::list<std::list<ParametricPoint> > bezierPolygon;
@@ -3496,9 +3498,6 @@ RotoContextPrivate::computeFeatherTriangles(const Bezier * bezier, double time, 
 
     assert( !featherPolygon.empty() && !bezierPolygon.empty() && featherPolygon.size() == bezierPolygon.size());
 
-    OfxRGBAColourF innerColor = { shapeColor[0], shapeColor[1], shapeColor[2], 1.};
-    OfxRGBAColourF outterColor = { shapeColor[0], shapeColor[1], shapeColor[2], 0. };
-
     std::list<std::list<ParametricPoint> >::const_iterator fIt = featherPolygon.begin();
     for (std::list<std::list<ParametricPoint> > ::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it, ++fIt) {
 
@@ -3507,18 +3506,67 @@ RotoContextPrivate::computeFeatherTriangles(const Bezier * bezier, double time, 
 
         assert(!it->empty() && !fIt->empty());
 
-        // initialize the state with a first vertex on the inner contour
-        RotoVertex lastVert;
-        double last_t;
+
+        // prepare iterators
+        std::list<ParametricPoint>::const_iterator fnext = fSegmentIt;
+        ++fnext;  // can only be valid since we assert the list is not empty
+        if ( fnext == fIt->end() ) {
+            fnext = fIt->begin();
+        }
+        std::list<ParametricPoint>::const_iterator fprev = fIt->end();
+        --fprev; // can only be valid since we assert the list is not empty
+
+
+        // initialize the state with a segment between the first inner vertex and first outter vertex
+        RotoFeatherVertex lastInnerVert,lastOutterVert;
         {
-            last_t = bSegmentIt->t;
-            lastVert.x = bSegmentIt->x;
-            lastVert.y = bSegmentIt->y;
-            lastVert.color = innerColor;
-            mesh->push_back(lastVert);
+            lastInnerVert.x = bSegmentIt->x;
+            lastInnerVert.y = bSegmentIt->y;
+            lastInnerVert.isInner = true;
+            mesh->push_back(lastInnerVert);
             ++bSegmentIt;
         }
+        {
+            lastOutterVert.x = fSegmentIt->x;
+            lastOutterVert.y = fSegmentIt->y;
+
+            double diffx = fnext->x - fprev->x;
+            double diffy = fnext->y - fprev->y;
+            double norm = std::sqrt( diffx * diffx + diffy * diffy );
+            assert(norm != 0);
+            double dx = (norm != 0) ? -( diffy / norm ) : 0;
+            double dy = (norm != 0) ? ( diffx / norm ) : 1;
+
+            if (!clockWise) {
+                lastOutterVert.x -= dx * absFeatherDist;
+                lastOutterVert.y -= dy * absFeatherDist;
+            } else {
+                lastOutterVert.x += dx * absFeatherDist;
+                lastOutterVert.y += dy * absFeatherDist;
+            }
+
+            lastOutterVert.isInner = false;
+            mesh->push_back(lastOutterVert);
+            ++fSegmentIt;
+        }
+
+        if ( fprev != fIt->end() ) {
+            ++fprev;
+        }
+        if ( fnext != fIt->end() ) {
+            ++fnext;
+        }
+
+
+
         for (;;) {
+
+            if ( fnext == fIt->end() ) {
+                fnext = fIt->begin();
+            }
+            if ( fprev == fIt->end() ) {
+                fprev = fIt->begin();
+            }
 
             double inner_t = (double)INT_MAX;
             double outter_t = (double)INT_MAX;
@@ -3538,18 +3586,52 @@ RotoContextPrivate::computeFeatherTriangles(const Bezier * bezier, double time, 
 
             // Pick the point with the minimum t
             if (inner_t <= outter_t) {
-                lastVert.x = bSegmentIt->x;
-                lastVert.y = bSegmentIt->y;
-                lastVert.color = innerColor;
-                mesh->push_back(lastVert);
-                 ++bSegmentIt;
+                lastInnerVert.x = bSegmentIt->x;
+                lastInnerVert.y = bSegmentIt->y;
+                lastInnerVert.isInner = true;
+                mesh->push_back(lastInnerVert);
+                ++bSegmentIt;
+
             } else {
-                lastVert.x = fSegmentIt->x;
-                lastVert.y = fSegmentIt->y;
-                lastVert.color = outterColor;
-                mesh->push_back(lastVert);
+                lastOutterVert.x = fSegmentIt->x;
+                lastOutterVert.y = fSegmentIt->y;
+
+                double diffx = fnext->x - fprev->x;
+                double diffy = fnext->y - fprev->y;
+                double norm = std::sqrt( diffx * diffx + diffy * diffy );
+                assert(norm != 0);
+                double dx = (norm != 0) ? -( diffy / norm ) : 0;
+                double dy = (norm != 0) ? ( diffx / norm ) : 1;
+
+                if (!clockWise) {
+                    lastOutterVert.x -= dx * absFeatherDist;
+                    lastOutterVert.y -= dy * absFeatherDist;
+                } else {
+                    lastOutterVert.x += dx * absFeatherDist;
+                    lastOutterVert.y += dy * absFeatherDist;
+                }
+
+                lastOutterVert.isInner = false;
+                mesh->push_back(lastOutterVert);
                 ++fSegmentIt;
+
+
+                if ( fprev != fIt->end() ) {
+                    ++fprev;
+                }
+                if ( fnext != fIt->end() ) {
+                    ++fnext;
+                }
             }
+
+            // Initialize the first segment of the next triangle if we did not reach the end
+            if (fSegmentIt == fIt->end() || bSegmentIt == it->end()) {
+                break;
+            }
+            mesh->push_back(lastOutterVert);
+            mesh->push_back(lastInnerVert);
+
+
         }
 
 
