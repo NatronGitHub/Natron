@@ -693,6 +693,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(NodePtr node,
                          const NodeSerialization* serialization,
+                         const QString& fixedName,
                          const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
 #ifndef NATRON_ENABLE_IO_META_NODES
                          ,
@@ -713,6 +714,7 @@ OfxHost::createOfxEffect(NodePtr node,
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
     if ( node && !node->getEffectInstance() ) {
         node->setEffect(hostSideEffect);
+        node->initNodeScriptName(serialization, fixedName);
     }
 
     hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization, paramValues

@@ -554,7 +554,11 @@ CurveWidget::paintGL()
         if (customInteract) {
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
-            customInteract->drawAction(0, scale, 0);
+            if (!customInteract->hasColorPicker()) {
+                customInteract->drawAction(0, scale, 0);
+            } else {
+                customInteract->drawActionWithColourPicker(0, scale, 0, customInteract->getLastColorPickerColor());
+            }
         }
 
         if (_imp->_timelineEnabled) {

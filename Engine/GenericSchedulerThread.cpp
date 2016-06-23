@@ -161,7 +161,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->mustQuitMutex);
         // We already called quitThread
-        if (_imp->mustQuit) {
+        if (_imp->mustQuit || !_imp->lastQuitThreadAllowedRestart) {
             return true;
         }
         _imp->mustQuit = true;
@@ -194,7 +194,6 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
 #endif
 
     onQuitRequested(allowRestarts);
-
     return true;
 }
 
