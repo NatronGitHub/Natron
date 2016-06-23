@@ -194,7 +194,6 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
 #endif
 
     onQuitRequested(allowRestarts);
-    qDebug() << getThreadName().c_str() << "quitThread: OK";
     return true;
 }
 
