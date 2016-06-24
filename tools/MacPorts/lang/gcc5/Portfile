@@ -74,6 +74,7 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --disable-multilib \
                     --enable-lto \
                     --enable-libstdcxx-time \
+                    --enable-install-libiberty \
                     --with-build-config=bootstrap-debug \
                     --with-as=${prefix}/bin/as \
                     --with-ld=${prefix}/bin/ld \

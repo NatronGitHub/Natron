@@ -1,6 +1,13 @@
 --- Portfile.orig	2016-06-15 11:19:59.000000000 +0200
-+++ Portfile	2016-06-15 11:20:07.000000000 +0200
-@@ -80,6 +80,10 @@
++++ Portfile	2016-06-24 11:18:36.000000000 +0200
+@@ -74,12 +74,17 @@
+                     --disable-multilib \
+                     --enable-lto \
+                     --enable-libstdcxx-time \
++                    --enable-install-libiberty \
+                     --with-build-config=bootstrap-debug \
+                     --with-as=${prefix}/bin/as \
+                     --with-ld=${prefix}/bin/ld \
                      --with-ar=${prefix}/bin/ar \
                      --with-bugurl=https://trac.macports.org/newticket
  
