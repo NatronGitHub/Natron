@@ -656,26 +656,28 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
         KnobPtr newGroupKnob = n->getNode()->getKnobByName( newRoleID.toStdString() );
         KnobPtr oldToolKnob = n->getNode()->getKnobByName( oldTool.toStdString() );
         KnobPtr newToolKnob = n->getNode()->getKnobByName( newToolID.toStdString() );
-        assert(oldToolKnob && newToolKnob && oldGroupKnob && newGroupKnob);
-        if (oldToolKnob && newToolKnob && oldGroupKnob && newGroupKnob) {
-            KnobButton* oldIsButton = dynamic_cast<KnobButton*>( oldToolKnob.get() );
-            assert(oldIsButton);
+        assert(newToolKnob && newGroupKnob);
+        if (newToolKnob && newGroupKnob) {
+
+            KnobButton* oldIsButton = oldToolKnob ? dynamic_cast<KnobButton*>( oldToolKnob.get() ) : 0;
             KnobButton* newIsButton = dynamic_cast<KnobButton*>( newToolKnob.get() );
             assert(newIsButton);
 
-            KnobGroup* oldIsGroup = dynamic_cast<KnobGroup*>( oldGroupKnob.get() );
-            assert(oldIsGroup);
+            KnobGroup* oldIsGroup = oldGroupKnob ? dynamic_cast<KnobGroup*>( oldGroupKnob.get() ) : 0;
             KnobGroup* newIsGroup = dynamic_cast<KnobGroup*>( newGroupKnob.get() );
             assert(newIsGroup);
-            if (oldIsButton && newIsButton && oldIsGroup && newIsGroup) {
+            if (newIsButton && newIsGroup) {
                 EffectInstPtr effect = n->getNode()->getEffectInstance();
-                if (oldIsGroup->getValue() != false) {
-                    oldIsGroup->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
-                } else {
-                    // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
-                }
 
+                if (oldIsGroup) {
+                    if (oldIsGroup->getValue() != false) {
+                        oldIsGroup->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
+                    } else {
+                        // We must issue at least a knobChanged call
+                        effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSpec(0), true);
+                    }
+                }
+                
                 if (newIsGroup->getValue() != true) {
                     newIsGroup->onValueChanged(true, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
                 } else {
@@ -685,7 +687,7 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
 
 
                 // Only change the value of the button if we are in the same group
-                if (oldIsGroup == newIsGroup) {
+                if (oldIsButton && oldIsGroup == newIsGroup) {
                     if (oldIsButton->getValue() != false) {
                         oldIsButton->onValueChanged(false, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
                     } else {

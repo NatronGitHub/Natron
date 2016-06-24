@@ -336,6 +336,7 @@ public:
         , refreshIdentityStateRequestsCount(0)
         , isRefreshingInputRelatedData(false)
         , streamWarnings()
+        , requiresGLFinishBeforeRender(false)
     {
         ///Initialize timers
         gettimeofday(&lastRenderStartedSlotCallTime, 0);
@@ -556,6 +557,10 @@ public:
     int refreshIdentityStateRequestsCount;
     int isRefreshingInputRelatedData; // only used by the main thread
     std::map<Node::StreamWarningEnum, QString> streamWarnings;
+
+    // Some plug-ins (mainly Hitfilm Ignite detected for now) use their own OpenGL context that is sharing resources with our OpenGL contexT.
+    // as a result if we don't call glFinish() before calling the render action, the plug-in context might use textures that were not finished yet.
+    bool requiresGLFinishBeforeRender;
 };
 
 class RefreshingInputData_RAII
@@ -601,6 +606,16 @@ Node::Node(const AppInstPtr& app,
     QObject::connect( this, SIGNAL(mustDequeueActions()), this, SLOT(dequeueActions()) );
     QObject::connect( this, SIGNAL(mustComputeHashOnMainThread()), this, SLOT(doComputeHashOnMainThread()) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
+
+    if (plugin && plugin->getPluginID().startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
+        _imp->requiresGLFinishBeforeRender = true;
+    }
+}
+
+bool
+Node::isGLFinishRequiredBeforeRender() const
+{
+    return _imp->requiresGLFinishBeforeRender;
 }
 
 bool
