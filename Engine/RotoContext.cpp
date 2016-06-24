@@ -44,6 +44,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
+//#define ROTO_RENDER_TRIANGLES_ONLY
+
 #include "libtess.h"
 
 #include "Global/MemoryInfo.h"
@@ -3212,7 +3214,7 @@ RotoContext::allocateAndRenderSingleDotStroke(int brushSizePixel,
 void
 RotoContextPrivate::renderBezier(cairo_t* cr,
                                  const Bezier* bezier,
-                                 double /*opacity*/,
+                                 double opacity,
                                  double time,
                                  unsigned int mipmapLevel)
 {
@@ -3247,6 +3249,8 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
     Transform::Matrix3x3 transform;
     bezier->getTransformAtTime(time, &transform);
 
+
+#ifdef ROTO_RENDER_TRIANGLES_ONLY
     std::list<RotoFeatherVertex> featherMesh;
     std::list<RotoTriangleFans> internalFans;
     std::list<RotoTriangles> internalTriangles;
@@ -3254,11 +3258,16 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
     computeTriangles(bezier, time, mipmapLevel, featherDist, &featherMesh, &internalFans, &internalTriangles, &internalStrips);
     renderFeather_cairo(featherMesh, shapeColor, fallOff, mesh);
     renderInternalShape_cairo(internalTriangles, internalFans, internalStrips, shapeColor, mesh);
-/*    renderFeather(bezier, time, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
+    Q_UNUSED(opacity);
+#else
+    renderFeather(bezier, time, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
 
 
     // strangely, the above-mentioned cairo bug doesn't affect this function
-    renderInternalShape(time, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);*/
+    BezierCPs cps = bezier->getControlPoints_mt_safe();
+    renderInternalShape(time, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
+
+#endif
 
 
     RotoContextPrivate::applyAndDestroyMask(cr, mesh);
