@@ -90,8 +90,8 @@ class OfxOverlayInteract
 public:
 
     OfxOverlayInteract(OfxImageEffectInstance &v,
-                       int bitDepthPerComponent = 8,
-                       bool hasAlpha = false);
+                       int bitDepthPerComponent,
+                       bool hasAlpha);
 
     virtual ~OfxOverlayInteract()
     {
