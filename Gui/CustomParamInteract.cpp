@@ -123,7 +123,8 @@ CustomParamInteract::paintGL()
         OfxPointD scale;
         scale.x = scale.y = 1.;
         double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        _imp->entryPoint->drawAction(time, scale, /*view=*/ 0);
+#pragma message WARN("TODO: colourPicker")
+        _imp->entryPoint->drawAction(time, scale, /*view=*/ 0, /*colourPicker=*/0);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }
@@ -312,7 +313,8 @@ CustomParamInteract::mousePressEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, /*view=*/ 0, pos, viewportPos, /*pressure=*/ 1.);
+#pragma message WARN("TODO: colourPicker")
+    OfxStatus stat = _imp->entryPoint->penDownAction(time, scale, /*view=*/ 0, /* colourPicker= */ 0, pos, viewportPos, /*pressure=*/ 1.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -331,7 +333,8 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/ 0, pos, viewportPos, /*pressure=*/ 1.);
+#pragma message WARN("TODO: colourPicker")
+    OfxStatus stat = _imp->entryPoint->penMotionAction(time, scale, /*view=*/ 0, /* colourPicker= */ 0, pos, viewportPos, /*pressure=*/ 1.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -350,7 +353,8 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     pos.y = e->y();
     viewportPos.y = e->x();
     viewportPos.y = e->y();
-    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/ 0, pos, viewportPos, /*pressure=*/ 1.);
+#pragma message WARN("TODO: colourPicker")
+    OfxStatus stat = _imp->entryPoint->penUpAction(time, scale, /*view=*/ 0, /* colourPicker= */ 0, pos, viewportPos, /*pressure=*/ 1.);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -363,7 +367,8 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/ 0);
+#pragma message WARN("TODO: colourPicker")
+    OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/ 0, /* colourPicker= */ 0);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -376,7 +381,8 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
 
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-    OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/ 0);
+#pragma message WARN("TODO: colourPicker")
+    OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/ 0, /* colourPicker= */ 0);
     if (stat == kOfxStatOK) {
         update();
     }
@@ -391,10 +397,11 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     QByteArray keyStr;
     OfxStatus stat;
+#pragma message WARN("TODO: colourPicker")
     if ( e->isAutoRepeat() ) {
-        stat = _imp->entryPoint->keyRepeatAction( time, scale, /*view=*/ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+        stat = _imp->entryPoint->keyRepeatAction( time, scale, /*view=*/ 0, /* colourPicker= */ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     } else {
-        stat = _imp->entryPoint->keyDownAction( time, scale, /*view=*/ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+        stat = _imp->entryPoint->keyDownAction( time, scale, /*view=*/ 0, /* colourPicker= */ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     }
     if (stat == kOfxStatOK) {
         update();
@@ -409,7 +416,8 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     scale.x = scale.y = 1.;
     double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
     QByteArray keyStr;
-    OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
+#pragma message WARN("TODO: colourPicker")
+    OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/ 0, /* colourPicker= */ 0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {
         update();
     }

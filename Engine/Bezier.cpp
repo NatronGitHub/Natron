@@ -620,6 +620,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
+#pragma message WARN("BUG? p set but not used")
                     addPointConditionnally(p1, t_p1, points);
                     return;
                 }
@@ -639,6 +640,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
+#pragma message WARN("BUG? p set but not used")
                     addPointConditionnally(p1, t_p1, points);
                     return;
                 }

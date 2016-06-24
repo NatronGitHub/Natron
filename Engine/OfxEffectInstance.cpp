@@ -752,8 +752,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             continue;
         }
 
-        bool requiresColorPicker;
-        OfxPluginEntryPoint* interactEntryPoint = paramToKnob->getCustomOverlayInteractEntryPoint(*it,&requiresColorPicker);
+        OfxPluginEntryPoint* interactEntryPoint = paramToKnob->getCustomOverlayInteractEntryPoint(*it);
         if (!interactEntryPoint) {
             continue;
         }
@@ -762,7 +761,9 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
-        interactDesc.describe(8, false);
+#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
+        interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
+        bool requiresColorPicker = (bool)interactDesc.getProperties().getIntProperty(kNatronOfxInteractColourPicking);
         boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle(), requiresColorPicker) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
@@ -2165,7 +2166,8 @@ OfxEffectInstance::drawOverlay(double time,
     }
     if (_imp->overlayInteract) {
         SET_CAN_SET_VALUE(false);
-        _imp->overlayInteract->drawAction(time, renderScale, view);
+#pragma message WARN("TODO: colourPicker")
+        _imp->overlayInteract->drawAction(time, renderScale, view, /* colourPicker= */ 0);
     }
 }
 
@@ -2200,7 +2202,8 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
         SET_CAN_SET_VALUE(true);
 
-        OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, penPos, penPosViewport, pressure);
+#pragma message WARN("TODO: colourPicker")
+        OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, /* colourPicker= */ 0, penPos, penPosViewport, pressure);
 
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2241,7 +2244,8 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, penPos, penPosViewport, pressure);
+#pragma message WARN("TODO: colourPicker")
+        stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, /* colourPicker= */ 0, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2277,7 +2281,8 @@ OfxEffectInstance::onOverlayPenUp(double time,
         penPosViewport.y = viewportPos.y();
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, penPos, penPosViewport, pressure);
+#pragma message WARN("TODO: colourPicker")
+        OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, /* colourPicker= */ 0, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2307,7 +2312,8 @@ OfxEffectInstance::onOverlayKeyDown(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view, (int)key, keyStr.data() );
+#pragma message WARN("TODO: colourPicker")
+        OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view, /* colourPicker= */ 0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2335,7 +2341,8 @@ OfxEffectInstance::onOverlayKeyUp(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, (int)key, keyStr.data() );
+#pragma message WARN("TODO: colourPicker")
+        OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, /* colourPicker= */ 0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2366,7 +2373,8 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
         QByteArray keyStr;
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, (int)key, keyStr.data() );
+#pragma message WARN("TODO: colourPicker")
+        OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, /* colourPicker= */ 0, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2392,7 +2400,8 @@ OfxEffectInstance::onOverlayFocusGained(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view);
+#pragma message WARN("TODO: colourPicker")
+        stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view, /* colourPicker= */ 0);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2412,7 +2421,8 @@ OfxEffectInstance::onOverlayFocusLost(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view);
+#pragma message WARN("TODO: colourPicker")
+        stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view, /* colourPicker= */ 0);
         if (stat == kOfxStatOK) {
             return true;
         }

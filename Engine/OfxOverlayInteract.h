@@ -90,8 +90,8 @@ class OfxOverlayInteract
 public:
 
     OfxOverlayInteract(OfxImageEffectInstance &v,
-                       int bitDepthPerComponent = 8,
-                       bool hasAlpha = false);
+                       int bitDepthPerComponent,
+                       bool hasAlpha);
 
     virtual ~OfxOverlayInteract()
     {
@@ -145,7 +145,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus drawAction(OfxTime time,
                                  const OfxPointD &renderScale,
-                                 int view) OVERRIDE FINAL;
+                                 int view,
+                                 const OfxRGBAColourD* pickerColour) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionPenMotion
     //
@@ -159,6 +160,7 @@ public:
     virtual OfxStatus penMotionAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view,
+                                      const OfxRGBAColourD* pickerColour,
                                       const OfxPointD &penPos,
                                       const OfxPointI &penPosViewport,
                                       double pressure) OVERRIDE FINAL;
@@ -175,6 +177,7 @@ public:
     virtual OfxStatus penUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* pickerColour,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double pressure) OVERRIDE FINAL;
@@ -191,6 +194,7 @@ public:
     virtual OfxStatus penDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* pickerColour,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double pressure) OVERRIDE FINAL;
@@ -206,6 +210,7 @@ public:
     virtual OfxStatus keyDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* pickerColour,
                                     int key,
                                     char*   keyString) OVERRIDE FINAL;
 
@@ -220,6 +225,7 @@ public:
     virtual OfxStatus keyUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* pickerColour,
                                   int key,
                                   char*   keyString) OVERRIDE FINAL;
 
@@ -234,6 +240,7 @@ public:
     virtual OfxStatus keyRepeatAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view,
+                                      const OfxRGBAColourD* pickerColour,
                                       int key,
                                       char*   keyString) OVERRIDE FINAL;
 
@@ -245,7 +252,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus gainFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
-                                      int view) OVERRIDE FINAL;
+                                      int view,
+                                      const OfxRGBAColourD* pickerColour) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionLoseFocus
     //
@@ -255,7 +263,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus loseFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
-                                      int view) OVERRIDE FINAL;
+                                      int view,
+                                      const OfxRGBAColourD* pickerColour) OVERRIDE FINAL;
 };
 
 class OfxParamOverlayInteract
