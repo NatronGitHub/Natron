@@ -5,10 +5,11 @@ PortSystem 1.0
 PortGroup select 1.0
 PortGroup compiler_blacklist_versions 1.0
 
-name                gcc49
+name                gcc6
+subport             libgcc {}
 
 epoch               2
-version             4.9.3
+version             6.1.0
 platforms           darwin
 categories          lang
 maintainers         mww openmaintainer
@@ -28,11 +29,10 @@ master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/re
 distname            gcc-${version}
 use_bzip2           yes
 
-checksums           rmd160  799d45b4231d9417a4648bbef224657df76fca95 \
-                    sha256  2332b2a5a321b57508b9031354a8503af6fdfb868b8c1748d33028d100a8b67e
+checksums           rmd160  6bf64177557e7485450fa09fb018019f2297f952 \
+                    sha256  09c4c85cabebb971b1de732a0219609f93fc0af5f86f6e437fd8d7f832f1a351
 
 depends_lib         port:cctools \
-                    path:lib/pkgconfig/cloog-isl.pc:cloog \
                     port:gmp \
                     path:lib/pkgconfig/isl.pc:isl \
                     port:ld64 \
@@ -40,20 +40,11 @@ depends_lib         port:cctools \
                     port:libiconv \
                     port:libmpc \
                     port:mpfr
-depends_run         port:gcc_select
 
 depends_skip_archcheck-append gcc_select ld64 cctools
 license_noconflict  gmp mpfr ppl libmpc
 
-# Handle OS X deployment targets correctly (GCC PR target/63810
-# <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=63810>).
-patchfiles-append   macosx-version-min.patch
-
-# Don't link with "-flat_namespace -undefined suppress" on Yosemite and
-# later (#45483).
-patchfiles-append   yosemite-libtool.patch
-
-set major           [join [lrange [split ${version} .-] 0 1] .]
+set major           [lindex [split ${version} .-] 0]
 
 platform darwin {
     configure.pre_args-append --build=${build_arch}-apple-darwin${os.major}
@@ -75,22 +66,16 @@ configure.args      --enable-languages=c,c++,objc,obj-c++,lto,fortran,java \
                     --with-gmp=${prefix} \
                     --with-mpfr=${prefix} \
                     --with-mpc=${prefix} \
-                    --with-isl=${prefix} --disable-isl-version-check \
-                    --with-cloog=${prefix} --disable-cloog-version-check \
+                    --with-isl=${prefix} \
                     --enable-stage1-checking \
                     --disable-multilib \
                     --enable-lto \
                     --enable-libstdcxx-time \
-                    --enable-install-libiberty \
                     --with-build-config=bootstrap-debug \
                     --with-as=${prefix}/bin/as \
                     --with-ld=${prefix}/bin/ld \
                     --with-ar=${prefix}/bin/ar \
                     --with-bugurl=https://trac.macports.org/newticket
-
-if {${configure.sdkroot} ne ""} { 
-    configure.args-append     --with-sysroot=${configure.sdkroot} 
-} 
 
 configure.env-append \
                     AR_FOR_TARGET=${prefix}/bin/ar \
@@ -116,20 +101,8 @@ compiler.blacklist-append gcc-4.0
 # http://trac.macports.org/ticket/29104
 compiler.blacklist-append {llvm-gcc-4.2 < 2336.1}
 
-# Recent versions of Clang emit inconsistent DWARF CIE version
-# information, causing bootstrap comparison failures (#47410). The
-# offending compilers are:
-#   - Apple LLVM 6.1.0 (clang-602.0.49)
-#   - clang-3.7 @3.7-r234122
-#   - clang-3.6 @3.6.0_0
-#   - clang-3.5 @3.5.1_3
-pre-configure {
-    if {(${configure.compiler} eq "clang"
-                && [compiler_blacklist_versions._version_matches clang >= 602.0.49])
-            || [string match {macports-clang-3.[567]} ${configure.compiler}]} {
-        configure.args-append --with-build-config=bootstrap-debug
-    }
-}
+# https://trac.macports.org/ticket/47996
+compiler.blacklist-append {clang < 300}
 
 # "-stdlib" would be passed on to the bootstrap compiler if present
 configure.cxx_stdlib
@@ -139,6 +112,89 @@ build.target        bootstrap-lean
 use_parallel_build  yes
 
 destroot.target     install install-info-host
+
+if {${subport} eq "libgcc"} {
+    conflicts       libgcc-devel
+
+    # http://trac.macports.org/ticket/35770
+    # http://trac.macports.org/ticket/38814
+    # While there can be multiple versions of these runtimes in a single
+    # process, it is not possible to pass objects between different versions,
+    # so we simplify this by having the libgcc port provide the newest version
+    # of these runtimes for all versions of gcc to use.
+    #
+    # If there is a binary incompatible change to the runtime in a future
+    # version of gcc, then the latest version of gcc to provide a given ABI
+    # version should continue to provide a subport for that and older gcc
+    # versions.
+
+    depends_lib-delete path:lib/libgcc/libgcc_s.1.dylib:libgcc
+
+    configure.args-delete --libdir=${prefix}/lib/${name}
+    configure.args-append --libdir=${prefix}/lib/libgcc
+
+    configure.args-delete --enable-languages=c,c++,objc,obj-c++,lto,fortran,java
+    configure.args-append --enable-languages=c,c++,objc,obj-c++,lto,fortran
+
+    # TODO: Possibly disable bootstrap with appropriate configure flags.
+    #       the problem is that libstdc++'s configure script tests for tls support
+    #       using the running compiler (not gcc for which libstdc++ is being built).
+    #       Thus when we build with clang, we get a mismatch
+    # http://trac.macports.org/ticket/36116
+    #compiler.blacklist-append {clang < 425}
+    #configure.args-append --disable-bootstrap
+    #build.target        all
+
+    post-destroot {
+        file mkdir ${destroot}${prefix}/lib/libgcc.merged
+
+        # Note that we really don't want to include libgcc_ext.10.[45].dylib here, but install_name_tool
+        # doesn't know how to change the id of stubs, and it's easier than recreating them for each
+        # gcc port.
+        set dylibs {libgcc_ext.10.4.dylib libgcc_ext.10.5.dylib libgcc_s.1.dylib libgfortran.3.dylib libquadmath.0.dylib libstdc++.6.dylib libobjc-gnu.4.dylib libgomp.1.dylib libitm.1.dylib libssp.0.dylib libasan.0.dylib libatomic.1.dylib}
+
+        foreach dylib ${dylibs} {
+            # Different OS versions (eg: Leopard) or architectures (eg: PPC) don't produce all the dylibs
+            # https://trac.macports.org/ticket/40098
+            # https://trac.macports.org/ticket/40100
+            if {! [file exists ${destroot}${prefix}/lib/libgcc/${dylib}]} {
+                continue
+            }
+
+            move ${destroot}${prefix}/lib/libgcc/${dylib} ${destroot}${prefix}/lib/libgcc.merged
+            if {[variant_isset universal]} {
+                foreach archdir [glob ${destroot}${prefix}/lib/libgcc/*/] {
+                    set archdir_nodestroot [string map "${destroot}/ /" ${archdir}]
+                    if {[file exists ${archdir}/${dylib}]} {
+                        system "install_name_tool -id ${prefix}/lib/libgcc/${dylib} ${archdir}/${dylib}"
+                        foreach link ${dylibs} {
+                            system "install_name_tool -change ${archdir_nodestroot}${link} ${prefix}/lib/libgcc/${link} ${archdir}/${dylib}"
+                        }
+                        system "lipo -create -output ${destroot}${prefix}/lib/libgcc.merged/${dylib}~ ${destroot}${prefix}/lib/libgcc.merged/${dylib} ${archdir}/${dylib} && mv ${destroot}${prefix}/lib/libgcc.merged/${dylib}~ ${destroot}${prefix}/lib/libgcc.merged/${dylib}"
+                    }
+                }
+            }
+
+            # strip debug symbols to supress debugger warnings:
+            # http://trac.macports.org/attachment/ticket/34831
+            if {! [string match *libgcc_ext* ${dylib}]} {
+                system "strip -x ${destroot}${prefix}/lib/libgcc.merged/${dylib}"
+            }
+        }
+
+        file delete -force ${destroot}${prefix}/bin              
+        file delete -force ${destroot}${prefix}/share
+        file delete -force ${destroot}${prefix}/include
+        file delete -force ${destroot}${prefix}/lib/libgcc
+        file delete -force ${destroot}${prefix}/libexec
+
+        move ${destroot}${prefix}/lib/libgcc.merged ${destroot}${prefix}/lib/libgcc
+
+        # For binary compatibility with binaries that linked against the old libstdcxx port
+        ln -s libgcc/libstdc++.6.dylib ${destroot}${prefix}/lib/libstdc++.6.dylib
+    }
+} else {
+depends_run-append         port:gcc_select
 
 post-destroot {
     file delete ${destroot}${prefix}/share/info/dir
@@ -173,6 +229,8 @@ post-destroot {
 
 select.group        gcc
 select.file         ${filespath}/mp-${name}
+
+}
 
 platform powerpc {
     configure.universal_archs ppc ppc64
