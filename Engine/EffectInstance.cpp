@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
+#include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
@@ -3636,6 +3637,39 @@ EffectInstance::onOverlayFocusLost_public(double time,
     checkIfRenderNeeded();
 
     return ret;
+}
+
+void
+EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor)
+{
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+        const KnobPtr& k = *it2;
+        if (!k) {
+            continue;
+        }
+        boost::shared_ptr<OfxParamOverlayInteract> interact = k->getCustomInteract();
+        if (!interact) {
+            continue;
+        }
+
+        if (!interact->isColorPickerRequired()) {
+            continue;
+        }
+        if (!hasColor) {
+            interact->setHasColorPicker(false);
+        } else {
+            if (setColor) {
+                interact->setLastColorPickerColor(color);
+            }
+            interact->setHasColorPicker(true);
+        }
+
+        k->redraw();
+    }
+
+    setInteractColourPicker(color, setColor, hasColor);
+
 }
 
 bool

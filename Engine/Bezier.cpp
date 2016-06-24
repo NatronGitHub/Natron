@@ -449,6 +449,7 @@ inline void addPointConditionnally(const Point& p, double t, std::list< Parametr
     }
 }
 
+#ifndef ROTO_BEZIER_EVAL_ITERATIVE
 /**
  * @brief Recursively subdivide the bezier segment p0,p1,p2,p3 until the cubic curve is assumed to be flat. The errorScale is used to determine the stopping criterion.
  * The greater it is, the smoother the curve will be.
@@ -620,8 +621,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
-#pragma message WARN("BUG? p set but not used")
-                    addPointConditionnally(p1, t_p1, points);
+                    addPointConditionnally(p, t_p23, points);
                     return;
                 }
 
@@ -640,8 +640,7 @@ recursiveBezierInternal(const Point& p0, const Point& p1, const Point& p2, const
                     Point p;
                     p.x = x23;
                     p.y = y23;
-#pragma message WARN("BUG? p set but not used")
-                    addPointConditionnally(p1, t_p1, points);
+                    addPointConditionnally(p, t_p23, points);
                     return;
                 }
 
@@ -691,6 +690,7 @@ recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& 
     recursiveBezierInternal(p0, p1, p2, p3, 0., 1. / 3., 2. / 3., 1., errorScale, 0, maxRecursion, points);
     points->push_back(p3x);
 }
+#endif // #ifdef ROTO_BEZIER_EVAL_ITERATIVE
 
 // compute nbPointsperSegment points and update the bbox bounding box for the Bezier
 // segment from 'first' to 'last' evaluated at 'time'

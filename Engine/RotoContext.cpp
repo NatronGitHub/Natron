@@ -2727,7 +2727,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
     double startTime = time, mbFrameStep = 1., endTime = time;
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
     if (isBezier) {
-        int mbType_i = _imp->motionBlurTypeKnob.lock()->getValue();
+        int mbType_i = getContext()->getMotionBlurTypeKnob()->getValue();
         bool applyPerShapeMotionBlur = mbType_i == 0;
         if (applyPerShapeMotionBlur) {
             isBezier->getMotionBlurSettings(time, &startTime, &endTime, &mbFrameStep);
@@ -2902,7 +2902,7 @@ RotoDrawableItem::renderMaskInternal(const RectI & roi,
             }
         }
     } else {
-        RotoContextPrivate::renderBezier(imgWrapper.ctx, isBezier, opacity, time, mipmapLevel);
+        RotoContextPrivate::renderBezier(imgWrapper.ctx, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel);
     }
 
     bool useOpacityToConvert = (isBezier != 0);
@@ -3216,6 +3216,7 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
                                  const Bezier* bezier,
                                  double opacity,
                                  double time,
+                                 double startTime, double endTime, double mbFrameStep,
                                  unsigned int mipmapLevel)
 {
     ///render the bezier only if finished (closed) and activated
@@ -3224,53 +3225,58 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
     }
 
 
-    double fallOff = bezier->getFeatherFallOff(time);
-    double featherDist = bezier->getFeatherDistance(time);
-    double shapeColor[3];
-    bezier->getColor(time, shapeColor);
 
-    cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+    for (double t = startTime; t <= endTime; t+=mbFrameStep) {
 
-    cairo_new_path(cr);
+        double fallOff = bezier->getFeatherFallOff(t);
+        double featherDist = bezier->getFeatherDistance(t);
+        double shapeColor[3];
+        bezier->getColor(t, shapeColor);
 
-    ////Define the feather edge pattern
-    cairo_pattern_t* mesh = cairo_pattern_create_mesh();
-    if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
-        cairo_pattern_destroy(mesh);
 
-        return;
-    }
+        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-    ///Adjust the feather distance so it takes the mipmap level into account
-    if (mipmapLevel != 0) {
-        featherDist /= (1 << mipmapLevel);
-    }
+        cairo_new_path(cr);
 
-    Transform::Matrix3x3 transform;
-    bezier->getTransformAtTime(time, &transform);
+        ////Define the feather edge pattern
+        cairo_pattern_t* mesh = cairo_pattern_create_mesh();
+        if (cairo_pattern_status(mesh) != CAIRO_STATUS_SUCCESS) {
+            cairo_pattern_destroy(mesh);
+
+            return;
+        }
+
+        ///Adjust the feather distance so it takes the mipmap level into account
+        if (mipmapLevel != 0) {
+            featherDist /= (1 << mipmapLevel);
+        }
+
+        Transform::Matrix3x3 transform;
+        bezier->getTransformAtTime(t, &transform);
 
 
 #ifdef ROTO_RENDER_TRIANGLES_ONLY
-    std::list<RotoFeatherVertex> featherMesh;
-    std::list<RotoTriangleFans> internalFans;
-    std::list<RotoTriangles> internalTriangles;
-    std::list<RotoTriangleStrips> internalStrips;
-    computeTriangles(bezier, time, mipmapLevel, featherDist, &featherMesh, &internalFans, &internalTriangles, &internalStrips);
-    renderFeather_cairo(featherMesh, shapeColor, fallOff, mesh);
-    renderInternalShape_cairo(internalTriangles, internalFans, internalStrips, shapeColor, mesh);
-    Q_UNUSED(opacity);
+        std::list<RotoFeatherVertex> featherMesh;
+        std::list<RotoTriangleFans> internalFans;
+        std::list<RotoTriangles> internalTriangles;
+        std::list<RotoTriangleStrips> internalStrips;
+        computeTriangles(bezier, t, mipmapLevel, featherDist, &featherMesh, &internalFans, &internalTriangles, &internalStrips);
+        renderFeather_cairo(featherMesh, shapeColor, fallOff, mesh);
+        renderInternalShape_cairo(internalTriangles, internalFans, internalStrips, shapeColor, mesh);
+        Q_UNUSED(opacity);
 #else
-    renderFeather(bezier, time, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
+        renderFeather(bezier, t, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
 
 
-    // strangely, the above-mentioned cairo bug doesn't affect this function
-    BezierCPs cps = bezier->getControlPoints_mt_safe();
-    renderInternalShape(time, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
-
+        // strangely, the above-mentioned cairo bug doesn't affect this function
+        BezierCPs cps = bezier->getControlPoints_mt_safe();
+        renderInternalShape(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
+        
 #endif
-
-
-    RotoContextPrivate::applyAndDestroyMask(cr, mesh);
+        
+        
+        RotoContextPrivate::applyAndDestroyMask(cr, mesh);
+    }
 } // RotoContextPrivate::renderBezier
 
 void

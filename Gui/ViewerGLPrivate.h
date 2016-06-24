@@ -72,6 +72,7 @@ enum MouseStateEnum
     eMouseStateDraggingRoiCross,
     eMouseStateBuildingUserRoI,
     eMouseStatePickingColor,
+    eMouseStatePickingInputColor,
     eMouseStateBuildingPickerRectangle,
     eMouseStateDraggingWipeCenter,
     eMouseStateDraggingWipeMixHandle,

@@ -278,7 +278,7 @@ public:
     virtual EffectInstPtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
-
+    virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
 public:
 
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;

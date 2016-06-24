@@ -788,6 +788,8 @@ private:
 
 public:
 
+
+
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
      **/
@@ -1617,6 +1619,8 @@ public:
 
     bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
+    void setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor);
+
     virtual bool isDoingInteractAction() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInteractViewportSelectionCleared() {}
 
@@ -1961,12 +1965,9 @@ protected:
                                                 NodePtr* passThroughInput);
 
 
-    /**
-     * @brief This function is provided for means to copy more data than just the knobs from the live instance
-     * to the render clones.
-     **/
-    virtual void cloneExtras()
+    virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)
     {
+
     }
 
     virtual void drawOverlay(double /*time*/,

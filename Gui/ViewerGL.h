@@ -616,8 +616,8 @@ private:
     /**
      * @brief X and Y are in widget coords!
      **/
-    bool pickColor(double x, double y);
-    bool pickColorInternal(double x, double y);
+    bool pickColor(double x, double y, bool pickInput);
+    bool pickColorInternal(double x, double y, bool pickInput);
 
 
     static double currentTimeForEvent(QInputEvent* e);

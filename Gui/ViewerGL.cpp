@@ -1822,8 +1822,20 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
          displayingImage() ) {
         // picker with single-point selection
         _imp->pickerState = ePickerStatePoint;
-        if ( pickColor( e->x(), e->y() ) ) {
+        if ( pickColor( e->x(), e->y(), false ) ) {
             _imp->ms = eMouseStatePickingColor;
+            mustRedraw = true;
+            overlaysCaught = true;
+        }
+    }
+
+    if ( !overlaysCaught &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) &&
+        displayingImage() ) {
+        // picker with single-point selection
+        _imp->pickerState = ePickerStatePoint;
+        if ( pickColor( e->x(), e->y(), true ) ) {
+            _imp->ms = eMouseStatePickingInputColor;
             mustRedraw = true;
             overlaysCaught = true;
         }
@@ -2447,7 +2459,12 @@ ViewerGL::penMotionInternal(int x,
         break;
     }
     case eMouseStatePickingColor: {
-        pickColor( newClick.x(), newClick.y() );
+        pickColor( newClick.x(), newClick.y(), false );
+        mustRedraw = true;
+        break;
+    }
+    case eMouseStatePickingInputColor: {
+        pickColor( newClick.x(), newClick.y(), true );
         mustRedraw = true;
         break;
     }
@@ -2660,36 +2677,15 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
 {
     const std::list<DockablePanel*>& panels = _imp->viewerTab->getGui()->getVisiblePanels();
     for (std::list<DockablePanel*>::const_iterator it = panels.begin(); it != panels.end(); ++it) {
-        const KnobsGuiMapping& knobs = (*it)->getKnobsMapping();
-        for (KnobsGuiMapping::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-            KnobPtr k = it2->first.lock();
-            if (!k) {
-                continue;
-            }
-            KnobParametric* isParametric = dynamic_cast<KnobParametric*>(k.get());
-            if (!isParametric) {
-                continue;
-            }
-
-            boost::shared_ptr<OfxParamOverlayInteract> interact = isParametric->getCustomInteract();
-            if (!interact) {
-                continue;
-            }
-
-            if (!interact->isColorPickerRequiredForDrawAction()) {
-                continue;
-            }
-            if (!hasColor) {
-                interact->setHasColorPicker(false);
-            } else {
-                if (setColor) {
-                    interact->setLastColorPickerColor(color);
-                }
-                interact->setHasColorPicker(true);
-            }
-
-            it2->second->redraw();
+        NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
+        if (!nodePanel) {
+            continue;
         }
+        NodeGuiPtr node = nodePanel->getNode();
+        if (!node) {
+            continue;
+        }
+        node->getNode()->getEffectInstance()->setInteractColourPicker_public(color, setColor, hasColor);
     }
 }
 
@@ -3733,8 +3729,11 @@ ViewerGL::getViewerTab() const
 
 bool
 ViewerGL::pickColorInternal(double x,
-                            double y)
+                            double y,
+                            bool /*pickInput*/)
 {
+
+#pragma message WARN("Todo: use pickInput")
     float r, g, b, a;
     QPointF imgPos;
     {
@@ -3776,7 +3775,8 @@ ViewerGL::pickColorInternal(double x,
 // used for the ctrl-click color picker (not the information bar at the bottom of the viewer)
 bool
 ViewerGL::pickColor(double x,
-                    double y)
+                    double y,
+                    bool pickInput)
 {
     bool isSync = _imp->viewerTab->isViewersSynchroEnabled();
 
@@ -3784,7 +3784,7 @@ ViewerGL::pickColor(double x,
         bool res = false;
         const std::list<ViewerTab*>& allViewers = _imp->viewerTab->getGui()->getViewersList();
         for (std::list<ViewerTab*>::const_iterator it = allViewers.begin(); it != allViewers.end(); ++it) {
-            bool ret = (*it)->getViewer()->pickColorInternal(x, y);
+            bool ret = (*it)->getViewer()->pickColorInternal(x, y, pickInput);
             if ( (*it)->getViewer() == this ) {
                 res = ret;
             }
@@ -3792,7 +3792,7 @@ ViewerGL::pickColor(double x,
 
         return res;
     } else {
-        return pickColorInternal(x, y);
+        return pickColorInternal(x, y, pickInput);
     }
 }
 

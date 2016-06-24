@@ -27,6 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include "ofxNatron.h"
+
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Format.h"
@@ -57,6 +59,13 @@ OfxOverlayInteract::OfxOverlayInteract(OfxImageEffectInstance &v,
     , NatronOverlayInteractSupport()
 {
 }
+
+bool
+OfxOverlayInteract::isColorPickerRequired() const
+{
+    return (bool)getProperties().getIntProperty(kNatronOfxInteractColourPicking);
+}
+
 
 // overridden from OFX::Host::Interact::Instance
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -214,18 +223,23 @@ OfxOverlayInteract::redraw()
 
 OfxParamOverlayInteract::OfxParamOverlayInteract(KnobI* knob,
                                                  OFX::Host::Interact::Descriptor &desc,
-                                                 void *effectInstance,
-                                                 bool requiresColorPicker)
+                                                 void *effectInstance)
     : OFX::Host::Interact::Instance(desc, effectInstance)
     , NatronOverlayInteractSupport()
-    , _requiresColorPicker(requiresColorPicker)
-    , _hasColorPicker(false)
 {
     setCallingViewport(knob);
 }
 
+bool
+OfxParamOverlayInteract::isColorPickerRequired() const
+{
+    return (bool)getProperties().getIntProperty(kNatronOfxInteractColourPicking);
+}
+
 NatronOverlayInteractSupport::NatronOverlayInteractSupport()
-    : _viewport(NULL)
+    : _hasColorPicker(false)
+    , _lastColorPicker()
+    , _viewport(NULL)
 {
 }
 
