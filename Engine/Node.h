@@ -166,6 +166,8 @@ public:
 
     bool isNodeCreated() const;
 
+    bool isGLFinishRequiredBeforeRender() const;
+
     void refreshAcceptedBitDepths();
 
     /**

@@ -2717,8 +2717,10 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             glEnable(GL_SCISSOR_TEST);
             glScissor( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
 
-            // Ensure that previous asynchronous operations are done (e.g: glTexImage2D) some plug-ins seem to require it (Hitfilm Ignite plugin-s)
-            glFinish();
+            if (_publicInterface->getNode()->isGLFinishRequiredBeforeRender()) {
+                // Ensure that previous asynchronous operations are done (e.g: glTexImage2D) some plug-ins seem to require it (Hitfilm Ignite plugin-s)
+                glFinish();
+            }
         }
 
         StatusEnum st = _publicInterface->render_public(actionArgs);
