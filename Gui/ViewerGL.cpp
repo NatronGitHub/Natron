@@ -55,6 +55,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Project.h"
+#include "Engine/OfxOverlayInteract.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
 #include "Engine/Texture.h"
@@ -73,6 +75,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Gui/Menu.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGui.h"
+#include "Gui/KnobGuiParametric.h"
 #include "Gui/NodeSettingsPanel.h"
 #include "Gui/Shaders.h"
 #include "Gui/TabWidget.h"
@@ -695,13 +698,9 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel)
         glCheckErrorIgnoreOSXBug();
 
         if (_imp->pickerState == ePickerStateRectangle) {
-            if ( _imp->viewerTab->getGui()->hasPickers() ) {
                 drawPickerRectangle();
-            }
         } else if (_imp->pickerState == ePickerStatePoint) {
-            if ( _imp->viewerTab->getGui()->hasPickers() ) {
                 drawPickerPixel();
-            }
         }
     } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_LINE_BIT | GL_CURRENT_BIT | GL_ENABLE_BIT);
     glCheckError();
@@ -1819,7 +1818,6 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         overlaysCaught = true;
     }
     if ( !overlaysCaught &&
-         hasPickers &&
          isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
          displayingImage() ) {
         // picker with single-point selection
@@ -1874,7 +1872,6 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
 
 
     if ( !overlaysCaught &&
-         hasPickers &&
          isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&
          displayingImage() ) {
         // start picker with rectangle selection (picked color is the average over the rectangle)
@@ -2131,9 +2128,11 @@ ViewerGL::penMotionInternal(int x,
 
     // if the picker was deselected, this fixes the picer State
     // (see issue #133 https://github.com/MrKepzie/Natron/issues/133 )
-    if ( !gui->hasPickers() ) {
-        _imp->pickerState = ePickerStateInactive;
-    }
+    // Edited: commented-out we need the picker state to be active even if there are no color pickers active because parametric
+    // parameters may use it
+    //if ( !gui->hasPickers() ) {
+    //    _imp->pickerState = ePickerStateInactive;
+    //}
 
     double zoomScreenPixelWidth, zoomScreenPixelHeight; // screen pixel size in zoom coordinates
     {
@@ -2559,7 +2558,9 @@ ViewerGL::updateColorPicker(int textureIndex,
         if ( _imp->infoViewer[textureIndex]->colorAndMouseVisible() ) {
             _imp->infoViewer[textureIndex]->hideColorAndMouseInfo();
         }
-
+        if (textureIndex == 0) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        }
         return;
     }
 
@@ -2625,6 +2626,9 @@ ViewerGL::updateColorPicker(int textureIndex,
     }
     if (!picked) {
         _imp->infoViewer[textureIndex]->setColorValid(false);
+        if (textureIndex == 0) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+        }
     } else {
         _imp->infoViewer[textureIndex]->setColorApproximated(mmLevel > 0);
         _imp->infoViewer[textureIndex]->setColorValid(true);
@@ -2632,6 +2636,11 @@ ViewerGL::updateColorPicker(int textureIndex,
             _imp->infoViewer[textureIndex]->showColorAndMouseInfo();
         }
         _imp->infoViewer[textureIndex]->setColor(r, g, b, a);
+
+        if (textureIndex == 0) {
+            OfxRGBAColourD interactColor = {r,g,b,a};
+            setParametricParamsPickerColor(interactColor, true, true);
+        }
 
         std::vector<double> colorVec(4);
         colorVec[0] = r;
@@ -2645,6 +2654,44 @@ ViewerGL::updateColorPicker(int textureIndex,
         }
     }
 } // updateColorPicker
+
+void
+ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setColor, bool hasColor)
+{
+    const std::list<DockablePanel*>& panels = _imp->viewerTab->getGui()->getVisiblePanels();
+    for (std::list<DockablePanel*>::const_iterator it = panels.begin(); it != panels.end(); ++it) {
+        const KnobsGuiMapping& knobs = (*it)->getKnobsMapping();
+        for (KnobsGuiMapping::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
+            KnobPtr k = it2->first.lock();
+            if (!k) {
+                continue;
+            }
+            KnobParametric* isParametric = dynamic_cast<KnobParametric*>(k.get());
+            if (!isParametric) {
+                continue;
+            }
+
+            boost::shared_ptr<OfxParamOverlayInteract> interact = isParametric->getCustomInteract();
+            if (!interact) {
+                continue;
+            }
+
+            if (!interact->isColorPickerRequiredForDrawAction()) {
+                continue;
+            }
+            if (!hasColor) {
+                interact->setHasColorPicker(false);
+            } else {
+                if (setColor) {
+                    interact->setLastColorPickerColor(color);
+                }
+                interact->setHasColorPicker(true);
+            }
+
+            it2->second->redraw();
+        }
+    }
+}
 
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
@@ -3135,8 +3182,11 @@ ViewerGL::leaveEvent(QEvent* e)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->infoViewer[0]->hideColorAndMouseInfo();
-    _imp->infoViewer[1]->hideColorAndMouseInfo();
+    if (_imp->pickerState == ePickerStateInactive) {
+        _imp->infoViewer[0]->hideColorAndMouseInfo();
+        _imp->infoViewer[1]->hideColorAndMouseInfo();
+        setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+    }
     QGLWidget::leaveEvent(e);
 }
 
@@ -3710,8 +3760,13 @@ ViewerGL::pickColorInternal(double x,
             }
             _imp->infoViewer[i]->setColor(r, g, b, a);
             ret = true;
+            {
+                OfxRGBAColourD interactColor = {r,g,b,a};
+                setParametricParamsPickerColor(interactColor, true, true);
+            }
         } else {
             _imp->infoViewer[i]->setColorValid(false);
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 
@@ -3789,22 +3844,29 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                ( imgPos.x() >= dispW.right() ) ||
                ( imgPos.y() < dispW.bottom() ) ||
                ( imgPos.y() >= dispW.top() ) ) ) {
-            if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
-                _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
-            }
-            for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
-                if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
-                    (*it)->hideViewerCursor();
-                }
-            }
-        } else {
-            if (_imp->pickerState == ePickerStateInactive) {
-                //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
-                updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
+                 if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
+                     _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
+                 }
+                 for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
+                     if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
+                         (*it)->hideViewerCursor();
+                     }
+                 }
+                 if (texIndex == 0 && _imp->pickerState == ePickerStateInactive) {
+                     setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
+                 }
+             } else {
+                 if (_imp->pickerState == ePickerStateInactive) {
+                     //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
+                     updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
                 // }
             } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
                 if ( !_imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
                     _imp->infoViewer[texIndex]->showColorAndMouseInfo();
+                }
+                // Show the picker on parametric params without updating the color value
+                if (texIndex == 0) {
+                    setParametricParamsPickerColor(OfxRGBAColourD(), false, true);
                 }
             } else {
                 ///unkwn state
@@ -3817,13 +3879,16 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
             _imp->infoViewer[texIndex]->setMousePos(imgPosPixel);
         }
     } else {
-        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() ) {
+        if ( _imp->infoViewer[texIndex]->colorAndMouseVisible() && _imp->pickerState == ePickerStateInactive) {
             _imp->infoViewer[texIndex]->hideColorAndMouseInfo();
         }
         for (std::list<Histogram*>::const_iterator it = histograms.begin(); it != histograms.end(); ++it) {
             if ( (*it)->getViewerTextureInputDisplayed() == texIndex ) {
                 (*it)->hideViewerCursor();
             }
+        }
+        if (texIndex == 0 && _imp->pickerState == ePickerStateInactive) {
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 } // ViewerGL::updateInfoWidgetColorPickerInternal
@@ -3869,8 +3934,12 @@ ViewerGL::updateRectangleColorPickerInternal()
             }
             _imp->infoViewer[i]->setColorApproximated(mm > 0);
             _imp->infoViewer[i]->setColor(r, g, b, a);
+
+            OfxRGBAColourD c = {r,g,b,a};
+            setParametricParamsPickerColor(c, true, true);
         } else {
             _imp->infoViewer[i]->setColorValid(false);
+            setParametricParamsPickerColor(OfxRGBAColourD(), false, false);
         }
     }
 }

@@ -506,6 +506,7 @@ private:
 
 private:
 
+    void setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setColor, bool hasColor);
 
     bool checkIfViewPortRoIValidOrRenderForInput(int texIndex);
 

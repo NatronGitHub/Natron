@@ -4154,7 +4154,15 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
         knob->setCurveColor(i, color[i * 3], color[i * 3 + 1], color[i * 3 + 2]);
     }
 
+
     setDisplayRange();
+}
+
+OfxPluginEntryPoint*
+OfxParametricInstance::getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance * instance, bool* requiresViewerColorPicker) const 
+{
+    *requiresViewerColorPicker = getProperties().getIntProperty(kNatronOfxParamPropParametricInteractColourPicking);
+    return (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
 }
 
 void
