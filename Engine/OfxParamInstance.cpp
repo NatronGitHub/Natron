@@ -4159,9 +4159,9 @@ OfxParametricInstance::OfxParametricInstance(const boost::shared_ptr<OfxEffectIn
 }
 
 OfxPluginEntryPoint*
-OfxParametricInstance::getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance * instance, bool* requiresViewerColorPicker) const 
+OfxParametricInstance::getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance* param) const
 {
-    *requiresViewerColorPicker = getProperties().getIntProperty(kNatronOfxParamPropParametricInteractColourPicking);
+    Q_UNUSED(param);
     return (OfxPluginEntryPoint*)getProperties().getPointerProperty(kOfxParamPropParametricInteractBackground);
 }
 

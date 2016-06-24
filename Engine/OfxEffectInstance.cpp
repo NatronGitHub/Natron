@@ -752,8 +752,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
             continue;
         }
 
-        bool requiresColorPicker;
-        OfxPluginEntryPoint* interactEntryPoint = paramToKnob->getCustomOverlayInteractEntryPoint(*it,&requiresColorPicker);
+        OfxPluginEntryPoint* interactEntryPoint = paramToKnob->getCustomOverlayInteractEntryPoint(*it);
         if (!interactEntryPoint) {
             continue;
         }
@@ -762,7 +761,9 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         OFX::Host::Interact::Descriptor &interactDesc = paramToKnob->getInteractDesc();
         interactDesc.getProperties().addProperties(interactDescProps);
         interactDesc.setEntryPoint(interactEntryPoint);
-        interactDesc.describe(8, false);
+#pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
+        interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
+        bool requiresColorPicker = (bool)interactDesc.getProperties().getIntProperty(kNatronOfxInteractColourPicking);
         boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle(), requiresColorPicker) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();

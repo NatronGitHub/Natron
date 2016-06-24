@@ -478,6 +478,8 @@ OSGLContext::getOrCreateFillShader()
 #else
     ok = _imp->fillImageShader->link();
 #endif
+    assert(ok);
+    Q_UNUSED(ok);
 
     return _imp->fillImageShader;
 }
@@ -508,6 +510,7 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
 #else
     bool ok = _imp->applyMaskMixShader[shader_i]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), 0);
 #endif
+    assert(ok);
 #ifdef DEBUG
     ok = _imp->applyMaskMixShader[shader_i]->link(&error);
     if (!ok) {
@@ -516,6 +519,8 @@ OSGLContext::getOrCreateMaskMixShader(bool maskEnabled)
 #else
     ok = _imp->applyMaskMixShader[shader_i]->link();
 #endif
+    assert(ok);
+    Q_UNUSED(ok);
 
     return _imp->applyMaskMixShader[shader_i];
 }
@@ -570,6 +575,7 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
 #else
     bool ok = _imp->copyUnprocessedChannelsShader[index]->addShader(GLShader::eShaderTypeFragment, fragmentSource.c_str(), 0);
 #endif
+    assert(ok);
 #ifdef DEBUG
     ok = _imp->copyUnprocessedChannelsShader[index]->link(&error);
     if (!ok) {
@@ -578,6 +584,8 @@ OSGLContext::getOrCreateCopyUnprocessedChannelsShader(bool doR,
 #else
     ok = _imp->copyUnprocessedChannelsShader[index]->link();
 #endif
+    assert(ok);
+    Q_UNUSED(ok);
 
     return _imp->copyUnprocessedChannelsShader[index];
 } // OSGLContext::getOrCreateCopyUnprocessedChannelsShader

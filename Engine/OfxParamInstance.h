@@ -110,9 +110,8 @@ public:
     {
     }
 
-    virtual OfxPluginEntryPoint* getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance* param, bool* requiresViewerColorPicker) const
+    virtual OfxPluginEntryPoint* getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance* param) const
     {
-        *requiresViewerColorPicker = false;
         return (OfxPluginEntryPoint*)param->getProperties().getPointerProperty(kOfxParamPropInteractV1);
     }
 
@@ -924,7 +923,7 @@ public:
 
     virtual ~OfxParametricInstance();
 
-    virtual OfxPluginEntryPoint* getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance * instance, bool* requiresViewerColorPicker) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual OfxPluginEntryPoint* getCustomOverlayInteractEntryPoint(const OFX::Host::Param::Instance* param) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     
     virtual void setHint() OVERRIDE FINAL;
     // callback which should set enabled state as appropriate

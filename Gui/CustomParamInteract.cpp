@@ -123,7 +123,8 @@ CustomParamInteract::paintGL()
         OfxPointD scale;
         scale.x = scale.y = 1.;
         double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
-        _imp->entryPoint->drawAction(time, scale, /*view=*/ 0);
+#pragma message WARN("TODO: pickerColour")
+        _imp->entryPoint->drawAction(time, scale, /*view=*/ 0, /*pickerColour=*/0);
         glCheckError();
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
 }

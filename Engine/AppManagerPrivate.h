@@ -40,7 +40,9 @@
 
 #ifdef NATRON_USE_BREAKPAD
 #if defined(Q_OS_MAC)
+GCC_DIAG_OFF(deprecated)
 #include "client/mac/handler/exception_handler.h"
+GCC_DIAG_ON(deprecated)
 #elif defined(Q_OS_LINUX)
 #include <fcntl.h>
 #include "client/linux/handler/exception_handler.h"
