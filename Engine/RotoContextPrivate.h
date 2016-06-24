@@ -360,6 +360,27 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+struct RotoFeatherVertex
+{
+    double x,y;
+    bool isInner;
+};
+
+struct RotoTriangleStrips
+{
+    std::list<Point> vertices;
+};
+
+struct RotoTriangleFans
+{
+    std::list<Point> vertices;
+};
+
+struct RotoTriangles
+{
+    std::list<Point> vertices;
+};
+
 struct BezierPrivate
 {
     BezierCPs points; //< the control points of the curve
@@ -2168,6 +2189,12 @@ public:
                                unsigned int mipmapLevel);
     static void renderBezier(cairo_t* cr, const Bezier* bezier, double opacity, double time, unsigned int mipmapLevel);
     static void renderFeather(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
+    static void renderFeather_cairo(const std::list<RotoFeatherVertex>& vertices, double shapeColor[3],  double fallOff, cairo_pattern_t * mesh);
+    static void renderInternalShape_cairo(const std::list<RotoTriangles>& triangles,
+                                          const std::list<RotoTriangleFans>& fans,
+                                          const std::list<RotoTriangleStrips>& strips,
+                                          double shapeColor[3],  cairo_pattern_t * mesh);
+    static void computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel,  double featherDist, std::list<RotoFeatherVertex>* featherMesh, std::list<RotoTriangleFans>* internalFans, std::list<RotoTriangles>* internalTriangles,std::list<RotoTriangleStrips>* internalStrips);
     static void renderInternalShape(double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
     static void bezulate(double time, const BezierCPs& cps, std::list<BezierCPs>* patches);
     static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);

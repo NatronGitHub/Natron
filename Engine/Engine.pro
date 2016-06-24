@@ -29,7 +29,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 # Do not uncomment the following: pyside requires QtGui, because PySide/QtCore/pyside_qtcore_python.h includes qtextdocument.h
 #QT -= gui
 
-CONFIG += libmv-flags openmvg-flags glad-flags
+CONFIG += libmv-flags openmvg-flags glad-flags libtess-flags
 
 include(../global.pri)
 

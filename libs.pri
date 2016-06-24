@@ -135,6 +135,10 @@ INCLUDEPATH += $$PWD/libs/gflags/src
 INCLUDEPATH += $$PWD/libs/gflags/src/gflags
 }
 
+libtess-flags {
+INCLUDEPATH += $$PWD/libs/libtess
+}
+
 ################
 # Gui
 static-gui {
