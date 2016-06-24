@@ -46,6 +46,9 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+
+#define ROTO_BEZIER_EVAL_ITERATIVE
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -374,14 +377,22 @@ public:
     void evaluateAtTime_DeCasteljau(bool useGuiCurves,
                                     double time,
                                     unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
+#else
+                                    double errorScale,
+#endif
                                     std::list<std::list<ParametricPoint> >* points,
                                     RectD* bbox) const;
 
     void evaluateAtTime_DeCasteljau(bool useGuiCurves,
                                     double time,
                                     unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
+#else
+                                    double errorScale,
+#endif
                                     std::list<ParametricPoint >* points,
                                     RectD* bbox) const;
 
@@ -390,7 +401,11 @@ private:
     void evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
                                     double time,
                                     unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
+#else
+                                    double errorScale,
+#endif
                                     std::list<std::list<ParametricPoint> >* points,
                                     std::list<ParametricPoint >* pointsSingleList,
                                     RectD* bbox) const;
@@ -413,7 +428,11 @@ public:
     void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                                  double time,
                                                  unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
+#else
+                                                 double errorScale,
+#endif
                                                  bool evaluateIfEqual,
                                                  std::list<std::list<ParametricPoint>  >* points,
                                                  RectD* bbox) const;
@@ -421,7 +440,11 @@ public:
     void evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                                  double time,
                                                  unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
+#else
+                                                 double errorScale,
+#endif
                                                  bool evaluateIfEqual,
                                                  std::list<ParametricPoint >* points,
                                                  RectD* bbox) const;
@@ -431,7 +454,11 @@ private:
     void evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiCurves,
                                                           double time,
                                                           unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                           int nbPointsPerSegment,
+#else
+                                                          double errorScale,
+#endif
                                                           bool evaluateIfEqual,
                                                           std::list<std::list<ParametricPoint>  >* points,
                                                           std::list<ParametricPoint >* pointsSingleList,

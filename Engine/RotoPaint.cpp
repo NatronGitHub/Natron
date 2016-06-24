@@ -1696,7 +1696,13 @@ RotoPaint::drawOverlay(double time,
                 }
 
                 std::list< ParametricPoint > points;
-                isBezier->evaluateAtTime_DeCasteljau(true, time, 0, 100, &points, NULL);
+                isBezier->evaluateAtTime_DeCasteljau(true, time, 0,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                     100,
+#else
+                                                     1,
+#endif
+                                                     &points, NULL);
 
                 bool locked = (*it)->isLockedRecursive();
                 double curveColor[4];
@@ -1724,7 +1730,13 @@ RotoPaint::drawOverlay(double time,
 
                 if (featherVisible) {
                     ///Draw feather only if visible (button is toggled in the user interface)
-                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(true, time, 0, 100, true, &featherPoints, &featherBBox);
+                    isBezier->evaluateFeatherPointsAtTime_DeCasteljau(true, time, 0,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                                      100,
+#else
+                                                                      1,
+#endif
+                                                                      true, &featherPoints, &featherBBox);
 
                     if ( !featherPoints.empty() ) {
                         glLineStipple(2, 0xAAAA);

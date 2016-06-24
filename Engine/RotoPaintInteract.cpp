@@ -1476,12 +1476,7 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
         if (cpCount <= 1) {
             continue;
         }
-        //        std::list<Point> polygon;
-        //        RectD polygonBBox( std::numeric_limits<double>::infinity(),
-        //                           std::numeric_limits<double>::infinity(),
-        //                           -std::numeric_limits<double>::infinity(),
-        //                           -std::numeric_limits<double>::infinity() );
-        //        (*it)->evaluateFeatherPointsAtTime_DeCasteljau(time, 0, 50, true, &polygon, &polygonBBox);
+
 
         std::list<boost::shared_ptr<BezierCP> >::const_iterator itF = fps.begin();
         std::list<boost::shared_ptr<BezierCP> >::const_iterator nextF = itF;

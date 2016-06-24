@@ -93,8 +93,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
 
-//#define ROTO_BEZIER_EVAL_ITERATIVE
-
 NATRON_NAMESPACE_ENTER;
 
 
@@ -702,7 +700,11 @@ bezierSegmentEval(bool useGuiCurves,
                   double time,
                   ViewIdx view,
                   unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                   int nbPointsPerSegment,
+#else
+                  double errorScale,
+#endif
                   const Transform::Matrix3x3& transform,
                   std::list< ParametricPoint >* points, ///< output
                   RectD* bbox = NULL) ///< input/output (optional)
@@ -776,8 +778,6 @@ bezierSegmentEval(bool useGuiCurves,
         points->push_back(p);
     }
 #else
-    Q_UNUSED(nbPointsPerSegment);
-    const double errorScale = 10.;
     static const int maxRecursion = 32;
     recursiveBezier(p0, p1, p2, p3, errorScale, maxRecursion, points);
 #endif
@@ -2554,39 +2554,69 @@ void
 Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
                                    unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
+#else
+                                   double errorScale,
+#endif
                                    std::list<std::list< ParametricPoint> >* points,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel, nbPointsPerSegment, points, 0, bbox);
+    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                        nbPointsPerSegment,
+#else
+                                        errorScale,
+#endif
+                                        points, 0, bbox);
 }
 
 void
 Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
                                    double time,
                                    unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
+#else
+                                   double errorScale,
+#endif
                                    std::list<ParametricPoint >* pointsSingleList,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel, nbPointsPerSegment, 0, pointsSingleList, bbox);
+    evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                        nbPointsPerSegment,
+#else
+                                        errorScale,
+#endif
+                                         0, pointsSingleList, bbox);
 }
 
 void
 Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
-                                         double time,
-                                         unsigned int mipMapLevel,
-                                         int nbPointsPerSegment,
-                                         std::list<std::list<ParametricPoint> >* points,
-                                         std::list<ParametricPoint >* pointsSingleList,
-                                         RectD* bbox) const
+                                            double time,
+                                            unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                            int nbPointsPerSegment,
+#else
+                                            double errorScale,
+#endif
+                                            std::list<std::list<ParametricPoint> >* points,
+                                            std::list<ParametricPoint >* pointsSingleList,
+                                            RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
     Transform::Matrix3x3 transform;
 
     getTransformAtTime(time, &transform);
     QMutexLocker l(&itemMutex);
-    deCastelJau(useGuiCurves, _imp->points, time, mipMapLevel, _imp->finished, nbPointsPerSegment, transform, points, pointsSingleList, bbox);
+    deCastelJau(useGuiCurves, _imp->points, time, mipMapLevel, _imp->finished,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                nbPointsPerSegment,
+#else
+                errorScale,
+#endif
+                transform, points, pointsSingleList, bbox);
 }
 
 void
@@ -2596,30 +2626,50 @@ Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
                                                 std::list<std::list<ParametricPoint> >* points,
                                                 RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau(useGuiPoints, time, mipMapLevel, -1, points, bbox);
+    evaluateAtTime_DeCasteljau(useGuiPoints, time, mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                               -1,
+#else
+                               1,
+#endif
+                               points, bbox);
 }
 
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                              double time,
                                              unsigned int mipMapLevel,
-                                             int nbPointsPerSegment,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                int nbPointsPerSegment,
+#else
+                                                double errorScale,
+#endif
                                              bool evaluateIfEqual,
                                              std::list<ParametricPoint >* points,
                                              RectD* bbox) const
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipMapLevel, nbPointsPerSegment, evaluateIfEqual, 0, points, bbox);
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                     nbPointsPerSegment,
+#else
+                                                     errorScale,
+#endif
+                                                      evaluateIfEqual, 0, points, bbox);
 }
 
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
-                                                      double time,
-                                                      unsigned int mipMapLevel,
-                                                      int nbPointsPerSegment,
-                                                      bool evaluateIfEqual,
-                                                      std::list<std::list<ParametricPoint>  >* points,
-                                                      std::list<ParametricPoint >* pointsSingleList,
-                                                      RectD* bbox) const
+                                                         double time,
+                                                         unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                         int nbPointsPerSegment,
+#else
+                                                         double errorScale,
+#endif
+                                                         bool evaluateIfEqual,
+                                                         std::list<std::list<ParametricPoint>  >* points,
+                                                         std::list<ParametricPoint >* pointsSingleList,
+                                                         RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
     assert( useFeatherPoints() );
@@ -2658,13 +2708,25 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
         }
         if (points) {
             std::list<ParametricPoint> segmentPoints;
-            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel, nbPointsPerSegment, transform, &segmentPoints, bbox);
+            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                              nbPointsPerSegment,
+#else
+                              errorScale,
+#endif
+                              transform, &segmentPoints, bbox);
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel, nbPointsPerSegment, transform, pointsSingleList, bbox);
+            bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                              nbPointsPerSegment,
+#else
+                              errorScale,
+#endif
+                              transform, pointsSingleList, bbox);
         }
-        
+
         // increment for next iteration
         if ( itCp != _imp->featherPoints.end() ) {
             ++itCp;
@@ -2683,12 +2745,22 @@ void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 double time,
                                                 unsigned int mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
+#else
+                                                double errorScale,
+#endif
                                                 bool evaluateIfEqual, ///< evaluate only if feather points are different from control points
                                                 std::list<std::list<ParametricPoint> >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel, nbPointsPerSegment, evaluateIfEqual, points, 0, bbox);
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
+#ifdef ROTO_BEZIER_EVAL_ITERATIVE
+                                                     nbPointsPerSegment,
+#else
+                                                     errorScale,
+#endif
+                                                     evaluateIfEqual, points, 0, bbox);
 } // Bezier::evaluateFeatherPointsAtTime_DeCasteljau
 
 void
