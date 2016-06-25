@@ -44,25 +44,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-FramebufferConfig::FramebufferConfig()
-    : redBits(8)
-    , greenBits(8)
-    , blueBits(8)
-    , alphaBits(8)
-    , depthBits(24)
-    , stencilBits(8)
-    , accumRedBits(0)
-    , accumGreenBits(0)
-    , accumBlueBits(0)
-    , accumAlphaBits(0)
-    , auxBuffers(0)
-    , stereo(GL_FALSE)
-    , samples(0)
-    , sRGB(GL_FALSE)
-    , doublebuffer(GL_FALSE)
-    , handle(0)
-{
-}
 
 const FramebufferConfig&
 OSGLContext::chooseFBConfig(const FramebufferConfig& desired,

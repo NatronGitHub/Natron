@@ -132,6 +132,7 @@ SOURCES += \
     NodeGroupSerialization.cpp \
     NoOpBase.cpp \
     OSGLContext.cpp \
+    OSGLContext_osmesa.cpp \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
     OSGLFunctions.cpp \
@@ -330,10 +331,12 @@ HEADERS += \
     NodeSerialization.h \
     NoOpBase.h \
     OSGLContext.h \
+    OSGLContext_osmesa.h \
     OSGLContext_mac.h \
     OSGLContext_win.h \
     OSGLContext_x11.h \
     OSGLFunctions.h \
+    OSGLFramebufferConfig.h \
     OfxClipInstance.h \
     OfxEffectInstance.h \
     OfxHost.h \
