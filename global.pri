@@ -126,6 +126,32 @@ isEmpty(BUILD_NUMBER) {
 	DEFINES += NATRON_BUILD_NUMBER=$$BUILD_NUMBER
 }
 
+CONFIG(enable-osmesa) {
+    #The following variables must be defined: LLVM_PATH and OSMESA_PATH
+    isEmpty(LLVM_PATH) {
+        LLVM_PATH="/opt/llvm"
+        message("enable-osmesa was passed to the config but you did not set LLVM_PATH, defaulting to $$LLVM_PATH")
+    }
+    isEmpty(OSMESA_PATH) {
+        OSMESA_PATH="/opt/osmesa"
+        message("enable-osmesa was passed to the config but you did not set OSMESA_PATH, defaulting to $$OSMESA_PATH")
+    }
+    LLVM_LIB=$$system($$LLVM_PATH/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr \"\n\" \" \")
+    win32 {
+        MESALIB="-lOSMesa"
+        GLULIB="-lGLU"
+    }
+    unix {
+        MESALIB="-lMangledOSMesa32"
+        GLULIB="-lMangledGLU"
+    }
+
+    DEFINES += HAVE_OSMESA
+    INCLUDEPATH += $$OSMESA_PATH/include
+    QMAKE_LFLAGS += -L$$OSMESA_PATH/lib -L$$LLVM_PATH/lib $$GLULIB $$MESALIB $$LLVM_LIB
+
+}
+
 # https://qt.gitorious.org/qt-creator/qt-creator/commit/b48ba2c25da4d785160df4fd0d69420b99b85152
 unix:LIBS += $$QMAKE_LIBS_DYNLOAD
 
