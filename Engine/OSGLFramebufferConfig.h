@@ -40,9 +40,8 @@ NATRON_NAMESPACE_ENTER;
  *  It is used to pass framebuffer parameters from shared code to the platform
  *  API and also to enumerate and select available framebuffer configs.
  */
-class FramebufferConfig
+struct FramebufferConfig
 {
-public:
 
     static const int ATTR_DONT_CARE = -1;
     int redBits;
@@ -62,28 +61,28 @@ public:
     unsigned char doublebuffer;
     unsigned long handle;
 
-    FramebufferConfig();
+    FramebufferConfig()
+    : redBits(8)
+    , greenBits(8)
+    , blueBits(8)
+    , alphaBits(8)
+    , depthBits(24)
+    , stencilBits(8)
+    , accumRedBits(0)
+    , accumGreenBits(0)
+    , accumBlueBits(0)
+    , accumAlphaBits(0)
+    , auxBuffers(0)
+    , stereo(0)
+    , samples(0)
+    , sRGB(0)
+    , doublebuffer(0)
+    , handle(0)
+    {
+
+    }
 };
 
-FramebufferConfig::FramebufferConfig()
-: redBits(8)
-, greenBits(8)
-, blueBits(8)
-, alphaBits(8)
-, depthBits(24)
-, stencilBits(8)
-, accumRedBits(0)
-, accumGreenBits(0)
-, accumBlueBits(0)
-, accumAlphaBits(0)
-, auxBuffers(0)
-, stereo(0)
-, samples(0)
-, sRGB(0)
-, doublebuffer(0)
-, handle(0)
-{
-}
 
 
 struct GLRendererID

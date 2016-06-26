@@ -123,7 +123,7 @@ class EffectInstance;
 class ExistenceCheckerThread;
 class Format;
 class FrameEntry;
-class FramebufferConfig;
+struct FramebufferConfig;
 class FrameKey;
 class FrameParams;
 class GPUContextPool;

@@ -88,7 +88,7 @@ OSGLContext_osmesa::OSGLContext_osmesa(const FramebufferConfig& pixelFormatAttrs
     _imp->ctx = OSMesaCreateContext( format, shareContex->_imp->ctx );
 #endif
 #endif
-
+    
     if (!_imp->ctx) {
         throw std::runtime_error("OSMesaCreateContext failed");
     }
