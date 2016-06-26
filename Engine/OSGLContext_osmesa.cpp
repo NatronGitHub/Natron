@@ -117,6 +117,7 @@ OSGLContext_osmesa::makeContextCurrent(const OSGLContext_osmesa* context,
     return true;
 }
 
-#endif //HAVE_OSMESA
 
 NATRON_NAMESPACE_EXIT;
+
+#endif //HAVE_OSMESA
