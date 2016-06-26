@@ -556,6 +556,9 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionDopeSheetEditorPasteKeyframes "pastekeyframes"
 #define kShortcutDescActionDopeSheetEditorPasteKeyframes "Paste Keyframes"
 
+#define kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute "pastekeyframesAbs"
+#define kShortcutDescActionDopeSheetEditorPasteKeyframesAbsolute "Paste Keyframes Absolute"
+
 // Script editor shortcuts
 #define kShortcutIDActionScriptEditorPrevScript "prevScript"
 #define kShortcutDescActionScriptEditorPrevScript "Previous Script"

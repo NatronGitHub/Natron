@@ -175,6 +175,8 @@ public:
 
     void setCanResizeOtherWidget(bool canResize);
 
+    void getSelectedDSKnobs(std::list<boost::shared_ptr<DSKnob> >* knobs) const;
+
 protected:
     virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const OVERRIDE FINAL;
     virtual void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const OVERRIDE FINAL;

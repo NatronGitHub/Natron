@@ -687,6 +687,18 @@ HierarchyView::setCanResizeOtherWidget(bool canResize)
 }
 
 void
+HierarchyView::getSelectedDSKnobs(std::list<boost::shared_ptr<DSKnob> >* knobs) const
+{
+    QList<QTreeWidgetItem*> items = selectedItems();
+    for (QList<QTreeWidgetItem*>::iterator it = items.begin(); it != items.end(); ++it) {
+        boost::shared_ptr<DSKnob> k = _imp->dopeSheetModel->mapNameItemToDSKnob(*it);
+        if (k) {
+            knobs->push_back(k);
+        }
+    }
+}
+
+void
 HierarchyView::resizeEvent(QResizeEvent* e)
 {
     QTreeWidget::resizeEvent(e);

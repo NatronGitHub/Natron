@@ -383,12 +383,16 @@ class DSPasteKeysCommand
 
 public:
     DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
+                       const std::list<boost::shared_ptr<DSKnob> >& dstKnobs,
+                       bool pasteRelativeToRefTime,
                        DopeSheetEditor *model,
                        QUndoCommand *parent = 0);
 
     void undo() OVERRIDE FINAL;
     void redo() OVERRIDE FINAL;
 
+
+    static void setKeyValueFromKnob(const KnobPtr& knob, double keyTime, KeyFrame* key);
 private:
     /**
      * @brief If 'add' is true, paste the keyframes contained in the dope
@@ -402,7 +406,9 @@ private:
 
     int _refTime;
     int _refKeyindex;
+    bool _pasteRelativeToRefTime;
     std::vector<DopeSheetKey> _keys;
+    std::list<boost::weak_ptr<DSKnob> > _dstKnobs;
     DopeSheetEditor *_model;
 };
 

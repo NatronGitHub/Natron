@@ -183,6 +183,12 @@ DopeSheetEditor::getDopesheetView() const
     return _imp->dopeSheetView;
 }
 
+HierarchyView*
+DopeSheetEditor::getHierarchyView() const
+{
+    return _imp->hierarchyView;
+}
+
 void
 DopeSheetEditor::setTreeWidgetWidth(int width)
 {
@@ -234,7 +240,9 @@ DopeSheetEditor::keyPressEvent(QKeyEvent* e)
     } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, modifiers, key) ) {
         _imp->dopeSheetView->copySelectedKeyframes();
     } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, modifiers, key) ) {
-        _imp->dopeSheetView->pasteKeyframes();
+        _imp->dopeSheetView->pasteKeyframesRelative();
+    } else if ( isKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute, modifiers, key) ) {
+        _imp->dopeSheetView->pasteKeyframesAbsolute();
     } else {
         accept = false;
     }

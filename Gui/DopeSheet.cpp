@@ -865,7 +865,7 @@ DopeSheet::onNodeNameEditDialogFinished()
 }
 
 void
-DopeSheet::pasteKeys()
+DopeSheet::pasteKeys(bool relative)
 {
     std::vector<DopeSheetKey> toPaste;
 
@@ -874,16 +874,30 @@ DopeSheet::pasteKeys()
 
         toPaste.push_back(key);
     }
+
     if ( !toPaste.empty() ) {
-        _imp->pushUndoCommand( new DSPasteKeysCommand(toPaste, _imp->editor) );
+
+        std::list<boost::shared_ptr<DSKnob> > dstKnobs;
+        _imp->editor->getHierarchyView()->getSelectedDSKnobs(&dstKnobs);
+        if (dstKnobs.empty()) {
+            Dialogs::warningDialog(tr("Paste").toStdString(), tr("You must select at least one parameter dimension on the left to perform this action").toStdString());
+            return;
+        }
+        _imp->pushUndoCommand( new DSPasteKeysCommand(toPaste, dstKnobs, relative, _imp->editor) );
     }
 }
 
 void
-DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys)
+DopeSheet::pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative)
 {
     if ( !keys.empty() ) {
-        _imp->pushUndoCommand( new DSPasteKeysCommand(keys, _imp->editor) );
+        std::list<boost::shared_ptr<DSKnob> > dstKnobs;
+        _imp->editor->getHierarchyView()->getSelectedDSKnobs(&dstKnobs);
+        if (dstKnobs.empty()) {
+            Dialogs::warningDialog(tr("Paste").toStdString(), tr("You must select at least one parameter dimension on the left to perform this action").toStdString());
+            return;
+        }
+        _imp->pushUndoCommand( new DSPasteKeysCommand(keys, dstKnobs, relative, _imp->editor) );
     }
 }
 

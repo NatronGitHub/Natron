@@ -2384,8 +2384,16 @@ DopeSheetViewPrivate::createContextMenu()
                                                            kShortcutDescActionDopeSheetEditorPasteKeyframes,
                                                            editMenu);
     QObject::connect( pasteKeyframesAction, SIGNAL(triggered()),
-                      q_ptr, SLOT(pasteKeyframes()) );
+                      q_ptr, SLOT(pasteKeyframesRelative()) );
     editMenu->addAction(pasteKeyframesAction);
+
+    QAction *pasteKeyframesAbsAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
+                                                           kShortcutIDActionDopeSheetEditorPasteKeyframesAbsolute,
+                                                           kShortcutDescActionDopeSheetEditorPasteKeyframesAbsolute,
+                                                           editMenu);
+    QObject::connect( pasteKeyframesAbsAction, SIGNAL(triggered()),
+                     q_ptr, SLOT(pasteKeyframesAbsolute()) );
+    editMenu->addAction(pasteKeyframesAbsAction);
 
     QAction *selectAllKeyframesAction = new ActionWithShortcut(kShortcutGroupDopeSheetEditor,
                                                                kShortcutIDActionDopeSheetEditorSelectAllKeyframes,
@@ -2896,11 +2904,11 @@ DopeSheetView::copySelectedKeyframes()
 }
 
 void
-DopeSheetView::pasteKeyframes()
+DopeSheetView::pasteKeyframes(bool relative)
 {
     running_in_main_thread();
 
-    _imp->model->pasteKeys();
+    _imp->model->pasteKeys(relative);
 }
 
 void
@@ -3432,6 +3440,13 @@ DopeSheetView::mousePressEvent(QMouseEvent *e)
         if (_imp->eventState == DopeSheetView::esNoEditingState) {
             if ( !modCASIsShift(e) ) {
                 _imp->model->getSelectionModel()->clearKeyframeSelection();
+
+                boost::shared_ptr<DSKnob> dsKnob = _imp->hierarchyView->getDSKnobAt( e->pos().y() );
+                if (dsKnob) {
+                    double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
+                    _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
+                                              eTimelineChangeReasonDopeSheetEditorSeek);
+                }
             }
 
             _imp->selectionRect.x1 = _imp->selectionRect.x2 = clickZoomCoords.x();
@@ -3587,19 +3602,12 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
                 _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
                                           eTimelineChangeReasonDopeSheetEditorSeek);
 
-                //The value of the keyframe will be set automatically in DSPasteKeysCommand::addOrRemoveKeyframe
                 KeyFrame k(keyframeTime, 0);
                 DopeSheetKey key(dsKnob, k);
                 toPaste.push_back(key);
-                _imp->model->pasteKeys(toPaste);
+                DSPasteKeysCommand::setKeyValueFromKnob(knob, keyframeTime, &k);
+                _imp->model->pasteKeys(toPaste, true);
             }
-        }
-    } else if ( modCASIsNone(e) ) {
-        boost::shared_ptr<DSKnob> dsKnob = _imp->hierarchyView->getDSKnobAt( e->pos().y() );
-        if (dsKnob) {
-            double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
-            _imp->timeline->seekFrame(SequenceTime(keyframeTime), false, 0,
-                                      eTimelineChangeReasonDopeSheetEditorSeek);
         }
     }
 }

@@ -257,6 +257,7 @@ RemoveKeysCommand::RemoveKeysCommand(CurveWidget* editor,
 void
 RemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
+    std::set<KnobPtr> knobsSet;
     for (std::map<boost::shared_ptr<CurveGui>, std::vector<KeyFrame> >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
         BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
@@ -271,7 +272,13 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
             knob = isKnobCurve->getInternalKnob();
         }
         boost::shared_ptr<KnobParametric> isParametric;
+
+        std::pair<std::set<KnobPtr>::iterator, bool> insertOk;
         if (knob) {
+            insertOk = knobsSet.insert(knob);
+            if (insertOk.second) {
+                knob->beginChanges();
+            }
             isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         }
 
@@ -284,7 +291,6 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
         } else {
             for (std::size_t i = 0; i < it->second.size(); ++i) {
                 if (isKnobCurve) {
-                    isKnobCurve->getInternalKnob()->beginChanges();
 
                     if (add) {
                         int time = it->second[i].getTime();
@@ -331,9 +337,11 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 } // if (isKnobCurve) {
             } // for (std::size_t i = 0; i < it->second.size(); ++i) {
         } // if (guiKnob) {
-        if (isKnobCurve) {
-            isKnobCurve->getInternalKnob()->endChanges();
-        }
+ 
+    }
+
+    for (std::set<KnobPtr>::iterator it = knobsSet.begin(); it!=knobsSet.end(); ++it) {
+        (*it)->endChanges();
     }
 
     _curveWidget->update();
