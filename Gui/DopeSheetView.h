@@ -326,7 +326,17 @@ public Q_SLOTS:
      * This slot is automatically called when the user triggers the menu action
      * or presses Ctrl + V.
      */
-    void pasteKeyframes();
+    void pasteKeyframes(bool relative);
+
+    void pasteKeyframesAbsolute()
+    {
+        pasteKeyframes(false);
+    }
+
+    void pasteKeyframesRelative()
+    {
+        pasteKeyframes(true);
+    }
 
 private: /* attributes */
     boost::scoped_ptr<DopeSheetViewPrivate> _imp;

@@ -374,9 +374,9 @@ public:
 
     void slipReader(const boost::shared_ptr<DSNode> &reader, double dt);
     void copySelectedKeys();
-    void pasteKeys();
+    void pasteKeys(bool relative);
 
-    void pasteKeys(const std::vector<DopeSheetKey>& keys);
+    void pasteKeys(const std::vector<DopeSheetKey>& keys, bool relative);
 
     void setSelectedKeysInterpolation(KeyframeTypeEnum keyType);
 

@@ -884,14 +884,22 @@ DSSetSelectedKeysInterpolationCommand::setInterpolation(bool undo)
 ////////////////////////// DSAddKeysCommand //////////////////////////
 
 DSPasteKeysCommand::DSPasteKeysCommand(const std::vector<DopeSheetKey> &keys,
+                                       const std::list<boost::shared_ptr<DSKnob> >& dstKnobs,
+                                       bool pasteRelativeToRefTime,
                                        DopeSheetEditor *model,
                                        QUndoCommand *parent)
     : QUndoCommand(parent),
     _refTime(0),
     _refKeyindex(-1),
+    _pasteRelativeToRefTime(pasteRelativeToRefTime),
     _keys(),
     _model(model)
 {
+
+    for (std::list<boost::shared_ptr<DSKnob> >::const_iterator it = dstKnobs.begin(); it != dstKnobs.end(); ++it) {
+        _dstKnobs.push_back(*it);
+    }
+
     _refTime = _model->getTimelineCurrentTime();
     setText( tr("Paste keyframes") );
     for (std::size_t i = 0; i < keys.size(); ++i) {
@@ -919,60 +927,71 @@ DSPasteKeysCommand::redo()
 }
 
 void
+DSPasteKeysCommand::setKeyValueFromKnob(const KnobPtr& knob, double keyTime, KeyFrame* key)
+{
+    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
+    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
+    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
+    Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+
+
+    if (isDouble) {
+        key->setValue( isDouble->getValueAtTime(keyTime) );
+    } else if (isBool) {
+        key->setValue( isBool->getValueAtTime(keyTime) );
+    } else if (isInt) {
+        key->setValue( isInt->getValueAtTime(keyTime) );
+    } else if (isString) {
+        std::string v = isString->getValueAtTime(keyTime);
+        double keyFrameValue = 0.;
+        AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(isString);
+        assert(isStringAnimatedKnob);
+        if (isStringAnimatedKnob) {
+            isStringAnimatedKnob->stringToKeyFrameValue(keyTime, ViewIdx(0), v, &keyFrameValue);
+        }
+        key->setValue(keyFrameValue);
+    }
+}
+
+void
 DSPasteKeysCommand::addOrRemoveKeyframe(bool add)
 {
-    for (std::size_t i = 0; i < _keys.size(); ++i) {
-        boost::shared_ptr<DSKnob> knobContext = _keys[i].context.lock();
+    for (std::list<boost::weak_ptr<DSKnob> >::const_iterator it = _dstKnobs.begin(); it != _dstKnobs.end(); ++it) {
+        boost::shared_ptr<DSKnob> knobContext = it->lock();
         if (!knobContext) {
             continue;
         }
-        int dim = knobContext->getDimension();
-        KnobPtr knob = knobContext->getInternalKnob();
-        knob->beginChanges();
+        for (std::size_t i = 0; i < _keys.size(); ++i) {
 
-        double keyTime = _keys[i].key.getTime();
-        double setTime = keyTime - _keys[_refKeyindex].key.getTime() + _refTime;
+            int dim = knobContext->getDimension();
+            KnobPtr knob = knobContext->getInternalKnob();
+            knob->beginChanges();
 
-        if (add) {
-            Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-            Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-            Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+            double keyTime = _keys[i].key.getTime();
+            double setTime = _pasteRelativeToRefTime ? keyTime - _keys[_refKeyindex].key.getTime() + _refTime : keyTime;
 
-            for (int j = 0; j < knob->getDimension(); ++j) {
-                if ( (dim == -1) || (j == dim) ) {
-                    KeyFrame k = _keys[i].key;
-                    k.setTime(setTime);
+            if (add) {
 
-                    if (isDouble) {
-                        k.setValue( isDouble->getValueAtTime(keyTime) );
-                    } else if (isBool) {
-                        k.setValue( isBool->getValueAtTime(keyTime) );
-                    } else if (isInt) {
-                        k.setValue( isInt->getValueAtTime(keyTime) );
-                    } else if (isString) {
-                        std::string v = isString->getValueAtTime(keyTime);
-                        double keyFrameValue = 0.;
-                        AnimatingKnobStringHelper* isStringAnimatedKnob = dynamic_cast<AnimatingKnobStringHelper*>(this);
-                        assert(isStringAnimatedKnob);
-                        if (isStringAnimatedKnob) {
-                            isStringAnimatedKnob->stringToKeyFrameValue(keyTime, ViewIdx(0), v, &keyFrameValue);
-                        }
-                        k.setValue(keyFrameValue);
+                for (int j = 0; j < knob->getDimension(); ++j) {
+                    if ( (dim == -1) || (j == dim) ) {
+                        KeyFrame k = _keys[i].key;
+                        k.setTime(setTime);
+
+                        knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
                     }
-                    knob->setKeyFrame(k, ViewSpec::all(), j, eValueChangedReasonNatronGuiEdited);
+                }
+            } else {
+                for (int j = 0; j < knob->getDimension(); ++j) {
+                    if ( (dim == -1) || (j == dim) ) {
+                        knob->deleteValueAtTime(eCurveChangeReasonDopeSheet, setTime, ViewSpec::all(), j, i == 0);
+                    }
                 }
             }
-        } else {
-            for (int j = 0; j < knob->getDimension(); ++j) {
-                if ( (dim == -1) || (j == dim) ) {
-                    knob->deleteValueAtTime(eCurveChangeReasonDopeSheet, setTime, ViewSpec::all(), j, i == 0);
-                }
-            }
+            
+            knob->endChanges();
         }
-
-        knob->endChanges();
     }
+
 
     _model->refreshSelectionBboxAndRedrawView();
 } // DSPasteKeysCommand::addOrRemoveKeyframe

@@ -119,6 +119,8 @@ public:
 
     DopeSheetView* getDopesheetView() const;
 
+    HierarchyView* getHierarchyView() const;
+
     void setTreeWidgetWidth(int width);
 
     int getTreeWidgetWidth() const;
