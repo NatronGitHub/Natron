@@ -806,6 +806,7 @@ DSRemoveKeysCommand::redo()
 void
 DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 {
+    std::set<KnobGuiPtr> knobsSet;
     for (std::vector<DopeSheetKey>::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         DopeSheetKey selected = (*it);
         boost::shared_ptr<DSKnob> knobContext = selected.context.lock();
@@ -815,12 +816,21 @@ DSRemoveKeysCommand::addOrRemoveKeyframe(bool add)
 
         KnobGuiPtr knobGui = knobContext->getKnobGui();
         assert(knobGui);
+
+        std::pair<std::set<KnobGuiPtr>::iterator,bool> ok = knobsSet.insert(knobGui);
+        if (ok.second) {
+            knobGui->getKnob()->beginChanges();
+        }
         if (add) {
             knobGui->setKeyframe( selected.key.getTime(), selected.key, knobContext->getDimension(), ViewIdx(0) );
         } else {
             knobGui->removeKeyFrame( selected.key.getTime(), knobContext->getDimension(), ViewIdx(0) );
             knobContext->getTreeItem()->setSelected(false);
         }
+    }
+
+    for (std::set<KnobGuiPtr>::iterator it = knobsSet.begin(); it != knobsSet.end(); ++it) {
+        (*it)->getKnob()->endChanges();
     }
 
     _model->refreshSelectionBboxAndRedrawView();
