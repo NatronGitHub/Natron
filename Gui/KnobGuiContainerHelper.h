@@ -276,6 +276,11 @@ protected:
     virtual void refreshCurrentPage() = 0;
 
     /**
+     * @brief Creates the widget that will contain the GUI for a knob
+     **/
+    virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const;
+
+    /**
      * @brief Returns the main container
      **/
     virtual QWidget* getPagesContainer() const = 0;

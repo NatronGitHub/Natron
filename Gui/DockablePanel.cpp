@@ -436,6 +436,16 @@ DockablePanel::useScrollAreaForTabs() const
 }
 
 QWidget*
+DockablePanel::createKnobHorizontalFieldContainer(QWidget* parent) const
+{
+    RightClickableWidget* clickableWidget = new RightClickableWidget(this, parent);
+    QObject::connect( clickableWidget, SIGNAL(rightClicked(QPoint)), this, SLOT(onRightClickMenuRequested(QPoint)) );
+    QObject::connect( clickableWidget, SIGNAL(escapePressed()), this, SLOT(closePanel()) );
+    clickableWidget->setFocusPolicy(Qt::NoFocus);
+    return clickableWidget;
+}
+
+QWidget*
 DockablePanel::getPagesContainer() const
 {
     if (_imp->_tabWidget) {

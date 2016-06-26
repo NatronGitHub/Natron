@@ -666,7 +666,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
 
         if (makeNewLine) {
             ///if new line is not turned off, create a new line
-            fieldContainer = new QWidget(page->tab);
+            fieldContainer = createKnobHorizontalFieldContainer(page->tab);
             fieldLayout = new QHBoxLayout(fieldContainer);
             fieldLayout->setContentsMargins( TO_DPIX(3), 0, 0, TO_DPIY(NATRON_SETTINGS_VERTICAL_SPACING_PIXELS) );
             fieldLayout->setSpacing( TO_DPIY(2) );
@@ -869,6 +869,12 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
 
     return ret;
 } // findKnobGuiOrCreate
+
+QWidget*
+KnobGuiContainerHelper::createKnobHorizontalFieldContainer(QWidget* parent) const
+{
+    return new QWidget(parent);
+}
 
 void
 KnobGuiContainerHelper::deleteKnobGui(const KnobPtr& knob)
