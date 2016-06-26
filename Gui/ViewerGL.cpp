@@ -1817,29 +1817,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         _imp->ms = eMouseStateZoomingImage;
         overlaysCaught = true;
     }
-    if ( !overlaysCaught &&
-         isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
-         displayingImage() ) {
-        // picker with single-point selection
-        _imp->pickerState = ePickerStatePoint;
-        if ( pickColor( e->x(), e->y(), false ) ) {
-            _imp->ms = eMouseStatePickingColor;
-            mustRedraw = true;
-            overlaysCaught = true;
-        }
-    }
 
-    if ( !overlaysCaught &&
-        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) &&
-        displayingImage() ) {
-        // picker with single-point selection
-        _imp->pickerState = ePickerStatePoint;
-        if ( pickColor( e->x(), e->y(), true ) ) {
-            _imp->ms = eMouseStatePickingInputColor;
-            mustRedraw = true;
-            overlaysCaught = true;
-        }
-    }
 
     // process the wipe tool events before the plugin overlays
     if ( !overlaysCaught &&
@@ -1882,6 +1860,29 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         }
     }
 
+    if ( !overlaysCaught &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickColor, modifiers, button) &&
+        displayingImage() ) {
+        // picker with single-point selection
+        _imp->pickerState = ePickerStatePoint;
+        if ( pickColor( e->x(), e->y(), false ) ) {
+            _imp->ms = eMouseStatePickingColor;
+            mustRedraw = true;
+            overlaysCaught = true;
+        }
+    }
+
+    if ( !overlaysCaught &&
+        isMouseShortcut(kShortcutGroupViewer, kShortcutIDMousePickInputColor, modifiers, button) &&
+        displayingImage() ) {
+        // picker with single-point selection
+        _imp->pickerState = ePickerStatePoint;
+        if ( pickColor( e->x(), e->y(), true ) ) {
+            _imp->ms = eMouseStatePickingInputColor;
+            mustRedraw = true;
+            overlaysCaught = true;
+        }
+    }
 
     if ( !overlaysCaught &&
          isMouseShortcut(kShortcutGroupViewer, kShortcutIDMouseRectanglePick, modifiers, button) &&

@@ -2174,19 +2174,15 @@ RotoPaint::onOverlayPenDoubleClicked(double /*time*/,
 
 bool
 RotoPaint::onOverlayPenDown(double time,
-                            const RenderScale & renderScale,
-                            ViewIdx view,
-                            const QPointF & viewportPos,
+                            const RenderScale & /*renderScale*/,
+                            ViewIdx /*view*/,
+                            const QPointF & /*viewportPos*/,
                             const QPointF & pos,
                             double pressure,
                             double timestamp,
                             PenType pen)
 {
     NodePtr node = getNode();
-
-    if ( node->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure) ) {
-        return true;
-    }
 
     std::pair<double, double> pixelScale;
     getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
