@@ -261,7 +261,9 @@ OfxHost::setProperties()
     }
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentMotionVectors, 3);
     _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kFnOfxImageComponentStereoDisparity, 4);
-
+#ifdef OFX_EXTENSIONS_NATRON
+    _properties.setStringProperty(kOfxImageEffectPropSupportedComponents,  kNatronOfxImageComponentXY, 5);
+#endif
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthFloat, 0);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthShort, 1);
     _properties.setStringProperty(kOfxImageEffectPropSupportedPixelDepths, kOfxBitDepthByte, 2);
