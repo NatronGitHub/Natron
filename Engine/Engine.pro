@@ -135,7 +135,8 @@ SOURCES += \
     OSGLContext_osmesa.cpp \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
-    OSGLFunctions.cpp \
+    OSGLFunctions_gl.cpp \
+    OSGLFunctions_mesa.cpp \
     OfxClipInstance.cpp \
     OfxHost.cpp \
     OfxImageEffectInstance.cpp \
@@ -336,6 +337,8 @@ HEADERS += \
     OSGLContext_win.h \
     OSGLContext_x11.h \
     OSGLFunctions.h \
+    OSGLFunctions_gl.h \
+    OSGLFunctions_mesa.h \
     OSGLFramebufferConfig.h \
     OfxClipInstance.h \
     OfxEffectInstance.h \
