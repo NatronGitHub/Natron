@@ -161,6 +161,7 @@ public:
     QString missingOpenglError;
     bool hasInitializedOpenGLFunctions;
     mutable QMutex openGLFunctionsMutex;
+    int glVersionMajor,glVersionMinor;
 
 #ifdef Q_OS_WIN32
     boost::scoped_ptr<OSGLContext_wgl_data> wglInfo;

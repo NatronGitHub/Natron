@@ -1125,13 +1125,16 @@ typedef void (*PFNGLREADBUFFERPROC)(GLenum src);
 typedef void (*PFNGLREADPIXELSPROC)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels);
 typedef void (*PFNGLGETBOOLEANVPROC)(GLenum pname, GLboolean* data);
 typedef void (*PFNGLGETDOUBLEVPROC)(GLenum pname, GLdouble* data);
+typedef GLenum (*PFNGLGETERRORPROC)();
 typedef void (*PFNGLGETFLOATVPROC)(GLenum pname, GLfloat* data);
 typedef void (*PFNGLGETINTEGERVPROC)(GLenum pname, GLint* data);
+typedef const GLubyte* (*PFNGLGETSTRINGPROC)(GLenum name);
 typedef void (*PFNGLGETTEXIMAGEPROC)(GLenum target, GLint level, GLenum format, GLenum type, void* pixels);
 typedef void (*PFNGLGETTEXPARAMETERFVPROC)(GLenum target, GLenum pname, GLfloat* params);
 typedef void (*PFNGLGETTEXPARAMETERIVPROC)(GLenum target, GLenum pname, GLint* params);
 typedef void (*PFNGLGETTEXLEVELPARAMETERFVPROC)(GLenum target, GLint level, GLenum pname, GLfloat* params);
 typedef void (*PFNGLGETTEXLEVELPARAMETERIVPROC)(GLenum target, GLint level, GLenum pname, GLint* params);
+typedef GLboolean (*PFNGLISENABLEDPROC)(GLenum cap);
 typedef void (*PFNGLDEPTHRANGEPROC)(GLdouble near, GLdouble far);
 typedef void (*PFNGLVIEWPORTPROC)(GLint x, GLint y, GLsizei width, GLsizei height);
 typedef void (*PFNGLNEWLISTPROC)(GLuint list, GLenum mode);
@@ -1139,6 +1142,7 @@ typedef void (*PFNGLENDLISTPROC)();
 typedef void (*PFNGLCALLLISTPROC)(GLuint list);
 typedef void (*PFNGLCALLLISTSPROC)(GLsizei n, GLenum type, const void* lists);
 typedef void (*PFNGLDELETELISTSPROC)(GLuint list, GLsizei range);
+typedef GLuint (*PFNGLGENLISTSPROC)(GLsizei range);
 typedef void (*PFNGLLISTBASEPROC)(GLuint base);
 typedef void (*PFNGLBEGINPROC)(GLenum mode);
 typedef void (*PFNGLBITMAPPROC)(GLsizei width, GLsizei height, GLfloat xorig, GLfloat yorig, GLfloat xmove, GLfloat ymove, const GLubyte* bitmap);
@@ -1316,6 +1320,7 @@ typedef void (*PFNGLTEXGENIPROC)(GLenum coord, GLenum pname, GLint param);
 typedef void (*PFNGLTEXGENIVPROC)(GLenum coord, GLenum pname, const GLint* params);
 typedef void (*PFNGLFEEDBACKBUFFERPROC)(GLsizei size, GLenum type, GLfloat* buffer);
 typedef void (*PFNGLSELECTBUFFERPROC)(GLsizei size, GLuint* buffer);
+typedef GLint (*PFNGLRENDERMODEPROC)(GLenum mode);
 typedef void (*PFNGLINITNAMESPROC)();
 typedef void (*PFNGLLOADNAMEPROC)(GLuint name);
 typedef void (*PFNGLPASSTHROUGHPROC)(GLfloat token);
@@ -1373,6 +1378,7 @@ typedef void (*PFNGLGETTEXENVIVPROC)(GLenum target, GLenum pname, GLint* params)
 typedef void (*PFNGLGETTEXGENDVPROC)(GLenum coord, GLenum pname, GLdouble* params);
 typedef void (*PFNGLGETTEXGENFVPROC)(GLenum coord, GLenum pname, GLfloat* params);
 typedef void (*PFNGLGETTEXGENIVPROC)(GLenum coord, GLenum pname, GLint* params);
+typedef GLboolean (*PFNGLISLISTPROC)(GLuint list);
 typedef void (*PFNGLFRUSTUMPROC)(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
 typedef void (*PFNGLLOADIDENTITYPROC)();
 typedef void (*PFNGLLOADMATRIXFPROC)(const GLfloat* m);
@@ -1402,6 +1408,7 @@ typedef void (*PFNGLTEXSUBIMAGE2DPROC)(GLenum target, GLint level, GLint xoffset
 typedef void (*PFNGLBINDTEXTUREPROC)(GLenum target, GLuint texture);
 typedef void (*PFNGLDELETETEXTURESPROC)(GLsizei n, const GLuint* textures);
 typedef void (*PFNGLGENTEXTURESPROC)(GLsizei n, GLuint* textures);
+typedef GLboolean (*PFNGLISTEXTUREPROC)(GLuint texture);
 typedef void (*PFNGLARRAYELEMENTPROC)(GLint i);
 typedef void (*PFNGLCOLORPOINTERPROC)(GLint size, GLenum type, GLsizei stride, const void* pointer);
 typedef void (*PFNGLDISABLECLIENTSTATEPROC)(GLenum array);
@@ -1412,6 +1419,7 @@ typedef void (*PFNGLINTERLEAVEDARRAYSPROC)(GLenum format, GLsizei stride, const 
 typedef void (*PFNGLNORMALPOINTERPROC)(GLenum type, GLsizei stride, const void* pointer);
 typedef void (*PFNGLTEXCOORDPOINTERPROC)(GLint size, GLenum type, GLsizei stride, const void* pointer);
 typedef void (*PFNGLVERTEXPOINTERPROC)(GLint size, GLenum type, GLsizei stride, const void* pointer);
+typedef GLboolean (*PFNGLARETEXTURESRESIDENTPROC)(GLsizei n, const GLuint* textures, GLboolean* residences);
 typedef void (*PFNGLPRIORITIZETEXTURESPROC)(GLsizei n, const GLuint* textures, const GLfloat* priorities);
 typedef void (*PFNGLINDEXUBPROC)(GLubyte c);
 typedef void (*PFNGLINDEXUBVPROC)(const GLubyte* c);
@@ -1516,6 +1524,7 @@ typedef void (*PFNGLBLENDCOLORPROC)(GLfloat red, GLfloat green, GLfloat blue, GL
 typedef void (*PFNGLBLENDEQUATIONPROC)(GLenum mode);
 typedef void (*PFNGLGENQUERIESPROC)(GLsizei n, GLuint* ids);
 typedef void (*PFNGLDELETEQUERIESPROC)(GLsizei n, const GLuint* ids);
+typedef GLboolean (*PFNGLISQUERYPROC)(GLuint id);
 typedef void (*PFNGLBEGINQUERYPROC)(GLenum target, GLuint id);
 typedef void (*PFNGLENDQUERYPROC)(GLenum target);
 typedef void (*PFNGLGETQUERYIVPROC)(GLenum target, GLenum pname, GLint* params);
@@ -1524,9 +1533,12 @@ typedef void (*PFNGLGETQUERYOBJECTUIVPROC)(GLuint id, GLenum pname, GLuint* para
 typedef void (*PFNGLBINDBUFFERPROC)(GLenum target, GLuint buffer);
 typedef void (*PFNGLDELETEBUFFERSPROC)(GLsizei n, const GLuint* buffers);
 typedef void (*PFNGLGENBUFFERSPROC)(GLsizei n, GLuint* buffers);
+typedef GLboolean (*PFNGLISBUFFERPROC)(GLuint buffer);
 typedef void (*PFNGLBUFFERDATAPROC)(GLenum target, GLsizeiptr size, const void* data, GLenum usage);
 typedef void (*PFNGLBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size, const void* data);
 typedef void (*PFNGLGETBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size, void* data);
+typedef void* (*PFNGLMAPBUFFERPROC)(GLenum target, GLenum access);
+typedef GLboolean (*PFNGLUNMAPBUFFERPROC)(GLenum target);
 typedef void (*PFNGLGETBUFFERPARAMETERIVPROC)(GLenum target, GLenum pname, GLint* params);
 typedef void (*PFNGLGETBUFFERPOINTERVPROC)(GLenum target, GLenum pname, void** params);
 typedef void (*PFNGLBLENDEQUATIONSEPARATEPROC)(GLenum modeRGB, GLenum modeAlpha);
@@ -1537,6 +1549,8 @@ typedef void (*PFNGLSTENCILMASKSEPARATEPROC)(GLenum face, GLuint mask);
 typedef void (*PFNGLATTACHSHADERPROC)(GLuint program, GLuint shader);
 typedef void (*PFNGLBINDATTRIBLOCATIONPROC)(GLuint program, GLuint index, const GLchar* name);
 typedef void (*PFNGLCOMPILESHADERPROC)(GLuint shader);
+typedef GLuint (*PFNGLCREATEPROGRAMPROC)();
+typedef GLuint (*PFNGLCREATESHADERPROC)(GLenum type);
 typedef void (*PFNGLDELETEPROGRAMPROC)(GLuint program);
 typedef void (*PFNGLDELETESHADERPROC)(GLuint shader);
 typedef void (*PFNGLDETACHSHADERPROC)(GLuint program, GLuint shader);
@@ -1545,17 +1559,21 @@ typedef void (*PFNGLENABLEVERTEXATTRIBARRAYPROC)(GLuint index);
 typedef void (*PFNGLGETACTIVEATTRIBPROC)(GLuint program, GLuint index, GLsizei bufSize, GLsizei* length, GLint* size, GLenum* type, GLchar* name);
 typedef void (*PFNGLGETACTIVEUNIFORMPROC)(GLuint program, GLuint index, GLsizei bufSize, GLsizei* length, GLint* size, GLenum* type, GLchar* name);
 typedef void (*PFNGLGETATTACHEDSHADERSPROC)(GLuint program, GLsizei maxCount, GLsizei* count, GLuint* shaders);
+typedef GLint (*PFNGLGETATTRIBLOCATIONPROC)(GLuint program, const GLchar* name);
 typedef void (*PFNGLGETPROGRAMIVPROC)(GLuint program, GLenum pname, GLint* params);
 typedef void (*PFNGLGETPROGRAMINFOLOGPROC)(GLuint program, GLsizei bufSize, GLsizei* length, GLchar* infoLog);
 typedef void (*PFNGLGETSHADERIVPROC)(GLuint shader, GLenum pname, GLint* params);
 typedef void (*PFNGLGETSHADERINFOLOGPROC)(GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* infoLog);
 typedef void (*PFNGLGETSHADERSOURCEPROC)(GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* source);
+typedef GLint (*PFNGLGETUNIFORMLOCATIONPROC)(GLuint program, const GLchar* name);
 typedef void (*PFNGLGETUNIFORMFVPROC)(GLuint program, GLint location, GLfloat* params);
 typedef void (*PFNGLGETUNIFORMIVPROC)(GLuint program, GLint location, GLint* params);
 typedef void (*PFNGLGETVERTEXATTRIBDVPROC)(GLuint index, GLenum pname, GLdouble* params);
 typedef void (*PFNGLGETVERTEXATTRIBFVPROC)(GLuint index, GLenum pname, GLfloat* params);
 typedef void (*PFNGLGETVERTEXATTRIBIVPROC)(GLuint index, GLenum pname, GLint* params);
 typedef void (*PFNGLGETVERTEXATTRIBPOINTERVPROC)(GLuint index, GLenum pname, void** pointer);
+typedef GLboolean (*PFNGLISPROGRAMPROC)(GLuint program);
+typedef GLboolean (*PFNGLISSHADERPROC)(GLuint shader);
 typedef void (*PFNGLLINKPROGRAMPROC)(GLuint program);
 typedef void (*PFNGLSHADERSOURCEPROC)(GLuint shader, GLsizei count, const GLchar** string, const GLint* length);
 typedef void (*PFNGLUSEPROGRAMPROC)(GLuint program);
@@ -1619,22 +1637,29 @@ typedef void (*PFNGLVERTEXATTRIBPOINTERPROC)(GLuint index, GLint size, GLenum ty
 typedef void (*PFNGLBINDBUFFERARBPROC)(GLenum target, GLuint buffer);
 typedef void (*PFNGLDELETEBUFFERSARBPROC)(GLsizei n, const GLuint* buffers);
 typedef void (*PFNGLGENBUFFERSARBPROC)(GLsizei n, GLuint* buffers);
+typedef GLboolean (*PFNGLISBUFFERARBPROC)(GLuint buffer);
 typedef void (*PFNGLBUFFERDATAARBPROC)(GLenum target, GLsizeiptrARB size, const void* data, GLenum usage);
 typedef void (*PFNGLBUFFERSUBDATAARBPROC)(GLenum target, GLintptrARB offset, GLsizeiptrARB size, const void* data);
 typedef void (*PFNGLGETBUFFERSUBDATAARBPROC)(GLenum target, GLintptrARB offset, GLsizeiptrARB size, void* data);
+typedef void* (*PFNGLMAPBUFFERARBPROC)(GLenum target, GLenum access);
+typedef GLboolean (*PFNGLUNMAPBUFFERARBPROC)(GLenum target);
 typedef void (*PFNGLGETBUFFERPARAMETERIVARBPROC)(GLenum target, GLenum pname, GLint* params);
 typedef void (*PFNGLGETBUFFERPOINTERVARBPROC)(GLenum target, GLenum pname, void** params);
 typedef void (*PFNGLBINDVERTEXARRAYPROC)(GLuint array);
 typedef void (*PFNGLDELETEVERTEXARRAYSPROC)(GLsizei n, const GLuint* arrays);
 typedef void (*PFNGLGENVERTEXARRAYSPROC)(GLsizei n, GLuint* arrays);
+typedef GLboolean (*PFNGLISVERTEXARRAYPROC)(GLuint array);
+typedef GLboolean (*PFNGLISRENDERBUFFERPROC)(GLuint renderbuffer);
 typedef void (*PFNGLBINDRENDERBUFFERPROC)(GLenum target, GLuint renderbuffer);
 typedef void (*PFNGLDELETERENDERBUFFERSPROC)(GLsizei n, const GLuint* renderbuffers);
 typedef void (*PFNGLGENRENDERBUFFERSPROC)(GLsizei n, GLuint* renderbuffers);
 typedef void (*PFNGLRENDERBUFFERSTORAGEPROC)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (*PFNGLGETRENDERBUFFERPARAMETERIVPROC)(GLenum target, GLenum pname, GLint* params);
+typedef GLboolean (*PFNGLISFRAMEBUFFERPROC)(GLuint framebuffer);
 typedef void (*PFNGLBINDFRAMEBUFFERPROC)(GLenum target, GLuint framebuffer);
 typedef void (*PFNGLDELETEFRAMEBUFFERSPROC)(GLsizei n, const GLuint* framebuffers);
 typedef void (*PFNGLGENFRAMEBUFFERSPROC)(GLsizei n, GLuint* framebuffers);
+typedef GLenum (*PFNGLCHECKFRAMEBUFFERSTATUSPROC)(GLenum target);
 typedef void (*PFNGLFRAMEBUFFERTEXTURE1DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef void (*PFNGLFRAMEBUFFERTEXTURE2DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 typedef void (*PFNGLFRAMEBUFFERTEXTURE3DPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
@@ -1702,13 +1727,16 @@ class OSGLFunctions
     PFNGLREADPIXELSPROC _mglReadPixels;
     PFNGLGETBOOLEANVPROC _mglGetBooleanv;
     PFNGLGETDOUBLEVPROC _mglGetDoublev;
+    PFNGLGETERRORPROC _mglGetError;
     PFNGLGETFLOATVPROC _mglGetFloatv;
     PFNGLGETINTEGERVPROC _mglGetIntegerv;
+    PFNGLGETSTRINGPROC _mglGetString;
     PFNGLGETTEXIMAGEPROC _mglGetTexImage;
     PFNGLGETTEXPARAMETERFVPROC _mglGetTexParameterfv;
     PFNGLGETTEXPARAMETERIVPROC _mglGetTexParameteriv;
     PFNGLGETTEXLEVELPARAMETERFVPROC _mglGetTexLevelParameterfv;
     PFNGLGETTEXLEVELPARAMETERIVPROC _mglGetTexLevelParameteriv;
+    PFNGLISENABLEDPROC _mglIsEnabled;
     PFNGLDEPTHRANGEPROC _mglDepthRange;
     PFNGLVIEWPORTPROC _mglViewport;
     PFNGLNEWLISTPROC _mglNewList;
@@ -1716,6 +1744,7 @@ class OSGLFunctions
     PFNGLCALLLISTPROC _mglCallList;
     PFNGLCALLLISTSPROC _mglCallLists;
     PFNGLDELETELISTSPROC _mglDeleteLists;
+    PFNGLGENLISTSPROC _mglGenLists;
     PFNGLLISTBASEPROC _mglListBase;
     PFNGLBEGINPROC _mglBegin;
     PFNGLBITMAPPROC _mglBitmap;
@@ -1893,6 +1922,7 @@ class OSGLFunctions
     PFNGLTEXGENIVPROC _mglTexGeniv;
     PFNGLFEEDBACKBUFFERPROC _mglFeedbackBuffer;
     PFNGLSELECTBUFFERPROC _mglSelectBuffer;
+    PFNGLRENDERMODEPROC _mglRenderMode;
     PFNGLINITNAMESPROC _mglInitNames;
     PFNGLLOADNAMEPROC _mglLoadName;
     PFNGLPASSTHROUGHPROC _mglPassThrough;
@@ -1950,6 +1980,7 @@ class OSGLFunctions
     PFNGLGETTEXGENDVPROC _mglGetTexGendv;
     PFNGLGETTEXGENFVPROC _mglGetTexGenfv;
     PFNGLGETTEXGENIVPROC _mglGetTexGeniv;
+    PFNGLISLISTPROC _mglIsList;
     PFNGLFRUSTUMPROC _mglFrustum;
     PFNGLLOADIDENTITYPROC _mglLoadIdentity;
     PFNGLLOADMATRIXFPROC _mglLoadMatrixf;
@@ -1979,6 +2010,7 @@ class OSGLFunctions
     PFNGLBINDTEXTUREPROC _mglBindTexture;
     PFNGLDELETETEXTURESPROC _mglDeleteTextures;
     PFNGLGENTEXTURESPROC _mglGenTextures;
+    PFNGLISTEXTUREPROC _mglIsTexture;
     PFNGLARRAYELEMENTPROC _mglArrayElement;
     PFNGLCOLORPOINTERPROC _mglColorPointer;
     PFNGLDISABLECLIENTSTATEPROC _mglDisableClientState;
@@ -1989,6 +2021,7 @@ class OSGLFunctions
     PFNGLNORMALPOINTERPROC _mglNormalPointer;
     PFNGLTEXCOORDPOINTERPROC _mglTexCoordPointer;
     PFNGLVERTEXPOINTERPROC _mglVertexPointer;
+    PFNGLARETEXTURESRESIDENTPROC _mglAreTexturesResident;
     PFNGLPRIORITIZETEXTURESPROC _mglPrioritizeTextures;
     PFNGLINDEXUBPROC _mglIndexub;
     PFNGLINDEXUBVPROC _mglIndexubv;
@@ -2093,6 +2126,7 @@ class OSGLFunctions
     PFNGLBLENDEQUATIONPROC _mglBlendEquation;
     PFNGLGENQUERIESPROC _mglGenQueries;
     PFNGLDELETEQUERIESPROC _mglDeleteQueries;
+    PFNGLISQUERYPROC _mglIsQuery;
     PFNGLBEGINQUERYPROC _mglBeginQuery;
     PFNGLENDQUERYPROC _mglEndQuery;
     PFNGLGETQUERYIVPROC _mglGetQueryiv;
@@ -2101,9 +2135,12 @@ class OSGLFunctions
     PFNGLBINDBUFFERPROC _mglBindBuffer;
     PFNGLDELETEBUFFERSPROC _mglDeleteBuffers;
     PFNGLGENBUFFERSPROC _mglGenBuffers;
+    PFNGLISBUFFERPROC _mglIsBuffer;
     PFNGLBUFFERDATAPROC _mglBufferData;
     PFNGLBUFFERSUBDATAPROC _mglBufferSubData;
     PFNGLGETBUFFERSUBDATAPROC _mglGetBufferSubData;
+    PFNGLMAPBUFFERPROC _mglMapBuffer;
+    PFNGLUNMAPBUFFERPROC _mglUnmapBuffer;
     PFNGLGETBUFFERPARAMETERIVPROC _mglGetBufferParameteriv;
     PFNGLGETBUFFERPOINTERVPROC _mglGetBufferPointerv;
     PFNGLBLENDEQUATIONSEPARATEPROC _mglBlendEquationSeparate;
@@ -2114,6 +2151,8 @@ class OSGLFunctions
     PFNGLATTACHSHADERPROC _mglAttachShader;
     PFNGLBINDATTRIBLOCATIONPROC _mglBindAttribLocation;
     PFNGLCOMPILESHADERPROC _mglCompileShader;
+    PFNGLCREATEPROGRAMPROC _mglCreateProgram;
+    PFNGLCREATESHADERPROC _mglCreateShader;
     PFNGLDELETEPROGRAMPROC _mglDeleteProgram;
     PFNGLDELETESHADERPROC _mglDeleteShader;
     PFNGLDETACHSHADERPROC _mglDetachShader;
@@ -2122,17 +2161,21 @@ class OSGLFunctions
     PFNGLGETACTIVEATTRIBPROC _mglGetActiveAttrib;
     PFNGLGETACTIVEUNIFORMPROC _mglGetActiveUniform;
     PFNGLGETATTACHEDSHADERSPROC _mglGetAttachedShaders;
+    PFNGLGETATTRIBLOCATIONPROC _mglGetAttribLocation;
     PFNGLGETPROGRAMIVPROC _mglGetProgramiv;
     PFNGLGETPROGRAMINFOLOGPROC _mglGetProgramInfoLog;
     PFNGLGETSHADERIVPROC _mglGetShaderiv;
     PFNGLGETSHADERINFOLOGPROC _mglGetShaderInfoLog;
     PFNGLGETSHADERSOURCEPROC _mglGetShaderSource;
+    PFNGLGETUNIFORMLOCATIONPROC _mglGetUniformLocation;
     PFNGLGETUNIFORMFVPROC _mglGetUniformfv;
     PFNGLGETUNIFORMIVPROC _mglGetUniformiv;
     PFNGLGETVERTEXATTRIBDVPROC _mglGetVertexAttribdv;
     PFNGLGETVERTEXATTRIBFVPROC _mglGetVertexAttribfv;
     PFNGLGETVERTEXATTRIBIVPROC _mglGetVertexAttribiv;
     PFNGLGETVERTEXATTRIBPOINTERVPROC _mglGetVertexAttribPointerv;
+    PFNGLISPROGRAMPROC _mglIsProgram;
+    PFNGLISSHADERPROC _mglIsShader;
     PFNGLLINKPROGRAMPROC _mglLinkProgram;
     PFNGLSHADERSOURCEPROC _mglShaderSource;
     PFNGLUSEPROGRAMPROC _mglUseProgram;
@@ -2196,22 +2239,29 @@ class OSGLFunctions
     PFNGLBINDBUFFERARBPROC _mglBindBufferARB;
     PFNGLDELETEBUFFERSARBPROC _mglDeleteBuffersARB;
     PFNGLGENBUFFERSARBPROC _mglGenBuffersARB;
+    PFNGLISBUFFERARBPROC _mglIsBufferARB;
     PFNGLBUFFERDATAARBPROC _mglBufferDataARB;
     PFNGLBUFFERSUBDATAARBPROC _mglBufferSubDataARB;
     PFNGLGETBUFFERSUBDATAARBPROC _mglGetBufferSubDataARB;
+    PFNGLMAPBUFFERARBPROC _mglMapBufferARB;
+    PFNGLUNMAPBUFFERARBPROC _mglUnmapBufferARB;
     PFNGLGETBUFFERPARAMETERIVARBPROC _mglGetBufferParameterivARB;
     PFNGLGETBUFFERPOINTERVARBPROC _mglGetBufferPointervARB;
     PFNGLBINDVERTEXARRAYPROC _mglBindVertexArray;
     PFNGLDELETEVERTEXARRAYSPROC _mglDeleteVertexArrays;
     PFNGLGENVERTEXARRAYSPROC _mglGenVertexArrays;
+    PFNGLISVERTEXARRAYPROC _mglIsVertexArray;
+    PFNGLISRENDERBUFFERPROC _mglIsRenderbuffer;
     PFNGLBINDRENDERBUFFERPROC _mglBindRenderbuffer;
     PFNGLDELETERENDERBUFFERSPROC _mglDeleteRenderbuffers;
     PFNGLGENRENDERBUFFERSPROC _mglGenRenderbuffers;
     PFNGLRENDERBUFFERSTORAGEPROC _mglRenderbufferStorage;
     PFNGLGETRENDERBUFFERPARAMETERIVPROC _mglGetRenderbufferParameteriv;
+    PFNGLISFRAMEBUFFERPROC _mglIsFramebuffer;
     PFNGLBINDFRAMEBUFFERPROC _mglBindFramebuffer;
     PFNGLDELETEFRAMEBUFFERSPROC _mglDeleteFramebuffers;
     PFNGLGENFRAMEBUFFERSPROC _mglGenFramebuffers;
+    PFNGLCHECKFRAMEBUFFERSTATUSPROC _mglCheckFramebufferStatus;
     PFNGLFRAMEBUFFERTEXTURE1DPROC _mglFramebufferTexture1D;
     PFNGLFRAMEBUFFERTEXTURE2DPROC _mglFramebufferTexture2D;
     PFNGLFRAMEBUFFERTEXTURE3DPROC _mglFramebufferTexture3D;
@@ -2375,12 +2425,20 @@ public:
         getInstance()._mglGetDoublev(pname, data);
     }
 
+    static GLenum glGetError() {
+        return getInstance()._mglGetError();
+    }
+
     static void glGetFloatv(GLenum pname, GLfloat* data) {
         getInstance()._mglGetFloatv(pname, data);
     }
 
     static void glGetIntegerv(GLenum pname, GLint* data) {
         getInstance()._mglGetIntegerv(pname, data);
+    }
+
+    static const GLubyte* glGetString(GLenum name) {
+        return getInstance()._mglGetString(name);
     }
 
     static void glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, void* pixels) {
@@ -2401,6 +2459,10 @@ public:
 
     static void glGetTexLevelParameteriv(GLenum target, GLint level, GLenum pname, GLint* params) {
         getInstance()._mglGetTexLevelParameteriv(target, level, pname, params);
+    }
+
+    static GLboolean glIsEnabled(GLenum cap) {
+        return getInstance()._mglIsEnabled(cap);
     }
 
     static void glDepthRange(GLdouble near, GLdouble far) {
@@ -2429,6 +2491,10 @@ public:
 
     static void glDeleteLists(GLuint list, GLsizei range) {
         getInstance()._mglDeleteLists(list, range);
+    }
+
+    static GLuint glGenLists(GLsizei range) {
+        return getInstance()._mglGenLists(range);
     }
 
     static void glListBase(GLuint base) {
@@ -3139,6 +3205,10 @@ public:
         getInstance()._mglSelectBuffer(size, buffer);
     }
 
+    static GLint glRenderMode(GLenum mode) {
+        return getInstance()._mglRenderMode(mode);
+    }
+
     static void glInitNames() {
         getInstance()._mglInitNames();
     }
@@ -3367,6 +3437,10 @@ public:
         getInstance()._mglGetTexGeniv(coord, pname, params);
     }
 
+    static GLboolean glIsList(GLuint list) {
+        return getInstance()._mglIsList(list);
+    }
+
     static void glFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar) {
         getInstance()._mglFrustum(left, right, bottom, top, zNear, zFar);
     }
@@ -3483,6 +3557,10 @@ public:
         getInstance()._mglGenTextures(n, textures);
     }
 
+    static GLboolean glIsTexture(GLuint texture) {
+        return getInstance()._mglIsTexture(texture);
+    }
+
     static void glArrayElement(GLint i) {
         getInstance()._mglArrayElement(i);
     }
@@ -3521,6 +3599,10 @@ public:
 
     static void glVertexPointer(GLint size, GLenum type, GLsizei stride, const void* pointer) {
         getInstance()._mglVertexPointer(size, type, stride, pointer);
+    }
+
+    static GLboolean glAreTexturesResident(GLsizei n, const GLuint* textures, GLboolean* residences) {
+        return getInstance()._mglAreTexturesResident(n, textures, residences);
     }
 
     static void glPrioritizeTextures(GLsizei n, const GLuint* textures, const GLfloat* priorities) {
@@ -3939,6 +4021,10 @@ public:
         getInstance()._mglDeleteQueries(n, ids);
     }
 
+    static GLboolean glIsQuery(GLuint id) {
+        return getInstance()._mglIsQuery(id);
+    }
+
     static void glBeginQuery(GLenum target, GLuint id) {
         getInstance()._mglBeginQuery(target, id);
     }
@@ -3971,6 +4057,10 @@ public:
         getInstance()._mglGenBuffers(n, buffers);
     }
 
+    static GLboolean glIsBuffer(GLuint buffer) {
+        return getInstance()._mglIsBuffer(buffer);
+    }
+
     static void glBufferData(GLenum target, GLsizeiptr size, const void* data, GLenum usage) {
         getInstance()._mglBufferData(target, size, data, usage);
     }
@@ -3981,6 +4071,14 @@ public:
 
     static void glGetBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, void* data) {
         getInstance()._mglGetBufferSubData(target, offset, size, data);
+    }
+
+    static void* glMapBuffer(GLenum target, GLenum access) {
+        return getInstance()._mglMapBuffer(target, access);
+    }
+
+    static GLboolean glUnmapBuffer(GLenum target) {
+        return getInstance()._mglUnmapBuffer(target);
     }
 
     static void glGetBufferParameteriv(GLenum target, GLenum pname, GLint* params) {
@@ -4023,6 +4121,14 @@ public:
         getInstance()._mglCompileShader(shader);
     }
 
+    static GLuint glCreateProgram() {
+        return getInstance()._mglCreateProgram();
+    }
+
+    static GLuint glCreateShader(GLenum type) {
+        return getInstance()._mglCreateShader(type);
+    }
+
     static void glDeleteProgram(GLuint program) {
         getInstance()._mglDeleteProgram(program);
     }
@@ -4055,6 +4161,10 @@ public:
         getInstance()._mglGetAttachedShaders(program, maxCount, count, shaders);
     }
 
+    static GLint glGetAttribLocation(GLuint program, const GLchar* name) {
+        return getInstance()._mglGetAttribLocation(program, name);
+    }
+
     static void glGetProgramiv(GLuint program, GLenum pname, GLint* params) {
         getInstance()._mglGetProgramiv(program, pname, params);
     }
@@ -4073,6 +4183,10 @@ public:
 
     static void glGetShaderSource(GLuint shader, GLsizei bufSize, GLsizei* length, GLchar* source) {
         getInstance()._mglGetShaderSource(shader, bufSize, length, source);
+    }
+
+    static GLint glGetUniformLocation(GLuint program, const GLchar* name) {
+        return getInstance()._mglGetUniformLocation(program, name);
     }
 
     static void glGetUniformfv(GLuint program, GLint location, GLfloat* params) {
@@ -4097,6 +4211,14 @@ public:
 
     static void glGetVertexAttribPointerv(GLuint index, GLenum pname, void** pointer) {
         getInstance()._mglGetVertexAttribPointerv(index, pname, pointer);
+    }
+
+    static GLboolean glIsProgram(GLuint program) {
+        return getInstance()._mglIsProgram(program);
+    }
+
+    static GLboolean glIsShader(GLuint shader) {
+        return getInstance()._mglIsShader(shader);
     }
 
     static void glLinkProgram(GLuint program) {
@@ -4351,6 +4473,10 @@ public:
         getInstance()._mglGenBuffersARB(n, buffers);
     }
 
+    static GLboolean glIsBufferARB(GLuint buffer) {
+        return getInstance()._mglIsBufferARB(buffer);
+    }
+
     static void glBufferDataARB(GLenum target, GLsizeiptrARB size, const void* data, GLenum usage) {
         getInstance()._mglBufferDataARB(target, size, data, usage);
     }
@@ -4361,6 +4487,14 @@ public:
 
     static void glGetBufferSubDataARB(GLenum target, GLintptrARB offset, GLsizeiptrARB size, void* data) {
         getInstance()._mglGetBufferSubDataARB(target, offset, size, data);
+    }
+
+    static void* glMapBufferARB(GLenum target, GLenum access) {
+        return getInstance()._mglMapBufferARB(target, access);
+    }
+
+    static GLboolean glUnmapBufferARB(GLenum target) {
+        return getInstance()._mglUnmapBufferARB(target);
     }
 
     static void glGetBufferParameterivARB(GLenum target, GLenum pname, GLint* params) {
@@ -4383,6 +4517,14 @@ public:
         getInstance()._mglGenVertexArrays(n, arrays);
     }
 
+    static GLboolean glIsVertexArray(GLuint array) {
+        return getInstance()._mglIsVertexArray(array);
+    }
+
+    static GLboolean glIsRenderbuffer(GLuint renderbuffer) {
+        return getInstance()._mglIsRenderbuffer(renderbuffer);
+    }
+
     static void glBindRenderbuffer(GLenum target, GLuint renderbuffer) {
         getInstance()._mglBindRenderbuffer(target, renderbuffer);
     }
@@ -4403,6 +4545,10 @@ public:
         getInstance()._mglGetRenderbufferParameteriv(target, pname, params);
     }
 
+    static GLboolean glIsFramebuffer(GLuint framebuffer) {
+        return getInstance()._mglIsFramebuffer(framebuffer);
+    }
+
     static void glBindFramebuffer(GLenum target, GLuint framebuffer) {
         getInstance()._mglBindFramebuffer(target, framebuffer);
     }
@@ -4413,6 +4559,10 @@ public:
 
     static void glGenFramebuffers(GLsizei n, GLuint* framebuffers) {
         getInstance()._mglGenFramebuffers(n, framebuffers);
+    }
+
+    static GLenum glCheckFramebufferStatus(GLenum target) {
+        return getInstance()._mglCheckFramebufferStatus(target);
     }
 
     static void glFramebufferTexture1D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) {

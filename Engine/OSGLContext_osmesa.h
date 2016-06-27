@@ -42,11 +42,7 @@ class OSGLContext_osmesa
 {
 public:
 
-    enum CPUDriverEnum {
-        eCPUDriverSoftPipe = 0,
-        eCPUDriverLLVMPipe
-    };
-
+    
     OSGLContext_osmesa(const FramebufferConfig& pixelFormatAttrs,
                        int major,
                        int minor,

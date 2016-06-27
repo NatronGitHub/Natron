@@ -538,6 +538,10 @@ public:
 
     QString getPySideVersion() const;
 
+    int getOpenGLVersionMajor() const;
+
+    int getOpenGLVersionMinor() const;
+
     bool initializeOpenGLFunctionsOnce(bool createOpenGLContext = false);
 
     const std::list<OpenGLRendererInfo>& getOpenGLRenderers() const;

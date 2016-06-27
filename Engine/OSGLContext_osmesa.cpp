@@ -77,7 +77,7 @@ OSGLContext_osmesa::OSGLContext_osmesa(const FramebufferConfig& pixelFormatAttrs
         attribs[n++] = OSMESA_GALLIUM_DRIVER;
         attribs[n++] = (int)cpuDriver;
         attribs[n++] = 0;
-        _imp->ctx = OSMesaCreateContextAttribs( attribs, shareContex->_imp->ctx );
+        _imp->ctx = OSMesaCreateContextAttribs( attribs, shareContex ? shareContex->_imp->ctx : 0);
     }
 #else
     Q_UNUSED(rendererID);

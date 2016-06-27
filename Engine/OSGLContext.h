@@ -42,7 +42,6 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/OSGLFramebufferConfig.h"
-#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -64,8 +63,9 @@ public:
      **/
     explicit OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
-                         int major = GLVersion.major,
-                         int minor = GLVersion.minor,
+                         bool useGPUContext,
+                         int major = -1,
+                         int minor = -1,
                          const GLRendererID& rendererID = GLRendererID(),
                          bool coreProfile = false);
 
@@ -76,12 +76,16 @@ public:
      * it fails by throwing an exception with the required version.
      * Note: the context must be made current before calling this function
      **/
-    static void checkOpenGLVersion();
+    static void checkOpenGLVersion(bool gpuAPI);
 
+    /**
+     * @brief Returns whether this is a GPU or CPU OpenGL context
+     **/
+    bool isGPUContext() const;
 
-    GLuint getPBOId() const;
+    unsigned int getPBOId() const;
 
-    GLuint getFBOId() const;
+    unsigned int getFBOId() const;
 
     // Helper functions used by platform dependent implementations
     static bool stringInExtensionString(const char* string, const char* extensions);
@@ -99,8 +103,8 @@ public:
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!
      **/
-    void setContextCurrentNoRender();
-    static void unsetCurrentContextNoRender();
+    void setContextCurrentNoRender(int width = 0, int height = 0, void* buffer = 0);
+    static void unsetCurrentContextNoRender(bool useGPU);
 
     /**
      * @brief Returns all renderers capable of rendering OpenGL
@@ -117,11 +121,28 @@ private:
      *
      *  @thread_safety This function may be called from any thread.
      */
-    void setContextCurrent(const AbortableRenderInfoPtr& render
+    void setContextCurrent_GPU(const AbortableRenderInfoPtr& render
 #ifdef DEBUG
                            , double frameTime
 #endif
                            );
+
+
+    void setContextCurrent_CPU(const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                               , double frameTime
+#endif
+                               , int width
+                               , int height
+                               , void* buffer);
+
+    void setContextCurrentInternal(const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                                   , double frameTime
+#endif
+                                   , int width
+                                   , int height
+                                   , void* buffer);
 
     /**
      * @brief Releases the OpenGL context from this thread.
@@ -146,8 +167,14 @@ class OSGLContextAttacher
     double _frameTime;
 #endif
     bool _attached;
+    int _width, _height;
+    void* _buffer;
+
 public:
 
+    /**
+     * @brief Locks the given context to this render. The context MUST be a GPU OpenGL context.
+     **/
     OSGLContextAttacher(const OSGLContextPtr& c,
                         const AbortableRenderInfoPtr& render
 #ifdef DEBUG
@@ -161,18 +188,55 @@ public:
     , _frameTime(frameTime)
 #endif
     , _attached(false)
+    , _width(0)
+    , _height(0)
+    , _buffer(0)
     {
+        assert(c && c->isGPUContext());
+    }
 
+    /**
+     * @brief Locks the given context to this render. The context MUST be a CPU OpenGL context.
+     **/
+    OSGLContextAttacher(const OSGLContextPtr& c,
+                        const AbortableRenderInfoPtr& render
+#ifdef DEBUG
+                        ,
+                        double frameTime
+#endif
+                        , int width, int height, void* buffer
+    )
+    : _c(c)
+    , _a(render)
+#ifdef DEBUG
+    , _frameTime(frameTime)
+#endif
+    , _attached(false)
+    , _width(width)
+    , _height(height)
+    , _buffer(buffer)
+    {
+        assert(c && !c->isGPUContext());
     }
 
     void attach()
     {
         if (!_attached) {
-            _c->setContextCurrent(_a.lock()
+            if (!_c->isGPUContext()) {
+                _c->setContextCurrent_CPU(_a.lock()
 #ifdef DEBUG
-                                 , _frameTime
+                                          , _frameTime
 #endif
-                                 );
+                                          , _width
+                                          , _height
+                                          , _buffer);
+            } else {
+                _c->setContextCurrent_GPU(_a.lock()
+#ifdef DEBUG
+                                          , _frameTime
+#endif
+                                          );
+            }
             _attached = true;
         }
     }

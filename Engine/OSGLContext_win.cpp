@@ -682,7 +682,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             }
 
             try {
-                OSGLContext::checkOpenGLVersion();
+                OSGLContext::checkOpenGLVersion(true);
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
                 continue;
@@ -732,7 +732,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
             }
 
             try {
-                OSGLContext::checkOpenGLVersion();
+                OSGLContext::checkOpenGLVersion(true);
             } catch (const std::exception& e) {
                 std::cerr << e.what() << std::endl;
                 continue;
@@ -759,7 +759,7 @@ OSGLContext_win::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         }
 
         try {
-            OSGLContext::checkOpenGLVersion();
+            OSGLContext::checkOpenGLVersion(true);
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
 

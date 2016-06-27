@@ -247,6 +247,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          int visitsCount,
                                          const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                          const OSGLContextPtr& glContext,
+                                         const OSGLContextPtr& cpuGlContext,
                                          int textureIndex,
                                          const TimeLine* timeline,
                                          bool isAnalysis,
@@ -288,6 +289,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
     args->tilesSupported = getNode()->getCurrentSupportTiles();
     args->stats = stats;
     args->openGLContext = glContext;
+    args->cpuOpenGLContext = cpuGlContext;
     argsList.push_back(args);
 }
 
@@ -4111,7 +4113,7 @@ EffectInstance::dettachAllOpenGLContexts()
         }
     }
     if ( !_imp->attachedContexts.empty() ) {
-        OSGLContext::unsetCurrentContextNoRender();
+        OSGLContext::unsetCurrentContextNoRender(true);
     }
     _imp->attachedContexts.clear();
 }

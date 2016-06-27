@@ -690,7 +690,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
 
         if (createOpenGLContext) {
             try {
-                OSGLContext::checkOpenGLVersion();
+                OSGLContext::checkOpenGLVersion(true);
             } catch (const std::exception& e) {
                 if ( !_imp->missingOpenglError.isEmpty() ) {
                     _imp->missingOpenglError = QString::fromUtf8( e.what() );
@@ -698,7 +698,7 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
             }
 
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
-            glContext->unsetCurrentContextNoRender();
+            glContext->unsetCurrentContextNoRender(true);
 
             // Clear created contexts because this context was created with the "default" OpenGL renderer and it might be different from the one
             // selected by the user in the settings (which are not created yet).
@@ -711,6 +711,18 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
     }
 
     return false;
+}
+
+int
+AppManager::getOpenGLVersionMajor() const
+{
+    return _imp->glVersionMajor;
+}
+
+int
+AppManager::getOpenGLVersionMinor() const
+{
+    return _imp->glVersionMinor;
 }
 
 #ifdef __NATRON_WIN32__

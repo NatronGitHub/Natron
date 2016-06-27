@@ -709,6 +709,14 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
 
     _openGLContext = glContext;
 
+    OSGLContextPtr cpuContext;
+    try {
+        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender();
+    } catch (const std::exception& e) {
+        qDebug() << e.what();
+    }
+
+    _cpuOpenGLContext = cpuContext;
 
     bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
@@ -735,7 +743,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         {
             U64 nodeHash = node->getHashValue();
             liveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash,
-                                                   abortInfo, treeRoot, it->second.visitCounter, boost::shared_ptr<NodeFrameRequest>(), glContext,  textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
+                                                   abortInfo, treeRoot, it->second.visitCounter, boost::shared_ptr<NodeFrameRequest>(), glContext, cpuContext, textureIndex, timeline, isAnalysis, duringPaintStrokeCreation, rotoPaintNodes, safety, glSupport, doNanHandling, draftMode, stats);
         }
         for (NodesList::iterator it2 = rotoPaintNodes.begin(); it2 != rotoPaintNodes.end(); ++it2) {
             U64 nodeHash = (*it2)->getHashValue();
@@ -745,7 +753,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
             (*it2)->getOutputs_mt_safe(outputs);
             int visitsCounter = (int)outputs.size();
 
-            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, visitsCounter, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
+            (*it2)->getEffectInstance()->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, visitsCounter, boost::shared_ptr<NodeFrameRequest>(), glContext, cpuContext, textureIndex, timeline, isAnalysis, activeRotoPaintNode && (*it2)->isDuringPaintStrokeCreation(), NodesList(), (*it2)->getCurrentRenderThreadSafety(),  (*it2)->getCurrentOpenGLRenderSupport(),doNanHandling, draftMode, stats);
         }
 
         if ( node->isMultiInstance() ) {
@@ -761,7 +769,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
                 PluginOpenGLRenderSupport childGlSupport = (*it2)->getCurrentOpenGLRenderSupport();
-                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, 1, boost::shared_ptr<NodeFrameRequest>(), glContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, childGlSupport, doNanHandling, draftMode, stats);
+                childLiveInstance->setParallelRenderArgsTLS(time, view, isRenderUserInteraction, isSequential, nodeHash, abortInfo, treeRoot, 1, boost::shared_ptr<NodeFrameRequest>(), glContext, cpuContext, textureIndex, timeline, isAnalysis, false, NodesList(), childSafety, childGlSupport, doNanHandling, draftMode, stats);
             }
         }
 
@@ -824,6 +832,14 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(const boost::shared_ptr<std::
     } catch (...) {
     }
 
+    OSGLContextPtr cpuContext;
+    try {
+        cpuContext = appPTR->getGPUContextPool()->attachCPUGLContextToRender();
+        _cpuOpenGLContext = cpuContext;
+    } catch (const std::exception& e) {
+    }
+
+
     if (args) {
         for (std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >::iterator it = argsMap->begin(); it != argsMap->end(); ++it) {
             it->second->openGLContext = glContext;
@@ -866,6 +882,12 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
     if (glContext) {
         // This render is going to end, release the OpenGL context so that another frame render may use it
         appPTR->getGPUContextPool()->releaseGLContextFromRender(glContext);
+    }
+
+    OSGLContextPtr cpuContext = _cpuOpenGLContext.lock();
+    if (cpuContext) {
+        // This render is going to end, release the OpenGL context so that another frame render may use it
+        appPTR->getGPUContextPool()->releaseCPUGLContextFromRender(cpuContext);
     }
 }
 

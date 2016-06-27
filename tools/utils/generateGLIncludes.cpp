@@ -130,6 +130,7 @@ static void writeFooter(QTextStream& ts)
 struct FunctionSignature {
     QString funcName;
     QString signature;
+    QString returnType;
     QString funcPNType;
     QStringList parameters;
 };
@@ -296,21 +297,26 @@ int main(int argc, char** argv)
             }
         }
 
-        QString funcDefToken("typedef void (APIENTRYP PFNGL");
-        int foundFuncDef = line.indexOf(funcDefToken);
-        if (foundFuncDef != -1) {
+        QString typedefToken("typedef ");
+        QString pfnToken("(APIENTRYP PFNGL");
+        int foundFuncDef = line.indexOf(typedefToken);
+        int foundPNFToken = line.indexOf(pfnToken);
+        if (foundFuncDef != -1 && foundPNFToken != -1) {
             
-            foundFuncDef += funcDefToken.size();
+            int pos = foundPNFToken + pfnToken.size();
 
-            int foundFirstEndParenthesis = line.indexOf(')', foundFuncDef);
+            int foundFirstEndParenthesis = line.indexOf(')', pos);
             assert(foundFirstEndParenthesis != -1);
 
 
             FunctionSignature signature;
-            QString lastFuncNameCaps = line.mid(foundFuncDef, foundFirstEndParenthesis - foundFuncDef);
+            QString lastFuncNameCaps = line.mid(pos, foundFirstEndParenthesis - pos);
             signature.signature = line.mid(foundFirstEndParenthesis);
 
-            QString funcTypeDefStr = "typedef void (*PFNGL";
+            signature.returnType = line.mid(foundFuncDef + typedefToken.size(), foundPNFToken -1 - (foundFuncDef + typedefToken.size()));
+            QString funcTypeDefStr = "typedef ";
+            funcTypeDefStr += signature.returnType;
+            funcTypeDefStr += " (*PFNGL";
             funcTypeDefStr += lastFuncNameCaps;
             funcTypeDefStr += signature.signature;
             funcTypeDefStr += "\n";
@@ -432,8 +438,13 @@ int main(int argc, char** argv)
 
 
     for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
-        ots_header << "    static void " << it->funcName << it->signature << " {\n";
-        ots_header << "        getInstance()._m" << it->funcName << "(";
+        ots_header << "    static " <<  it->returnType << " " << it->funcName << it->signature << " {\n";
+        if (it->returnType == "void") {
+            ots_header << "        ";
+        } else {
+            ots_header << "        return ";
+        }
+        ots_header << "getInstance()._m" << it->funcName << "(";
         QStringList::const_iterator next = it->parameters.begin();
         if (!it->parameters.isEmpty()) {
             ++next;

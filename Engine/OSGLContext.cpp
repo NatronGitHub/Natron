@@ -37,10 +37,16 @@
 #include "Engine/OSGLContext_x11.h"
 #endif
 
+#ifdef HAVE_OSMESA
+#include "Engine/OSGLContext_osmesa.h"
+#endif
+
+#include "Engine/AppManager.h"
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/DefaultShaders.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/GLShader.h"
+#include "Engine/OSGLFunctions.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -199,6 +205,9 @@ OSGLContext::chooseFBConfig(const FramebufferConfig& desired,
 
 struct OSGLContextPrivate
 {
+
+    bool useGPUContext;
+
 #ifdef __NATRON_WIN32__
     boost::scoped_ptr<OSGLContext_win> _platformContext;
 #elif defined(__NATRON_OSX__)
@@ -207,7 +216,14 @@ struct OSGLContextPrivate
     boost::scoped_ptr<OSGLContext_x11> _platformContext;
 #endif
 
-#ifdef NATRON_RENDER_SHARED_CONTEXT
+#ifdef HAVE_OSMESA
+    boost::scoped_ptr<OSGLContext_osmesa> _osmesaContext;
+
+    // Used when we want to make the osmesa context current not for rendering (e.g: just to call functions like glGetInteger, etc...) so the context
+    // does not fail
+    std::vector<float> _osmesaStubBuffer;
+#endif
+
     // When we use a single GL context, renders are all sharing the same context and lock it when trying to render
     QMutex renderOwningContextMutex;
     QWaitCondition renderOwningContextCond;
@@ -216,13 +232,12 @@ struct OSGLContextPrivate
 #ifdef DEBUG
     double renderOwningContextFrameTime;
 #endif
-#endif
 
     // This pbo is used to call glTexSubImage2D and glReadPixels asynchronously
-    GLuint pboID;
+    unsigned int pboID;
 
     // The main FBO onto which we do all renders
-    GLuint fboID;
+    unsigned int fboID;
     boost::shared_ptr<GLShader> fillImageShader;
 
     // One for enabled, one for disabled
@@ -230,15 +245,18 @@ struct OSGLContextPrivate
     boost::shared_ptr<GLShader> copyUnprocessedChannelsShader[16];
 
     OSGLContextPrivate()
-        : _platformContext()
-#ifdef NATRON_RENDER_SHARED_CONTEXT
+        : useGPUContext(true)
+        , _platformContext()
+#ifdef HAVE_OSMESA
+        , _osmesaContext()
+        , _osmesaStubBuffer()
+#endif
         , renderOwningContextMutex()
         , renderOwningContextCond()
         , renderOwningContext()
         , renderOwningContextCount(0)
 #ifdef DEBUG
         , renderOwningContextFrameTime(0)
-#endif
 #endif
         , pboID(0)
         , fboID(0)
@@ -254,42 +272,75 @@ struct OSGLContextPrivate
 
 OSGLContext::OSGLContext(const FramebufferConfig& pixelFormatAttrs,
                          const OSGLContext* shareContext,
+                         bool useGPUContext,
                          int major,
                          int minor,
                          const GLRendererID &rendererID,
                          bool coreProfile)
     : _imp( new OSGLContextPrivate() )
 {
+
+    _imp->useGPUContext = useGPUContext;
+
+    if (major == -1) {
+        major = appPTR->getOpenGLVersionMajor();
+    }
+    if (minor == -1) {
+        minor = appPTR->getOpenGLVersionMinor();
+    }
+
     if (coreProfile) {
         // Don't bother with core profile with OpenGL < 3
         if (major < 3) {
             coreProfile = false;
         }
     }
+
+    if (useGPUContext) {
 #ifdef __NATRON_WIN32__
-    _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+        _imp->_platformContext.reset( new OSGLContext_win(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_OSX__)
-    _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+        _imp->_platformContext.reset( new OSGLContext_mac(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #elif defined(__NATRON_LINUX__)
-    _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
+        _imp->_platformContext.reset( new OSGLContext_x11(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_platformContext.get() : 0) );
 #endif
+    } else {
+#ifdef HAVE_OSMESA
+        _imp->_osmesaContext.reset( new OSGLContext_osmesa(pixelFormatAttrs, major, minor, coreProfile, rendererID, shareContext ? shareContext->_imp->_osmesaContext.get() : 0) );
+        _imp->_osmesaStubBuffer.resize(4);
+#endif
+    }
 }
 
 OSGLContext::~OSGLContext()
 {
     setContextCurrentNoRender();
     if (_imp->pboID) {
-        glDeleteBuffers(1, &_imp->pboID);
+        if (_imp->useGPUContext) {
+            GL_GPU::glDeleteBuffers(1, &_imp->pboID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_imp->pboID);
+        }
     }
     if (_imp->fboID) {
-        glDeleteFramebuffers(1, &_imp->fboID);
+        if (_imp->useGPUContext) {
+            GL_GPU::glDeleteFramebuffers(1, &_imp->fboID);
+        } else {
+            GL_CPU::glDeleteFramebuffers(1, &_imp->fboID);
+        }
     }
 }
 
 void
-OSGLContext::checkOpenGLVersion()
+OSGLContext::checkOpenGLVersion(bool gpuAPI)
 {
-    const char *verstr = (const char *) glGetString(GL_VERSION);
+
+    const char *verstr;
+    if (gpuAPI) {
+        verstr = (const char *) GL_GPU::glGetString(GL_VERSION);
+    } else {
+        verstr = (const char *) GL_CPU::glGetString(GL_VERSION);
+    }
     int major, minor;
 
     if ( (verstr == NULL) || (std::sscanf(verstr, "%d.%d", &major, &minor) != 2) ) {
@@ -297,49 +348,91 @@ OSGLContext::checkOpenGLVersion()
         //fprintf(stderr, "Invalid GL_VERSION format!!!\n");
     }
 
-    if ( (major < GLVersion.major) || ( (major == GLVersion.major) && (minor < GLVersion.minor) ) ) {
+    if ( (major < appPTR->getOpenGLVersionMajor()) || ( (major == appPTR->getOpenGLVersionMajor()) && (minor < appPTR->getOpenGLVersionMinor()) ) ) {
         std::stringstream ss;
-        ss << NATRON_APPLICATION_NAME << " requires at least OpenGL " << GLVersion.major << "." << GLVersion.minor << "to perform OpenGL accelerated rendering." << std::endl;
+        ss << NATRON_APPLICATION_NAME << " requires at least OpenGL " << appPTR->getOpenGLVersionMajor() << "." << appPTR->getOpenGLVersionMinor() << "to perform OpenGL accelerated rendering." << std::endl;
         ss << "Your system only has OpenGL " << major << "." << minor << "available.";
         throw std::runtime_error( ss.str() );
     }
 }
 
-GLuint
+bool
+OSGLContext::isGPUContext() const
+{
+    return _imp->useGPUContext;
+}
+
+unsigned int
 OSGLContext::getPBOId() const
 {
     return _imp->pboID;
 }
 
-GLuint
+unsigned int
 OSGLContext::getFBOId() const
 {
     return _imp->fboID;
 }
 
 void
-OSGLContext::setContextCurrentNoRender()
+OSGLContext::setContextCurrentNoRender(int width, int height, void* buffer)
 {
+
+    if (_imp->useGPUContext) {
 #ifdef __NATRON_WIN32__
-    OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
+        OSGLContext_win::makeContextCurrent( _imp->_platformContext.get() );
 #elif defined(__NATRON_OSX__)
-    OSGLContext_mac::makeContextCurrent( _imp->_platformContext.get() );
+        OSGLContext_mac::makeContextCurrent( _imp->_platformContext.get() );
 #elif defined(__NATRON_LINUX__)
-    OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
+        OSGLContext_x11::makeContextCurrent( _imp->_platformContext.get() );
 #endif
+    } else {
+#ifdef HAVE_OSMESA
+
+        if (buffer) {
+            OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, width, height, buffer);
+        } else {
+            // Make the context current with a stub buffer
+            OSGLContext_osmesa::makeContextCurrent(_imp->_osmesaContext.get(), GL_FLOAT, 1, 1, &_imp->_osmesaStubBuffer[0]);
+        }
+#endif
+    }
 }
 
 void
-OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
+OSGLContext::setContextCurrent_GPU(const AbortableRenderInfoPtr& abortInfo
 #ifdef DEBUG
                                ,
                                double frameTime
 #endif
                                )
 {
+    setContextCurrentInternal(abortInfo, frameTime, 0, 0, 0);
+}
+
+void
+OSGLContext::setContextCurrent_CPU(const AbortableRenderInfoPtr& abortInfo
+#ifdef DEBUG
+                           , double frameTime
+#endif
+                           , int width
+                           , int height
+                           , void* buffer)
+{
+    setContextCurrentInternal(abortInfo, frameTime, width, height, buffer);
+}
+
+void
+OSGLContext::setContextCurrentInternal(const AbortableRenderInfoPtr& abortInfo
+#ifdef DEBUG
+                               , double frameTime
+#endif
+                               , int width
+                               , int height
+                               , void* buffer)
+{
     assert(_imp && _imp->_platformContext);
 
-#ifdef NATRON_RENDER_SHARED_CONTEXT
     QMutexLocker k(&_imp->renderOwningContextMutex);
     while (_imp->renderOwningContext && _imp->renderOwningContext != abortInfo) {
         _imp->renderOwningContextCond.wait(&_imp->renderOwningContextMutex);
@@ -352,9 +445,8 @@ OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
     }
 #endif
     ++_imp->renderOwningContextCount;
-#endif
 
-    setContextCurrentNoRender();
+    setContextCurrentNoRender(width, height, buffer);
 
     // The first time this context is made current, allocate the PBO and FBO
     // This is thread-safe
@@ -363,22 +455,28 @@ OSGLContext::setContextCurrent(const AbortableRenderInfoPtr& abortInfo
     }
 }
 
+
 void
-OSGLContext::unsetCurrentContextNoRender()
+OSGLContext::unsetCurrentContextNoRender(bool useGPU)
 {
+    if (useGPU) {
 #ifdef __NATRON_WIN32__
-    OSGLContext_win::makeContextCurrent( 0 );
+        OSGLContext_win::makeContextCurrent( 0 );
 #elif defined(__NATRON_OSX__)
-    OSGLContext_mac::makeContextCurrent( 0 );
+        OSGLContext_mac::makeContextCurrent( 0 );
 #elif defined(__NATRON_LINUX__)
-    OSGLContext_x11::makeContextCurrent( 0 );
+        OSGLContext_x11::makeContextCurrent( 0 );
 #endif
+    } else {
+#ifdef HAVE_OSMESA
+        OSGLContext_osmesa::makeContextCurrent(0, 0, 0, 0, 0);
+#endif
+    }
 }
 
 void
 OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
 {
-#ifdef NATRON_RENDER_SHARED_CONTEXT
     QMutexLocker k(&_imp->renderOwningContextMutex);
     if (abortInfo != _imp->renderOwningContext) {
         return;
@@ -389,20 +487,22 @@ OSGLContext::unsetCurrentContext(const AbortableRenderInfoPtr& abortInfo)
         //qDebug() << "Dettaching" << this << "from frame" << _imp->renderOwningContextFrameTime;
 #endif
         _imp->renderOwningContext.reset();
-        unsetCurrentContextNoRender();
+        unsetCurrentContextNoRender(_imp->useGPUContext);
         //Wake-up only one thread waiting, since each thread that is waiting in setContextCurrent() will actually call this function.
         _imp->renderOwningContextCond.wakeOne();
     }
-#else
-    unsetCurrentContextNoRender();
-#endif
 }
 
 void
 OSGLContextPrivate::init()
 {
-    glGenBuffers(1, &pboID);
-    glGenFramebuffers(1, &fboID);
+    if (useGPUContext) {
+        GL_GPU::glGenBuffers(1, &pboID);
+        GL_GPU::glGenFramebuffers(1, &fboID);
+    } else {
+        GL_CPU::glGenBuffers(1, &pboID);
+        GL_CPU::glGenFramebuffers(1, &fboID);
+    }
 }
 
 bool

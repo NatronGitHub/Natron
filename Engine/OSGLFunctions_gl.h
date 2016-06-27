@@ -193,6 +193,11 @@ extern PFNGLGETDOUBLEVPROC glad_debug_glGetDoublev;
 void extern PFNGLGETDOUBLEVPROC glad_glGetDoublev;
 #endif
 #ifdef DEBUG
+extern PFNGLGETERRORPROC glad_debug_glGetError;
+#else
+void extern PFNGLGETERRORPROC glad_glGetError;
+#endif
+#ifdef DEBUG
 extern PFNGLGETFLOATVPROC glad_debug_glGetFloatv;
 #else
 void extern PFNGLGETFLOATVPROC glad_glGetFloatv;
@@ -201,6 +206,11 @@ void extern PFNGLGETFLOATVPROC glad_glGetFloatv;
 extern PFNGLGETINTEGERVPROC glad_debug_glGetIntegerv;
 #else
 void extern PFNGLGETINTEGERVPROC glad_glGetIntegerv;
+#endif
+#ifdef DEBUG
+extern PFNGLGETSTRINGPROC glad_debug_glGetString;
+#else
+void extern PFNGLGETSTRINGPROC glad_glGetString;
 #endif
 #ifdef DEBUG
 extern PFNGLGETTEXIMAGEPROC glad_debug_glGetTexImage;
@@ -226,6 +236,11 @@ void extern PFNGLGETTEXLEVELPARAMETERFVPROC glad_glGetTexLevelParameterfv;
 extern PFNGLGETTEXLEVELPARAMETERIVPROC glad_debug_glGetTexLevelParameteriv;
 #else
 void extern PFNGLGETTEXLEVELPARAMETERIVPROC glad_glGetTexLevelParameteriv;
+#endif
+#ifdef DEBUG
+extern PFNGLISENABLEDPROC glad_debug_glIsEnabled;
+#else
+void extern PFNGLISENABLEDPROC glad_glIsEnabled;
 #endif
 #ifdef DEBUG
 extern PFNGLDEPTHRANGEPROC glad_debug_glDepthRange;
@@ -261,6 +276,11 @@ void extern PFNGLCALLLISTSPROC glad_glCallLists;
 extern PFNGLDELETELISTSPROC glad_debug_glDeleteLists;
 #else
 void extern PFNGLDELETELISTSPROC glad_glDeleteLists;
+#endif
+#ifdef DEBUG
+extern PFNGLGENLISTSPROC glad_debug_glGenLists;
+#else
+void extern PFNGLGENLISTSPROC glad_glGenLists;
 #endif
 #ifdef DEBUG
 extern PFNGLLISTBASEPROC glad_debug_glListBase;
@@ -1148,6 +1168,11 @@ extern PFNGLSELECTBUFFERPROC glad_debug_glSelectBuffer;
 void extern PFNGLSELECTBUFFERPROC glad_glSelectBuffer;
 #endif
 #ifdef DEBUG
+extern PFNGLRENDERMODEPROC glad_debug_glRenderMode;
+#else
+void extern PFNGLRENDERMODEPROC glad_glRenderMode;
+#endif
+#ifdef DEBUG
 extern PFNGLINITNAMESPROC glad_debug_glInitNames;
 #else
 void extern PFNGLINITNAMESPROC glad_glInitNames;
@@ -1433,6 +1458,11 @@ extern PFNGLGETTEXGENIVPROC glad_debug_glGetTexGeniv;
 void extern PFNGLGETTEXGENIVPROC glad_glGetTexGeniv;
 #endif
 #ifdef DEBUG
+extern PFNGLISLISTPROC glad_debug_glIsList;
+#else
+void extern PFNGLISLISTPROC glad_glIsList;
+#endif
+#ifdef DEBUG
 extern PFNGLFRUSTUMPROC glad_debug_glFrustum;
 #else
 void extern PFNGLFRUSTUMPROC glad_glFrustum;
@@ -1578,6 +1608,11 @@ extern PFNGLGENTEXTURESPROC glad_debug_glGenTextures;
 void extern PFNGLGENTEXTURESPROC glad_glGenTextures;
 #endif
 #ifdef DEBUG
+extern PFNGLISTEXTUREPROC glad_debug_glIsTexture;
+#else
+void extern PFNGLISTEXTUREPROC glad_glIsTexture;
+#endif
+#ifdef DEBUG
 extern PFNGLARRAYELEMENTPROC glad_debug_glArrayElement;
 #else
 void extern PFNGLARRAYELEMENTPROC glad_glArrayElement;
@@ -1626,6 +1661,11 @@ void extern PFNGLTEXCOORDPOINTERPROC glad_glTexCoordPointer;
 extern PFNGLVERTEXPOINTERPROC glad_debug_glVertexPointer;
 #else
 void extern PFNGLVERTEXPOINTERPROC glad_glVertexPointer;
+#endif
+#ifdef DEBUG
+extern PFNGLARETEXTURESRESIDENTPROC glad_debug_glAreTexturesResident;
+#else
+void extern PFNGLARETEXTURESRESIDENTPROC glad_glAreTexturesResident;
 #endif
 #ifdef DEBUG
 extern PFNGLPRIORITIZETEXTURESPROC glad_debug_glPrioritizeTextures;
@@ -2148,6 +2188,11 @@ extern PFNGLDELETEQUERIESPROC glad_debug_glDeleteQueries;
 void extern PFNGLDELETEQUERIESPROC glad_glDeleteQueries;
 #endif
 #ifdef DEBUG
+extern PFNGLISQUERYPROC glad_debug_glIsQuery;
+#else
+void extern PFNGLISQUERYPROC glad_glIsQuery;
+#endif
+#ifdef DEBUG
 extern PFNGLBEGINQUERYPROC glad_debug_glBeginQuery;
 #else
 void extern PFNGLBEGINQUERYPROC glad_glBeginQuery;
@@ -2188,6 +2233,11 @@ extern PFNGLGENBUFFERSPROC glad_debug_glGenBuffers;
 void extern PFNGLGENBUFFERSPROC glad_glGenBuffers;
 #endif
 #ifdef DEBUG
+extern PFNGLISBUFFERPROC glad_debug_glIsBuffer;
+#else
+void extern PFNGLISBUFFERPROC glad_glIsBuffer;
+#endif
+#ifdef DEBUG
 extern PFNGLBUFFERDATAPROC glad_debug_glBufferData;
 #else
 void extern PFNGLBUFFERDATAPROC glad_glBufferData;
@@ -2201,6 +2251,16 @@ void extern PFNGLBUFFERSUBDATAPROC glad_glBufferSubData;
 extern PFNGLGETBUFFERSUBDATAPROC glad_debug_glGetBufferSubData;
 #else
 void extern PFNGLGETBUFFERSUBDATAPROC glad_glGetBufferSubData;
+#endif
+#ifdef DEBUG
+extern PFNGLMAPBUFFERPROC glad_debug_glMapBuffer;
+#else
+void extern PFNGLMAPBUFFERPROC glad_glMapBuffer;
+#endif
+#ifdef DEBUG
+extern PFNGLUNMAPBUFFERPROC glad_debug_glUnmapBuffer;
+#else
+void extern PFNGLUNMAPBUFFERPROC glad_glUnmapBuffer;
 #endif
 #ifdef DEBUG
 extern PFNGLGETBUFFERPARAMETERIVPROC glad_debug_glGetBufferParameteriv;
@@ -2253,6 +2313,16 @@ extern PFNGLCOMPILESHADERPROC glad_debug_glCompileShader;
 void extern PFNGLCOMPILESHADERPROC glad_glCompileShader;
 #endif
 #ifdef DEBUG
+extern PFNGLCREATEPROGRAMPROC glad_debug_glCreateProgram;
+#else
+void extern PFNGLCREATEPROGRAMPROC glad_glCreateProgram;
+#endif
+#ifdef DEBUG
+extern PFNGLCREATESHADERPROC glad_debug_glCreateShader;
+#else
+void extern PFNGLCREATESHADERPROC glad_glCreateShader;
+#endif
+#ifdef DEBUG
 extern PFNGLDELETEPROGRAMPROC glad_debug_glDeleteProgram;
 #else
 void extern PFNGLDELETEPROGRAMPROC glad_glDeleteProgram;
@@ -2293,6 +2363,11 @@ extern PFNGLGETATTACHEDSHADERSPROC glad_debug_glGetAttachedShaders;
 void extern PFNGLGETATTACHEDSHADERSPROC glad_glGetAttachedShaders;
 #endif
 #ifdef DEBUG
+extern PFNGLGETATTRIBLOCATIONPROC glad_debug_glGetAttribLocation;
+#else
+void extern PFNGLGETATTRIBLOCATIONPROC glad_glGetAttribLocation;
+#endif
+#ifdef DEBUG
 extern PFNGLGETPROGRAMIVPROC glad_debug_glGetProgramiv;
 #else
 void extern PFNGLGETPROGRAMIVPROC glad_glGetProgramiv;
@@ -2316,6 +2391,11 @@ void extern PFNGLGETSHADERINFOLOGPROC glad_glGetShaderInfoLog;
 extern PFNGLGETSHADERSOURCEPROC glad_debug_glGetShaderSource;
 #else
 void extern PFNGLGETSHADERSOURCEPROC glad_glGetShaderSource;
+#endif
+#ifdef DEBUG
+extern PFNGLGETUNIFORMLOCATIONPROC glad_debug_glGetUniformLocation;
+#else
+void extern PFNGLGETUNIFORMLOCATIONPROC glad_glGetUniformLocation;
 #endif
 #ifdef DEBUG
 extern PFNGLGETUNIFORMFVPROC glad_debug_glGetUniformfv;
@@ -2346,6 +2426,16 @@ void extern PFNGLGETVERTEXATTRIBIVPROC glad_glGetVertexAttribiv;
 extern PFNGLGETVERTEXATTRIBPOINTERVPROC glad_debug_glGetVertexAttribPointerv;
 #else
 void extern PFNGLGETVERTEXATTRIBPOINTERVPROC glad_glGetVertexAttribPointerv;
+#endif
+#ifdef DEBUG
+extern PFNGLISPROGRAMPROC glad_debug_glIsProgram;
+#else
+void extern PFNGLISPROGRAMPROC glad_glIsProgram;
+#endif
+#ifdef DEBUG
+extern PFNGLISSHADERPROC glad_debug_glIsShader;
+#else
+void extern PFNGLISSHADERPROC glad_glIsShader;
 #endif
 #ifdef DEBUG
 extern PFNGLLINKPROGRAMPROC glad_debug_glLinkProgram;
@@ -2663,6 +2753,11 @@ extern PFNGLGENBUFFERSARBPROC glad_debug_glGenBuffersARB;
 void extern PFNGLGENBUFFERSARBPROC glad_glGenBuffersARB;
 #endif
 #ifdef DEBUG
+extern PFNGLISBUFFERARBPROC glad_debug_glIsBufferARB;
+#else
+void extern PFNGLISBUFFERARBPROC glad_glIsBufferARB;
+#endif
+#ifdef DEBUG
 extern PFNGLBUFFERDATAARBPROC glad_debug_glBufferDataARB;
 #else
 void extern PFNGLBUFFERDATAARBPROC glad_glBufferDataARB;
@@ -2676,6 +2771,16 @@ void extern PFNGLBUFFERSUBDATAARBPROC glad_glBufferSubDataARB;
 extern PFNGLGETBUFFERSUBDATAARBPROC glad_debug_glGetBufferSubDataARB;
 #else
 void extern PFNGLGETBUFFERSUBDATAARBPROC glad_glGetBufferSubDataARB;
+#endif
+#ifdef DEBUG
+extern PFNGLMAPBUFFERARBPROC glad_debug_glMapBufferARB;
+#else
+void extern PFNGLMAPBUFFERARBPROC glad_glMapBufferARB;
+#endif
+#ifdef DEBUG
+extern PFNGLUNMAPBUFFERARBPROC glad_debug_glUnmapBufferARB;
+#else
+void extern PFNGLUNMAPBUFFERARBPROC glad_glUnmapBufferARB;
 #endif
 #ifdef DEBUG
 extern PFNGLGETBUFFERPARAMETERIVARBPROC glad_debug_glGetBufferParameterivARB;
@@ -2703,6 +2808,16 @@ extern PFNGLGENVERTEXARRAYSPROC glad_debug_glGenVertexArrays;
 void extern PFNGLGENVERTEXARRAYSPROC glad_glGenVertexArrays;
 #endif
 #ifdef DEBUG
+extern PFNGLISVERTEXARRAYPROC glad_debug_glIsVertexArray;
+#else
+void extern PFNGLISVERTEXARRAYPROC glad_glIsVertexArray;
+#endif
+#ifdef DEBUG
+extern PFNGLISRENDERBUFFERPROC glad_debug_glIsRenderbuffer;
+#else
+void extern PFNGLISRENDERBUFFERPROC glad_glIsRenderbuffer;
+#endif
+#ifdef DEBUG
 extern PFNGLBINDRENDERBUFFERPROC glad_debug_glBindRenderbuffer;
 #else
 void extern PFNGLBINDRENDERBUFFERPROC glad_glBindRenderbuffer;
@@ -2728,6 +2843,11 @@ extern PFNGLGETRENDERBUFFERPARAMETERIVPROC glad_debug_glGetRenderbufferParameter
 void extern PFNGLGETRENDERBUFFERPARAMETERIVPROC glad_glGetRenderbufferParameteriv;
 #endif
 #ifdef DEBUG
+extern PFNGLISFRAMEBUFFERPROC glad_debug_glIsFramebuffer;
+#else
+void extern PFNGLISFRAMEBUFFERPROC glad_glIsFramebuffer;
+#endif
+#ifdef DEBUG
 extern PFNGLBINDFRAMEBUFFERPROC glad_debug_glBindFramebuffer;
 #else
 void extern PFNGLBINDFRAMEBUFFERPROC glad_glBindFramebuffer;
@@ -2741,6 +2861,11 @@ void extern PFNGLDELETEFRAMEBUFFERSPROC glad_glDeleteFramebuffers;
 extern PFNGLGENFRAMEBUFFERSPROC glad_debug_glGenFramebuffers;
 #else
 void extern PFNGLGENFRAMEBUFFERSPROC glad_glGenFramebuffers;
+#endif
+#ifdef DEBUG
+extern PFNGLCHECKFRAMEBUFFERSTATUSPROC glad_debug_glCheckFramebufferStatus;
+#else
+void extern PFNGLCHECKFRAMEBUFFERSTATUSPROC glad_glCheckFramebufferStatus;
 #endif
 #ifdef DEBUG
 extern PFNGLFRAMEBUFFERTEXTURE1DPROC glad_debug_glFramebufferTexture1D;
@@ -2975,6 +3100,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetDoublev = glad_glGetDoublev;
 #endif
 #ifdef DEBUG
+    _mglGetError = glad_debug_glGetError;
+#else
+    _mglGetError = glad_glGetError;
+#endif
+#ifdef DEBUG
     _mglGetFloatv = glad_debug_glGetFloatv;
 #else
     _mglGetFloatv = glad_glGetFloatv;
@@ -2983,6 +3113,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetIntegerv = glad_debug_glGetIntegerv;
 #else
     _mglGetIntegerv = glad_glGetIntegerv;
+#endif
+#ifdef DEBUG
+    _mglGetString = glad_debug_glGetString;
+#else
+    _mglGetString = glad_glGetString;
 #endif
 #ifdef DEBUG
     _mglGetTexImage = glad_debug_glGetTexImage;
@@ -3008,6 +3143,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetTexLevelParameteriv = glad_debug_glGetTexLevelParameteriv;
 #else
     _mglGetTexLevelParameteriv = glad_glGetTexLevelParameteriv;
+#endif
+#ifdef DEBUG
+    _mglIsEnabled = glad_debug_glIsEnabled;
+#else
+    _mglIsEnabled = glad_glIsEnabled;
 #endif
 #ifdef DEBUG
     _mglDepthRange = glad_debug_glDepthRange;
@@ -3043,6 +3183,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglDeleteLists = glad_debug_glDeleteLists;
 #else
     _mglDeleteLists = glad_glDeleteLists;
+#endif
+#ifdef DEBUG
+    _mglGenLists = glad_debug_glGenLists;
+#else
+    _mglGenLists = glad_glGenLists;
 #endif
 #ifdef DEBUG
     _mglListBase = glad_debug_glListBase;
@@ -3930,6 +4075,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglSelectBuffer = glad_glSelectBuffer;
 #endif
 #ifdef DEBUG
+    _mglRenderMode = glad_debug_glRenderMode;
+#else
+    _mglRenderMode = glad_glRenderMode;
+#endif
+#ifdef DEBUG
     _mglInitNames = glad_debug_glInitNames;
 #else
     _mglInitNames = glad_glInitNames;
@@ -4215,6 +4365,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetTexGeniv = glad_glGetTexGeniv;
 #endif
 #ifdef DEBUG
+    _mglIsList = glad_debug_glIsList;
+#else
+    _mglIsList = glad_glIsList;
+#endif
+#ifdef DEBUG
     _mglFrustum = glad_debug_glFrustum;
 #else
     _mglFrustum = glad_glFrustum;
@@ -4360,6 +4515,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGenTextures = glad_glGenTextures;
 #endif
 #ifdef DEBUG
+    _mglIsTexture = glad_debug_glIsTexture;
+#else
+    _mglIsTexture = glad_glIsTexture;
+#endif
+#ifdef DEBUG
     _mglArrayElement = glad_debug_glArrayElement;
 #else
     _mglArrayElement = glad_glArrayElement;
@@ -4408,6 +4568,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglVertexPointer = glad_debug_glVertexPointer;
 #else
     _mglVertexPointer = glad_glVertexPointer;
+#endif
+#ifdef DEBUG
+    _mglAreTexturesResident = glad_debug_glAreTexturesResident;
+#else
+    _mglAreTexturesResident = glad_glAreTexturesResident;
 #endif
 #ifdef DEBUG
     _mglPrioritizeTextures = glad_debug_glPrioritizeTextures;
@@ -4930,6 +5095,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglDeleteQueries = glad_glDeleteQueries;
 #endif
 #ifdef DEBUG
+    _mglIsQuery = glad_debug_glIsQuery;
+#else
+    _mglIsQuery = glad_glIsQuery;
+#endif
+#ifdef DEBUG
     _mglBeginQuery = glad_debug_glBeginQuery;
 #else
     _mglBeginQuery = glad_glBeginQuery;
@@ -4970,6 +5140,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGenBuffers = glad_glGenBuffers;
 #endif
 #ifdef DEBUG
+    _mglIsBuffer = glad_debug_glIsBuffer;
+#else
+    _mglIsBuffer = glad_glIsBuffer;
+#endif
+#ifdef DEBUG
     _mglBufferData = glad_debug_glBufferData;
 #else
     _mglBufferData = glad_glBufferData;
@@ -4983,6 +5158,16 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetBufferSubData = glad_debug_glGetBufferSubData;
 #else
     _mglGetBufferSubData = glad_glGetBufferSubData;
+#endif
+#ifdef DEBUG
+    _mglMapBuffer = glad_debug_glMapBuffer;
+#else
+    _mglMapBuffer = glad_glMapBuffer;
+#endif
+#ifdef DEBUG
+    _mglUnmapBuffer = glad_debug_glUnmapBuffer;
+#else
+    _mglUnmapBuffer = glad_glUnmapBuffer;
 #endif
 #ifdef DEBUG
     _mglGetBufferParameteriv = glad_debug_glGetBufferParameteriv;
@@ -5035,6 +5220,16 @@ void OSGLFunctions<true>::load_functions() {
     _mglCompileShader = glad_glCompileShader;
 #endif
 #ifdef DEBUG
+    _mglCreateProgram = glad_debug_glCreateProgram;
+#else
+    _mglCreateProgram = glad_glCreateProgram;
+#endif
+#ifdef DEBUG
+    _mglCreateShader = glad_debug_glCreateShader;
+#else
+    _mglCreateShader = glad_glCreateShader;
+#endif
+#ifdef DEBUG
     _mglDeleteProgram = glad_debug_glDeleteProgram;
 #else
     _mglDeleteProgram = glad_glDeleteProgram;
@@ -5075,6 +5270,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetAttachedShaders = glad_glGetAttachedShaders;
 #endif
 #ifdef DEBUG
+    _mglGetAttribLocation = glad_debug_glGetAttribLocation;
+#else
+    _mglGetAttribLocation = glad_glGetAttribLocation;
+#endif
+#ifdef DEBUG
     _mglGetProgramiv = glad_debug_glGetProgramiv;
 #else
     _mglGetProgramiv = glad_glGetProgramiv;
@@ -5098,6 +5298,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetShaderSource = glad_debug_glGetShaderSource;
 #else
     _mglGetShaderSource = glad_glGetShaderSource;
+#endif
+#ifdef DEBUG
+    _mglGetUniformLocation = glad_debug_glGetUniformLocation;
+#else
+    _mglGetUniformLocation = glad_glGetUniformLocation;
 #endif
 #ifdef DEBUG
     _mglGetUniformfv = glad_debug_glGetUniformfv;
@@ -5128,6 +5333,16 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetVertexAttribPointerv = glad_debug_glGetVertexAttribPointerv;
 #else
     _mglGetVertexAttribPointerv = glad_glGetVertexAttribPointerv;
+#endif
+#ifdef DEBUG
+    _mglIsProgram = glad_debug_glIsProgram;
+#else
+    _mglIsProgram = glad_glIsProgram;
+#endif
+#ifdef DEBUG
+    _mglIsShader = glad_debug_glIsShader;
+#else
+    _mglIsShader = glad_glIsShader;
 #endif
 #ifdef DEBUG
     _mglLinkProgram = glad_debug_glLinkProgram;
@@ -5445,6 +5660,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGenBuffersARB = glad_glGenBuffersARB;
 #endif
 #ifdef DEBUG
+    _mglIsBufferARB = glad_debug_glIsBufferARB;
+#else
+    _mglIsBufferARB = glad_glIsBufferARB;
+#endif
+#ifdef DEBUG
     _mglBufferDataARB = glad_debug_glBufferDataARB;
 #else
     _mglBufferDataARB = glad_glBufferDataARB;
@@ -5458,6 +5678,16 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetBufferSubDataARB = glad_debug_glGetBufferSubDataARB;
 #else
     _mglGetBufferSubDataARB = glad_glGetBufferSubDataARB;
+#endif
+#ifdef DEBUG
+    _mglMapBufferARB = glad_debug_glMapBufferARB;
+#else
+    _mglMapBufferARB = glad_glMapBufferARB;
+#endif
+#ifdef DEBUG
+    _mglUnmapBufferARB = glad_debug_glUnmapBufferARB;
+#else
+    _mglUnmapBufferARB = glad_glUnmapBufferARB;
 #endif
 #ifdef DEBUG
     _mglGetBufferParameterivARB = glad_debug_glGetBufferParameterivARB;
@@ -5485,6 +5715,16 @@ void OSGLFunctions<true>::load_functions() {
     _mglGenVertexArrays = glad_glGenVertexArrays;
 #endif
 #ifdef DEBUG
+    _mglIsVertexArray = glad_debug_glIsVertexArray;
+#else
+    _mglIsVertexArray = glad_glIsVertexArray;
+#endif
+#ifdef DEBUG
+    _mglIsRenderbuffer = glad_debug_glIsRenderbuffer;
+#else
+    _mglIsRenderbuffer = glad_glIsRenderbuffer;
+#endif
+#ifdef DEBUG
     _mglBindRenderbuffer = glad_debug_glBindRenderbuffer;
 #else
     _mglBindRenderbuffer = glad_glBindRenderbuffer;
@@ -5510,6 +5750,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGetRenderbufferParameteriv = glad_glGetRenderbufferParameteriv;
 #endif
 #ifdef DEBUG
+    _mglIsFramebuffer = glad_debug_glIsFramebuffer;
+#else
+    _mglIsFramebuffer = glad_glIsFramebuffer;
+#endif
+#ifdef DEBUG
     _mglBindFramebuffer = glad_debug_glBindFramebuffer;
 #else
     _mglBindFramebuffer = glad_glBindFramebuffer;
@@ -5523,6 +5768,11 @@ void OSGLFunctions<true>::load_functions() {
     _mglGenFramebuffers = glad_debug_glGenFramebuffers;
 #else
     _mglGenFramebuffers = glad_glGenFramebuffers;
+#endif
+#ifdef DEBUG
+    _mglCheckFramebufferStatus = glad_debug_glCheckFramebufferStatus;
+#else
+    _mglCheckFramebufferStatus = glad_glCheckFramebufferStatus;
 #endif
 #ifdef DEBUG
     _mglFramebufferTexture1D = glad_debug_glFramebufferTexture1D;

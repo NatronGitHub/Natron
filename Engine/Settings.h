@@ -363,6 +363,8 @@ public:
 
     bool isOpenGLRenderingEnabled() const;
 
+    GLRendererID getOpenGLCPUDriver() const;
+
     int getMaxOpenGLContexts() const;
 
     bool isDriveLetterToUNCPathConversionEnabled() const;
@@ -437,6 +439,7 @@ private:
     boost::shared_ptr<KnobPage> _gpuPage;
     boost::shared_ptr<KnobString> _openglRendererString;
     boost::shared_ptr<KnobChoice> _availableOpenGLRenderers;
+    boost::shared_ptr<KnobChoice> _osmesaRenderers;
     boost::shared_ptr<KnobInt> _nOpenGLContexts;
     boost::shared_ptr<KnobChoice> _enableOpenGL;
 

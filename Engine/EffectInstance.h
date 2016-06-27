@@ -648,6 +648,7 @@ public:
                                   int visitsCount,
                                   const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
                                   const OSGLContextPtr& glContext,
+                                  const OSGLContextPtr& cpuGlContext,
                                   int textureIndex,
                                   const TimeLine* timeline,
                                   bool isAnalysis,

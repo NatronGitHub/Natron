@@ -119,6 +119,8 @@ AppManagerPrivate::AppManagerPrivate()
     , missingOpenglError()
     , hasInitializedOpenGLFunctions(false)
     , openGLFunctionsMutex()
+    , glVersionMajor(0)
+    , glVersionMinor(0)
     , renderingContextPool()
     , openGLRenderers()
 {
@@ -585,7 +587,6 @@ AppManagerPrivate::initGl()
     hasInitializedOpenGLFunctions = true;
     hasRequiredOpenGLVersionAndExtensions = true;
 
-
 #ifdef DEBUG
     glad_set_pre_callback(pre_gl_call);
     glad_set_post_callback(post_gl_call);
@@ -602,6 +603,9 @@ AppManagerPrivate::initGl()
 
         return;
     }
+    glVersionMajor = GLVersion.major;
+    glVersionMinor = GLVersion.minor;
+
 
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }
