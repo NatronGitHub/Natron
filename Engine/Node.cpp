@@ -4445,7 +4445,8 @@ Node::makeDocumentation(bool genHTML) const
         }
         ts << "</ul></div>";
         ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
-        ts << Markdown::convert2html(markdown);
+        QString html = Markdown::convert2html(markdown);
+        ts << Markdown::fixNodeHTML(html);
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     } else {
         ts << markdown;

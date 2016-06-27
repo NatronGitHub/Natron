@@ -84,5 +84,16 @@ Markdown::parseCustomLinksForHTML(const QString& markdown)
     return result;
 }
 
+QString
+Markdown::fixNodeHTML(const QString &html)
+{
+    QString result = html;
+
+    result.replace( QString::fromUtf8("<h2>Inputs</h2>\n\n<table>"), QString::fromUtf8("<h2>Inputs <span style=\"font-size:small;\">(<a class=\"toggleInputTable\" href=\"#\">+/-</a>)</span></h2>\n\n<table class=\"inputTable\">") );
+    result.replace( QString::fromUtf8("<h2>Controls</h2>\n\n<table>"), QString::fromUtf8("<h2>Controls <span style=\"font-size:small;\">(<a class=\"toggleControlTable\" href=\"#\">+/-</a>)</span></h2>\n\n<table class=\"controlTable\">") );
+
+    return result;
+}
+
 NATRON_NAMESPACE_EXIT;
 

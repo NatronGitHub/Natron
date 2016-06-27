@@ -165,8 +165,10 @@ div#search input {
   border: 1px solid #ebebeb;
 }
 
-
-
+.inputTable,
+.controlTable {
+  display: none;
+}
 
 
 
