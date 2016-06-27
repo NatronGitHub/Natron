@@ -159,9 +159,11 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
     writeTemplateIncludeStart(defineVal, ots);
 
     if (!templateValue) {
+        ots << "#ifdef HAVE_OSMESA\n\n";
         ots << "#include <GL/gl_mangle.h>\n";
         ots << "#include <GL/glu_mangle.h>\n";
         ots << "#include <GL/osmesa.h>\n";
+        ots << "#endif // HAVE_OSMESA\n";
     }
     ots << "\n\n";
 
@@ -169,10 +171,10 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
         ots << "extern \"C\" {\n";
         for (std::list<FunctionSignature>::const_iterator it = functions.begin(); it != functions.end(); ++it) {
             ots << "#ifdef DEBUG\n";
-            ots << it->funcPNType << " glad_debug_" << it->funcName << ";\n";
+            ots << "extern " << it->funcPNType << " glad_debug_" << it->funcName << ";\n";
             ots << "#else\n";
             ots << "void ";
-            ots << it->funcPNType << " glad_" << it->funcName << ";\n";
+            ots << "extern " << it->funcPNType << " glad_" << it->funcName << ";\n";
             ots << "#endif\n";
         }
         ots << "} // extern C\n";
@@ -189,6 +191,9 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
         ots << "false";
     }
     ots << ">::load_functions() {\n";
+    if (!templateValue) {
+        ots << "#ifdef HAVE_OSMESA\n\n";
+    }
     for (std::list<FunctionSignature>::const_iterator it = functions.begin(); it != functions.end(); ++it) {
         if (templateValue) {
             // OpenGL functions are directly pointing to the ones loaded by glad
@@ -203,12 +208,14 @@ static void writeImplementationHeaderFile(const std::list<FunctionSignature>& fu
         }
 
     }
+    if (!templateValue) {
+        ots << "#endif // HAVE_OSMESA\n";
+    }
     ots << "} // load_functions \n\n";
 
 
 
     ots << "} // namespace Natron \n\n";
-
     ots << "#endif // " << defineVal << "\n";
 }
 
@@ -415,6 +422,11 @@ int main(int argc, char** argv)
 
     ots_header << "public: \n\n\n";
 
+
+    ots_header << "// Declare a static non MT-safe load function that must be called once to initialize functions\n";
+    ots_header << "    static void load() {\n";
+    ots_header << "         (void)getInstance();\n";
+    ots_header << "    }\n\n";
 
 
 

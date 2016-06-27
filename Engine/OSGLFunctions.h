@@ -2226,6 +2226,11 @@ class OSGLFunctions
 public: 
 
 
+// Declare a static non MT-safe load function that must be called once to initialize functions
+    static void load() {
+         (void)getInstance();
+    }
+
     static void glCullFace(GLenum mode) {
         getInstance()._mglCullFace(mode);
     }

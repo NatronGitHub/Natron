@@ -9,15 +9,20 @@
 
 
 
+#ifdef HAVE_OSMESA
+
 #include <GL/gl_mangle.h>
 #include <GL/glu_mangle.h>
 #include <GL/osmesa.h>
+#endif // HAVE_OSMESA
 
 
 namespace Natron {
 
 template <>
 void OSGLFunctions<false>::load_functions() {
+#ifdef HAVE_OSMESA
+
     _mglCullFace = (PFNGLCULLFACEPROC)OSMesaGetProcAddress("glCullFace");
     _mglFrontFace = (PFNGLFRONTFACEPROC)OSMesaGetProcAddress("glFrontFace");
     _mglHint = (PFNGLHINTPROC)OSMesaGetProcAddress("glHint");
@@ -573,6 +578,7 @@ void OSGLFunctions<false>::load_functions() {
     _mglBlitFramebuffer = (PFNGLBLITFRAMEBUFFERPROC)OSMesaGetProcAddress("glBlitFramebuffer");
     _mglRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)OSMesaGetProcAddress("glRenderbufferStorageMultisample");
     _mglFramebufferTextureLayer = (PFNGLFRAMEBUFFERTEXTURELAYERPROC)OSMesaGetProcAddress("glFramebufferTextureLayer");
+#endif // HAVE_OSMESA
 } // load_functions 
 
 } // namespace Natron 

@@ -13,2779 +13,2779 @@
 
 extern "C" {
 #ifdef DEBUG
-PFNGLCULLFACEPROC glad_debug_glCullFace;
+extern PFNGLCULLFACEPROC glad_debug_glCullFace;
 #else
-void PFNGLCULLFACEPROC glad_glCullFace;
+void extern PFNGLCULLFACEPROC glad_glCullFace;
 #endif
 #ifdef DEBUG
-PFNGLFRONTFACEPROC glad_debug_glFrontFace;
+extern PFNGLFRONTFACEPROC glad_debug_glFrontFace;
 #else
-void PFNGLFRONTFACEPROC glad_glFrontFace;
+void extern PFNGLFRONTFACEPROC glad_glFrontFace;
 #endif
 #ifdef DEBUG
-PFNGLHINTPROC glad_debug_glHint;
+extern PFNGLHINTPROC glad_debug_glHint;
 #else
-void PFNGLHINTPROC glad_glHint;
+void extern PFNGLHINTPROC glad_glHint;
 #endif
 #ifdef DEBUG
-PFNGLLINEWIDTHPROC glad_debug_glLineWidth;
+extern PFNGLLINEWIDTHPROC glad_debug_glLineWidth;
 #else
-void PFNGLLINEWIDTHPROC glad_glLineWidth;
+void extern PFNGLLINEWIDTHPROC glad_glLineWidth;
 #endif
 #ifdef DEBUG
-PFNGLPOINTSIZEPROC glad_debug_glPointSize;
+extern PFNGLPOINTSIZEPROC glad_debug_glPointSize;
 #else
-void PFNGLPOINTSIZEPROC glad_glPointSize;
+void extern PFNGLPOINTSIZEPROC glad_glPointSize;
 #endif
 #ifdef DEBUG
-PFNGLPOLYGONMODEPROC glad_debug_glPolygonMode;
+extern PFNGLPOLYGONMODEPROC glad_debug_glPolygonMode;
 #else
-void PFNGLPOLYGONMODEPROC glad_glPolygonMode;
+void extern PFNGLPOLYGONMODEPROC glad_glPolygonMode;
 #endif
 #ifdef DEBUG
-PFNGLSCISSORPROC glad_debug_glScissor;
+extern PFNGLSCISSORPROC glad_debug_glScissor;
 #else
-void PFNGLSCISSORPROC glad_glScissor;
+void extern PFNGLSCISSORPROC glad_glScissor;
 #endif
 #ifdef DEBUG
-PFNGLTEXPARAMETERFPROC glad_debug_glTexParameterf;
+extern PFNGLTEXPARAMETERFPROC glad_debug_glTexParameterf;
 #else
-void PFNGLTEXPARAMETERFPROC glad_glTexParameterf;
+void extern PFNGLTEXPARAMETERFPROC glad_glTexParameterf;
 #endif
 #ifdef DEBUG
-PFNGLTEXPARAMETERFVPROC glad_debug_glTexParameterfv;
+extern PFNGLTEXPARAMETERFVPROC glad_debug_glTexParameterfv;
 #else
-void PFNGLTEXPARAMETERFVPROC glad_glTexParameterfv;
+void extern PFNGLTEXPARAMETERFVPROC glad_glTexParameterfv;
 #endif
 #ifdef DEBUG
-PFNGLTEXPARAMETERIPROC glad_debug_glTexParameteri;
+extern PFNGLTEXPARAMETERIPROC glad_debug_glTexParameteri;
 #else
-void PFNGLTEXPARAMETERIPROC glad_glTexParameteri;
+void extern PFNGLTEXPARAMETERIPROC glad_glTexParameteri;
 #endif
 #ifdef DEBUG
-PFNGLTEXPARAMETERIVPROC glad_debug_glTexParameteriv;
+extern PFNGLTEXPARAMETERIVPROC glad_debug_glTexParameteriv;
 #else
-void PFNGLTEXPARAMETERIVPROC glad_glTexParameteriv;
+void extern PFNGLTEXPARAMETERIVPROC glad_glTexParameteriv;
 #endif
 #ifdef DEBUG
-PFNGLTEXIMAGE1DPROC glad_debug_glTexImage1D;
+extern PFNGLTEXIMAGE1DPROC glad_debug_glTexImage1D;
 #else
-void PFNGLTEXIMAGE1DPROC glad_glTexImage1D;
+void extern PFNGLTEXIMAGE1DPROC glad_glTexImage1D;
 #endif
 #ifdef DEBUG
-PFNGLTEXIMAGE2DPROC glad_debug_glTexImage2D;
+extern PFNGLTEXIMAGE2DPROC glad_debug_glTexImage2D;
 #else
-void PFNGLTEXIMAGE2DPROC glad_glTexImage2D;
+void extern PFNGLTEXIMAGE2DPROC glad_glTexImage2D;
 #endif
 #ifdef DEBUG
-PFNGLDRAWBUFFERPROC glad_debug_glDrawBuffer;
+extern PFNGLDRAWBUFFERPROC glad_debug_glDrawBuffer;
 #else
-void PFNGLDRAWBUFFERPROC glad_glDrawBuffer;
+void extern PFNGLDRAWBUFFERPROC glad_glDrawBuffer;
 #endif
 #ifdef DEBUG
-PFNGLCLEARPROC glad_debug_glClear;
+extern PFNGLCLEARPROC glad_debug_glClear;
 #else
-void PFNGLCLEARPROC glad_glClear;
+void extern PFNGLCLEARPROC glad_glClear;
 #endif
 #ifdef DEBUG
-PFNGLCLEARCOLORPROC glad_debug_glClearColor;
+extern PFNGLCLEARCOLORPROC glad_debug_glClearColor;
 #else
-void PFNGLCLEARCOLORPROC glad_glClearColor;
+void extern PFNGLCLEARCOLORPROC glad_glClearColor;
 #endif
 #ifdef DEBUG
-PFNGLCLEARSTENCILPROC glad_debug_glClearStencil;
+extern PFNGLCLEARSTENCILPROC glad_debug_glClearStencil;
 #else
-void PFNGLCLEARSTENCILPROC glad_glClearStencil;
+void extern PFNGLCLEARSTENCILPROC glad_glClearStencil;
 #endif
 #ifdef DEBUG
-PFNGLCLEARDEPTHPROC glad_debug_glClearDepth;
+extern PFNGLCLEARDEPTHPROC glad_debug_glClearDepth;
 #else
-void PFNGLCLEARDEPTHPROC glad_glClearDepth;
+void extern PFNGLCLEARDEPTHPROC glad_glClearDepth;
 #endif
 #ifdef DEBUG
-PFNGLSTENCILMASKPROC glad_debug_glStencilMask;
+extern PFNGLSTENCILMASKPROC glad_debug_glStencilMask;
 #else
-void PFNGLSTENCILMASKPROC glad_glStencilMask;
+void extern PFNGLSTENCILMASKPROC glad_glStencilMask;
 #endif
 #ifdef DEBUG
-PFNGLCOLORMASKPROC glad_debug_glColorMask;
+extern PFNGLCOLORMASKPROC glad_debug_glColorMask;
 #else
-void PFNGLCOLORMASKPROC glad_glColorMask;
+void extern PFNGLCOLORMASKPROC glad_glColorMask;
 #endif
 #ifdef DEBUG
-PFNGLDEPTHMASKPROC glad_debug_glDepthMask;
+extern PFNGLDEPTHMASKPROC glad_debug_glDepthMask;
 #else
-void PFNGLDEPTHMASKPROC glad_glDepthMask;
+void extern PFNGLDEPTHMASKPROC glad_glDepthMask;
 #endif
 #ifdef DEBUG
-PFNGLDISABLEPROC glad_debug_glDisable;
+extern PFNGLDISABLEPROC glad_debug_glDisable;
 #else
-void PFNGLDISABLEPROC glad_glDisable;
+void extern PFNGLDISABLEPROC glad_glDisable;
 #endif
 #ifdef DEBUG
-PFNGLENABLEPROC glad_debug_glEnable;
+extern PFNGLENABLEPROC glad_debug_glEnable;
 #else
-void PFNGLENABLEPROC glad_glEnable;
+void extern PFNGLENABLEPROC glad_glEnable;
 #endif
 #ifdef DEBUG
-PFNGLFINISHPROC glad_debug_glFinish;
+extern PFNGLFINISHPROC glad_debug_glFinish;
 #else
-void PFNGLFINISHPROC glad_glFinish;
+void extern PFNGLFINISHPROC glad_glFinish;
 #endif
 #ifdef DEBUG
-PFNGLFLUSHPROC glad_debug_glFlush;
+extern PFNGLFLUSHPROC glad_debug_glFlush;
 #else
-void PFNGLFLUSHPROC glad_glFlush;
+void extern PFNGLFLUSHPROC glad_glFlush;
 #endif
 #ifdef DEBUG
-PFNGLBLENDFUNCPROC glad_debug_glBlendFunc;
+extern PFNGLBLENDFUNCPROC glad_debug_glBlendFunc;
 #else
-void PFNGLBLENDFUNCPROC glad_glBlendFunc;
+void extern PFNGLBLENDFUNCPROC glad_glBlendFunc;
 #endif
 #ifdef DEBUG
-PFNGLLOGICOPPROC glad_debug_glLogicOp;
+extern PFNGLLOGICOPPROC glad_debug_glLogicOp;
 #else
-void PFNGLLOGICOPPROC glad_glLogicOp;
+void extern PFNGLLOGICOPPROC glad_glLogicOp;
 #endif
 #ifdef DEBUG
-PFNGLSTENCILFUNCPROC glad_debug_glStencilFunc;
+extern PFNGLSTENCILFUNCPROC glad_debug_glStencilFunc;
 #else
-void PFNGLSTENCILFUNCPROC glad_glStencilFunc;
+void extern PFNGLSTENCILFUNCPROC glad_glStencilFunc;
 #endif
 #ifdef DEBUG
-PFNGLSTENCILOPPROC glad_debug_glStencilOp;
+extern PFNGLSTENCILOPPROC glad_debug_glStencilOp;
 #else
-void PFNGLSTENCILOPPROC glad_glStencilOp;
+void extern PFNGLSTENCILOPPROC glad_glStencilOp;
 #endif
 #ifdef DEBUG
-PFNGLDEPTHFUNCPROC glad_debug_glDepthFunc;
+extern PFNGLDEPTHFUNCPROC glad_debug_glDepthFunc;
 #else
-void PFNGLDEPTHFUNCPROC glad_glDepthFunc;
+void extern PFNGLDEPTHFUNCPROC glad_glDepthFunc;
 #endif
 #ifdef DEBUG
-PFNGLPIXELSTOREFPROC glad_debug_glPixelStoref;
+extern PFNGLPIXELSTOREFPROC glad_debug_glPixelStoref;
 #else
-void PFNGLPIXELSTOREFPROC glad_glPixelStoref;
+void extern PFNGLPIXELSTOREFPROC glad_glPixelStoref;
 #endif
 #ifdef DEBUG
-PFNGLPIXELSTOREIPROC glad_debug_glPixelStorei;
+extern PFNGLPIXELSTOREIPROC glad_debug_glPixelStorei;
 #else
-void PFNGLPIXELSTOREIPROC glad_glPixelStorei;
+void extern PFNGLPIXELSTOREIPROC glad_glPixelStorei;
 #endif
 #ifdef DEBUG
-PFNGLREADBUFFERPROC glad_debug_glReadBuffer;
+extern PFNGLREADBUFFERPROC glad_debug_glReadBuffer;
 #else
-void PFNGLREADBUFFERPROC glad_glReadBuffer;
+void extern PFNGLREADBUFFERPROC glad_glReadBuffer;
 #endif
 #ifdef DEBUG
-PFNGLREADPIXELSPROC glad_debug_glReadPixels;
+extern PFNGLREADPIXELSPROC glad_debug_glReadPixels;
 #else
-void PFNGLREADPIXELSPROC glad_glReadPixels;
+void extern PFNGLREADPIXELSPROC glad_glReadPixels;
 #endif
 #ifdef DEBUG
-PFNGLGETBOOLEANVPROC glad_debug_glGetBooleanv;
+extern PFNGLGETBOOLEANVPROC glad_debug_glGetBooleanv;
 #else
-void PFNGLGETBOOLEANVPROC glad_glGetBooleanv;
+void extern PFNGLGETBOOLEANVPROC glad_glGetBooleanv;
 #endif
 #ifdef DEBUG
-PFNGLGETDOUBLEVPROC glad_debug_glGetDoublev;
+extern PFNGLGETDOUBLEVPROC glad_debug_glGetDoublev;
 #else
-void PFNGLGETDOUBLEVPROC glad_glGetDoublev;
+void extern PFNGLGETDOUBLEVPROC glad_glGetDoublev;
 #endif
 #ifdef DEBUG
-PFNGLGETFLOATVPROC glad_debug_glGetFloatv;
+extern PFNGLGETFLOATVPROC glad_debug_glGetFloatv;
 #else
-void PFNGLGETFLOATVPROC glad_glGetFloatv;
+void extern PFNGLGETFLOATVPROC glad_glGetFloatv;
 #endif
 #ifdef DEBUG
-PFNGLGETINTEGERVPROC glad_debug_glGetIntegerv;
+extern PFNGLGETINTEGERVPROC glad_debug_glGetIntegerv;
 #else
-void PFNGLGETINTEGERVPROC glad_glGetIntegerv;
+void extern PFNGLGETINTEGERVPROC glad_glGetIntegerv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXIMAGEPROC glad_debug_glGetTexImage;
+extern PFNGLGETTEXIMAGEPROC glad_debug_glGetTexImage;
 #else
-void PFNGLGETTEXIMAGEPROC glad_glGetTexImage;
+void extern PFNGLGETTEXIMAGEPROC glad_glGetTexImage;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXPARAMETERFVPROC glad_debug_glGetTexParameterfv;
+extern PFNGLGETTEXPARAMETERFVPROC glad_debug_glGetTexParameterfv;
 #else
-void PFNGLGETTEXPARAMETERFVPROC glad_glGetTexParameterfv;
+void extern PFNGLGETTEXPARAMETERFVPROC glad_glGetTexParameterfv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXPARAMETERIVPROC glad_debug_glGetTexParameteriv;
+extern PFNGLGETTEXPARAMETERIVPROC glad_debug_glGetTexParameteriv;
 #else
-void PFNGLGETTEXPARAMETERIVPROC glad_glGetTexParameteriv;
+void extern PFNGLGETTEXPARAMETERIVPROC glad_glGetTexParameteriv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXLEVELPARAMETERFVPROC glad_debug_glGetTexLevelParameterfv;
+extern PFNGLGETTEXLEVELPARAMETERFVPROC glad_debug_glGetTexLevelParameterfv;
 #else
-void PFNGLGETTEXLEVELPARAMETERFVPROC glad_glGetTexLevelParameterfv;
+void extern PFNGLGETTEXLEVELPARAMETERFVPROC glad_glGetTexLevelParameterfv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXLEVELPARAMETERIVPROC glad_debug_glGetTexLevelParameteriv;
+extern PFNGLGETTEXLEVELPARAMETERIVPROC glad_debug_glGetTexLevelParameteriv;
 #else
-void PFNGLGETTEXLEVELPARAMETERIVPROC glad_glGetTexLevelParameteriv;
+void extern PFNGLGETTEXLEVELPARAMETERIVPROC glad_glGetTexLevelParameteriv;
 #endif
 #ifdef DEBUG
-PFNGLDEPTHRANGEPROC glad_debug_glDepthRange;
+extern PFNGLDEPTHRANGEPROC glad_debug_glDepthRange;
 #else
-void PFNGLDEPTHRANGEPROC glad_glDepthRange;
+void extern PFNGLDEPTHRANGEPROC glad_glDepthRange;
 #endif
 #ifdef DEBUG
-PFNGLVIEWPORTPROC glad_debug_glViewport;
+extern PFNGLVIEWPORTPROC glad_debug_glViewport;
 #else
-void PFNGLVIEWPORTPROC glad_glViewport;
+void extern PFNGLVIEWPORTPROC glad_glViewport;
 #endif
 #ifdef DEBUG
-PFNGLNEWLISTPROC glad_debug_glNewList;
+extern PFNGLNEWLISTPROC glad_debug_glNewList;
 #else
-void PFNGLNEWLISTPROC glad_glNewList;
+void extern PFNGLNEWLISTPROC glad_glNewList;
 #endif
 #ifdef DEBUG
-PFNGLENDLISTPROC glad_debug_glEndList;
+extern PFNGLENDLISTPROC glad_debug_glEndList;
 #else
-void PFNGLENDLISTPROC glad_glEndList;
+void extern PFNGLENDLISTPROC glad_glEndList;
 #endif
 #ifdef DEBUG
-PFNGLCALLLISTPROC glad_debug_glCallList;
+extern PFNGLCALLLISTPROC glad_debug_glCallList;
 #else
-void PFNGLCALLLISTPROC glad_glCallList;
+void extern PFNGLCALLLISTPROC glad_glCallList;
 #endif
 #ifdef DEBUG
-PFNGLCALLLISTSPROC glad_debug_glCallLists;
+extern PFNGLCALLLISTSPROC glad_debug_glCallLists;
 #else
-void PFNGLCALLLISTSPROC glad_glCallLists;
+void extern PFNGLCALLLISTSPROC glad_glCallLists;
 #endif
 #ifdef DEBUG
-PFNGLDELETELISTSPROC glad_debug_glDeleteLists;
+extern PFNGLDELETELISTSPROC glad_debug_glDeleteLists;
 #else
-void PFNGLDELETELISTSPROC glad_glDeleteLists;
+void extern PFNGLDELETELISTSPROC glad_glDeleteLists;
 #endif
 #ifdef DEBUG
-PFNGLLISTBASEPROC glad_debug_glListBase;
+extern PFNGLLISTBASEPROC glad_debug_glListBase;
 #else
-void PFNGLLISTBASEPROC glad_glListBase;
+void extern PFNGLLISTBASEPROC glad_glListBase;
 #endif
 #ifdef DEBUG
-PFNGLBEGINPROC glad_debug_glBegin;
+extern PFNGLBEGINPROC glad_debug_glBegin;
 #else
-void PFNGLBEGINPROC glad_glBegin;
+void extern PFNGLBEGINPROC glad_glBegin;
 #endif
 #ifdef DEBUG
-PFNGLBITMAPPROC glad_debug_glBitmap;
+extern PFNGLBITMAPPROC glad_debug_glBitmap;
 #else
-void PFNGLBITMAPPROC glad_glBitmap;
+void extern PFNGLBITMAPPROC glad_glBitmap;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3BPROC glad_debug_glColor3b;
+extern PFNGLCOLOR3BPROC glad_debug_glColor3b;
 #else
-void PFNGLCOLOR3BPROC glad_glColor3b;
+void extern PFNGLCOLOR3BPROC glad_glColor3b;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3BVPROC glad_debug_glColor3bv;
+extern PFNGLCOLOR3BVPROC glad_debug_glColor3bv;
 #else
-void PFNGLCOLOR3BVPROC glad_glColor3bv;
+void extern PFNGLCOLOR3BVPROC glad_glColor3bv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3DPROC glad_debug_glColor3d;
+extern PFNGLCOLOR3DPROC glad_debug_glColor3d;
 #else
-void PFNGLCOLOR3DPROC glad_glColor3d;
+void extern PFNGLCOLOR3DPROC glad_glColor3d;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3DVPROC glad_debug_glColor3dv;
+extern PFNGLCOLOR3DVPROC glad_debug_glColor3dv;
 #else
-void PFNGLCOLOR3DVPROC glad_glColor3dv;
+void extern PFNGLCOLOR3DVPROC glad_glColor3dv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3FPROC glad_debug_glColor3f;
+extern PFNGLCOLOR3FPROC glad_debug_glColor3f;
 #else
-void PFNGLCOLOR3FPROC glad_glColor3f;
+void extern PFNGLCOLOR3FPROC glad_glColor3f;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3FVPROC glad_debug_glColor3fv;
+extern PFNGLCOLOR3FVPROC glad_debug_glColor3fv;
 #else
-void PFNGLCOLOR3FVPROC glad_glColor3fv;
+void extern PFNGLCOLOR3FVPROC glad_glColor3fv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3IPROC glad_debug_glColor3i;
+extern PFNGLCOLOR3IPROC glad_debug_glColor3i;
 #else
-void PFNGLCOLOR3IPROC glad_glColor3i;
+void extern PFNGLCOLOR3IPROC glad_glColor3i;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3IVPROC glad_debug_glColor3iv;
+extern PFNGLCOLOR3IVPROC glad_debug_glColor3iv;
 #else
-void PFNGLCOLOR3IVPROC glad_glColor3iv;
+void extern PFNGLCOLOR3IVPROC glad_glColor3iv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3SPROC glad_debug_glColor3s;
+extern PFNGLCOLOR3SPROC glad_debug_glColor3s;
 #else
-void PFNGLCOLOR3SPROC glad_glColor3s;
+void extern PFNGLCOLOR3SPROC glad_glColor3s;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3SVPROC glad_debug_glColor3sv;
+extern PFNGLCOLOR3SVPROC glad_debug_glColor3sv;
 #else
-void PFNGLCOLOR3SVPROC glad_glColor3sv;
+void extern PFNGLCOLOR3SVPROC glad_glColor3sv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3UBPROC glad_debug_glColor3ub;
+extern PFNGLCOLOR3UBPROC glad_debug_glColor3ub;
 #else
-void PFNGLCOLOR3UBPROC glad_glColor3ub;
+void extern PFNGLCOLOR3UBPROC glad_glColor3ub;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3UBVPROC glad_debug_glColor3ubv;
+extern PFNGLCOLOR3UBVPROC glad_debug_glColor3ubv;
 #else
-void PFNGLCOLOR3UBVPROC glad_glColor3ubv;
+void extern PFNGLCOLOR3UBVPROC glad_glColor3ubv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3UIPROC glad_debug_glColor3ui;
+extern PFNGLCOLOR3UIPROC glad_debug_glColor3ui;
 #else
-void PFNGLCOLOR3UIPROC glad_glColor3ui;
+void extern PFNGLCOLOR3UIPROC glad_glColor3ui;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3UIVPROC glad_debug_glColor3uiv;
+extern PFNGLCOLOR3UIVPROC glad_debug_glColor3uiv;
 #else
-void PFNGLCOLOR3UIVPROC glad_glColor3uiv;
+void extern PFNGLCOLOR3UIVPROC glad_glColor3uiv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3USPROC glad_debug_glColor3us;
+extern PFNGLCOLOR3USPROC glad_debug_glColor3us;
 #else
-void PFNGLCOLOR3USPROC glad_glColor3us;
+void extern PFNGLCOLOR3USPROC glad_glColor3us;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR3USVPROC glad_debug_glColor3usv;
+extern PFNGLCOLOR3USVPROC glad_debug_glColor3usv;
 #else
-void PFNGLCOLOR3USVPROC glad_glColor3usv;
+void extern PFNGLCOLOR3USVPROC glad_glColor3usv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4BPROC glad_debug_glColor4b;
+extern PFNGLCOLOR4BPROC glad_debug_glColor4b;
 #else
-void PFNGLCOLOR4BPROC glad_glColor4b;
+void extern PFNGLCOLOR4BPROC glad_glColor4b;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4BVPROC glad_debug_glColor4bv;
+extern PFNGLCOLOR4BVPROC glad_debug_glColor4bv;
 #else
-void PFNGLCOLOR4BVPROC glad_glColor4bv;
+void extern PFNGLCOLOR4BVPROC glad_glColor4bv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4DPROC glad_debug_glColor4d;
+extern PFNGLCOLOR4DPROC glad_debug_glColor4d;
 #else
-void PFNGLCOLOR4DPROC glad_glColor4d;
+void extern PFNGLCOLOR4DPROC glad_glColor4d;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4DVPROC glad_debug_glColor4dv;
+extern PFNGLCOLOR4DVPROC glad_debug_glColor4dv;
 #else
-void PFNGLCOLOR4DVPROC glad_glColor4dv;
+void extern PFNGLCOLOR4DVPROC glad_glColor4dv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4FPROC glad_debug_glColor4f;
+extern PFNGLCOLOR4FPROC glad_debug_glColor4f;
 #else
-void PFNGLCOLOR4FPROC glad_glColor4f;
+void extern PFNGLCOLOR4FPROC glad_glColor4f;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4FVPROC glad_debug_glColor4fv;
+extern PFNGLCOLOR4FVPROC glad_debug_glColor4fv;
 #else
-void PFNGLCOLOR4FVPROC glad_glColor4fv;
+void extern PFNGLCOLOR4FVPROC glad_glColor4fv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4IPROC glad_debug_glColor4i;
+extern PFNGLCOLOR4IPROC glad_debug_glColor4i;
 #else
-void PFNGLCOLOR4IPROC glad_glColor4i;
+void extern PFNGLCOLOR4IPROC glad_glColor4i;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4IVPROC glad_debug_glColor4iv;
+extern PFNGLCOLOR4IVPROC glad_debug_glColor4iv;
 #else
-void PFNGLCOLOR4IVPROC glad_glColor4iv;
+void extern PFNGLCOLOR4IVPROC glad_glColor4iv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4SPROC glad_debug_glColor4s;
+extern PFNGLCOLOR4SPROC glad_debug_glColor4s;
 #else
-void PFNGLCOLOR4SPROC glad_glColor4s;
+void extern PFNGLCOLOR4SPROC glad_glColor4s;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4SVPROC glad_debug_glColor4sv;
+extern PFNGLCOLOR4SVPROC glad_debug_glColor4sv;
 #else
-void PFNGLCOLOR4SVPROC glad_glColor4sv;
+void extern PFNGLCOLOR4SVPROC glad_glColor4sv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4UBPROC glad_debug_glColor4ub;
+extern PFNGLCOLOR4UBPROC glad_debug_glColor4ub;
 #else
-void PFNGLCOLOR4UBPROC glad_glColor4ub;
+void extern PFNGLCOLOR4UBPROC glad_glColor4ub;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4UBVPROC glad_debug_glColor4ubv;
+extern PFNGLCOLOR4UBVPROC glad_debug_glColor4ubv;
 #else
-void PFNGLCOLOR4UBVPROC glad_glColor4ubv;
+void extern PFNGLCOLOR4UBVPROC glad_glColor4ubv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4UIPROC glad_debug_glColor4ui;
+extern PFNGLCOLOR4UIPROC glad_debug_glColor4ui;
 #else
-void PFNGLCOLOR4UIPROC glad_glColor4ui;
+void extern PFNGLCOLOR4UIPROC glad_glColor4ui;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4UIVPROC glad_debug_glColor4uiv;
+extern PFNGLCOLOR4UIVPROC glad_debug_glColor4uiv;
 #else
-void PFNGLCOLOR4UIVPROC glad_glColor4uiv;
+void extern PFNGLCOLOR4UIVPROC glad_glColor4uiv;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4USPROC glad_debug_glColor4us;
+extern PFNGLCOLOR4USPROC glad_debug_glColor4us;
 #else
-void PFNGLCOLOR4USPROC glad_glColor4us;
+void extern PFNGLCOLOR4USPROC glad_glColor4us;
 #endif
 #ifdef DEBUG
-PFNGLCOLOR4USVPROC glad_debug_glColor4usv;
+extern PFNGLCOLOR4USVPROC glad_debug_glColor4usv;
 #else
-void PFNGLCOLOR4USVPROC glad_glColor4usv;
+void extern PFNGLCOLOR4USVPROC glad_glColor4usv;
 #endif
 #ifdef DEBUG
-PFNGLEDGEFLAGPROC glad_debug_glEdgeFlag;
+extern PFNGLEDGEFLAGPROC glad_debug_glEdgeFlag;
 #else
-void PFNGLEDGEFLAGPROC glad_glEdgeFlag;
+void extern PFNGLEDGEFLAGPROC glad_glEdgeFlag;
 #endif
 #ifdef DEBUG
-PFNGLEDGEFLAGVPROC glad_debug_glEdgeFlagv;
+extern PFNGLEDGEFLAGVPROC glad_debug_glEdgeFlagv;
 #else
-void PFNGLEDGEFLAGVPROC glad_glEdgeFlagv;
+void extern PFNGLEDGEFLAGVPROC glad_glEdgeFlagv;
 #endif
 #ifdef DEBUG
-PFNGLENDPROC glad_debug_glEnd;
+extern PFNGLENDPROC glad_debug_glEnd;
 #else
-void PFNGLENDPROC glad_glEnd;
+void extern PFNGLENDPROC glad_glEnd;
 #endif
 #ifdef DEBUG
-PFNGLINDEXDPROC glad_debug_glIndexd;
+extern PFNGLINDEXDPROC glad_debug_glIndexd;
 #else
-void PFNGLINDEXDPROC glad_glIndexd;
+void extern PFNGLINDEXDPROC glad_glIndexd;
 #endif
 #ifdef DEBUG
-PFNGLINDEXDVPROC glad_debug_glIndexdv;
+extern PFNGLINDEXDVPROC glad_debug_glIndexdv;
 #else
-void PFNGLINDEXDVPROC glad_glIndexdv;
+void extern PFNGLINDEXDVPROC glad_glIndexdv;
 #endif
 #ifdef DEBUG
-PFNGLINDEXFPROC glad_debug_glIndexf;
+extern PFNGLINDEXFPROC glad_debug_glIndexf;
 #else
-void PFNGLINDEXFPROC glad_glIndexf;
+void extern PFNGLINDEXFPROC glad_glIndexf;
 #endif
 #ifdef DEBUG
-PFNGLINDEXFVPROC glad_debug_glIndexfv;
+extern PFNGLINDEXFVPROC glad_debug_glIndexfv;
 #else
-void PFNGLINDEXFVPROC glad_glIndexfv;
+void extern PFNGLINDEXFVPROC glad_glIndexfv;
 #endif
 #ifdef DEBUG
-PFNGLINDEXIPROC glad_debug_glIndexi;
+extern PFNGLINDEXIPROC glad_debug_glIndexi;
 #else
-void PFNGLINDEXIPROC glad_glIndexi;
+void extern PFNGLINDEXIPROC glad_glIndexi;
 #endif
 #ifdef DEBUG
-PFNGLINDEXIVPROC glad_debug_glIndexiv;
+extern PFNGLINDEXIVPROC glad_debug_glIndexiv;
 #else
-void PFNGLINDEXIVPROC glad_glIndexiv;
+void extern PFNGLINDEXIVPROC glad_glIndexiv;
 #endif
 #ifdef DEBUG
-PFNGLINDEXSPROC glad_debug_glIndexs;
+extern PFNGLINDEXSPROC glad_debug_glIndexs;
 #else
-void PFNGLINDEXSPROC glad_glIndexs;
+void extern PFNGLINDEXSPROC glad_glIndexs;
 #endif
 #ifdef DEBUG
-PFNGLINDEXSVPROC glad_debug_glIndexsv;
+extern PFNGLINDEXSVPROC glad_debug_glIndexsv;
 #else
-void PFNGLINDEXSVPROC glad_glIndexsv;
+void extern PFNGLINDEXSVPROC glad_glIndexsv;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3BPROC glad_debug_glNormal3b;
+extern PFNGLNORMAL3BPROC glad_debug_glNormal3b;
 #else
-void PFNGLNORMAL3BPROC glad_glNormal3b;
+void extern PFNGLNORMAL3BPROC glad_glNormal3b;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3BVPROC glad_debug_glNormal3bv;
+extern PFNGLNORMAL3BVPROC glad_debug_glNormal3bv;
 #else
-void PFNGLNORMAL3BVPROC glad_glNormal3bv;
+void extern PFNGLNORMAL3BVPROC glad_glNormal3bv;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3DPROC glad_debug_glNormal3d;
+extern PFNGLNORMAL3DPROC glad_debug_glNormal3d;
 #else
-void PFNGLNORMAL3DPROC glad_glNormal3d;
+void extern PFNGLNORMAL3DPROC glad_glNormal3d;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3DVPROC glad_debug_glNormal3dv;
+extern PFNGLNORMAL3DVPROC glad_debug_glNormal3dv;
 #else
-void PFNGLNORMAL3DVPROC glad_glNormal3dv;
+void extern PFNGLNORMAL3DVPROC glad_glNormal3dv;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3FPROC glad_debug_glNormal3f;
+extern PFNGLNORMAL3FPROC glad_debug_glNormal3f;
 #else
-void PFNGLNORMAL3FPROC glad_glNormal3f;
+void extern PFNGLNORMAL3FPROC glad_glNormal3f;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3FVPROC glad_debug_glNormal3fv;
+extern PFNGLNORMAL3FVPROC glad_debug_glNormal3fv;
 #else
-void PFNGLNORMAL3FVPROC glad_glNormal3fv;
+void extern PFNGLNORMAL3FVPROC glad_glNormal3fv;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3IPROC glad_debug_glNormal3i;
+extern PFNGLNORMAL3IPROC glad_debug_glNormal3i;
 #else
-void PFNGLNORMAL3IPROC glad_glNormal3i;
+void extern PFNGLNORMAL3IPROC glad_glNormal3i;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3IVPROC glad_debug_glNormal3iv;
+extern PFNGLNORMAL3IVPROC glad_debug_glNormal3iv;
 #else
-void PFNGLNORMAL3IVPROC glad_glNormal3iv;
+void extern PFNGLNORMAL3IVPROC glad_glNormal3iv;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3SPROC glad_debug_glNormal3s;
+extern PFNGLNORMAL3SPROC glad_debug_glNormal3s;
 #else
-void PFNGLNORMAL3SPROC glad_glNormal3s;
+void extern PFNGLNORMAL3SPROC glad_glNormal3s;
 #endif
 #ifdef DEBUG
-PFNGLNORMAL3SVPROC glad_debug_glNormal3sv;
+extern PFNGLNORMAL3SVPROC glad_debug_glNormal3sv;
 #else
-void PFNGLNORMAL3SVPROC glad_glNormal3sv;
+void extern PFNGLNORMAL3SVPROC glad_glNormal3sv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2DPROC glad_debug_glRasterPos2d;
+extern PFNGLRASTERPOS2DPROC glad_debug_glRasterPos2d;
 #else
-void PFNGLRASTERPOS2DPROC glad_glRasterPos2d;
+void extern PFNGLRASTERPOS2DPROC glad_glRasterPos2d;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2DVPROC glad_debug_glRasterPos2dv;
+extern PFNGLRASTERPOS2DVPROC glad_debug_glRasterPos2dv;
 #else
-void PFNGLRASTERPOS2DVPROC glad_glRasterPos2dv;
+void extern PFNGLRASTERPOS2DVPROC glad_glRasterPos2dv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2FPROC glad_debug_glRasterPos2f;
+extern PFNGLRASTERPOS2FPROC glad_debug_glRasterPos2f;
 #else
-void PFNGLRASTERPOS2FPROC glad_glRasterPos2f;
+void extern PFNGLRASTERPOS2FPROC glad_glRasterPos2f;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2FVPROC glad_debug_glRasterPos2fv;
+extern PFNGLRASTERPOS2FVPROC glad_debug_glRasterPos2fv;
 #else
-void PFNGLRASTERPOS2FVPROC glad_glRasterPos2fv;
+void extern PFNGLRASTERPOS2FVPROC glad_glRasterPos2fv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2IPROC glad_debug_glRasterPos2i;
+extern PFNGLRASTERPOS2IPROC glad_debug_glRasterPos2i;
 #else
-void PFNGLRASTERPOS2IPROC glad_glRasterPos2i;
+void extern PFNGLRASTERPOS2IPROC glad_glRasterPos2i;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2IVPROC glad_debug_glRasterPos2iv;
+extern PFNGLRASTERPOS2IVPROC glad_debug_glRasterPos2iv;
 #else
-void PFNGLRASTERPOS2IVPROC glad_glRasterPos2iv;
+void extern PFNGLRASTERPOS2IVPROC glad_glRasterPos2iv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2SPROC glad_debug_glRasterPos2s;
+extern PFNGLRASTERPOS2SPROC glad_debug_glRasterPos2s;
 #else
-void PFNGLRASTERPOS2SPROC glad_glRasterPos2s;
+void extern PFNGLRASTERPOS2SPROC glad_glRasterPos2s;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS2SVPROC glad_debug_glRasterPos2sv;
+extern PFNGLRASTERPOS2SVPROC glad_debug_glRasterPos2sv;
 #else
-void PFNGLRASTERPOS2SVPROC glad_glRasterPos2sv;
+void extern PFNGLRASTERPOS2SVPROC glad_glRasterPos2sv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3DPROC glad_debug_glRasterPos3d;
+extern PFNGLRASTERPOS3DPROC glad_debug_glRasterPos3d;
 #else
-void PFNGLRASTERPOS3DPROC glad_glRasterPos3d;
+void extern PFNGLRASTERPOS3DPROC glad_glRasterPos3d;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3DVPROC glad_debug_glRasterPos3dv;
+extern PFNGLRASTERPOS3DVPROC glad_debug_glRasterPos3dv;
 #else
-void PFNGLRASTERPOS3DVPROC glad_glRasterPos3dv;
+void extern PFNGLRASTERPOS3DVPROC glad_glRasterPos3dv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3FPROC glad_debug_glRasterPos3f;
+extern PFNGLRASTERPOS3FPROC glad_debug_glRasterPos3f;
 #else
-void PFNGLRASTERPOS3FPROC glad_glRasterPos3f;
+void extern PFNGLRASTERPOS3FPROC glad_glRasterPos3f;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3FVPROC glad_debug_glRasterPos3fv;
+extern PFNGLRASTERPOS3FVPROC glad_debug_glRasterPos3fv;
 #else
-void PFNGLRASTERPOS3FVPROC glad_glRasterPos3fv;
+void extern PFNGLRASTERPOS3FVPROC glad_glRasterPos3fv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3IPROC glad_debug_glRasterPos3i;
+extern PFNGLRASTERPOS3IPROC glad_debug_glRasterPos3i;
 #else
-void PFNGLRASTERPOS3IPROC glad_glRasterPos3i;
+void extern PFNGLRASTERPOS3IPROC glad_glRasterPos3i;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3IVPROC glad_debug_glRasterPos3iv;
+extern PFNGLRASTERPOS3IVPROC glad_debug_glRasterPos3iv;
 #else
-void PFNGLRASTERPOS3IVPROC glad_glRasterPos3iv;
+void extern PFNGLRASTERPOS3IVPROC glad_glRasterPos3iv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3SPROC glad_debug_glRasterPos3s;
+extern PFNGLRASTERPOS3SPROC glad_debug_glRasterPos3s;
 #else
-void PFNGLRASTERPOS3SPROC glad_glRasterPos3s;
+void extern PFNGLRASTERPOS3SPROC glad_glRasterPos3s;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS3SVPROC glad_debug_glRasterPos3sv;
+extern PFNGLRASTERPOS3SVPROC glad_debug_glRasterPos3sv;
 #else
-void PFNGLRASTERPOS3SVPROC glad_glRasterPos3sv;
+void extern PFNGLRASTERPOS3SVPROC glad_glRasterPos3sv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4DPROC glad_debug_glRasterPos4d;
+extern PFNGLRASTERPOS4DPROC glad_debug_glRasterPos4d;
 #else
-void PFNGLRASTERPOS4DPROC glad_glRasterPos4d;
+void extern PFNGLRASTERPOS4DPROC glad_glRasterPos4d;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4DVPROC glad_debug_glRasterPos4dv;
+extern PFNGLRASTERPOS4DVPROC glad_debug_glRasterPos4dv;
 #else
-void PFNGLRASTERPOS4DVPROC glad_glRasterPos4dv;
+void extern PFNGLRASTERPOS4DVPROC glad_glRasterPos4dv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4FPROC glad_debug_glRasterPos4f;
+extern PFNGLRASTERPOS4FPROC glad_debug_glRasterPos4f;
 #else
-void PFNGLRASTERPOS4FPROC glad_glRasterPos4f;
+void extern PFNGLRASTERPOS4FPROC glad_glRasterPos4f;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4FVPROC glad_debug_glRasterPos4fv;
+extern PFNGLRASTERPOS4FVPROC glad_debug_glRasterPos4fv;
 #else
-void PFNGLRASTERPOS4FVPROC glad_glRasterPos4fv;
+void extern PFNGLRASTERPOS4FVPROC glad_glRasterPos4fv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4IPROC glad_debug_glRasterPos4i;
+extern PFNGLRASTERPOS4IPROC glad_debug_glRasterPos4i;
 #else
-void PFNGLRASTERPOS4IPROC glad_glRasterPos4i;
+void extern PFNGLRASTERPOS4IPROC glad_glRasterPos4i;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4IVPROC glad_debug_glRasterPos4iv;
+extern PFNGLRASTERPOS4IVPROC glad_debug_glRasterPos4iv;
 #else
-void PFNGLRASTERPOS4IVPROC glad_glRasterPos4iv;
+void extern PFNGLRASTERPOS4IVPROC glad_glRasterPos4iv;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4SPROC glad_debug_glRasterPos4s;
+extern PFNGLRASTERPOS4SPROC glad_debug_glRasterPos4s;
 #else
-void PFNGLRASTERPOS4SPROC glad_glRasterPos4s;
+void extern PFNGLRASTERPOS4SPROC glad_glRasterPos4s;
 #endif
 #ifdef DEBUG
-PFNGLRASTERPOS4SVPROC glad_debug_glRasterPos4sv;
+extern PFNGLRASTERPOS4SVPROC glad_debug_glRasterPos4sv;
 #else
-void PFNGLRASTERPOS4SVPROC glad_glRasterPos4sv;
+void extern PFNGLRASTERPOS4SVPROC glad_glRasterPos4sv;
 #endif
 #ifdef DEBUG
-PFNGLRECTDPROC glad_debug_glRectd;
+extern PFNGLRECTDPROC glad_debug_glRectd;
 #else
-void PFNGLRECTDPROC glad_glRectd;
+void extern PFNGLRECTDPROC glad_glRectd;
 #endif
 #ifdef DEBUG
-PFNGLRECTDVPROC glad_debug_glRectdv;
+extern PFNGLRECTDVPROC glad_debug_glRectdv;
 #else
-void PFNGLRECTDVPROC glad_glRectdv;
+void extern PFNGLRECTDVPROC glad_glRectdv;
 #endif
 #ifdef DEBUG
-PFNGLRECTFPROC glad_debug_glRectf;
+extern PFNGLRECTFPROC glad_debug_glRectf;
 #else
-void PFNGLRECTFPROC glad_glRectf;
+void extern PFNGLRECTFPROC glad_glRectf;
 #endif
 #ifdef DEBUG
-PFNGLRECTFVPROC glad_debug_glRectfv;
+extern PFNGLRECTFVPROC glad_debug_glRectfv;
 #else
-void PFNGLRECTFVPROC glad_glRectfv;
+void extern PFNGLRECTFVPROC glad_glRectfv;
 #endif
 #ifdef DEBUG
-PFNGLRECTIPROC glad_debug_glRecti;
+extern PFNGLRECTIPROC glad_debug_glRecti;
 #else
-void PFNGLRECTIPROC glad_glRecti;
+void extern PFNGLRECTIPROC glad_glRecti;
 #endif
 #ifdef DEBUG
-PFNGLRECTIVPROC glad_debug_glRectiv;
+extern PFNGLRECTIVPROC glad_debug_glRectiv;
 #else
-void PFNGLRECTIVPROC glad_glRectiv;
+void extern PFNGLRECTIVPROC glad_glRectiv;
 #endif
 #ifdef DEBUG
-PFNGLRECTSPROC glad_debug_glRects;
+extern PFNGLRECTSPROC glad_debug_glRects;
 #else
-void PFNGLRECTSPROC glad_glRects;
+void extern PFNGLRECTSPROC glad_glRects;
 #endif
 #ifdef DEBUG
-PFNGLRECTSVPROC glad_debug_glRectsv;
+extern PFNGLRECTSVPROC glad_debug_glRectsv;
 #else
-void PFNGLRECTSVPROC glad_glRectsv;
+void extern PFNGLRECTSVPROC glad_glRectsv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1DPROC glad_debug_glTexCoord1d;
+extern PFNGLTEXCOORD1DPROC glad_debug_glTexCoord1d;
 #else
-void PFNGLTEXCOORD1DPROC glad_glTexCoord1d;
+void extern PFNGLTEXCOORD1DPROC glad_glTexCoord1d;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1DVPROC glad_debug_glTexCoord1dv;
+extern PFNGLTEXCOORD1DVPROC glad_debug_glTexCoord1dv;
 #else
-void PFNGLTEXCOORD1DVPROC glad_glTexCoord1dv;
+void extern PFNGLTEXCOORD1DVPROC glad_glTexCoord1dv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1FPROC glad_debug_glTexCoord1f;
+extern PFNGLTEXCOORD1FPROC glad_debug_glTexCoord1f;
 #else
-void PFNGLTEXCOORD1FPROC glad_glTexCoord1f;
+void extern PFNGLTEXCOORD1FPROC glad_glTexCoord1f;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1FVPROC glad_debug_glTexCoord1fv;
+extern PFNGLTEXCOORD1FVPROC glad_debug_glTexCoord1fv;
 #else
-void PFNGLTEXCOORD1FVPROC glad_glTexCoord1fv;
+void extern PFNGLTEXCOORD1FVPROC glad_glTexCoord1fv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1IPROC glad_debug_glTexCoord1i;
+extern PFNGLTEXCOORD1IPROC glad_debug_glTexCoord1i;
 #else
-void PFNGLTEXCOORD1IPROC glad_glTexCoord1i;
+void extern PFNGLTEXCOORD1IPROC glad_glTexCoord1i;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1IVPROC glad_debug_glTexCoord1iv;
+extern PFNGLTEXCOORD1IVPROC glad_debug_glTexCoord1iv;
 #else
-void PFNGLTEXCOORD1IVPROC glad_glTexCoord1iv;
+void extern PFNGLTEXCOORD1IVPROC glad_glTexCoord1iv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1SPROC glad_debug_glTexCoord1s;
+extern PFNGLTEXCOORD1SPROC glad_debug_glTexCoord1s;
 #else
-void PFNGLTEXCOORD1SPROC glad_glTexCoord1s;
+void extern PFNGLTEXCOORD1SPROC glad_glTexCoord1s;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD1SVPROC glad_debug_glTexCoord1sv;
+extern PFNGLTEXCOORD1SVPROC glad_debug_glTexCoord1sv;
 #else
-void PFNGLTEXCOORD1SVPROC glad_glTexCoord1sv;
+void extern PFNGLTEXCOORD1SVPROC glad_glTexCoord1sv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2DPROC glad_debug_glTexCoord2d;
+extern PFNGLTEXCOORD2DPROC glad_debug_glTexCoord2d;
 #else
-void PFNGLTEXCOORD2DPROC glad_glTexCoord2d;
+void extern PFNGLTEXCOORD2DPROC glad_glTexCoord2d;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2DVPROC glad_debug_glTexCoord2dv;
+extern PFNGLTEXCOORD2DVPROC glad_debug_glTexCoord2dv;
 #else
-void PFNGLTEXCOORD2DVPROC glad_glTexCoord2dv;
+void extern PFNGLTEXCOORD2DVPROC glad_glTexCoord2dv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2FPROC glad_debug_glTexCoord2f;
+extern PFNGLTEXCOORD2FPROC glad_debug_glTexCoord2f;
 #else
-void PFNGLTEXCOORD2FPROC glad_glTexCoord2f;
+void extern PFNGLTEXCOORD2FPROC glad_glTexCoord2f;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2FVPROC glad_debug_glTexCoord2fv;
+extern PFNGLTEXCOORD2FVPROC glad_debug_glTexCoord2fv;
 #else
-void PFNGLTEXCOORD2FVPROC glad_glTexCoord2fv;
+void extern PFNGLTEXCOORD2FVPROC glad_glTexCoord2fv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2IPROC glad_debug_glTexCoord2i;
+extern PFNGLTEXCOORD2IPROC glad_debug_glTexCoord2i;
 #else
-void PFNGLTEXCOORD2IPROC glad_glTexCoord2i;
+void extern PFNGLTEXCOORD2IPROC glad_glTexCoord2i;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2IVPROC glad_debug_glTexCoord2iv;
+extern PFNGLTEXCOORD2IVPROC glad_debug_glTexCoord2iv;
 #else
-void PFNGLTEXCOORD2IVPROC glad_glTexCoord2iv;
+void extern PFNGLTEXCOORD2IVPROC glad_glTexCoord2iv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2SPROC glad_debug_glTexCoord2s;
+extern PFNGLTEXCOORD2SPROC glad_debug_glTexCoord2s;
 #else
-void PFNGLTEXCOORD2SPROC glad_glTexCoord2s;
+void extern PFNGLTEXCOORD2SPROC glad_glTexCoord2s;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD2SVPROC glad_debug_glTexCoord2sv;
+extern PFNGLTEXCOORD2SVPROC glad_debug_glTexCoord2sv;
 #else
-void PFNGLTEXCOORD2SVPROC glad_glTexCoord2sv;
+void extern PFNGLTEXCOORD2SVPROC glad_glTexCoord2sv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3DPROC glad_debug_glTexCoord3d;
+extern PFNGLTEXCOORD3DPROC glad_debug_glTexCoord3d;
 #else
-void PFNGLTEXCOORD3DPROC glad_glTexCoord3d;
+void extern PFNGLTEXCOORD3DPROC glad_glTexCoord3d;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3DVPROC glad_debug_glTexCoord3dv;
+extern PFNGLTEXCOORD3DVPROC glad_debug_glTexCoord3dv;
 #else
-void PFNGLTEXCOORD3DVPROC glad_glTexCoord3dv;
+void extern PFNGLTEXCOORD3DVPROC glad_glTexCoord3dv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3FPROC glad_debug_glTexCoord3f;
+extern PFNGLTEXCOORD3FPROC glad_debug_glTexCoord3f;
 #else
-void PFNGLTEXCOORD3FPROC glad_glTexCoord3f;
+void extern PFNGLTEXCOORD3FPROC glad_glTexCoord3f;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3FVPROC glad_debug_glTexCoord3fv;
+extern PFNGLTEXCOORD3FVPROC glad_debug_glTexCoord3fv;
 #else
-void PFNGLTEXCOORD3FVPROC glad_glTexCoord3fv;
+void extern PFNGLTEXCOORD3FVPROC glad_glTexCoord3fv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3IPROC glad_debug_glTexCoord3i;
+extern PFNGLTEXCOORD3IPROC glad_debug_glTexCoord3i;
 #else
-void PFNGLTEXCOORD3IPROC glad_glTexCoord3i;
+void extern PFNGLTEXCOORD3IPROC glad_glTexCoord3i;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3IVPROC glad_debug_glTexCoord3iv;
+extern PFNGLTEXCOORD3IVPROC glad_debug_glTexCoord3iv;
 #else
-void PFNGLTEXCOORD3IVPROC glad_glTexCoord3iv;
+void extern PFNGLTEXCOORD3IVPROC glad_glTexCoord3iv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3SPROC glad_debug_glTexCoord3s;
+extern PFNGLTEXCOORD3SPROC glad_debug_glTexCoord3s;
 #else
-void PFNGLTEXCOORD3SPROC glad_glTexCoord3s;
+void extern PFNGLTEXCOORD3SPROC glad_glTexCoord3s;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD3SVPROC glad_debug_glTexCoord3sv;
+extern PFNGLTEXCOORD3SVPROC glad_debug_glTexCoord3sv;
 #else
-void PFNGLTEXCOORD3SVPROC glad_glTexCoord3sv;
+void extern PFNGLTEXCOORD3SVPROC glad_glTexCoord3sv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4DPROC glad_debug_glTexCoord4d;
+extern PFNGLTEXCOORD4DPROC glad_debug_glTexCoord4d;
 #else
-void PFNGLTEXCOORD4DPROC glad_glTexCoord4d;
+void extern PFNGLTEXCOORD4DPROC glad_glTexCoord4d;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4DVPROC glad_debug_glTexCoord4dv;
+extern PFNGLTEXCOORD4DVPROC glad_debug_glTexCoord4dv;
 #else
-void PFNGLTEXCOORD4DVPROC glad_glTexCoord4dv;
+void extern PFNGLTEXCOORD4DVPROC glad_glTexCoord4dv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4FPROC glad_debug_glTexCoord4f;
+extern PFNGLTEXCOORD4FPROC glad_debug_glTexCoord4f;
 #else
-void PFNGLTEXCOORD4FPROC glad_glTexCoord4f;
+void extern PFNGLTEXCOORD4FPROC glad_glTexCoord4f;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4FVPROC glad_debug_glTexCoord4fv;
+extern PFNGLTEXCOORD4FVPROC glad_debug_glTexCoord4fv;
 #else
-void PFNGLTEXCOORD4FVPROC glad_glTexCoord4fv;
+void extern PFNGLTEXCOORD4FVPROC glad_glTexCoord4fv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4IPROC glad_debug_glTexCoord4i;
+extern PFNGLTEXCOORD4IPROC glad_debug_glTexCoord4i;
 #else
-void PFNGLTEXCOORD4IPROC glad_glTexCoord4i;
+void extern PFNGLTEXCOORD4IPROC glad_glTexCoord4i;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4IVPROC glad_debug_glTexCoord4iv;
+extern PFNGLTEXCOORD4IVPROC glad_debug_glTexCoord4iv;
 #else
-void PFNGLTEXCOORD4IVPROC glad_glTexCoord4iv;
+void extern PFNGLTEXCOORD4IVPROC glad_glTexCoord4iv;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4SPROC glad_debug_glTexCoord4s;
+extern PFNGLTEXCOORD4SPROC glad_debug_glTexCoord4s;
 #else
-void PFNGLTEXCOORD4SPROC glad_glTexCoord4s;
+void extern PFNGLTEXCOORD4SPROC glad_glTexCoord4s;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORD4SVPROC glad_debug_glTexCoord4sv;
+extern PFNGLTEXCOORD4SVPROC glad_debug_glTexCoord4sv;
 #else
-void PFNGLTEXCOORD4SVPROC glad_glTexCoord4sv;
+void extern PFNGLTEXCOORD4SVPROC glad_glTexCoord4sv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2DPROC glad_debug_glVertex2d;
+extern PFNGLVERTEX2DPROC glad_debug_glVertex2d;
 #else
-void PFNGLVERTEX2DPROC glad_glVertex2d;
+void extern PFNGLVERTEX2DPROC glad_glVertex2d;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2DVPROC glad_debug_glVertex2dv;
+extern PFNGLVERTEX2DVPROC glad_debug_glVertex2dv;
 #else
-void PFNGLVERTEX2DVPROC glad_glVertex2dv;
+void extern PFNGLVERTEX2DVPROC glad_glVertex2dv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2FPROC glad_debug_glVertex2f;
+extern PFNGLVERTEX2FPROC glad_debug_glVertex2f;
 #else
-void PFNGLVERTEX2FPROC glad_glVertex2f;
+void extern PFNGLVERTEX2FPROC glad_glVertex2f;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2FVPROC glad_debug_glVertex2fv;
+extern PFNGLVERTEX2FVPROC glad_debug_glVertex2fv;
 #else
-void PFNGLVERTEX2FVPROC glad_glVertex2fv;
+void extern PFNGLVERTEX2FVPROC glad_glVertex2fv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2IPROC glad_debug_glVertex2i;
+extern PFNGLVERTEX2IPROC glad_debug_glVertex2i;
 #else
-void PFNGLVERTEX2IPROC glad_glVertex2i;
+void extern PFNGLVERTEX2IPROC glad_glVertex2i;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2IVPROC glad_debug_glVertex2iv;
+extern PFNGLVERTEX2IVPROC glad_debug_glVertex2iv;
 #else
-void PFNGLVERTEX2IVPROC glad_glVertex2iv;
+void extern PFNGLVERTEX2IVPROC glad_glVertex2iv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2SPROC glad_debug_glVertex2s;
+extern PFNGLVERTEX2SPROC glad_debug_glVertex2s;
 #else
-void PFNGLVERTEX2SPROC glad_glVertex2s;
+void extern PFNGLVERTEX2SPROC glad_glVertex2s;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX2SVPROC glad_debug_glVertex2sv;
+extern PFNGLVERTEX2SVPROC glad_debug_glVertex2sv;
 #else
-void PFNGLVERTEX2SVPROC glad_glVertex2sv;
+void extern PFNGLVERTEX2SVPROC glad_glVertex2sv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3DPROC glad_debug_glVertex3d;
+extern PFNGLVERTEX3DPROC glad_debug_glVertex3d;
 #else
-void PFNGLVERTEX3DPROC glad_glVertex3d;
+void extern PFNGLVERTEX3DPROC glad_glVertex3d;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3DVPROC glad_debug_glVertex3dv;
+extern PFNGLVERTEX3DVPROC glad_debug_glVertex3dv;
 #else
-void PFNGLVERTEX3DVPROC glad_glVertex3dv;
+void extern PFNGLVERTEX3DVPROC glad_glVertex3dv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3FPROC glad_debug_glVertex3f;
+extern PFNGLVERTEX3FPROC glad_debug_glVertex3f;
 #else
-void PFNGLVERTEX3FPROC glad_glVertex3f;
+void extern PFNGLVERTEX3FPROC glad_glVertex3f;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3FVPROC glad_debug_glVertex3fv;
+extern PFNGLVERTEX3FVPROC glad_debug_glVertex3fv;
 #else
-void PFNGLVERTEX3FVPROC glad_glVertex3fv;
+void extern PFNGLVERTEX3FVPROC glad_glVertex3fv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3IPROC glad_debug_glVertex3i;
+extern PFNGLVERTEX3IPROC glad_debug_glVertex3i;
 #else
-void PFNGLVERTEX3IPROC glad_glVertex3i;
+void extern PFNGLVERTEX3IPROC glad_glVertex3i;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3IVPROC glad_debug_glVertex3iv;
+extern PFNGLVERTEX3IVPROC glad_debug_glVertex3iv;
 #else
-void PFNGLVERTEX3IVPROC glad_glVertex3iv;
+void extern PFNGLVERTEX3IVPROC glad_glVertex3iv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3SPROC glad_debug_glVertex3s;
+extern PFNGLVERTEX3SPROC glad_debug_glVertex3s;
 #else
-void PFNGLVERTEX3SPROC glad_glVertex3s;
+void extern PFNGLVERTEX3SPROC glad_glVertex3s;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX3SVPROC glad_debug_glVertex3sv;
+extern PFNGLVERTEX3SVPROC glad_debug_glVertex3sv;
 #else
-void PFNGLVERTEX3SVPROC glad_glVertex3sv;
+void extern PFNGLVERTEX3SVPROC glad_glVertex3sv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4DPROC glad_debug_glVertex4d;
+extern PFNGLVERTEX4DPROC glad_debug_glVertex4d;
 #else
-void PFNGLVERTEX4DPROC glad_glVertex4d;
+void extern PFNGLVERTEX4DPROC glad_glVertex4d;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4DVPROC glad_debug_glVertex4dv;
+extern PFNGLVERTEX4DVPROC glad_debug_glVertex4dv;
 #else
-void PFNGLVERTEX4DVPROC glad_glVertex4dv;
+void extern PFNGLVERTEX4DVPROC glad_glVertex4dv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4FPROC glad_debug_glVertex4f;
+extern PFNGLVERTEX4FPROC glad_debug_glVertex4f;
 #else
-void PFNGLVERTEX4FPROC glad_glVertex4f;
+void extern PFNGLVERTEX4FPROC glad_glVertex4f;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4FVPROC glad_debug_glVertex4fv;
+extern PFNGLVERTEX4FVPROC glad_debug_glVertex4fv;
 #else
-void PFNGLVERTEX4FVPROC glad_glVertex4fv;
+void extern PFNGLVERTEX4FVPROC glad_glVertex4fv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4IPROC glad_debug_glVertex4i;
+extern PFNGLVERTEX4IPROC glad_debug_glVertex4i;
 #else
-void PFNGLVERTEX4IPROC glad_glVertex4i;
+void extern PFNGLVERTEX4IPROC glad_glVertex4i;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4IVPROC glad_debug_glVertex4iv;
+extern PFNGLVERTEX4IVPROC glad_debug_glVertex4iv;
 #else
-void PFNGLVERTEX4IVPROC glad_glVertex4iv;
+void extern PFNGLVERTEX4IVPROC glad_glVertex4iv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4SPROC glad_debug_glVertex4s;
+extern PFNGLVERTEX4SPROC glad_debug_glVertex4s;
 #else
-void PFNGLVERTEX4SPROC glad_glVertex4s;
+void extern PFNGLVERTEX4SPROC glad_glVertex4s;
 #endif
 #ifdef DEBUG
-PFNGLVERTEX4SVPROC glad_debug_glVertex4sv;
+extern PFNGLVERTEX4SVPROC glad_debug_glVertex4sv;
 #else
-void PFNGLVERTEX4SVPROC glad_glVertex4sv;
+void extern PFNGLVERTEX4SVPROC glad_glVertex4sv;
 #endif
 #ifdef DEBUG
-PFNGLCLIPPLANEPROC glad_debug_glClipPlane;
+extern PFNGLCLIPPLANEPROC glad_debug_glClipPlane;
 #else
-void PFNGLCLIPPLANEPROC glad_glClipPlane;
+void extern PFNGLCLIPPLANEPROC glad_glClipPlane;
 #endif
 #ifdef DEBUG
-PFNGLCOLORMATERIALPROC glad_debug_glColorMaterial;
+extern PFNGLCOLORMATERIALPROC glad_debug_glColorMaterial;
 #else
-void PFNGLCOLORMATERIALPROC glad_glColorMaterial;
+void extern PFNGLCOLORMATERIALPROC glad_glColorMaterial;
 #endif
 #ifdef DEBUG
-PFNGLFOGFPROC glad_debug_glFogf;
+extern PFNGLFOGFPROC glad_debug_glFogf;
 #else
-void PFNGLFOGFPROC glad_glFogf;
+void extern PFNGLFOGFPROC glad_glFogf;
 #endif
 #ifdef DEBUG
-PFNGLFOGFVPROC glad_debug_glFogfv;
+extern PFNGLFOGFVPROC glad_debug_glFogfv;
 #else
-void PFNGLFOGFVPROC glad_glFogfv;
+void extern PFNGLFOGFVPROC glad_glFogfv;
 #endif
 #ifdef DEBUG
-PFNGLFOGIPROC glad_debug_glFogi;
+extern PFNGLFOGIPROC glad_debug_glFogi;
 #else
-void PFNGLFOGIPROC glad_glFogi;
+void extern PFNGLFOGIPROC glad_glFogi;
 #endif
 #ifdef DEBUG
-PFNGLFOGIVPROC glad_debug_glFogiv;
+extern PFNGLFOGIVPROC glad_debug_glFogiv;
 #else
-void PFNGLFOGIVPROC glad_glFogiv;
+void extern PFNGLFOGIVPROC glad_glFogiv;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTFPROC glad_debug_glLightf;
+extern PFNGLLIGHTFPROC glad_debug_glLightf;
 #else
-void PFNGLLIGHTFPROC glad_glLightf;
+void extern PFNGLLIGHTFPROC glad_glLightf;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTFVPROC glad_debug_glLightfv;
+extern PFNGLLIGHTFVPROC glad_debug_glLightfv;
 #else
-void PFNGLLIGHTFVPROC glad_glLightfv;
+void extern PFNGLLIGHTFVPROC glad_glLightfv;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTIPROC glad_debug_glLighti;
+extern PFNGLLIGHTIPROC glad_debug_glLighti;
 #else
-void PFNGLLIGHTIPROC glad_glLighti;
+void extern PFNGLLIGHTIPROC glad_glLighti;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTIVPROC glad_debug_glLightiv;
+extern PFNGLLIGHTIVPROC glad_debug_glLightiv;
 #else
-void PFNGLLIGHTIVPROC glad_glLightiv;
+void extern PFNGLLIGHTIVPROC glad_glLightiv;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTMODELFPROC glad_debug_glLightModelf;
+extern PFNGLLIGHTMODELFPROC glad_debug_glLightModelf;
 #else
-void PFNGLLIGHTMODELFPROC glad_glLightModelf;
+void extern PFNGLLIGHTMODELFPROC glad_glLightModelf;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTMODELFVPROC glad_debug_glLightModelfv;
+extern PFNGLLIGHTMODELFVPROC glad_debug_glLightModelfv;
 #else
-void PFNGLLIGHTMODELFVPROC glad_glLightModelfv;
+void extern PFNGLLIGHTMODELFVPROC glad_glLightModelfv;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTMODELIPROC glad_debug_glLightModeli;
+extern PFNGLLIGHTMODELIPROC glad_debug_glLightModeli;
 #else
-void PFNGLLIGHTMODELIPROC glad_glLightModeli;
+void extern PFNGLLIGHTMODELIPROC glad_glLightModeli;
 #endif
 #ifdef DEBUG
-PFNGLLIGHTMODELIVPROC glad_debug_glLightModeliv;
+extern PFNGLLIGHTMODELIVPROC glad_debug_glLightModeliv;
 #else
-void PFNGLLIGHTMODELIVPROC glad_glLightModeliv;
+void extern PFNGLLIGHTMODELIVPROC glad_glLightModeliv;
 #endif
 #ifdef DEBUG
-PFNGLLINESTIPPLEPROC glad_debug_glLineStipple;
+extern PFNGLLINESTIPPLEPROC glad_debug_glLineStipple;
 #else
-void PFNGLLINESTIPPLEPROC glad_glLineStipple;
+void extern PFNGLLINESTIPPLEPROC glad_glLineStipple;
 #endif
 #ifdef DEBUG
-PFNGLMATERIALFPROC glad_debug_glMaterialf;
+extern PFNGLMATERIALFPROC glad_debug_glMaterialf;
 #else
-void PFNGLMATERIALFPROC glad_glMaterialf;
+void extern PFNGLMATERIALFPROC glad_glMaterialf;
 #endif
 #ifdef DEBUG
-PFNGLMATERIALFVPROC glad_debug_glMaterialfv;
+extern PFNGLMATERIALFVPROC glad_debug_glMaterialfv;
 #else
-void PFNGLMATERIALFVPROC glad_glMaterialfv;
+void extern PFNGLMATERIALFVPROC glad_glMaterialfv;
 #endif
 #ifdef DEBUG
-PFNGLMATERIALIPROC glad_debug_glMateriali;
+extern PFNGLMATERIALIPROC glad_debug_glMateriali;
 #else
-void PFNGLMATERIALIPROC glad_glMateriali;
+void extern PFNGLMATERIALIPROC glad_glMateriali;
 #endif
 #ifdef DEBUG
-PFNGLMATERIALIVPROC glad_debug_glMaterialiv;
+extern PFNGLMATERIALIVPROC glad_debug_glMaterialiv;
 #else
-void PFNGLMATERIALIVPROC glad_glMaterialiv;
+void extern PFNGLMATERIALIVPROC glad_glMaterialiv;
 #endif
 #ifdef DEBUG
-PFNGLPOLYGONSTIPPLEPROC glad_debug_glPolygonStipple;
+extern PFNGLPOLYGONSTIPPLEPROC glad_debug_glPolygonStipple;
 #else
-void PFNGLPOLYGONSTIPPLEPROC glad_glPolygonStipple;
+void extern PFNGLPOLYGONSTIPPLEPROC glad_glPolygonStipple;
 #endif
 #ifdef DEBUG
-PFNGLSHADEMODELPROC glad_debug_glShadeModel;
+extern PFNGLSHADEMODELPROC glad_debug_glShadeModel;
 #else
-void PFNGLSHADEMODELPROC glad_glShadeModel;
+void extern PFNGLSHADEMODELPROC glad_glShadeModel;
 #endif
 #ifdef DEBUG
-PFNGLTEXENVFPROC glad_debug_glTexEnvf;
+extern PFNGLTEXENVFPROC glad_debug_glTexEnvf;
 #else
-void PFNGLTEXENVFPROC glad_glTexEnvf;
+void extern PFNGLTEXENVFPROC glad_glTexEnvf;
 #endif
 #ifdef DEBUG
-PFNGLTEXENVFVPROC glad_debug_glTexEnvfv;
+extern PFNGLTEXENVFVPROC glad_debug_glTexEnvfv;
 #else
-void PFNGLTEXENVFVPROC glad_glTexEnvfv;
+void extern PFNGLTEXENVFVPROC glad_glTexEnvfv;
 #endif
 #ifdef DEBUG
-PFNGLTEXENVIPROC glad_debug_glTexEnvi;
+extern PFNGLTEXENVIPROC glad_debug_glTexEnvi;
 #else
-void PFNGLTEXENVIPROC glad_glTexEnvi;
+void extern PFNGLTEXENVIPROC glad_glTexEnvi;
 #endif
 #ifdef DEBUG
-PFNGLTEXENVIVPROC glad_debug_glTexEnviv;
+extern PFNGLTEXENVIVPROC glad_debug_glTexEnviv;
 #else
-void PFNGLTEXENVIVPROC glad_glTexEnviv;
+void extern PFNGLTEXENVIVPROC glad_glTexEnviv;
 #endif
 #ifdef DEBUG
-PFNGLTEXGENDPROC glad_debug_glTexGend;
+extern PFNGLTEXGENDPROC glad_debug_glTexGend;
 #else
-void PFNGLTEXGENDPROC glad_glTexGend;
+void extern PFNGLTEXGENDPROC glad_glTexGend;
 #endif
 #ifdef DEBUG
-PFNGLTEXGENDVPROC glad_debug_glTexGendv;
+extern PFNGLTEXGENDVPROC glad_debug_glTexGendv;
 #else
-void PFNGLTEXGENDVPROC glad_glTexGendv;
+void extern PFNGLTEXGENDVPROC glad_glTexGendv;
 #endif
 #ifdef DEBUG
-PFNGLTEXGENFPROC glad_debug_glTexGenf;
+extern PFNGLTEXGENFPROC glad_debug_glTexGenf;
 #else
-void PFNGLTEXGENFPROC glad_glTexGenf;
+void extern PFNGLTEXGENFPROC glad_glTexGenf;
 #endif
 #ifdef DEBUG
-PFNGLTEXGENFVPROC glad_debug_glTexGenfv;
+extern PFNGLTEXGENFVPROC glad_debug_glTexGenfv;
 #else
-void PFNGLTEXGENFVPROC glad_glTexGenfv;
+void extern PFNGLTEXGENFVPROC glad_glTexGenfv;
 #endif
 #ifdef DEBUG
-PFNGLTEXGENIPROC glad_debug_glTexGeni;
+extern PFNGLTEXGENIPROC glad_debug_glTexGeni;
 #else
-void PFNGLTEXGENIPROC glad_glTexGeni;
+void extern PFNGLTEXGENIPROC glad_glTexGeni;
 #endif
 #ifdef DEBUG
-PFNGLTEXGENIVPROC glad_debug_glTexGeniv;
+extern PFNGLTEXGENIVPROC glad_debug_glTexGeniv;
 #else
-void PFNGLTEXGENIVPROC glad_glTexGeniv;
+void extern PFNGLTEXGENIVPROC glad_glTexGeniv;
 #endif
 #ifdef DEBUG
-PFNGLFEEDBACKBUFFERPROC glad_debug_glFeedbackBuffer;
+extern PFNGLFEEDBACKBUFFERPROC glad_debug_glFeedbackBuffer;
 #else
-void PFNGLFEEDBACKBUFFERPROC glad_glFeedbackBuffer;
+void extern PFNGLFEEDBACKBUFFERPROC glad_glFeedbackBuffer;
 #endif
 #ifdef DEBUG
-PFNGLSELECTBUFFERPROC glad_debug_glSelectBuffer;
+extern PFNGLSELECTBUFFERPROC glad_debug_glSelectBuffer;
 #else
-void PFNGLSELECTBUFFERPROC glad_glSelectBuffer;
+void extern PFNGLSELECTBUFFERPROC glad_glSelectBuffer;
 #endif
 #ifdef DEBUG
-PFNGLINITNAMESPROC glad_debug_glInitNames;
+extern PFNGLINITNAMESPROC glad_debug_glInitNames;
 #else
-void PFNGLINITNAMESPROC glad_glInitNames;
+void extern PFNGLINITNAMESPROC glad_glInitNames;
 #endif
 #ifdef DEBUG
-PFNGLLOADNAMEPROC glad_debug_glLoadName;
+extern PFNGLLOADNAMEPROC glad_debug_glLoadName;
 #else
-void PFNGLLOADNAMEPROC glad_glLoadName;
+void extern PFNGLLOADNAMEPROC glad_glLoadName;
 #endif
 #ifdef DEBUG
-PFNGLPASSTHROUGHPROC glad_debug_glPassThrough;
+extern PFNGLPASSTHROUGHPROC glad_debug_glPassThrough;
 #else
-void PFNGLPASSTHROUGHPROC glad_glPassThrough;
+void extern PFNGLPASSTHROUGHPROC glad_glPassThrough;
 #endif
 #ifdef DEBUG
-PFNGLPOPNAMEPROC glad_debug_glPopName;
+extern PFNGLPOPNAMEPROC glad_debug_glPopName;
 #else
-void PFNGLPOPNAMEPROC glad_glPopName;
+void extern PFNGLPOPNAMEPROC glad_glPopName;
 #endif
 #ifdef DEBUG
-PFNGLPUSHNAMEPROC glad_debug_glPushName;
+extern PFNGLPUSHNAMEPROC glad_debug_glPushName;
 #else
-void PFNGLPUSHNAMEPROC glad_glPushName;
+void extern PFNGLPUSHNAMEPROC glad_glPushName;
 #endif
 #ifdef DEBUG
-PFNGLCLEARACCUMPROC glad_debug_glClearAccum;
+extern PFNGLCLEARACCUMPROC glad_debug_glClearAccum;
 #else
-void PFNGLCLEARACCUMPROC glad_glClearAccum;
+void extern PFNGLCLEARACCUMPROC glad_glClearAccum;
 #endif
 #ifdef DEBUG
-PFNGLCLEARINDEXPROC glad_debug_glClearIndex;
+extern PFNGLCLEARINDEXPROC glad_debug_glClearIndex;
 #else
-void PFNGLCLEARINDEXPROC glad_glClearIndex;
+void extern PFNGLCLEARINDEXPROC glad_glClearIndex;
 #endif
 #ifdef DEBUG
-PFNGLINDEXMASKPROC glad_debug_glIndexMask;
+extern PFNGLINDEXMASKPROC glad_debug_glIndexMask;
 #else
-void PFNGLINDEXMASKPROC glad_glIndexMask;
+void extern PFNGLINDEXMASKPROC glad_glIndexMask;
 #endif
 #ifdef DEBUG
-PFNGLACCUMPROC glad_debug_glAccum;
+extern PFNGLACCUMPROC glad_debug_glAccum;
 #else
-void PFNGLACCUMPROC glad_glAccum;
+void extern PFNGLACCUMPROC glad_glAccum;
 #endif
 #ifdef DEBUG
-PFNGLPOPATTRIBPROC glad_debug_glPopAttrib;
+extern PFNGLPOPATTRIBPROC glad_debug_glPopAttrib;
 #else
-void PFNGLPOPATTRIBPROC glad_glPopAttrib;
+void extern PFNGLPOPATTRIBPROC glad_glPopAttrib;
 #endif
 #ifdef DEBUG
-PFNGLPUSHATTRIBPROC glad_debug_glPushAttrib;
+extern PFNGLPUSHATTRIBPROC glad_debug_glPushAttrib;
 #else
-void PFNGLPUSHATTRIBPROC glad_glPushAttrib;
+void extern PFNGLPUSHATTRIBPROC glad_glPushAttrib;
 #endif
 #ifdef DEBUG
-PFNGLMAP1DPROC glad_debug_glMap1d;
+extern PFNGLMAP1DPROC glad_debug_glMap1d;
 #else
-void PFNGLMAP1DPROC glad_glMap1d;
+void extern PFNGLMAP1DPROC glad_glMap1d;
 #endif
 #ifdef DEBUG
-PFNGLMAP1FPROC glad_debug_glMap1f;
+extern PFNGLMAP1FPROC glad_debug_glMap1f;
 #else
-void PFNGLMAP1FPROC glad_glMap1f;
+void extern PFNGLMAP1FPROC glad_glMap1f;
 #endif
 #ifdef DEBUG
-PFNGLMAP2DPROC glad_debug_glMap2d;
+extern PFNGLMAP2DPROC glad_debug_glMap2d;
 #else
-void PFNGLMAP2DPROC glad_glMap2d;
+void extern PFNGLMAP2DPROC glad_glMap2d;
 #endif
 #ifdef DEBUG
-PFNGLMAP2FPROC glad_debug_glMap2f;
+extern PFNGLMAP2FPROC glad_debug_glMap2f;
 #else
-void PFNGLMAP2FPROC glad_glMap2f;
+void extern PFNGLMAP2FPROC glad_glMap2f;
 #endif
 #ifdef DEBUG
-PFNGLMAPGRID1DPROC glad_debug_glMapGrid1d;
+extern PFNGLMAPGRID1DPROC glad_debug_glMapGrid1d;
 #else
-void PFNGLMAPGRID1DPROC glad_glMapGrid1d;
+void extern PFNGLMAPGRID1DPROC glad_glMapGrid1d;
 #endif
 #ifdef DEBUG
-PFNGLMAPGRID1FPROC glad_debug_glMapGrid1f;
+extern PFNGLMAPGRID1FPROC glad_debug_glMapGrid1f;
 #else
-void PFNGLMAPGRID1FPROC glad_glMapGrid1f;
+void extern PFNGLMAPGRID1FPROC glad_glMapGrid1f;
 #endif
 #ifdef DEBUG
-PFNGLMAPGRID2DPROC glad_debug_glMapGrid2d;
+extern PFNGLMAPGRID2DPROC glad_debug_glMapGrid2d;
 #else
-void PFNGLMAPGRID2DPROC glad_glMapGrid2d;
+void extern PFNGLMAPGRID2DPROC glad_glMapGrid2d;
 #endif
 #ifdef DEBUG
-PFNGLMAPGRID2FPROC glad_debug_glMapGrid2f;
+extern PFNGLMAPGRID2FPROC glad_debug_glMapGrid2f;
 #else
-void PFNGLMAPGRID2FPROC glad_glMapGrid2f;
+void extern PFNGLMAPGRID2FPROC glad_glMapGrid2f;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD1DPROC glad_debug_glEvalCoord1d;
+extern PFNGLEVALCOORD1DPROC glad_debug_glEvalCoord1d;
 #else
-void PFNGLEVALCOORD1DPROC glad_glEvalCoord1d;
+void extern PFNGLEVALCOORD1DPROC glad_glEvalCoord1d;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD1DVPROC glad_debug_glEvalCoord1dv;
+extern PFNGLEVALCOORD1DVPROC glad_debug_glEvalCoord1dv;
 #else
-void PFNGLEVALCOORD1DVPROC glad_glEvalCoord1dv;
+void extern PFNGLEVALCOORD1DVPROC glad_glEvalCoord1dv;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD1FPROC glad_debug_glEvalCoord1f;
+extern PFNGLEVALCOORD1FPROC glad_debug_glEvalCoord1f;
 #else
-void PFNGLEVALCOORD1FPROC glad_glEvalCoord1f;
+void extern PFNGLEVALCOORD1FPROC glad_glEvalCoord1f;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD1FVPROC glad_debug_glEvalCoord1fv;
+extern PFNGLEVALCOORD1FVPROC glad_debug_glEvalCoord1fv;
 #else
-void PFNGLEVALCOORD1FVPROC glad_glEvalCoord1fv;
+void extern PFNGLEVALCOORD1FVPROC glad_glEvalCoord1fv;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD2DPROC glad_debug_glEvalCoord2d;
+extern PFNGLEVALCOORD2DPROC glad_debug_glEvalCoord2d;
 #else
-void PFNGLEVALCOORD2DPROC glad_glEvalCoord2d;
+void extern PFNGLEVALCOORD2DPROC glad_glEvalCoord2d;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD2DVPROC glad_debug_glEvalCoord2dv;
+extern PFNGLEVALCOORD2DVPROC glad_debug_glEvalCoord2dv;
 #else
-void PFNGLEVALCOORD2DVPROC glad_glEvalCoord2dv;
+void extern PFNGLEVALCOORD2DVPROC glad_glEvalCoord2dv;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD2FPROC glad_debug_glEvalCoord2f;
+extern PFNGLEVALCOORD2FPROC glad_debug_glEvalCoord2f;
 #else
-void PFNGLEVALCOORD2FPROC glad_glEvalCoord2f;
+void extern PFNGLEVALCOORD2FPROC glad_glEvalCoord2f;
 #endif
 #ifdef DEBUG
-PFNGLEVALCOORD2FVPROC glad_debug_glEvalCoord2fv;
+extern PFNGLEVALCOORD2FVPROC glad_debug_glEvalCoord2fv;
 #else
-void PFNGLEVALCOORD2FVPROC glad_glEvalCoord2fv;
+void extern PFNGLEVALCOORD2FVPROC glad_glEvalCoord2fv;
 #endif
 #ifdef DEBUG
-PFNGLEVALMESH1PROC glad_debug_glEvalMesh1;
+extern PFNGLEVALMESH1PROC glad_debug_glEvalMesh1;
 #else
-void PFNGLEVALMESH1PROC glad_glEvalMesh1;
+void extern PFNGLEVALMESH1PROC glad_glEvalMesh1;
 #endif
 #ifdef DEBUG
-PFNGLEVALPOINT1PROC glad_debug_glEvalPoint1;
+extern PFNGLEVALPOINT1PROC glad_debug_glEvalPoint1;
 #else
-void PFNGLEVALPOINT1PROC glad_glEvalPoint1;
+void extern PFNGLEVALPOINT1PROC glad_glEvalPoint1;
 #endif
 #ifdef DEBUG
-PFNGLEVALMESH2PROC glad_debug_glEvalMesh2;
+extern PFNGLEVALMESH2PROC glad_debug_glEvalMesh2;
 #else
-void PFNGLEVALMESH2PROC glad_glEvalMesh2;
+void extern PFNGLEVALMESH2PROC glad_glEvalMesh2;
 #endif
 #ifdef DEBUG
-PFNGLEVALPOINT2PROC glad_debug_glEvalPoint2;
+extern PFNGLEVALPOINT2PROC glad_debug_glEvalPoint2;
 #else
-void PFNGLEVALPOINT2PROC glad_glEvalPoint2;
+void extern PFNGLEVALPOINT2PROC glad_glEvalPoint2;
 #endif
 #ifdef DEBUG
-PFNGLALPHAFUNCPROC glad_debug_glAlphaFunc;
+extern PFNGLALPHAFUNCPROC glad_debug_glAlphaFunc;
 #else
-void PFNGLALPHAFUNCPROC glad_glAlphaFunc;
+void extern PFNGLALPHAFUNCPROC glad_glAlphaFunc;
 #endif
 #ifdef DEBUG
-PFNGLPIXELZOOMPROC glad_debug_glPixelZoom;
+extern PFNGLPIXELZOOMPROC glad_debug_glPixelZoom;
 #else
-void PFNGLPIXELZOOMPROC glad_glPixelZoom;
+void extern PFNGLPIXELZOOMPROC glad_glPixelZoom;
 #endif
 #ifdef DEBUG
-PFNGLPIXELTRANSFERFPROC glad_debug_glPixelTransferf;
+extern PFNGLPIXELTRANSFERFPROC glad_debug_glPixelTransferf;
 #else
-void PFNGLPIXELTRANSFERFPROC glad_glPixelTransferf;
+void extern PFNGLPIXELTRANSFERFPROC glad_glPixelTransferf;
 #endif
 #ifdef DEBUG
-PFNGLPIXELTRANSFERIPROC glad_debug_glPixelTransferi;
+extern PFNGLPIXELTRANSFERIPROC glad_debug_glPixelTransferi;
 #else
-void PFNGLPIXELTRANSFERIPROC glad_glPixelTransferi;
+void extern PFNGLPIXELTRANSFERIPROC glad_glPixelTransferi;
 #endif
 #ifdef DEBUG
-PFNGLPIXELMAPFVPROC glad_debug_glPixelMapfv;
+extern PFNGLPIXELMAPFVPROC glad_debug_glPixelMapfv;
 #else
-void PFNGLPIXELMAPFVPROC glad_glPixelMapfv;
+void extern PFNGLPIXELMAPFVPROC glad_glPixelMapfv;
 #endif
 #ifdef DEBUG
-PFNGLPIXELMAPUIVPROC glad_debug_glPixelMapuiv;
+extern PFNGLPIXELMAPUIVPROC glad_debug_glPixelMapuiv;
 #else
-void PFNGLPIXELMAPUIVPROC glad_glPixelMapuiv;
+void extern PFNGLPIXELMAPUIVPROC glad_glPixelMapuiv;
 #endif
 #ifdef DEBUG
-PFNGLPIXELMAPUSVPROC glad_debug_glPixelMapusv;
+extern PFNGLPIXELMAPUSVPROC glad_debug_glPixelMapusv;
 #else
-void PFNGLPIXELMAPUSVPROC glad_glPixelMapusv;
+void extern PFNGLPIXELMAPUSVPROC glad_glPixelMapusv;
 #endif
 #ifdef DEBUG
-PFNGLCOPYPIXELSPROC glad_debug_glCopyPixels;
+extern PFNGLCOPYPIXELSPROC glad_debug_glCopyPixels;
 #else
-void PFNGLCOPYPIXELSPROC glad_glCopyPixels;
+void extern PFNGLCOPYPIXELSPROC glad_glCopyPixels;
 #endif
 #ifdef DEBUG
-PFNGLDRAWPIXELSPROC glad_debug_glDrawPixels;
+extern PFNGLDRAWPIXELSPROC glad_debug_glDrawPixels;
 #else
-void PFNGLDRAWPIXELSPROC glad_glDrawPixels;
+void extern PFNGLDRAWPIXELSPROC glad_glDrawPixels;
 #endif
 #ifdef DEBUG
-PFNGLGETCLIPPLANEPROC glad_debug_glGetClipPlane;
+extern PFNGLGETCLIPPLANEPROC glad_debug_glGetClipPlane;
 #else
-void PFNGLGETCLIPPLANEPROC glad_glGetClipPlane;
+void extern PFNGLGETCLIPPLANEPROC glad_glGetClipPlane;
 #endif
 #ifdef DEBUG
-PFNGLGETLIGHTFVPROC glad_debug_glGetLightfv;
+extern PFNGLGETLIGHTFVPROC glad_debug_glGetLightfv;
 #else
-void PFNGLGETLIGHTFVPROC glad_glGetLightfv;
+void extern PFNGLGETLIGHTFVPROC glad_glGetLightfv;
 #endif
 #ifdef DEBUG
-PFNGLGETLIGHTIVPROC glad_debug_glGetLightiv;
+extern PFNGLGETLIGHTIVPROC glad_debug_glGetLightiv;
 #else
-void PFNGLGETLIGHTIVPROC glad_glGetLightiv;
+void extern PFNGLGETLIGHTIVPROC glad_glGetLightiv;
 #endif
 #ifdef DEBUG
-PFNGLGETMAPDVPROC glad_debug_glGetMapdv;
+extern PFNGLGETMAPDVPROC glad_debug_glGetMapdv;
 #else
-void PFNGLGETMAPDVPROC glad_glGetMapdv;
+void extern PFNGLGETMAPDVPROC glad_glGetMapdv;
 #endif
 #ifdef DEBUG
-PFNGLGETMAPFVPROC glad_debug_glGetMapfv;
+extern PFNGLGETMAPFVPROC glad_debug_glGetMapfv;
 #else
-void PFNGLGETMAPFVPROC glad_glGetMapfv;
+void extern PFNGLGETMAPFVPROC glad_glGetMapfv;
 #endif
 #ifdef DEBUG
-PFNGLGETMAPIVPROC glad_debug_glGetMapiv;
+extern PFNGLGETMAPIVPROC glad_debug_glGetMapiv;
 #else
-void PFNGLGETMAPIVPROC glad_glGetMapiv;
+void extern PFNGLGETMAPIVPROC glad_glGetMapiv;
 #endif
 #ifdef DEBUG
-PFNGLGETMATERIALFVPROC glad_debug_glGetMaterialfv;
+extern PFNGLGETMATERIALFVPROC glad_debug_glGetMaterialfv;
 #else
-void PFNGLGETMATERIALFVPROC glad_glGetMaterialfv;
+void extern PFNGLGETMATERIALFVPROC glad_glGetMaterialfv;
 #endif
 #ifdef DEBUG
-PFNGLGETMATERIALIVPROC glad_debug_glGetMaterialiv;
+extern PFNGLGETMATERIALIVPROC glad_debug_glGetMaterialiv;
 #else
-void PFNGLGETMATERIALIVPROC glad_glGetMaterialiv;
+void extern PFNGLGETMATERIALIVPROC glad_glGetMaterialiv;
 #endif
 #ifdef DEBUG
-PFNGLGETPIXELMAPFVPROC glad_debug_glGetPixelMapfv;
+extern PFNGLGETPIXELMAPFVPROC glad_debug_glGetPixelMapfv;
 #else
-void PFNGLGETPIXELMAPFVPROC glad_glGetPixelMapfv;
+void extern PFNGLGETPIXELMAPFVPROC glad_glGetPixelMapfv;
 #endif
 #ifdef DEBUG
-PFNGLGETPIXELMAPUIVPROC glad_debug_glGetPixelMapuiv;
+extern PFNGLGETPIXELMAPUIVPROC glad_debug_glGetPixelMapuiv;
 #else
-void PFNGLGETPIXELMAPUIVPROC glad_glGetPixelMapuiv;
+void extern PFNGLGETPIXELMAPUIVPROC glad_glGetPixelMapuiv;
 #endif
 #ifdef DEBUG
-PFNGLGETPIXELMAPUSVPROC glad_debug_glGetPixelMapusv;
+extern PFNGLGETPIXELMAPUSVPROC glad_debug_glGetPixelMapusv;
 #else
-void PFNGLGETPIXELMAPUSVPROC glad_glGetPixelMapusv;
+void extern PFNGLGETPIXELMAPUSVPROC glad_glGetPixelMapusv;
 #endif
 #ifdef DEBUG
-PFNGLGETPOLYGONSTIPPLEPROC glad_debug_glGetPolygonStipple;
+extern PFNGLGETPOLYGONSTIPPLEPROC glad_debug_glGetPolygonStipple;
 #else
-void PFNGLGETPOLYGONSTIPPLEPROC glad_glGetPolygonStipple;
+void extern PFNGLGETPOLYGONSTIPPLEPROC glad_glGetPolygonStipple;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXENVFVPROC glad_debug_glGetTexEnvfv;
+extern PFNGLGETTEXENVFVPROC glad_debug_glGetTexEnvfv;
 #else
-void PFNGLGETTEXENVFVPROC glad_glGetTexEnvfv;
+void extern PFNGLGETTEXENVFVPROC glad_glGetTexEnvfv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXENVIVPROC glad_debug_glGetTexEnviv;
+extern PFNGLGETTEXENVIVPROC glad_debug_glGetTexEnviv;
 #else
-void PFNGLGETTEXENVIVPROC glad_glGetTexEnviv;
+void extern PFNGLGETTEXENVIVPROC glad_glGetTexEnviv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXGENDVPROC glad_debug_glGetTexGendv;
+extern PFNGLGETTEXGENDVPROC glad_debug_glGetTexGendv;
 #else
-void PFNGLGETTEXGENDVPROC glad_glGetTexGendv;
+void extern PFNGLGETTEXGENDVPROC glad_glGetTexGendv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXGENFVPROC glad_debug_glGetTexGenfv;
+extern PFNGLGETTEXGENFVPROC glad_debug_glGetTexGenfv;
 #else
-void PFNGLGETTEXGENFVPROC glad_glGetTexGenfv;
+void extern PFNGLGETTEXGENFVPROC glad_glGetTexGenfv;
 #endif
 #ifdef DEBUG
-PFNGLGETTEXGENIVPROC glad_debug_glGetTexGeniv;
+extern PFNGLGETTEXGENIVPROC glad_debug_glGetTexGeniv;
 #else
-void PFNGLGETTEXGENIVPROC glad_glGetTexGeniv;
+void extern PFNGLGETTEXGENIVPROC glad_glGetTexGeniv;
 #endif
 #ifdef DEBUG
-PFNGLFRUSTUMPROC glad_debug_glFrustum;
+extern PFNGLFRUSTUMPROC glad_debug_glFrustum;
 #else
-void PFNGLFRUSTUMPROC glad_glFrustum;
+void extern PFNGLFRUSTUMPROC glad_glFrustum;
 #endif
 #ifdef DEBUG
-PFNGLLOADIDENTITYPROC glad_debug_glLoadIdentity;
+extern PFNGLLOADIDENTITYPROC glad_debug_glLoadIdentity;
 #else
-void PFNGLLOADIDENTITYPROC glad_glLoadIdentity;
+void extern PFNGLLOADIDENTITYPROC glad_glLoadIdentity;
 #endif
 #ifdef DEBUG
-PFNGLLOADMATRIXFPROC glad_debug_glLoadMatrixf;
+extern PFNGLLOADMATRIXFPROC glad_debug_glLoadMatrixf;
 #else
-void PFNGLLOADMATRIXFPROC glad_glLoadMatrixf;
+void extern PFNGLLOADMATRIXFPROC glad_glLoadMatrixf;
 #endif
 #ifdef DEBUG
-PFNGLLOADMATRIXDPROC glad_debug_glLoadMatrixd;
+extern PFNGLLOADMATRIXDPROC glad_debug_glLoadMatrixd;
 #else
-void PFNGLLOADMATRIXDPROC glad_glLoadMatrixd;
+void extern PFNGLLOADMATRIXDPROC glad_glLoadMatrixd;
 #endif
 #ifdef DEBUG
-PFNGLMATRIXMODEPROC glad_debug_glMatrixMode;
+extern PFNGLMATRIXMODEPROC glad_debug_glMatrixMode;
 #else
-void PFNGLMATRIXMODEPROC glad_glMatrixMode;
+void extern PFNGLMATRIXMODEPROC glad_glMatrixMode;
 #endif
 #ifdef DEBUG
-PFNGLMULTMATRIXFPROC glad_debug_glMultMatrixf;
+extern PFNGLMULTMATRIXFPROC glad_debug_glMultMatrixf;
 #else
-void PFNGLMULTMATRIXFPROC glad_glMultMatrixf;
+void extern PFNGLMULTMATRIXFPROC glad_glMultMatrixf;
 #endif
 #ifdef DEBUG
-PFNGLMULTMATRIXDPROC glad_debug_glMultMatrixd;
+extern PFNGLMULTMATRIXDPROC glad_debug_glMultMatrixd;
 #else
-void PFNGLMULTMATRIXDPROC glad_glMultMatrixd;
+void extern PFNGLMULTMATRIXDPROC glad_glMultMatrixd;
 #endif
 #ifdef DEBUG
-PFNGLORTHOPROC glad_debug_glOrtho;
+extern PFNGLORTHOPROC glad_debug_glOrtho;
 #else
-void PFNGLORTHOPROC glad_glOrtho;
+void extern PFNGLORTHOPROC glad_glOrtho;
 #endif
 #ifdef DEBUG
-PFNGLPOPMATRIXPROC glad_debug_glPopMatrix;
+extern PFNGLPOPMATRIXPROC glad_debug_glPopMatrix;
 #else
-void PFNGLPOPMATRIXPROC glad_glPopMatrix;
+void extern PFNGLPOPMATRIXPROC glad_glPopMatrix;
 #endif
 #ifdef DEBUG
-PFNGLPUSHMATRIXPROC glad_debug_glPushMatrix;
+extern PFNGLPUSHMATRIXPROC glad_debug_glPushMatrix;
 #else
-void PFNGLPUSHMATRIXPROC glad_glPushMatrix;
+void extern PFNGLPUSHMATRIXPROC glad_glPushMatrix;
 #endif
 #ifdef DEBUG
-PFNGLROTATEDPROC glad_debug_glRotated;
+extern PFNGLROTATEDPROC glad_debug_glRotated;
 #else
-void PFNGLROTATEDPROC glad_glRotated;
+void extern PFNGLROTATEDPROC glad_glRotated;
 #endif
 #ifdef DEBUG
-PFNGLROTATEFPROC glad_debug_glRotatef;
+extern PFNGLROTATEFPROC glad_debug_glRotatef;
 #else
-void PFNGLROTATEFPROC glad_glRotatef;
+void extern PFNGLROTATEFPROC glad_glRotatef;
 #endif
 #ifdef DEBUG
-PFNGLSCALEDPROC glad_debug_glScaled;
+extern PFNGLSCALEDPROC glad_debug_glScaled;
 #else
-void PFNGLSCALEDPROC glad_glScaled;
+void extern PFNGLSCALEDPROC glad_glScaled;
 #endif
 #ifdef DEBUG
-PFNGLSCALEFPROC glad_debug_glScalef;
+extern PFNGLSCALEFPROC glad_debug_glScalef;
 #else
-void PFNGLSCALEFPROC glad_glScalef;
+void extern PFNGLSCALEFPROC glad_glScalef;
 #endif
 #ifdef DEBUG
-PFNGLTRANSLATEDPROC glad_debug_glTranslated;
+extern PFNGLTRANSLATEDPROC glad_debug_glTranslated;
 #else
-void PFNGLTRANSLATEDPROC glad_glTranslated;
+void extern PFNGLTRANSLATEDPROC glad_glTranslated;
 #endif
 #ifdef DEBUG
-PFNGLTRANSLATEFPROC glad_debug_glTranslatef;
+extern PFNGLTRANSLATEFPROC glad_debug_glTranslatef;
 #else
-void PFNGLTRANSLATEFPROC glad_glTranslatef;
+void extern PFNGLTRANSLATEFPROC glad_glTranslatef;
 #endif
 #ifdef DEBUG
-PFNGLDRAWARRAYSPROC glad_debug_glDrawArrays;
+extern PFNGLDRAWARRAYSPROC glad_debug_glDrawArrays;
 #else
-void PFNGLDRAWARRAYSPROC glad_glDrawArrays;
+void extern PFNGLDRAWARRAYSPROC glad_glDrawArrays;
 #endif
 #ifdef DEBUG
-PFNGLDRAWELEMENTSPROC glad_debug_glDrawElements;
+extern PFNGLDRAWELEMENTSPROC glad_debug_glDrawElements;
 #else
-void PFNGLDRAWELEMENTSPROC glad_glDrawElements;
+void extern PFNGLDRAWELEMENTSPROC glad_glDrawElements;
 #endif
 #ifdef DEBUG
-PFNGLGETPOINTERVPROC glad_debug_glGetPointerv;
+extern PFNGLGETPOINTERVPROC glad_debug_glGetPointerv;
 #else
-void PFNGLGETPOINTERVPROC glad_glGetPointerv;
+void extern PFNGLGETPOINTERVPROC glad_glGetPointerv;
 #endif
 #ifdef DEBUG
-PFNGLPOLYGONOFFSETPROC glad_debug_glPolygonOffset;
+extern PFNGLPOLYGONOFFSETPROC glad_debug_glPolygonOffset;
 #else
-void PFNGLPOLYGONOFFSETPROC glad_glPolygonOffset;
+void extern PFNGLPOLYGONOFFSETPROC glad_glPolygonOffset;
 #endif
 #ifdef DEBUG
-PFNGLCOPYTEXIMAGE1DPROC glad_debug_glCopyTexImage1D;
+extern PFNGLCOPYTEXIMAGE1DPROC glad_debug_glCopyTexImage1D;
 #else
-void PFNGLCOPYTEXIMAGE1DPROC glad_glCopyTexImage1D;
+void extern PFNGLCOPYTEXIMAGE1DPROC glad_glCopyTexImage1D;
 #endif
 #ifdef DEBUG
-PFNGLCOPYTEXIMAGE2DPROC glad_debug_glCopyTexImage2D;
+extern PFNGLCOPYTEXIMAGE2DPROC glad_debug_glCopyTexImage2D;
 #else
-void PFNGLCOPYTEXIMAGE2DPROC glad_glCopyTexImage2D;
+void extern PFNGLCOPYTEXIMAGE2DPROC glad_glCopyTexImage2D;
 #endif
 #ifdef DEBUG
-PFNGLCOPYTEXSUBIMAGE1DPROC glad_debug_glCopyTexSubImage1D;
+extern PFNGLCOPYTEXSUBIMAGE1DPROC glad_debug_glCopyTexSubImage1D;
 #else
-void PFNGLCOPYTEXSUBIMAGE1DPROC glad_glCopyTexSubImage1D;
+void extern PFNGLCOPYTEXSUBIMAGE1DPROC glad_glCopyTexSubImage1D;
 #endif
 #ifdef DEBUG
-PFNGLCOPYTEXSUBIMAGE2DPROC glad_debug_glCopyTexSubImage2D;
+extern PFNGLCOPYTEXSUBIMAGE2DPROC glad_debug_glCopyTexSubImage2D;
 #else
-void PFNGLCOPYTEXSUBIMAGE2DPROC glad_glCopyTexSubImage2D;
+void extern PFNGLCOPYTEXSUBIMAGE2DPROC glad_glCopyTexSubImage2D;
 #endif
 #ifdef DEBUG
-PFNGLTEXSUBIMAGE1DPROC glad_debug_glTexSubImage1D;
+extern PFNGLTEXSUBIMAGE1DPROC glad_debug_glTexSubImage1D;
 #else
-void PFNGLTEXSUBIMAGE1DPROC glad_glTexSubImage1D;
+void extern PFNGLTEXSUBIMAGE1DPROC glad_glTexSubImage1D;
 #endif
 #ifdef DEBUG
-PFNGLTEXSUBIMAGE2DPROC glad_debug_glTexSubImage2D;
+extern PFNGLTEXSUBIMAGE2DPROC glad_debug_glTexSubImage2D;
 #else
-void PFNGLTEXSUBIMAGE2DPROC glad_glTexSubImage2D;
+void extern PFNGLTEXSUBIMAGE2DPROC glad_glTexSubImage2D;
 #endif
 #ifdef DEBUG
-PFNGLBINDTEXTUREPROC glad_debug_glBindTexture;
+extern PFNGLBINDTEXTUREPROC glad_debug_glBindTexture;
 #else
-void PFNGLBINDTEXTUREPROC glad_glBindTexture;
+void extern PFNGLBINDTEXTUREPROC glad_glBindTexture;
 #endif
 #ifdef DEBUG
-PFNGLDELETETEXTURESPROC glad_debug_glDeleteTextures;
+extern PFNGLDELETETEXTURESPROC glad_debug_glDeleteTextures;
 #else
-void PFNGLDELETETEXTURESPROC glad_glDeleteTextures;
+void extern PFNGLDELETETEXTURESPROC glad_glDeleteTextures;
 #endif
 #ifdef DEBUG
-PFNGLGENTEXTURESPROC glad_debug_glGenTextures;
+extern PFNGLGENTEXTURESPROC glad_debug_glGenTextures;
 #else
-void PFNGLGENTEXTURESPROC glad_glGenTextures;
+void extern PFNGLGENTEXTURESPROC glad_glGenTextures;
 #endif
 #ifdef DEBUG
-PFNGLARRAYELEMENTPROC glad_debug_glArrayElement;
+extern PFNGLARRAYELEMENTPROC glad_debug_glArrayElement;
 #else
-void PFNGLARRAYELEMENTPROC glad_glArrayElement;
+void extern PFNGLARRAYELEMENTPROC glad_glArrayElement;
 #endif
 #ifdef DEBUG
-PFNGLCOLORPOINTERPROC glad_debug_glColorPointer;
+extern PFNGLCOLORPOINTERPROC glad_debug_glColorPointer;
 #else
-void PFNGLCOLORPOINTERPROC glad_glColorPointer;
+void extern PFNGLCOLORPOINTERPROC glad_glColorPointer;
 #endif
 #ifdef DEBUG
-PFNGLDISABLECLIENTSTATEPROC glad_debug_glDisableClientState;
+extern PFNGLDISABLECLIENTSTATEPROC glad_debug_glDisableClientState;
 #else
-void PFNGLDISABLECLIENTSTATEPROC glad_glDisableClientState;
+void extern PFNGLDISABLECLIENTSTATEPROC glad_glDisableClientState;
 #endif
 #ifdef DEBUG
-PFNGLEDGEFLAGPOINTERPROC glad_debug_glEdgeFlagPointer;
+extern PFNGLEDGEFLAGPOINTERPROC glad_debug_glEdgeFlagPointer;
 #else
-void PFNGLEDGEFLAGPOINTERPROC glad_glEdgeFlagPointer;
+void extern PFNGLEDGEFLAGPOINTERPROC glad_glEdgeFlagPointer;
 #endif
 #ifdef DEBUG
-PFNGLENABLECLIENTSTATEPROC glad_debug_glEnableClientState;
+extern PFNGLENABLECLIENTSTATEPROC glad_debug_glEnableClientState;
 #else
-void PFNGLENABLECLIENTSTATEPROC glad_glEnableClientState;
+void extern PFNGLENABLECLIENTSTATEPROC glad_glEnableClientState;
 #endif
 #ifdef DEBUG
-PFNGLINDEXPOINTERPROC glad_debug_glIndexPointer;
+extern PFNGLINDEXPOINTERPROC glad_debug_glIndexPointer;
 #else
-void PFNGLINDEXPOINTERPROC glad_glIndexPointer;
+void extern PFNGLINDEXPOINTERPROC glad_glIndexPointer;
 #endif
 #ifdef DEBUG
-PFNGLINTERLEAVEDARRAYSPROC glad_debug_glInterleavedArrays;
+extern PFNGLINTERLEAVEDARRAYSPROC glad_debug_glInterleavedArrays;
 #else
-void PFNGLINTERLEAVEDARRAYSPROC glad_glInterleavedArrays;
+void extern PFNGLINTERLEAVEDARRAYSPROC glad_glInterleavedArrays;
 #endif
 #ifdef DEBUG
-PFNGLNORMALPOINTERPROC glad_debug_glNormalPointer;
+extern PFNGLNORMALPOINTERPROC glad_debug_glNormalPointer;
 #else
-void PFNGLNORMALPOINTERPROC glad_glNormalPointer;
+void extern PFNGLNORMALPOINTERPROC glad_glNormalPointer;
 #endif
 #ifdef DEBUG
-PFNGLTEXCOORDPOINTERPROC glad_debug_glTexCoordPointer;
+extern PFNGLTEXCOORDPOINTERPROC glad_debug_glTexCoordPointer;
 #else
-void PFNGLTEXCOORDPOINTERPROC glad_glTexCoordPointer;
+void extern PFNGLTEXCOORDPOINTERPROC glad_glTexCoordPointer;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXPOINTERPROC glad_debug_glVertexPointer;
+extern PFNGLVERTEXPOINTERPROC glad_debug_glVertexPointer;
 #else
-void PFNGLVERTEXPOINTERPROC glad_glVertexPointer;
+void extern PFNGLVERTEXPOINTERPROC glad_glVertexPointer;
 #endif
 #ifdef DEBUG
-PFNGLPRIORITIZETEXTURESPROC glad_debug_glPrioritizeTextures;
+extern PFNGLPRIORITIZETEXTURESPROC glad_debug_glPrioritizeTextures;
 #else
-void PFNGLPRIORITIZETEXTURESPROC glad_glPrioritizeTextures;
+void extern PFNGLPRIORITIZETEXTURESPROC glad_glPrioritizeTextures;
 #endif
 #ifdef DEBUG
-PFNGLINDEXUBPROC glad_debug_glIndexub;
+extern PFNGLINDEXUBPROC glad_debug_glIndexub;
 #else
-void PFNGLINDEXUBPROC glad_glIndexub;
+void extern PFNGLINDEXUBPROC glad_glIndexub;
 #endif
 #ifdef DEBUG
-PFNGLINDEXUBVPROC glad_debug_glIndexubv;
+extern PFNGLINDEXUBVPROC glad_debug_glIndexubv;
 #else
-void PFNGLINDEXUBVPROC glad_glIndexubv;
+void extern PFNGLINDEXUBVPROC glad_glIndexubv;
 #endif
 #ifdef DEBUG
-PFNGLPOPCLIENTATTRIBPROC glad_debug_glPopClientAttrib;
+extern PFNGLPOPCLIENTATTRIBPROC glad_debug_glPopClientAttrib;
 #else
-void PFNGLPOPCLIENTATTRIBPROC glad_glPopClientAttrib;
+void extern PFNGLPOPCLIENTATTRIBPROC glad_glPopClientAttrib;
 #endif
 #ifdef DEBUG
-PFNGLPUSHCLIENTATTRIBPROC glad_debug_glPushClientAttrib;
+extern PFNGLPUSHCLIENTATTRIBPROC glad_debug_glPushClientAttrib;
 #else
-void PFNGLPUSHCLIENTATTRIBPROC glad_glPushClientAttrib;
+void extern PFNGLPUSHCLIENTATTRIBPROC glad_glPushClientAttrib;
 #endif
 #ifdef DEBUG
-PFNGLDRAWRANGEELEMENTSPROC glad_debug_glDrawRangeElements;
+extern PFNGLDRAWRANGEELEMENTSPROC glad_debug_glDrawRangeElements;
 #else
-void PFNGLDRAWRANGEELEMENTSPROC glad_glDrawRangeElements;
+void extern PFNGLDRAWRANGEELEMENTSPROC glad_glDrawRangeElements;
 #endif
 #ifdef DEBUG
-PFNGLTEXIMAGE3DPROC glad_debug_glTexImage3D;
+extern PFNGLTEXIMAGE3DPROC glad_debug_glTexImage3D;
 #else
-void PFNGLTEXIMAGE3DPROC glad_glTexImage3D;
+void extern PFNGLTEXIMAGE3DPROC glad_glTexImage3D;
 #endif
 #ifdef DEBUG
-PFNGLTEXSUBIMAGE3DPROC glad_debug_glTexSubImage3D;
+extern PFNGLTEXSUBIMAGE3DPROC glad_debug_glTexSubImage3D;
 #else
-void PFNGLTEXSUBIMAGE3DPROC glad_glTexSubImage3D;
+void extern PFNGLTEXSUBIMAGE3DPROC glad_glTexSubImage3D;
 #endif
 #ifdef DEBUG
-PFNGLCOPYTEXSUBIMAGE3DPROC glad_debug_glCopyTexSubImage3D;
+extern PFNGLCOPYTEXSUBIMAGE3DPROC glad_debug_glCopyTexSubImage3D;
 #else
-void PFNGLCOPYTEXSUBIMAGE3DPROC glad_glCopyTexSubImage3D;
+void extern PFNGLCOPYTEXSUBIMAGE3DPROC glad_glCopyTexSubImage3D;
 #endif
 #ifdef DEBUG
-PFNGLACTIVETEXTUREPROC glad_debug_glActiveTexture;
+extern PFNGLACTIVETEXTUREPROC glad_debug_glActiveTexture;
 #else
-void PFNGLACTIVETEXTUREPROC glad_glActiveTexture;
+void extern PFNGLACTIVETEXTUREPROC glad_glActiveTexture;
 #endif
 #ifdef DEBUG
-PFNGLSAMPLECOVERAGEPROC glad_debug_glSampleCoverage;
+extern PFNGLSAMPLECOVERAGEPROC glad_debug_glSampleCoverage;
 #else
-void PFNGLSAMPLECOVERAGEPROC glad_glSampleCoverage;
+void extern PFNGLSAMPLECOVERAGEPROC glad_glSampleCoverage;
 #endif
 #ifdef DEBUG
-PFNGLCOMPRESSEDTEXIMAGE3DPROC glad_debug_glCompressedTexImage3D;
+extern PFNGLCOMPRESSEDTEXIMAGE3DPROC glad_debug_glCompressedTexImage3D;
 #else
-void PFNGLCOMPRESSEDTEXIMAGE3DPROC glad_glCompressedTexImage3D;
+void extern PFNGLCOMPRESSEDTEXIMAGE3DPROC glad_glCompressedTexImage3D;
 #endif
 #ifdef DEBUG
-PFNGLCOMPRESSEDTEXIMAGE2DPROC glad_debug_glCompressedTexImage2D;
+extern PFNGLCOMPRESSEDTEXIMAGE2DPROC glad_debug_glCompressedTexImage2D;
 #else
-void PFNGLCOMPRESSEDTEXIMAGE2DPROC glad_glCompressedTexImage2D;
+void extern PFNGLCOMPRESSEDTEXIMAGE2DPROC glad_glCompressedTexImage2D;
 #endif
 #ifdef DEBUG
-PFNGLCOMPRESSEDTEXIMAGE1DPROC glad_debug_glCompressedTexImage1D;
+extern PFNGLCOMPRESSEDTEXIMAGE1DPROC glad_debug_glCompressedTexImage1D;
 #else
-void PFNGLCOMPRESSEDTEXIMAGE1DPROC glad_glCompressedTexImage1D;
+void extern PFNGLCOMPRESSEDTEXIMAGE1DPROC glad_glCompressedTexImage1D;
 #endif
 #ifdef DEBUG
-PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glad_debug_glCompressedTexSubImage3D;
+extern PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glad_debug_glCompressedTexSubImage3D;
 #else
-void PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glad_glCompressedTexSubImage3D;
+void extern PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glad_glCompressedTexSubImage3D;
 #endif
 #ifdef DEBUG
-PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glad_debug_glCompressedTexSubImage2D;
+extern PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glad_debug_glCompressedTexSubImage2D;
 #else
-void PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glad_glCompressedTexSubImage2D;
+void extern PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glad_glCompressedTexSubImage2D;
 #endif
 #ifdef DEBUG
-PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glad_debug_glCompressedTexSubImage1D;
+extern PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glad_debug_glCompressedTexSubImage1D;
 #else
-void PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glad_glCompressedTexSubImage1D;
+void extern PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glad_glCompressedTexSubImage1D;
 #endif
 #ifdef DEBUG
-PFNGLGETCOMPRESSEDTEXIMAGEPROC glad_debug_glGetCompressedTexImage;
+extern PFNGLGETCOMPRESSEDTEXIMAGEPROC glad_debug_glGetCompressedTexImage;
 #else
-void PFNGLGETCOMPRESSEDTEXIMAGEPROC glad_glGetCompressedTexImage;
+void extern PFNGLGETCOMPRESSEDTEXIMAGEPROC glad_glGetCompressedTexImage;
 #endif
 #ifdef DEBUG
-PFNGLCLIENTACTIVETEXTUREPROC glad_debug_glClientActiveTexture;
+extern PFNGLCLIENTACTIVETEXTUREPROC glad_debug_glClientActiveTexture;
 #else
-void PFNGLCLIENTACTIVETEXTUREPROC glad_glClientActiveTexture;
+void extern PFNGLCLIENTACTIVETEXTUREPROC glad_glClientActiveTexture;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1DPROC glad_debug_glMultiTexCoord1d;
+extern PFNGLMULTITEXCOORD1DPROC glad_debug_glMultiTexCoord1d;
 #else
-void PFNGLMULTITEXCOORD1DPROC glad_glMultiTexCoord1d;
+void extern PFNGLMULTITEXCOORD1DPROC glad_glMultiTexCoord1d;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1DVPROC glad_debug_glMultiTexCoord1dv;
+extern PFNGLMULTITEXCOORD1DVPROC glad_debug_glMultiTexCoord1dv;
 #else
-void PFNGLMULTITEXCOORD1DVPROC glad_glMultiTexCoord1dv;
+void extern PFNGLMULTITEXCOORD1DVPROC glad_glMultiTexCoord1dv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1FPROC glad_debug_glMultiTexCoord1f;
+extern PFNGLMULTITEXCOORD1FPROC glad_debug_glMultiTexCoord1f;
 #else
-void PFNGLMULTITEXCOORD1FPROC glad_glMultiTexCoord1f;
+void extern PFNGLMULTITEXCOORD1FPROC glad_glMultiTexCoord1f;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1FVPROC glad_debug_glMultiTexCoord1fv;
+extern PFNGLMULTITEXCOORD1FVPROC glad_debug_glMultiTexCoord1fv;
 #else
-void PFNGLMULTITEXCOORD1FVPROC glad_glMultiTexCoord1fv;
+void extern PFNGLMULTITEXCOORD1FVPROC glad_glMultiTexCoord1fv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1IPROC glad_debug_glMultiTexCoord1i;
+extern PFNGLMULTITEXCOORD1IPROC glad_debug_glMultiTexCoord1i;
 #else
-void PFNGLMULTITEXCOORD1IPROC glad_glMultiTexCoord1i;
+void extern PFNGLMULTITEXCOORD1IPROC glad_glMultiTexCoord1i;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1IVPROC glad_debug_glMultiTexCoord1iv;
+extern PFNGLMULTITEXCOORD1IVPROC glad_debug_glMultiTexCoord1iv;
 #else
-void PFNGLMULTITEXCOORD1IVPROC glad_glMultiTexCoord1iv;
+void extern PFNGLMULTITEXCOORD1IVPROC glad_glMultiTexCoord1iv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1SPROC glad_debug_glMultiTexCoord1s;
+extern PFNGLMULTITEXCOORD1SPROC glad_debug_glMultiTexCoord1s;
 #else
-void PFNGLMULTITEXCOORD1SPROC glad_glMultiTexCoord1s;
+void extern PFNGLMULTITEXCOORD1SPROC glad_glMultiTexCoord1s;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD1SVPROC glad_debug_glMultiTexCoord1sv;
+extern PFNGLMULTITEXCOORD1SVPROC glad_debug_glMultiTexCoord1sv;
 #else
-void PFNGLMULTITEXCOORD1SVPROC glad_glMultiTexCoord1sv;
+void extern PFNGLMULTITEXCOORD1SVPROC glad_glMultiTexCoord1sv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2DPROC glad_debug_glMultiTexCoord2d;
+extern PFNGLMULTITEXCOORD2DPROC glad_debug_glMultiTexCoord2d;
 #else
-void PFNGLMULTITEXCOORD2DPROC glad_glMultiTexCoord2d;
+void extern PFNGLMULTITEXCOORD2DPROC glad_glMultiTexCoord2d;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2DVPROC glad_debug_glMultiTexCoord2dv;
+extern PFNGLMULTITEXCOORD2DVPROC glad_debug_glMultiTexCoord2dv;
 #else
-void PFNGLMULTITEXCOORD2DVPROC glad_glMultiTexCoord2dv;
+void extern PFNGLMULTITEXCOORD2DVPROC glad_glMultiTexCoord2dv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2FPROC glad_debug_glMultiTexCoord2f;
+extern PFNGLMULTITEXCOORD2FPROC glad_debug_glMultiTexCoord2f;
 #else
-void PFNGLMULTITEXCOORD2FPROC glad_glMultiTexCoord2f;
+void extern PFNGLMULTITEXCOORD2FPROC glad_glMultiTexCoord2f;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2FVPROC glad_debug_glMultiTexCoord2fv;
+extern PFNGLMULTITEXCOORD2FVPROC glad_debug_glMultiTexCoord2fv;
 #else
-void PFNGLMULTITEXCOORD2FVPROC glad_glMultiTexCoord2fv;
+void extern PFNGLMULTITEXCOORD2FVPROC glad_glMultiTexCoord2fv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2IPROC glad_debug_glMultiTexCoord2i;
+extern PFNGLMULTITEXCOORD2IPROC glad_debug_glMultiTexCoord2i;
 #else
-void PFNGLMULTITEXCOORD2IPROC glad_glMultiTexCoord2i;
+void extern PFNGLMULTITEXCOORD2IPROC glad_glMultiTexCoord2i;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2IVPROC glad_debug_glMultiTexCoord2iv;
+extern PFNGLMULTITEXCOORD2IVPROC glad_debug_glMultiTexCoord2iv;
 #else
-void PFNGLMULTITEXCOORD2IVPROC glad_glMultiTexCoord2iv;
+void extern PFNGLMULTITEXCOORD2IVPROC glad_glMultiTexCoord2iv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2SPROC glad_debug_glMultiTexCoord2s;
+extern PFNGLMULTITEXCOORD2SPROC glad_debug_glMultiTexCoord2s;
 #else
-void PFNGLMULTITEXCOORD2SPROC glad_glMultiTexCoord2s;
+void extern PFNGLMULTITEXCOORD2SPROC glad_glMultiTexCoord2s;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD2SVPROC glad_debug_glMultiTexCoord2sv;
+extern PFNGLMULTITEXCOORD2SVPROC glad_debug_glMultiTexCoord2sv;
 #else
-void PFNGLMULTITEXCOORD2SVPROC glad_glMultiTexCoord2sv;
+void extern PFNGLMULTITEXCOORD2SVPROC glad_glMultiTexCoord2sv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3DPROC glad_debug_glMultiTexCoord3d;
+extern PFNGLMULTITEXCOORD3DPROC glad_debug_glMultiTexCoord3d;
 #else
-void PFNGLMULTITEXCOORD3DPROC glad_glMultiTexCoord3d;
+void extern PFNGLMULTITEXCOORD3DPROC glad_glMultiTexCoord3d;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3DVPROC glad_debug_glMultiTexCoord3dv;
+extern PFNGLMULTITEXCOORD3DVPROC glad_debug_glMultiTexCoord3dv;
 #else
-void PFNGLMULTITEXCOORD3DVPROC glad_glMultiTexCoord3dv;
+void extern PFNGLMULTITEXCOORD3DVPROC glad_glMultiTexCoord3dv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3FPROC glad_debug_glMultiTexCoord3f;
+extern PFNGLMULTITEXCOORD3FPROC glad_debug_glMultiTexCoord3f;
 #else
-void PFNGLMULTITEXCOORD3FPROC glad_glMultiTexCoord3f;
+void extern PFNGLMULTITEXCOORD3FPROC glad_glMultiTexCoord3f;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3FVPROC glad_debug_glMultiTexCoord3fv;
+extern PFNGLMULTITEXCOORD3FVPROC glad_debug_glMultiTexCoord3fv;
 #else
-void PFNGLMULTITEXCOORD3FVPROC glad_glMultiTexCoord3fv;
+void extern PFNGLMULTITEXCOORD3FVPROC glad_glMultiTexCoord3fv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3IPROC glad_debug_glMultiTexCoord3i;
+extern PFNGLMULTITEXCOORD3IPROC glad_debug_glMultiTexCoord3i;
 #else
-void PFNGLMULTITEXCOORD3IPROC glad_glMultiTexCoord3i;
+void extern PFNGLMULTITEXCOORD3IPROC glad_glMultiTexCoord3i;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3IVPROC glad_debug_glMultiTexCoord3iv;
+extern PFNGLMULTITEXCOORD3IVPROC glad_debug_glMultiTexCoord3iv;
 #else
-void PFNGLMULTITEXCOORD3IVPROC glad_glMultiTexCoord3iv;
+void extern PFNGLMULTITEXCOORD3IVPROC glad_glMultiTexCoord3iv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3SPROC glad_debug_glMultiTexCoord3s;
+extern PFNGLMULTITEXCOORD3SPROC glad_debug_glMultiTexCoord3s;
 #else
-void PFNGLMULTITEXCOORD3SPROC glad_glMultiTexCoord3s;
+void extern PFNGLMULTITEXCOORD3SPROC glad_glMultiTexCoord3s;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD3SVPROC glad_debug_glMultiTexCoord3sv;
+extern PFNGLMULTITEXCOORD3SVPROC glad_debug_glMultiTexCoord3sv;
 #else
-void PFNGLMULTITEXCOORD3SVPROC glad_glMultiTexCoord3sv;
+void extern PFNGLMULTITEXCOORD3SVPROC glad_glMultiTexCoord3sv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4DPROC glad_debug_glMultiTexCoord4d;
+extern PFNGLMULTITEXCOORD4DPROC glad_debug_glMultiTexCoord4d;
 #else
-void PFNGLMULTITEXCOORD4DPROC glad_glMultiTexCoord4d;
+void extern PFNGLMULTITEXCOORD4DPROC glad_glMultiTexCoord4d;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4DVPROC glad_debug_glMultiTexCoord4dv;
+extern PFNGLMULTITEXCOORD4DVPROC glad_debug_glMultiTexCoord4dv;
 #else
-void PFNGLMULTITEXCOORD4DVPROC glad_glMultiTexCoord4dv;
+void extern PFNGLMULTITEXCOORD4DVPROC glad_glMultiTexCoord4dv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4FPROC glad_debug_glMultiTexCoord4f;
+extern PFNGLMULTITEXCOORD4FPROC glad_debug_glMultiTexCoord4f;
 #else
-void PFNGLMULTITEXCOORD4FPROC glad_glMultiTexCoord4f;
+void extern PFNGLMULTITEXCOORD4FPROC glad_glMultiTexCoord4f;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4FVPROC glad_debug_glMultiTexCoord4fv;
+extern PFNGLMULTITEXCOORD4FVPROC glad_debug_glMultiTexCoord4fv;
 #else
-void PFNGLMULTITEXCOORD4FVPROC glad_glMultiTexCoord4fv;
+void extern PFNGLMULTITEXCOORD4FVPROC glad_glMultiTexCoord4fv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4IPROC glad_debug_glMultiTexCoord4i;
+extern PFNGLMULTITEXCOORD4IPROC glad_debug_glMultiTexCoord4i;
 #else
-void PFNGLMULTITEXCOORD4IPROC glad_glMultiTexCoord4i;
+void extern PFNGLMULTITEXCOORD4IPROC glad_glMultiTexCoord4i;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4IVPROC glad_debug_glMultiTexCoord4iv;
+extern PFNGLMULTITEXCOORD4IVPROC glad_debug_glMultiTexCoord4iv;
 #else
-void PFNGLMULTITEXCOORD4IVPROC glad_glMultiTexCoord4iv;
+void extern PFNGLMULTITEXCOORD4IVPROC glad_glMultiTexCoord4iv;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4SPROC glad_debug_glMultiTexCoord4s;
+extern PFNGLMULTITEXCOORD4SPROC glad_debug_glMultiTexCoord4s;
 #else
-void PFNGLMULTITEXCOORD4SPROC glad_glMultiTexCoord4s;
+void extern PFNGLMULTITEXCOORD4SPROC glad_glMultiTexCoord4s;
 #endif
 #ifdef DEBUG
-PFNGLMULTITEXCOORD4SVPROC glad_debug_glMultiTexCoord4sv;
+extern PFNGLMULTITEXCOORD4SVPROC glad_debug_glMultiTexCoord4sv;
 #else
-void PFNGLMULTITEXCOORD4SVPROC glad_glMultiTexCoord4sv;
+void extern PFNGLMULTITEXCOORD4SVPROC glad_glMultiTexCoord4sv;
 #endif
 #ifdef DEBUG
-PFNGLLOADTRANSPOSEMATRIXFPROC glad_debug_glLoadTransposeMatrixf;
+extern PFNGLLOADTRANSPOSEMATRIXFPROC glad_debug_glLoadTransposeMatrixf;
 #else
-void PFNGLLOADTRANSPOSEMATRIXFPROC glad_glLoadTransposeMatrixf;
+void extern PFNGLLOADTRANSPOSEMATRIXFPROC glad_glLoadTransposeMatrixf;
 #endif
 #ifdef DEBUG
-PFNGLLOADTRANSPOSEMATRIXDPROC glad_debug_glLoadTransposeMatrixd;
+extern PFNGLLOADTRANSPOSEMATRIXDPROC glad_debug_glLoadTransposeMatrixd;
 #else
-void PFNGLLOADTRANSPOSEMATRIXDPROC glad_glLoadTransposeMatrixd;
+void extern PFNGLLOADTRANSPOSEMATRIXDPROC glad_glLoadTransposeMatrixd;
 #endif
 #ifdef DEBUG
-PFNGLMULTTRANSPOSEMATRIXFPROC glad_debug_glMultTransposeMatrixf;
+extern PFNGLMULTTRANSPOSEMATRIXFPROC glad_debug_glMultTransposeMatrixf;
 #else
-void PFNGLMULTTRANSPOSEMATRIXFPROC glad_glMultTransposeMatrixf;
+void extern PFNGLMULTTRANSPOSEMATRIXFPROC glad_glMultTransposeMatrixf;
 #endif
 #ifdef DEBUG
-PFNGLMULTTRANSPOSEMATRIXDPROC glad_debug_glMultTransposeMatrixd;
+extern PFNGLMULTTRANSPOSEMATRIXDPROC glad_debug_glMultTransposeMatrixd;
 #else
-void PFNGLMULTTRANSPOSEMATRIXDPROC glad_glMultTransposeMatrixd;
+void extern PFNGLMULTTRANSPOSEMATRIXDPROC glad_glMultTransposeMatrixd;
 #endif
 #ifdef DEBUG
-PFNGLBLENDFUNCSEPARATEPROC glad_debug_glBlendFuncSeparate;
+extern PFNGLBLENDFUNCSEPARATEPROC glad_debug_glBlendFuncSeparate;
 #else
-void PFNGLBLENDFUNCSEPARATEPROC glad_glBlendFuncSeparate;
+void extern PFNGLBLENDFUNCSEPARATEPROC glad_glBlendFuncSeparate;
 #endif
 #ifdef DEBUG
-PFNGLMULTIDRAWARRAYSPROC glad_debug_glMultiDrawArrays;
+extern PFNGLMULTIDRAWARRAYSPROC glad_debug_glMultiDrawArrays;
 #else
-void PFNGLMULTIDRAWARRAYSPROC glad_glMultiDrawArrays;
+void extern PFNGLMULTIDRAWARRAYSPROC glad_glMultiDrawArrays;
 #endif
 #ifdef DEBUG
-PFNGLMULTIDRAWELEMENTSPROC glad_debug_glMultiDrawElements;
+extern PFNGLMULTIDRAWELEMENTSPROC glad_debug_glMultiDrawElements;
 #else
-void PFNGLMULTIDRAWELEMENTSPROC glad_glMultiDrawElements;
+void extern PFNGLMULTIDRAWELEMENTSPROC glad_glMultiDrawElements;
 #endif
 #ifdef DEBUG
-PFNGLPOINTPARAMETERFPROC glad_debug_glPointParameterf;
+extern PFNGLPOINTPARAMETERFPROC glad_debug_glPointParameterf;
 #else
-void PFNGLPOINTPARAMETERFPROC glad_glPointParameterf;
+void extern PFNGLPOINTPARAMETERFPROC glad_glPointParameterf;
 #endif
 #ifdef DEBUG
-PFNGLPOINTPARAMETERFVPROC glad_debug_glPointParameterfv;
+extern PFNGLPOINTPARAMETERFVPROC glad_debug_glPointParameterfv;
 #else
-void PFNGLPOINTPARAMETERFVPROC glad_glPointParameterfv;
+void extern PFNGLPOINTPARAMETERFVPROC glad_glPointParameterfv;
 #endif
 #ifdef DEBUG
-PFNGLPOINTPARAMETERIPROC glad_debug_glPointParameteri;
+extern PFNGLPOINTPARAMETERIPROC glad_debug_glPointParameteri;
 #else
-void PFNGLPOINTPARAMETERIPROC glad_glPointParameteri;
+void extern PFNGLPOINTPARAMETERIPROC glad_glPointParameteri;
 #endif
 #ifdef DEBUG
-PFNGLPOINTPARAMETERIVPROC glad_debug_glPointParameteriv;
+extern PFNGLPOINTPARAMETERIVPROC glad_debug_glPointParameteriv;
 #else
-void PFNGLPOINTPARAMETERIVPROC glad_glPointParameteriv;
+void extern PFNGLPOINTPARAMETERIVPROC glad_glPointParameteriv;
 #endif
 #ifdef DEBUG
-PFNGLFOGCOORDFPROC glad_debug_glFogCoordf;
+extern PFNGLFOGCOORDFPROC glad_debug_glFogCoordf;
 #else
-void PFNGLFOGCOORDFPROC glad_glFogCoordf;
+void extern PFNGLFOGCOORDFPROC glad_glFogCoordf;
 #endif
 #ifdef DEBUG
-PFNGLFOGCOORDFVPROC glad_debug_glFogCoordfv;
+extern PFNGLFOGCOORDFVPROC glad_debug_glFogCoordfv;
 #else
-void PFNGLFOGCOORDFVPROC glad_glFogCoordfv;
+void extern PFNGLFOGCOORDFVPROC glad_glFogCoordfv;
 #endif
 #ifdef DEBUG
-PFNGLFOGCOORDDPROC glad_debug_glFogCoordd;
+extern PFNGLFOGCOORDDPROC glad_debug_glFogCoordd;
 #else
-void PFNGLFOGCOORDDPROC glad_glFogCoordd;
+void extern PFNGLFOGCOORDDPROC glad_glFogCoordd;
 #endif
 #ifdef DEBUG
-PFNGLFOGCOORDDVPROC glad_debug_glFogCoorddv;
+extern PFNGLFOGCOORDDVPROC glad_debug_glFogCoorddv;
 #else
-void PFNGLFOGCOORDDVPROC glad_glFogCoorddv;
+void extern PFNGLFOGCOORDDVPROC glad_glFogCoorddv;
 #endif
 #ifdef DEBUG
-PFNGLFOGCOORDPOINTERPROC glad_debug_glFogCoordPointer;
+extern PFNGLFOGCOORDPOINTERPROC glad_debug_glFogCoordPointer;
 #else
-void PFNGLFOGCOORDPOINTERPROC glad_glFogCoordPointer;
+void extern PFNGLFOGCOORDPOINTERPROC glad_glFogCoordPointer;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3BPROC glad_debug_glSecondaryColor3b;
+extern PFNGLSECONDARYCOLOR3BPROC glad_debug_glSecondaryColor3b;
 #else
-void PFNGLSECONDARYCOLOR3BPROC glad_glSecondaryColor3b;
+void extern PFNGLSECONDARYCOLOR3BPROC glad_glSecondaryColor3b;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3BVPROC glad_debug_glSecondaryColor3bv;
+extern PFNGLSECONDARYCOLOR3BVPROC glad_debug_glSecondaryColor3bv;
 #else
-void PFNGLSECONDARYCOLOR3BVPROC glad_glSecondaryColor3bv;
+void extern PFNGLSECONDARYCOLOR3BVPROC glad_glSecondaryColor3bv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3DPROC glad_debug_glSecondaryColor3d;
+extern PFNGLSECONDARYCOLOR3DPROC glad_debug_glSecondaryColor3d;
 #else
-void PFNGLSECONDARYCOLOR3DPROC glad_glSecondaryColor3d;
+void extern PFNGLSECONDARYCOLOR3DPROC glad_glSecondaryColor3d;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3DVPROC glad_debug_glSecondaryColor3dv;
+extern PFNGLSECONDARYCOLOR3DVPROC glad_debug_glSecondaryColor3dv;
 #else
-void PFNGLSECONDARYCOLOR3DVPROC glad_glSecondaryColor3dv;
+void extern PFNGLSECONDARYCOLOR3DVPROC glad_glSecondaryColor3dv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3FPROC glad_debug_glSecondaryColor3f;
+extern PFNGLSECONDARYCOLOR3FPROC glad_debug_glSecondaryColor3f;
 #else
-void PFNGLSECONDARYCOLOR3FPROC glad_glSecondaryColor3f;
+void extern PFNGLSECONDARYCOLOR3FPROC glad_glSecondaryColor3f;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3FVPROC glad_debug_glSecondaryColor3fv;
+extern PFNGLSECONDARYCOLOR3FVPROC glad_debug_glSecondaryColor3fv;
 #else
-void PFNGLSECONDARYCOLOR3FVPROC glad_glSecondaryColor3fv;
+void extern PFNGLSECONDARYCOLOR3FVPROC glad_glSecondaryColor3fv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3IPROC glad_debug_glSecondaryColor3i;
+extern PFNGLSECONDARYCOLOR3IPROC glad_debug_glSecondaryColor3i;
 #else
-void PFNGLSECONDARYCOLOR3IPROC glad_glSecondaryColor3i;
+void extern PFNGLSECONDARYCOLOR3IPROC glad_glSecondaryColor3i;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3IVPROC glad_debug_glSecondaryColor3iv;
+extern PFNGLSECONDARYCOLOR3IVPROC glad_debug_glSecondaryColor3iv;
 #else
-void PFNGLSECONDARYCOLOR3IVPROC glad_glSecondaryColor3iv;
+void extern PFNGLSECONDARYCOLOR3IVPROC glad_glSecondaryColor3iv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3SPROC glad_debug_glSecondaryColor3s;
+extern PFNGLSECONDARYCOLOR3SPROC glad_debug_glSecondaryColor3s;
 #else
-void PFNGLSECONDARYCOLOR3SPROC glad_glSecondaryColor3s;
+void extern PFNGLSECONDARYCOLOR3SPROC glad_glSecondaryColor3s;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3SVPROC glad_debug_glSecondaryColor3sv;
+extern PFNGLSECONDARYCOLOR3SVPROC glad_debug_glSecondaryColor3sv;
 #else
-void PFNGLSECONDARYCOLOR3SVPROC glad_glSecondaryColor3sv;
+void extern PFNGLSECONDARYCOLOR3SVPROC glad_glSecondaryColor3sv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3UBPROC glad_debug_glSecondaryColor3ub;
+extern PFNGLSECONDARYCOLOR3UBPROC glad_debug_glSecondaryColor3ub;
 #else
-void PFNGLSECONDARYCOLOR3UBPROC glad_glSecondaryColor3ub;
+void extern PFNGLSECONDARYCOLOR3UBPROC glad_glSecondaryColor3ub;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3UBVPROC glad_debug_glSecondaryColor3ubv;
+extern PFNGLSECONDARYCOLOR3UBVPROC glad_debug_glSecondaryColor3ubv;
 #else
-void PFNGLSECONDARYCOLOR3UBVPROC glad_glSecondaryColor3ubv;
+void extern PFNGLSECONDARYCOLOR3UBVPROC glad_glSecondaryColor3ubv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3UIPROC glad_debug_glSecondaryColor3ui;
+extern PFNGLSECONDARYCOLOR3UIPROC glad_debug_glSecondaryColor3ui;
 #else
-void PFNGLSECONDARYCOLOR3UIPROC glad_glSecondaryColor3ui;
+void extern PFNGLSECONDARYCOLOR3UIPROC glad_glSecondaryColor3ui;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3UIVPROC glad_debug_glSecondaryColor3uiv;
+extern PFNGLSECONDARYCOLOR3UIVPROC glad_debug_glSecondaryColor3uiv;
 #else
-void PFNGLSECONDARYCOLOR3UIVPROC glad_glSecondaryColor3uiv;
+void extern PFNGLSECONDARYCOLOR3UIVPROC glad_glSecondaryColor3uiv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3USPROC glad_debug_glSecondaryColor3us;
+extern PFNGLSECONDARYCOLOR3USPROC glad_debug_glSecondaryColor3us;
 #else
-void PFNGLSECONDARYCOLOR3USPROC glad_glSecondaryColor3us;
+void extern PFNGLSECONDARYCOLOR3USPROC glad_glSecondaryColor3us;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLOR3USVPROC glad_debug_glSecondaryColor3usv;
+extern PFNGLSECONDARYCOLOR3USVPROC glad_debug_glSecondaryColor3usv;
 #else
-void PFNGLSECONDARYCOLOR3USVPROC glad_glSecondaryColor3usv;
+void extern PFNGLSECONDARYCOLOR3USVPROC glad_glSecondaryColor3usv;
 #endif
 #ifdef DEBUG
-PFNGLSECONDARYCOLORPOINTERPROC glad_debug_glSecondaryColorPointer;
+extern PFNGLSECONDARYCOLORPOINTERPROC glad_debug_glSecondaryColorPointer;
 #else
-void PFNGLSECONDARYCOLORPOINTERPROC glad_glSecondaryColorPointer;
+void extern PFNGLSECONDARYCOLORPOINTERPROC glad_glSecondaryColorPointer;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2DPROC glad_debug_glWindowPos2d;
+extern PFNGLWINDOWPOS2DPROC glad_debug_glWindowPos2d;
 #else
-void PFNGLWINDOWPOS2DPROC glad_glWindowPos2d;
+void extern PFNGLWINDOWPOS2DPROC glad_glWindowPos2d;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2DVPROC glad_debug_glWindowPos2dv;
+extern PFNGLWINDOWPOS2DVPROC glad_debug_glWindowPos2dv;
 #else
-void PFNGLWINDOWPOS2DVPROC glad_glWindowPos2dv;
+void extern PFNGLWINDOWPOS2DVPROC glad_glWindowPos2dv;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2FPROC glad_debug_glWindowPos2f;
+extern PFNGLWINDOWPOS2FPROC glad_debug_glWindowPos2f;
 #else
-void PFNGLWINDOWPOS2FPROC glad_glWindowPos2f;
+void extern PFNGLWINDOWPOS2FPROC glad_glWindowPos2f;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2FVPROC glad_debug_glWindowPos2fv;
+extern PFNGLWINDOWPOS2FVPROC glad_debug_glWindowPos2fv;
 #else
-void PFNGLWINDOWPOS2FVPROC glad_glWindowPos2fv;
+void extern PFNGLWINDOWPOS2FVPROC glad_glWindowPos2fv;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2IPROC glad_debug_glWindowPos2i;
+extern PFNGLWINDOWPOS2IPROC glad_debug_glWindowPos2i;
 #else
-void PFNGLWINDOWPOS2IPROC glad_glWindowPos2i;
+void extern PFNGLWINDOWPOS2IPROC glad_glWindowPos2i;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2IVPROC glad_debug_glWindowPos2iv;
+extern PFNGLWINDOWPOS2IVPROC glad_debug_glWindowPos2iv;
 #else
-void PFNGLWINDOWPOS2IVPROC glad_glWindowPos2iv;
+void extern PFNGLWINDOWPOS2IVPROC glad_glWindowPos2iv;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2SPROC glad_debug_glWindowPos2s;
+extern PFNGLWINDOWPOS2SPROC glad_debug_glWindowPos2s;
 #else
-void PFNGLWINDOWPOS2SPROC glad_glWindowPos2s;
+void extern PFNGLWINDOWPOS2SPROC glad_glWindowPos2s;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS2SVPROC glad_debug_glWindowPos2sv;
+extern PFNGLWINDOWPOS2SVPROC glad_debug_glWindowPos2sv;
 #else
-void PFNGLWINDOWPOS2SVPROC glad_glWindowPos2sv;
+void extern PFNGLWINDOWPOS2SVPROC glad_glWindowPos2sv;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3DPROC glad_debug_glWindowPos3d;
+extern PFNGLWINDOWPOS3DPROC glad_debug_glWindowPos3d;
 #else
-void PFNGLWINDOWPOS3DPROC glad_glWindowPos3d;
+void extern PFNGLWINDOWPOS3DPROC glad_glWindowPos3d;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3DVPROC glad_debug_glWindowPos3dv;
+extern PFNGLWINDOWPOS3DVPROC glad_debug_glWindowPos3dv;
 #else
-void PFNGLWINDOWPOS3DVPROC glad_glWindowPos3dv;
+void extern PFNGLWINDOWPOS3DVPROC glad_glWindowPos3dv;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3FPROC glad_debug_glWindowPos3f;
+extern PFNGLWINDOWPOS3FPROC glad_debug_glWindowPos3f;
 #else
-void PFNGLWINDOWPOS3FPROC glad_glWindowPos3f;
+void extern PFNGLWINDOWPOS3FPROC glad_glWindowPos3f;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3FVPROC glad_debug_glWindowPos3fv;
+extern PFNGLWINDOWPOS3FVPROC glad_debug_glWindowPos3fv;
 #else
-void PFNGLWINDOWPOS3FVPROC glad_glWindowPos3fv;
+void extern PFNGLWINDOWPOS3FVPROC glad_glWindowPos3fv;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3IPROC glad_debug_glWindowPos3i;
+extern PFNGLWINDOWPOS3IPROC glad_debug_glWindowPos3i;
 #else
-void PFNGLWINDOWPOS3IPROC glad_glWindowPos3i;
+void extern PFNGLWINDOWPOS3IPROC glad_glWindowPos3i;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3IVPROC glad_debug_glWindowPos3iv;
+extern PFNGLWINDOWPOS3IVPROC glad_debug_glWindowPos3iv;
 #else
-void PFNGLWINDOWPOS3IVPROC glad_glWindowPos3iv;
+void extern PFNGLWINDOWPOS3IVPROC glad_glWindowPos3iv;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3SPROC glad_debug_glWindowPos3s;
+extern PFNGLWINDOWPOS3SPROC glad_debug_glWindowPos3s;
 #else
-void PFNGLWINDOWPOS3SPROC glad_glWindowPos3s;
+void extern PFNGLWINDOWPOS3SPROC glad_glWindowPos3s;
 #endif
 #ifdef DEBUG
-PFNGLWINDOWPOS3SVPROC glad_debug_glWindowPos3sv;
+extern PFNGLWINDOWPOS3SVPROC glad_debug_glWindowPos3sv;
 #else
-void PFNGLWINDOWPOS3SVPROC glad_glWindowPos3sv;
+void extern PFNGLWINDOWPOS3SVPROC glad_glWindowPos3sv;
 #endif
 #ifdef DEBUG
-PFNGLBLENDCOLORPROC glad_debug_glBlendColor;
+extern PFNGLBLENDCOLORPROC glad_debug_glBlendColor;
 #else
-void PFNGLBLENDCOLORPROC glad_glBlendColor;
+void extern PFNGLBLENDCOLORPROC glad_glBlendColor;
 #endif
 #ifdef DEBUG
-PFNGLBLENDEQUATIONPROC glad_debug_glBlendEquation;
+extern PFNGLBLENDEQUATIONPROC glad_debug_glBlendEquation;
 #else
-void PFNGLBLENDEQUATIONPROC glad_glBlendEquation;
+void extern PFNGLBLENDEQUATIONPROC glad_glBlendEquation;
 #endif
 #ifdef DEBUG
-PFNGLGENQUERIESPROC glad_debug_glGenQueries;
+extern PFNGLGENQUERIESPROC glad_debug_glGenQueries;
 #else
-void PFNGLGENQUERIESPROC glad_glGenQueries;
+void extern PFNGLGENQUERIESPROC glad_glGenQueries;
 #endif
 #ifdef DEBUG
-PFNGLDELETEQUERIESPROC glad_debug_glDeleteQueries;
+extern PFNGLDELETEQUERIESPROC glad_debug_glDeleteQueries;
 #else
-void PFNGLDELETEQUERIESPROC glad_glDeleteQueries;
+void extern PFNGLDELETEQUERIESPROC glad_glDeleteQueries;
 #endif
 #ifdef DEBUG
-PFNGLBEGINQUERYPROC glad_debug_glBeginQuery;
+extern PFNGLBEGINQUERYPROC glad_debug_glBeginQuery;
 #else
-void PFNGLBEGINQUERYPROC glad_glBeginQuery;
+void extern PFNGLBEGINQUERYPROC glad_glBeginQuery;
 #endif
 #ifdef DEBUG
-PFNGLENDQUERYPROC glad_debug_glEndQuery;
+extern PFNGLENDQUERYPROC glad_debug_glEndQuery;
 #else
-void PFNGLENDQUERYPROC glad_glEndQuery;
+void extern PFNGLENDQUERYPROC glad_glEndQuery;
 #endif
 #ifdef DEBUG
-PFNGLGETQUERYIVPROC glad_debug_glGetQueryiv;
+extern PFNGLGETQUERYIVPROC glad_debug_glGetQueryiv;
 #else
-void PFNGLGETQUERYIVPROC glad_glGetQueryiv;
+void extern PFNGLGETQUERYIVPROC glad_glGetQueryiv;
 #endif
 #ifdef DEBUG
-PFNGLGETQUERYOBJECTIVPROC glad_debug_glGetQueryObjectiv;
+extern PFNGLGETQUERYOBJECTIVPROC glad_debug_glGetQueryObjectiv;
 #else
-void PFNGLGETQUERYOBJECTIVPROC glad_glGetQueryObjectiv;
+void extern PFNGLGETQUERYOBJECTIVPROC glad_glGetQueryObjectiv;
 #endif
 #ifdef DEBUG
-PFNGLGETQUERYOBJECTUIVPROC glad_debug_glGetQueryObjectuiv;
+extern PFNGLGETQUERYOBJECTUIVPROC glad_debug_glGetQueryObjectuiv;
 #else
-void PFNGLGETQUERYOBJECTUIVPROC glad_glGetQueryObjectuiv;
+void extern PFNGLGETQUERYOBJECTUIVPROC glad_glGetQueryObjectuiv;
 #endif
 #ifdef DEBUG
-PFNGLBINDBUFFERPROC glad_debug_glBindBuffer;
+extern PFNGLBINDBUFFERPROC glad_debug_glBindBuffer;
 #else
-void PFNGLBINDBUFFERPROC glad_glBindBuffer;
+void extern PFNGLBINDBUFFERPROC glad_glBindBuffer;
 #endif
 #ifdef DEBUG
-PFNGLDELETEBUFFERSPROC glad_debug_glDeleteBuffers;
+extern PFNGLDELETEBUFFERSPROC glad_debug_glDeleteBuffers;
 #else
-void PFNGLDELETEBUFFERSPROC glad_glDeleteBuffers;
+void extern PFNGLDELETEBUFFERSPROC glad_glDeleteBuffers;
 #endif
 #ifdef DEBUG
-PFNGLGENBUFFERSPROC glad_debug_glGenBuffers;
+extern PFNGLGENBUFFERSPROC glad_debug_glGenBuffers;
 #else
-void PFNGLGENBUFFERSPROC glad_glGenBuffers;
+void extern PFNGLGENBUFFERSPROC glad_glGenBuffers;
 #endif
 #ifdef DEBUG
-PFNGLBUFFERDATAPROC glad_debug_glBufferData;
+extern PFNGLBUFFERDATAPROC glad_debug_glBufferData;
 #else
-void PFNGLBUFFERDATAPROC glad_glBufferData;
+void extern PFNGLBUFFERDATAPROC glad_glBufferData;
 #endif
 #ifdef DEBUG
-PFNGLBUFFERSUBDATAPROC glad_debug_glBufferSubData;
+extern PFNGLBUFFERSUBDATAPROC glad_debug_glBufferSubData;
 #else
-void PFNGLBUFFERSUBDATAPROC glad_glBufferSubData;
+void extern PFNGLBUFFERSUBDATAPROC glad_glBufferSubData;
 #endif
 #ifdef DEBUG
-PFNGLGETBUFFERSUBDATAPROC glad_debug_glGetBufferSubData;
+extern PFNGLGETBUFFERSUBDATAPROC glad_debug_glGetBufferSubData;
 #else
-void PFNGLGETBUFFERSUBDATAPROC glad_glGetBufferSubData;
+void extern PFNGLGETBUFFERSUBDATAPROC glad_glGetBufferSubData;
 #endif
 #ifdef DEBUG
-PFNGLGETBUFFERPARAMETERIVPROC glad_debug_glGetBufferParameteriv;
+extern PFNGLGETBUFFERPARAMETERIVPROC glad_debug_glGetBufferParameteriv;
 #else
-void PFNGLGETBUFFERPARAMETERIVPROC glad_glGetBufferParameteriv;
+void extern PFNGLGETBUFFERPARAMETERIVPROC glad_glGetBufferParameteriv;
 #endif
 #ifdef DEBUG
-PFNGLGETBUFFERPOINTERVPROC glad_debug_glGetBufferPointerv;
+extern PFNGLGETBUFFERPOINTERVPROC glad_debug_glGetBufferPointerv;
 #else
-void PFNGLGETBUFFERPOINTERVPROC glad_glGetBufferPointerv;
+void extern PFNGLGETBUFFERPOINTERVPROC glad_glGetBufferPointerv;
 #endif
 #ifdef DEBUG
-PFNGLBLENDEQUATIONSEPARATEPROC glad_debug_glBlendEquationSeparate;
+extern PFNGLBLENDEQUATIONSEPARATEPROC glad_debug_glBlendEquationSeparate;
 #else
-void PFNGLBLENDEQUATIONSEPARATEPROC glad_glBlendEquationSeparate;
+void extern PFNGLBLENDEQUATIONSEPARATEPROC glad_glBlendEquationSeparate;
 #endif
 #ifdef DEBUG
-PFNGLDRAWBUFFERSPROC glad_debug_glDrawBuffers;
+extern PFNGLDRAWBUFFERSPROC glad_debug_glDrawBuffers;
 #else
-void PFNGLDRAWBUFFERSPROC glad_glDrawBuffers;
+void extern PFNGLDRAWBUFFERSPROC glad_glDrawBuffers;
 #endif
 #ifdef DEBUG
-PFNGLSTENCILOPSEPARATEPROC glad_debug_glStencilOpSeparate;
+extern PFNGLSTENCILOPSEPARATEPROC glad_debug_glStencilOpSeparate;
 #else
-void PFNGLSTENCILOPSEPARATEPROC glad_glStencilOpSeparate;
+void extern PFNGLSTENCILOPSEPARATEPROC glad_glStencilOpSeparate;
 #endif
 #ifdef DEBUG
-PFNGLSTENCILFUNCSEPARATEPROC glad_debug_glStencilFuncSeparate;
+extern PFNGLSTENCILFUNCSEPARATEPROC glad_debug_glStencilFuncSeparate;
 #else
-void PFNGLSTENCILFUNCSEPARATEPROC glad_glStencilFuncSeparate;
+void extern PFNGLSTENCILFUNCSEPARATEPROC glad_glStencilFuncSeparate;
 #endif
 #ifdef DEBUG
-PFNGLSTENCILMASKSEPARATEPROC glad_debug_glStencilMaskSeparate;
+extern PFNGLSTENCILMASKSEPARATEPROC glad_debug_glStencilMaskSeparate;
 #else
-void PFNGLSTENCILMASKSEPARATEPROC glad_glStencilMaskSeparate;
+void extern PFNGLSTENCILMASKSEPARATEPROC glad_glStencilMaskSeparate;
 #endif
 #ifdef DEBUG
-PFNGLATTACHSHADERPROC glad_debug_glAttachShader;
+extern PFNGLATTACHSHADERPROC glad_debug_glAttachShader;
 #else
-void PFNGLATTACHSHADERPROC glad_glAttachShader;
+void extern PFNGLATTACHSHADERPROC glad_glAttachShader;
 #endif
 #ifdef DEBUG
-PFNGLBINDATTRIBLOCATIONPROC glad_debug_glBindAttribLocation;
+extern PFNGLBINDATTRIBLOCATIONPROC glad_debug_glBindAttribLocation;
 #else
-void PFNGLBINDATTRIBLOCATIONPROC glad_glBindAttribLocation;
+void extern PFNGLBINDATTRIBLOCATIONPROC glad_glBindAttribLocation;
 #endif
 #ifdef DEBUG
-PFNGLCOMPILESHADERPROC glad_debug_glCompileShader;
+extern PFNGLCOMPILESHADERPROC glad_debug_glCompileShader;
 #else
-void PFNGLCOMPILESHADERPROC glad_glCompileShader;
+void extern PFNGLCOMPILESHADERPROC glad_glCompileShader;
 #endif
 #ifdef DEBUG
-PFNGLDELETEPROGRAMPROC glad_debug_glDeleteProgram;
+extern PFNGLDELETEPROGRAMPROC glad_debug_glDeleteProgram;
 #else
-void PFNGLDELETEPROGRAMPROC glad_glDeleteProgram;
+void extern PFNGLDELETEPROGRAMPROC glad_glDeleteProgram;
 #endif
 #ifdef DEBUG
-PFNGLDELETESHADERPROC glad_debug_glDeleteShader;
+extern PFNGLDELETESHADERPROC glad_debug_glDeleteShader;
 #else
-void PFNGLDELETESHADERPROC glad_glDeleteShader;
+void extern PFNGLDELETESHADERPROC glad_glDeleteShader;
 #endif
 #ifdef DEBUG
-PFNGLDETACHSHADERPROC glad_debug_glDetachShader;
+extern PFNGLDETACHSHADERPROC glad_debug_glDetachShader;
 #else
-void PFNGLDETACHSHADERPROC glad_glDetachShader;
+void extern PFNGLDETACHSHADERPROC glad_glDetachShader;
 #endif
 #ifdef DEBUG
-PFNGLDISABLEVERTEXATTRIBARRAYPROC glad_debug_glDisableVertexAttribArray;
+extern PFNGLDISABLEVERTEXATTRIBARRAYPROC glad_debug_glDisableVertexAttribArray;
 #else
-void PFNGLDISABLEVERTEXATTRIBARRAYPROC glad_glDisableVertexAttribArray;
+void extern PFNGLDISABLEVERTEXATTRIBARRAYPROC glad_glDisableVertexAttribArray;
 #endif
 #ifdef DEBUG
-PFNGLENABLEVERTEXATTRIBARRAYPROC glad_debug_glEnableVertexAttribArray;
+extern PFNGLENABLEVERTEXATTRIBARRAYPROC glad_debug_glEnableVertexAttribArray;
 #else
-void PFNGLENABLEVERTEXATTRIBARRAYPROC glad_glEnableVertexAttribArray;
+void extern PFNGLENABLEVERTEXATTRIBARRAYPROC glad_glEnableVertexAttribArray;
 #endif
 #ifdef DEBUG
-PFNGLGETACTIVEATTRIBPROC glad_debug_glGetActiveAttrib;
+extern PFNGLGETACTIVEATTRIBPROC glad_debug_glGetActiveAttrib;
 #else
-void PFNGLGETACTIVEATTRIBPROC glad_glGetActiveAttrib;
+void extern PFNGLGETACTIVEATTRIBPROC glad_glGetActiveAttrib;
 #endif
 #ifdef DEBUG
-PFNGLGETACTIVEUNIFORMPROC glad_debug_glGetActiveUniform;
+extern PFNGLGETACTIVEUNIFORMPROC glad_debug_glGetActiveUniform;
 #else
-void PFNGLGETACTIVEUNIFORMPROC glad_glGetActiveUniform;
+void extern PFNGLGETACTIVEUNIFORMPROC glad_glGetActiveUniform;
 #endif
 #ifdef DEBUG
-PFNGLGETATTACHEDSHADERSPROC glad_debug_glGetAttachedShaders;
+extern PFNGLGETATTACHEDSHADERSPROC glad_debug_glGetAttachedShaders;
 #else
-void PFNGLGETATTACHEDSHADERSPROC glad_glGetAttachedShaders;
+void extern PFNGLGETATTACHEDSHADERSPROC glad_glGetAttachedShaders;
 #endif
 #ifdef DEBUG
-PFNGLGETPROGRAMIVPROC glad_debug_glGetProgramiv;
+extern PFNGLGETPROGRAMIVPROC glad_debug_glGetProgramiv;
 #else
-void PFNGLGETPROGRAMIVPROC glad_glGetProgramiv;
+void extern PFNGLGETPROGRAMIVPROC glad_glGetProgramiv;
 #endif
 #ifdef DEBUG
-PFNGLGETPROGRAMINFOLOGPROC glad_debug_glGetProgramInfoLog;
+extern PFNGLGETPROGRAMINFOLOGPROC glad_debug_glGetProgramInfoLog;
 #else
-void PFNGLGETPROGRAMINFOLOGPROC glad_glGetProgramInfoLog;
+void extern PFNGLGETPROGRAMINFOLOGPROC glad_glGetProgramInfoLog;
 #endif
 #ifdef DEBUG
-PFNGLGETSHADERIVPROC glad_debug_glGetShaderiv;
+extern PFNGLGETSHADERIVPROC glad_debug_glGetShaderiv;
 #else
-void PFNGLGETSHADERIVPROC glad_glGetShaderiv;
+void extern PFNGLGETSHADERIVPROC glad_glGetShaderiv;
 #endif
 #ifdef DEBUG
-PFNGLGETSHADERINFOLOGPROC glad_debug_glGetShaderInfoLog;
+extern PFNGLGETSHADERINFOLOGPROC glad_debug_glGetShaderInfoLog;
 #else
-void PFNGLGETSHADERINFOLOGPROC glad_glGetShaderInfoLog;
+void extern PFNGLGETSHADERINFOLOGPROC glad_glGetShaderInfoLog;
 #endif
 #ifdef DEBUG
-PFNGLGETSHADERSOURCEPROC glad_debug_glGetShaderSource;
+extern PFNGLGETSHADERSOURCEPROC glad_debug_glGetShaderSource;
 #else
-void PFNGLGETSHADERSOURCEPROC glad_glGetShaderSource;
+void extern PFNGLGETSHADERSOURCEPROC glad_glGetShaderSource;
 #endif
 #ifdef DEBUG
-PFNGLGETUNIFORMFVPROC glad_debug_glGetUniformfv;
+extern PFNGLGETUNIFORMFVPROC glad_debug_glGetUniformfv;
 #else
-void PFNGLGETUNIFORMFVPROC glad_glGetUniformfv;
+void extern PFNGLGETUNIFORMFVPROC glad_glGetUniformfv;
 #endif
 #ifdef DEBUG
-PFNGLGETUNIFORMIVPROC glad_debug_glGetUniformiv;
+extern PFNGLGETUNIFORMIVPROC glad_debug_glGetUniformiv;
 #else
-void PFNGLGETUNIFORMIVPROC glad_glGetUniformiv;
+void extern PFNGLGETUNIFORMIVPROC glad_glGetUniformiv;
 #endif
 #ifdef DEBUG
-PFNGLGETVERTEXATTRIBDVPROC glad_debug_glGetVertexAttribdv;
+extern PFNGLGETVERTEXATTRIBDVPROC glad_debug_glGetVertexAttribdv;
 #else
-void PFNGLGETVERTEXATTRIBDVPROC glad_glGetVertexAttribdv;
+void extern PFNGLGETVERTEXATTRIBDVPROC glad_glGetVertexAttribdv;
 #endif
 #ifdef DEBUG
-PFNGLGETVERTEXATTRIBFVPROC glad_debug_glGetVertexAttribfv;
+extern PFNGLGETVERTEXATTRIBFVPROC glad_debug_glGetVertexAttribfv;
 #else
-void PFNGLGETVERTEXATTRIBFVPROC glad_glGetVertexAttribfv;
+void extern PFNGLGETVERTEXATTRIBFVPROC glad_glGetVertexAttribfv;
 #endif
 #ifdef DEBUG
-PFNGLGETVERTEXATTRIBIVPROC glad_debug_glGetVertexAttribiv;
+extern PFNGLGETVERTEXATTRIBIVPROC glad_debug_glGetVertexAttribiv;
 #else
-void PFNGLGETVERTEXATTRIBIVPROC glad_glGetVertexAttribiv;
+void extern PFNGLGETVERTEXATTRIBIVPROC glad_glGetVertexAttribiv;
 #endif
 #ifdef DEBUG
-PFNGLGETVERTEXATTRIBPOINTERVPROC glad_debug_glGetVertexAttribPointerv;
+extern PFNGLGETVERTEXATTRIBPOINTERVPROC glad_debug_glGetVertexAttribPointerv;
 #else
-void PFNGLGETVERTEXATTRIBPOINTERVPROC glad_glGetVertexAttribPointerv;
+void extern PFNGLGETVERTEXATTRIBPOINTERVPROC glad_glGetVertexAttribPointerv;
 #endif
 #ifdef DEBUG
-PFNGLLINKPROGRAMPROC glad_debug_glLinkProgram;
+extern PFNGLLINKPROGRAMPROC glad_debug_glLinkProgram;
 #else
-void PFNGLLINKPROGRAMPROC glad_glLinkProgram;
+void extern PFNGLLINKPROGRAMPROC glad_glLinkProgram;
 #endif
 #ifdef DEBUG
-PFNGLSHADERSOURCEPROC glad_debug_glShaderSource;
+extern PFNGLSHADERSOURCEPROC glad_debug_glShaderSource;
 #else
-void PFNGLSHADERSOURCEPROC glad_glShaderSource;
+void extern PFNGLSHADERSOURCEPROC glad_glShaderSource;
 #endif
 #ifdef DEBUG
-PFNGLUSEPROGRAMPROC glad_debug_glUseProgram;
+extern PFNGLUSEPROGRAMPROC glad_debug_glUseProgram;
 #else
-void PFNGLUSEPROGRAMPROC glad_glUseProgram;
+void extern PFNGLUSEPROGRAMPROC glad_glUseProgram;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM1FPROC glad_debug_glUniform1f;
+extern PFNGLUNIFORM1FPROC glad_debug_glUniform1f;
 #else
-void PFNGLUNIFORM1FPROC glad_glUniform1f;
+void extern PFNGLUNIFORM1FPROC glad_glUniform1f;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM2FPROC glad_debug_glUniform2f;
+extern PFNGLUNIFORM2FPROC glad_debug_glUniform2f;
 #else
-void PFNGLUNIFORM2FPROC glad_glUniform2f;
+void extern PFNGLUNIFORM2FPROC glad_glUniform2f;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM3FPROC glad_debug_glUniform3f;
+extern PFNGLUNIFORM3FPROC glad_debug_glUniform3f;
 #else
-void PFNGLUNIFORM3FPROC glad_glUniform3f;
+void extern PFNGLUNIFORM3FPROC glad_glUniform3f;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM4FPROC glad_debug_glUniform4f;
+extern PFNGLUNIFORM4FPROC glad_debug_glUniform4f;
 #else
-void PFNGLUNIFORM4FPROC glad_glUniform4f;
+void extern PFNGLUNIFORM4FPROC glad_glUniform4f;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM1IPROC glad_debug_glUniform1i;
+extern PFNGLUNIFORM1IPROC glad_debug_glUniform1i;
 #else
-void PFNGLUNIFORM1IPROC glad_glUniform1i;
+void extern PFNGLUNIFORM1IPROC glad_glUniform1i;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM2IPROC glad_debug_glUniform2i;
+extern PFNGLUNIFORM2IPROC glad_debug_glUniform2i;
 #else
-void PFNGLUNIFORM2IPROC glad_glUniform2i;
+void extern PFNGLUNIFORM2IPROC glad_glUniform2i;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM3IPROC glad_debug_glUniform3i;
+extern PFNGLUNIFORM3IPROC glad_debug_glUniform3i;
 #else
-void PFNGLUNIFORM3IPROC glad_glUniform3i;
+void extern PFNGLUNIFORM3IPROC glad_glUniform3i;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM4IPROC glad_debug_glUniform4i;
+extern PFNGLUNIFORM4IPROC glad_debug_glUniform4i;
 #else
-void PFNGLUNIFORM4IPROC glad_glUniform4i;
+void extern PFNGLUNIFORM4IPROC glad_glUniform4i;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM1FVPROC glad_debug_glUniform1fv;
+extern PFNGLUNIFORM1FVPROC glad_debug_glUniform1fv;
 #else
-void PFNGLUNIFORM1FVPROC glad_glUniform1fv;
+void extern PFNGLUNIFORM1FVPROC glad_glUniform1fv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM2FVPROC glad_debug_glUniform2fv;
+extern PFNGLUNIFORM2FVPROC glad_debug_glUniform2fv;
 #else
-void PFNGLUNIFORM2FVPROC glad_glUniform2fv;
+void extern PFNGLUNIFORM2FVPROC glad_glUniform2fv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM3FVPROC glad_debug_glUniform3fv;
+extern PFNGLUNIFORM3FVPROC glad_debug_glUniform3fv;
 #else
-void PFNGLUNIFORM3FVPROC glad_glUniform3fv;
+void extern PFNGLUNIFORM3FVPROC glad_glUniform3fv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM4FVPROC glad_debug_glUniform4fv;
+extern PFNGLUNIFORM4FVPROC glad_debug_glUniform4fv;
 #else
-void PFNGLUNIFORM4FVPROC glad_glUniform4fv;
+void extern PFNGLUNIFORM4FVPROC glad_glUniform4fv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM1IVPROC glad_debug_glUniform1iv;
+extern PFNGLUNIFORM1IVPROC glad_debug_glUniform1iv;
 #else
-void PFNGLUNIFORM1IVPROC glad_glUniform1iv;
+void extern PFNGLUNIFORM1IVPROC glad_glUniform1iv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM2IVPROC glad_debug_glUniform2iv;
+extern PFNGLUNIFORM2IVPROC glad_debug_glUniform2iv;
 #else
-void PFNGLUNIFORM2IVPROC glad_glUniform2iv;
+void extern PFNGLUNIFORM2IVPROC glad_glUniform2iv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM3IVPROC glad_debug_glUniform3iv;
+extern PFNGLUNIFORM3IVPROC glad_debug_glUniform3iv;
 #else
-void PFNGLUNIFORM3IVPROC glad_glUniform3iv;
+void extern PFNGLUNIFORM3IVPROC glad_glUniform3iv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORM4IVPROC glad_debug_glUniform4iv;
+extern PFNGLUNIFORM4IVPROC glad_debug_glUniform4iv;
 #else
-void PFNGLUNIFORM4IVPROC glad_glUniform4iv;
+void extern PFNGLUNIFORM4IVPROC glad_glUniform4iv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORMMATRIX2FVPROC glad_debug_glUniformMatrix2fv;
+extern PFNGLUNIFORMMATRIX2FVPROC glad_debug_glUniformMatrix2fv;
 #else
-void PFNGLUNIFORMMATRIX2FVPROC glad_glUniformMatrix2fv;
+void extern PFNGLUNIFORMMATRIX2FVPROC glad_glUniformMatrix2fv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORMMATRIX3FVPROC glad_debug_glUniformMatrix3fv;
+extern PFNGLUNIFORMMATRIX3FVPROC glad_debug_glUniformMatrix3fv;
 #else
-void PFNGLUNIFORMMATRIX3FVPROC glad_glUniformMatrix3fv;
+void extern PFNGLUNIFORMMATRIX3FVPROC glad_glUniformMatrix3fv;
 #endif
 #ifdef DEBUG
-PFNGLUNIFORMMATRIX4FVPROC glad_debug_glUniformMatrix4fv;
+extern PFNGLUNIFORMMATRIX4FVPROC glad_debug_glUniformMatrix4fv;
 #else
-void PFNGLUNIFORMMATRIX4FVPROC glad_glUniformMatrix4fv;
+void extern PFNGLUNIFORMMATRIX4FVPROC glad_glUniformMatrix4fv;
 #endif
 #ifdef DEBUG
-PFNGLVALIDATEPROGRAMPROC glad_debug_glValidateProgram;
+extern PFNGLVALIDATEPROGRAMPROC glad_debug_glValidateProgram;
 #else
-void PFNGLVALIDATEPROGRAMPROC glad_glValidateProgram;
+void extern PFNGLVALIDATEPROGRAMPROC glad_glValidateProgram;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB1DPROC glad_debug_glVertexAttrib1d;
+extern PFNGLVERTEXATTRIB1DPROC glad_debug_glVertexAttrib1d;
 #else
-void PFNGLVERTEXATTRIB1DPROC glad_glVertexAttrib1d;
+void extern PFNGLVERTEXATTRIB1DPROC glad_glVertexAttrib1d;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB1DVPROC glad_debug_glVertexAttrib1dv;
+extern PFNGLVERTEXATTRIB1DVPROC glad_debug_glVertexAttrib1dv;
 #else
-void PFNGLVERTEXATTRIB1DVPROC glad_glVertexAttrib1dv;
+void extern PFNGLVERTEXATTRIB1DVPROC glad_glVertexAttrib1dv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB1FPROC glad_debug_glVertexAttrib1f;
+extern PFNGLVERTEXATTRIB1FPROC glad_debug_glVertexAttrib1f;
 #else
-void PFNGLVERTEXATTRIB1FPROC glad_glVertexAttrib1f;
+void extern PFNGLVERTEXATTRIB1FPROC glad_glVertexAttrib1f;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB1FVPROC glad_debug_glVertexAttrib1fv;
+extern PFNGLVERTEXATTRIB1FVPROC glad_debug_glVertexAttrib1fv;
 #else
-void PFNGLVERTEXATTRIB1FVPROC glad_glVertexAttrib1fv;
+void extern PFNGLVERTEXATTRIB1FVPROC glad_glVertexAttrib1fv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB1SPROC glad_debug_glVertexAttrib1s;
+extern PFNGLVERTEXATTRIB1SPROC glad_debug_glVertexAttrib1s;
 #else
-void PFNGLVERTEXATTRIB1SPROC glad_glVertexAttrib1s;
+void extern PFNGLVERTEXATTRIB1SPROC glad_glVertexAttrib1s;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB1SVPROC glad_debug_glVertexAttrib1sv;
+extern PFNGLVERTEXATTRIB1SVPROC glad_debug_glVertexAttrib1sv;
 #else
-void PFNGLVERTEXATTRIB1SVPROC glad_glVertexAttrib1sv;
+void extern PFNGLVERTEXATTRIB1SVPROC glad_glVertexAttrib1sv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB2DPROC glad_debug_glVertexAttrib2d;
+extern PFNGLVERTEXATTRIB2DPROC glad_debug_glVertexAttrib2d;
 #else
-void PFNGLVERTEXATTRIB2DPROC glad_glVertexAttrib2d;
+void extern PFNGLVERTEXATTRIB2DPROC glad_glVertexAttrib2d;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB2DVPROC glad_debug_glVertexAttrib2dv;
+extern PFNGLVERTEXATTRIB2DVPROC glad_debug_glVertexAttrib2dv;
 #else
-void PFNGLVERTEXATTRIB2DVPROC glad_glVertexAttrib2dv;
+void extern PFNGLVERTEXATTRIB2DVPROC glad_glVertexAttrib2dv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB2FPROC glad_debug_glVertexAttrib2f;
+extern PFNGLVERTEXATTRIB2FPROC glad_debug_glVertexAttrib2f;
 #else
-void PFNGLVERTEXATTRIB2FPROC glad_glVertexAttrib2f;
+void extern PFNGLVERTEXATTRIB2FPROC glad_glVertexAttrib2f;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB2FVPROC glad_debug_glVertexAttrib2fv;
+extern PFNGLVERTEXATTRIB2FVPROC glad_debug_glVertexAttrib2fv;
 #else
-void PFNGLVERTEXATTRIB2FVPROC glad_glVertexAttrib2fv;
+void extern PFNGLVERTEXATTRIB2FVPROC glad_glVertexAttrib2fv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB2SPROC glad_debug_glVertexAttrib2s;
+extern PFNGLVERTEXATTRIB2SPROC glad_debug_glVertexAttrib2s;
 #else
-void PFNGLVERTEXATTRIB2SPROC glad_glVertexAttrib2s;
+void extern PFNGLVERTEXATTRIB2SPROC glad_glVertexAttrib2s;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB2SVPROC glad_debug_glVertexAttrib2sv;
+extern PFNGLVERTEXATTRIB2SVPROC glad_debug_glVertexAttrib2sv;
 #else
-void PFNGLVERTEXATTRIB2SVPROC glad_glVertexAttrib2sv;
+void extern PFNGLVERTEXATTRIB2SVPROC glad_glVertexAttrib2sv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB3DPROC glad_debug_glVertexAttrib3d;
+extern PFNGLVERTEXATTRIB3DPROC glad_debug_glVertexAttrib3d;
 #else
-void PFNGLVERTEXATTRIB3DPROC glad_glVertexAttrib3d;
+void extern PFNGLVERTEXATTRIB3DPROC glad_glVertexAttrib3d;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB3DVPROC glad_debug_glVertexAttrib3dv;
+extern PFNGLVERTEXATTRIB3DVPROC glad_debug_glVertexAttrib3dv;
 #else
-void PFNGLVERTEXATTRIB3DVPROC glad_glVertexAttrib3dv;
+void extern PFNGLVERTEXATTRIB3DVPROC glad_glVertexAttrib3dv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB3FPROC glad_debug_glVertexAttrib3f;
+extern PFNGLVERTEXATTRIB3FPROC glad_debug_glVertexAttrib3f;
 #else
-void PFNGLVERTEXATTRIB3FPROC glad_glVertexAttrib3f;
+void extern PFNGLVERTEXATTRIB3FPROC glad_glVertexAttrib3f;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB3FVPROC glad_debug_glVertexAttrib3fv;
+extern PFNGLVERTEXATTRIB3FVPROC glad_debug_glVertexAttrib3fv;
 #else
-void PFNGLVERTEXATTRIB3FVPROC glad_glVertexAttrib3fv;
+void extern PFNGLVERTEXATTRIB3FVPROC glad_glVertexAttrib3fv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB3SPROC glad_debug_glVertexAttrib3s;
+extern PFNGLVERTEXATTRIB3SPROC glad_debug_glVertexAttrib3s;
 #else
-void PFNGLVERTEXATTRIB3SPROC glad_glVertexAttrib3s;
+void extern PFNGLVERTEXATTRIB3SPROC glad_glVertexAttrib3s;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB3SVPROC glad_debug_glVertexAttrib3sv;
+extern PFNGLVERTEXATTRIB3SVPROC glad_debug_glVertexAttrib3sv;
 #else
-void PFNGLVERTEXATTRIB3SVPROC glad_glVertexAttrib3sv;
+void extern PFNGLVERTEXATTRIB3SVPROC glad_glVertexAttrib3sv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4NBVPROC glad_debug_glVertexAttrib4Nbv;
+extern PFNGLVERTEXATTRIB4NBVPROC glad_debug_glVertexAttrib4Nbv;
 #else
-void PFNGLVERTEXATTRIB4NBVPROC glad_glVertexAttrib4Nbv;
+void extern PFNGLVERTEXATTRIB4NBVPROC glad_glVertexAttrib4Nbv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4NIVPROC glad_debug_glVertexAttrib4Niv;
+extern PFNGLVERTEXATTRIB4NIVPROC glad_debug_glVertexAttrib4Niv;
 #else
-void PFNGLVERTEXATTRIB4NIVPROC glad_glVertexAttrib4Niv;
+void extern PFNGLVERTEXATTRIB4NIVPROC glad_glVertexAttrib4Niv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4NSVPROC glad_debug_glVertexAttrib4Nsv;
+extern PFNGLVERTEXATTRIB4NSVPROC glad_debug_glVertexAttrib4Nsv;
 #else
-void PFNGLVERTEXATTRIB4NSVPROC glad_glVertexAttrib4Nsv;
+void extern PFNGLVERTEXATTRIB4NSVPROC glad_glVertexAttrib4Nsv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4NUBPROC glad_debug_glVertexAttrib4Nub;
+extern PFNGLVERTEXATTRIB4NUBPROC glad_debug_glVertexAttrib4Nub;
 #else
-void PFNGLVERTEXATTRIB4NUBPROC glad_glVertexAttrib4Nub;
+void extern PFNGLVERTEXATTRIB4NUBPROC glad_glVertexAttrib4Nub;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4NUBVPROC glad_debug_glVertexAttrib4Nubv;
+extern PFNGLVERTEXATTRIB4NUBVPROC glad_debug_glVertexAttrib4Nubv;
 #else
-void PFNGLVERTEXATTRIB4NUBVPROC glad_glVertexAttrib4Nubv;
+void extern PFNGLVERTEXATTRIB4NUBVPROC glad_glVertexAttrib4Nubv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4NUIVPROC glad_debug_glVertexAttrib4Nuiv;
+extern PFNGLVERTEXATTRIB4NUIVPROC glad_debug_glVertexAttrib4Nuiv;
 #else
-void PFNGLVERTEXATTRIB4NUIVPROC glad_glVertexAttrib4Nuiv;
+void extern PFNGLVERTEXATTRIB4NUIVPROC glad_glVertexAttrib4Nuiv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4NUSVPROC glad_debug_glVertexAttrib4Nusv;
+extern PFNGLVERTEXATTRIB4NUSVPROC glad_debug_glVertexAttrib4Nusv;
 #else
-void PFNGLVERTEXATTRIB4NUSVPROC glad_glVertexAttrib4Nusv;
+void extern PFNGLVERTEXATTRIB4NUSVPROC glad_glVertexAttrib4Nusv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4BVPROC glad_debug_glVertexAttrib4bv;
+extern PFNGLVERTEXATTRIB4BVPROC glad_debug_glVertexAttrib4bv;
 #else
-void PFNGLVERTEXATTRIB4BVPROC glad_glVertexAttrib4bv;
+void extern PFNGLVERTEXATTRIB4BVPROC glad_glVertexAttrib4bv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4DPROC glad_debug_glVertexAttrib4d;
+extern PFNGLVERTEXATTRIB4DPROC glad_debug_glVertexAttrib4d;
 #else
-void PFNGLVERTEXATTRIB4DPROC glad_glVertexAttrib4d;
+void extern PFNGLVERTEXATTRIB4DPROC glad_glVertexAttrib4d;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4DVPROC glad_debug_glVertexAttrib4dv;
+extern PFNGLVERTEXATTRIB4DVPROC glad_debug_glVertexAttrib4dv;
 #else
-void PFNGLVERTEXATTRIB4DVPROC glad_glVertexAttrib4dv;
+void extern PFNGLVERTEXATTRIB4DVPROC glad_glVertexAttrib4dv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4FPROC glad_debug_glVertexAttrib4f;
+extern PFNGLVERTEXATTRIB4FPROC glad_debug_glVertexAttrib4f;
 #else
-void PFNGLVERTEXATTRIB4FPROC glad_glVertexAttrib4f;
+void extern PFNGLVERTEXATTRIB4FPROC glad_glVertexAttrib4f;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4FVPROC glad_debug_glVertexAttrib4fv;
+extern PFNGLVERTEXATTRIB4FVPROC glad_debug_glVertexAttrib4fv;
 #else
-void PFNGLVERTEXATTRIB4FVPROC glad_glVertexAttrib4fv;
+void extern PFNGLVERTEXATTRIB4FVPROC glad_glVertexAttrib4fv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4IVPROC glad_debug_glVertexAttrib4iv;
+extern PFNGLVERTEXATTRIB4IVPROC glad_debug_glVertexAttrib4iv;
 #else
-void PFNGLVERTEXATTRIB4IVPROC glad_glVertexAttrib4iv;
+void extern PFNGLVERTEXATTRIB4IVPROC glad_glVertexAttrib4iv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4SPROC glad_debug_glVertexAttrib4s;
+extern PFNGLVERTEXATTRIB4SPROC glad_debug_glVertexAttrib4s;
 #else
-void PFNGLVERTEXATTRIB4SPROC glad_glVertexAttrib4s;
+void extern PFNGLVERTEXATTRIB4SPROC glad_glVertexAttrib4s;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4SVPROC glad_debug_glVertexAttrib4sv;
+extern PFNGLVERTEXATTRIB4SVPROC glad_debug_glVertexAttrib4sv;
 #else
-void PFNGLVERTEXATTRIB4SVPROC glad_glVertexAttrib4sv;
+void extern PFNGLVERTEXATTRIB4SVPROC glad_glVertexAttrib4sv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4UBVPROC glad_debug_glVertexAttrib4ubv;
+extern PFNGLVERTEXATTRIB4UBVPROC glad_debug_glVertexAttrib4ubv;
 #else
-void PFNGLVERTEXATTRIB4UBVPROC glad_glVertexAttrib4ubv;
+void extern PFNGLVERTEXATTRIB4UBVPROC glad_glVertexAttrib4ubv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4UIVPROC glad_debug_glVertexAttrib4uiv;
+extern PFNGLVERTEXATTRIB4UIVPROC glad_debug_glVertexAttrib4uiv;
 #else
-void PFNGLVERTEXATTRIB4UIVPROC glad_glVertexAttrib4uiv;
+void extern PFNGLVERTEXATTRIB4UIVPROC glad_glVertexAttrib4uiv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIB4USVPROC glad_debug_glVertexAttrib4usv;
+extern PFNGLVERTEXATTRIB4USVPROC glad_debug_glVertexAttrib4usv;
 #else
-void PFNGLVERTEXATTRIB4USVPROC glad_glVertexAttrib4usv;
+void extern PFNGLVERTEXATTRIB4USVPROC glad_glVertexAttrib4usv;
 #endif
 #ifdef DEBUG
-PFNGLVERTEXATTRIBPOINTERPROC glad_debug_glVertexAttribPointer;
+extern PFNGLVERTEXATTRIBPOINTERPROC glad_debug_glVertexAttribPointer;
 #else
-void PFNGLVERTEXATTRIBPOINTERPROC glad_glVertexAttribPointer;
+void extern PFNGLVERTEXATTRIBPOINTERPROC glad_glVertexAttribPointer;
 #endif
 #ifdef DEBUG
-PFNGLBINDBUFFERARBPROC glad_debug_glBindBufferARB;
+extern PFNGLBINDBUFFERARBPROC glad_debug_glBindBufferARB;
 #else
-void PFNGLBINDBUFFERARBPROC glad_glBindBufferARB;
+void extern PFNGLBINDBUFFERARBPROC glad_glBindBufferARB;
 #endif
 #ifdef DEBUG
-PFNGLDELETEBUFFERSARBPROC glad_debug_glDeleteBuffersARB;
+extern PFNGLDELETEBUFFERSARBPROC glad_debug_glDeleteBuffersARB;
 #else
-void PFNGLDELETEBUFFERSARBPROC glad_glDeleteBuffersARB;
+void extern PFNGLDELETEBUFFERSARBPROC glad_glDeleteBuffersARB;
 #endif
 #ifdef DEBUG
-PFNGLGENBUFFERSARBPROC glad_debug_glGenBuffersARB;
+extern PFNGLGENBUFFERSARBPROC glad_debug_glGenBuffersARB;
 #else
-void PFNGLGENBUFFERSARBPROC glad_glGenBuffersARB;
+void extern PFNGLGENBUFFERSARBPROC glad_glGenBuffersARB;
 #endif
 #ifdef DEBUG
-PFNGLBUFFERDATAARBPROC glad_debug_glBufferDataARB;
+extern PFNGLBUFFERDATAARBPROC glad_debug_glBufferDataARB;
 #else
-void PFNGLBUFFERDATAARBPROC glad_glBufferDataARB;
+void extern PFNGLBUFFERDATAARBPROC glad_glBufferDataARB;
 #endif
 #ifdef DEBUG
-PFNGLBUFFERSUBDATAARBPROC glad_debug_glBufferSubDataARB;
+extern PFNGLBUFFERSUBDATAARBPROC glad_debug_glBufferSubDataARB;
 #else
-void PFNGLBUFFERSUBDATAARBPROC glad_glBufferSubDataARB;
+void extern PFNGLBUFFERSUBDATAARBPROC glad_glBufferSubDataARB;
 #endif
 #ifdef DEBUG
-PFNGLGETBUFFERSUBDATAARBPROC glad_debug_glGetBufferSubDataARB;
+extern PFNGLGETBUFFERSUBDATAARBPROC glad_debug_glGetBufferSubDataARB;
 #else
-void PFNGLGETBUFFERSUBDATAARBPROC glad_glGetBufferSubDataARB;
+void extern PFNGLGETBUFFERSUBDATAARBPROC glad_glGetBufferSubDataARB;
 #endif
 #ifdef DEBUG
-PFNGLGETBUFFERPARAMETERIVARBPROC glad_debug_glGetBufferParameterivARB;
+extern PFNGLGETBUFFERPARAMETERIVARBPROC glad_debug_glGetBufferParameterivARB;
 #else
-void PFNGLGETBUFFERPARAMETERIVARBPROC glad_glGetBufferParameterivARB;
+void extern PFNGLGETBUFFERPARAMETERIVARBPROC glad_glGetBufferParameterivARB;
 #endif
 #ifdef DEBUG
-PFNGLGETBUFFERPOINTERVARBPROC glad_debug_glGetBufferPointervARB;
+extern PFNGLGETBUFFERPOINTERVARBPROC glad_debug_glGetBufferPointervARB;
 #else
-void PFNGLGETBUFFERPOINTERVARBPROC glad_glGetBufferPointervARB;
+void extern PFNGLGETBUFFERPOINTERVARBPROC glad_glGetBufferPointervARB;
 #endif
 #ifdef DEBUG
-PFNGLBINDVERTEXARRAYPROC glad_debug_glBindVertexArray;
+extern PFNGLBINDVERTEXARRAYPROC glad_debug_glBindVertexArray;
 #else
-void PFNGLBINDVERTEXARRAYPROC glad_glBindVertexArray;
+void extern PFNGLBINDVERTEXARRAYPROC glad_glBindVertexArray;
 #endif
 #ifdef DEBUG
-PFNGLDELETEVERTEXARRAYSPROC glad_debug_glDeleteVertexArrays;
+extern PFNGLDELETEVERTEXARRAYSPROC glad_debug_glDeleteVertexArrays;
 #else
-void PFNGLDELETEVERTEXARRAYSPROC glad_glDeleteVertexArrays;
+void extern PFNGLDELETEVERTEXARRAYSPROC glad_glDeleteVertexArrays;
 #endif
 #ifdef DEBUG
-PFNGLGENVERTEXARRAYSPROC glad_debug_glGenVertexArrays;
+extern PFNGLGENVERTEXARRAYSPROC glad_debug_glGenVertexArrays;
 #else
-void PFNGLGENVERTEXARRAYSPROC glad_glGenVertexArrays;
+void extern PFNGLGENVERTEXARRAYSPROC glad_glGenVertexArrays;
 #endif
 #ifdef DEBUG
-PFNGLBINDRENDERBUFFERPROC glad_debug_glBindRenderbuffer;
+extern PFNGLBINDRENDERBUFFERPROC glad_debug_glBindRenderbuffer;
 #else
-void PFNGLBINDRENDERBUFFERPROC glad_glBindRenderbuffer;
+void extern PFNGLBINDRENDERBUFFERPROC glad_glBindRenderbuffer;
 #endif
 #ifdef DEBUG
-PFNGLDELETERENDERBUFFERSPROC glad_debug_glDeleteRenderbuffers;
+extern PFNGLDELETERENDERBUFFERSPROC glad_debug_glDeleteRenderbuffers;
 #else
-void PFNGLDELETERENDERBUFFERSPROC glad_glDeleteRenderbuffers;
+void extern PFNGLDELETERENDERBUFFERSPROC glad_glDeleteRenderbuffers;
 #endif
 #ifdef DEBUG
-PFNGLGENRENDERBUFFERSPROC glad_debug_glGenRenderbuffers;
+extern PFNGLGENRENDERBUFFERSPROC glad_debug_glGenRenderbuffers;
 #else
-void PFNGLGENRENDERBUFFERSPROC glad_glGenRenderbuffers;
+void extern PFNGLGENRENDERBUFFERSPROC glad_glGenRenderbuffers;
 #endif
 #ifdef DEBUG
-PFNGLRENDERBUFFERSTORAGEPROC glad_debug_glRenderbufferStorage;
+extern PFNGLRENDERBUFFERSTORAGEPROC glad_debug_glRenderbufferStorage;
 #else
-void PFNGLRENDERBUFFERSTORAGEPROC glad_glRenderbufferStorage;
+void extern PFNGLRENDERBUFFERSTORAGEPROC glad_glRenderbufferStorage;
 #endif
 #ifdef DEBUG
-PFNGLGETRENDERBUFFERPARAMETERIVPROC glad_debug_glGetRenderbufferParameteriv;
+extern PFNGLGETRENDERBUFFERPARAMETERIVPROC glad_debug_glGetRenderbufferParameteriv;
 #else
-void PFNGLGETRENDERBUFFERPARAMETERIVPROC glad_glGetRenderbufferParameteriv;
+void extern PFNGLGETRENDERBUFFERPARAMETERIVPROC glad_glGetRenderbufferParameteriv;
 #endif
 #ifdef DEBUG
-PFNGLBINDFRAMEBUFFERPROC glad_debug_glBindFramebuffer;
+extern PFNGLBINDFRAMEBUFFERPROC glad_debug_glBindFramebuffer;
 #else
-void PFNGLBINDFRAMEBUFFERPROC glad_glBindFramebuffer;
+void extern PFNGLBINDFRAMEBUFFERPROC glad_glBindFramebuffer;
 #endif
 #ifdef DEBUG
-PFNGLDELETEFRAMEBUFFERSPROC glad_debug_glDeleteFramebuffers;
+extern PFNGLDELETEFRAMEBUFFERSPROC glad_debug_glDeleteFramebuffers;
 #else
-void PFNGLDELETEFRAMEBUFFERSPROC glad_glDeleteFramebuffers;
+void extern PFNGLDELETEFRAMEBUFFERSPROC glad_glDeleteFramebuffers;
 #endif
 #ifdef DEBUG
-PFNGLGENFRAMEBUFFERSPROC glad_debug_glGenFramebuffers;
+extern PFNGLGENFRAMEBUFFERSPROC glad_debug_glGenFramebuffers;
 #else
-void PFNGLGENFRAMEBUFFERSPROC glad_glGenFramebuffers;
+void extern PFNGLGENFRAMEBUFFERSPROC glad_glGenFramebuffers;
 #endif
 #ifdef DEBUG
-PFNGLFRAMEBUFFERTEXTURE1DPROC glad_debug_glFramebufferTexture1D;
+extern PFNGLFRAMEBUFFERTEXTURE1DPROC glad_debug_glFramebufferTexture1D;
 #else
-void PFNGLFRAMEBUFFERTEXTURE1DPROC glad_glFramebufferTexture1D;
+void extern PFNGLFRAMEBUFFERTEXTURE1DPROC glad_glFramebufferTexture1D;
 #endif
 #ifdef DEBUG
-PFNGLFRAMEBUFFERTEXTURE2DPROC glad_debug_glFramebufferTexture2D;
+extern PFNGLFRAMEBUFFERTEXTURE2DPROC glad_debug_glFramebufferTexture2D;
 #else
-void PFNGLFRAMEBUFFERTEXTURE2DPROC glad_glFramebufferTexture2D;
+void extern PFNGLFRAMEBUFFERTEXTURE2DPROC glad_glFramebufferTexture2D;
 #endif
 #ifdef DEBUG
-PFNGLFRAMEBUFFERTEXTURE3DPROC glad_debug_glFramebufferTexture3D;
+extern PFNGLFRAMEBUFFERTEXTURE3DPROC glad_debug_glFramebufferTexture3D;
 #else
-void PFNGLFRAMEBUFFERTEXTURE3DPROC glad_glFramebufferTexture3D;
+void extern PFNGLFRAMEBUFFERTEXTURE3DPROC glad_glFramebufferTexture3D;
 #endif
 #ifdef DEBUG
-PFNGLFRAMEBUFFERRENDERBUFFERPROC glad_debug_glFramebufferRenderbuffer;
+extern PFNGLFRAMEBUFFERRENDERBUFFERPROC glad_debug_glFramebufferRenderbuffer;
 #else
-void PFNGLFRAMEBUFFERRENDERBUFFERPROC glad_glFramebufferRenderbuffer;
+void extern PFNGLFRAMEBUFFERRENDERBUFFERPROC glad_glFramebufferRenderbuffer;
 #endif
 #ifdef DEBUG
-PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVPROC glad_debug_glGetFramebufferAttachmentParameteriv;
+extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVPROC glad_debug_glGetFramebufferAttachmentParameteriv;
 #else
-void PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVPROC glad_glGetFramebufferAttachmentParameteriv;
+void extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVPROC glad_glGetFramebufferAttachmentParameteriv;
 #endif
 #ifdef DEBUG
-PFNGLGENERATEMIPMAPPROC glad_debug_glGenerateMipmap;
+extern PFNGLGENERATEMIPMAPPROC glad_debug_glGenerateMipmap;
 #else
-void PFNGLGENERATEMIPMAPPROC glad_glGenerateMipmap;
+void extern PFNGLGENERATEMIPMAPPROC glad_glGenerateMipmap;
 #endif
 #ifdef DEBUG
-PFNGLBLITFRAMEBUFFERPROC glad_debug_glBlitFramebuffer;
+extern PFNGLBLITFRAMEBUFFERPROC glad_debug_glBlitFramebuffer;
 #else
-void PFNGLBLITFRAMEBUFFERPROC glad_glBlitFramebuffer;
+void extern PFNGLBLITFRAMEBUFFERPROC glad_glBlitFramebuffer;
 #endif
 #ifdef DEBUG
-PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC glad_debug_glRenderbufferStorageMultisample;
+extern PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC glad_debug_glRenderbufferStorageMultisample;
 #else
-void PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC glad_glRenderbufferStorageMultisample;
+void extern PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC glad_glRenderbufferStorageMultisample;
 #endif
 #ifdef DEBUG
-PFNGLFRAMEBUFFERTEXTURELAYERPROC glad_debug_glFramebufferTextureLayer;
+extern PFNGLFRAMEBUFFERTEXTURELAYERPROC glad_debug_glFramebufferTextureLayer;
 #else
-void PFNGLFRAMEBUFFERTEXTURELAYERPROC glad_glFramebufferTextureLayer;
+void extern PFNGLFRAMEBUFFERTEXTURELAYERPROC glad_glFramebufferTextureLayer;
 #endif
 } // extern C
 

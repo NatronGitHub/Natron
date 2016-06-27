@@ -86,6 +86,7 @@
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/OSGLFunctions.h"
 #include "Engine/OneViewNode.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/Project.h"
@@ -682,6 +683,11 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         }
         // The following requires a valid OpenGL context to be created
         _imp->initGl();
+
+        // Load our OpenGL functions both in OSMesa and GL (from glad)
+        GL_GPU::load();
+        GL_CPU::load();
+
         if (createOpenGLContext) {
             try {
                 OSGLContext::checkOpenGLVersion();
