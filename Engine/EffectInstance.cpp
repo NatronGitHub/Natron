@@ -3231,17 +3231,23 @@ EffectInstance::addPluginMemoryPointer(const PluginMemoryPtr& mem)
 void
 EffectInstance::removePluginMemoryPointer(const PluginMemory* mem)
 {
-    QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+    std::list<boost::shared_ptr<PluginMemory> > safeCopy;
 
-    for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
-        PluginMemoryPtr p = it->lock();
-        if (!p) {
-            continue;
-        }
-        if (p.get() == mem) {
-            _imp->pluginMemoryChunks.erase(it);
+    {
+        QMutexLocker l(&_imp->pluginMemoryChunksMutex);
+        // make a copy of the list so that elements don't get deleted while the mutex is held
 
-            return;
+        for (std::list<boost::weak_ptr<PluginMemory> >::iterator it = _imp->pluginMemoryChunks.begin(); it != _imp->pluginMemoryChunks.end(); ++it) {
+            PluginMemoryPtr p = it->lock();
+            if (!p) {
+                continue;
+            }
+            safeCopy.push_back(p);
+            if (p.get() == mem) {
+                _imp->pluginMemoryChunks.erase(it);
+
+                return;
+            }
         }
     }
 }

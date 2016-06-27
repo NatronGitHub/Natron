@@ -16,16 +16,34 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
+
 #include "OSGLContext_mac.h"
 
-#include <stdexcept>
 #ifdef __NATRON_OSX__
+
+#include <stdexcept>
 
 #include <QDebug>
 
 #include "Global/GLIncludes.h"
 
 //#import <Cocoa/Cocoa.h>
+#include <AvailabilityMacros.h>
+
+/* Silence deprecated OpenGL warnings. */
+#if MAC_OS_X_VERSION_MIN_REQUIRED >= 1090
+#include <OpenGL/OpenGLAvailability.h>
+#undef OPENGL_DEPRECATED
+#undef OPENGL_DEPRECATED_MSG
+#define OPENGL_DEPRECATED(from, to)
+#define OPENGL_DEPRECATED_MSG(from, to, msg)
+#endif
+
 #include <OpenGL/OpenGL.h> // necessary for CGL, even if glad was included just above
 #include <OpenGL/CGLTypes.h>
 
@@ -37,18 +55,105 @@
 // note use of 1070 instead of __MAC_10_7
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
 // code in here might run on pre-Lion OS
+#ifndef kCGLPFATripleBuffer
+#define kCGLPFATripleBuffer 3
+#endif
+#ifndef kCGLPFAOpenGLProfile
+#define kCGLPFAOpenGLProfile  99
+#endif
+#ifndef kCGLRPVideoMemoryMegabytes
+#define kCGLRPVideoMemoryMegabytes 131
+#endif
+#ifndef kCGLRPTextureMemoryMegabytes
+#define kCGLRPTextureMemoryMegabytes 132
+#endif
+#ifndef kCGLCECrashOnRemovedFunctions
+#define kCGLCECrashOnRemovedFunctions 316
+#endif
 #ifndef kCGLPFAOpenGLProfile
 #define kCGLPFAOpenGLProfile (CGLPixelFormatAttribute)99
-#endif
-#ifndef kCGLOGLPVersion_3_2_Core
-#define kCGLOGLPVersion_3_2_Core (CGLPixelFormatAttribute)0x3200
 #endif
 #ifndef kCGLOGLPVersion_Legacy
 #define kCGLOGLPVersion_Legacy (CGLPixelFormatAttribute)0x1000
 #endif
+#ifndef kCGLOGLPVersion_3_2_Core
+#define kCGLOGLPVersion_3_2_Core (CGLPixelFormatAttribute)0x3200
+#endif
+#ifndef kCGLOGLPVersion_GL3_Core
+#define kCGLOGLPVersion_GL3_Core 0x3200
+#endif
 #else
 // code here can assume Lion or later
 #endif
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1080
+#ifndef kCGLPFABackingVolatile
+#define kCGLPFABackingVolatile 77
+#endif
+#ifndef kCGLPFASupportsAutomaticGraphicsSwitching
+#define kCGLPFASupportsAutomaticGraphicsSwitching 101
+#endif
+#endif
+
+#if MAC_OS_X_VERSION_MIN_REQUIRED < 1090
+#ifndef kCGLOGLPVersion_GL3_Core
+#define kCGLOGLPVersion_GL3_Core 0x3200
+#endif
+#ifndef kCGLOGLPVersion_GL4_Core
+#define kCGLOGLPVersion_GL4_Core 0x4100
+#endif
+#ifndef kCGLRPMajorGLVersion
+#define kCGLRPMajorGLVersion 133
+#endif
+#endif
+
+// OpenGL/CGLProfiler.h seems to no longer be included with XCode
+#define kCGLCPComment                        ((CGLContextParameter)1232)
+#define kCGLCPDumpState                      ((CGLContextParameter)1233)
+#define kCGLCPEnableForceFlush               ((CGLContextParameter)1234)
+#define kCGLGOComment                        ((CGLGlobalOption)1506)
+#define kCGLGOEnableFunctionTrace            ((CGLGlobalOption)1507)
+#define kCGLGOEnableFunctionStatistics       ((CGLGlobalOption)1508)
+#define kCGLGOResetFunctionTrace             ((CGLGlobalOption)1509)
+#define kCGLGOPageBreak                      ((CGLGlobalOption)1510)
+#define kCGLGOResetFunctionStatistics        ((CGLGlobalOption)1511)
+#define kCGLGOEnableDebugAttach              ((CGLGlobalOption)1512)
+#define kCGLGOHideObjects                    ((CGLGlobalOption)1513)
+#define kCGLGOEnableBreakpoint               ((CGLGlobalOption)1514)
+#define kCGLGOForceSlowRenderingPath         ((CGLGlobalOption)1609)
+#define kCGLGODisableImmediateRenderPath     ((CGLGlobalOption)1610)
+#define kCGLGODisableCVARenderPath           ((CGLGlobalOption)1611)
+#define kCGLGODisableVARRenderPath           ((CGLGlobalOption)1612)
+#define kCGLGOForceWireframeRendering        ((CGLGlobalOption)1613)
+#define kCGLGOSubmitOnImmediateRenderCommand ((CGLGlobalOption)1614)
+#define kCGLGOSubmitOnCVARenderCommand       ((CGLGlobalOption)1615)
+#define kCGLGOSubmitOnVAORenderCommand       ((CGLGlobalOption)1616)
+#define kCGLGOSubmitOnClearCommand           ((CGLGlobalOption)1617)
+#define kCGLGOForceSoftwareTransformLighting ((CGLGlobalOption)1618)
+#define kCGLGOForceSoftwareTexgen            ((CGLGlobalOption)1619)
+#define kCGLGOForceSoftwareTRUFORM_ATI       ((CGLGlobalOption)1620)
+#define kCGLGOForceSoftwareVertexShaders     ((CGLGlobalOption)1621)
+#define kCGLGODisableFragmentShaders_ATI     ((CGLGlobalOption)1622)
+#define kCGLGODisableTexturing               ((CGLGlobalOption)1623)
+#define kCGLGOOutlineTexture                 ((CGLGlobalOption)1624)
+#define kCGLGOOutlineTextureColor            ((CGLGlobalOption)1625)
+#define kCGLGOForceSlowBitmapPath            ((CGLGlobalOption)1626)
+#define kCGLGODisableBitmap                  ((CGLGlobalOption)1627)
+#define kCGLGOForceSlowReadPixelsPath        ((CGLGlobalOption)1630)
+#define kCGLGODisableReadPixels              ((CGLGlobalOption)1631)
+#define kCGLGOOutlineReadPixelsBuffer        ((CGLGlobalOption)1632)
+#define kCGLGOOutlineReadPixelsBufferColor   ((CGLGlobalOption)1633)
+#define kCGLGOForceSlowDrawPixelsPath        ((CGLGlobalOption)1634)
+#define kCGLGODisableDrawPixels              ((CGLGlobalOption)1635)
+#define kCGLGOOutlineDrawPixelsBuffer        ((CGLGlobalOption)1636)
+#define kCGLGOOutlineDrawPixelsBufferColor   ((CGLGlobalOption)1637)
+#define kCGLGOForceSlowCopyPixelsPath        ((CGLGlobalOption)1638)
+#define kCGLGODisableCopyPixels              ((CGLGlobalOption)1639)
+#define kCGLGOOutlineCopyPixelsBuffer        ((CGLGlobalOption)1640)
+#define kCGLGOOutlineCopyPixelsBufferColor   ((CGLGlobalOption)1641)
+#define kCGLGOMakeAllGLObjectsRequireUpdate  ((CGLGlobalOption)1642)
+#define kCGLGOMakeAllGLStateRequireUpdate    ((CGLGlobalOption)1643)
+
 #endif
 
 NATRON_NAMESPACE_ENTER;
@@ -122,11 +227,16 @@ makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs,
     }
     attributes.push_back(kCGLPFAClosestPolicy);
     attributes.push_back(kCGLPFAAccelerated);
-    attributes.push_back(kCGLPFAOpenGLProfile);
-    if (coreProfile) {
-        attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_3_2_Core );
-    } else {
-        attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy );
+    /* Request an OpenGL 3.2 profile if one is available */
+    GLint version_major, version_minor;
+    CGLGetVersion(&version_major, &version_minor);
+    if (version_major > 1 || (version_major == 1 && version_minor >= 3)) {
+        attributes.push_back(kCGLPFAOpenGLProfile);
+        if (coreProfile) {
+            attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_3_2_Core );
+        } else {
+            attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy );
+        }
     }
     if (pixelFormatAttrs.doublebuffer) {
         attributes.push_back(kCGLPFADoubleBuffer);
