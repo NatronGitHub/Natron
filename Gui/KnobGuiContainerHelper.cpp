@@ -174,11 +174,19 @@ KnobGuiContainerHelper::getOrCreateDefaultPage()
     const std::vector< KnobPtr > & knobs = getInternalKnobs();
 
     // Find in all knobs a page param to set this param into
+    std::list<boost::shared_ptr<KnobPage> > pagesNotDeclaredByPlugin;
     for (U32 i = 0; i < knobs.size(); ++i) {
         boost::shared_ptr<KnobPage> p = boost::dynamic_pointer_cast<KnobPage>( knobs[i]);
-        if ( p && p->isDeclaredByPlugin() ) {
-            return getOrCreatePage(p);
+        if (p) {
+            if (p->isDeclaredByPlugin()) {
+                return getOrCreatePage(p);
+            } else {
+                pagesNotDeclaredByPlugin.push_back(p);
+            }
         }
+    }
+    if (!pagesNotDeclaredByPlugin.empty()) {
+        return getOrCreatePage(pagesNotDeclaredByPlugin.front());
     }
     // The plug-in didn't specify any page, it should have been caught before in Node::getOrCreateMainPage
     assert(false);
@@ -555,7 +563,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
     }
 
     KnobPtr parentKnob = knob->getParentKnob();
-    assert(parentKnob);
+    assert(parentKnob || !isPagingEnabled());
 
     boost::shared_ptr<KnobGroup> parentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
     KnobGuiGroup* parentGui = 0;

@@ -1142,6 +1142,7 @@ TrackerContext::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                              OverlaySupport* overlayInteract)
 {
     if ( markers.empty() ) {
+        Q_EMIT trackingFinished();
         return;
     }
 

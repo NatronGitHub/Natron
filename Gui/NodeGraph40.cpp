@@ -84,6 +84,14 @@ NodeGraph::togglePreviewsForSelectedNodes()
 }
 
 void
+NodeGraph::showSelectedNodeSettingsPanel()
+{
+    if (_imp->_selection.size() == 1) {
+        showNodePanel(false, false, _imp->_selection.front().get());
+    }
+}
+
+void
 NodeGraph::switchInputs1and2ForSelectedNodes()
 {
     QMutexLocker l(&_imp->_nodesMutex);

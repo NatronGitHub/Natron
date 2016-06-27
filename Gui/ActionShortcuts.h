@@ -481,6 +481,8 @@ CLANG_DIAG_ON(uninitialized)
 #define kShortcutIDActionGraphShowCacheSize "cacheSize"
 #define kShortcutDescActionGraphShowCacheSize "Diplay Cache Memory Consumption"
 
+#define kShortcutIDActionGraphOpenNodePanel "openSettingsPanel"
+#define kShortcutDescActionGraphOpenNodePanel "Open Node Settings Panel"
 
 #define kShortcutIDActionGraphFrameNodes "frameNodes"
 #define kShortcutDescActionGraphFrameNodes "Center on All Nodes"
