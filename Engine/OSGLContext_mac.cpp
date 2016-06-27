@@ -37,6 +37,7 @@
 // note use of 1070 instead of __MAC_10_7
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
 // code in here might run on pre-Lion OS
+#if 0 // it is wrong to define/use these attributes, since they are unknown to the system
 #ifndef kCGLPFAOpenGLProfile
 #define kCGLPFAOpenGLProfile (CGLPixelFormatAttribute)99
 #endif
@@ -46,6 +47,7 @@
 #ifndef kCGLOGLPVersion_Legacy
 #define kCGLOGLPVersion_Legacy (CGLPixelFormatAttribute)0x1000
 #endif
+#endif // 0
 #else
 // code here can assume Lion or later
 #endif
@@ -122,12 +124,14 @@ makeAttribsFromFBConfig(const FramebufferConfig& pixelFormatAttrs,
     }
     attributes.push_back(kCGLPFAClosestPolicy);
     attributes.push_back(kCGLPFAAccelerated);
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
     attributes.push_back(kCGLPFAOpenGLProfile);
     if (coreProfile) {
         attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_3_2_Core );
     } else {
         attributes.push_back( (CGLPixelFormatAttribute) kCGLOGLPVersion_Legacy );
     }
+#endif
     if (pixelFormatAttrs.doublebuffer) {
         attributes.push_back(kCGLPFADoubleBuffer);
     }
