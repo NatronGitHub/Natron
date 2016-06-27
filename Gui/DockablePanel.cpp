@@ -547,6 +547,9 @@ DockablePanel::onKnobsRecreated()
 void
 DockablePanel::onPageIndexChanged(int index)
 {
+    if (!_imp->_tabWidget) {
+        return;
+    }
     QWidget* curTab = _imp->_tabWidget->widget(index);
     const PagesMap& pages = getPages();
 
@@ -564,7 +567,7 @@ DockablePanel::onPageIndexChanged(int index)
 void
 DockablePanel::refreshCurrentPage()
 {
-    onPageIndexChanged( _imp->_tabWidget->currentIndex() );
+    onPageIndexChanged( _imp->_tabWidget ? _imp->_tabWidget->currentIndex() : 0);
 }
 
 void

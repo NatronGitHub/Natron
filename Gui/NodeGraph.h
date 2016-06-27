@@ -189,6 +189,8 @@ public Q_SLOTS:
 
     void togglePreviewsForSelectedNodes();
 
+    void showSelectedNodeSettingsPanel();
+
     void toggleAutoPreview();
 
     void toggleSelectedNodesEnabled();
@@ -246,6 +248,8 @@ public Q_SLOTS:
     void onAutoScrollTimerTriggered();
 
 private:
+
+    void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
 
     void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR);
 
