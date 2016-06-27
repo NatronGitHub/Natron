@@ -79,6 +79,7 @@ SOURCES += \
     Cache.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
+    CreateNodeArgs.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
     DefaultShaders.cpp \
@@ -260,6 +261,7 @@ HEADERS += \
     CacheEntryHolder.h \
     CacheSerialization.h \
     CoonsRegularization.h \
+    CreateNodeArgs.h \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \

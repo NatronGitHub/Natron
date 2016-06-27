@@ -1069,9 +1069,9 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        CreateNodeReason reason)
+                                        const boost::shared_ptr<NodeSerialization>& serialization, bool userCreated)
 {
-    if (reason == eCreateNodeReasonUserCreate) {
+    if (userCreated) {
         NodeGraph* graph = 0;
         boost::shared_ptr<NodeCollection> collection = node->getGroup();
         assert(collection);
@@ -1101,7 +1101,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
 
-    AppInstance::onGroupCreationFinished(node, reason);
+    AppInstance::onGroupCreationFinished(node, serialization, userCreated);
 
     /*std::list<ViewerInstance* > viewers;
        node->hasViewersConnected(&viewers);

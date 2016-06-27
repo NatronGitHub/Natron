@@ -272,7 +272,7 @@ public:
 
 private:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool userCreated) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;

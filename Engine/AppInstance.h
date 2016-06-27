@@ -45,69 +45,6 @@
 NATRON_NAMESPACE_ENTER;
 
 struct AppInstancePrivate;
-struct CreateNodeArgs
-{
-    typedef std::list< boost::shared_ptr<KnobSerialization> > DefaultValuesList;
-
-    ///The pluginID corresponds to Plugin::getPluginID()
-    QString pluginID;
-
-    //The version of the plug-in we want to instanciate
-    int majorV, minorV;
-
-    //If the node is a multi-instance child, this is the script-name of the parent
-    std::string multiInstanceParentName;
-
-    //A hint for the initial x,y position in the NodeGraph
-    double xPosHint, yPosHint;
-
-    //If we do not want the name of the node to be generated automatically, we can set this
-    //to force the node to have this name
-    QString fixedName;
-
-    //A list of parameter values that will be set prior to calling createInstanceAction
-    DefaultValuesList paramValues;
-
-    //The group into which the node should be. All "user" nodes should at least be in the Project
-    //or in a NodeGroup
-    boost::shared_ptr<NodeCollection> group;
-
-    //How was this node created
-    CreateNodeReason reason;
-
-    //Should we create the NodeGui or keep the node internal only
-    bool createGui;
-
-    //If false the node will not be serialized, indicating it's just used by Natron internals
-    bool addToProject;
-
-    //When copy/pasting or loading from a project, this is a pointer to this node serialization to load
-    //data from
-    boost::shared_ptr<NodeSerialization> serialization;
-
-    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
-    NodePtr ioContainer;
-
-    explicit CreateNodeArgs(const QString& pluginID,
-                            CreateNodeReason reason,
-                            const boost::shared_ptr<NodeCollection>& group)
-        : pluginID(pluginID)
-        , majorV(-1)
-        , minorV(-1)
-        , multiInstanceParentName()
-        , xPosHint(INT_MIN)
-        , yPosHint(INT_MIN)
-        , fixedName()
-        , paramValues()
-        , group(group)
-        , reason(reason)
-        , createGui(true)
-        , addToProject(true)
-        , serialization()
-        , ioContainer()
-    {
-    }
-};
 
 
 class FlagSetter
@@ -496,7 +433,7 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, CreateNodeReason reason);
+    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool userCreated);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)
