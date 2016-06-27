@@ -1702,7 +1702,7 @@ public:
      * @brief Called after all knobs have been loaded and the nod ehas been created
      **/
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/,
-                                 const std::list<boost::shared_ptr<KnobSerialization> >& /*defaultParamValues*/) {}
+                                 const CreateNodeArgs& /*args*/) {}
 
     virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
                               int dimension,

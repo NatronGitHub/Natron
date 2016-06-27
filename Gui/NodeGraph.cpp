@@ -34,6 +34,7 @@
 #include <stdexcept>
 
 #include "Engine/Backdrop.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Dot.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -417,7 +418,10 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {
         isTopLevelNodeBeingCreated = true;
     }
-    if ( (args.reason != eCreateNodeReasonProjectLoad) && (args.reason != eCreateNodeReasonCopyPaste) && isTopLevelNodeBeingCreated ) {
+    
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, boost::shared_ptr<NodeSerialization>());
+    
+    if ( !serialization && isTopLevelNodeBeingCreated ) {
         node_ui->ensurePanelCreated();
     }
 
@@ -427,9 +431,10 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         getGui()->registerNewUndoStack( nodeStack.get() );
     }
 
-    if (args.reason == eCreateNodeReasonUserCreate) {
+    bool userCreated = args.getProperty<int>(kCreateNodeArgsPropUserCreated, false);
+    if (userCreated) {
         pushUndoCommand( new AddMultipleNodesCommand(this, node_ui) );
-    } else if ( (args.reason != eCreateNodeReasonProjectLoad) && !isGrp ) {
+    } else if ( !serialization && !isGrp ) {
         selectNode(node_ui, false);
     }
 

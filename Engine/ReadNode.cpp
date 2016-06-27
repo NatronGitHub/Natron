@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
@@ -1028,7 +1029,7 @@ ReadNode::initializeKnobs()
 
 void
 ReadNode::onEffectCreated(bool mayCreateFileDialog,
-                          const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues)
+                          const CreateNodeArgs& args)
 {
     //If we already loaded the Reader, do not do anything
     NodePtr p = getEmbeddedReader();
@@ -1052,7 +1053,8 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;
     } else {
-        pattern = getFileNameFromSerialization(defaultParamValues);
+        std::string paramName = std::string(kCreateNodeArgsPropParamValue) + std::string("_") + std::string(kOfxImageEffectFileParamName);
+        pattern = args.getProperty<std::string>(paramName, std::string());
     }
     _imp->createReadNode( throwErrors, pattern, boost::shared_ptr<NodeSerialization>() );
     _imp->refreshPluginSelectorKnob();

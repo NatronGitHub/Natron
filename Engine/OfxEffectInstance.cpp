@@ -58,6 +58,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/AppManager.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeMetadata.h"
@@ -344,7 +345,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                                                 OFX::Host::ImageEffect::Descriptor* desc,
                                                 ContextEnum context,
                                                 const NodeSerialization* serialization,
-                                                const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
+                                                const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                                 ,
                                                 bool allowFileDialogs,
@@ -512,9 +513,8 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
                 getNode()->loadKnobs(*serialization);
             }
 
-            if ( !paramValues.empty() ) {
-                getNode()->setValuesFromSerialization(paramValues);
-            }
+            getNode()->setValuesFromSerialization(args);
+            
 
 #ifndef NATRON_ENABLE_IO_META_NODES
             //////////////////////////////////////////////////////

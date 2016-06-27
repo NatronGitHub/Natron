@@ -1921,9 +1921,7 @@ AppManager::getPluginBinary(const QString & pluginId,
 
 EffectInstPtr
 AppManager::createOFXEffect(NodePtr node,
-                            const NodeSerialization* serialization,
-                            const QString& fixedName,
-                            const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
+                            const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                             ,
                             bool allowFileDialogs,
@@ -1931,7 +1929,7 @@ AppManager::createOFXEffect(NodePtr node,
 #endif
                             ) const
 {
-    return _imp->ofxHost->createOfxEffect(node, serialization, fixedName, paramValues
+    return _imp->ofxHost->createOfxEffect(node, args,
 #ifndef NATRON_ENABLE_IO_META_NODES
                                           , allowFileDialogs,
                                           hasUsedFileDialog

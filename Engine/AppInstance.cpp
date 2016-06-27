@@ -1117,7 +1117,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-    NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
+    NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
     //If it is a reader or writer, create a ReadNode or WriteNode
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
@@ -1151,7 +1151,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     bool allowUserCreatablePlugins = args.getProperty<int>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
     if ( !plugin->getIsUserCreatable() && !allowUserCreatablePlugins ) {
         //The plug-in should not be instantiable by the user
-        qDebug() << "Attempt to create" << args.pluginID << "which is not user creatable";
+        qDebug() << "Attempt to create" << argsPluginID << "which is not user creatable";
 
         return node;
     }
@@ -1194,7 +1194,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 // ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
                 ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
             } catch (const std::exception& e) {
-                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(args.pluginID).toStdString()
+                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString()
                             + '\n' + e.what(), false);
 
                 return NodePtr();
@@ -1268,8 +1268,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     try {
         node->load(args);
     } catch (const std::exception & e) {
-        if (args.group) {
-            args.group->removeNode(node);
+        if (argsGroup) {
+            argsGroup->removeNode(node);
         }
         std::string error( e.what() );
         if ( !error.empty() ) {
@@ -1281,8 +1281,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
         return NodePtr();
     } catch (...) {
-        if (args.group) {
-            args.group->removeNode(node);
+        if (argsGroup) {
+            argsGroup->removeNode(node);
         }
         std::string title("Error while creating node");
         std::string message = title + " " + foundPluginID;
@@ -2085,7 +2085,7 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const boost::shared_ptr<NodeSerialization>& serialization, bool userCreated)
+                                     const boost::shared_ptr<NodeSerialization>& serialization, bool /*userCreated*/)
 {
     assert(node);
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {

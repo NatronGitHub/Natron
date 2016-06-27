@@ -180,25 +180,39 @@ class CreateNodeArgs
 
         }
     };
-
-
+    
     template <typename T>
-    boost::shared_ptr<Property<T> > getOrCreateProp(const std::string& name, bool fail)
+    boost::shared_ptr<Property<T> > getProp(const std::string& name)
     {
-        boost::shared_ptr<PropertyBase>* propPtr = 0;
-        if (!fail) {
-            propPtr = &_properties[name];
-        } else {
-            std::map<std::string, boost::shared_ptr<PropertyBase> >::iterator found = _properties.find(name);
-            if (found == _properties.end()) {
-                throw std::invalid_argument("Invalid property " + name);
-            }
-            propPtr = &(found->second);
+        const boost::shared_ptr<PropertyBase>* propPtr = 0;
+
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
+        if (found == _properties.end()) {
+            throw std::invalid_argument("Invalid property " + name);
         }
+        propPtr = &(found->second);
         boost::shared_ptr<Property<T> > propTemplate;
         if (!propPtr) {
             propTemplate.reset(new Property<T>);
-            propPtr = propTemplate;
+            *propPtr = propTemplate;
+        } else {
+            propTemplate = boost::dynamic_pointer_cast<Property<T> >(propPtr);
+        }
+        assert(propTemplate);
+        return propTemplate;
+    }
+
+
+    template <typename T>
+    boost::shared_ptr<Property<T> > getOrCreateProp(const std::string& name)
+    {
+        boost::shared_ptr<PropertyBase>* propPtr = 0;
+        propPtr = &_properties[name];
+        
+        boost::shared_ptr<Property<T> > propTemplate;
+        if (!propPtr) {
+            propTemplate.reset(new Property<T>);
+            *propPtr = propTemplate;
         } else {
             propTemplate = boost::dynamic_pointer_cast<Property<T> >(propPtr);
         }
@@ -219,7 +233,7 @@ public:
     template <typename T>
     void setProperty(const std::string& name, const T& value, int index = 0)
     {
-        boost::shared_ptr<Property<T> > propTemplate = getOrCreateProp<T>(name, false);
+        boost::shared_ptr<Property<T> > propTemplate = getOrCreateProp<T>(name);
         if (index >= (int)propTemplate->value.size()) {
             propTemplate->value.resize(index + 1);
         }
@@ -230,7 +244,7 @@ public:
     template <typename T>
     void setPropertyN(const std::string& name, const std::vector<T>& values)
     {
-        boost::shared_ptr<Property<T> > propTemplate = getOrCreateProp<T>(name, false);
+        boost::shared_ptr<Property<T> > propTemplate = getOrCreateProp<T>(name);
         propTemplate->value = values;
     }
 
@@ -277,7 +291,7 @@ public:
     const T& getProperty(const std::string& name, const T& defaultValueIffailed, int index = 0) const
     {
         try {
-            boost::shared_ptr<Property<T> > propTemplate = getOrCreateProp<T>(name, true);
+            boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
             if (index < 0 || index >= (int)propTemplate->value.size()) {
                 return defaultValueIffailed;
             }
@@ -292,7 +306,7 @@ public:
     const std::vector<T>& getPropertyN(const std::string& name, const std::vector<T>& defaultValueIfFailed) const
     {
         try {
-            boost::shared_ptr<Property<T> > propTemplate = getOrCreateProp<T>(name, true);
+            boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
             return propTemplate->value;
 
         } catch (const std::exception& e) {

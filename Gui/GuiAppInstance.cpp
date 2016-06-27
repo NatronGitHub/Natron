@@ -33,6 +33,7 @@
 
 #include "Engine/CLArgs.h"
 #include "Engine/Project.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
@@ -489,15 +490,16 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
     NodeGroup* isGroup = node->isEffectGroup();
     if ( isGroup && isGroup->isSubGraphUserVisible() ) {
-        _imp->_gui->createGroupGui(node, args.reason);
+        _imp->_gui->createGroupGui(node, args);
     }
 
     ///Don't initialize inputs if it is a multi-instance child since it is not part of  the graph
     if (!parentMultiInstance) {
         nodegui->initializeInputs();
     }
-
-    if ( (args.reason == eCreateNodeReasonUserCreate) && !isViewer ) {
+    
+    bool userCreated = args.getProperty<int>(kCreateNodeArgsPropUserCreated, false);
+    if ( userCreated && !isViewer ) {
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
         triggerAutoSave();
@@ -506,19 +508,21 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
     ///only move main instances
     if ( node->getParentMultiInstanceName().empty() ) {
-        bool autoConnect = args.reason == eCreateNodeReasonUserCreate;
+        bool autoConnect = userCreated;
 
         if ( selectedNodes.empty() ) {
             autoConnect = false;
         }
-        if ( (args.xPosHint != INT_MIN) && (args.yPosHint != INT_MIN) && (!autoConnect) ) {
-            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(args.xPosHint, args.yPosHint) ) );
+        double xPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, INT_MIN, 0);
+        double yPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, INT_MIN, 1);
+        if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (!autoConnect) ) {
+            QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
             nodegui->refreshPosition( pos.x(), pos.y(), true );
         } else {
             BackdropGui* isBd = dynamic_cast<BackdropGui*>( nodegui.get() );
             if (!isBd) {
                 NodeGuiPtr selectedNode;
-                if ( (args.reason == eCreateNodeReasonUserCreate) && (selectedNodes.size() == 1) ) {
+                if ( userCreated && (selectedNodes.size() == 1) ) {
                     selectedNode = selectedNodes.front();
                     BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>( selectedNode.get() );
                     if (isBackdropGui) {
