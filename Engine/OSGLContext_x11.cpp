@@ -859,7 +859,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
     if (!glxInfo->_imp->MESA_query_renderer) {
         boost::scoped_ptr<OSGLContext_x11> context;
         try {
-            context.reset( new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID(), 0) );
+            context.reset( new OSGLContext_x11(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, GLRendererID(), 0) );
         } catch (const std::exception& e) {
             std::cerr << e.what() << std::endl;
 
@@ -879,10 +879,10 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
         }
 
         OpenGLRendererInfo info;
-        info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
-        info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
-        info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
-        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+        info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
+        info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
+        info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
+        GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
         // We don't have any way to get memory size, set it to 0
         info.maxMemBytes = 0;
         info.rendererID.renderID = -1;
@@ -957,7 +957,7 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     // Now create a context with the renderer ID
                     boost::scoped_ptr<OSGLContext_x11> context;
                     try {
-                        context.reset( new OSGLContext_x11(FramebufferConfig(), GLVersion.major, GLVersion.minor, false, GLRendererID( (int)renderer ), 0) );
+                        context.reset( new OSGLContext_x11(FramebufferConfig(), appPTR->getOpenGLVersionMajor(), appPTR->getOpenGLVersionMinor(), false, GLRendererID( (int)renderer ), 0) );
                     } catch (const std::exception& e) {
 #ifndef DEBUG
                         std::cerr << ss.str() << std::endl;
@@ -984,10 +984,10 @@ OSGLContext_x11::getGPUInfos(std::list<OpenGLRendererInfo>& renderers)
                     }
 
                     info.rendererID.renderID = renderer;
-                    info.vendorName = std::string( (const char *) glGetString(GL_VENDOR) );
-                    info.rendererName = std::string( (const char *) glGetString(GL_RENDERER) );
-                    info.glVersionString = std::string( (const char *) glGetString(GL_VERSION) );
-                    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
+                    info.vendorName = std::string( (const char *) GL_GPU::glGetString(GL_VENDOR) );
+                    info.rendererName = std::string( (const char *) GL_GPU::glGetString(GL_RENDERER) );
+                    info.glVersionString = std::string( (const char *) GL_GPU::glGetString(GL_VERSION) );
+                    GL_GPU::glGetIntegerv(GL_MAX_TEXTURE_SIZE, &info.maxTextureSize);
 
                     renderers.push_back(info);
 

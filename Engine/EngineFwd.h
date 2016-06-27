@@ -127,7 +127,6 @@ struct FramebufferConfig;
 class FrameKey;
 class FrameParams;
 class GPUContextPool;
-class GLShader;
 class GenericAccess;
 class GenericSchedulerThread;
 class GenericSchedulerThreadWatcher;

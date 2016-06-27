@@ -32,8 +32,9 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
-#include "Engine/OSGLFunctions.h"
 #include "Engine/Settings.h"
+
+#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 

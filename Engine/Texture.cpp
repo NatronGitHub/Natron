@@ -26,6 +26,9 @@
 
 #include <stdexcept>
 
+#include "Global/GLIncludes.h"
+
+
 NATRON_NAMESPACE_ENTER;
 
 Texture::Texture(U32 target,
@@ -35,7 +38,8 @@ Texture::Texture(U32 target,
                  DataTypeEnum type,
                  int format,
                  int internalFormat,
-                 int glType)
+                 int glType,
+                 bool useOpenGL)
     : _texID(0)
     , _target(target)
     , _minFilter(minFilter)
@@ -45,8 +49,13 @@ Texture::Texture(U32 target,
     , _format(format)
     , _glType(glType)
     , _type(type)
+    , _useOpenGL(useOpenGL)
 {
-    glGenTextures(1, &_texID);
+    if (useOpenGL) {
+        GL_GPU::glGenTextures(1, &_texID);
+    } else {
+        GL_CPU::glGenTextures(1, &_texID);
+    }
 }
 
 void
@@ -59,6 +68,51 @@ Texture::getRecommendedTexParametersForRGBAByteTexture(int* format,
     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
 }
 
+template <typename GL>
+void ensureTextureHasSizeInternal(const unsigned char* originalRAMBuffer,
+                                  int target,
+                                  int texID,
+                                  int minFilter,
+                                  int magFilter,
+                                  int clamp,
+                                  int internalFormat,
+                                  int format,
+                                  int glType,
+                                  int w,
+                                  int h)
+{
+    GLProtectAttrib<GL> a(GL_ENABLE_BIT);
+    GL::glEnable(target);
+    GL::glBindTexture (target, texID);
+
+    GL::glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
+
+    if (minFilter != GL_NONE) {
+        GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, minFilter);
+    }
+    if (magFilter != GL_NONE) {
+        GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, magFilter);
+    }
+
+    if (clamp != GL_NONE) {
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, clamp);
+        GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, clamp);
+    }
+
+    GL::glTexImage2D (target,
+                  0,            // level
+                  internalFormat, //internalFormat
+                  w, h,
+                  0,            // border
+                  format,      // format
+                  glType, // type
+                  originalRAMBuffer);           // pixels
+
+
+    GL::glBindTexture(target, 0);
+    glCheckError(GL);
+}
+
 bool
 Texture::ensureTextureHasSize(const TextureRect& texRect,
                               const unsigned char* originalRAMBuffer)
@@ -66,40 +120,55 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
     if (texRect == _textureRect) {
         return false;
     }
-
-    GLProtectAttrib a(GL_ENABLE_BIT);
-    glEnable(_target);
-    glBindTexture (_target, _texID);
     _textureRect = texRect;
 
-    glPixelStorei (GL_UNPACK_ALIGNMENT, 1);
-
-    if (_minFilter != GL_NONE) {
-        glTexParameteri (_target, GL_TEXTURE_MIN_FILTER, _minFilter);
+    if (_useOpenGL) {
+        ensureTextureHasSizeInternal<GL_GPU>(originalRAMBuffer, _target, _texID, _minFilter, _magFilter, _clamp, _internalFormat, _format, _glType, w(), h());
+    } else {
+        ensureTextureHasSizeInternal<GL_CPU>(originalRAMBuffer, _target, _texID, _minFilter, _magFilter, _clamp, _internalFormat, _format, _glType, w(), h());
     }
-    if (_magFilter != GL_NONE) {
-        glTexParameteri (_target, GL_TEXTURE_MAG_FILTER, _magFilter);
-    }
-
-    if (_clamp != GL_NONE) {
-        glTexParameteri (_target, GL_TEXTURE_WRAP_S, _clamp);
-        glTexParameteri (_target, GL_TEXTURE_WRAP_T, _clamp);
-    }
-
-    glTexImage2D (_target,
-                  0,            // level
-                  _internalFormat, //internalFormat
-                  w(), h(),
-                  0,            // border
-                  _format,      // format
-                  _glType, // type
-                  originalRAMBuffer);           // pixels
-
-
-    glBindTexture(_target, 0);
-    glCheckError();
 
     return true;
+}
+
+template <typename GL>
+void fillOrAllocateTextureInternal(const TextureRect & texRect,
+                                   Texture* texture,
+                                   const RectI& roi,
+                                   bool updateOnlyRoi,
+                                   const unsigned char* originalRAMBuffer,
+                                   int target,
+                                   int texID,
+                                   int format,
+                                   int glType,
+                                   int w,
+                                   int h)
+{
+    //GLuint savedTexture;
+    //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
+    {
+        GLProtectAttrib<GL> a(GL_ENABLE_BIT);
+        int width = updateOnlyRoi ? roi.width() : w;
+        int height = updateOnlyRoi ? roi.height() : h;
+        int x1 = updateOnlyRoi ? roi.x1 - texRect.x1 : 0;
+        int y1 = updateOnlyRoi ? roi.y1 - texRect.y1 : 0;
+
+        if ( !texture->ensureTextureHasSize(texRect, originalRAMBuffer) ) {
+            GL::glEnable(target);
+            GL::glBindTexture (target, texID);
+
+            GL::glTexSubImage2D(target,
+                            0,              // level
+                            x1, y1,               // xoffset, yoffset
+                            width, height,
+                            format,            // format
+                            glType,       // type
+                            originalRAMBuffer);
+
+            GL::glBindTexture (target, 0);
+            glCheckError(GL);
+        }
+    } // GLProtectAttrib a(GL_ENABLE_BIT);
 }
 
 void
@@ -108,36 +177,20 @@ Texture::fillOrAllocateTexture(const TextureRect & texRect,
                                bool updateOnlyRoi,
                                const unsigned char* originalRAMBuffer)
 {
-    //GLuint savedTexture;
-    //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
-    {
-        GLProtectAttrib a(GL_ENABLE_BIT);
-        int width = updateOnlyRoi ? roi.width() : w();
-        int height = updateOnlyRoi ? roi.height() : h();
-        int x1 = updateOnlyRoi ? roi.x1 - texRect.x1 : 0;
-        int y1 = updateOnlyRoi ? roi.y1 - texRect.y1 : 0;
-
-        if ( !ensureTextureHasSize(texRect, originalRAMBuffer) ) {
-            glEnable(_target);
-            glBindTexture (_target, _texID);
-
-            glTexSubImage2D(_target,
-                            0,              // level
-                            x1, y1,               // xoffset, yoffset
-                            width, height,
-                            _format,            // format
-                            _glType,       // type
-                            originalRAMBuffer);
-
-            glBindTexture (_target, 0);
-            glCheckError();
-        }
-    } // GLProtectAttrib a(GL_ENABLE_BIT);
+    if (_useOpenGL) {
+        fillOrAllocateTextureInternal<GL_GPU>(texRect, this, roi, updateOnlyRoi, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
+    } else {
+        fillOrAllocateTextureInternal<GL_CPU>(texRect, this, roi, updateOnlyRoi, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
+    }
 } // fillOrAllocateTexture
 
 Texture::~Texture()
 {
-    glDeleteTextures(1, &_texID);
+    if (_useOpenGL) {
+        GL_GPU::glDeleteTextures(1, &_texID);
+    } else {
+        GL_CPU::glDeleteTextures(1, &_texID);
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

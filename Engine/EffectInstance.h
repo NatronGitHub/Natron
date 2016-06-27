@@ -595,6 +595,7 @@ public:
      * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
      * The OpenGL context should have been made current prior to calling this function.
      **/
+    template <typename GL>
     ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);
 
 

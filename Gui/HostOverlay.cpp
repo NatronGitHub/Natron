@@ -953,22 +953,22 @@ PositionInteract::draw(double time,
         pos.setY(p[1]);
     }
     //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
-    glPointSize( (GLfloat)pointSize() );
+    GL_GPU::glPointSize( (GLfloat)pointSize() );
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing
     for (int l = 0; l < 2; ++l) {
         // shadow (uses GL_PROJECTION)
-        glMatrixMode(GL_PROJECTION);
+        GL_GPU::glMatrixMode(GL_PROJECTION);
         int direction = (l == 0) ? 1 : -1;
         // translate (1,-1) pixels
-        glTranslated(direction * shadow.x, -direction * shadow.y, 0);
-        glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+        GL_GPU::glTranslated(direction * shadow.x, -direction * shadow.y, 0);
+        GL_GPU::glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
 
-        glColor3f(pR * l, pG * l, pB * l);
-        glBegin(GL_POINTS);
-        glVertex2d( pos.x(), pos.y() );
-        glEnd();
+        GL_GPU::glColor3f(pR * l, pG * l, pB * l);
+        GL_GPU::glBegin(GL_POINTS);
+        GL_GPU::glVertex2d( pos.x(), pos.y() );
+        GL_GPU::glEnd();
         QColor c;
         c.setRgbF(pR * l, pG * l, pB * l);
 
@@ -1084,24 +1084,24 @@ drawSquare(const OfxRGBColourD& color,
 
     if (hovered) {
         if (althovered) {
-            glColor3f(0.f * l, 1.f * l, 0.f * l);
+            GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
         } else {
-            glColor3f(1.f * l, 0.f * l, 0.f * l);
+            GL_GPU::glColor3f(1.f * l, 0.f * l, 0.f * l);
         }
     } else {
-        glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+        GL_GPU::glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
     }
     double halfWidth = (TransformInteract::pointSize() / 2.) * meanPixelScale;
     double halfHeight = (TransformInteract::pointSize() / 2.) * meanPixelScale;
-    glPushMatrix();
-    glTranslated(center.x, center.y, 0.);
-    glBegin(GL_POLYGON);
-    glVertex2d(-halfWidth, -halfHeight);   // bottom left
-    glVertex2d(-halfWidth, +halfHeight);   // top left
-    glVertex2d(+halfWidth, +halfHeight);   // bottom right
-    glVertex2d(+halfWidth, -halfHeight);   // top right
-    glEnd();
-    glPopMatrix();
+    GL_GPU::glPushMatrix();
+    GL_GPU::glTranslated(center.x, center.y, 0.);
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glVertex2d(-halfWidth, -halfHeight);   // bottom left
+    GL_GPU::glVertex2d(-halfWidth, +halfHeight);   // top left
+    GL_GPU::glVertex2d(+halfWidth, +halfHeight);   // bottom right
+    GL_GPU::glVertex2d(+halfWidth, -halfHeight);   // top right
+    GL_GPU::glEnd();
+    GL_GPU::glPopMatrix();
 }
 
 static void
@@ -1112,25 +1112,25 @@ drawEllipse(const OfxRGBColourD& color,
             int l)
 {
     if (hovered) {
-        glColor3f(1.f * l, 0.f * l, 0.f * l);
+        GL_GPU::glColor3f(1.f * l, 0.f * l, 0.f * l);
     } else {
-        glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+        GL_GPU::glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
     }
 
-    glPushMatrix();
+    GL_GPU::glPushMatrix();
     //  center the oval at x_center, y_center
-    glTranslatef( (float)center.x, (float)center.y, 0.f );
+    GL_GPU::glTranslatef( (float)center.x, (float)center.y, 0.f );
     //  draw the oval using line segments
-    glBegin(GL_LINE_LOOP);
+    GL_GPU::glBegin(GL_LINE_LOOP);
     // we don't need to be pixel-perfect here, it's just an interact!
     // 40 segments is enough.
     for (int i = 0; i < 40; ++i) {
         double theta = i * 2 * M_PI / 40.;
-        glVertex2d( targetRadius.x * std::cos(theta), targetRadius.y * std::sin(theta) );
+        GL_GPU::glVertex2d( targetRadius.x * std::cos(theta), targetRadius.y * std::sin(theta) );
     }
-    glEnd();
+    GL_GPU::glEnd();
 
-    glPopMatrix();
+    GL_GPU::glPopMatrix();
 }
 
 static void
@@ -1143,22 +1143,22 @@ drawSkewBar(const OfxRGBColourD& color,
             int l)
 {
     if (hovered) {
-        glColor3f(1.f * l, 0.f * l, 0.f * l);
+        GL_GPU::glColor3f(1.f * l, 0.f * l, 0.f * l);
     } else {
-        glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+        GL_GPU::glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
     }
 
     // we are not axis-aligned: use the mean pixel scale
     double meanPixelScale = (pixelScale.x + pixelScale.y) / 2.;
     double barHalfSize = targetRadiusY + 20. * meanPixelScale;
 
-    glPushMatrix();
-    glTranslatef( (float)center.x, (float)center.y, 0.f );
-    glRotated(angle, 0, 0, 1);
+    GL_GPU::glPushMatrix();
+    GL_GPU::glTranslatef( (float)center.x, (float)center.y, 0.f );
+    GL_GPU::glRotated(angle, 0, 0, 1);
 
-    glBegin(GL_LINES);
-    glVertex2d(0., -barHalfSize);
-    glVertex2d(0., +barHalfSize);
+    GL_GPU::glBegin(GL_LINES);
+    GL_GPU::glVertex2d(0., -barHalfSize);
+    GL_GPU::glVertex2d(0., +barHalfSize);
 
     if (hovered) {
         double arrowYPosition = targetRadiusY + 10. * meanPixelScale;
@@ -1167,25 +1167,25 @@ drawSkewBar(const OfxRGBColourD& color,
         double arrowHeadOffsetY = 3 * meanPixelScale;
 
         ///draw the central bar
-        glVertex2d(-arrowXHalfSize, -arrowYPosition);
-        glVertex2d(+arrowXHalfSize, -arrowYPosition);
+        GL_GPU::glVertex2d(-arrowXHalfSize, -arrowYPosition);
+        GL_GPU::glVertex2d(+arrowXHalfSize, -arrowYPosition);
 
         ///left triangle
-        glVertex2d(-arrowXHalfSize, -arrowYPosition);
-        glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowYPosition + arrowHeadOffsetY);
+        GL_GPU::glVertex2d(-arrowXHalfSize, -arrowYPosition);
+        GL_GPU::glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowYPosition + arrowHeadOffsetY);
 
-        glVertex2d(-arrowXHalfSize, -arrowYPosition);
-        glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowYPosition - arrowHeadOffsetY);
+        GL_GPU::glVertex2d(-arrowXHalfSize, -arrowYPosition);
+        GL_GPU::glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowYPosition - arrowHeadOffsetY);
 
         ///right triangle
-        glVertex2d(+arrowXHalfSize, -arrowYPosition);
-        glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowYPosition + arrowHeadOffsetY);
+        GL_GPU::glVertex2d(+arrowXHalfSize, -arrowYPosition);
+        GL_GPU::glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowYPosition + arrowHeadOffsetY);
 
-        glVertex2d(+arrowXHalfSize, -arrowYPosition);
-        glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowYPosition - arrowHeadOffsetY);
+        GL_GPU::glVertex2d(+arrowXHalfSize, -arrowYPosition);
+        GL_GPU::glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowYPosition - arrowHeadOffsetY);
     }
-    glEnd();
-    glPopMatrix();
+    GL_GPU::glEnd();
+    GL_GPU::glPopMatrix();
 }
 
 static void
@@ -1200,16 +1200,16 @@ drawRotationBar(const OfxRGBColourD& color,
     double meanPixelScale = (pixelScale.x + pixelScale.y) / 2.;
 
     if (hovered) {
-        glColor3f(1.f * l, 0.f * l, 0.f * l);
+        GL_GPU::glColor3f(1.f * l, 0.f * l, 0.f * l);
     } else {
-        glColor3f(color.r * l, color.g * l, color.b * l);
+        GL_GPU::glColor3f(color.r * l, color.g * l, color.b * l);
     }
 
     double barExtra = 30. * meanPixelScale;
-    glBegin(GL_LINES);
-    glVertex2d(0., 0.);
-    glVertex2d(0. + targetRadiusX + barExtra, 0.);
-    glEnd();
+    GL_GPU::glBegin(GL_LINES);
+    GL_GPU::glVertex2d(0., 0.);
+    GL_GPU::glVertex2d(0. + targetRadiusX + barExtra, 0.);
+    GL_GPU::glEnd();
 
     if (hovered) {
         double arrowCenterX = targetRadiusX + barExtra / 2.;
@@ -1219,35 +1219,35 @@ drawRotationBar(const OfxRGBColourD& color,
         arrowRadius.x = 5. * meanPixelScale;
         arrowRadius.y = 10. * meanPixelScale;
 
-        glPushMatrix();
+        GL_GPU::glPushMatrix();
         //  center the oval at x_center, y_center
-        glTranslatef( (float)arrowCenterX, 0.f, 0 );
+        GL_GPU::glTranslatef( (float)arrowCenterX, 0.f, 0 );
         //  draw the oval using line segments
-        glBegin(GL_LINE_STRIP);
-        glVertex2d(0, arrowRadius.y);
-        glVertex2d(arrowRadius.x, 0.);
-        glVertex2d(0, -arrowRadius.y);
-        glEnd();
+        GL_GPU::glBegin(GL_LINE_STRIP);
+        GL_GPU::glVertex2d(0, arrowRadius.y);
+        GL_GPU::glVertex2d(arrowRadius.x, 0.);
+        GL_GPU::glVertex2d(0, -arrowRadius.y);
+        GL_GPU::glEnd();
 
 
-        glBegin(GL_LINES);
+        GL_GPU::glBegin(GL_LINES);
         ///draw the top head
-        glVertex2d(0., arrowRadius.y);
-        glVertex2d(0., arrowRadius.y - 5. * meanPixelScale);
+        GL_GPU::glVertex2d(0., arrowRadius.y);
+        GL_GPU::glVertex2d(0., arrowRadius.y - 5. * meanPixelScale);
 
-        glVertex2d(0., arrowRadius.y);
-        glVertex2d(4. * meanPixelScale, arrowRadius.y - 3. * meanPixelScale); // 5^2 = 3^2+4^2
+        GL_GPU::glVertex2d(0., arrowRadius.y);
+        GL_GPU::glVertex2d(4. * meanPixelScale, arrowRadius.y - 3. * meanPixelScale); // 5^2 = 3^2+4^2
 
         ///draw the bottom head
-        glVertex2d(0., -arrowRadius.y);
-        glVertex2d(0., -arrowRadius.y + 5. * meanPixelScale);
+        GL_GPU::glVertex2d(0., -arrowRadius.y);
+        GL_GPU::glVertex2d(0., -arrowRadius.y + 5. * meanPixelScale);
 
-        glVertex2d(0., -arrowRadius.y);
-        glVertex2d(4. * meanPixelScale, -arrowRadius.y + 3. * meanPixelScale); // 5^2 = 3^2+4^2
+        GL_GPU::glVertex2d(0., -arrowRadius.y);
+        GL_GPU::glVertex2d(4. * meanPixelScale, -arrowRadius.y + 3. * meanPixelScale); // 5^2 = 3^2+4^2
 
-        glEnd();
+        GL_GPU::glEnd();
 
-        glPopMatrix();
+        GL_GPU::glPopMatrix();
     }
     if (inverted) {
         double arrowXPosition = targetRadiusX + barExtra * 1.5;
@@ -1255,52 +1255,52 @@ drawRotationBar(const OfxRGBColourD& color,
         double arrowHeadOffsetX = 3 * meanPixelScale;
         double arrowHeadOffsetY = 3 * meanPixelScale;
 
-        glPushMatrix();
-        glTranslatef( (float)arrowXPosition, 0, 0 );
+        GL_GPU::glPushMatrix();
+        GL_GPU::glTranslatef( (float)arrowXPosition, 0, 0 );
 
-        glBegin(GL_LINES);
+        GL_GPU::glBegin(GL_LINES);
         ///draw the central bar
-        glVertex2d(-arrowXHalfSize, 0.);
-        glVertex2d(+arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(-arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(+arrowXHalfSize, 0.);
 
         ///left triangle
-        glVertex2d(-arrowXHalfSize, 0.);
-        glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, arrowHeadOffsetY);
+        GL_GPU::glVertex2d(-arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, arrowHeadOffsetY);
 
-        glVertex2d(-arrowXHalfSize, 0.);
-        glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowHeadOffsetY);
+        GL_GPU::glVertex2d(-arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowHeadOffsetY);
 
         ///right triangle
-        glVertex2d(+arrowXHalfSize, 0.);
-        glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, arrowHeadOffsetY);
+        GL_GPU::glVertex2d(+arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, arrowHeadOffsetY);
 
-        glVertex2d(+arrowXHalfSize, 0.);
-        glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowHeadOffsetY);
-        glEnd();
+        GL_GPU::glVertex2d(+arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowHeadOffsetY);
+        GL_GPU::glEnd();
 
-        glRotated(90., 0., 0., 1.);
+        GL_GPU::glRotated(90., 0., 0., 1.);
 
-        glBegin(GL_LINES);
+        GL_GPU::glBegin(GL_LINES);
         ///draw the central bar
-        glVertex2d(-arrowXHalfSize, 0.);
-        glVertex2d(+arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(-arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(+arrowXHalfSize, 0.);
 
         ///left triangle
-        glVertex2d(-arrowXHalfSize, 0.);
-        glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, arrowHeadOffsetY);
+        GL_GPU::glVertex2d(-arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, arrowHeadOffsetY);
 
-        glVertex2d(-arrowXHalfSize, 0.);
-        glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowHeadOffsetY);
+        GL_GPU::glVertex2d(-arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(-arrowXHalfSize + arrowHeadOffsetX, -arrowHeadOffsetY);
 
         ///right triangle
-        glVertex2d(+arrowXHalfSize, 0.);
-        glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, arrowHeadOffsetY);
+        GL_GPU::glVertex2d(+arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, arrowHeadOffsetY);
 
-        glVertex2d(+arrowXHalfSize, 0.);
-        glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowHeadOffsetY);
-        glEnd();
+        GL_GPU::glVertex2d(+arrowXHalfSize, 0.);
+        GL_GPU::glVertex2d(+arrowXHalfSize - arrowHeadOffsetX, -arrowHeadOffsetY);
+        GL_GPU::glEnd();
 
-        glPopMatrix();
+        GL_GPU::glPopMatrix();
     }
 } // drawRotationBar
 
@@ -1375,34 +1375,34 @@ TransformInteract::draw(double time,
 
     //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
 
-    glDisable(GL_LINE_STIPPLE);
-    glEnable(GL_LINE_SMOOTH);
-    glDisable(GL_POINT_SMOOTH);
-    glEnable(GL_BLEND);
-    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glLineWidth(1.5f);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GL_GPU::glDisable(GL_LINE_STIPPLE);
+    GL_GPU::glEnable(GL_LINE_SMOOTH);
+    GL_GPU::glDisable(GL_POINT_SMOOTH);
+    GL_GPU::glEnable(GL_BLEND);
+    GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+    GL_GPU::glLineWidth(1.5f);
+    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing
     for (int l = 0; l < 2; ++l) {
         // shadow (uses GL_PROJECTION)
-        glMatrixMode(GL_PROJECTION);
+        GL_GPU::glMatrixMode(GL_PROJECTION);
         int direction = (l == 0) ? 1 : -1;
         // translate (1,-1) pixels
-        glTranslated(direction * shadow.x, -direction * shadow.y, 0);
-        glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+        GL_GPU::glTranslated(direction * shadow.x, -direction * shadow.y, 0);
+        GL_GPU::glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
 
-        glColor3f(color.r * l, color.g * l, color.b * l);
+        GL_GPU::glColor3f(color.r * l, color.g * l, color.b * l);
 
-        glPushMatrix();
-        glTranslated(targetCenter.x, targetCenter.y, 0.);
+        GL_GPU::glPushMatrix();
+        GL_GPU::glTranslated(targetCenter.x, targetCenter.y, 0.);
 
-        glRotated(rotate, 0, 0., 1.);
+        GL_GPU::glRotated(rotate, 0, 0., 1.);
         drawRotationBar(color, pscale, targetRadius.x, _mouseState == TransformInteract::eDraggingRotationBar || _drawState == TransformInteract::eRotationBarHovered, inverted, l);
-        glMultMatrixd(skewMatrix);
-        glTranslated(-targetCenter.x, -targetCenter.y, 0.);
+        GL_GPU::glMultMatrixd(skewMatrix);
+        GL_GPU::glTranslated(-targetCenter.x, -targetCenter.y, 0.);
 
         drawEllipse(color, targetCenter, targetRadius, _mouseState == TransformInteract::eDraggingCircle || _drawState == TransformInteract::eCircleHovered, l);
 
@@ -1438,7 +1438,7 @@ TransformInteract::draw(double time,
         drawSquare(color, top, pscale, _mouseState == TransformInteract::eDraggingTopPoint || _drawState == TransformInteract::eTopPointHovered, false, l);
         drawSquare(color, bottom, pscale, _mouseState == TransformInteract::eDraggingBottomPoint || _drawState == TransformInteract::eBottomPointHovered, false, l);
 
-        glPopMatrix();
+        GL_GPU::glPopMatrix();
     }
     //glPopAttrib();
 } // TransformInteract::draw
@@ -1463,9 +1463,9 @@ CornerPinInteract::draw(double time,
     }
 
     GLdouble projection[16];
-    glGetDoublev( GL_PROJECTION_MATRIX, projection);
+    GL_GPU::glGetDoublev( GL_PROJECTION_MATRIX, projection);
     GLint viewport[4];
-    glGetIntegerv(GL_VIEWPORT, viewport);
+    GL_GPU::glGetIntegerv(GL_VIEWPORT, viewport);
 
 
     OfxPointD to[4];
@@ -1514,54 +1514,54 @@ CornerPinInteract::draw(double time,
     //glPushAttrib(GL_ALL_ATTRIB_BITS); // caller is responsible for protecting attribs
 
     //glDisable(GL_LINE_STIPPLE);
-    glEnable(GL_LINE_SMOOTH);
+    GL_GPU::glEnable(GL_LINE_SMOOTH);
     //glEnable(GL_POINT_SMOOTH);
-    glEnable(GL_BLEND);
-    glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-    glLineWidth(1.5f);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GL_GPU::glEnable(GL_BLEND);
+    GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+    GL_GPU::glLineWidth(1.5f);
+    GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glPointSize( CornerPinInteract::pointSize() );
+    GL_GPU::glPointSize( CornerPinInteract::pointSize() );
     // Draw everything twice
     // l = 0: shadow
     // l = 1: drawing
     for (int l = 0; l < 2; ++l) {
         // shadow (uses GL_PROJECTION)
-        glMatrixMode(GL_PROJECTION);
+        GL_GPU::glMatrixMode(GL_PROJECTION);
         int direction = (l == 0) ? 1 : -1;
         // translate (1,-1) pixels
-        glTranslated(direction * shadow.x, -direction * shadow.y, 0);
-        glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
+        GL_GPU::glTranslated(direction * shadow.x, -direction * shadow.y, 0);
+        GL_GPU::glMatrixMode(GL_MODELVIEW); // Modelview should be used on Nuke
 
-        glColor3f( (float)(color.r / 2) * l, (float)(color.g / 2) * l, (float)(color.b / 2) * l );
-        glBegin(GL_LINES);
+        GL_GPU::glColor3f( (float)(color.r / 2) * l, (float)(color.g / 2) * l, (float)(color.b / 2) * l );
+        GL_GPU::glBegin(GL_LINES);
         for (int i = enableBegin; i < enableEnd; ++i) {
             if (enable[i]) {
-                glVertex2d(p[i].x, p[i].y);
-                glVertex2d(q[i].x, q[i].y);
+                GL_GPU::glVertex2d(p[i].x, p[i].y);
+                GL_GPU::glVertex2d(q[i].x, q[i].y);
             }
         }
-        glEnd();
-        glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
-        glBegin(GL_LINE_LOOP);
+        GL_GPU::glEnd();
+        GL_GPU::glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+        GL_GPU::glBegin(GL_LINE_LOOP);
         for (int i = enableBegin; i < enableEnd; ++i) {
             if (enable[i]) {
-                glVertex2d(p[i].x, p[i].y);
+                GL_GPU::glVertex2d(p[i].x, p[i].y);
             }
         }
-        glEnd();
-        glBegin(GL_POINTS);
+        GL_GPU::glEnd();
+        GL_GPU::glBegin(GL_POINTS);
         for (int i = enableBegin; i < enableEnd; ++i) {
             if (enable[i]) {
                 if ( (_hovering == i) || (_dragging == i) ) {
-                    glColor3f(0.f * l, 1.f * l, 0.f * l);
+                    GL_GPU::glColor3f(0.f * l, 1.f * l, 0.f * l);
                 } else {
-                    glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
+                    GL_GPU::glColor3f( (float)color.r * l, (float)color.g * l, (float)color.b * l );
                 }
-                glVertex2d(p[i].x, p[i].y);
+                GL_GPU::glVertex2d(p[i].x, p[i].y);
             }
         }
-        glEnd();
+        GL_GPU::glEnd();
         QColor c;
         c.setRgbF(color.r * l, color.g * l, color.b * l);
         for (int i = enableBegin; i < enableEnd; ++i) {
@@ -1591,7 +1591,7 @@ HostOverlay::draw(double time,
 
 
     GLdouble projection[16];
-    glGetDoublev( GL_PROJECTION_MATRIX, projection);
+    GL_GPU::glGetDoublev( GL_PROJECTION_MATRIX, projection);
     OfxPointD shadow; // how much to translate GL_PROJECTION to get exactly one pixel on screen
     shadow.x = 2. / (projection[0] * w);
     shadow.y = 2. / (projection[5] * h);

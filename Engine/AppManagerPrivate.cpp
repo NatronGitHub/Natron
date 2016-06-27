@@ -578,6 +578,18 @@ AppManagerPrivate::initGLAPISpecific()
 #endif // Q_OS_WIN32
 }
 
+extern "C" {
+extern int gladLoadGL(void);
+struct gladGLversionStruct {
+    int major;
+    int minor;
+};
+typedef void (* GLADcallback)(const char *name, void *funcptr, int len_args, ...);
+extern void glad_set_pre_callback(GLADcallback);
+extern void glad_set_post_callback(GLADcallback);
+extern gladGLversionStruct GLVersion;
+}
+
 void
 AppManagerPrivate::initGl()
 {

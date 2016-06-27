@@ -2281,6 +2281,10 @@ public:
          (void)getInstance();
     }
 
+    static bool isGPU() {
+         return USEOPENGL;
+    }
+
     static void glCullFace(GLenum mode) {
         getInstance()._mglCullFace(mode);
     }

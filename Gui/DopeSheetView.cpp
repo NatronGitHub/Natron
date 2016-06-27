@@ -338,7 +338,7 @@ DopeSheetViewPrivate::DopeSheetViewPrivate(DopeSheetView *qq)
 
 DopeSheetViewPrivate::~DopeSheetViewPrivate()
 {
-    glDeleteTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
+    GL_GPU::glDeleteTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
 }
 
 /*
@@ -789,28 +789,28 @@ DopeSheetViewPrivate::generateKeyframeTextures()
     kfTexturesImages[16].load( QString::fromUtf8(NATRON_IMAGES_PATH "keyframe_node_root.png") );
     kfTexturesImages[17].load( QString::fromUtf8(NATRON_IMAGES_PATH "keyframe_node_root_selected.png") );
 
-    glGenTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
+    GL_GPU::glGenTextures(KF_TEXTURES_COUNT, kfTexturesIDs);
 
-    glEnable(GL_TEXTURE_2D);
+    GL_GPU::glEnable(GL_TEXTURE_2D);
 
     for (int i = 0; i < KF_TEXTURES_COUNT; ++i) {
         if (std::max( kfTexturesImages[i].width(), kfTexturesImages[i].height() ) != KF_PIXMAP_SIZE) {
             kfTexturesImages[i] = kfTexturesImages[i].scaled(KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         }
         kfTexturesImages[i] = QGLWidget::convertToGLFormat(kfTexturesImages[i]);
-        glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
+        GL_GPU::glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[i]);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        GL_GPU::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[i].bits() );
+        GL_GPU::glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, KF_PIXMAP_SIZE, KF_PIXMAP_SIZE, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, kfTexturesImages[i].bits() );
     }
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glDisable(GL_TEXTURE_2D);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
+    GL_GPU::glDisable(GL_TEXTURE_2D);
 }
 
 DopeSheetViewPrivate::KeyframeTexture
@@ -886,10 +886,10 @@ DopeSheetViewPrivate::drawScale() const
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         const double rangePixel = q_ptr->width();
         const double range_min = bottomLeft.x();
@@ -917,22 +917,22 @@ DopeSheetViewPrivate::drawScale() const
         const double minTickSizeTextPixel = fontM.width( QString::fromUtf8("00") );
         const double minTickSizeText = range * minTickSizeTextPixel / rangePixel;
 
-        glCheckError();
+        glCheckError(GL_GPU);
 
         for (int i = m1; i <= m2; ++i) {
             double value = i * smallTickSize + offset;
             const double tickSize = ticks[i - m1] * smallTickSize;
             const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-            glColor4f(scaleColor.redF(), scaleColor.greenF(), scaleColor.blueF(), alpha);
+            GL_GPU::glColor4f(scaleColor.redF(), scaleColor.greenF(), scaleColor.blueF(), alpha);
 
             // Draw the vertical lines belonging to the grid
-            glBegin(GL_LINES);
-            glVertex2f( value, bottomLeft.y() );
-            glVertex2f( value, topRight.y() );
-            glEnd();
+            GL_GPU::glBegin(GL_LINES);
+            GL_GPU::glVertex2f( value, bottomLeft.y() );
+            GL_GPU::glVertex2f( value, topRight.y() );
+            GL_GPU::glEnd();
 
-            glCheckErrorIgnoreOSXBug();
+            glCheckErrorIgnoreOSXBug(GL_GPU);
 
             // Draw the time indicators
             if (tickSize > minTickSizeText) {
@@ -979,7 +979,7 @@ DopeSheetViewPrivate::drawRows() const
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
         for (DSTreeItemNodeMap::const_iterator it = treeItemsAndDSNodes.begin();
              it != treeItemsAndDSNodes.end();
@@ -996,8 +996,8 @@ DopeSheetViewPrivate::drawRows() const
                 }
             }
 
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            GL_GPU::glEnable(GL_BLEND);
+            GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             boost::shared_ptr<DSNode> dsNode = (*it).second;
 
@@ -1051,7 +1051,7 @@ DopeSheetViewPrivate::drawRows() const
 void
 DopeSheetViewPrivate::drawNodeRow(const boost::shared_ptr<DSNode> dsNode) const
 {
-    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsNode->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -1059,14 +1059,14 @@ DopeSheetViewPrivate::drawNodeRow(const boost::shared_ptr<DSNode> dsNode) const
 
     settings->getDopeSheetEditorRootRowBackgroundColor(&rootR, &rootG, &rootB, &rootA);
 
-    glColor4f(rootR, rootG, rootB, rootA);
+    GL_GPU::glColor4f(rootR, rootG, rootB, rootA);
 
-    glBegin(GL_POLYGON);
-    glVertex2f( rowRect.left(), rowRect.top() );
-    glVertex2f( rowRect.left(), rowRect.bottom() );
-    glVertex2f( rowRect.right(), rowRect.bottom() );
-    glVertex2f( rowRect.right(), rowRect.top() );
-    glEnd();
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glVertex2f( rowRect.left(), rowRect.top() );
+    GL_GPU::glVertex2f( rowRect.left(), rowRect.bottom() );
+    GL_GPU::glVertex2f( rowRect.right(), rowRect.bottom() );
+    GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
+    GL_GPU::glEnd();
 }
 
 /**
@@ -1081,7 +1081,7 @@ DopeSheetViewPrivate::drawKnobRow(const boost::shared_ptr<DSKnob> dsKnob) const
         return;
     }
 
-    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+    GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsKnob->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
     boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
@@ -1092,30 +1092,30 @@ DopeSheetViewPrivate::drawKnobRow(const boost::shared_ptr<DSKnob> dsKnob) const
         settings->getDopeSheetEditorKnobRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
     }
 
-    glColor4f(bkR, bkG, bkB, bkA);
+    GL_GPU::glColor4f(bkR, bkG, bkB, bkA);
 
-    glBegin(GL_POLYGON);
-    glVertex2f( rowRect.left(), rowRect.top() );
-    glVertex2f( rowRect.left(), rowRect.bottom() );
-    glVertex2f( rowRect.right(), rowRect.bottom() );
-    glVertex2f( rowRect.right(), rowRect.top() );
-    glEnd();
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glVertex2f( rowRect.left(), rowRect.top() );
+    GL_GPU::glVertex2f( rowRect.left(), rowRect.bottom() );
+    GL_GPU::glVertex2f( rowRect.right(), rowRect.bottom() );
+    GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
+    GL_GPU::glEnd();
 }
 
 void
 DopeSheetViewPrivate::drawNodeRowSeparation(const boost::shared_ptr<DSNode> dsNode) const
 {
-    GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
+    GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_LINE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsNode->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
 
-    glLineWidth( appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() );
-    glColor4f(0.f, 0.f, 0.f, 1.f);
+    GL_GPU::glLineWidth( appPTR->getCurrentSettings()->getDopeSheetEditorNodeSeparationWith() );
+    GL_GPU::glColor4f(0.f, 0.f, 0.f, 1.f);
 
-    glBegin(GL_LINES);
-    glVertex2f( rowRect.left(), rowRect.top() );
-    glVertex2f( rowRect.right(), rowRect.top() );
-    glEnd();
+    GL_GPU::glBegin(GL_LINES);
+    GL_GPU::glVertex2f( rowRect.left(), rowRect.top() );
+    GL_GPU::glVertex2f( rowRect.right(), rowRect.top() );
+    GL_GPU::glEnd();
 }
 
 void
@@ -1141,7 +1141,7 @@ DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
         clipRectZoomCoords.x2 = range.second;
         clipRectZoomCoords.y2 = treeRectTopLeft.y();
         clipRectZoomCoords.y1 = treeRectBtmRight.y();
-        GLProtectAttrib a(GL_CURRENT_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT);
         QColor fillColor = dsNode->getNodeGui()->getCurrentColor();
         fillColor = QColor::fromHsl( fillColor.hslHue(), 50, fillColor.lightness() );
 
@@ -1170,27 +1170,27 @@ DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
 
             clipRectCenterY = (clipRectZoomCoords.y1 + clipRectZoomCoords.y2) / 2.;
 
-            GLProtectAttrib aa(GL_CURRENT_BIT | GL_LINE_BIT);
-            glLineWidth(2);
+            GLProtectAttrib<GL_GPU> aa(GL_CURRENT_BIT | GL_LINE_BIT);
+            GL_GPU::glLineWidth(2);
 
-            glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
+            GL_GPU::glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
 
-            glBegin(GL_LINES);
+            GL_GPU::glBegin(GL_LINES);
 
             //horizontal line
-            glVertex2f(lineBegin, clipRectCenterY);
-            glVertex2f(lineEnd, clipRectCenterY);
+            GL_GPU::glVertex2f(lineBegin, clipRectCenterY);
+            GL_GPU::glVertex2f(lineEnd, clipRectCenterY);
 
             //left end
-            glVertex2d(lineBegin, clipRectZoomCoords.y1);
-            glVertex2d(lineBegin, clipRectZoomCoords.y2);
+            GL_GPU::glVertex2d(lineBegin, clipRectZoomCoords.y1);
+            GL_GPU::glVertex2d(lineBegin, clipRectZoomCoords.y2);
 
 
             //right end
-            glVertex2d(lineEnd, clipRectZoomCoords.y1);
-            glVertex2d(lineEnd, clipRectZoomCoords.y2);
+            GL_GPU::glVertex2d(lineEnd, clipRectZoomCoords.y1);
+            GL_GPU::glVertex2d(lineEnd, clipRectZoomCoords.y2);
 
-            glEnd();
+            GL_GPU::glEnd();
         }
 
         QColor fadedColor;
@@ -1198,23 +1198,23 @@ DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
         // Fill the range rect
 
 
-        glColor4f(fadedColor.redF(), fadedColor.greenF(), fadedColor.blueF(), 1.f);
+        GL_GPU::glColor4f(fadedColor.redF(), fadedColor.greenF(), fadedColor.blueF(), 1.f);
 
-        glBegin(GL_POLYGON);
-        glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
-        glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
-        glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
-        glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
-        glEnd();
+        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
+        GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
+        GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
+        GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
+        GL_GPU::glEnd();
 
         if (isSelected) {
-            glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
-            glBegin(GL_LINE_LOOP);
-            glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
-            glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
-            glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
-            glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
-            glEnd();
+            GL_GPU::glColor4f(fillColor.redF(), fillColor.greenF(), fillColor.blueF(), 1.f);
+            GL_GPU::glBegin(GL_LINE_LOOP);
+            GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.top() );
+            GL_GPU::glVertex2f( clipRectZoomCoords.left(), clipRectZoomCoords.bottom() );
+            GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.bottom() );
+            GL_GPU::glVertex2f( clipRectZoomCoords.right(), clipRectZoomCoords.top() );
+            GL_GPU::glEnd();
         }
 
         if ( isSelected && (dsNode->getItemType() == eDopeSheetItemTypeReader) ) {
@@ -1260,10 +1260,10 @@ DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) con
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         const DSTreeItemKnobMap& knobItems = dsNode->getItemKnobMap();
         double kfTimeSelected;
@@ -1410,27 +1410,27 @@ DopeSheetViewPrivate::drawTexturedKeyframe(DopeSheetViewPrivate::KeyframeTexture
                                            const QColor& textColor,
                                            const RectD &rect) const
 {
-    GLProtectAttrib a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
-    GLProtectMatrix pr(GL_MODELVIEW);
+    GLProtectAttrib<GL_GPU> a(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
+    GLProtectMatrix<GL_GPU> pr(GL_MODELVIEW);
 
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[textureType]);
+    GL_GPU::glEnable(GL_TEXTURE_2D);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, kfTexturesIDs[textureType]);
 
-    glBegin(GL_POLYGON);
-    glTexCoord2f(0.0f, 1.0f);
-    glVertex2f( rect.left(), rect.top() );
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex2f( rect.left(), rect.bottom() );
-    glTexCoord2f(1.0f, 0.0f);
-    glVertex2f( rect.right(), rect.bottom() );
-    glTexCoord2f(1.0f, 1.0f);
-    glVertex2f( rect.right(), rect.top() );
-    glEnd();
+    GL_GPU::glBegin(GL_POLYGON);
+    GL_GPU::glTexCoord2f(0.0f, 1.0f);
+    GL_GPU::glVertex2f( rect.left(), rect.top() );
+    GL_GPU::glTexCoord2f(0.0f, 0.0f);
+    GL_GPU::glVertex2f( rect.left(), rect.bottom() );
+    GL_GPU::glTexCoord2f(1.0f, 0.0f);
+    GL_GPU::glVertex2f( rect.right(), rect.bottom() );
+    GL_GPU::glTexCoord2f(1.0f, 1.0f);
+    GL_GPU::glVertex2f( rect.right(), rect.top() );
+    GL_GPU::glEnd();
 
-    glColor4f(1, 1, 1, 1);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    GL_GPU::glColor4f(1, 1, 1, 1);
+    GL_GPU::glBindTexture(GL_TEXTURE_2D, 0);
 
-    glDisable(GL_TEXTURE_2D);
+    GL_GPU::glDisable(GL_TEXTURE_2D);
 
     if (drawTime) {
         QString text = QString::number(time);
@@ -1465,16 +1465,16 @@ DopeSheetViewPrivate::drawGroupOverlay(const boost::shared_ptr<DSNode> &dsNode,
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        glColor4f(r, g, b, 0.30f);
+        GL_GPU::glColor4f(r, g, b, 0.30f);
 
-        glBegin(GL_QUADS);
-        glVertex2f( overlayRect.left(), overlayRect.top() );
-        glVertex2f( overlayRect.left(), overlayRect.bottom() );
-        glVertex2f( overlayRect.right(), overlayRect.bottom() );
-        glVertex2f( overlayRect.right(), overlayRect.top() );
-        glEnd();
+        GL_GPU::glBegin(GL_QUADS);
+        GL_GPU::glVertex2f( overlayRect.left(), overlayRect.top() );
+        GL_GPU::glVertex2f( overlayRect.left(), overlayRect.bottom() );
+        GL_GPU::glVertex2f( overlayRect.right(), overlayRect.bottom() );
+        GL_GPU::glVertex2f( overlayRect.right(), overlayRect.top() );
+        GL_GPU::glEnd();
     }
 }
 
@@ -1494,21 +1494,21 @@ DopeSheetViewPrivate::drawProjectBounds() const
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        glColor4f(colorR, colorG, colorB, 1.f);
+        GL_GPU::glColor4f(colorR, colorG, colorB, 1.f);
 
         // Draw start bound
-        glBegin(GL_LINES);
-        glVertex2f(projectStart, top);
-        glVertex2f(projectStart, bottom);
-        glEnd();
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f(projectStart, top);
+        GL_GPU::glVertex2f(projectStart, bottom);
+        GL_GPU::glEnd();
 
         // Draw end bound
-        glBegin(GL_LINES);
-        glVertex2f(projectEnd, top);
-        glVertex2f(projectEnd, bottom);
-        glEnd();
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f(projectEnd, top);
+        GL_GPU::glVertex2f(projectEnd, bottom);
+        GL_GPU::glEnd();
     }
 }
 
@@ -1536,38 +1536,31 @@ DopeSheetViewPrivate::drawCurrentFrameIndicator()
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_HINT_BIT | GL_ENABLE_BIT |
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_HINT_BIT | GL_ENABLE_BIT |
                           GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glColor4f(colorR, colorG, colorB, 1.f);
+        GL_GPU::glColor4f(colorR, colorG, colorB, 1.f);
 
-        glBegin(GL_LINES);
-        glVertex2f(currentFrame, top);
-        glVertex2f(currentFrame, bottom);
-        glEnd();
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f(currentFrame, top);
+        GL_GPU::glVertex2f(currentFrame, bottom);
+        GL_GPU::glEnd();
 
-        glEnable(GL_POLYGON_SMOOTH);
-        glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
-
-        // Draw top polygon
-        //        glBegin(GL_POLYGON);
-        //        glVertex2f(currentTime - polyHalfWidth, top);
-        //        glVertex2f(currentTime + polyHalfWidth, top);
-        //        glVertex2f(currentTime, top - polyHeight);
-        //        glEnd();
+        GL_GPU::glEnable(GL_POLYGON_SMOOTH);
+        GL_GPU::glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
 
         // Draw bottom polygon
-        glBegin(GL_POLYGON);
-        glVertex2f( currentFrameIndicatorBottomPoly.at(0).x(), currentFrameIndicatorBottomPoly.at(0).y() );
-        glVertex2f( currentFrameIndicatorBottomPoly.at(1).x(), currentFrameIndicatorBottomPoly.at(1).y() );
-        glVertex2f( currentFrameIndicatorBottomPoly.at(2).x(), currentFrameIndicatorBottomPoly.at(2).y() );
-        glEnd();
+        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::glVertex2f( currentFrameIndicatorBottomPoly.at(0).x(), currentFrameIndicatorBottomPoly.at(0).y() );
+        GL_GPU::glVertex2f( currentFrameIndicatorBottomPoly.at(1).x(), currentFrameIndicatorBottomPoly.at(1).y() );
+        GL_GPU::glVertex2f( currentFrameIndicatorBottomPoly.at(2).x(), currentFrameIndicatorBottomPoly.at(2).y() );
+        GL_GPU::glEnd();
     }
 } // DopeSheetViewPrivate::drawCurrentFrameIndicator
 
@@ -1583,35 +1576,35 @@ DopeSheetViewPrivate::drawSelectionRect() const
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glColor4f(0.3, 0.3, 0.3, 0.2);
+        GL_GPU::glColor4f(0.3, 0.3, 0.3, 0.2);
 
         // Draw rect
-        glBegin(GL_POLYGON);
-        glVertex2f(selectionRect.x1, selectionRect.y1);
-        glVertex2f(selectionRect.x1, selectionRect.y2);
-        glVertex2f(selectionRect.x2, selectionRect.y2);
-        glVertex2f(selectionRect.x2, selectionRect.y1);
-        glEnd();
+        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y1);
+        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y2);
+        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y2);
+        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y1);
+        GL_GPU::glEnd();
 
-        glLineWidth(1.5);
+        GL_GPU::glLineWidth(1.5);
 
         // Draw outline
-        glColor4f(0.5, 0.5, 0.5, 1.);
-        glBegin(GL_LINE_LOOP);
-        glVertex2f(selectionRect.x1, selectionRect.y1);
-        glVertex2f(selectionRect.x1, selectionRect.y2);
-        glVertex2f(selectionRect.x2, selectionRect.y2);
-        glVertex2f(selectionRect.x2, selectionRect.y1);
-        glEnd();
+        GL_GPU::glColor4f(0.5, 0.5, 0.5, 1.);
+        GL_GPU::glBegin(GL_LINE_LOOP);
+        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y1);
+        GL_GPU::glVertex2f(selectionRect.x1, selectionRect.y2);
+        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y2);
+        GL_GPU::glVertex2f(selectionRect.x2, selectionRect.y1);
+        GL_GPU::glEnd();
 
-        glCheckError();
+        glCheckError(GL_GPU);
     }
 }
 
@@ -1627,24 +1620,24 @@ DopeSheetViewPrivate::drawSelectedKeysBRect() const
 
     // Perform drawing
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_LINE_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glLineWidth(1.5);
+        GL_GPU::glLineWidth(1.5);
 
-        glColor4f(0.5, 0.5, 0.5, 1.);
+        GL_GPU::glColor4f(0.5, 0.5, 0.5, 1.);
 
         // Draw outline
-        glBegin(GL_LINE_LOOP);
-        glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.bottom() );
-        glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.top() );
-        glVertex2f( selectedKeysBRect.right(), selectedKeysBRect.top() );
-        glVertex2f( selectedKeysBRect.right(), selectedKeysBRect.bottom() );
-        glEnd();
+        GL_GPU::glBegin(GL_LINE_LOOP);
+        GL_GPU::glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.bottom() );
+        GL_GPU::glVertex2f( selectedKeysBRect.left(), selectedKeysBRect.top() );
+        GL_GPU::glVertex2f( selectedKeysBRect.right(), selectedKeysBRect.top() );
+        GL_GPU::glVertex2f( selectedKeysBRect.right(), selectedKeysBRect.bottom() );
+        GL_GPU::glEnd();
 
         // Draw center cross lines
         const int CROSS_LINE_OFFSET = 10;
@@ -1655,15 +1648,15 @@ DopeSheetViewPrivate::drawSelectedKeysBRect() const
         QLineF verticalLine( zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() - CROSS_LINE_OFFSET),
                              zoomContext.toZoomCoordinates(bRectCenterWidgetCoords.x(), bRectCenterWidgetCoords.y() + CROSS_LINE_OFFSET) );
 
-        glBegin(GL_LINES);
-        glVertex2f( horizontalLine.p1().x(), horizontalLine.p1().y() );
-        glVertex2f( horizontalLine.p2().x(), horizontalLine.p2().y() );
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f( horizontalLine.p1().x(), horizontalLine.p1().y() );
+        GL_GPU::glVertex2f( horizontalLine.p2().x(), horizontalLine.p2().y() );
 
-        glVertex2f( verticalLine.p1().x(), verticalLine.p1().y() );
-        glVertex2f( verticalLine.p2().x(), verticalLine.p2().y() );
-        glEnd();
+        GL_GPU::glVertex2f( verticalLine.p1().x(), verticalLine.p1().y() );
+        GL_GPU::glVertex2f( verticalLine.p2().x(), verticalLine.p2().y() );
+        GL_GPU::glEnd();
 
-        glCheckError();
+        glCheckError(GL_GPU);
     }
 }
 
@@ -1696,7 +1689,7 @@ DopeSheetViewPrivate::renderText(double x,
 
     textRenderer.renderText(x, y, scalex, scaley, text, color, font);
 
-    glCheckError();
+    glCheckError(GL_GPU);
 }
 
 void
@@ -3176,7 +3169,7 @@ DopeSheetView::resizeGL(int w,
         h = 1;
     }
 
-    glViewport(0, 0, w, h);
+    GL_GPU::glViewport(0, 0, w, h);
 
     _imp->zoomContext.setScreenSize(w, h);
 
@@ -3206,7 +3199,7 @@ DopeSheetView::paintGL()
     }
 
 
-    glCheckError();
+    glCheckError(GL_GPU);
 
     if (_imp->zoomContext.factor() <= 0) {
         return;
@@ -3224,27 +3217,27 @@ DopeSheetView::paintGL()
     settings->getDopeSheetEditorBackgroundColor(&bgR, &bgG, &bgB);
 
     if ( (zoomLeft == zoomRight) || (zoomTop == zoomBottom) ) {
-        glClearColor(bgR, bgG, bgB, 1.);
-        glClear(GL_COLOR_BUFFER_BIT);
+        GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
+        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
 
         return;
     }
 
     {
-        GLProtectAttrib a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
-        GLProtectMatrix p(GL_PROJECTION);
+        GLProtectAttrib<GL_GPU> a(GL_TRANSFORM_BIT | GL_COLOR_BUFFER_BIT);
+        GLProtectMatrix<GL_GPU> p(GL_PROJECTION);
 
-        glLoadIdentity();
-        glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
+        GL_GPU::glLoadIdentity();
+        GL_GPU::glOrtho(zoomLeft, zoomRight, zoomBottom, zoomTop, 1, -1);
 
-        GLProtectMatrix m(GL_MODELVIEW);
+        GLProtectMatrix<GL_GPU> m(GL_MODELVIEW);
 
-        glLoadIdentity();
+        GL_GPU::glLoadIdentity();
 
-        glCheckError();
+        glCheckError(GL_GPU);
 
-        glClearColor(bgR, bgG, bgB, 1.);
-        glClear(GL_COLOR_BUFFER_BIT);
+        GL_GPU::glClearColor(bgR, bgG, bgB, 1.);
+        GL_GPU::glClear(GL_COLOR_BUFFER_BIT);
 
         _imp->drawScale();
         _imp->drawProjectBounds();
@@ -3260,7 +3253,7 @@ DopeSheetView::paintGL()
 
         _imp->drawCurrentFrameIndicator();
     }
-    glCheckError();
+    glCheckError(GL_GPU);
 } // DopeSheetView::paintGL
 
 void

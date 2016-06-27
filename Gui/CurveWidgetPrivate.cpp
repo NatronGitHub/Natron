@@ -280,36 +280,36 @@ CurveWidgetPrivate::drawSelectionRectangle()
     assert( QGLContext::currentContext() == _widget->context() );
 
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
-        glColor4f(0.3, 0.3, 0.3, 0.2);
+        GL_GPU::glColor4f(0.3, 0.3, 0.3, 0.2);
         QPointF btmRight = _selectionRectangle.bottomRight();
         QPointF topLeft = _selectionRectangle.topLeft();
 
-        glBegin(GL_POLYGON);
-        glVertex2f( topLeft.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::glEnd();
 
 
-        glLineWidth(1.5);
+        GL_GPU::glLineWidth(1.5);
 
-        glColor4f(0.5, 0.5, 0.5, 1.);
-        glBegin(GL_LINE_LOOP);
-        glVertex2f( topLeft.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::glColor4f(0.5, 0.5, 0.5, 1.);
+        GL_GPU::glBegin(GL_LINE_LOOP);
+        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::glEnd();
 
-        glCheckError();
+        glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 }
 
@@ -353,7 +353,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
-    glCheckError();
+    glCheckError(GL_GPU);
 
     refreshTimelinePositions();
 
@@ -367,46 +367,46 @@ CurveWidgetPrivate::drawTimelineMarkers()
     QPointF btmRight = zoomCtx.toZoomCoordinates(_widget->width() - 1, _widget->height() - 1);
 
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glColor4f(boundsR, boundsG, boundsB, 1.);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glColor4f(boundsR, boundsG, boundsB, 1.);
 
         double leftBound, rightBound;
         _gui->getApp()->getFrameRange(&leftBound, &rightBound);
-        glBegin(GL_LINES);
-        glVertex2f( leftBound, btmRight.y() );
-        glVertex2f( leftBound, topLeft.y() );
-        glVertex2f( rightBound, btmRight.y() );
-        glVertex2f( rightBound, topLeft.y() );
-        glColor4f(cursorR, cursorG, cursorB, 1.);
-        glVertex2f( _timeline->currentFrame(), btmRight.y() );
-        glVertex2f( _timeline->currentFrame(), topLeft.y() );
-        glEnd();
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f( leftBound, btmRight.y() );
+        GL_GPU::glVertex2f( leftBound, topLeft.y() );
+        GL_GPU::glVertex2f( rightBound, btmRight.y() );
+        GL_GPU::glVertex2f( rightBound, topLeft.y() );
+        GL_GPU::glColor4f(cursorR, cursorG, cursorB, 1.);
+        GL_GPU::glVertex2f( _timeline->currentFrame(), btmRight.y() );
+        GL_GPU::glVertex2f( _timeline->currentFrame(), topLeft.y() );
+        GL_GPU::glEnd();
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
-        glEnable(GL_POLYGON_SMOOTH);
-        glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glEnable(GL_POLYGON_SMOOTH);
+        GL_GPU::glHint(GL_POLYGON_SMOOTH_HINT, GL_DONT_CARE);
 
         assert(_timelineBtmPoly.size() == 3 && _timelineTopPoly.size() == 3);
 
-        glBegin(GL_POLYGON);
-        glVertex2f( _timelineBtmPoly.at(0).x(), _timelineBtmPoly.at(0).y() );
-        glVertex2f( _timelineBtmPoly.at(1).x(), _timelineBtmPoly.at(1).y() );
-        glVertex2f( _timelineBtmPoly.at(2).x(), _timelineBtmPoly.at(2).y() );
-        glEnd();
-        glCheckErrorIgnoreOSXBug();
+        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::glVertex2f( _timelineBtmPoly.at(0).x(), _timelineBtmPoly.at(0).y() );
+        GL_GPU::glVertex2f( _timelineBtmPoly.at(1).x(), _timelineBtmPoly.at(1).y() );
+        GL_GPU::glVertex2f( _timelineBtmPoly.at(2).x(), _timelineBtmPoly.at(2).y() );
+        GL_GPU::glEnd();
+        glCheckErrorIgnoreOSXBug(GL_GPU);
 
-        glBegin(GL_POLYGON);
-        glVertex2f( _timelineTopPoly.at(0).x(), _timelineTopPoly.at(0).y() );
-        glVertex2f( _timelineTopPoly.at(1).x(), _timelineTopPoly.at(1).y() );
-        glVertex2f( _timelineTopPoly.at(2).x(), _timelineTopPoly.at(2).y() );
-        glEnd();
+        GL_GPU::glBegin(GL_POLYGON);
+        GL_GPU::glVertex2f( _timelineTopPoly.at(0).x(), _timelineTopPoly.at(0).y() );
+        GL_GPU::glVertex2f( _timelineTopPoly.at(1).x(), _timelineTopPoly.at(1).y() );
+        GL_GPU::glVertex2f( _timelineTopPoly.at(2).x(), _timelineTopPoly.at(2).y() );
+        GL_GPU::glEnd();
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POLYGON_BIT);
-    glCheckErrorIgnoreOSXBug();
+    glCheckErrorIgnoreOSXBug(GL_GPU);
 } // CurveWidgetPrivate::drawTimelineMarkers
 
 void
@@ -429,7 +429,7 @@ CurveWidgetPrivate::drawCurves()
 void
 CurveWidgetPrivate::drawScale()
 {
-    glCheckError();
+    glCheckError(GL_GPU);
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _widget->context() );
@@ -460,10 +460,10 @@ CurveWidgetPrivate::drawScale()
 
 
     {
-        GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         for (int axis = 0; axis < 2; ++axis) {
             const double rangePixel = (axis == 0) ? _widget->width() : _widget->height(); // AXIS-SPECIFIC
@@ -488,19 +488,19 @@ CurveWidgetPrivate::drawScale()
                 const double tickSize = ticks[i - m1] * smallTickSize;
                 const double alpha = ticks_alpha(smallestTickSize, largestTickSize, tickSize);
 
-                glCheckError();
-                glColor4f(gridR, gridG, gridB, alpha);
+                glCheckError(GL_GPU);
+                GL_GPU::glColor4f(gridR, gridG, gridB, alpha);
 
-                glBegin(GL_LINES);
+                GL_GPU::glBegin(GL_LINES);
                 if (axis == 0) {
-                    glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
-                    glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
+                    GL_GPU::glVertex2f( value, btmLeft.y() ); // AXIS-SPECIFIC
+                    GL_GPU::glVertex2f( value, topRight.y() ); // AXIS-SPECIFIC
                 } else {
-                    glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
-                    glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
+                    GL_GPU::glVertex2f(btmLeft.x(), value); // AXIS-SPECIFIC
+                    GL_GPU::glVertex2f(topRight.x(), value); // AXIS-SPECIFIC
                 }
-                glEnd();
-                glCheckErrorIgnoreOSXBug();
+                GL_GPU::glEnd();
+                glCheckErrorIgnoreOSXBug(GL_GPU);
 
                 if (tickSize > minTickSizeText) {
                     const int tickSizePixel = rangePixel * tickSize / range;
@@ -528,17 +528,17 @@ CurveWidgetPrivate::drawScale()
     } // GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
 
 
-    glCheckError();
-    glColor4f(gridR, gridG, gridB, 1.);
-    glBegin(GL_LINES);
-    glVertex2f(AXIS_MIN, 0);
-    glVertex2f(AXIS_MAX, 0);
-    glVertex2f(0, AXIS_MIN);
-    glVertex2f(0, AXIS_MAX);
-    glEnd();
+    glCheckError(GL_GPU);
+    GL_GPU::glColor4f(gridR, gridG, gridB, 1.);
+    GL_GPU::glBegin(GL_LINES);
+    GL_GPU::glVertex2f(AXIS_MIN, 0);
+    GL_GPU::glVertex2f(AXIS_MAX, 0);
+    GL_GPU::glVertex2f(0, AXIS_MIN);
+    GL_GPU::glVertex2f(0, AXIS_MAX);
+    GL_GPU::glEnd();
 
 
-    glCheckErrorIgnoreOSXBug();
+    glCheckErrorIgnoreOSXBug(GL_GPU);
 } // drawScale
 
 void
@@ -549,12 +549,12 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
     assert( QGLContext::currentContext() == _widget->context() );
 
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
 
         QPointF topLeft = _selectedKeyFramesBbox.topLeft();
         QPointF btmRight = _selectedKeyFramesBbox.bottomRight();
@@ -563,62 +563,62 @@ CurveWidgetPrivate::drawSelectedKeyFramesBbox()
         double xMid = ( topLeft.x() + btmRight.x() ) / 2.;
         double yMid = ( topLeft.y() + btmRight.y() ) / 2.;
 
-        glLineWidth(1.5);
+        GL_GPU::glLineWidth(1.5);
 
-        glColor4f(0.5, 0.5, 0.5, 1.);
-        glBegin(GL_LINE_LOOP);
-        glVertex2f( topLeft.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::glColor4f(0.5, 0.5, 0.5, 1.);
+        GL_GPU::glBegin(GL_LINE_LOOP);
+        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::glEnd();
 
 
-        glBegin(GL_LINES);
-        glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(), topLeft.x() ), _selectedKeyFramesCrossHorizLine.p1().y() );
-        glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(), btmRight.x() ), _selectedKeyFramesCrossHorizLine.p2().y() );
-        glVertex2f( _selectedKeyFramesCrossVertLine.p1().x(), std::max( _selectedKeyFramesCrossVertLine.p1().y(), btmRight.y() ) );
-        glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(), std::min( _selectedKeyFramesCrossVertLine.p2().y(), topLeft.y() ) );
+        GL_GPU::glBegin(GL_LINES);
+        GL_GPU::glVertex2f( std::max( _selectedKeyFramesCrossHorizLine.p1().x(), topLeft.x() ), _selectedKeyFramesCrossHorizLine.p1().y() );
+        GL_GPU::glVertex2f( std::min( _selectedKeyFramesCrossHorizLine.p2().x(), btmRight.x() ), _selectedKeyFramesCrossHorizLine.p2().y() );
+        GL_GPU::glVertex2f( _selectedKeyFramesCrossVertLine.p1().x(), std::max( _selectedKeyFramesCrossVertLine.p1().y(), btmRight.y() ) );
+        GL_GPU::glVertex2f( _selectedKeyFramesCrossVertLine.p2().x(), std::min( _selectedKeyFramesCrossVertLine.p2().y(), topLeft.y() ) );
 
         //top tick
         {
             double yBottom = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() + BOUNDING_BOX_HANDLE_SIZE).y();
             double yTop = zoomCtx.toZoomCoordinates(0, topLeftWidget.y() - BOUNDING_BOX_HANDLE_SIZE).y();
-            glVertex2f(xMid, yBottom);
-            glVertex2f(xMid, yTop);
+            GL_GPU::glVertex2f(xMid, yBottom);
+            GL_GPU::glVertex2f(xMid, yTop);
         }
         //left tick
         {
             double xLeft = zoomCtx.toZoomCoordinates(topLeftWidget.x() - BOUNDING_BOX_HANDLE_SIZE, 0).x();
             double xRight = zoomCtx.toZoomCoordinates(topLeftWidget.x() + BOUNDING_BOX_HANDLE_SIZE, 0).x();
-            glVertex2f(xLeft, yMid);
-            glVertex2f(xRight, yMid);
+            GL_GPU::glVertex2f(xLeft, yMid);
+            GL_GPU::glVertex2f(xRight, yMid);
         }
         //bottom tick
         {
             double yBottom = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() + BOUNDING_BOX_HANDLE_SIZE).y();
             double yTop = zoomCtx.toZoomCoordinates(0, btmRightWidget.y() - BOUNDING_BOX_HANDLE_SIZE).y();
-            glVertex2f(xMid, yBottom);
-            glVertex2f(xMid, yTop);
+            GL_GPU::glVertex2f(xMid, yBottom);
+            GL_GPU::glVertex2f(xMid, yTop);
         }
         //right tick
         {
             double xLeft = zoomCtx.toZoomCoordinates(btmRightWidget.x() - BOUNDING_BOX_HANDLE_SIZE, 0).x();
             double xRight = zoomCtx.toZoomCoordinates(btmRightWidget.x() + BOUNDING_BOX_HANDLE_SIZE, 0).x();
-            glVertex2f(xLeft, yMid);
-            glVertex2f(xRight, yMid);
+            GL_GPU::glVertex2f(xLeft, yMid);
+            GL_GPU::glVertex2f(xRight, yMid);
         }
-        glEnd();
+        GL_GPU::glEnd();
 
-        glPointSize(BOUNDING_BOX_HANDLE_SIZE);
-        glBegin(GL_POINTS);
-        glVertex2f( topLeft.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), topLeft.y() );
-        glVertex2f( btmRight.x(), btmRight.y() );
-        glVertex2f( topLeft.x(), btmRight.y() );
-        glEnd();
+        GL_GPU::glPointSize(BOUNDING_BOX_HANDLE_SIZE);
+        GL_GPU::glBegin(GL_POINTS);
+        GL_GPU::glVertex2f( topLeft.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), topLeft.y() );
+        GL_GPU::glVertex2f( btmRight.x(), btmRight.y() );
+        GL_GPU::glVertex2f( topLeft.x(), btmRight.y() );
+        GL_GPU::glEnd();
 
-        glCheckError();
+        glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT);
 } // CurveWidgetPrivate::drawSelectedKeyFramesBbox
 

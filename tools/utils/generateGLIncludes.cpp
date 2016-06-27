@@ -435,7 +435,9 @@ int main(int argc, char** argv)
     ots_header << "    }\n\n";
 
 
-
+    ots_header << "    static bool isGPU() {\n";
+    ots_header << "         return USEOPENGL;\n";
+    ots_header << "    }\n\n";
 
     for (std::list<FunctionSignature>::iterator it = signatures.begin(); it != signatures.end(); ++it) {
         ots_header << "    static " <<  it->returnType << " " << it->funcName << it->signature << " {\n";

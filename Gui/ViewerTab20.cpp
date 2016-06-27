@@ -132,9 +132,9 @@ ViewerTab::drawOverlays(double time,
 
             GLdouble oglMat[16];
             transformToOpenGLMatrix(mat, oglMat);
-            glMatrixMode(GL_MODELVIEW);
-            glGetFloatv(GL_MODELVIEW_MATRIX, oldMat);
-            glMultMatrixd(oglMat);
+            GL_GPU::glMatrixMode(GL_MODELVIEW);
+            GL_GPU::glGetFloatv(GL_MODELVIEW_MATRIX, oldMat);
+            GL_GPU::glMultMatrixd(oglMat);
         }
 
 #endif
@@ -148,8 +148,8 @@ ViewerTab::drawOverlays(double time,
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
         if (ok) {
-            glMatrixMode(GL_MODELVIEW);
-            glLoadMatrixf(oldMat);
+            GL_GPU::glMatrixMode(GL_MODELVIEW);
+            GL_GPU::glLoadMatrixf(oldMat);
         }
 #endif
     }

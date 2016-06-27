@@ -66,6 +66,7 @@ struct CacheEntryStorageInfo
     std::size_t numComponents;
     StorageModeEnum mode;
     U32 textureTarget;
+    bool isGPUTexture;
 
     CacheEntryStorageInfo()
         : bounds()
@@ -73,6 +74,7 @@ struct CacheEntryStorageInfo
         , numComponents(0)
         , mode(eStorageModeNone)
         , textureTarget(0)
+        , isGPUTexture(true)
     {
     }
 
@@ -80,7 +82,8 @@ struct CacheEntryStorageInfo
     {
         return dataTypeSize == other.dataTypeSize &&
                mode == other.mode &&
-               textureTarget == other.textureTarget;
+               textureTarget == other.textureTarget &&
+               isGPUTexture == other.isGPUTexture;
     }
 };
 

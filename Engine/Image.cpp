@@ -35,7 +35,6 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
-#include "Engine/GLShader.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -1113,84 +1112,39 @@ Image::ensureBounds(const RectI& newBounds,
     return true;
 }
 
-void
-Image::applyTextureMapping(const RectI& bounds,
-                           const RectI& roi)
+
+template <typename GL>
+static void
+pasteFromGL(const Image & src,
+            Image* dst,
+            const RectI & srcRoi,
+            bool /*copyBitmap*/,
+            const OSGLContextPtr& glContext,
+            const RectI& dstBounds,
+            StorageModeEnum thisStorage,
+            StorageModeEnum otherStorage,
+            int target, int texID)
 {
-    glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho( roi.x1, roi.x2,
-             roi.y1, roi.y2,
-             -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glCheckError();
-
-    // Compute the texture coordinates to match the srcRoi
-    Point srcTexCoords[4], vertexCoords[4];
-    vertexCoords[0].x = roi.x1;
-    vertexCoords[0].y = roi.y1;
-    srcTexCoords[0].x = (roi.x1 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[0].y = (roi.y1 - bounds.y1) / (double)bounds.height();
-
-    vertexCoords[1].x = roi.x2;
-    vertexCoords[1].y = roi.y1;
-    srcTexCoords[1].x = (roi.x2 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[1].y = (roi.y1 - bounds.y1) / (double)bounds.height();
-
-    vertexCoords[2].x = roi.x2;
-    vertexCoords[2].y = roi.y2;
-    srcTexCoords[2].x = (roi.x2 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[2].y = (roi.y2 - bounds.y1) / (double)bounds.height();
-
-    vertexCoords[3].x = roi.x1;
-    vertexCoords[3].y = roi.y2;
-    srcTexCoords[3].x = (roi.x1 - bounds.x1) / (double)bounds.width();
-    srcTexCoords[3].y = (roi.y2 - bounds.y1) / (double)bounds.height();
-
-    glBegin(GL_POLYGON);
-    for (int i = 0; i < 4; ++i) {
-        glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-        glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
-    }
-    glEnd();
-    glCheckError();
-}
-
-// code proofread and fixed by @devernay on 8/8/2014
-void
-Image::pasteFrom(const Image & src,
-                 const RectI & srcRoi,
-                 bool copyBitmap,
-                 const OSGLContextPtr& glContext)
-{
-    StorageModeEnum thisStorage = getStorageMode();
-    StorageModeEnum otherStorage = src.getStorageMode();
 
     if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to OpenGL texture
-        assert(_params->getStorageInfo().textureTarget == src.getParams()->getStorageInfo().textureTarget);
 
-        RectI dstBounds = getBounds();
         RectI srcBounds = src.getBounds();
         GLuint fboID = glContext->getFBOId();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = getGLTextureTarget();
-        glEnable(target);
-        glBindTexture( target, getGLTextureID() );
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
-        glBindTexture( target, src.getGLTextureID() );
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::glEnable(target);
+        GL::glBindTexture( target, texID );
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+        glCheckFramebufferError(GL);
+        GL::glBindTexture( target, src.getGLTextureID() );
 
-        applyTextureMapping(dstBounds, srcRoi);
+        Image::applyTextureMapping<GL>(dstBounds, srcRoi);
 
-        glBindTexture(target, 0);
-        glCheckError();
+        GL::glBindTexture(target, 0);
+        glCheckError(GL);
     } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
         // RAM image to OpenGL texture
-        RectI dstBounds = getBounds();
         RectI srcBounds = src.getBounds();
 
         // only copy the intersection of roi, bounds and otherBounds
@@ -1206,11 +1160,10 @@ Image::pasteFrom(const Image & src,
             return;
         }
         GLuint pboID = glContext->getPBOId();
-        int target = getGLTextureTarget();
-        glEnable(target);
+        GL::glEnable(target);
 
         // bind PBO to update texture source
-        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
         std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
 
@@ -1221,46 +1174,45 @@ Image::pasteFrom(const Image & src,
         // If you do that, the previous data in PBO will be discarded and
         // glMapBufferARB() returns a new allocated pointer immediately
         // even if GPU is still working with the previous data.
-        glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+        GL::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
 
         // map the buffer object into client's memory
-        void* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+        void* gpuData = GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
             ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
             tmpImg->pasteFrom(src, roi);
 
-            Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
+            Image::ReadAccess racc(tmpImg ? tmpImg.get() : dst);
             const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
             assert(srcdata);
-            
+
             memcpy(gpuData, srcdata, dataSize);
 
-            GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+            GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
             assert(result == GL_TRUE);
             Q_UNUSED(result);
         }
 
         // bind the texture
-        glBindTexture( target, getGLTextureID() );
+        GL::glBindTexture( target, texID );
         // copy pixels from PBO to texture object
         // Use offset instead of pointer (last parameter is 0).
-        glTexSubImage2D(target,
-                        0,              // level
-                        roi.x1, roi.y1,               // xoffset, yoffset
-                        roi.width(), roi.height(),
-                        src.getGLTextureFormat(),            // format
-                        src.getGLTextureType(),       // type
-                        0);
+        GL::glTexSubImage2D(target,
+                            0,              // level
+                            roi.x1, roi.y1,               // xoffset, yoffset
+                            roi.width(), roi.height(),
+                            src.getGLTextureFormat(),            // format
+                            src.getGLTextureType(),       // type
+                            0);
 
-        glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-        glBindTexture(target, 0);
-        glCheckError();
+        GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+        GL::glBindTexture(target, 0);
+        glCheckError(GL);
     } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
         // OpenGL texture to RAM image
 
-        RectI dstBounds = getBounds();
         RectI srcBounds = src.getBounds();
 
         // only copy the intersection of roi, bounds and otherBounds
@@ -1278,36 +1230,53 @@ Image::pasteFrom(const Image & src,
 
         GLuint fboID = glContext->getFBOId();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = src.getGLTextureTarget();
-        glEnable(target);
-        glBindTexture( target, src.getGLTextureID() );
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        GL::glEnable(target);
+        GL::glBindTexture( target, src.getGLTextureID() );
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
         //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
-        glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
-        glCheckFramebufferError();
+        GL::glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
+        glCheckFramebufferError(GL);
         // Ensure all drawing commands are finished
-        glFlush();
-        glFinish();
-        glCheckError();
+        GL::glFlush();
+        GL::glFinish();
+        glCheckError(GL);
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
-        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
+        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM) );
 
         {
-            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
+            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : dst);
             unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
 
-            glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
-            glBindTexture(target, 0);
+            GL::glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
+            GL::glBindTexture(target, 0);
         }
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glCheckError();
+        GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glCheckError(GL);
 
         // Ok now convert from RGBA to this image format if needed
-        if ( tmpImg->getComponentsCount() != getComponentsCount() ) {
-            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, this);
+        if ( tmpImg->getComponentsCount() != dst->getComponentsCount() ) {
+            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, dst);
         } else {
-            pasteFrom(*tmpImg, roi, false);
+            dst->pasteFrom(*tmpImg, roi, false);
+        }
+    } 
+
+}
+
+// code proofread and fixed by @devernay on 8/8/2014
+void
+Image::pasteFrom(const Image & src,
+                 const RectI & srcRoi,
+                 bool copyBitmap,
+                 const OSGLContextPtr& glContext)
+{
+    if (getStorageMode() == eStorageModeGLTex || src.getStorageMode() == eStorageModeGLTex) {
+        assert(glContext);
+        if (glContext->isGPUContext()) {
+            pasteFromGL<GL_GPU>(src, this, srcRoi, copyBitmap, glContext, getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
+        } else {
+            pasteFromGL<GL_CPU>(src, this, srcRoi, copyBitmap, glContext, getBounds(), getStorageMode(), src.getStorageMode(), getGLTextureTarget(), getGLTextureID());
         }
     } else {
         assert(getStorageMode() != eStorageModeGLTex && src.getStorageMode() != eStorageModeGLTex);
@@ -1397,6 +1366,54 @@ Image::fillForDepth(const RectI & roi_,
     }
 }
 
+template <typename GL>
+void fillGL(const RectI & roi,
+            float r,
+            float g,
+            float b,
+            float a,
+            const OSGLContextPtr& glContext,
+            const RectI& bounds,
+            int target,
+            int texID)
+{
+    RectI realRoI = roi;
+    bool doInteresect = roi.intersect(bounds, &realRoI);
+    if (!doInteresect) {
+        // no intersection between roi and the bounds of the image
+        return;
+    }
+
+    assert(glContext);
+    boost::shared_ptr<GLShader<GL> > shader = glContext->getOrCreateFillShader<GL>();
+    assert(shader);
+    GLuint fboID = glContext->getFBOId();
+
+    GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+    GL::glEnable(target);
+    GL::glActiveTexture(GL_TEXTURE0);
+    GL::glBindTexture( target, texID );
+
+    GL::glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    GL::glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    GL::glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    glCheckFramebufferError(GL);
+
+    shader->bind();
+    OfxRGBAColourF fillColor = {r, g, b, a};
+    shader->setUniform("fillColor", fillColor);
+    Image::applyTextureMapping<GL>(bounds, realRoI);
+    shader->unbind();
+
+
+    GL::glBindTexture(target, 0);
+    glCheckError(GL);
+}
+
 // code proofread and fixed by @devernay on 8/8/2014
 void
 Image::fill(const RectI & roi,
@@ -1409,43 +1426,11 @@ Image::fill(const RectI & roi,
     QWriteLocker k(&_entryLock);
 
     if (getStorageMode() == eStorageModeGLTex) {
-        RectI realRoI = roi;
-        bool doInteresect = roi.intersect(_bounds, &realRoI);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the image
-            return;
+        if (glContext->isGPUContext()) {
+            fillGL<GL_GPU>(roi, r, g, b, a, glContext, _bounds, getGLTextureTarget(), getGLTextureID());
+        } else {
+            fillGL<GL_CPU>(roi, r, g, b, a, glContext, _bounds, getGLTextureTarget(), getGLTextureID());
         }
-
-        assert(glContext);
-        boost::shared_ptr<GLShader> shader = glContext->getOrCreateFillShader();
-        assert(shader);
-        GLuint fboID = glContext->getFBOId();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        int target = getGLTextureTarget();
-        glEnable(target);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture( target, getGLTextureID() );
-
-        glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, getGLTextureID(), 0 /*LoD*/);
-        glCheckFramebufferError();
-
-        shader->bind();
-        OfxRGBAColourF fillColor = {r, g, b, a};
-        shader->setUniform("fillColor", fillColor);
-        applyTextureMapping(_bounds, realRoI);
-        shader->unbind();
-
-
-        glBindTexture(target, 0);
-        glCheckError();
-
         return;
     }
 

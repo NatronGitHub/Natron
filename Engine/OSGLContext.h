@@ -42,6 +42,8 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/OSGLFramebufferConfig.h"
+#include "Engine/GLShader.h"
+#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -96,9 +98,12 @@ public:
      * @brief Returns one of the built-in shaders, used in the Image class.
      * Note: this context must be made current before calling this function
      **/
-    boost::shared_ptr<GLShader> getOrCreateFillShader();
-    boost::shared_ptr<GLShader> getOrCreateMaskMixShader(bool maskEnabled);
-    boost::shared_ptr<GLShader> getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
+    template <typename GL>
+    boost::shared_ptr<GLShader<GL> > getOrCreateFillShader();
+    template <typename GL>
+    boost::shared_ptr<GLShader<GL> > getOrCreateMaskMixShader(bool maskEnabled, bool maskInvert);
+    template <typename GL>
+    boost::shared_ptr<GLShader<GL> > getOrCreateCopyUnprocessedChannelsShader(bool doR, bool doG, bool doB, bool doA);
 
     /**
      * @brief Same as setContextCurrent() except that it should be used to bind the context to perform NON-RENDER operations!

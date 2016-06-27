@@ -250,8 +250,49 @@ public:
      **/
     bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output);
 
+    template <typename GL>
+    static void applyTextureMapping(const RectI& bounds, const RectI& roi)
+    {
+        GL::glViewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+        GL::glMatrixMode(GL_PROJECTION);
+        GL::glLoadIdentity();
+        GL::glOrtho( roi.x1, roi.x2,
+                    roi.y1, roi.y2,
+                    -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+        GL::glMatrixMode(GL_MODELVIEW);
+        GL::glLoadIdentity();
+        glCheckError(GL);
 
-    static void applyTextureMapping(const RectI& bounds, const RectI& roi);
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = roi.x1;
+        vertexCoords[0].y = roi.y1;
+        srcTexCoords[0].x = (roi.x1 - bounds.x1) / (double)bounds.width();
+        srcTexCoords[0].y = (roi.y1 - bounds.y1) / (double)bounds.height();
+
+        vertexCoords[1].x = roi.x2;
+        vertexCoords[1].y = roi.y1;
+        srcTexCoords[1].x = (roi.x2 - bounds.x1) / (double)bounds.width();
+        srcTexCoords[1].y = (roi.y1 - bounds.y1) / (double)bounds.height();
+
+        vertexCoords[2].x = roi.x2;
+        vertexCoords[2].y = roi.y2;
+        srcTexCoords[2].x = (roi.x2 - bounds.x1) / (double)bounds.width();
+        srcTexCoords[2].y = (roi.y2 - bounds.y1) / (double)bounds.height();
+
+        vertexCoords[3].x = roi.x1;
+        vertexCoords[3].y = roi.y2;
+        srcTexCoords[3].x = (roi.x1 - bounds.x1) / (double)bounds.width();
+        srcTexCoords[3].y = (roi.y2 - bounds.y1) / (double)bounds.height();
+
+        GL::glBegin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            GL::glTexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            GL::glVertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        GL::glEnd();
+        glCheckError(GL);
+    }
 
 private:
 
@@ -739,6 +780,7 @@ public:
      * The internal bitmap will be copied aswell
      **/
     void pasteFrom( const Image & src, const RectI & srcRoi, bool copyBitmap = true, const OSGLContextPtr& glContext = OSGLContextPtr() );
+
 
     /**
      * @brief Downscales a portion of this image into output.

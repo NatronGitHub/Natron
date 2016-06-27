@@ -31,7 +31,6 @@
 
 #include "Engine/TextureRect.h"
 #include "Engine/EngineFwd.h"
-#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -56,7 +55,9 @@ public:
             DataTypeEnum type,
             int format,
             int internalFormat,
-            int glType);
+            int glType,
+            bool useOpenGL);
+
     static void getRecommendedTexParametersForRGBAByteTexture(int* format, int* internalFormat, int* glType);
 
     U32 getTexID() const
@@ -166,6 +167,7 @@ private:
     int _internalFormat, _format, _glType;
     TextureRect _textureRect;
     DataTypeEnum _type;
+    bool _useOpenGL;
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -98,7 +98,6 @@ SOURCES += \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
     GPUContextPool.cpp \
-    GLShader.cpp \
     GroupInput.cpp \
     GroupOutput.cpp \
     Hash64.cpp \

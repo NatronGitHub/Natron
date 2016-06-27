@@ -28,10 +28,11 @@
 
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
+#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct GLShaderPrivate;
+template <typename GL>
 class GLShader
 {
 public:
@@ -58,27 +59,166 @@ public:
      * and unbind() to deactivate it.
      * To set uniforms, call the setUniform function.
      **/
-    GLShader();
+    GLShader()
+    : _shaderID(0)
+    , _vertexID(0)
+    , _fragmentID(0)
+    , _vertexAttached(false)
+    , _fragmentAttached(false)
+    , _firstTime(true)
+    {
 
-    ~GLShader();
+    }
 
-    bool addShader(ShaderTypeEnum type, const char* src, std::string* error = 0);
+    ~GLShader()
+    {
+        if (_vertexAttached) {
+            GL::glDetachShader(_shaderID, _vertexID);
+            GL::glDeleteShader(_vertexID);
 
-    void bind();
+        }
+        if (_fragmentAttached) {
+            GL::glDetachShader(_shaderID, _fragmentID);
+            GL::glDeleteShader(_fragmentID);
 
-    bool link(std::string* error = 0);
+        }
 
-    void unbind();
+        if (_shaderID != 0) {
+            GL::glDeleteProgram(_shaderID);
+        }
+    }
 
-    U32 getShaderID() const;
+    bool addShader(ShaderTypeEnum type, const char* src, std::string* error = 0)
+    {
+        if (_firstTime) {
+            _firstTime = false;
+            _shaderID = GL::glCreateProgram();
+        }
 
-    bool setUniform(const char* name, int value);
-    bool setUniform(const char* name, float value);
-    bool setUniform(const char* name, const OfxRGBAColourF& values);
+        GLuint shader = 0;
+        if (type == eShaderTypeVertex) {
+            _vertexID = GL::glCreateShader(GL_VERTEX_SHADER);
+
+            shader = _vertexID;
+        } else if (type == eShaderTypeFragment) {
+            _fragmentID = GL::glCreateShader(GL_FRAGMENT_SHADER);
+
+            shader = _fragmentID;
+        } else {
+            assert(false);
+        }
+
+        GL::glShaderSource(shader, 1, (const GLchar**)&src, 0);
+        GL::glCompileShader(shader);
+        GLint isCompiled;
+        GL::glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+        if (isCompiled == GL_FALSE) {
+            if (error) {
+                getShaderInfoLog(shader, error);
+            }
+
+            return false;
+        }
+
+        GL::glAttachShader(_shaderID, shader);
+        if (type == eShaderTypeVertex) {
+            _vertexAttached = true;
+        } else {
+            _fragmentAttached = true;
+        }
+        
+        return true;
+    }
+
+    void bind()
+    {
+        GL::glUseProgram(_shaderID);
+    }
+
+    bool link(std::string* error = 0)
+    {
+        GL::glLinkProgram(_shaderID);
+        GLint isLinked;
+        GL::glGetProgramiv(_shaderID, GL_LINK_STATUS, &isLinked);
+        if (isLinked == GL_FALSE) {
+            if (error) {
+                getShaderInfoLog(_shaderID, error);
+            }
+
+            return false;
+        }
+        
+        return true;
+    }
+
+    void unbind()
+    {
+        GL::glUseProgram(0);
+    }
+
+    U32 getShaderID() const
+    {
+        return _shaderID;
+    }
+
+    bool setUniform(const char* name, int value)
+    {
+        GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
+
+        if (location != -1) {
+            GL::glUniform1iv(location, 1, &value);
+
+            return true;
+        }
+        
+        return false;
+    }
+
+    bool setUniform(const char* name, float value)
+    {
+        GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
+
+        if (location != -1) {
+            GL::glUniform1fv(location, 1, &value);
+
+            return true;
+        }
+        
+        return false;
+    }
+
+    bool setUniform(const char* name, const OfxRGBAColourF& values)
+    {
+        GLint location = GL::glGetUniformLocation(_shaderID, (const GLchar*)name);
+
+        if (location != -1) {
+            GL::glUniform4fv(location, 1, &values.r);
+
+            return true;
+        }
+        
+        return false;
+    }
 
 private:
 
-    boost::scoped_ptr<GLShaderPrivate> _imp;
+    void getShaderInfoLog(GLuint shader,
+                          std::string* error)
+    {
+        GLint maxLength;
+        GL::glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        char* infoLog = (char*)malloc(maxLength);
+        GL::glGetShaderInfoLog(shader, maxLength, &maxLength, infoLog);
+        error->append(infoLog);
+        free(infoLog);
+    }
+
+    GLuint _shaderID;
+    GLuint _vertexID;
+    GLuint _fragmentID;
+    bool _vertexAttached, _fragmentAttached;
+    bool _firstTime;
 };
 
 NATRON_NAMESPACE_EXIT;

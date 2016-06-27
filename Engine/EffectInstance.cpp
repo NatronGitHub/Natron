@@ -1022,7 +1022,7 @@ EffectInstance::getImage(int inputNb,
         }
 
         if ( returnStorage == eStorageModeGLTex && (inputImg->getStorageMode() != eStorageModeGLTex) ) {
-            inputImg = convertRAMImageToOpenGLTexture(inputImg);
+            inputImg = convertRAMImageToOpenGLTexture<GL_GPU>(inputImg);
         }
 
         return inputImg;
@@ -1504,6 +1504,7 @@ EffectInstance::convertOpenGLTextureToCachedRAMImage(const ImagePtr& image)
     return ramImage;
 }
 
+template <typename GL>
 ImagePtr
 EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 {
@@ -1513,6 +1514,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     CacheEntryStorageInfo& info = params->getStorageInfo();
     info.mode = eStorageModeGLTex;
     info.textureTarget = GL_TEXTURE_2D;
+    info.isGPUTexture = GL::isGPU();
 
     RectI bounds = image->getBounds();
     OSGLContextPtr context = getThreadLocalOpenGLContext();
@@ -1523,9 +1525,9 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 
     GLuint pboID = context->getPBOId();
     assert(pboID != 0);
-    glEnable(GL_TEXTURE_2D);
+    GL::glEnable(GL_TEXTURE_2D);
     // bind PBO to update texture source
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
+    GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
 
     std::size_t dataSize = bounds.area() * 4 * info.dataTypeSize;
 
@@ -1536,7 +1538,7 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     // If you do that, the previous data in PBO will be discarded and
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
-    glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
+    GL::glBufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
 
     bool useTmpImage = image->getComponentsCount() != 4;
     ImagePtr tmpImg;
@@ -1554,15 +1556,15 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
     const unsigned char* srcdata = racc.pixelAt(bounds.x1, bounds.y1);
     assert(srcdata);
 
-    GLvoid* gpuData = glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
+    GLvoid* gpuData = GL::glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     if (gpuData) {
             // update data directly on the mapped buffer
         memcpy(gpuData, srcdata, dataSize);
-        GLboolean result = glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
+        GLboolean result = GL::glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);
     }
-    glCheckError();
+    glCheckError(GL);
 
     // The creation of the image will use glTexImage2D and will get filled with the PBO
     ImagePtr gpuImage;
@@ -1570,13 +1572,16 @@ EffectInstance::convertRAMImageToOpenGLTexture(const ImagePtr& image)
 
     // it is good idea to release PBOs with ID 0 after use.
     // Once bound with 0, all pixel operations are back to normal ways.
-    glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    GL::glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
     //glBindTexture(GL_TEXTURE_2D, 0); // useless, we didn't bind anything
-    glCheckError();
+    glCheckError(GL);
 
 
     return gpuImage;
 } // convertRAMImageToOpenGLTexture
+
+template ImagePtr EffectInstance::convertRAMImageToOpenGLTexture<GL_GPU>(const ImagePtr& image);
+template ImagePtr EffectInstance::convertRAMImageToOpenGLTexture<GL_CPU>(const ImagePtr& image);
 
 void
 EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
@@ -1770,7 +1775,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                     if (returnStorage == eStorageModeGLTex) {
                         assert(glContextAttacher);
                         glContextAttacher->attach();
-                        *image = convertRAMImageToOpenGLTexture(imageToConvert);
+                        *image = convertRAMImageToOpenGLTexture<GL_GPU>(imageToConvert);
                     } else {
                         assert(returnStorage == eStorageModeRAM && (imageToConvert->getStorageMode() == eStorageModeRAM || imageToConvert->getStorageMode() == eStorageModeDisk));
                         // If renderRoI must return a RAM image, don't convert it back again!
@@ -1801,7 +1806,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                         if (returnStorage == eStorageModeGLTex) {
                             assert(glContextAttacher);
                             glContextAttacher->attach();
-                            *image = convertRAMImageToOpenGLTexture(*image);
+                            *image = convertRAMImageToOpenGLTexture<GL_GPU>(*image);
                         }
                     } else {
                         image->reset();
@@ -2472,8 +2477,8 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
 
 
         GLuint fboID = glContext->getFBOId();
-        glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        glCheckError();
+        GL_GPU::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
+        glCheckError(GL_GPU);
     }
 
 
@@ -2695,47 +2700,47 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
             const ImagePtr& mainImagePlane = actionArgs.outputPlanes.front().second;
             assert(mainImagePlane->getStorageMode() == eStorageModeGLTex);
             textureTarget = mainImagePlane->getGLTextureTarget();
-            glEnable(textureTarget);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture( textureTarget, mainImagePlane->getGLTextureID() );
-            glCheckError();
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, mainImagePlane->getGLTextureID(), 0 /*LoD*/);
-            glCheckError();
-            glCheckFramebufferError();
+            GL_GPU::glEnable(textureTarget);
+            GL_GPU::glActiveTexture(GL_TEXTURE0);
+            GL_GPU::glBindTexture( textureTarget, mainImagePlane->getGLTextureID() );
+            glCheckError(GL_GPU);
+            GL_GPU::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, textureTarget, mainImagePlane->getGLTextureID(), 0 /*LoD*/);
+            glCheckError(GL_GPU);
+            glCheckFramebufferError(GL_GPU);
 
             // setup the output viewport
             RectI imageBounds = mainImagePlane->getBounds();
-            glViewport( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
+            GL_GPU::glViewport( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
 
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            glOrtho(actionArgs.roi.x1, actionArgs.roi.x2, actionArgs.roi.y1, actionArgs.roi.y2, -1, 1);
-            glMatrixMode(GL_MODELVIEW);
-            glLoadIdentity();
+            GL_GPU::glMatrixMode(GL_PROJECTION);
+            GL_GPU::glLoadIdentity();
+            GL_GPU::glOrtho(actionArgs.roi.x1, actionArgs.roi.x2, actionArgs.roi.y1, actionArgs.roi.y2, -1, 1);
+            GL_GPU::glMatrixMode(GL_MODELVIEW);
+            GL_GPU::glLoadIdentity();
 
 
-            glCheckError();
+            glCheckError(GL_GPU);
 
             // Enable scissor to make the plug-in doesn't render outside of the viewport...
-            glEnable(GL_SCISSOR_TEST);
-            glScissor( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
+            GL_GPU::glEnable(GL_SCISSOR_TEST);
+            GL_GPU::glScissor( actionArgs.roi.x1 - imageBounds.x1, actionArgs.roi.y1 - imageBounds.y1, actionArgs.roi.width(), actionArgs.roi.height() );
 
             if (_publicInterface->getNode()->isGLFinishRequiredBeforeRender()) {
                 // Ensure that previous asynchronous operations are done (e.g: glTexImage2D) some plug-ins seem to require it (Hitfilm Ignite plugin-s)
-                glFinish();
+                GL_GPU::glFinish();
             }
         }
 
         StatusEnum st = _publicInterface->render_public(actionArgs);
 
         if (planes.useOpenGL) {
-            glDisable(GL_SCISSOR_TEST);
-            glCheckError();
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(textureTarget, 0);
-            glCheckError();
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glCheckError();
+            GL_GPU::glDisable(GL_SCISSOR_TEST);
+            glCheckError(GL_GPU);
+            GL_GPU::glActiveTexture(GL_TEXTURE0);
+            GL_GPU::glBindTexture(textureTarget, 0);
+            glCheckError(GL_GPU);
+            GL_GPU::glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glCheckError(GL_GPU);
         }
 
         renderAborted = _publicInterface->aborted();

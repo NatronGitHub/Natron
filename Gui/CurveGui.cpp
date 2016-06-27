@@ -227,7 +227,7 @@ drawLineStrip(const std::vector<float>& vertices,
               const QPointF& btmLeft,
               const QPointF& topRight)
 {
-    glBegin(GL_LINE_STRIP);
+    GL_GPU::glBegin(GL_LINE_STRIP);
 
     bool prevVisible = true;
     bool prevTooAbove = false;
@@ -251,15 +251,15 @@ drawLineStrip(const std::vector<float>& vertices,
             //At least draw the previous point otherwise this will draw a line between the last previous point and this point
             //Draw them 10000 units further so that we're sure we don't see half of a pixel of a line remaining
             if (previousWasTooAbove) {
-                glVertex2f(vertices[i - 2], vertices[i - 1] + 100000);
+                GL_GPU::glVertex2f(vertices[i - 2], vertices[i - 1] + 100000);
             } else if (previousWasTooBelow) {
-                glVertex2f(vertices[i - 2], vertices[i - 1] - 100000);
+                GL_GPU::glVertex2f(vertices[i - 2], vertices[i - 1] - 100000);
             }
         }
-        glVertex2f(vertices[i], vertices[i + 1]);
+        GL_GPU::glVertex2f(vertices[i], vertices[i + 1]);
     }
 
-    glEnd();
+    GL_GPU::glEnd();
 }
 
 void
@@ -356,7 +356,7 @@ CurveGui::drawCurve(int curveIndex,
     const QColor & curveColor = _selected ?  _curveWidget->getSelectedCurveColor() : _color;
 
     {
-        GLProtectAttrib a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
+        GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
         if (!isBezier && _selected) {
             ///Draw y min/max axis so the user understands why the curve is clamped
@@ -364,14 +364,14 @@ CurveGui::drawCurve(int curveIndex,
             if ( (curveYRange.min != INT_MIN && curveYRange.min != !std::numeric_limits<double>::infinity()) && (curveYRange.max != INT_MAX && curveYRange.max != std::numeric_limits<double>::infinity()) ) {
                 QColor minMaxColor;
                 minMaxColor.setRgbF(0.398979, 0.398979, 0.398979);
-                glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
-                glBegin(GL_LINES);
-                glVertex2d(btmLeft.x(), curveYRange.min);
-                glVertex2d(topRight.x(), curveYRange.min);
-                glVertex2d(btmLeft.x(), curveYRange.max);
-                glVertex2d(topRight.x(), curveYRange.max);
-                glEnd();
-                glColor4d(1., 1., 1., 1.);
+                GL_GPU::glColor4d(minMaxColor.redF(), minMaxColor.greenF(), minMaxColor.blueF(), 1.);
+                GL_GPU::glBegin(GL_LINES);
+                GL_GPU::glVertex2d(btmLeft.x(), curveYRange.min);
+                GL_GPU::glVertex2d(topRight.x(), curveYRange.min);
+                GL_GPU::glVertex2d(btmLeft.x(), curveYRange.max);
+                GL_GPU::glVertex2d(topRight.x(), curveYRange.max);
+                GL_GPU::glEnd();
+                GL_GPU::glColor4d(1., 1., 1., 1.);
 
                 double xText = _curveWidget->toZoomCoordinates(10, 0).x();
 
@@ -381,28 +381,28 @@ CurveGui::drawCurve(int curveIndex,
         }
 
 
-        glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
-        glPointSize(_thickness);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_LINE_SMOOTH);
-        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-        glLineWidth(1.5);
-        glCheckError();
+        GL_GPU::glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+        GL_GPU::glPointSize(_thickness);
+        GL_GPU::glEnable(GL_BLEND);
+        GL_GPU::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        GL_GPU::glEnable(GL_LINE_SMOOTH);
+        GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+        GL_GPU::glLineWidth(1.5);
+        glCheckError(GL_GPU);
         if (hasDrawnExpr) {
             drawLineStrip(exprVertices, btmLeft, topRight);
-            glLineStipple(2, 0xAAAA);
-            glEnable(GL_LINE_STIPPLE);
+            GL_GPU::glLineStipple(2, 0xAAAA);
+            GL_GPU::glEnable(GL_LINE_STIPPLE);
         }
         drawLineStrip(vertices, btmLeft, topRight);
         if (hasDrawnExpr) {
-            glDisable(GL_LINE_STIPPLE);
+            GL_GPU::glDisable(GL_LINE_STIPPLE);
         }
 
-        glCheckError();
+        glCheckError(GL_GPU);
 
         //render the name of the curve
-        glColor4f(1.f, 1.f, 1.f, 1.f);
+        GL_GPU::glColor4f(1.f, 1.f, 1.f, 1.f);
 
 
         double interval = ( topRight.x() - btmLeft.x() ) / (double)curvesCount;
@@ -418,11 +418,11 @@ CurveGui::drawCurve(int curveIndex,
         if ( ( textX >= btmLeft.x() ) && ( textX <= topRight.x() ) && ( textY >= btmLeft.y() ) && ( textY <= topRight.y() ) ) {
             _curveWidget->renderText( textX, textY, _name, _color, _curveWidget->getFont() );
         }
-        glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
+        GL_GPU::glColor4f( curveColor.redF(), curveColor.greenF(), curveColor.blueF(), curveColor.alphaF() );
 
         //draw keyframes
-        glPointSize(7.f);
-        glEnable(GL_POINT_SMOOTH);
+        GL_GPU::glPointSize(7.f);
+        GL_GPU::glEnable(GL_POINT_SMOOTH);
 
         const SelectedKeys & selectedKeyFrames = _curveWidget->getSelectedKeyFrames();
         SelectedKeys::const_iterator selectedKeyFramesIt;
@@ -443,7 +443,7 @@ CurveGui::drawCurve(int curveIndex,
                 continue;
             }
 
-            glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
+            GL_GPU::glColor4f( _color.redF(), _color.greenF(), _color.blueF(), _color.alphaF() );
 
             //if the key is selected change its color to white
             KeyPtr isSelected;
@@ -452,7 +452,7 @@ CurveGui::drawCurve(int curveIndex,
                      it2 != foundCurveSelected->second.end(); ++it2) {
                     if ( ( (*it2)->key.getTime() == key.getTime() ) && ( (*it2)->curve.get() == this ) ) {
                         isSelected = *it2;
-                        glColor4f(1.f, 1.f, 1.f, 1.f);
+                        GL_GPU::glColor4f(1.f, 1.f, 1.f, 1.f);
                         break;
                     }
                 }
@@ -460,9 +460,9 @@ CurveGui::drawCurve(int curveIndex,
 
             double x = key.getTime();
             double y = key.getValue();
-            glBegin(GL_POINTS);
-            glVertex2f(x, y);
-            glEnd();
+            GL_GPU::glBegin(GL_POINTS);
+            GL_GPU::glVertex2f(x, y);
+            GL_GPU::glEnd();
 
             if ( !isBezier && isSelected && (key.getInterpolation() != eKeyframeTypeConstant) ) {
                 QFontMetrics m( _curveWidget->getFont() );
@@ -470,18 +470,18 @@ CurveGui::drawCurve(int curveIndex,
 
                 //draw the derivatives lines
                 if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
-                    glLineStipple(2, 0xAAAA);
-                    glEnable(GL_LINE_STIPPLE);
+                    GL_GPU::glLineStipple(2, 0xAAAA);
+                    GL_GPU::glEnable(GL_LINE_STIPPLE);
                 }
-                glBegin(GL_LINES);
-                glColor4f(1., 0.35, 0.35, 1.);
-                glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
-                glVertex2f(x, y);
-                glVertex2f(x, y);
-                glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
-                glEnd();
+                GL_GPU::glBegin(GL_LINES);
+                GL_GPU::glColor4f(1., 0.35, 0.35, 1.);
+                GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
+                GL_GPU::glVertex2f(x, y);
+                GL_GPU::glVertex2f(x, y);
+                GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
+                GL_GPU::glEnd();
                 if ( (key.getInterpolation() != eKeyframeTypeFree) && (key.getInterpolation() != eKeyframeTypeBroken) ) {
-                    glDisable(GL_LINE_STIPPLE);
+                    GL_GPU::glDisable(GL_LINE_STIPPLE);
                 }
 
                 bool singleKey = selectedKeyFrames.size() == 1 && selectedKeyFrames.begin()->second.size() == 1;
@@ -495,8 +495,8 @@ CurveGui::drawCurve(int curveIndex,
                     double yRightWidgetCoord = _curveWidget->toWidgetCoordinates(0, isSelected->rightTan.second).y();
                     yRightWidgetCoord += (m.height() + 4);
 
-                    glColor4f(1., 1., 1., 1.);
-                    glCheckFramebufferError();
+                    GL_GPU::glColor4f(1., 1., 1., 1.);
+                    glCheckFramebufferError(GL_GPU);
                     _curveWidget->renderText( isSelected->leftTan.first, _curveWidget->toZoomCoordinates(0, yLeftWidgetCoord).y(),
                                               leftDerivStr, QColor(240, 240, 240), _curveWidget->getFont() );
                     _curveWidget->renderText( isSelected->rightTan.first, _curveWidget->toZoomCoordinates(0, yRightWidgetCoord).y(),
@@ -509,20 +509,20 @@ CurveGui::drawCurve(int curveIndex,
                     coordStr = coordStr.arg(x).arg(y);
                     double yWidgetCoord = _curveWidget->toWidgetCoordinates( 0, key.getValue() ).y();
                     yWidgetCoord += (m.height() + 4);
-                    glColor4f(1., 1., 1., 1.);
-                    glCheckFramebufferError();
+                    GL_GPU::glColor4f(1., 1., 1., 1.);
+                    glCheckFramebufferError(GL_GPU);
                     _curveWidget->renderText( x, _curveWidget->toZoomCoordinates(0, yWidgetCoord).y(),
                                               coordStr, QColor(240, 240, 240), _curveWidget->getFont() );
                 }
-                glBegin(GL_POINTS);
-                glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
-                glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
-                glEnd();
+                GL_GPU::glBegin(GL_POINTS);
+                GL_GPU::glVertex2f( isSelected->leftTan.first, isSelected->leftTan.second );
+                GL_GPU::glVertex2f( isSelected->rightTan.first, isSelected->rightTan.second );
+                GL_GPU::glEnd();
             } // if ( !isBezier && ( isSelected != selectedKeyFrames.end() ) && (key.getInterpolation() != eKeyframeTypeConstant) ) {
         } // for (KeyFrameSet::const_iterator k = keyframes.begin(); k != keyframes.end(); ++k) {
     } // GLProtectAttrib(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT | GL_POINT_BIT | GL_CURRENT_BIT);
 
-    glCheckError();
+    glCheckError(GL_GPU);
 } // drawCurve
 
 void

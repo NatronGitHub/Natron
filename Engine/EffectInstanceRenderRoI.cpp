@@ -1798,7 +1798,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         ///The image might need to be converted to fit the original requested format
         if (comp) {
             it->second.downscaleImage = convertPlanesFormatsIfNeeded(getApp(), it->second.downscaleImage, originalRoI, *comp, args.bitdepth, useAlpha0ForRGBToRGBAConversion, planesToRender->outputPremult, -1);
-            assert(it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth);
+            assert(it->second.downscaleImage->getStorageMode() == eStorageModeGLTex ||  (it->second.downscaleImage->getComponents() == *comp && it->second.downscaleImage->getBitDepth() == args.bitdepth));
 
             StorageModeEnum imageStorage = it->second.downscaleImage->getStorageMode();
             if ( args.returnStorage == eStorageModeGLTex && (imageStorage != eStorageModeGLTex) ) {
@@ -1811,7 +1811,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                                                                    ) );
                 }
                 glContextLocker->attach();
-                it->second.downscaleImage = convertRAMImageToOpenGLTexture(it->second.downscaleImage);
+                it->second.downscaleImage = convertRAMImageToOpenGLTexture<GL_GPU>(it->second.downscaleImage);
             } else if ( args.returnStorage != eStorageModeGLTex && (imageStorage == eStorageModeGLTex) ) {
                 assert(args.returnStorage == eStorageModeRAM);
                 assert(glContextLocker);

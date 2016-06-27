@@ -73,6 +73,7 @@ public:
         info.dataTypeSize = getSizeOfForBitDepth( (ImageBitDepthEnum)bitDepth );
         info.bounds = bounds;
         info.textureTarget = GL_TEXTURE_2D;
+        info.isGPUTexture = true;
     }
 
     virtual ~FrameParams()

@@ -57,6 +57,7 @@
 #include <SequenceParsing.h> // for removePath
 #include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
+#include "Global/GLIncludes.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -429,7 +430,8 @@ public:
     }
 
     void allocateGLTexture(const RectI& rectangle,
-                           U32 target)
+                           U32 target,
+                           bool isGPUTexture)
     {
         if (_glTexture) {
             return;
@@ -464,7 +466,8 @@ public:
                                       type,
                                       format,
                                       internalFormat,
-                                      glType) );
+                                      glType,
+                                      isGPUTexture /*useOpenGL*/) );
 
 
         TextureRect r(rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2, 1., 1.);
@@ -1188,7 +1191,7 @@ private:
             U64 count = getElementsCountFromParams();
             _data.allocateRAM(count);
         } else if (info.mode == eStorageModeGLTex) {
-            _data.allocateGLTexture(info.bounds, info.textureTarget);
+            _data.allocateGLTexture(info.bounds, info.textureTarget, info.isGPUTexture);
         }
     }
 
