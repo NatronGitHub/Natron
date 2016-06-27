@@ -1230,10 +1230,12 @@ pasteFromGL(const Image & src,
 
         GLuint fboID = glContext->getFBOId();
 
+        int srcTarget = src.getGLTextureTarget();
+
         GL::glBindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::glEnable(target);
-        GL::glBindTexture( target, src.getGLTextureID() );
-        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, src.getGLTextureID(), 0 /*LoD*/);
+        GL::glEnable(srcTarget);
+        GL::glBindTexture( srcTarget, src.getGLTextureID() );
+        GL::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, srcTarget, src.getGLTextureID(), 0 /*LoD*/);
         //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
         GL::glViewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
         glCheckFramebufferError(GL);
@@ -1249,7 +1251,7 @@ pasteFromGL(const Image & src,
             unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
 
             GL::glReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
-            GL::glBindTexture(target, 0);
+            GL::glBindTexture(srcTarget, 0);
         }
         GL::glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glCheckError(GL);
