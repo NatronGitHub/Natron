@@ -66,7 +66,7 @@ NodeGraph::mouseDoubleClickEvent(QMouseEvent* e)
     Edge* nearbyEdge;
     NearbyItemEnum nearbyItemCode = hasItemNearbyMouse(e->pos(), &nearbyNode, &nearbyEdge);
 
-    if (nearbyItemCode == eNearbyItemNode) {
+    if (nearbyItemCode == eNearbyItemNode || nearbyItemCode == eNearbyItemBackdropFrame) {
         if ( modCASIsControl(e) ) {
             nearbyNode->ensurePanelCreated();
             if ( nearbyNode->getSettingPanel() ) {
