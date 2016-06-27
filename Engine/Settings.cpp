@@ -2500,7 +2500,8 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n";
-        ts << Markdown::convert2html(markdown);
+        QString html = Markdown::convert2html(markdown);
+        ts << Markdown::fixSettingsHTML(html);
         ts << "</div>\n</div>\n</div>\n<div class=\"clearer\"></div>\n</div>\n<div class=\"footer\"></div>\n</body>\n</html>\n";
     } else {
         ts << markdown;

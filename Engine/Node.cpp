@@ -4228,7 +4228,7 @@ Node::makeDocumentation(bool genHTML) const
     int majorVersion = getMajorVersion();
     int minorVersion = getMinorVersion();
     QStringList pluginGroup;
-    //bool pluginDescriptionMarkdown = false;
+    bool pluginDescriptionIsMarkdown = false;
     QVector<QStringList> inputs;
     QVector<QStringList> items;
 
@@ -4249,14 +4249,14 @@ Node::makeDocumentation(bool genHTML) const
             pluginDescription =  QString::fromUtf8( _imp->effect->getPluginDescription().c_str() );
             pluginIcon = _imp->plugin->getIconFilePath();
             pluginGroup = _imp->plugin->getGrouping();
+            pluginDescriptionIsMarkdown = _imp->effect->isPluginDescriptionInMarkdown();
         }
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
-            input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) );
-            if ( !input.isEmpty() ) {
-                inputs.push_back(input);
-            }
+            QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
+            input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) ) << optional;
+            inputs.push_back(input);
         }
     }
 
@@ -4298,18 +4298,45 @@ Node::makeDocumentation(bool genHTML) const
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
 
-        QString defValuesStr;
+        QString defValuesStr, knobType;
         std::vector<std::pair<QString, QString> > dimsDefaultValueStr;
-        Knob<int>* isInt = dynamic_cast<Knob<int>*>( it->get() );
+        KnobInt* isInt = dynamic_cast<KnobInt*>( it->get() );
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( it->get() );
-        Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( it->get() );
-        Knob<double>* isDbl = dynamic_cast<Knob<double>*>( it->get() );
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( it->get() );
+        KnobBool* isBool = dynamic_cast<KnobBool*>( it->get() );
+        KnobDouble* isDbl = dynamic_cast<KnobDouble*>( it->get() );
+        KnobString* isString = dynamic_cast<KnobString*>( it->get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
         KnobButton* isBtn = dynamic_cast<KnobButton*>( it->get() );
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>( it->get() );
         KnobGroup* isGroup = dynamic_cast<KnobGroup*>( it->get() );
         KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+        KnobColor* isColor = dynamic_cast<KnobColor*>( it->get() );
+
+        if (isInt) {
+            knobType = tr("Integer");
+        } else if (isChoice) {
+            knobType = tr("Choice");
+        } else if (isBool) {
+            knobType = tr("Boolean");
+        } else if (isDbl) {
+            knobType = tr("Double");
+        } else if (isString) {
+            knobType = tr("String");
+        } else if (isSep) {
+            knobType = tr("Seperator");
+        } else if (isBtn) {
+            knobType = tr("Button");
+        } else if (isParametric) {
+            knobType = tr("Parametric");
+        } else if (isGroup) {
+            knobType = tr("Group");
+        } else if (isPage) {
+            knobType = tr("Page");
+        } else if (isColor) {
+            knobType = tr("Color");
+        } else {
+            knobType = tr("N/A");
+        }
 
         if (!isGroup && !isPage) {
             for (int i = 0; i < (*it)->getDimension(); ++i) {
@@ -4330,6 +4357,8 @@ Node::makeDocumentation(bool genHTML) const
                         valueStr = isBool->getDefaultValue(i) ? tr("On") : tr("Off");
                     } else if (isString) {
                         valueStr = QString::fromUtf8( isString->getDefaultValue(i).c_str() );
+                    } else if (isColor) {
+                        valueStr = QString::number( isColor->getDefaultValue(i) );
                     }
                 }
 
@@ -4353,9 +4382,11 @@ Node::makeDocumentation(bool genHTML) const
             }
         }
 
-        QStringList row;
-        row << knobLabel << knobScriptName << defValuesStr << knobHint;
-        items.append(row);
+        if (!isPage && !isSep && !isGroup) {
+            QStringList row;
+            row << knobLabel << knobScriptName << knobType << defValuesStr << knobHint;
+            items.append(row);
+        }
     } // for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
 
 
@@ -4365,12 +4396,17 @@ Node::makeDocumentation(bool genHTML) const
         ms << "![](" << pluginIconUrl << ")\n\n";
     }
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
+
+    if (!pluginDescriptionIsMarkdown) {
+        pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+    }
+
     ms << pluginDescription << "\n\n";
 
     // create markdown table
     ms << tr("Inputs") << "\n----------\n\n";
-    ms << tr("Input") << " | " << tr("Description")<< "\n";
-    ms << "--- | ---\n";
+    ms << tr("Input") << " | " << tr("Description") << " | " << tr("Optional") << "\n";
+    ms << "--- | --- | ---\n";
     if (inputs.size() > 0) {
         Q_FOREACH(const QStringList &input, inputs) {
             QString inputName = input.at(0);
@@ -4385,12 +4421,17 @@ Node::makeDocumentation(bool genHTML) const
                 inputDesc = QString::fromUtf8("&nbsp;");
             }
 
-            ms << inputName << " | " << inputDesc << "\n";
+            QString inputOpt = input.at(2);
+            if (inputOpt.isEmpty()) {
+                inputOpt = QString::fromUtf8("&nbsp;");
+            }
+
+            ms << inputName << " | " << inputDesc << " | " << inputOpt << "\n";
         }
     }
     ms << tr("Controls") << "\n----------\n\n";
-    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
-    ms << "--- | --- | --- | ---\n";
+    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " <<tr("Type") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
+    ms << "--- | --- | --- | --- | ---\n";
     if (items.size() > 0) {
         Q_FOREACH(const QStringList &item, items) {
             QString itemLabel = item.at(0);
@@ -4405,19 +4446,24 @@ Node::makeDocumentation(bool genHTML) const
                 itemScript = QString::fromUtf8("&nbsp;");
             }
 
-            QString itemDefault = item.at(2);
+            QString itemType = item.at(2);
+            if (itemType.isEmpty()) {
+                itemType = QString::fromUtf8("&nbsp;");
+            }
+
+            QString itemDefault = item.at(3);
             itemDefault.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
             if (itemDefault.isEmpty()) {
                 itemDefault = QString::fromUtf8("&nbsp;");
             }
 
-            QString itemFunction = item.at(3);
+            QString itemFunction = item.at(4);
             itemFunction.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
             if (itemFunction.isEmpty()) {
                 itemFunction = QString::fromUtf8("&nbsp;");
             }
 
-            ms << itemLabel << " | " << itemScript << " | " << itemDefault << " | " << itemFunction << "\n";
+            ms << itemLabel << " | " << itemScript << " | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
         }
     }
 
