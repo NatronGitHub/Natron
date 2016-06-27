@@ -56,31 +56,25 @@
 #if __MAC_OS_X_VERSION_MIN_REQUIRED < 1070
 // code in here might run on pre-Lion OS
 #ifndef kCGLPFATripleBuffer
-#define kCGLPFATripleBuffer 3
-#endif
-#ifndef kCGLPFAOpenGLProfile
-#define kCGLPFAOpenGLProfile  99
+#define kCGLPFATripleBuffer ((CGLPixelFormatAttribute)3)
 #endif
 #ifndef kCGLRPVideoMemoryMegabytes
-#define kCGLRPVideoMemoryMegabytes 131
+#define kCGLRPVideoMemoryMegabytes ((CGLRendererProperty)131)
 #endif
 #ifndef kCGLRPTextureMemoryMegabytes
-#define kCGLRPTextureMemoryMegabytes 132
+#define kCGLRPTextureMemoryMegabytes ((CGLRendererProperty)132)
 #endif
 #ifndef kCGLCECrashOnRemovedFunctions
-#define kCGLCECrashOnRemovedFunctions 316
+#define kCGLCECrashOnRemovedFunctions ((CGLContextEnable)316)
 #endif
 #ifndef kCGLPFAOpenGLProfile
-#define kCGLPFAOpenGLProfile (CGLPixelFormatAttribute)99
+#define kCGLPFAOpenGLProfile ((CGLPixelFormatAttribute)99)
 #endif
 #ifndef kCGLOGLPVersion_Legacy
-#define kCGLOGLPVersion_Legacy (CGLPixelFormatAttribute)0x1000
+#define kCGLOGLPVersion_Legacy ((CGLOpenGLProfile)0x1000)
 #endif
 #ifndef kCGLOGLPVersion_3_2_Core
-#define kCGLOGLPVersion_3_2_Core (CGLPixelFormatAttribute)0x3200
-#endif
-#ifndef kCGLOGLPVersion_GL3_Core
-#define kCGLOGLPVersion_GL3_Core 0x3200
+#define kCGLOGLPVersion_3_2_Core ((CGLOpenGLProfile)0x3200)
 #endif
 #else
 // code here can assume Lion or later
@@ -88,22 +82,22 @@
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1080
 #ifndef kCGLPFABackingVolatile
-#define kCGLPFABackingVolatile 77
+#define kCGLPFABackingVolatile ((CGLPixelFormatAttribute)77)
 #endif
 #ifndef kCGLPFASupportsAutomaticGraphicsSwitching
-#define kCGLPFASupportsAutomaticGraphicsSwitching 101
+#define kCGLPFASupportsAutomaticGraphicsSwitching ((CGLPixelFormatAttribute)101)
 #endif
 #endif
 
 #if MAC_OS_X_VERSION_MIN_REQUIRED < 1090
 #ifndef kCGLOGLPVersion_GL3_Core
-#define kCGLOGLPVersion_GL3_Core 0x3200
+#define kCGLOGLPVersion_GL3_Core ((CGLOpenGLProfile)0x3200)
 #endif
 #ifndef kCGLOGLPVersion_GL4_Core
-#define kCGLOGLPVersion_GL4_Core 0x4100
+#define kCGLOGLPVersion_GL4_Core ((CGLOpenGLProfile)0x4100)
 #endif
 #ifndef kCGLRPMajorGLVersion
-#define kCGLRPMajorGLVersion 133
+#define kCGLRPMajorGLVersion ((CGLRendererProperty)133)
 #endif
 #endif
 
