@@ -189,6 +189,8 @@ public Q_SLOTS:
 
     void togglePreviewsForSelectedNodes();
 
+    void showSelectedNodeSettingsPanel();
+
     void toggleAutoPreview();
 
     void toggleSelectedNodesEnabled();

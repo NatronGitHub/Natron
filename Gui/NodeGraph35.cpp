@@ -406,6 +406,15 @@ NodeGraph::showMenu(const QPoint & pos)
         turnOffPreviewAction->setChecked(false);
         QObject::connect( turnOffPreviewAction, SIGNAL(triggered()), this, SLOT(togglePreviewsForSelectedNodes()) );
         _imp->_menu->addAction(turnOffPreviewAction);
+
+        if (selectedNodes.size() == 1) {
+            QAction* openNodePanelAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel,
+                                                                  kShortcutDescActionGraphOpenNodePanel, _imp->_menu);
+            openNodePanelAction->setCheckable(true);
+            openNodePanelAction->setChecked(false);
+            QObject::connect( openNodePanelAction, SIGNAL(triggered()), this, SLOT(showSelectedNodeSettingsPanel()) );
+            _imp->_menu->addAction(openNodePanelAction);
+        }
     }
 
     QAction* connectionHints = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphEnableHints,
