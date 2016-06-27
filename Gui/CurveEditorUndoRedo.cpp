@@ -278,6 +278,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
             insertOk = knobsSet.insert(knob);
             if (insertOk.second) {
                 knob->beginChanges();
+                knob->blockValueChanges();
             }
             isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
         }
@@ -341,6 +342,8 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
     }
 
     for (std::set<KnobPtr>::iterator it = knobsSet.begin(); it!=knobsSet.end(); ++it) {
+        (*it)->unblockValueChanges();
+        (*it)->evaluateValueChange(0, (*it)->getCurrentTime(), ViewSpec(0), eValueChangedReasonUserEdited);
         (*it)->endChanges();
     }
 
