@@ -49,6 +49,8 @@ public:
 
     static QString convert2html(const QString& markdown);
     static QString parseCustomLinksForHTML(const QString& markdown);
+    static QString fixNodeHTML(const QString& html);
+    static QString fixSettingsHTML(const QString& html);
 };
 
 NATRON_NAMESPACE_EXIT;

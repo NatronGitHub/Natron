@@ -165,34 +165,39 @@ div#search input {
   border: 1px solid #ebebeb;
 }
 
+@media screen {
+  .inputTable,
+  .controlTable {
+    display: none;
+  }
+  .showHideTable {
+    font-size: small;
+  }
+}
 
-
-
-
-
-/* OVERRIDES FOR PRINT */
 @media print {
-#mainMenu,
-#header,
-#related {
-  display:none;
-}
-body {
-  font-size: 70%;
-}
-td {
-  padding:5px;
-}
-h1 {
-  margin-top:0;
-}
-table {
-  border-collapse: collapse;
-}
-table, th, td {
-  border: 1px solid black;
-}
-div.body {
-  margin:0;
-}
+  #mainMenu,
+  #header,
+  #related,
+  .showHideTable {
+    display:none;
+  }
+  body {
+    font-size: 70%;
+  }
+  td {
+    padding:5px;
+  }
+  h1 {
+    margin-top:0;
+  }
+  table {
+    border-collapse: collapse;
+  }
+  table, th, td {
+    border: 1px solid black;
+  }
+  div.body {
+    margin:0;
+  }
 }

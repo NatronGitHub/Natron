@@ -84,5 +84,39 @@ Markdown::parseCustomLinksForHTML(const QString& markdown)
     return result;
 }
 
+QString
+Markdown::fixNodeHTML(const QString &html)
+{
+    QString result = html;
+
+    result.replace( QString::fromUtf8("<h2>Inputs</h2>\n\n<table>"), QString::fromUtf8("<h2>Inputs <span class=\"showHideTable\">(<a class=\"toggleInputTable\" href=\"#\">+/-</a>)</span></h2>\n\n<table class=\"inputTable\">") );
+    result.replace( QString::fromUtf8("<h2>Controls</h2>\n\n<table>"), QString::fromUtf8("<h2>Controls <span class=\"showHideTable\">(<a class=\"toggleControlTable\" href=\"#\">+/-</a>)</span></h2>\n\n<table class=\"controlTable\">") );
+
+    return result;
+}
+
+QString
+Markdown::fixSettingsHTML(const QString &html)
+{
+    QString result;
+
+    // Replace <h2>A Title</h2> with <h2 id="a-title">A Title</h2>
+    QStringList list = html.split( QString::fromUtf8("\n") );
+    Q_FOREACH(const QString &line, list) {
+        if ( line.startsWith(QString::fromUtf8("<h2>")) ) {
+            QRegExp rx( QString::fromUtf8("<h2>(.*)</h2>") );
+            rx.indexIn(line);
+            QString header = rx.cap(1);
+            QString headerLink = header.toLower();
+            headerLink.replace( QString::fromUtf8(" "), QString::fromUtf8("-") );
+            result.append(QString::fromUtf8("<h2 id=\"%1\">%2</h2>").arg(headerLink).arg(header));
+        } else {
+            result.append(line);
+        }
+    }
+
+    return result;
+}
+
 NATRON_NAMESPACE_EXIT;
 
