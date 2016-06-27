@@ -2676,6 +2676,9 @@ ViewerGL::updateColorPicker(int textureIndex,
 void
 ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setColor, bool hasColor)
 {
+    if (!_imp->viewerTab->getGui()) {
+        return;
+    }
     const std::list<DockablePanel*>& panels = _imp->viewerTab->getGui()->getVisiblePanels();
     for (std::list<DockablePanel*>::const_iterator it = panels.begin(); it != panels.end(); ++it) {
         NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
