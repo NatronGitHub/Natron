@@ -247,6 +247,8 @@ public Q_SLOTS:
 
 private:
 
+    void showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode);
+
     void checkForHints(bool shiftdown, bool controlDown, const NodeGuiPtr& selectedNode, const QRectF& visibleSceneR);
 
     void moveSelectedNodesBy(bool shiftdown, bool controlDown, const QPointF& lastMousePosScene, const QPointF& newPos, const QRectF& visibleSceneR, bool userEdit);
