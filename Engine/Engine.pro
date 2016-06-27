@@ -132,6 +132,7 @@ SOURCES += \
     NodeGroupSerialization.cpp \
     NoOpBase.cpp \
     OSGLContext.cpp \
+    OSGLContext_mac.cpp \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
     OfxClipInstance.cpp \
@@ -552,9 +553,6 @@ OTHER_FILES += \
 
 # QMAKE_EXTRA_COMPILERS += SHIBOKEN
 macx {
-
-SOURCES += \
-OSGLContext_mac.cpp
 
 OBJECTIVE_SOURCES += \
     QUrlFix.mm
