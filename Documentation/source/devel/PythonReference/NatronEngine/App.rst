@@ -18,9 +18,9 @@ Functions
 ^^^^^^^^^
 *	 def :meth:`addProjectLayer<NatronEngine.App.addProjectLayer>` (layer)
 *	 def :meth:`addFormat<NatronEngine.App.addFormat>` (formatSpec)
-*    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None]])
-*    def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None])
-*    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None])
+*    def :meth:`createNode<NatronEngine.App.createNode>` (pluginID[, majorVersion=-1[, group=None] [, properties=None]])
+*    def :meth:`createReader<NatronEngine.App.createReader>` (filename[, group=None] [, properties=None])
+*    def :meth:`createWriter<NatronEngine.App.createWriter>` (filename[, group=None] [, properties=None])
 *    def :meth:`getAppID<NatronEngine.App.getAppID>` ()
 *    def :meth:`getProjectParam<NatronEngine.App.getProjectParam>` (name)
 *    def :meth:`getViewNames<NatronEngine.App.getViewNames>`()
@@ -156,12 +156,13 @@ format. For instance::
 	
 Wrongly formatted format will be omitted and a warning will be printed in the *ScriptEditor*.
 
-.. method:: NatronEngine.App.createNode(pluginID[, majorVersion=-1[, group=None]])
+.. method:: NatronEngine.App.createNode(pluginID[, majorVersion=-1[, group=None] [, properties=None]])
 
 
     :param pluginID: :class:`str<NatronEngine.std::string>`
     :param majorVersion: :class:`int<PySide.QtCore.int>`
     :param group: :class:`Group<NatronEngine.Group>`
+    :param properties: :class:`Dict`
     :rtype: :class:`Effect<NatronEngine.Effect>`
 
 Creates a new node instantiating the plug-in specified with the given *pluginID* at the given
@@ -172,9 +173,166 @@ should be created, *None* meaning the project's top level.
 In Natron you can call the  following function to get a sequence with all plug-in IDs currently available::
 
 	natron.getPluginIDs()
+	
+The optional parameter *properties* is a dictionary containing properties that may modify
+the creation of the node, such as hiding the node GUI, disabling auto-connection in the 
+NodeGraph, etc...
+
+The properties are values of type Bool, Int, Float or String and are mapped against a unique
+*key* identifying them.
+
+Most properties have a default value and don't need to be specified, except the pluginID property.
+
+Below is a list of all the properties available that are recognized by Natron. If you specify
+an unknown property, Natron will print a warning in the Script Editor.
+
+All properties type have been wrapped to Natron types:
+	- A boolean property is represented by the **BoolNodeCreationProperty** class
+	- A int property is represented by the **IntNodeCreationProperty** class
+	- A float property is represented by the **FloatNodeCreationProperty** class
+	- A string property is represented by the **StringNodeCreationProperty** class
+	
+Here is an example on how to pass properties to the createNode function::
+
+	app.createNode("net.sf.cimg.CImgBlur", -1, app, dict([ ("CreateNodeArgsPropSettingsOpened", NatronEngine.BoolNodeCreationProperty(True)), ("CreateNodeArgsPropNodeInitialParamValues", NatronEngine.StringNodeCreationProperty("size")) ,("CreateNodeArgsPropParamValue_size",NatronEngine.FloatNodeCreationProperty([2.3,5.1])) ]))
 
 
-.. method:: NatronEngine.App.createReader(filename[, group=None]])
+
+- *Name*: **CreateNodeArgsPropPluginID**
+
+	*Dimension*: 1
+	
+	*Type*: string
+	
+	*Default*: None
+	
+	*Description*: Indicates the ID of the plug-in to create. This property is mandatory. 
+  It is set automatically by passing the pluginID to the createNode function
+  
+- *Name*: **CreateNodeArgsPropPluginVersion**
+
+	*Dimension*: 2
+	
+	*Type*: int
+	
+	*Default*: -1,-1
+	
+	*Description*: Indicates the version of the plug-in to create. 
+  With the value (-1,-1) Natron will load the highest possible version available for that plug-in.
+
+- *Name*: **CreateNodeArgsPropNodeInitialPosition**
+
+	*Dimension*: 2
+	
+	*Type*: float
+	
+	*Default*: None
+	
+	*Description*: Indicates the initial position of the node in the nodegraph.
+  By default Natron will position the node according to the state of the interface (current selection, position of the viewport, etc...)
+  
+- *Name*: **CreateNodeArgsPropNodeInitialName**
+
+	  *Dimension*: 1
+	  
+	  *Type*: string
+	  
+	  *Default*: None
+	  
+	  *Description*: Indicates the initial *script-name* of the node 
+  By default Natron will name the node according to the plug-in label and will add a digit
+  afterwards dependending on the current number of instances of that plug-in.
+  
+- *Name*: **CreateNodeArgsPropNodeInitialParamValues**
+
+	 *Dimension*: N
+	 
+	 *Type*: string
+	 
+	 *Default*: None
+	 
+	 *Description*: Contains a sequence of parameter script-names for which a default value
+  is specified by a property. Each default value must be specified by a property whose name is 
+  in the form *CreateNodeArgsPropParamValue_PARAMETERNAME*  where *PARAMETERNAME* must be replaced by the
+  *script-name* of the parameter.  The property must have the same type as the data-type of
+  the parameter (e.g: int for IntParam, float for FloatParam, bool for BooleanParam, String for StringParam).
+  
+  
+- *Name*: **CreateNodeArgsPropOutOfProject**
+
+  	*Dimension*: 1
+  	
+	*Type*: bool
+	
+	*Default*: False
+	
+	*Description*: When True the node will not be part of the project. The node can be used for internal used, e.g in a Python script but will
+  not appear to the user. It will also not be saved in the project.
+  
+  
+- *Name*: **CreateNodeArgsPropNoNodeGUI**
+
+	*Dimension*: 1
+	
+	*Type*: bool
+	
+	*Default*: False
+	
+	*Description*:  * If True, the node will not have any GUI created. The property CreateNodeArgsPropOutOfProject set to True implies this.
+
+
+- *Name*: **CreateNodeArgsPropSettingsOpened**
+
+	*Dimension*: 1
+	
+	*Type*: bool
+	
+	*Default*: False
+	
+	*Description*:  * If True, the node settings panel will not be opened by default when created.
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  is set to true, this property has no effet.
+
+
+- *Name*: **CreateNodeArgsPropAutoConnect**
+
+	*Dimension*: 1
+	
+	*Type*: bool
+	
+	*Default*: False
+	
+	*Description*:  * If True, Natron will try to automatically connect the node to others depending on the user selection. 
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  is set to true, this property has no effet.
+
+
+- *Name*: **CreateNodeArgsPropAddUndoRedoCommand**
+
+      *Dimension*: 1
+      
+ 	  *Type*: bool
+ 	  
+  	  *Default*: False
+  	  
+ 	  *Description*:  Natron will push a undo/redo command to the stack when creating this node. 
+  If the property CreateNodeArgsPropNoNodeGUI is set to true or CreateNodeArgsPropOutOfProject
+  is set to true, this property has no effect.
+    
+    
+- *Name*: **CreateNodeArgsPropSilent**
+
+	  *Dimension*: 1
+	  
+	  *Type*: bool
+	  
+	  *Default*: False
+	  
+	  *Description*:  When set to True, Natron will not show any information, error, warning, question or file dialog when creating the node.
+  
+  
+
+.. method:: NatronEngine.App.createReader(filename[, group=None] [, properties=None])
 
 
     :param filename: :class:`str<NatronEngine.std::string>`
@@ -192,7 +350,7 @@ If however you need a specific decoder to decode the file format, you can use
 the :func:`getSettings()<NatronEngine.App.createNode>` function with the exact plug-in ID. 
 
 
-.. method:: NatronEngine.App.createWriter(filename[, group=None]])
+.. method:: NatronEngine.App.createWriter(filename[, group=None] [, properties=None])
 
 
     :param filename: :class:`str<NatronEngine.std::string>`

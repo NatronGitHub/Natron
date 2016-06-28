@@ -498,6 +498,8 @@ private:
     bool _isTiled;
     std::size_t _tileByteSize;
 
+    // True when clearing the cache, protected by _tileCacheMutex
+    bool _clearingCache;
 
     // Used when the cache is tiled
     std::set<TileCacheFilePtr> _cacheFiles;
@@ -534,6 +536,7 @@ public:
         , _tileCacheMutex()
         , _isTiled(false)
         , _tileByteSize(0)
+        , _clearingCache(false)
         , _cacheFiles()
         , _nextAvailableCacheFile()
         , _nextAvailableCacheFileIndex(-1)
@@ -716,7 +719,8 @@ private:
             _nextAvailableCacheFileIndex = 1;
         }
 
-
+        // Notify the memory file that this portion of the file is valid
+        foundAvailableFile->file->flush(MemoryFile::eFlushTypeAsync, foundAvailableFile->file->data() + *dataOffset, _tileByteSize);
         foundAvailableFile->usedTiles[foundTileIndex] = true;
         return foundAvailableFile;
     }
@@ -749,11 +753,14 @@ private:
         // A use_count of 2 means that the tile file is only referenced by the cache itself and the entry calling
         // the freeTile() function, hence once its freed, no tile should be using it anymore
         if ((*foundTileFile).use_count() <= 2) {
-            // Do not remove the file if we are tearing down the cache
-            if (!_tearingDown) {
+            // Do not remove the file except if we are clearing the cache
+            if (_clearingCache) {
                 (*foundTileFile)->file->remove();
+                _cacheFiles.erase(foundTileFile);
+            } else {
+                // Invalidate this portion of the cache
+                (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, _tileByteSize);
             }
-            _cacheFiles.erase(foundTileFile);
         } else {
             _nextAvailableCacheFile = *foundTileFile;
             _nextAvailableCacheFileIndex = index;
@@ -1003,6 +1010,10 @@ public:
      **/
     void clear()
     {
+        {
+            QMutexLocker k(&_tileCacheMutex);
+            _clearingCache = true;
+        }
         clearDiskPortion();
 
 
@@ -1022,6 +1033,11 @@ public:
         if (_signalEmitter) {
             _signalEmitter->blockSignals(false);
             _signalEmitter->emitSignalClearedInMemoryPortion();
+        }
+
+        {
+            QMutexLocker k(&_tileCacheMutex);
+            _clearingCache = false;
         }
     }
 
@@ -1534,20 +1550,12 @@ public:
 
     /*Saves cache to disk as a settings file.
      */
-    void save(CacheTOC* tableOfContents, bool async);
+    void save(CacheTOC* tableOfContents);
 
 
     /*Restores the cache from disk.*/
     void restore(const CacheTOC & tableOfContents);
 
-    /* Synchronize internal storage for tiled cache on disk*/
-    void syncTileCache(bool asynchronous) const
-    {
-        QMutexLocker k(&_tileCacheMutex);
-        for (std::set<TileCacheFilePtr>::const_iterator it = _cacheFiles.begin(); it!=_cacheFiles.end(); ++it) {
-            (*it)->file->flush(asynchronous);
-        }
-    }
 
     void removeAllEntriesWithDifferentNodeHashForHolderPublic(const CacheEntryHolder* holder,
                                                               U64 nodeHash)

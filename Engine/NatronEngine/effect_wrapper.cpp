@@ -251,41 +251,6 @@ static PyObject* Sbk_EffectFunc_connectInput(PyObject* self, PyObject* args)
         return 0;
 }
 
-static PyObject* Sbk_EffectFunc_createChild(PyObject* self)
-{
-    ::Effect* cppSelf = 0;
-    SBK_UNUSED(cppSelf)
-    if (!Shiboken::Object::isValid(self))
-        return 0;
-    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
-
-    // Call function/method
-    {
-
-        if (!PyErr_Occurred()) {
-            // createChild()
-            // Begin code injection
-
-            Effect * cppResult = cppSelf->createChild();
-            pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
-
-            // End of code injection
-
-
-
-            // Ownership transferences.
-            Shiboken::Object::getOwnership(pyResult);
-        }
-    }
-
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
-        return 0;
-    }
-    return pyResult;
-}
-
 static PyObject* Sbk_EffectFunc_destroy(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ::Effect* cppSelf = 0;
@@ -1580,7 +1545,6 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"beginChanges", (PyCFunction)Sbk_EffectFunc_beginChanges, METH_NOARGS},
     {"canConnectInput", (PyCFunction)Sbk_EffectFunc_canConnectInput, METH_VARARGS},
     {"connectInput", (PyCFunction)Sbk_EffectFunc_connectInput, METH_VARARGS},
-    {"createChild", (PyCFunction)Sbk_EffectFunc_createChild, METH_NOARGS},
     {"destroy", (PyCFunction)Sbk_EffectFunc_destroy, METH_VARARGS|METH_KEYWORDS},
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},

@@ -33,6 +33,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
@@ -1590,7 +1591,11 @@ GroupFromSelectionCommand::redo()
     } else {
         NodesList internalNewNodes;
         // Create the actual Group node
-        CreateNodeArgs groupArgs( QString::fromUtf8(PLUGINID_NATRON_GROUP), eCreateNodeReasonInternal, _graph->getGroup() );
+        CreateNodeArgs groupArgs( PLUGINID_NATRON_GROUP, _graph->getGroup() );
+        groupArgs.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        groupArgs.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        groupArgs.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+
         NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
 
         isGrp = boost::dynamic_pointer_cast<NodeGroup>( containerNode->getEffectInstance()->shared_from_this() );
@@ -1655,7 +1660,12 @@ GroupFromSelectionCommand::redo()
                     NodePtr originalInput = originalNodeInputs[i].lock();
                     if (originalInput) {
                         //Create an input node corresponding to this input
-                        CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isGrp);
+                        CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
+                        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+
+
                         NodePtr input = _graph->getGui()->getApp()->createNode(args);
                         assert(input);
                         std::string inputLabel = originalNodeInternal->getLabel() + '_' + originalNodeInternal->getInputLabel(i);
@@ -1690,7 +1700,10 @@ GroupFromSelectionCommand::redo()
             //Create only a single output
 
             if (!hasCreatedOutput) {
-                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isGrp);
+                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
+                args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
                 NodePtr output = _graph->getGui()->getApp()->createNode(args);
                 try {
                     output->setScriptName("Output");

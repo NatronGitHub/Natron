@@ -131,7 +131,7 @@ public:
                   bool updateKnobGui = false);
 
     ///Set values for Knobs given their serialization
-    void setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues);
+    void setValuesFromSerialization(const CreateNodeArgs& args);
 
     ///to be called once all nodes have been loaded from the project or right away after the load() function.
     ///this is so the child of a multi-instance can retrieve the pointer to it's main instance
@@ -1328,7 +1328,7 @@ private:
 
     bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 
-    void setNameInternal(const std::string& name, bool throwErrors, bool declareToPython);
+    void setNameInternal(const std::string& name, bool throwErrors);
 
     std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
 

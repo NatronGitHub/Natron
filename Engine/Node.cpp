@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Backdrop.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
@@ -687,62 +688,73 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
         isMultiInstanceChild = true;
     }
 
-    if (serialization) {
+    if (!fixedName.isEmpty()) {
+
+        std::string baseName = fixedName.toStdString();
+        std::string name = baseName;
+        int no = 1;
+        do {
+            if (no > 1) {
+                std::stringstream ss;
+                ss << baseName;
+                ss << '_';
+                ss << no;
+                name = ss.str();
+            }
+            ++no;
+        } while ( group && group->checkIfNodeNameExists(name, this) );
+
+        //This version of setScriptName will not error if the name is invalid or already taken
+        setScriptName_no_error_check(name);
+
+    } else if (serialization) {
         if ( group && !group->isCacheIDAlreadyTaken( serialization->getCacheID() ) ) {
             QMutexLocker k(&_imp->nameMutex);
             _imp->cacheID = serialization->getCacheID();
         }
-        if (fixedName.isEmpty() ) {
-            const std::string& baseName = serialization->getNodeScriptName();
-            std::string name = baseName;
-            int no = 1;
-            do {
-                if (no > 1) {
-                    std::stringstream ss;
-                    ss << baseName;
-                    ss << '_';
-                    ss << no;
-                    name = ss.str();
-                }
-                ++no;
-            } while ( group && group->checkIfNodeNameExists(name, this) );
+        const std::string& baseName = serialization->getNodeScriptName();
+        std::string name = baseName;
+        int no = 1;
+        do {
+            if (no > 1) {
+                std::stringstream ss;
+                ss << baseName;
+                ss << '_';
+                ss << no;
+                name = ss.str();
+            }
+            ++no;
+        } while ( group && group->checkIfNodeNameExists(name, this) );
 
-            //This version of setScriptName will not error if the name is invalid or already taken
-            //and will not declare to python the node (because effect is not instanced yet)
-            setScriptName_no_error_check(name);
-            setLabel( serialization->getNodeLabel() );
-        }
+        //This version of setScriptName will not error if the name is invalid or already taken
+        setScriptName_no_error_check(name);
+        setLabel( serialization->getNodeLabel() );
+
     } else {
-        if ( fixedName.isEmpty() ) {
-            std::string name;
-            QString pluginLabel;
-            AppManager::AppTypeEnum appType = appPTR->getAppType();
-            if ( _imp->plugin &&
-                ( ( appType == AppManager::eAppTypeBackground) ||
-                 ( appType == AppManager::eAppTypeGui) ||
-                 ( appType == AppManager::eAppTypeInterpreter) ) ) {
-                    pluginLabel = _imp->plugin->getLabelWithoutSuffix();
-                } else {
-                    pluginLabel = _imp->plugin->getPluginLabel();
-                }
-            try {
-                if (group) {
-                    group->initNodeName(isMultiInstanceChild ? _imp->multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
-                } else {
-                    name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() );
-                }
-            } catch (...) {
+        std::string name;
+        QString pluginLabel;
+        AppManager::AppTypeEnum appType = appPTR->getAppType();
+        if ( _imp->plugin &&
+            ( ( appType == AppManager::eAppTypeBackground) ||
+             ( appType == AppManager::eAppTypeGui) ||
+             ( appType == AppManager::eAppTypeInterpreter) ) ) {
+                pluginLabel = _imp->plugin->getLabelWithoutSuffix();
+            } else {
+                pluginLabel = _imp->plugin->getPluginLabel();
             }
-
-            setNameInternal(name.c_str(), false, true);
-        } else {
-            try {
-                setScriptName( fixedName.toStdString() );
-            } catch (...) {
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()), tr("Could not set node name to %1").arg(fixedName));
+        try {
+            if (group) {
+                group->initNodeName(isMultiInstanceChild ? _imp->multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
+            } else {
+                name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() );
             }
+        } catch (...) {
         }
+
+        setNameInternal(name.c_str(), false);
     }
+
+
 
 }
 
@@ -754,15 +766,16 @@ Node::load(const CreateNodeArgs& args)
 
     ///cannot load twice
     assert(!_imp->effect);
-    _imp->isPartOfProject = args.addToProject;
+    _imp->isPartOfProject = !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-    _imp->ioContainer = args.ioContainer;
+    _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 #endif
 
     boost::shared_ptr<NodeCollection> group = getGroup();
-    if ( !args.multiInstanceParentName.empty() ) {
-        _imp->multiInstanceParentName = args.multiInstanceParentName;
+    std::string multiInstanceParentName = args.getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
+    if ( !multiInstanceParentName.empty() ) {
+        _imp->multiInstanceParentName = multiInstanceParentName;
         _imp->isMultiInstance = false;
         fetchParentMultiInstancePointer();
     }
@@ -776,11 +789,24 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    
+    bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 #ifndef NATRON_ENABLE_IO_META_NODES
     bool hasUsedFileDialog = false;
 #endif
-    bool canOpenFileDialog = args.reason == eCreateNodeReasonUserCreate && !args.serialization && args.paramValues.empty() && getGroup();
 
+    bool hasDefaultFilename;
+    {
+        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+        hasDefaultFilename = foundFileName != defaultParamValues.end() && !foundFileName->empty();
+    }
+    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPartOfProject && !hasDefaultFilename && getGroup();
+
+    std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
+
+    
     if (func.first) {
         /*
            We are creating a built-in plug-in
@@ -790,12 +816,13 @@ Node::load(const CreateNodeArgs& args)
 
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-        if (args.ioContainer) {
-            ReadNode* isReader = dynamic_cast<ReadNode*>( args.ioContainer->getEffectInstance().get() );
+        NodePtr ioContainer = _imp->ioContainer.lock();
+        if (ioContainer) {
+            ReadNode* isReader = dynamic_cast<ReadNode*>( ioContainer->getEffectInstance().get() );
             if (isReader) {
                 isReader->setEmbeddedReader(thisShared);
             } else {
-                WriteNode* isWriter = dynamic_cast<WriteNode*>( args.ioContainer->getEffectInstance().get() );
+                WriteNode* isWriter = dynamic_cast<WriteNode*>( ioContainer->getEffectInstance().get() );
                 assert(isWriter);
                 if (isWriter) {
                     isWriter->setEmbeddedWriter(thisShared);
@@ -803,30 +830,26 @@ Node::load(const CreateNodeArgs& args)
             }
         }
 #endif
-        initNodeScriptName(args.serialization.get(), args.fixedName);
+        initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
         
         _imp->effect->initializeData();
 
         createRotoContextConditionnally();
         createTrackerContextConditionnally();
         initializeInputs();
-        initializeKnobs(args.serialization.get() != 0);
+        initializeKnobs(serialization.get() != 0);
 
         refreshAcceptedBitDepths();
 
         _imp->effect->setDefaultMetadata();
 
-        if (args.serialization) {
-            //We have to declare the node to Python now since we didn't declare it before
-            //with setScriptName_no_error_check
-            declareNodeVariableToPython( getFullyQualifiedName() );
+        if (serialization) {
 
-            _imp->effect->onKnobsAboutToBeLoaded(args.serialization);
-            loadKnobs(*args.serialization);
+            _imp->effect->onKnobsAboutToBeLoaded(serialization);
+            loadKnobs(*serialization);
         }
-        if ( !args.paramValues.empty() ) {
-            setValuesFromSerialization(args.paramValues);
-        }
+        setValuesFromSerialization(args);
+        
 
 
 #ifndef NATRON_ENABLE_IO_META_NODES
@@ -847,22 +870,22 @@ Node::load(const CreateNodeArgs& args)
             int firstFrame, lastFrame;
             Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
             list.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
-            setValuesFromSerialization(list);
+            setValuesFromSerialization(args);
         }
 #endif
     } else {
         //ofx plugin
 #ifndef NATRON_ENABLE_IO_META_NODES
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.fixedName, args.paramValues, canOpenFileDialog, &hasUsedFileDialog);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args, canOpenFileDialog, &hasUsedFileDialog);
 #else
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.fixedName, args.paramValues);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args);
 #endif
         assert(_imp->effect);
     }
 
 
     // For readers, set their original frame range when creating them
-    if ( !args.serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
+    if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
         KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (filenameKnob) {
             onFileNameParameterChanged( filenameKnob.get() );
@@ -890,18 +913,17 @@ Node::load(const CreateNodeArgs& args)
 
     /*if (isMultiInstanceChild && !args.serialization) {
         updateEffectLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
-    }*/
+     }*/
     restoreSublabel();
 
-    if (args.addToProject) {
-        declarePythonFields();
-        if  ( getRotoContext() ) {
-            declareRotoPythonField();
-        }
-        if ( getTrackerContext() ) {
-            declareTrackerPythonField();
-        }
+    declarePythonFields();
+    if  ( getRotoContext() ) {
+        declareRotoPythonField();
     }
+    if ( getTrackerContext() ) {
+        declareTrackerPythonField();
+    }
+
 
     if (group) {
         group->notifyNodeActivated(thisShared);
@@ -915,7 +937,7 @@ Node::load(const CreateNodeArgs& args)
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
 
-    if (!args.serialization) {
+    if (!serialization) {
         computeHash();
     }
 
@@ -927,16 +949,16 @@ Node::load(const CreateNodeArgs& args)
 
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
 
-    _imp->effect->onEffectCreated(canOpenFileDialog, args.paramValues);
+    _imp->effect->onEffectCreated(canOpenFileDialog, args);
 
     _imp->nodeCreated = true;
 
     if ( !getApp()->isCreatingNodeTree() ) {
-        refreshAllInputRelatedData(!args.serialization);
+        refreshAllInputRelatedData(!serialization);
     }
 
 
-    _imp->runOnNodeCreatedCB(!args.serialization && !isLoadingPyPlug);
+    _imp->runOnNodeCreatedCB(!serialization && !isLoadingPyPlug);
 } // load
 
 bool
@@ -1677,23 +1699,59 @@ Node::computeHash()
 } // computeHash
 
 void
-Node::setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues)
+Node::setValuesFromSerialization(const CreateNodeArgs& args)
 {
+    
+    std::vector<std::string> params = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+    
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->knobsInitialized);
-
     const std::vector< KnobPtr > & nodeKnobs = getKnobs();
-    ///for all knobs of the node
-    for (U32 j = 0; j < nodeKnobs.size(); ++j) {
-        ///try to find a serialized value for this knob
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
-            if ( (*it)->getName() == nodeKnobs[j]->getName() ) {
-                KnobPtr serializedKnob = (*it)->getKnob();
-                nodeKnobs[j]->clone(serializedKnob);
+
+    for (std::size_t i = 0; i < params.size(); ++i) {
+        for (U32 j = 0; j < nodeKnobs.size(); ++j) {
+            if (nodeKnobs[j]->getName() == params[i]) {
+                
+                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(nodeKnobs[j].get());
+                Knob<int>* isInt = dynamic_cast<Knob<int>*>(nodeKnobs[j].get());
+                Knob<double>* isDbl = dynamic_cast<Knob<double>*>(nodeKnobs[j].get());
+                Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(nodeKnobs[j].get());
+                int nDims = nodeKnobs[j]->getDimension();
+
+                std::string propName = kCreateNodeArgsPropParamValue;
+                propName += "_";
+                propName += params[i];
+                if (isBool) {
+                    std::vector<bool> v = args.getPropertyN<bool>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isBool->setValue(v[d], ViewSpec(0), d);
+                    }
+                } else if (isInt) {
+                    std::vector<int> v = args.getPropertyN<int>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isInt->setValue(v[d], ViewSpec(0), d);
+                    }
+                } else if (isDbl) {
+                    std::vector<double> v = args.getPropertyN<double>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isDbl->setValue(v[d], ViewSpec(0), d );
+                    }
+                } else if (isStr) {
+                    std::vector<std::string> v = args.getPropertyN<std::string>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isStr->setValue(v[d],ViewSpec(0), d );
+                    }
+                }
                 break;
             }
         }
     }
+    
+    
 }
 
 void
@@ -1706,11 +1764,6 @@ Node::loadKnobs(const NodeSerialization & serialization,
     if ( serialization.isNull() ) {
         return;
     }
-
-
-    //We have to declare the node to Python now since we didn't declare it before
-    //with setScriptName_no_error_check
-    declareNodeVariableToPython( getFullyQualifiedName() );
 
 
     {
@@ -2939,7 +2992,7 @@ Node::getLabel_mt_safe() const
 void
 Node::setScriptName_no_error_check(const std::string & name)
 {
-    setNameInternal(name, false, true);
+    setNameInternal(name, false);
 }
 
 static void
@@ -2977,8 +3030,7 @@ insertDependenciesRecursive(Node* node,
 
 void
 Node::setNameInternal(const std::string& name,
-                      bool throwErrors,
-                      bool declareToPython)
+                      bool throwErrors)
 {
     std::string oldName = getScriptName_mt_safe();
     std::string fullOldName = getFullyQualifiedName();
@@ -3084,7 +3136,7 @@ Node::setNameInternal(const std::string& name,
         _imp->cacheID = cacheID;
     }
 
-    if (declareToPython && collection) {
+    if (collection) {
         if ( !oldName.empty() ) {
             if (fullOldName != fullySpecifiedName) {
                 try {
@@ -3138,7 +3190,7 @@ Node::setScriptName(const std::string& name)
     }
 
 
-    setNameInternal(newName, true, true);
+    setNameInternal(newName, true);
 }
 
 AppInstPtr
@@ -3178,9 +3230,9 @@ Node::makeInfoForInput(int inputNumber) const
     EffectInstPtr input;
     if (inputNumber != -1) {
         input = _imp->effect->getInput(inputNumber);
-        if (input) {
+        /*if (input) {
             input = input->getNearestNonIdentity( getApp()->getTimeLine()->currentFrame() );
-        }
+        }*/
     } else {
         input = _imp->effect;
     }

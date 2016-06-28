@@ -101,7 +101,7 @@ public:
 
     void createViewerGui(NodePtr viewer);
 
-    void createGroupGui(const NodePtr& group, CreateNodeReason reason);
+    void createGroupGui(const NodePtr& group, const CreateNodeArgs& args);
 
     void addGroupGui(NodeGraph* tab, TabWidget* where);
 

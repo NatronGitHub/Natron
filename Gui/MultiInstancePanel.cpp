@@ -64,6 +64,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxNatron.h>
 
 #include "Engine/Curve.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -666,9 +667,10 @@ NodePtr
 MultiInstancePanel::addInstanceInternal(bool useUndoRedoStack)
 {
     NodePtr mainInstance = _imp->getMainInstance();
-    CreateNodeArgs args( QString::fromUtf8( mainInstance->getPluginID().c_str() ), eCreateNodeReasonInternal, mainInstance->getGroup() );
-
-    args.multiInstanceParentName = mainInstance->getScriptName();
+    CreateNodeArgs args(mainInstance->getPluginID() ,mainInstance->getGroup() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, mainInstance->getScriptName());
     NodePtr newInstance = _imp->getMainInstance()->getApp()->createNode(args);
 
     if (useUndoRedoStack) {
@@ -2349,7 +2351,9 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         assert(centers[i]);
     }
     GuiAppInstPtr app = publicInterface->getGui()->getApp();
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, publicInterface->getMainInstance()->getGroup() );
+    CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, publicInterface->getMainInstance()->getGroup() );
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     NodePtr cornerPin = app->createNode(args);
 
     if (!cornerPin) {

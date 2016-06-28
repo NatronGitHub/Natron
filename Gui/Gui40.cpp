@@ -44,6 +44,7 @@
 
 
 #include "Engine/CLArgs.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h" // floatToInt, LutManager
 #include "Engine/Node.h"
@@ -793,7 +794,11 @@ Gui::renderSelectedNode()
                 NodePtr writer = createWriter();
 #else
                 NodeGraph* graph = selectedNodes.front()->getDagGui();
-                NodePtr writer = getApp()->createWriter( "", eCreateNodeReasonInternal, graph->getGroup() );
+                CreateNodeArgs args(PLUGINID_NATRON_WRITE, graph->getGroup());
+                args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+                args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                NodePtr writer = getApp()->createWriter( std::string(), args );
 #endif
                 if (writer) {
                     AppInstance::RenderWork w;

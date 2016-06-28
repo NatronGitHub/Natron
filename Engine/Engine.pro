@@ -79,6 +79,7 @@ SOURCES += \
     Cache.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
+    CreateNodeArgs.cpp \
     Curve.cpp \
     CurveSerialization.cpp \
     DefaultShaders.cpp \
@@ -132,6 +133,7 @@ SOURCES += \
     NoOpBase.cpp \
     OSGLContext.cpp \
     OSGLContext_osmesa.cpp \
+    OSGLContext_mac.cpp \
     OSGLContext_win.cpp \
     OSGLContext_x11.cpp \
     OSGLFunctions_gl.cpp \
@@ -239,7 +241,12 @@ SOURCES += \
     NatronEngine/userparamholder_wrapper.cpp \
     NatronEngine/rectd_wrapper.cpp \
     NatronEngine/recti_wrapper.cpp \
-    NatronEngine/separatorparam_wrapper.cpp
+    NatronEngine/separatorparam_wrapper.cpp \
+    NatronEngine/boolnodecreationproperty_wrapper.cpp \
+    NatronEngine/floatnodecreationproperty_wrapper.cpp \
+    NatronEngine/intnodecreationproperty_wrapper.cpp \
+    NatronEngine/nodecreationproperty_wrapper.cpp \
+    NatronEngine/stringnodecreationproperty_wrapper.cpp
 
 
 HEADERS += \
@@ -262,6 +269,7 @@ HEADERS += \
     CacheEntryHolder.h \
     CacheSerialization.h \
     CoonsRegularization.h \
+    CreateNodeArgs.h \
     Curve.h \
     CurveSerialization.h \
     CurvePrivate.h \
@@ -496,7 +504,12 @@ HEADERS += \
     NatronEngine/userparamholder_wrapper.h \
     NatronEngine/rectd_wrapper.h \
     NatronEngine/recti_wrapper.h \
-    NatronEngine/separatorparam_wrapper.h
+    NatronEngine/separatorparam_wrapper.h \
+    NatronEngine/boolnodecreationproperty_wrapper.h \
+    NatronEngine/floatnodecreationproperty_wrapper.h \
+    NatronEngine/intnodecreationproperty_wrapper.h \
+    NatronEngine/nodecreationproperty_wrapper.h \
+    NatronEngine/stringnodecreationproperty_wrapper.h
 
 
 
@@ -559,9 +572,6 @@ OTHER_FILES += \
 
 # QMAKE_EXTRA_COMPILERS += SHIBOKEN
 macx {
-
-SOURCES += \
-OSGLContext_mac.cpp
 
 OBJECTIVE_SOURCES += \
     QUrlFix.mm

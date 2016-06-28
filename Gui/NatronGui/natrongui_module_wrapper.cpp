@@ -35,12 +35,12 @@ static PyMethodDef NatronGui_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
-void init_PyGuiApplication(PyObject* module);
-void init_GuiApp(PyObject* module);
 void init_PyViewer(PyObject* module);
 void init_PyTabWidget(PyObject* module);
-void init_PyPanel(PyObject* module);
+void init_PyGuiApplication(PyObject* module);
+void init_GuiApp(PyObject* module);
 void init_PyModalDialog(PyObject* module);
+void init_PyPanel(PyObject* module);
 
 // Required modules' type and converter arrays.
 PyTypeObject** SbkPySide_QtGuiTypes;
@@ -48,6 +48,49 @@ SbkConverter** SbkPySide_QtGuiTypeConverters;
 
 // Module initialization ------------------------------------------------------------
 // Container Type converters.
+
+// C++ to Python conversion for type 'const std::map<QString, NodeCreationProperty * > &'.
+static PyObject* _conststd_map_QString_NodeCreationPropertyPTR_REF_CppToPython__conststd_map_QString_NodeCreationPropertyPTR_REF(const void* cppIn) {
+    ::std::map<QString, NodeCreationProperty * >& cppInRef = *((::std::map<QString, NodeCreationProperty * >*)cppIn);
+
+                    // TEMPLATE - stdMapToPyDict - START
+            PyObject* pyOut = PyDict_New();
+            ::std::map<QString, NodeCreationProperty * >::const_iterator it = cppInRef.begin();
+            for (; it != cppInRef.end(); ++it) {
+            ::QString key = it->first;
+            ::NodeCreationProperty* value = it->second;
+            PyObject* pyKey = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &key);
+            PyObject* pyValue = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_NODECREATIONPROPERTY_IDX], value);
+            PyDict_SetItem(pyOut, pyKey, pyValue);
+            Py_DECREF(pyKey);
+            Py_DECREF(pyValue);
+            }
+            return pyOut;
+        // TEMPLATE - stdMapToPyDict - END
+
+}
+static void _conststd_map_QString_NodeCreationPropertyPTR_REF_PythonToCpp__conststd_map_QString_NodeCreationPropertyPTR_REF(PyObject* pyIn, void* cppOut) {
+    ::std::map<QString, NodeCreationProperty * >& cppOutRef = *((::std::map<QString, NodeCreationProperty * >*)cppOut);
+
+                    // TEMPLATE - pyDictToStdMap - START
+        PyObject* key;
+        PyObject* value;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(pyIn, &pos, &key, &value)) {
+        ::QString cppKey = ::QString();
+        Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], key, &(cppKey));
+        ::NodeCreationProperty* cppValue = ((::NodeCreationProperty*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_NODECREATIONPROPERTY_IDX], value, &(cppValue));
+        cppOutRef.insert(std::make_pair(cppKey, cppValue));
+        }
+    // TEMPLATE - pyDictToStdMap - END
+
+}
+static PythonToCppFunc is__conststd_map_QString_NodeCreationPropertyPTR_REF_PythonToCpp__conststd_map_QString_NodeCreationPropertyPTR_REF_Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleDictTypes(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], false, SBK_CONVERTER(SbkNatronEngineTypes[SBK_NODECREATIONPROPERTY_IDX]), true, pyIn))
+        return _conststd_map_QString_NodeCreationPropertyPTR_REF_PythonToCpp__conststd_map_QString_NodeCreationPropertyPTR_REF;
+    return 0;
+}
 
 // C++ to Python conversion for type 'std::list<Effect * >'.
 static PyObject* _std_list_EffectPTR__CppToPython__std_list_EffectPTR_(const void* cppIn) {
@@ -461,12 +504,20 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronGui)
 #endif
 
     // Initialize classes in the type system
-    init_PyGuiApplication(module);
-    init_GuiApp(module);
     init_PyViewer(module);
     init_PyTabWidget(module);
-    init_PyPanel(module);
+    init_PyGuiApplication(module);
+    init_GuiApp(module);
     init_PyModalDialog(module);
+    init_PyPanel(module);
+
+    // Register converter for type 'const std::map<QString,NodeCreationProperty*>&'.
+    SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX] = Shiboken::Conversions::createConverter(&PyDict_Type, _conststd_map_QString_NodeCreationPropertyPTR_REF_CppToPython__conststd_map_QString_NodeCreationPropertyPTR_REF);
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], "const std::map<QString,NodeCreationProperty*>&");
+    Shiboken::Conversions::registerConverterName(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], "std::map<QString,NodeCreationProperty*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX],
+        _conststd_map_QString_NodeCreationPropertyPTR_REF_PythonToCpp__conststd_map_QString_NodeCreationPropertyPTR_REF,
+        is__conststd_map_QString_NodeCreationPropertyPTR_REF_PythonToCpp__conststd_map_QString_NodeCreationPropertyPTR_REF_Convertible);
 
     // Register converter for type 'std::list<Effect*>'.
     SbkNatronGuiTypeConverters[SBK_NATRONGUI_STD_LIST_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _std_list_EffectPTR__CppToPython__std_list_EffectPTR_);

@@ -816,7 +816,7 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
 
 
     bool gotFrame = false;
-    int frame;
+    int frame = -1;
     {
         QMutexLocker l(&_imp->framesToRenderMutex);
         while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
@@ -3375,7 +3375,7 @@ public:
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     bool canAbort;
     NodePtr isRotoPaintRequest;
-    boost::shared_ptr<RotoStrokeItem> strokeItem;
+    boost::weak_ptr<RotoStrokeItem> strokeItem;
     boost::shared_ptr<ViewerArgs> args[2];
     bool isRotoNeatRender;
 
@@ -3546,7 +3546,7 @@ public:
                 stat = _args->viewer->renderViewer(_args->view, QThread::currentThread() == qApp->thread(), false, _args->viewerHash, _args->canAbort,
                                                    NodePtr(), true, _args->args, _args->request, _args->stats);
             } else {
-                stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem, _args->stats, &_args->args[0], &_args->args[1]);
+                stat = _args->viewer->getViewerArgsAndRenderViewer(_args->time, _args->canAbort, _args->view, _args->viewerHash, _args->isRotoPaintRequest, _args->strokeItem.lock(), _args->stats, &_args->args[0], &_args->args[1]);
             }
         } catch (...) {
             stat = ViewerInstance::eViewerRenderRetCodeFail;
@@ -3687,6 +3687,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
             //    ++found;
             //    _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //} else {
+            ++found;
             _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //}
         } else {

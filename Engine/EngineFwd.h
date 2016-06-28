@@ -114,7 +114,7 @@ class BufferableObject;
 class CLArgs;
 class CacheEntryHolder;
 class CacheSignalEmitter;
-struct CreateNodeArgs;
+class CreateNodeArgs;
 class ChoiceExtraData;
 class Curve;
 class Dimension;

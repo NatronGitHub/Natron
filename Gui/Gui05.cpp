@@ -37,8 +37,10 @@
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
+#include "Engine/CreateNodeArgs.h"
 
 #include "Gui/AboutWindow.h"
 #include "Gui/AutoHideToolBar.h"
@@ -198,7 +200,7 @@ Gui::updateAboutWindowLibrariesVersion()
 
 void
 Gui::createGroupGui(const NodePtr & group,
-                    CreateNodeReason reason)
+                    const CreateNodeArgs& args)
 {
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
@@ -223,7 +225,10 @@ Gui::createGroupGui(const NodePtr & group,
     NodeGraph* nodeGraph = new NodeGraph(this, collection, scene, this);
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
-    if ( where && (reason == eCreateNodeReasonUserCreate) && !getApp()->isCreatingPythonGroup() ) {
+    
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+
+    if ( where && !serialization && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {

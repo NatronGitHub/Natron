@@ -39,6 +39,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/CreateNodeArgs.h"
 
 #include "Gui/BackdropGui.h"
 #include "Gui/Edge.h"
@@ -295,7 +296,11 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             return;
         }
 
-        CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_DOT), eCreateNodeReasonInternal, _imp->group.lock() );
+        CreateNodeArgs args( PLUGINID_NATRON_DOT, _imp->group.lock() );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
         boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();

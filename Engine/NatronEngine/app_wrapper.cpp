@@ -24,6 +24,7 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyNodeGroup.h>
 #include <PyParameter.h>
 #include <list>
+#include <map>
 
 
 // Native ---------------------------------------------------------
@@ -167,14 +168,14 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
     cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0, 0};
+    PyObject* pyArgs[] = {0, 0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 3) {
+    if (numArgs + numNamedArgs > 4) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createNode(): too many arguments");
         return 0;
     } else if (numArgs < 1) {
@@ -182,20 +183,24 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OOO:createNode", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+    if (!PyArg_ParseTuple(args, "|OOOO:createNode", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: createNode(QString,int,Group*)const
+    // 0: createNode(QString,int,Group*,std::map<QString,NodeCreationProperty*>)const
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // createNode(QString,int,Group*)const
+            overloadId = 0; // createNode(QString,int,Group*,std::map<QString,NodeCreationProperty*>)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
             if (numArgs == 2) {
-                overloadId = 0; // createNode(QString,int,Group*)const
+                overloadId = 0; // createNode(QString,int,Group*,std::map<QString,NodeCreationProperty*>)const
             } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[2])))) {
-                overloadId = 0; // createNode(QString,int,Group*)const
+                if (numArgs == 3) {
+                    overloadId = 0; // createNode(QString,int,Group*,std::map<QString,NodeCreationProperty*>)const
+                } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], (pyArgs[3])))) {
+                    overloadId = 0; // createNode(QString,int,Group*,std::map<QString,NodeCreationProperty*>)const
+                }
             }
         }
     }
@@ -224,6 +229,15 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
                 if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[2]))))
                     goto Sbk_AppFunc_createNode_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "props");
+            if (value && pyArgs[3]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createNode(): got multiple values for keyword argument 'props'.");
+                return 0;
+            } else if (value) {
+                pyArgs[3] = value;
+                if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], (pyArgs[3]))))
+                    goto Sbk_AppFunc_createNode_TypeError;
+            }
         }
         ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -233,12 +247,14 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
             return 0;
         ::Group* cppArg2 = 0;
         if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
+        ::std::map<QString, NodeCreationProperty * > cppArg3;
+        if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
 
         if (!PyErr_Occurred()) {
-            // createNode(QString,int,Group*)const
+            // createNode(QString,int,Group*,std::map<QString,NodeCreationProperty*>)const
             // Begin code injection
 
-            Effect * cppResult = cppSelf->createNode(cppArg0,cppArg1,cppArg2);
+            Effect * cppResult = cppSelf->createNode(cppArg0,cppArg1,cppArg2, cppArg3);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
             // End of code injection
@@ -257,7 +273,7 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
     return pyResult;
 
     Sbk_AppFunc_createNode_TypeError:
-        const char* overloads[] = {"unicode, int = -1, NatronEngine.Group = None", 0};
+        const char* overloads[] = {"unicode, int = -1, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createNode", overloads);
         return 0;
 }
@@ -271,14 +287,14 @@ static PyObject* Sbk_AppFunc_createReader(PyObject* self, PyObject* args, PyObje
     cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
+    if (numArgs + numNamedArgs > 3) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createReader(): too many arguments");
         return 0;
     } else if (numArgs < 1) {
@@ -286,17 +302,21 @@ static PyObject* Sbk_AppFunc_createReader(PyObject* self, PyObject* args, PyObje
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OO:createReader", &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOO:createReader", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: createReader(QString,Group*)const
+    // 0: createReader(QString,Group*,std::map<QString,NodeCreationProperty*>)const
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // createReader(QString,Group*)const
+            overloadId = 0; // createReader(QString,Group*,std::map<QString,NodeCreationProperty*>)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[1])))) {
-            overloadId = 0; // createReader(QString,Group*)const
+            if (numArgs == 2) {
+                overloadId = 0; // createReader(QString,Group*,std::map<QString,NodeCreationProperty*>)const
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], (pyArgs[2])))) {
+                overloadId = 0; // createReader(QString,Group*,std::map<QString,NodeCreationProperty*>)const
+            }
         }
     }
 
@@ -315,6 +335,15 @@ static PyObject* Sbk_AppFunc_createReader(PyObject* self, PyObject* args, PyObje
                 if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[1]))))
                     goto Sbk_AppFunc_createReader_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "props");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createReader(): got multiple values for keyword argument 'props'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], (pyArgs[2]))))
+                    goto Sbk_AppFunc_createReader_TypeError;
+            }
         }
         ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -322,12 +351,14 @@ static PyObject* Sbk_AppFunc_createReader(PyObject* self, PyObject* args, PyObje
             return 0;
         ::Group* cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::std::map<QString, NodeCreationProperty * > cppArg2;
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // createReader(QString,Group*)const
+            // createReader(QString,Group*,std::map<QString,NodeCreationProperty*>)const
             // Begin code injection
 
-            Effect * cppResult = cppSelf->createReader(cppArg0,cppArg1);
+            Effect * cppResult = cppSelf->createReader(cppArg0,cppArg1, cppArg2);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
             // End of code injection
@@ -346,7 +377,7 @@ static PyObject* Sbk_AppFunc_createReader(PyObject* self, PyObject* args, PyObje
     return pyResult;
 
     Sbk_AppFunc_createReader_TypeError:
-        const char* overloads[] = {"unicode, NatronEngine.Group = None", 0};
+        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createReader", overloads);
         return 0;
 }
@@ -360,14 +391,14 @@ static PyObject* Sbk_AppFunc_createWriter(PyObject* self, PyObject* args, PyObje
     cppSelf = (AppWrapper*)((::App*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_APP_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
-    if (numArgs + numNamedArgs > 2) {
+    if (numArgs + numNamedArgs > 3) {
         PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createWriter(): too many arguments");
         return 0;
     } else if (numArgs < 1) {
@@ -375,17 +406,21 @@ static PyObject* Sbk_AppFunc_createWriter(PyObject* self, PyObject* args, PyObje
         return 0;
     }
 
-    if (!PyArg_ParseTuple(args, "|OO:createWriter", &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_ParseTuple(args, "|OOO:createWriter", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: createWriter(QString,Group*)const
+    // 0: createWriter(QString,Group*,std::map<QString,NodeCreationProperty*>)const
     if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
         if (numArgs == 1) {
-            overloadId = 0; // createWriter(QString,Group*)const
+            overloadId = 0; // createWriter(QString,Group*,std::map<QString,NodeCreationProperty*>)const
         } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[1])))) {
-            overloadId = 0; // createWriter(QString,Group*)const
+            if (numArgs == 2) {
+                overloadId = 0; // createWriter(QString,Group*,std::map<QString,NodeCreationProperty*>)const
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], (pyArgs[2])))) {
+                overloadId = 0; // createWriter(QString,Group*,std::map<QString,NodeCreationProperty*>)const
+            }
         }
     }
 
@@ -404,6 +439,15 @@ static PyObject* Sbk_AppFunc_createWriter(PyObject* self, PyObject* args, PyObje
                 if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_GROUP_IDX], (pyArgs[1]))))
                     goto Sbk_AppFunc_createWriter_TypeError;
             }
+            value = PyDict_GetItemString(kwds, "props");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.App.createWriter(): got multiple values for keyword argument 'props'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_QSTRING_NODECREATIONPROPERTYPTR_IDX], (pyArgs[2]))))
+                    goto Sbk_AppFunc_createWriter_TypeError;
+            }
         }
         ::QString cppArg0 = ::QString();
         pythonToCpp[0](pyArgs[0], &cppArg0);
@@ -411,12 +455,14 @@ static PyObject* Sbk_AppFunc_createWriter(PyObject* self, PyObject* args, PyObje
             return 0;
         ::Group* cppArg1 = 0;
         if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::std::map<QString, NodeCreationProperty * > cppArg2;
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // createWriter(QString,Group*)const
+            // createWriter(QString,Group*,std::map<QString,NodeCreationProperty*>)const
             // Begin code injection
 
-            Effect * cppResult = cppSelf->createWriter(cppArg0,cppArg1);
+            Effect * cppResult = cppSelf->createWriter(cppArg0,cppArg1, cppArg2);
             pyResult = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], cppResult);
 
             // End of code injection
@@ -435,7 +481,7 @@ static PyObject* Sbk_AppFunc_createWriter(PyObject* self, PyObject* args, PyObje
     return pyResult;
 
     Sbk_AppFunc_createWriter_TypeError:
-        const char* overloads[] = {"unicode, NatronEngine.Group = None", 0};
+        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createWriter", overloads);
         return 0;
 }

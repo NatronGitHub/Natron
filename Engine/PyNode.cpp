@@ -881,22 +881,6 @@ UserParamHolder::refreshUserParamsGUI()
     _holder->recreateUserKnobs(false);
 }
 
-Effect*
-Effect::createChild()
-{
-    if ( !getInternalNode()->isMultiInstance() ) {
-        return 0;
-    }
-
-    CreateNodeArgs args( QString::fromUtf8( getInternalNode()->getPluginID().c_str() ), eCreateNodeReasonInternal, getInternalNode()->getGroup() );
-    args.multiInstanceParentName = getInternalNode()->getScriptName();
-    NodePtr child = getInternalNode()->getApp()->createNode(args);
-    if (child) {
-        return new Effect(child);
-    }
-
-    return 0;
-}
 
 Roto*
 Effect::getRotoContext() const
