@@ -208,7 +208,11 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
 OfxStatus
 OfxImageEffectInstance::clearPersistentMessage()
 {
-    _ofxEffectInstance.lock()->clearPersistentMessage(false);
+    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    if (!effect) {
+        return kOfxStatFailed;
+    }
+    effect->clearPersistentMessage(false);
 
     return kOfxStatOK;
 }

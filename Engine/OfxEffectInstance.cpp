@@ -622,6 +622,10 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
 OfxEffectInstance::~OfxEffectInstance()
 {
+    _imp->overlayInteract.reset();
+    if (_imp->effect) {
+        _imp->effect->destroyInstanceAction();
+    }
 }
 
 EffectInstPtr
