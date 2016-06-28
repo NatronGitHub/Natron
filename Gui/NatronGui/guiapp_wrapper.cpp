@@ -26,6 +26,7 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyParameter.h>
 #include <PythonPanels.h>
 #include <list>
+#include <map>
 
 
 // Native ---------------------------------------------------------

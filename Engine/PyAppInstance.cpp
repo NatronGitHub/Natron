@@ -93,20 +93,67 @@ App::getCollectionFromGroup(Group* group) const
     return collection;
 }
 
+static void makeCreateNodeArgs(const AppInstPtr& app,
+                               const QString& pluginID,
+                               int majorVersion,
+                               const boost::shared_ptr<NodeCollection>& collection,
+                               const std::map<QString, NodeCreationProperty*>& props,
+                               CreateNodeArgs* args)
+{
+
+    args->setProperty<std::string>(kCreateNodeArgsPropPluginID, pluginID.toStdString());
+    args->setProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, collection);
+    args->setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
+
+    args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+
+
+    for (std::map<QString, NodeCreationProperty*>::const_iterator it = props.begin(); it!=props.end(); ++it) {
+        IntNodeCreationProperty* isInt = dynamic_cast<IntNodeCreationProperty*>(it->second);
+        BoolNodeCreationProperty* isBool = dynamic_cast<BoolNodeCreationProperty*>(it->second);
+        FloatNodeCreationProperty* isDouble = dynamic_cast<FloatNodeCreationProperty*>(it->second);
+        StringNodeCreationProperty* isString = dynamic_cast<StringNodeCreationProperty*>(it->second);
+
+        bool fail = true;
+        if (it->first.startsWith(QString::fromUtf8(kCreateNodeArgsPropParamValue))) {
+            fail = false;
+        }
+        try {
+            if (isInt) {
+                args->setPropertyN<int>(it->first.toStdString(), isInt->getValues(), fail);
+            } else if (isBool) {
+                args->setPropertyN<bool>(it->first.toStdString(), isBool->getValues(), fail);
+            } else if (isDouble) {
+                args->setPropertyN<double>(it->first.toStdString(), isDouble->getValues(), fail);
+            } else if (isString) {
+                args->setPropertyN<std::string>(it->first.toStdString(), isString->getValues(), fail);
+            }
+        } catch (const std::exception& e) {
+            std::stringstream ss;
+            ss << ("Error while setting property ");
+            ss << it->first.toStdString();
+            ss << ": " << e.what();
+            app->appendToScriptEditor(ss.str());
+        }
+    }
+
+
+}
+
+
 Effect*
 App::createNode(const QString& pluginID,
                 int majorVersion,
-                Group* group) const
+                Group* group,
+                const std::map<QString, NodeCreationProperty*>& props) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
 
     assert(collection);
-
-    CreateNodeArgs args(pluginID.toStdString(), collection);
-    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    CreateNodeArgs args;
+    makeCreateNodeArgs(getInternalApp(), pluginID, majorVersion, collection, props, &args);
 
     NodePtr node = getInternalApp()->createNode(args);
     if (node) {
@@ -118,15 +165,16 @@ App::createNode(const QString& pluginID,
 
 Effect*
 App::createReader(const QString& filename,
-                  Group* group) const
+                  Group* group,
+                  const std::map<QString, NodeCreationProperty*>& props) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
 
     assert(collection);
-    CreateNodeArgs args(PLUGINID_NATRON_READ, collection);
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+
+    CreateNodeArgs args;
+    makeCreateNodeArgs(getInternalApp(),  QString::fromUtf8(PLUGINID_NATRON_READ), -1, collection, props, &args);
+
     NodePtr node = getInternalApp()->createReader(filename.toStdString(), args);
     if (node) {
         return new Effect(node);
@@ -137,15 +185,14 @@ App::createReader(const QString& filename,
 
 Effect*
 App::createWriter(const QString& filename,
-                  Group* group) const
+                  Group* group,
+                  const std::map<QString, NodeCreationProperty*>& props) const
 {
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
 
     assert(collection);
-    CreateNodeArgs args(PLUGINID_NATRON_WRITE, collection);
-    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    CreateNodeArgs args;
+    makeCreateNodeArgs(getInternalApp(), QString::fromUtf8(PLUGINID_NATRON_WRITE), -1, collection, props, &args);
     NodePtr node = getInternalApp()->createWriter(filename.toStdString(), args);
     if (node) {
         return new Effect(node);

@@ -913,18 +913,17 @@ Node::load(const CreateNodeArgs& args)
 
     /*if (isMultiInstanceChild && !args.serialization) {
         updateEffectLabelKnob( QString::fromUtf8( getScriptName().c_str() ) );
-    }*/
+     }*/
     restoreSublabel();
 
-    if (_imp->isPartOfProject) {
-        declarePythonFields();
-        if  ( getRotoContext() ) {
-            declareRotoPythonField();
-        }
-        if ( getTrackerContext() ) {
-            declareTrackerPythonField();
-        }
+    declarePythonFields();
+    if  ( getRotoContext() ) {
+        declareRotoPythonField();
     }
+    if ( getTrackerContext() ) {
+        declareTrackerPythonField();
+    }
+
 
     if (group) {
         group->notifyNodeActivated(thisShared);
@@ -1717,22 +1716,35 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                 Knob<int>* isInt = dynamic_cast<Knob<int>*>(nodeKnobs[j].get());
                 Knob<double>* isDbl = dynamic_cast<Knob<double>*>(nodeKnobs[j].get());
                 Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(nodeKnobs[j].get());
-                
+                int nDims = nodeKnobs[j]->getDimension();
+
                 std::string propName = kCreateNodeArgsPropParamValue;
                 propName += "_";
                 propName += params[i];
                 if (isBool) {
-                    bool v = args.getProperty<bool>(propName);
-                    isBool->setValue(v);
+                    std::vector<bool> v = args.getPropertyN<bool>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isBool->setValue(v[d], ViewSpec(0), d);
+                    }
                 } else if (isInt) {
-                    int v = args.getProperty<int>(propName);
-                    isInt->setValue(v);
+                    std::vector<int> v = args.getPropertyN<int>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isInt->setValue(v[d], ViewSpec(0), d);
+                    }
                 } else if (isDbl) {
-                    double v = args.getProperty<double>(propName);
-                    isDbl->setValue(v);
+                    std::vector<double> v = args.getPropertyN<double>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isDbl->setValue(v[d], ViewSpec(0), d );
+                    }
                 } else if (isStr) {
-                    std::string v = args.getProperty<std::string>(propName);
-                    isStr->setValue(v);
+                    std::vector<std::string> v = args.getPropertyN<std::string>(propName);
+                    nDims = std::min((int)v.size(), nDims);
+                    for (int d = 0; d < nDims; ++d) {
+                        isStr->setValue(v[d],ViewSpec(0), d );
+                    }
                 }
                 break;
             }

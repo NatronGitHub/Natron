@@ -30,6 +30,12 @@
 NATRON_NAMESPACE_ENTER;
 
 
+CreateNodeArgs::CreateNodeArgs()
+: _properties()
+{
+    createProperties();
+}
+
 CreateNodeArgs::CreateNodeArgs(const std::string& pluginID,
                const boost::shared_ptr<NodeCollection>& group)
 : _properties()

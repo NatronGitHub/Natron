@@ -20,7 +20,6 @@ Functions
 *    def :meth:`beginChanges<NatronEngine.Effect.beginChanges>` ()
 *    def :meth:`canConnectInput<NatronEngine.Effect.canConnectInput>` (inputNumber, node)
 *    def :meth:`connectInput<NatronEngine.Effect.connectInput>` (inputNumber, input)
-*    def :meth:`createChild<NatronEngine.Effect.createChild>` ()
 *    def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 *    def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
 *    def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
@@ -186,19 +185,6 @@ Effect. This function could return False for one of the following reasons:
 Connects *input* to the given *inputNumber* of this Effect. 
 This function calls internally :func:`canConnectInput()<NatronEngine.Effect.canConnectInput>`
 to determine if a connection is possible. 
-
-
-
-.. method:: NatronEngine.Effect.createChild()
-
-
-    :rtype: :class:`Effect<NatronEngine.Effect>`
-
-If this Effect is a multi-instance node (currently only the Tracker node is a multi-instance)
-then this function will create a new instance of the same plug-in as a child of this node.
-This is used for Trackers to create new tracks: internally each track is in fact a 
-separate node on its own.
-
 
 
 

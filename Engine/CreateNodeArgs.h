@@ -310,6 +310,8 @@ class CreateNodeArgs
 
 public:
 
+    CreateNodeArgs();
+
     /**
      * @brief The constructor, taking values for all non-optional properties and the group
      **/
@@ -326,7 +328,7 @@ public:
             propTemplate = getProp<T>(name);
         } catch(const std::exception& e) {
             if (failIfNotExisting) {
-                throw e;
+                throw;
             }
             propTemplate = createProperty<T>(name, value);
         }
@@ -346,7 +348,7 @@ public:
             propTemplate->value = values;
         } catch(const std::exception& e) {
             if (failIfNotExisting) {
-                throw e;
+                throw;
             }
             propTemplate = createProperty<T>(name, values);
         }
