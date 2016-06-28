@@ -1946,7 +1946,7 @@ OfxEffectInstance::drawOverlay(double time,
     }
     if (_imp->overlayInteract) {
         SET_CAN_SET_VALUE(false);
-        _imp->overlayInteract->drawAction(time, renderScale, view);
+        _imp->overlayInteract->drawAction(time, renderScale, view, /*colourPicker=*/NULL);
     }
 }
 
@@ -1979,7 +1979,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
 
         SET_CAN_SET_VALUE(true);
 
-        OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, penPos, penPosViewport, pressure);
+        OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, /*colourPicker=*/NULL, penPos, penPosViewport, pressure);
 
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
@@ -2019,7 +2019,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         OfxStatus stat;
 
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, penPos, penPosViewport, pressure);
+        stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, /*colourPicker=*/NULL, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2054,7 +2054,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
         penPosViewport.y = viewportPos.y();
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, penPos, penPosViewport, pressure);
+        OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, /*colourPicker=*/NULL, penPos, penPosViewport, pressure);
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2084,7 +2084,7 @@ OfxEffectInstance::onOverlayKeyDown(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view, /*colourPicker=*/NULL, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2112,7 +2112,7 @@ OfxEffectInstance::onOverlayKeyUp(double time,
     if (_imp->overlayInteract) {
         QByteArray keyStr;
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, /*colourPicker=*/NULL, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2143,7 +2143,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
         QByteArray keyStr;
 
         SET_CAN_SET_VALUE(true);
-        OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, /*colourPicker=*/NULL, (int)key, keyStr.data() );
 
         if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
             stat = _imp->overlayInteract->redraw();
@@ -2169,7 +2169,7 @@ OfxEffectInstance::onOverlayFocusGained(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view);
+        stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view, /*colourPicker=*/NULL);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -2189,7 +2189,7 @@ OfxEffectInstance::onOverlayFocusLost(double time,
     if (_imp->overlayInteract) {
         OfxStatus stat;
         SET_CAN_SET_VALUE(true);
-        stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view);
+        stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view, /*colourPicker=*/NULL);
         if (stat == kOfxStatOK) {
             return true;
         }

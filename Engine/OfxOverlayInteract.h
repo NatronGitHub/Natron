@@ -144,7 +144,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus drawAction(OfxTime time,
                                  const OfxPointD &renderScale,
-                                 int view) OVERRIDE FINAL;
+                                 int view,
+                                 const OfxRGBAColourD* colourPicker) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionPenMotion
     //
@@ -158,6 +159,7 @@ public:
     virtual OfxStatus penMotionAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view,
+                                      const OfxRGBAColourD* colourPicker,
                                       const OfxPointD &penPos,
                                       const OfxPointI &penPosViewport,
                                       double pressure) OVERRIDE FINAL;
@@ -174,6 +176,7 @@ public:
     virtual OfxStatus penUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* colourPicker,
                                   const OfxPointD &penPos,
                                   const OfxPointI &penPosViewport,
                                   double pressure) OVERRIDE FINAL;
@@ -190,6 +193,7 @@ public:
     virtual OfxStatus penDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* colourPicker,
                                     const OfxPointD &penPos,
                                     const OfxPointI &penPosViewport,
                                     double pressure) OVERRIDE FINAL;
@@ -205,6 +209,7 @@ public:
     virtual OfxStatus keyDownAction(OfxTime time,
                                     const OfxPointD &renderScale,
                                     int view,
+                                    const OfxRGBAColourD* colourPicker,
                                     int key,
                                     char*   keyString) OVERRIDE FINAL;
 
@@ -219,6 +224,7 @@ public:
     virtual OfxStatus keyUpAction(OfxTime time,
                                   const OfxPointD &renderScale,
                                   int view,
+                                  const OfxRGBAColourD* colourPicker,
                                   int key,
                                   char*   keyString) OVERRIDE FINAL;
 
@@ -233,6 +239,7 @@ public:
     virtual OfxStatus keyRepeatAction(OfxTime time,
                                       const OfxPointD &renderScale,
                                       int view,
+                                      const OfxRGBAColourD* colourPicker,
                                       int key,
                                       char*   keyString) OVERRIDE FINAL;
 
@@ -244,7 +251,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus gainFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
-                                      int view) OVERRIDE FINAL;
+                                      int view,
+                                      const OfxRGBAColourD* colourPicker) OVERRIDE FINAL;
 
     // interact action - kOfxInteractActionLoseFocus
     //
@@ -254,7 +262,8 @@ public:
     //    renderScale       - the render scale
     virtual OfxStatus loseFocusAction(OfxTime time,
                                       const OfxPointD &renderScale,
-                                      int view) OVERRIDE FINAL;
+                                      int view,
+                                      const OfxRGBAColourD* colourPicker) OVERRIDE FINAL;
 };
 
 class OfxParamOverlayInteract
