@@ -1921,7 +1921,7 @@ AppInstance::clearAllLastRenderedImages()
 {
     NodesList activeNodes;
 
-    _imp->_currentProject->getActiveNodes(&activeNodes);
+    _imp->_currentProject->getNodes_recursive(activeNodes, false);
 
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         (*it)->clearLastRenderedImage();
