@@ -348,20 +348,34 @@ MemoryFilePrivate::closeMapping()
 }
 
 bool
-MemoryFile::flush(bool async)
+MemoryFile::flush(FlushTypeEnum type, void* data, std::size_t size)
 {
+    void* ptr = data ? data : _imp->data;
+    std::size_t n = data ? size : _imp->size;
 #if defined(__NATRON_UNIX__)
-    if (async) {
-        return ::msync(_imp->data, _imp->size, MS_ASYNC) == 0;
-    } else {
-        return ::msync(_imp->data, _imp->size, MS_SYNC) == 0;
+    switch (type) {
+        case eFlushTypeAsync:
+            return ::msync(ptr, n, MS_ASYNC) == 0;
+        case eFlushTypeSync:
+            return ::msync(ptr, n, MS_SYNC) == 0;
+        case eFlushTypeInvalidate:
+            return ::msync(ptr, n, MS_INVALIDATE) == 0;
+        default:
+            break;
     }
 #elif defined(__NATRON_WIN32__)
-    bool ret =  (bool)::FlushViewOfFile(_imp->data, _imp->size) != 0;
-    if (ret && !async) {
-        ret = (bool)::FlushFileBuffers(_imp->file_handle);
+    switch (type) {
+        case eFlushTypeSync: {
+            bool ret =  (bool)::FlushViewOfFile(ptr, n) != 0;
+            if (ret) {
+                ret = (bool)::FlushFileBuffers(_imp->file_handle);
+            }
+        } break;
+        case eFlushTypeAsync:
+            return (bool)::FlushViewOfFile(ptr, n) != 0;
+        case eFlushTypeInvalidate:
+            break;
     }
-    return ret;
 #endif
 }
 

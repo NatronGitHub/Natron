@@ -88,6 +88,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Node.h"
@@ -694,9 +696,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 
 boost::shared_ptr<AbstractOfxEffectInstance>
 OfxHost::createOfxEffect(NodePtr node,
-                         const NodeSerialization* serialization,
-                         const QString& fixedName,
-                         const std::list<boost::shared_ptr<KnobSerialization> >& paramValues
+                         const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                          ,
                          bool allowFileDialogs,
@@ -714,12 +714,15 @@ OfxHost::createOfxEffect(NodePtr node,
 
 
     boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
+
     if ( node && !node->getEffectInstance() ) {
         node->setEffect(hostSideEffect);
-        node->initNodeScriptName(serialization, fixedName);
+        node->initNodeScriptName(serialization.get(), QString::fromUtf8(fixedName.c_str()));
     }
 
-    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization, paramValues
+    hostSideEffect->createOfxImageEffectInstance(plugin, desc, ctx, serialization.get(), args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                                  , allowFileDialogs,
                                                  hasUsedFileDialog

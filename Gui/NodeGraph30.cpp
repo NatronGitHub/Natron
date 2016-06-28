@@ -41,6 +41,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Node.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewerInstance.h"
 
@@ -87,8 +88,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
         v = boost::dynamic_pointer_cast<InspectorNode>( lastUsedViewer->
                                                         getInternalNode()->getNode() );
     } else {
-        CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER),
-                             eCreateNodeReasonUserCreate,
+        CreateNodeArgs args( PLUGINID_NATRON_VIEWER,
                              getGroup() );
         NodePtr viewerNode = getGui()->getApp()->createNode(args);
 

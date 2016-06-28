@@ -30,6 +30,7 @@
 #include <QtCore/QFileInfo>
 
 #include "Engine/AppManager.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Settings.h"
 #include "Engine/AppInstance.h"
 #include "Engine/NodeGroup.h"
@@ -108,7 +109,11 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                 }
                 ///Create the parent
                 if (!foundParent) {
-                    CreateNodeArgs args(QString::fromUtf8( pluginID.c_str() ), eCreateNodeReasonInternal, group);
+                    CreateNodeArgs args(pluginID, group);
+                    args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+                    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+
                     NodePtr parent = group->getApplication()->createNode(args);
                     try {
                         parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );
@@ -211,11 +216,15 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
         }
 
         if (!n) {
-            CreateNodeArgs args(QString::fromUtf8( pluginID.c_str() ), eCreateNodeReasonProjectLoad, group);
-            args.multiInstanceParentName = (*it)->getMultiInstanceParentName();
-            args.majorV = majorVersion;
-            args.minorV = minorVersion;
-            args.serialization = *it;
+            CreateNodeArgs args(pluginID, group);
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
+            args.setProperty<int>(kCreateNodeArgsPropPluginVersion, minorVersion, 1);
+            args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, *it);
+            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+            if (!(*it)->getMultiInstanceParentName().empty()) {
+                args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, (*it)->getMultiInstanceParentName());
+            }
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
             n = group->getApplication()->createNode(args);
         }
         if (!n) {

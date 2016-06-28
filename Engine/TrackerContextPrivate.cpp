@@ -118,9 +118,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
         //NodePtr maskInput;
 
         {
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isTrackerNode);
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+
             output = node->getApp()->createNode(args);
             try {
                 output->setScriptName("Output");
@@ -130,46 +130,19 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
             assert(output);
         }
         {
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
-            args.fixedName = QLatin1String("Source");
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_NATRON_INPUT, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
             input = node->getApp()->createNode(args);
             assert(input);
         }
 
-        /* {
-             CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isTrackerNode);
-             args.fixedName = QLatin1String("Mask");
-             args.createGui = false;
-             args.addToProject = false;
-             maskInput = node->getApp()->createNode(args);
-             assert(maskInput);
-             KnobPtr isMaskInputKnob = maskInput->getKnobByName(kNatronGroupInputIsMaskParamName);
-             if (isMaskInputKnob) {
-                 KnobBool* maskInputKnob = dynamic_cast<KnobBool*>(isMaskInputKnob.get());
-                 assert(maskInputKnob);
-                 if (maskInputKnob) {
-                     maskInputKnob->setValue(true);
-                 }
-             }
-             KnobPtr isOptionalInputKnob = maskInput->getKnobByName(kNatronGroupInputIsOptionalParamName);
-             if (isOptionalInputKnob) {
-                 KnobBool* optionalInputKnob = dynamic_cast<KnobBool*>(isOptionalInputKnob.get());
-                 assert(optionalInputKnob);
-                 if (optionalInputKnob) {
-                     optionalInputKnob->setValue(true);
-                 }
-             }
-
-           }*/
 
         {
             QString cornerPinName = fixedNamePrefix + QLatin1String("CornerPin");
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_CORNERPIN), eCreateNodeReasonInternal, isTrackerNode);
-            args.fixedName = cornerPinName;
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_OFX_CORNERPIN, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, cornerPinName.toStdString());
             NodePtr cpNode = node->getApp()->createNode(args);
             if (!cpNode) {
                 throw std::runtime_error( tr("The Tracker node requires the Misc.ofx.bundle plug-in to be installed").toStdString() );
@@ -180,10 +153,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
 
         {
             QString transformName = fixedNamePrefix + QLatin1String("Transform");
-            CreateNodeArgs args(QString::fromUtf8(PLUGINID_OFX_TRANSFORM), eCreateNodeReasonInternal, isTrackerNode);
-            args.fixedName = transformName;
-            args.createGui = false;
-            args.addToProject = false;
+            CreateNodeArgs args(PLUGINID_OFX_TRANSFORM, isTrackerNode);
+            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+            args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, transformName.toStdString());
             NodePtr tNode = node->getApp()->createNode(args);
             tNode->setNodeDisabled(true);
             transformNode = tNode;

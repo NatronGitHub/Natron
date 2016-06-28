@@ -27,6 +27,8 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/AbortableRenderInfo.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
@@ -1271,10 +1273,10 @@ TrackMarkerPM::initializeKnobs()
     QObject::connect( getContext().get(), SIGNAL(onNodeInputChanged(int)), this, SLOT(onTrackerNodeInputChanged(int)) );
     NodePtr node;
     {
-        CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_TRACKERPM), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-        args.createGui = false;
-        args.addToProject = false;
-        args.fixedName = QLatin1String("TrackerPMNode");
+        CreateNodeArgs args( PLUGINID_OFX_TRACKERPM, boost::shared_ptr<NodeCollection>() );
+        args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "TrackerPMNode");
+
         node = getContext()->getNode()->getApp()->createNode(args);
         if (!node) {
             throw std::runtime_error("Couldn't create plug-in " PLUGINID_OFX_TRACKERPM);

@@ -38,6 +38,8 @@
 
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Engine/AppInstance.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
@@ -163,9 +165,9 @@ DocumentationManager::handler(QHttpRequest *req,
 
                         if (plugin) {
         
-                            CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, appPTR->getTopLevelInstance()->getProject() );
-                            args.createGui = false;
-                            args.addToProject = false;
+                            CreateNodeArgs args( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() );
+                            args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {
                                 QString html = node->makeDocumentation(true);

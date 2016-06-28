@@ -27,6 +27,8 @@
 
 #include <stdexcept>
 
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeSerialization.h"
@@ -146,12 +148,17 @@ NodeGraphPrivate::pasteNode(const boost::shared_ptr<NodeSerialization> & interna
                             bool clone,
                             std::map<std::string, std::string>* oldNewScriptNameMapping)
 {
-    CreateNodeArgs args(QString::fromUtf8( internalSerialization->getPluginID().c_str() ), eCreateNodeReasonCopyPaste, grp);
-
-    args.multiInstanceParentName = parentName;
-    args.majorV = internalSerialization->getPluginMajorVersion();
-    args.minorV = internalSerialization->getPluginMinorVersion();
-    args.serialization = internalSerialization;
+    CreateNodeArgs args(internalSerialization->getPluginID(), grp);
+    args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
+    if (!parentName.empty()) {
+        args.setProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, parentName);
+    }
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->getPluginMajorVersion(), 0);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->getPluginMinorVersion(), 1);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    
     NodePtr n = _publicInterface->getGui()->getApp()->createNode(args);
 
     if (!n) {

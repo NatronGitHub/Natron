@@ -182,7 +182,7 @@ public:
 
     void loadBuiltinFormats();
 
-    void saveCaches(bool async);
+    void saveCaches();
 
     void restoreCaches();
 

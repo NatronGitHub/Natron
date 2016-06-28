@@ -55,6 +55,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Backdrop.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
@@ -754,15 +755,16 @@ Node::load(const CreateNodeArgs& args)
 
     ///cannot load twice
     assert(!_imp->effect);
-    _imp->isPartOfProject = args.addToProject;
+    _imp->isPartOfProject = !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-    _imp->ioContainer = args.ioContainer;
+    _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 #endif
 
     boost::shared_ptr<NodeCollection> group = getGroup();
-    if ( !args.multiInstanceParentName.empty() ) {
-        _imp->multiInstanceParentName = args.multiInstanceParentName;
+    std::string multiInstanceParentName = args.getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
+    if ( !multiInstanceParentName.empty() ) {
+        _imp->multiInstanceParentName = multiInstanceParentName;
         _imp->isMultiInstance = false;
         fetchParentMultiInstancePointer();
     }
@@ -776,11 +778,24 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    
+    bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 #ifndef NATRON_ENABLE_IO_META_NODES
     bool hasUsedFileDialog = false;
 #endif
-    bool canOpenFileDialog = args.reason == eCreateNodeReasonUserCreate && !args.serialization && args.paramValues.empty() && getGroup();
 
+    bool hasDefaultFilename;
+    {
+        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+        hasDefaultFilename = foundFileName != defaultParamValues.end() && !foundFileName->empty();
+    }
+    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPartOfProject && !hasDefaultFilename && getGroup();
+
+    std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
+
+    
     if (func.first) {
         /*
            We are creating a built-in plug-in
@@ -790,12 +805,13 @@ Node::load(const CreateNodeArgs& args)
 
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-        if (args.ioContainer) {
-            ReadNode* isReader = dynamic_cast<ReadNode*>( args.ioContainer->getEffectInstance().get() );
+        NodePtr ioContainer = _imp->ioContainer.lock();
+        if (ioContainer) {
+            ReadNode* isReader = dynamic_cast<ReadNode*>( ioContainer->getEffectInstance().get() );
             if (isReader) {
                 isReader->setEmbeddedReader(thisShared);
             } else {
-                WriteNode* isWriter = dynamic_cast<WriteNode*>( args.ioContainer->getEffectInstance().get() );
+                WriteNode* isWriter = dynamic_cast<WriteNode*>( ioContainer->getEffectInstance().get() );
                 assert(isWriter);
                 if (isWriter) {
                     isWriter->setEmbeddedWriter(thisShared);
@@ -803,30 +819,29 @@ Node::load(const CreateNodeArgs& args)
             }
         }
 #endif
-        initNodeScriptName(args.serialization.get(), args.fixedName);
+        initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
         
         _imp->effect->initializeData();
 
         createRotoContextConditionnally();
         createTrackerContextConditionnally();
         initializeInputs();
-        initializeKnobs(args.serialization.get() != 0);
+        initializeKnobs(serialization.get() != 0);
 
         refreshAcceptedBitDepths();
 
         _imp->effect->setDefaultMetadata();
 
-        if (args.serialization) {
+        if (serialization) {
             //We have to declare the node to Python now since we didn't declare it before
             //with setScriptName_no_error_check
             declareNodeVariableToPython( getFullyQualifiedName() );
 
-            _imp->effect->onKnobsAboutToBeLoaded(args.serialization);
-            loadKnobs(*args.serialization);
+            _imp->effect->onKnobsAboutToBeLoaded(serialization);
+            loadKnobs(*serialization);
         }
-        if ( !args.paramValues.empty() ) {
-            setValuesFromSerialization(args.paramValues);
-        }
+        setValuesFromSerialization(args);
+        
 
 
 #ifndef NATRON_ENABLE_IO_META_NODES
@@ -847,22 +862,22 @@ Node::load(const CreateNodeArgs& args)
             int firstFrame, lastFrame;
             Node::getOriginalFrameRangeForReader(getPluginID(), canonicalFilename, &firstFrame, &lastFrame);
             list.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
-            setValuesFromSerialization(list);
+            setValuesFromSerialization(args);
         }
 #endif
     } else {
         //ofx plugin
 #ifndef NATRON_ENABLE_IO_META_NODES
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.fixedName, args.paramValues, canOpenFileDialog, &hasUsedFileDialog);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args, canOpenFileDialog, &hasUsedFileDialog);
 #else
-        _imp->effect = appPTR->createOFXEffect(thisShared, args.serialization.get(), args.fixedName, args.paramValues);
+        _imp->effect = appPTR->createOFXEffect(thisShared, args);
 #endif
         assert(_imp->effect);
     }
 
 
     // For readers, set their original frame range when creating them
-    if ( !args.serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
+    if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
         KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (filenameKnob) {
             onFileNameParameterChanged( filenameKnob.get() );
@@ -893,7 +908,7 @@ Node::load(const CreateNodeArgs& args)
     }*/
     restoreSublabel();
 
-    if (args.addToProject) {
+    if (_imp->isPartOfProject) {
         declarePythonFields();
         if  ( getRotoContext() ) {
             declareRotoPythonField();
@@ -915,7 +930,7 @@ Node::load(const CreateNodeArgs& args)
         _imp->useAlpha0ToConvertFromRGBToRGBA = true;
     }
 
-    if (!args.serialization) {
+    if (!serialization) {
         computeHash();
     }
 
@@ -927,16 +942,16 @@ Node::load(const CreateNodeArgs& args)
 
     bool isLoadingPyPlug = getApp()->isCreatingPythonGroup();
 
-    _imp->effect->onEffectCreated(canOpenFileDialog, args.paramValues);
+    _imp->effect->onEffectCreated(canOpenFileDialog, args);
 
     _imp->nodeCreated = true;
 
     if ( !getApp()->isCreatingNodeTree() ) {
-        refreshAllInputRelatedData(!args.serialization);
+        refreshAllInputRelatedData(!serialization);
     }
 
 
-    _imp->runOnNodeCreatedCB(!args.serialization && !isLoadingPyPlug);
+    _imp->runOnNodeCreatedCB(!serialization && !isLoadingPyPlug);
 } // load
 
 bool
@@ -1677,23 +1692,46 @@ Node::computeHash()
 } // computeHash
 
 void
-Node::setValuesFromSerialization(const std::list<boost::shared_ptr<KnobSerialization> >& paramValues)
+Node::setValuesFromSerialization(const CreateNodeArgs& args)
 {
+    
+    std::vector<std::string> params = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+    
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->knobsInitialized);
-
     const std::vector< KnobPtr > & nodeKnobs = getKnobs();
-    ///for all knobs of the node
-    for (U32 j = 0; j < nodeKnobs.size(); ++j) {
-        ///try to find a serialized value for this knob
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = paramValues.begin(); it != paramValues.end(); ++it) {
-            if ( (*it)->getName() == nodeKnobs[j]->getName() ) {
-                KnobPtr serializedKnob = (*it)->getKnob();
-                nodeKnobs[j]->clone(serializedKnob);
+
+    for (std::size_t i = 0; i < params.size(); ++i) {
+        for (U32 j = 0; j < nodeKnobs.size(); ++j) {
+            if (nodeKnobs[j]->getName() == params[i]) {
+                
+                Knob<bool>* isBool = dynamic_cast<Knob<bool>*>(nodeKnobs[j].get());
+                Knob<int>* isInt = dynamic_cast<Knob<int>*>(nodeKnobs[j].get());
+                Knob<double>* isDbl = dynamic_cast<Knob<double>*>(nodeKnobs[j].get());
+                Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>(nodeKnobs[j].get());
+                
+                std::string propName = kCreateNodeArgsPropParamValue;
+                propName += "_";
+                propName += params[i];
+                if (isBool) {
+                    bool v = args.getProperty<bool>(propName);
+                    isBool->setValue(v);
+                } else if (isInt) {
+                    int v = args.getProperty<int>(propName);
+                    isInt->setValue(v);
+                } else if (isDbl) {
+                    double v = args.getProperty<double>(propName);
+                    isDbl->setValue(v);
+                } else if (isStr) {
+                    std::string v = args.getProperty<std::string>(propName);
+                    isStr->setValue(v);
+                }
                 break;
             }
         }
     }
+    
+    
 }
 
 void
@@ -3178,9 +3216,9 @@ Node::makeInfoForInput(int inputNumber) const
     EffectInstPtr input;
     if (inputNumber != -1) {
         input = _imp->effect->getInput(inputNumber);
-        if (input) {
+        /*if (input) {
             input = input->getNearestNonIdentity( getApp()->getTimeLine()->currentFrame() );
-        }
+        }*/
     } else {
         input = _imp->effect;
     }

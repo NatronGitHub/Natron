@@ -85,6 +85,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/MemoryInfo.h"
 #include "Gui/GuiDefines.h"
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobFile.h"
@@ -2915,10 +2916,9 @@ SequenceFileDialog::onTogglePreviewButtonClicked(bool toggled)
 void
 SequenceFileDialog::createViewerPreviewNode()
 {
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-
-    args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
-    args.addToProject = false;
+    CreateNodeArgs args( PLUGINID_NATRON_VIEWER, boost::shared_ptr<NodeCollection>() );
+    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_VIEWER_NAME);
 
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
@@ -2996,10 +2996,9 @@ SequenceFileDialog::findOrCreatePreviewReader(const std::string& filetype)
         return _preview->readerNode;
     }
     Q_UNUSED(filetype);
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_READ), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-    args.fixedName = QString::fromUtf8(NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
-    args.createGui = false;
-    args.addToProject = false;
+    CreateNodeArgs args( PLUGINID_NATRON_READ, boost::shared_ptr<NodeCollection>() );
+    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, NATRON_FILE_DIALOG_PREVIEW_READER_NAME);
     NodePtr reader = _gui->getApp()->createNode(args);
     if (reader) {
         _preview->readerNode = reader;

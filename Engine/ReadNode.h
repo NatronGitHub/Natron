@@ -108,7 +108,7 @@ public:
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void onEffectCreated(bool mayCreateFileDialog,
-                                 const std::list<boost::shared_ptr<KnobSerialization> >& defaultParamValues) OVERRIDE FINAL;
+                                 const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
 
 private:
 

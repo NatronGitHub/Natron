@@ -1043,6 +1043,9 @@ void init_NATRON_NAMESPACE(PyObject* module)
         &Sbk_NATRON_NAMESPACE_Type, "eStatusFailed", (long) NATRON_NAMESPACE::eStatusFailed))
         return ;
     if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX],
+        &Sbk_NATRON_NAMESPACE_Type, "eStatusOutOfMemory", (long) NATRON_NAMESPACE::eStatusOutOfMemory))
+        return ;
+    if (!Shiboken::Enum::createScopedEnumItem(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX],
         &Sbk_NATRON_NAMESPACE_Type, "eStatusReplyDefault", (long) NATRON_NAMESPACE::eStatusReplyDefault))
         return ;
     // Register converter for enum 'NATRON_NAMESPACE::StatusEnum'.

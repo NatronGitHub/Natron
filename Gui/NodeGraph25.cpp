@@ -36,6 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Settings.h"
@@ -206,10 +207,10 @@ NodeGraph::onNodeCreationDialogFinished()
             PluginsMap::const_iterator found = allPlugins.find( res.toStdString() );
             if ( found != allPlugins.end() ) {
                 QPointF posHint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                CreateNodeArgs args( res, eCreateNodeReasonUserCreate, getGroup() );
-                args.xPosHint = posHint.x();
-                args.yPosHint = posHint.y();
-                args.majorV = major;
+                CreateNodeArgs args( res.toStdString(), getGroup() );
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.x(), 0);
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, posHint.y(), 1);
+                args.setProperty<int>(kCreateNodeArgsPropPluginVersion, major, 0);
                 getGui()->getApp()->createNode(args);
             }
             break;
@@ -420,9 +421,9 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                     }
                     if ( isKeybind(group.toStdString(), plugin->getPluginID().toStdString(), modifiers, key) ) {
                         QPointF hint = mapToScene( mapFromGlobal( QCursor::pos() ) );
-                        CreateNodeArgs args( plugin->getPluginID(), eCreateNodeReasonUserCreate, getGroup() );
-                        args.xPosHint = hint.x();
-                        args.yPosHint = hint.y();
+                        CreateNodeArgs args( plugin->getPluginID().toStdString(), getGroup() );
+                        args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.x(), 0);
+                        args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, hint.y(), 1);
                         getGui()->getApp()->createNode(args);
 
                         intercepted = true;

@@ -34,8 +34,10 @@
 #include <stdexcept>
 
 #include "Engine/Backdrop.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Dot.h"
 #include "Engine/Node.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -417,7 +419,11 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {
         isTopLevelNodeBeingCreated = true;
     }
-    if ( (args.reason != eCreateNodeReasonProjectLoad) && (args.reason != eCreateNodeReasonCopyPaste) && isTopLevelNodeBeingCreated ) {
+    
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+
+    bool panelOpened = args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
+    if ( !serialization && panelOpened && isTopLevelNodeBeingCreated ) {
         node_ui->ensurePanelCreated();
     }
 
@@ -427,9 +433,10 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         getGui()->registerNewUndoStack( nodeStack.get() );
     }
 
-    if (args.reason == eCreateNodeReasonUserCreate) {
+    bool addUndoRedo = args.getProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
+    if (addUndoRedo) {
         pushUndoCommand( new AddMultipleNodesCommand(this, node_ui) );
-    } else if ( (args.reason != eCreateNodeReasonProjectLoad) && !isGrp ) {
+    } else if ( !serialization && !isGrp ) {
         selectNode(node_ui, false);
     }
 

@@ -586,6 +586,8 @@ enum CreateNodeReason
     eCreateNodeReasonInternal,
 };
 
+
+
 enum KnobClipBoardType
 {
     eKnobClipBoardTypeCopyValue,
