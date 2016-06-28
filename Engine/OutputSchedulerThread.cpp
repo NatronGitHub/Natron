@@ -816,7 +816,7 @@ OutputSchedulerThread::pickFrameToRender(RenderThreadTask* thread,
 
 
     bool gotFrame = false;
-    int frame;
+    int frame = -1;
     {
         QMutexLocker l(&_imp->framesToRenderMutex);
         while ( _imp->framesToRender.empty() && !thread->mustQuit() ) {
