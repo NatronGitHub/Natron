@@ -972,14 +972,14 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
        appPTR->debugImage(image.get(), renderWindow, filename);*/
 #endif
 
-
+    double par = getAspectRatio();
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(renderData, image, true, renderWindow, transform, components, nComps);
+        OfxImage* ofxImage = new OfxImage(renderData, image, true, renderWindow, transform, components, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(renderData, image, true, renderWindow, transform, components, nComps);
+        OfxTexture* ofxTex = new OfxTexture(renderData, image, true, renderWindow, transform, components, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }
@@ -1120,13 +1120,14 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     assert(!retTexture || outputImage->getStorageMode() == eStorageModeGLTex);
 
     //The output clip doesn't have any transform matrix
+    double par = getAspectRatio();
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps);
+        OfxImage* ret =  new OfxImage(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps, par);
         *retImage = ret;
         retCommon = ret;
     } else if (retTexture) {
-        OfxTexture* ret =  new OfxTexture(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps);
+        OfxTexture* ret =  new OfxTexture(renderData, outputImage, false, renderWindow, boost::shared_ptr<Transform::Matrix3x3>(), ofxComponents, nComps, par);
         *retTexture = ret;
         retCommon = ret;
     }
@@ -1450,7 +1451,8 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                                const RectI& renderWindow,
                                const boost::shared_ptr<Transform::Matrix3x3>& mat,
                                const std::string& components,
-                               int nComps)
+                               int nComps,
+                               double par)
     : _imp( new OfxImageCommonPrivate(ofxImageBase, internalImage, renderData) )
 {
     _imp->components = components;
@@ -1560,7 +1562,7 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
     ofxImageBase->setStringProperty( kOfxImageEffectPropPreMultiplication, OfxClipInstance::natronsPremultToOfxPremult( internalImage->getPremultiplication() ) );
     ofxImageBase->setStringProperty( kOfxImagePropField, OfxClipInstance::natronsFieldingToOfxFielding( internalImage->getFieldingOrder() ) );
     ofxImageBase->setStringProperty( kOfxImagePropUniqueIdentifier, QString::number(internalImage->getHashKey(), 16).toStdString() );
-    ofxImageBase->setDoubleProperty( kOfxImagePropPixelAspectRatio, internalImage->getPixelAspectRatio() );
+    ofxImageBase->setDoubleProperty( kOfxImagePropPixelAspectRatio, par );
 
     //Attach the transform matrix if any
     if (mat) {

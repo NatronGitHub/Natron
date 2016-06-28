@@ -334,7 +334,8 @@ public:
                             const RectI& renderWindow,
                             const boost::shared_ptr<Transform::Matrix3x3>& mat,
                             const std::string& components,
-                            int nComps);
+                            int nComps,
+                            double par);
 
     virtual ~OfxImageCommon();
 
@@ -357,9 +358,10 @@ public:
                        const RectI& renderWindow,
                        const boost::shared_ptr<Transform::Matrix3x3>& mat,
                        const std::string& components,
-                       int nComps)
+                       int nComps,
+                      double par)
         : OFX::Host::ImageEffect::Image()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
     {
     }
 };
@@ -375,9 +377,10 @@ public:
                          const RectI& renderWindow,
                          const boost::shared_ptr<Transform::Matrix3x3>& mat,
                          const std::string& components,
-                         int nComps)
+                         int nComps,
+                        double par)
         : OFX::Host::ImageEffect::Texture()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps)
+        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
     {
     }
 };
