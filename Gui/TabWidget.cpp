@@ -48,6 +48,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QSplitter>
 CLANG_DIAG_ON(deprecated)
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ScriptObject.h"
@@ -726,7 +727,7 @@ TabWidget::addNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup() );
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, graph->getGroup() );
     _imp->gui->getApp()->createNode(args);
 }
 

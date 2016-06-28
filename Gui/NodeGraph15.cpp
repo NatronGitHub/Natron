@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Engine/AppInstance.h" // CreateNodeArgs
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
@@ -253,7 +254,10 @@ NodeGraph::mouseReleaseEvent(QMouseEvent* e)
                     selectedNodeBbox = selectedNode->mapToScene( selectedNode->boundingRect() ).boundingRect();
 
                     QPointF selectedNodeCenter = selectedNodeBbox.center();
-                    CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal, getGroup() );
+                    CreateNodeArgs args( PLUGINID_OFX_MERGE, getGroup() );
+                    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+                    
                     NodePtr mergeNode = getGui()->getApp()->createNode(args);
 
                     if (mergeNode) {

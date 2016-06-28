@@ -258,6 +258,8 @@ public:
 
     void refreshPluginSelectorKnob();
 
+    void refreshFileInfoVisibility(const std::string& pluginID);
+
     void createDefaultReadNode();
 
     bool checkDecoderCreated(double time, ViewIdx view);
@@ -464,7 +466,11 @@ ReadNodePrivate::destroyReadNode()
                 serialized.push_back(s);
             }
             if (!isGeneric) {
-                _publicInterface->deleteKnob(it->get(), false);
+                try {
+                    _publicInterface->deleteKnob(it->get(), false);
+                } catch (...) {
+                    
+                }
             }
         }
 
@@ -505,12 +511,13 @@ ReadNodePrivate::destroyReadNode()
 void
 ReadNodePrivate::createDefaultReadNode()
 {
-    CreateNodeArgs args( QString::fromUtf8(READ_NODE_DEFAULT_READER), eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
+    CreateNodeArgs args(READ_NODE_DEFAULT_READER, boost::shared_ptr<NodeCollection>() );
 
-    args.createGui = false;
-    args.addToProject = false;
-    args.ioContainer = _publicInterface->getNode();
-    args.fixedName = QString::fromUtf8("defaultReadNodeReader");
+    args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+    args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "defaultReadNodeReader");
+    args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
+    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
     //args.paramValues.push_back(createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filePattern));
 
 
@@ -643,23 +650,27 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
 
-        CreateNodeArgs args( QString::fromUtf8( readerPluginID.c_str() ), serialization ? eCreateNodeReasonProjectLoad : eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-        args.createGui = false;
-        args.addToProject = false;
-        args.serialization = serialization;
-        args.fixedName = QString::fromUtf8("internalDecoderNode");
-        args.ioContainer = _publicInterface->getNode();
+        CreateNodeArgs args(readerPluginID, boost::shared_ptr<NodeCollection>() );
+        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+        args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
+        args.setProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, _publicInterface->getNode());
+        args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, serialization);
+        args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
         //Set a pre-value for the inputfile knob only if it did not exist
         if (!filename.empty() && !serialization) {
-            args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+            args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
 
             std::string canonicalFilename = filename;
             _publicInterface->getApp()->getProject()->canonicalizePath(canonicalFilename);
 
             int firstFrame, lastFrame;
             Node::getOriginalFrameRangeForReader(readerPluginID, canonicalFilename, &firstFrame, &lastFrame);
-            args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
+            std::vector<int> originalRange(2);
+            originalRange[0] = firstFrame;
+            originalRange[1] = lastFrame;
+            args.addParamDefaultValueN(kReaderParamNameOriginalFrameRange, originalRange);
         }
 
 
@@ -710,6 +721,27 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 } // ReadNodePrivate::createReadNode
 
 void
+ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
+{
+    boost::shared_ptr<KnobButton> fileInfos = fileInfosKnob.lock();
+    KnobPtr hasMetaDatasKnob = _publicInterface->getKnobByName("showMetadata");
+    bool hasFfprobe = false;
+    if (!hasMetaDatasKnob) {
+        QString ffprobePath = getFFProbeBinaryPath();
+        hasFfprobe = QFile::exists(ffprobePath);
+    } else {
+        hasMetaDatasKnob->setSecret(true);
+    }
+
+
+    if ( hasMetaDatasKnob || ( (pluginID == PLUGINID_OFX_READFFMPEG) && hasFfprobe ) ) {
+        fileInfos->setSecret(false);
+    } else {
+        fileInfos->setSecret(true);
+    }
+}
+
+void
 ReadNodePrivate::refreshPluginSelectorKnob()
 {
     boost::shared_ptr<KnobFile> fileKnob = inputFileKnob.lock();
@@ -757,23 +789,8 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     pluginIDKnob->setValue(pluginID);
     pluginIDKnob->unblockValueChanges();
 
+    refreshFileInfoVisibility(pluginID);
 
-    boost::shared_ptr<KnobButton> fileInfos = fileInfosKnob.lock();
-    KnobPtr hasMetaDatasKnob = _publicInterface->getKnobByName("showMetadata");
-    bool hasFfprobe = false;
-    if (!hasMetaDatasKnob) {
-        QString ffprobePath = getFFProbeBinaryPath();
-        hasFfprobe = QFile::exists(ffprobePath);
-    } else {
-        hasMetaDatasKnob->setSecret(true);
-    }
-
-
-    if ( hasMetaDatasKnob || ( (pluginID == PLUGINID_OFX_READFFMPEG) && hasFfprobe ) ) {
-        fileInfos->setSecret(false);
-    } else {
-        fileInfos->setSecret(true);
-    }
 } // ReadNodePrivate::refreshPluginSelectorKnob
 
 bool
@@ -1053,8 +1070,11 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
         //The user selected a file, if it fails to read do not create the node
         throwErrors = true;
     } else {
-        std::string paramName = std::string(kCreateNodeArgsPropParamValue) + std::string("_") + std::string(kOfxImageEffectFileParamName);
-        pattern = args.getProperty<std::string>(paramName, std::string());
+        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+        if (foundFileName != defaultParamValues.end()) {
+            pattern = *foundFileName;
+        }
     }
     _imp->createReadNode( throwErrors, pattern, boost::shared_ptr<NodeSerialization>() );
     _imp->refreshPluginSelectorKnob();
@@ -1138,6 +1158,7 @@ ReadNode::knobChanged(KnobI* k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
+        _imp->refreshFileInfoVisibility(entry);
     } else if ( k == _imp->fileInfosKnob.lock().get() ) {
         NodePtr p = getEmbeddedReader();
         if (!p) {

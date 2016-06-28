@@ -64,11 +64,11 @@ void init_Int3DParam(PyObject* module);
 void init_DoubleParam(PyObject* module);
 void init_Double2DParam(PyObject* module);
 void init_Double3DParam(PyObject* module);
+void init_ParametricParam(PyObject* module);
+void init_PageParam(PyObject* module);
 void init_ButtonParam(PyObject* module);
 void init_SeparatorParam(PyObject* module);
 void init_GroupParam(PyObject* module);
-void init_PageParam(PyObject* module);
-void init_ParametricParam(PyObject* module);
 void init_Int2DTuple(PyObject* module);
 void init_Int3DTuple(PyObject* module);
 void init_Double2DTuple(PyObject* module);
@@ -371,6 +371,49 @@ static PythonToCppFunc is_std_list_EffectPTR__PythonToCpp_std_list_EffectPTR__Co
     return 0;
 }
 
+// C++ to Python conversion for type 'std::map<ImageLayer, Effect * >'.
+static PyObject* std_map_ImageLayer_EffectPTR__CppToPython_std_map_ImageLayer_EffectPTR_(const void* cppIn) {
+    ::std::map<ImageLayer, Effect * >& cppInRef = *((::std::map<ImageLayer, Effect * >*)cppIn);
+
+                    // TEMPLATE - stdMapToPyDict - START
+            PyObject* pyOut = PyDict_New();
+            ::std::map<ImageLayer, Effect * >::const_iterator it = cppInRef.begin();
+            for (; it != cppInRef.end(); ++it) {
+            ::ImageLayer key = it->first;
+            ::Effect* value = it->second;
+            PyObject* pyKey = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], &key);
+            PyObject* pyValue = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value);
+            PyDict_SetItem(pyOut, pyKey, pyValue);
+            Py_DECREF(pyKey);
+            Py_DECREF(pyValue);
+            }
+            return pyOut;
+        // TEMPLATE - stdMapToPyDict - END
+
+}
+static void std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_(PyObject* pyIn, void* cppOut) {
+    ::std::map<ImageLayer, Effect * >& cppOutRef = *((::std::map<ImageLayer, Effect * >*)cppOut);
+
+                    // TEMPLATE - pyDictToStdMap - START
+        PyObject* key;
+        PyObject* value;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(pyIn, &pos, &key, &value)) {
+        ::ImageLayer cppKey = ::ImageLayer(::QString(), ::QString(), ::QStringList());
+        Shiboken::Conversions::pythonToCppCopy((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], key, &(cppKey));
+        ::Effect* cppValue = ((::Effect*)0);
+        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value, &(cppValue));
+        cppOutRef.insert(std::make_pair(cppKey, cppValue));
+        }
+    // TEMPLATE - pyDictToStdMap - END
+
+}
+static PythonToCppFunc is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleDictTypes(SBK_CONVERTER(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX]), false, SBK_CONVERTER(SbkNatronEngineTypes[SBK_EFFECT_IDX]), true, pyIn))
+        return std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_;
+    return 0;
+}
+
 // C++ to Python conversion for type 'std::list<QString >'.
 static PyObject* std_list_QString__CppToPython_std_list_QString_(const void* cppIn) {
     ::std::list<QString >& cppInRef = *((::std::list<QString >*)cppIn);
@@ -436,49 +479,6 @@ static void conststd_list_int_REF_PythonToCpp_conststd_list_int_REF(PyObject* py
 static PythonToCppFunc is_conststd_list_int_REF_PythonToCpp_conststd_list_int_REF_Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes(Shiboken::Conversions::PrimitiveTypeConverter<int>(), pyIn))
         return conststd_list_int_REF_PythonToCpp_conststd_list_int_REF;
-    return 0;
-}
-
-// C++ to Python conversion for type 'std::map<ImageLayer, Effect * >'.
-static PyObject* std_map_ImageLayer_EffectPTR__CppToPython_std_map_ImageLayer_EffectPTR_(const void* cppIn) {
-    ::std::map<ImageLayer, Effect * >& cppInRef = *((::std::map<ImageLayer, Effect * >*)cppIn);
-
-                    // TEMPLATE - stdMapToPyDict - START
-            PyObject* pyOut = PyDict_New();
-            ::std::map<ImageLayer, Effect * >::const_iterator it = cppInRef.begin();
-            for (; it != cppInRef.end(); ++it) {
-            ::ImageLayer key = it->first;
-            ::Effect* value = it->second;
-            PyObject* pyKey = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], &key);
-            PyObject* pyValue = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value);
-            PyDict_SetItem(pyOut, pyKey, pyValue);
-            Py_DECREF(pyKey);
-            Py_DECREF(pyValue);
-            }
-            return pyOut;
-        // TEMPLATE - stdMapToPyDict - END
-
-}
-static void std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_(PyObject* pyIn, void* cppOut) {
-    ::std::map<ImageLayer, Effect * >& cppOutRef = *((::std::map<ImageLayer, Effect * >*)cppOut);
-
-                    // TEMPLATE - pyDictToStdMap - START
-        PyObject* key;
-        PyObject* value;
-        Py_ssize_t pos = 0;
-        while (PyDict_Next(pyIn, &pos, &key, &value)) {
-        ::ImageLayer cppKey = ::ImageLayer(::QString(), ::QString(), ::QStringList());
-        Shiboken::Conversions::pythonToCppCopy((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], key, &(cppKey));
-        ::Effect* cppValue = ((::Effect*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value, &(cppValue));
-        cppOutRef.insert(std::make_pair(cppKey, cppValue));
-        }
-    // TEMPLATE - pyDictToStdMap - END
-
-}
-static PythonToCppFunc is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::convertibleDictTypes(SBK_CONVERTER(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX]), false, SBK_CONVERTER(SbkNatronEngineTypes[SBK_EFFECT_IDX]), true, pyIn))
-        return std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_;
     return 0;
 }
 
@@ -669,11 +669,11 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_DoubleParam(module);
     init_Double2DParam(module);
     init_Double3DParam(module);
+    init_ParametricParam(module);
+    init_PageParam(module);
     init_ButtonParam(module);
     init_SeparatorParam(module);
     init_GroupParam(module);
-    init_PageParam(module);
-    init_ParametricParam(module);
     init_Int2DTuple(module);
     init_Int3DTuple(module);
     init_Double2DTuple(module);
@@ -749,6 +749,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         std_list_EffectPTR__PythonToCpp_std_list_EffectPTR_,
         is_std_list_EffectPTR__PythonToCpp_std_list_EffectPTR__Convertible);
 
+    // Register converter for type 'std::map<ImageLayer,Effect*>'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyDict_Type, std_map_ImageLayer_EffectPTR__CppToPython_std_map_ImageLayer_EffectPTR_);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX], "std::map<ImageLayer,Effect*>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX],
+        std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_,
+        is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible);
+
     // Register converter for type 'std::list<QString>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_QSTRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_QString__CppToPython_std_list_QString_);
     Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_QSTRING_IDX], "std::list<QString>");
@@ -763,13 +770,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_INT_IDX],
         conststd_list_int_REF_PythonToCpp_conststd_list_int_REF,
         is_conststd_list_int_REF_PythonToCpp_conststd_list_int_REF_Convertible);
-
-    // Register converter for type 'std::map<ImageLayer,Effect*>'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyDict_Type, std_map_ImageLayer_EffectPTR__CppToPython_std_map_ImageLayer_EffectPTR_);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX], "std::map<ImageLayer,Effect*>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX],
-        std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_,
-        is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Global/QtCompat.h"
 
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
@@ -1258,10 +1259,10 @@ Gui::handleOpenFilesFromUrls(const QList<QUrl>& urls,
                 Dialogs::errorDialog("Reader", "No plugin capable of decoding " + extLower + " was found.");
             } else {
                 std::string pattern = sequence->generateValidSequencePattern();
-                CreateNodeArgs args( QString::fromUtf8( readerPluginID.c_str() ), eCreateNodeReasonUserCreate, graph->getGroup() );
-                args.xPosHint = graphScenePos.x();
-                args.yPosHint = graphScenePos.y();
-                args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
+                CreateNodeArgs args(readerPluginID, graph->getGroup() );
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.x(), 0);
+                args.setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, graphScenePos.y(), 1);
+                args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
                 NodePtr n = getApp()->createNode(args);
 

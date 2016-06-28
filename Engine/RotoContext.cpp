@@ -54,12 +54,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
 #include "Engine/BezierCP.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/CoonsRegularization.h"
 #include "Engine/FeatherPoint.h"
 #include "Engine/Format.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoContextSerialization.h"
@@ -4623,10 +4625,10 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     fixedNamePrefix.append( QLatin1Char('_') );
 
 
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_OFX_MERGE), eCreateNodeReasonInternal,  boost::shared_ptr<NodeCollection>() );
-    args.fixedName = fixedNamePrefix;
-    args.createGui = false;
-    args.addToProject = false;
+    CreateNodeArgs args( PLUGINID_OFX_MERGE,  boost::shared_ptr<NodeCollection>() );
+    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    
     NodePtr mergeNode = node->getApp()->createNode(args);
     if (!mergeNode) {
         return mergeNode;

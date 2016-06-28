@@ -357,11 +357,6 @@ public:
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @brief Create a new child node for this node, currently this is only supported by the tracker node.
-     **/
-    Effect* createChild();
-
-    /**
      * @brief Get the roto context for this node if it has any. At the time of writing only the Roto node has a roto context.
      **/
     Roto* getRotoContext() const;

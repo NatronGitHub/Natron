@@ -35,6 +35,7 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/weak_ptr.hpp>
 #include "Gui/GuiAppInstance.h"
 #include "Gui/Gui.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Project.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -191,9 +192,9 @@ ToolButton::onTriggered()
     boost::shared_ptr<NodeCollection> group = app->getGui()->getLastSelectedNodeCollection();
 
     assert(group);
-    CreateNodeArgs args(_imp->_id, eCreateNodeReasonUserCreate, group);
-    args.majorV = _imp->_major;
-    args.minorV = _imp->_minor;
+    CreateNodeArgs args(_imp->_id.toStdString(), group);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, _imp->_major, 0);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, _imp->_minor, 1);
     app->createNode(args);
 }
 

@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 
 
 #include "Engine/Backdrop.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
@@ -469,14 +470,17 @@ ProjectGui::load<boost::archive::xml_iarchive>(bool isAutosave,  boost::archive:
         it->getSize(w, h);
 
         KnobPtr labelSerialization = it->getLabelSerialization();
-        CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_BACKDROP), eCreateNodeReasonInternal, _project.lock() );
+        CreateNodeArgs args( PLUGINID_NATRON_BACKDROP, _project.lock() );
+        args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        
         NodePtr node = getGui()->getApp()->createNode(args);
         boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
         assert(gui_i);
         BackdropGui* bd = dynamic_cast<BackdropGui*>( gui_i.get() );
         assert(bd);
         if (bd) {
-            bd->setVisibleSettingsPanel(false);
             bd->setPos(x, y);
             bd->resize(w, h);
             KnobString* iStr = dynamic_cast<KnobString*>( labelSerialization.get() );

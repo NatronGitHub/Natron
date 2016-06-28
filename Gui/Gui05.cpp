@@ -37,6 +37,7 @@
 
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/CreateNodeArgs.h"
@@ -225,8 +226,9 @@ Gui::createGroupGui(const NodePtr & group,
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
-    bool userCreated = args.getProperty<int>(kCreateNodeArgsPropUserCreated, false);
-    if ( where && userCreated && !getApp()->isCreatingPythonGroup() ) {
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+
+    if ( where && !serialization && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
         QTimer::singleShot( 25, nodeGraph, SLOT(centerOnAllNodes()) );
     } else {

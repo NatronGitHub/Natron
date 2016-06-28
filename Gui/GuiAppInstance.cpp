@@ -38,6 +38,7 @@
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
@@ -498,8 +499,8 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->initializeInputs();
     }
     
-    bool userCreated = args.getProperty<int>(kCreateNodeArgsPropUserCreated, false);
-    if ( userCreated && !isViewer ) {
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    if ( !serialization && !isViewer ) {
         ///we make sure we can have a clean preview.
         node->computePreviewImage( getTimeLine()->currentFrame() );
         triggerAutoSave();
@@ -507,14 +508,14 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
 
 
     ///only move main instances
-    if ( node->getParentMultiInstanceName().empty() ) {
-        bool autoConnect = userCreated;
+    if ( node->getParentMultiInstanceName().empty() && !serialization) {
+        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
 
-        if ( selectedNodes.empty() ) {
+        if ( selectedNodes.empty() || serialization) {
             autoConnect = false;
         }
-        double xPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, INT_MIN, 0);
-        double yPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, INT_MIN, 1);
+        double xPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+        double yPosHint = serialization ? INT_MIN : args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
         if ( (xPosHint != INT_MIN) && (yPosHint != INT_MIN) && (!autoConnect) ) {
             QPointF pos = nodegui->mapToParent( nodegui->mapFromScene( QPointF(xPosHint, yPosHint) ) );
             nodegui->refreshPosition( pos.x(), pos.y(), true );
@@ -522,7 +523,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
             BackdropGui* isBd = dynamic_cast<BackdropGui*>( nodegui.get() );
             if (!isBd) {
                 NodeGuiPtr selectedNode;
-                if ( userCreated && (selectedNodes.size() == 1) ) {
+                if ( !serialization && (selectedNodes.size() == 1) ) {
                     selectedNode = selectedNodes.front();
                     BackdropGui* isBackdropGui = dynamic_cast<BackdropGui*>( selectedNode.get() );
                     if (isBackdropGui) {
@@ -1073,9 +1074,9 @@ GuiAppInstance::clearOverlayRedrawRequests()
 
 void
 GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const boost::shared_ptr<NodeSerialization>& serialization, bool userCreated)
+                                        const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect)
 {
-    if (userCreated) {
+    if (autoConnect && !serialization) {
         NodeGraph* graph = 0;
         boost::shared_ptr<NodeCollection> collection = node->getGroup();
         assert(collection);
@@ -1105,7 +1106,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
     }
 
-    AppInstance::onGroupCreationFinished(node, serialization, userCreated);
+    AppInstance::onGroupCreationFinished(node, serialization, autoConnect);
 
     /*std::list<ViewerInstance* > viewers;
        node->hasViewersConnected(&viewers);

@@ -30,6 +30,7 @@
 #include <QtCore/QDebug>
 
 #include "Engine/AppInstance.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Project.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -101,8 +102,11 @@ App::createNode(const QString& pluginID,
 
     assert(collection);
 
-    CreateNodeArgs args(pluginID, eCreateNodeReasonInternal, collection);
-    args.majorV = majorVersion;
+    CreateNodeArgs args(pluginID.toStdString(), collection);
+    args.setProperty<int>(kCreateNodeArgsPropPluginVersion, majorVersion, 0);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
 
     NodePtr node = getInternalApp()->createNode(args);
     if (node) {
@@ -119,7 +123,11 @@ App::createReader(const QString& filename,
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
 
     assert(collection);
-    NodePtr node = getInternalApp()->createReader(filename.toStdString(), eCreateNodeReasonInternal, collection);
+    CreateNodeArgs args(PLUGINID_NATRON_READ, collection);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    NodePtr node = getInternalApp()->createReader(filename.toStdString(), args);
     if (node) {
         return new Effect(node);
     } else {
@@ -134,7 +142,11 @@ App::createWriter(const QString& filename,
     boost::shared_ptr<NodeCollection> collection = getCollectionFromGroup(group);
 
     assert(collection);
-    NodePtr node = getInternalApp()->createWriter(filename.toStdString(), eCreateNodeReasonInternal, collection);
+    CreateNodeArgs args(PLUGINID_NATRON_WRITE, collection);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+    NodePtr node = getInternalApp()->createWriter(filename.toStdString(), args);
     if (node) {
         return new Effect(node);
     } else {

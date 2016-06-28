@@ -42,6 +42,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/LibraryBinary.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Settings.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
@@ -319,8 +320,10 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
         return false;
     }
 
-    CreateNodeArgs args( QString::fromUtf8( readerFileType.c_str() ), eCreateNodeReasonUserCreate, mainInstance->getProject() );
-    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+    CreateNodeArgs args(readerFileType, mainInstance->getProject() );
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
+    args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+    args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     NodePtr readerNode = mainInstance->createNode(args);
     if (!readerNode && instanceCreated) {
         mainInstance->quit();
@@ -340,7 +343,9 @@ GuiApplicationManager::handleImageFileOpenRequest(const std::string& filename)
 
     ///If no viewer is found, create it
     if (!viewerFound) {
-        CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonInternal, mainInstance->getProject() );
+        CreateNodeArgs args(PLUGINID_NATRON_VIEWER, mainInstance->getProject() );
+        args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         viewerFound = mainInstance->createNode(args);
     }
     if (viewerFound) {

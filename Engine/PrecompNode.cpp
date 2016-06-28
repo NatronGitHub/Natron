@@ -41,6 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CLArgs.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -576,10 +577,10 @@ PrecompNodePrivate::createReadNode()
     fixedNamePrefix.append( QString::fromUtf8("readNode") );
     fixedNamePrefix.append( QLatin1Char('_') );
 
-    CreateNodeArgs args( readPluginID, eCreateNodeReasonInternal, app.lock()->getProject() );
-    args.createGui = false;
-    args.fixedName = fixedNamePrefix;
-    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, pattern) );
+    CreateNodeArgs args( readPluginID.toStdString(), app.lock()->getProject() );
+    args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
+    args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, pattern);
 
 
     NodePtr read = app.lock()->createNode(args);

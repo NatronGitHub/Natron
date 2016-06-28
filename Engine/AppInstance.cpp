@@ -500,7 +500,11 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
                 }
             }
         } else {
-            writerNode = createWriter( it->filename.toStdString(), eCreateNodeReasonInternal, getProject() );
+            CreateNodeArgs args(PLUGINID_NATRON_WRITE, getProject());
+            args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+            args.setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+            args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+            writerNode = createWriter( it->filename.toStdString(), args );
             if (!writerNode) {
                 throw std::runtime_error( tr("Failed to create writer for %1.").arg(it->filename).toStdString() );
             }
@@ -867,12 +871,12 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     bool istoolsetScript = plugin->getToolsetScript();
     NodePtr node;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, boost::shared_ptr<NodeSerialization>());
-    boost::shared_ptr<NodeCollection> group = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, boost::shared_ptr<NodeCollection>());
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    boost::shared_ptr<NodeCollection> group = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
     {
         FlagIncrementer fs(&_imp->_creatingGroup, &_imp->creatingGroupMutex);
         if (_imp->_creatingGroup == 1) {
-            bool createGui = !args.getProperty<int>(kCreateNodeArgsPropNoNodeGUI, false) && !args.getProperty<int>(kCreateNodeArgsPropOutOfProject, false);
+            bool createGui = !args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI) && !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
             _imp->_creatingInternalNode = !createGui;
         }
         CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
@@ -885,7 +889,7 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
                 return containerNode;
             }
 
-            if (!serialization && args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string()).empty()) {
+            if (!serialization && args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName).empty()) {
                 std::string containerName;
                 try {
                     if (group) {
@@ -949,8 +953,8 @@ AppInstance::createNodeFromPythonModule(Plugin* plugin,
     } //FlagSetter fs(true,&_imp->_creatingGroup,&_imp->creatingGroupMutex);
 
     ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-    bool userCreated = args.getProperty<int>(kCreateNodeArgsPropUserCreated, false);
-    onGroupCreationFinished(node, serialization, userCreated);
+    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
+    onGroupCreationFinished(node, serialization, autoConnect);
 
     return node;
 } // AppInstance::createNodeFromPythonModule
@@ -979,17 +983,11 @@ AppInstance::setGroupLabelIDAndVersion(const NodePtr& node,
 
 NodePtr
 AppInstance::createReader(const std::string& filename,
-                          CreateNodeReason reason,
-                          const boost::shared_ptr<NodeCollection>& group)
+                          CreateNodeArgs& args)
 {
     std::string pluginID;
 
-#ifdef NATRON_ENABLE_IO_META_NODES
-    pluginID = PLUGINID_NATRON_READ;
-    CreateNodeArgs args(QString::fromUtf8( pluginID.c_str() ),
-                        reason,
-                        group);
-#else
+#ifndef NATRON_ENABLE_IO_META_NODES
 
     std::map<std::string, std::string> readersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForReadingAndReader(&readersForFormat);
@@ -1007,27 +1005,27 @@ AppInstance::createReader(const std::string& filename,
     CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, group);
 #endif
 
-    args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, filename) );
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     std::string canonicalFilename = filename;
     getProject()->canonicalizePath(canonicalFilename);
 
     int firstFrame, lastFrame;
     Node::getOriginalFrameRangeForReader(pluginID, canonicalFilename, &firstFrame, &lastFrame);
-    args.paramValues.push_back( createDefaultValueForParam(kReaderParamNameOriginalFrameRange, firstFrame, lastFrame) );
+    std::vector<int> originalRange(2);
+    originalRange[0] = firstFrame;
+    originalRange[1] = lastFrame;
+    args.addParamDefaultValueN<int>(kReaderParamNameOriginalFrameRange, originalRange);
 
     return createNode(args);
 }
 
 NodePtr
 AppInstance::createWriter(const std::string& filename,
-                          CreateNodeReason reason,
-                          const boost::shared_ptr<NodeCollection>& collection,
+                          CreateNodeArgs& args,
                           int firstFrame,
                           int lastFrame)
 {
-#ifdef NATRON_ENABLE_IO_META_NODES
-    CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_WRITE), reason, collection);
-#else
+#ifndef NATRON_ENABLE_IO_META_NODES
     std::map<std::string, std::string> writersForFormat;
     appPTR->getCurrentSettings()->getFileFormatsForWritingAndWriter(&writersForFormat);
 
@@ -1045,11 +1043,11 @@ AppInstance::createWriter(const std::string& filename,
 
     CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), reason, collection);
 #endif
-    args.paramValues.push_back( createDefaultValueForParam<std::string>(kOfxImageEffectFileParamName, filename) );
+    args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
     if ( (firstFrame != INT_MIN) && (lastFrame != INT_MAX) ) {
-        args.paramValues.push_back( createDefaultValueForParam<int>("frameRange", 2) );
-        args.paramValues.push_back( createDefaultValueForParam<int>("firstFrame", firstFrame) );
-        args.paramValues.push_back( createDefaultValueForParam<int>("lastFrame", lastFrame) );
+        args.addParamDefaultValue<int>("frameRange", 2);
+        args.addParamDefaultValue<int>("firstFrame", firstFrame);
+        args.addParamDefaultValue<int>("lastFrame", lastFrame);
     }
 
     return createNode(args);
@@ -1102,11 +1100,11 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     Plugin* plugin = 0;
     QString findId;
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, boost::shared_ptr<NodeSerialization>());
-    bool trustPluginID = args.getProperty<int>(kCreateNodeArgsPropTrustPluginID, false);
-    QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID, std::string()).c_str());
-    int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, -1, 0);
-    int versionMinor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, -1, 1);
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    bool trustPluginID = args.getProperty<bool>(kCreateNodeArgsPropTrustPluginID);
+    QString argsPluginID = QString::fromUtf8(args.getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
+    int versionMajor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
+    int versionMinor = args.getProperty<int>(kCreateNodeArgsPropPluginVersion, 1);
 
     //Roto has moved to a built-in plugin
     if ( (!trustPluginID || serialization) &&
@@ -1116,8 +1114,11 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         findId = argsPluginID;
     }
 
+    bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
+
+
 #ifdef NATRON_ENABLE_IO_META_NODES
-    NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
+    NodePtr argsIOContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
     //If it is a reader or writer, create a ReadNode or WriteNode
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
@@ -1137,9 +1138,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         try {
             plugin = appPTR->getPluginBinaryFromOldID(argsPluginID, versionMajor, versionMinor);
         } catch (const std::exception& e2) {
-            Dialogs::errorDialog(tr("Plugin error").toStdString(),
+            if (!isSilentCreation) {
+                Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                  tr("Cannot load plugin executable.").toStdString() + ": " + e2.what(), false );
-
+            }
             return node;
         }
     }
@@ -1148,7 +1150,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         return node;
     }
 
-    bool allowUserCreatablePlugins = args.getProperty<int>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
+    bool allowUserCreatablePlugins = args.getProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins);
     if ( !plugin->getIsUserCreatable() && !allowUserCreatablePlugins ) {
         //The plug-in should not be instantiable by the user
         qDebug() << "Attempt to create" << argsPluginID << "which is not user creatable";
@@ -1166,14 +1168,15 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
      */
     const QString& pythonModule = plugin->getPythonModule();
     if ( !pythonModule.isEmpty() ) {
-        bool disableLoadFromScript = args.getProperty<int>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript, false);
+        bool disableLoadFromScript = args.getProperty<bool>(kCreateNodeArgsPropDoNotLoadPyPlugFromScript);
         if (!disableLoadFromScript) {
             try {
                 return createNodeFromPythonModule(plugin, args);
             } catch (const std::exception& e) {
-                Dialogs::errorDialog(tr("Plugin error").toStdString(),
+                if (!isSilentCreation) {
+                    Dialogs::errorDialog(tr("Plugin error").toStdString(),
                                      tr("Cannot create PyPlug:").toStdString() + e.what(), false );
-
+                }
                 return node;
             }
         } else {
@@ -1194,9 +1197,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 // ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
                 ofxDesc = appPTR->getPluginContextAndDescribe(ofxPlugin, &ctx);
             } catch (const std::exception& e) {
-                errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString()
+                if (!isSilentCreation) {
+                    errorDialog(tr("Error while creating node").toStdString(), tr("Failed to create an instance of %1:").arg(argsPluginID).toStdString()
                             + '\n' + e.what(), false);
-
+                }
                 return NodePtr();
             }
 
@@ -1205,7 +1209,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-    boost::shared_ptr<NodeCollection> argsGroup = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer, boost::shared_ptr<NodeCollection>());
+    boost::shared_ptr<NodeCollection> argsGroup = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
 
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 
@@ -1216,7 +1220,6 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
 
-    bool userCreated = args.getProperty<int>(kCreateNodeArgsPropUserCreated, false);
 
 
     AddCreateNode_RAII creatingNode_raii(_imp.get(), node);
@@ -1224,7 +1227,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     {
         ///Furnace plug-ins don't handle using the thread pool
         boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
-        if ( boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
+        if ( !isSilentCreation && boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
              ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
             StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
                                                                tr("The settings of the application are currently set to use "
@@ -1239,7 +1242,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
 
         // If this is a stereo plug-in, check that the project has been set for multi-view
-        if (userCreated) {
+        if (!isSilentCreation) {
             const QStringList& grouping = plugin->getGrouping();
             if ( !grouping.isEmpty() && ( grouping[0] == QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW) ) ) {
                 int nbViews = getProject()->getProjectViewsCount();
@@ -1273,22 +1276,14 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
         std::string error( e.what() );
         if ( !error.empty() ) {
-            std::string title("Error while creating node");
-            std::string message = title + " " + foundPluginID + ": " + e.what();
-            qDebug() << message.c_str();
-            errorDialog(title, message, false);
+            if (!isSilentCreation) {
+                std::string title("Error while creating node");
+                std::string message = title + " " + foundPluginID + ": " + e.what();
+                qDebug() << message.c_str();
+                errorDialog(title, message, false);
+            }
         }
-
-        return NodePtr();
-    } catch (...) {
-        if (argsGroup) {
-            argsGroup->removeNode(node);
-        }
-        std::string title("Error while creating node");
-        std::string message = title + " " + foundPluginID;
-        qDebug() << message.c_str();
-        errorDialog(title, message, false);
-
+        
         return NodePtr();
     }
 
@@ -1297,7 +1292,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
 
     // _imp->_creatingInternalNode will be set to false if we created a pyPlug with the flag args.createGui = false
     bool createGui = !_imp->_creatingInternalNode;
-    if (args.getProperty<int>(kCreateNodeArgsPropNoNodeGUI, false) || args.getProperty<int>(kCreateNodeArgsPropOutOfProject, false)) {
+    bool argsNoNodeGui = args.getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+    bool argsOutOfProject = args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
+    if (argsNoNodeGui || argsOutOfProject) {
         createGui = false;
     }
     if (createGui) {
@@ -1305,11 +1302,12 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
             createNodeGui(node, multiInstanceParent, args);
         } catch (const std::exception& e) {
             node->destroyNode(false);
-            std::string title("Error while creating node");
-            std::string message = title + " " + foundPluginID + ": " + e.what();
-            qDebug() << message.c_str();
-            errorDialog(title, message, false);
-
+            if (!isSilentCreation) {
+                std::string title("Error while creating node");
+                std::string message = title + " " + foundPluginID + ": " + e.what();
+                qDebug() << message.c_str();
+                errorDialog(title, message, false);
+            }
             return boost::shared_ptr<Node>();
         }
     }
@@ -1317,6 +1315,8 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
 
     if (isGrp) {
+        bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
+
         if (serialization) {
             if ( serialization && !serialization->getPythonModule().empty() ) {
                 QString pythonModulePath = QString::fromUtf8( ( serialization->getPythonModule().c_str() ) );
@@ -1330,13 +1330,16 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 QtCompat::removeFileExtension(moduleName);
                 setGroupLabelIDAndVersion(node, modulePath, moduleName);
             }
-            onGroupCreationFinished(node, serialization, userCreated);
-        } else if ( userCreated && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
+            onGroupCreationFinished(node, serialization, autoConnect);
+        } else if ( !serialization  && createGui && !_imp->_creatingGroup && (isGrp->getPluginID() == PLUGINID_NATRON_GROUP) ) {
             //if the node is a group and we're not loading the project, create one input and one output
             NodePtr input, output;
 
             {
-                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_OUTPUT), eCreateNodeReasonInternal, isGrp);
+                CreateNodeArgs args(PLUGINID_NATRON_OUTPUT, isGrp);
+                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
+                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 output = createNode(args);
                 try {
                     output->setScriptName("Output");
@@ -1346,7 +1349,10 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 assert(output);
             }
             {
-                CreateNodeArgs args(QString::fromUtf8(PLUGINID_NATRON_INPUT), eCreateNodeReasonInternal, isGrp);
+                CreateNodeArgs args(PLUGINID_NATRON_INPUT, isGrp);
+                args.setProperty(kCreateNodeArgsPropAutoConnect, false);
+                args.setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
+                args.setProperty(kCreateNodeArgsPropSettingsOpened, false);
                 input = createNode(args);
                 assert(input);
             }
@@ -1358,7 +1364,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
                 y -= 100;
                 input->setPosition(x, y);
             }
-            onGroupCreationFinished(node, serialization, userCreated);
+            onGroupCreationFinished(node, serialization, autoConnect);
 
             ///Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
         }
@@ -1401,32 +1407,40 @@ AppInstance::exportDocs(const QString path)
                         QStringList plugList;
                         plugList << plugin->getGrouping().at(0) << pluginID << plugin->getPluginLabel();
                         plugins << plugList;
-                        CreateNodeArgs args( pluginID, eCreateNodeReasonInternal, boost::shared_ptr<NodeCollection>() );
-                        args.createGui = false;
-                        args.addToProject = false;
+                        CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
+                        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+                        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+                        args.setProperty(kCreateNodeArgsPropSilent, true);
                         qDebug() << pluginID;
                         NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                         if (node) {
                             QDir mdDir(path);
                             if ( !mdDir.exists() ) {
-                                mdDir.mkdir(path);
+                                mdDir.mkpath(path);
                             }
+
+                            mdDir.mkdir(QLatin1String("plugins"));
+                            mdDir.cd(QLatin1String("plugins"));
 
                             QFile imgFile( plugin->getIconFilePath() );
                             if ( imgFile.exists() ) {
-                                if ( !imgFile.copy( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".png") ) ) {
-                                    std::cout << "ERROR: failed to copy image" << imgFile.fileName().toStdString() << std::endl;
+                                QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
+                                if (QFile::exists(dstPath)) {
+                                    QFile::remove(dstPath);
+                                }
+                                if ( !imgFile.copy(dstPath) ) {
+                                    std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
                                 }
                             }
 
                             QString md = node->makeDocumentation(false);
-                            QFile mdFile( path + QString::fromUtf8("/plugins/") + pluginID + QString::fromUtf8(".md") );
+                            QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
                             if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
                                 QTextStream out(&mdFile);
                                 out << md;
                                 mdFile.close();
                             } else {
-                                std::cout << "ERROR: failed to write to file " << mdFile.fileName().toStdString() << std::endl;
+                                std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
                             }
                         }
                     }
@@ -2085,7 +2099,7 @@ AppInstance::getAppIDString() const
 
 void
 AppInstance::onGroupCreationFinished(const NodePtr& node,
-                                     const boost::shared_ptr<NodeSerialization>& serialization, bool /*userCreated*/)
+                                     const boost::shared_ptr<NodeSerialization>& serialization, bool /*autoConnect*/)
 {
     assert(node);
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {

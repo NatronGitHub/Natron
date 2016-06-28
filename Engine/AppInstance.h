@@ -147,12 +147,12 @@ public:
     /** @brief Create a new node  in the node graph.
     **/
     NodePtr createNode(CreateNodeArgs & args);
-    NodePtr createReader(const std::string& filename, CreateNodeReason reason, const boost::shared_ptr<NodeCollection>& group);
+    NodePtr createReader(const std::string& filename,
+                         CreateNodeArgs& args);
 
 
     NodePtr createWriter(const std::string& filename,
-                         CreateNodeReason reason,
-                         const boost::shared_ptr<NodeCollection>& collection,
+                         CreateNodeArgs& args,
                          int firstFrame = INT_MIN, int lastFrame = INT_MAX);
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
@@ -433,7 +433,7 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool userCreated);
+    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)

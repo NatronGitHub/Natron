@@ -755,14 +755,14 @@ Node::load(const CreateNodeArgs& args)
 
     ///cannot load twice
     assert(!_imp->effect);
-    _imp->isPartOfProject = args.getProperty<int>(kCreateNodeArgsPropOutOfProject, false);
+    _imp->isPartOfProject = !args.getProperty<bool>(kCreateNodeArgsPropOutOfProject);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-    _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
+    _imp->ioContainer = args.getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 #endif
 
     boost::shared_ptr<NodeCollection> group = getGroup();
-    std::string multiInstanceParentName = args.getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName, std::string());
+    std::string multiInstanceParentName = args.getProperty<std::string>(kCreateNodeArgsPropMultiInstanceParentName);
     if ( !multiInstanceParentName.empty() ) {
         _imp->multiInstanceParentName = multiInstanceParentName;
         _imp->isMultiInstance = false;
@@ -778,17 +778,22 @@ Node::load(const CreateNodeArgs& args)
     }
 
 
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, boost::shared_ptr<NodeSerialization>());
+    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
     
-    bool isUserCreated = args.getProperty<int>(kCreateNodeArgsPropUserCreated, false);
+    bool isSilentCreation = args.getProperty<bool>(kCreateNodeArgsPropSilent);
 #ifndef NATRON_ENABLE_IO_META_NODES
     bool hasUsedFileDialog = false;
 #endif
-    
-    std::string defaultFilenameParamValue = args.getProperty<std::string>(std::string(kCreateNodeArgsPropParamValue) + std::string("_") + std::string(kOfxImageEffectFileParamName), std::string());
-    bool canOpenFileDialog = isUserCreated && !serialization && defaultFilenameParamValue.empty() && getGroup();
 
-    std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName, std::string());
+    bool hasDefaultFilename;
+    {
+        std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
+        hasDefaultFilename = foundFileName != defaultParamValues.end() && !foundFileName->empty();
+    }
+    bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPartOfProject && !hasDefaultFilename && getGroup();
+
+    std::string argFixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     
     if (func.first) {
@@ -1690,7 +1695,7 @@ void
 Node::setValuesFromSerialization(const CreateNodeArgs& args)
 {
     
-    std::vector<std::string> params = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
+    std::vector<std::string> params = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
     
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->knobsInitialized);
@@ -1709,16 +1714,16 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                 propName += "_";
                 propName += params[i];
                 if (isBool) {
-                    bool v = args.getProperty<bool>(propName, false);
+                    bool v = args.getProperty<bool>(propName);
                     isBool->setValue(v);
                 } else if (isInt) {
-                    int v = args.getProperty<int>(propName, 0);
+                    int v = args.getProperty<int>(propName);
                     isInt->setValue(v);
                 } else if (isDbl) {
-                    double v = args.getProperty<double>(propName, 0);
+                    double v = args.getProperty<double>(propName);
                     isDbl->setValue(v);
                 } else if (isStr) {
-                    std::string v = args.getProperty<std::string>(propName, std::string());
+                    std::string v = args.getProperty<std::string>(propName);
                     isStr->setValue(v);
                 }
                 break;
@@ -3211,9 +3216,9 @@ Node::makeInfoForInput(int inputNumber) const
     EffectInstPtr input;
     if (inputNumber != -1) {
         input = _imp->effect->getInput(inputNumber);
-        if (input) {
+        /*if (input) {
             input = input->getNearestNonIdentity( getApp()->getTimeLine()->currentFrame() );
-        }
+        }*/
     } else {
         input = _imp->effect;
     }

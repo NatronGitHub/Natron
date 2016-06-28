@@ -1929,7 +1929,7 @@ AppManager::createOFXEffect(NodePtr node,
 #endif
                             ) const
 {
-    return _imp->ofxHost->createOfxEffect(node, args,
+    return _imp->ofxHost->createOfxEffect(node, args
 #ifndef NATRON_ENABLE_IO_META_NODES
                                           , allowFileDialogs,
                                           hasUsedFileDialog

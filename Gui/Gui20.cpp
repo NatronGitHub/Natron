@@ -41,6 +41,7 @@
 #include <QApplication>
 
 #include "Engine/CLArgs.h"
+#include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobSerialization.h" // createDefaultValueForParam
 #include "Engine/Lut.h" // Color, floatToInt
 #include "Engine/Node.h"
@@ -1238,7 +1239,7 @@ Gui::createNewViewer()
     if (!graph) {
         throw std::logic_error("");
     }
-    CreateNodeArgs args( QString::fromUtf8(PLUGINID_NATRON_VIEWER), eCreateNodeReasonUserCreate, graph->getGroup() );
+    CreateNodeArgs args(PLUGINID_NATRON_VIEWER, graph->getGroup() );
     ignore_result( getApp()->createNode(args) );
 }
 
@@ -1262,7 +1263,8 @@ Gui::createReader()
         assert(group);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
-        ret = getApp()->createReader(pattern, eCreateNodeReasonUserCreate, group);
+        CreateNodeArgs args(PLUGINID_NATRON_READ, group);
+        ret = getApp()->createReader(pattern, args);
 #else
 
         QString qpattern = QString::fromUtf8( pattern.c_str() );
@@ -1276,8 +1278,8 @@ Gui::createReader()
         if ( found == readersForFormat.end() ) {
             errorDialog( tr("Reader").toStdString(), tr("No plugin capable of decoding \"%1\" files was found.").arg(ext_qs).toStdString(), false);
         } else {
-            CreateNodeArgs args(QString::fromUtf8( found->second.c_str() ), eCreateNodeReasonUserCreate, group);
-            args.paramValues.push_back( createDefaultValueForParam(kOfxImageEffectFileParamName, pattern) );
+            CreateNodeArgs args(found->second.c_str(), group);
+            args.addParamDefaultValue(kOfxImageEffectFileParamName, pattern);
             std::string canonicalFilename = pattern;
             getApp()->getProject()->canonicalizePath(canonicalFilename);
             int firstFrame, lastFrame;
@@ -1334,7 +1336,8 @@ Gui::createWriter()
     boost::shared_ptr<NodeCollection> group = graph->getGroup();
     assert(group);
 
-    ret =  getApp()->createWriter(file, eCreateNodeReasonUserCreate, group);
+    CreateNodeArgs args(PLUGINID_NATRON_WRITE, group);
+    ret =  getApp()->createWriter(file, args);
 
 
     return ret;
