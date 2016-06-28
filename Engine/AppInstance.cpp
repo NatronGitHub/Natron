@@ -1210,6 +1210,9 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
     }
 
     boost::shared_ptr<NodeCollection> argsGroup = args.getProperty<boost::shared_ptr<NodeCollection> >(kCreateNodeArgsPropGroupContainer);
+    if (!argsGroup) {
+        argsGroup = getProject();
+    }
 
     bool useInspector = isEntitledForInspector(plugin, ofxDesc);
 

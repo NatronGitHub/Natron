@@ -688,62 +688,73 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
         isMultiInstanceChild = true;
     }
 
-    if (serialization) {
+    if (!fixedName.isEmpty()) {
+
+        std::string baseName = fixedName.toStdString();
+        std::string name = baseName;
+        int no = 1;
+        do {
+            if (no > 1) {
+                std::stringstream ss;
+                ss << baseName;
+                ss << '_';
+                ss << no;
+                name = ss.str();
+            }
+            ++no;
+        } while ( group && group->checkIfNodeNameExists(name, this) );
+
+        //This version of setScriptName will not error if the name is invalid or already taken
+        setScriptName_no_error_check(name);
+
+    } else if (serialization) {
         if ( group && !group->isCacheIDAlreadyTaken( serialization->getCacheID() ) ) {
             QMutexLocker k(&_imp->nameMutex);
             _imp->cacheID = serialization->getCacheID();
         }
-        if (fixedName.isEmpty() ) {
-            const std::string& baseName = serialization->getNodeScriptName();
-            std::string name = baseName;
-            int no = 1;
-            do {
-                if (no > 1) {
-                    std::stringstream ss;
-                    ss << baseName;
-                    ss << '_';
-                    ss << no;
-                    name = ss.str();
-                }
-                ++no;
-            } while ( group && group->checkIfNodeNameExists(name, this) );
+        const std::string& baseName = serialization->getNodeScriptName();
+        std::string name = baseName;
+        int no = 1;
+        do {
+            if (no > 1) {
+                std::stringstream ss;
+                ss << baseName;
+                ss << '_';
+                ss << no;
+                name = ss.str();
+            }
+            ++no;
+        } while ( group && group->checkIfNodeNameExists(name, this) );
 
-            //This version of setScriptName will not error if the name is invalid or already taken
-            //and will not declare to python the node (because effect is not instanced yet)
-            setScriptName_no_error_check(name);
-            setLabel( serialization->getNodeLabel() );
-        }
+        //This version of setScriptName will not error if the name is invalid or already taken
+        setScriptName_no_error_check(name);
+        setLabel( serialization->getNodeLabel() );
+
     } else {
-        if ( fixedName.isEmpty() ) {
-            std::string name;
-            QString pluginLabel;
-            AppManager::AppTypeEnum appType = appPTR->getAppType();
-            if ( _imp->plugin &&
-                ( ( appType == AppManager::eAppTypeBackground) ||
-                 ( appType == AppManager::eAppTypeGui) ||
-                 ( appType == AppManager::eAppTypeInterpreter) ) ) {
-                    pluginLabel = _imp->plugin->getLabelWithoutSuffix();
-                } else {
-                    pluginLabel = _imp->plugin->getPluginLabel();
-                }
-            try {
-                if (group) {
-                    group->initNodeName(isMultiInstanceChild ? _imp->multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
-                } else {
-                    name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() );
-                }
-            } catch (...) {
+        std::string name;
+        QString pluginLabel;
+        AppManager::AppTypeEnum appType = appPTR->getAppType();
+        if ( _imp->plugin &&
+            ( ( appType == AppManager::eAppTypeBackground) ||
+             ( appType == AppManager::eAppTypeGui) ||
+             ( appType == AppManager::eAppTypeInterpreter) ) ) {
+                pluginLabel = _imp->plugin->getLabelWithoutSuffix();
+            } else {
+                pluginLabel = _imp->plugin->getPluginLabel();
             }
-
-            setNameInternal(name.c_str(), false, true);
-        } else {
-            try {
-                setScriptName( fixedName.toStdString() );
-            } catch (...) {
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getFullyQualifiedName().c_str()), tr("Could not set node name to %1").arg(fixedName));
+        try {
+            if (group) {
+                group->initNodeName(isMultiInstanceChild ? _imp->multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
+            } else {
+                name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly( pluginLabel.toStdString() );
             }
+        } catch (...) {
         }
+
+        setNameInternal(name.c_str(), false);
     }
+
+
 
 }
 
@@ -833,9 +844,6 @@ Node::load(const CreateNodeArgs& args)
         _imp->effect->setDefaultMetadata();
 
         if (serialization) {
-            //We have to declare the node to Python now since we didn't declare it before
-            //with setScriptName_no_error_check
-            declareNodeVariableToPython( getFullyQualifiedName() );
 
             _imp->effect->onKnobsAboutToBeLoaded(serialization);
             loadKnobs(*serialization);
@@ -1744,11 +1752,6 @@ Node::loadKnobs(const NodeSerialization & serialization,
     if ( serialization.isNull() ) {
         return;
     }
-
-
-    //We have to declare the node to Python now since we didn't declare it before
-    //with setScriptName_no_error_check
-    declareNodeVariableToPython( getFullyQualifiedName() );
 
 
     {
@@ -2977,7 +2980,7 @@ Node::getLabel_mt_safe() const
 void
 Node::setScriptName_no_error_check(const std::string & name)
 {
-    setNameInternal(name, false, true);
+    setNameInternal(name, false);
 }
 
 static void
@@ -3015,8 +3018,7 @@ insertDependenciesRecursive(Node* node,
 
 void
 Node::setNameInternal(const std::string& name,
-                      bool throwErrors,
-                      bool declareToPython)
+                      bool throwErrors)
 {
     std::string oldName = getScriptName_mt_safe();
     std::string fullOldName = getFullyQualifiedName();
@@ -3122,7 +3124,7 @@ Node::setNameInternal(const std::string& name,
         _imp->cacheID = cacheID;
     }
 
-    if (declareToPython && collection) {
+    if (collection) {
         if ( !oldName.empty() ) {
             if (fullOldName != fullySpecifiedName) {
                 try {
@@ -3176,7 +3178,7 @@ Node::setScriptName(const std::string& name)
     }
 
 
-    setNameInternal(newName, true, true);
+    setNameInternal(newName, true);
 }
 
 AppInstPtr
