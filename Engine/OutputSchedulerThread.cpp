@@ -3687,6 +3687,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
             //    ++found;
             //    _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //} else {
+            ++found;
             _imp->producedFrames.erase(_imp->producedFrames.begin(), found);
             //}
         } else {

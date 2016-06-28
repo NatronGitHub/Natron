@@ -67,7 +67,7 @@ NATRON_NAMESPACE_ENTER;
  */
 template<typename EntryType>
 void
-Cache<EntryType>::save(CacheTOC* tableOfContents, bool async)
+Cache<EntryType>::save(CacheTOC* tableOfContents)
 {
     clearInMemoryPortion(false);
     {
@@ -94,7 +94,6 @@ Cache<EntryType>::save(CacheTOC* tableOfContents, bool async)
             }
         }
     }
-    syncTileCache(async);
 }
 
 /*Restores the cache from disk.*/
