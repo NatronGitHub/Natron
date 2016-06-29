@@ -599,7 +599,8 @@ AppManagerPrivate::initGl()
 #endif
 
 
-    if ( !gladLoadGL() ) {
+    if ( !gladLoadGL() ||
+        GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 0)) {
         missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
         missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object,GL_ARB_framebuffer_object,GL_ARB_texture_float");
         missingOpenglError += QLatin1String("\n");
@@ -609,7 +610,7 @@ AppManagerPrivate::initGl()
 
         return;
     }
-
+    
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }
 
