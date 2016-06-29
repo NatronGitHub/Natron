@@ -76,8 +76,9 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER;
 
 class Node
-    : public QObject, public boost::enable_shared_from_this<Node>
-      , public CacheEntryHolder
+    : public QObject
+    , public boost::enable_shared_from_this<Node>
+    , public CacheEntryHolder
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -87,11 +88,14 @@ public:
 
     struct Implementation;
 
-
+public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Node(const AppInstPtr& app,
          const boost::shared_ptr<NodeCollection>& group,
          Plugin* plugin);
 
+public:
     virtual ~Node();
 
     boost::shared_ptr<NodeCollection> getGroup() const;

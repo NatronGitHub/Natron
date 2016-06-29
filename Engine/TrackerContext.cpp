@@ -96,9 +96,9 @@ TrackerContext::load(const TrackerContextSerialization& serialization)
     for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
         TrackMarkerPtr marker;
         if ( it->usePatternMatching() ) {
-            marker.reset( new TrackMarkerPM(thisShared) );
+            marker = TrackMarkerPM::create(thisShared);
         } else {
-            marker.reset( new TrackMarker(thisShared) );
+            marker = TrackMarker::create(thisShared);
         }
         marker->initializeKnobsPublic();
         marker->load(*it);
@@ -237,12 +237,12 @@ TrackerContext::createMarker()
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     bool usePM = isTrackerPMEnabled();
     if (!usePM) {
-        track.reset( new TrackMarker( shared_from_this() ) );
+        track = TrackMarker::create( shared_from_this() );
     } else {
-        track.reset( new TrackMarkerPM( shared_from_this() ) );
+        track = TrackMarkerPM::create( shared_from_this() );
     }
 #else
-    track.reset( new TrackMarker( shared_from_this() ) );
+    track = TrackMarker::create( shared_from_this() );
 #endif
 
     track->initializeKnobsPublic();

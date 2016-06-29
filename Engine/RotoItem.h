@@ -67,7 +67,8 @@ NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;
 class RotoItem
-    : public QObject, public boost::enable_shared_from_this<RotoItem>
+    : public QObject
+    , public boost::enable_shared_from_this<RotoItem>
 {
 public:
 
@@ -79,9 +80,21 @@ public:
     };
 
 
+public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+
     RotoItem( const boost::shared_ptr<RotoContext>& context,
               const std::string & name,
               boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() );
+
+public:
+    static boost::shared_ptr<RotoItem> create( const boost::shared_ptr<RotoContext>& context,
+                                               const std::string & name,
+                                               boost::shared_ptr<RotoLayer> parent = boost::shared_ptr<RotoLayer>() )
+    {
+        return boost::shared_ptr<RotoItem>( new RotoItem(context, name, parent) );
+    }
 
     virtual ~RotoItem();
 

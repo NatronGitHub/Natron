@@ -113,9 +113,9 @@ EffectInstance::EffectInstance(NodePtr node)
 }
 
 EffectInstance::EffectInstance(const EffectInstance& other)
-: NamedKnobHolder(other)
-, _node(other.getNode())
-, _imp(new Implementation(*other._imp))
+    : NamedKnobHolder(other)
+    , _node( other.getNode() )
+    , _imp( new Implementation(*other._imp) )
 {
     _imp->_publicInterface = this;
 }
@@ -3324,8 +3324,11 @@ EffectInstance::drawOverlay_public(double time,
     }
 
     _imp->setDuringInteractAction(true);
+    bool drawHostOverlay = shouldDrawHostOverlay();
     drawOverlay(time, actualScale, view);
-    getNode()->drawHostOverlay(time, actualScale, view);
+    if (drawHostOverlay) {
+        getNode()->drawHostOverlay(time, actualScale, view);
+    }
     _imp->setDuringInteractAction(false);
 }
 
@@ -3356,10 +3359,19 @@ EffectInstance::onOverlayPenDown_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
-        if (!ret) {
-            ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
+        bool drawHostOverlay = shouldDrawHostOverlay();
+        if (!shouldPreferPluginOverlayOverHostOverlay()) {
+            ret = drawHostOverlay ? getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
+            if (!ret) {
+                ret |= onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
+            }
+        } else {
+            ret = onOverlayPenDown(time, actualScale, view, viewportPos, pos, pressure, timestamp, pen);
+            if (!ret && drawHostOverlay) {
+                ret |= getNode()->onOverlayPenDownDefault(time, actualScale, view, viewportPos, pos, pressure);
+            }
         }
+
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3391,10 +3403,19 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenDoubleClicked(time, actualScale, view, viewportPos, pos);
-        if (!ret) {
-            ret |= getNode()->onOverlayPenDoubleClickedDefault(time, actualScale, view, viewportPos, pos);
+        bool drawHostOverlay = shouldDrawHostOverlay();
+        if (!shouldPreferPluginOverlayOverHostOverlay()) {
+            ret = drawHostOverlay ? getNode()->onOverlayPenDoubleClickedDefault(time, actualScale, view, viewportPos, pos) : false;
+            if (!ret) {
+                ret |= onOverlayPenDoubleClicked(time, actualScale, view, viewportPos, pos);
+            }
+        } else {
+            ret = onOverlayPenDoubleClicked(time, actualScale, view, viewportPos, pos);
+            if (!ret && drawHostOverlay) {
+                ret |= getNode()->onOverlayPenDoubleClickedDefault(time, actualScale, view, viewportPos, pos);
+            }
         }
+
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3427,10 +3448,20 @@ EffectInstance::onOverlayPenMotion_public(double time,
 
     NON_RECURSIVE_ACTION();
     _imp->setDuringInteractAction(true);
-    bool ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
-    if (!ret) {
-        ret |= getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure);
+    bool ret;
+    bool drawHostOverlay = shouldDrawHostOverlay();
+    if (!shouldPreferPluginOverlayOverHostOverlay()) {
+        ret = drawHostOverlay ? getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
+        if (!ret) {
+            ret |= onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+        }
+    } else {
+        ret = onOverlayPenMotion(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+        if (!ret && drawHostOverlay) {
+            ret |= getNode()->onOverlayPenMotionDefault(time, actualScale, view, viewportPos, pos, pressure);
+        }
     }
+
     _imp->setDuringInteractAction(false);
     //Don't chek if render is needed on pen motion, wait for the pen up
 
@@ -3464,10 +3495,19 @@ EffectInstance::onOverlayPenUp_public(double time,
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
-        ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
-        if (!ret) {
-            ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
+        bool drawHostOverlay = shouldDrawHostOverlay();
+        if (!shouldPreferPluginOverlayOverHostOverlay()) {
+            ret = drawHostOverlay ? getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure) : false;
+            if (!ret) {
+                ret |= onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+            }
+        } else {
+            ret = onOverlayPenUp(time, actualScale, view, viewportPos, pos, pressure, timestamp);
+            if (!ret && drawHostOverlay) {
+                ret |= getNode()->onOverlayPenUpDefault(time, actualScale, view, viewportPos, pos, pressure);
+            }
         }
+
         _imp->setDuringInteractAction(false);
     }
     checkIfRenderNeeded();
@@ -3495,12 +3535,13 @@ EffectInstance::onOverlayKeyDown_public(double time,
         actualScale = renderScale;
     }
 
+
     bool ret;
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
-        if (!ret) {
+        if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyDownDefault(time, actualScale, view, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
@@ -3536,7 +3577,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
 
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
-        if (!ret) {
+        if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyUpDefault(time, actualScale, view, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
@@ -3571,7 +3612,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
-        if (!ret) {
+        if (!ret && shouldDrawHostOverlay()) {
             ret |= getNode()->onOverlayKeyRepeatDefault(time, actualScale, view, key, modifiers);
         }
         _imp->setDuringInteractAction(false);
@@ -3604,7 +3645,9 @@ EffectInstance::onOverlayFocusGained_public(double time,
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusGained(time, actualScale, view);
-        ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
+        if (shouldDrawHostOverlay()) {
+            ret |= getNode()->onOverlayFocusGainedDefault(time, actualScale, view);
+        }
 
         _imp->setDuringInteractAction(false);
     }
@@ -3631,12 +3674,15 @@ EffectInstance::onOverlayFocusLost_public(double time,
         actualScale = renderScale;
     }
 
+
     bool ret;
     {
         NON_RECURSIVE_ACTION();
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusLost(time, actualScale, view);
-        ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
+        if (shouldDrawHostOverlay()) {
+            ret |= getNode()->onOverlayFocusLostDefault(time, actualScale, view);
+        }
 
         _imp->setDuringInteractAction(false);
     }
@@ -4755,7 +4801,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
         if (reason != eValueChangedReasonTimeChanged) {
-            AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+            AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
             const bool isRenderUserInteraction = true;
             const bool isSequentialRender = false;
             AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
@@ -4797,6 +4843,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             if ( !isDequeueingValuesSet() && (getRecursionLevel() == 0) && checkIfOverlayRedrawNeeded() ) {
                 redrawOverlayInteract();
             }
+        }
+        if (isOverlaySlaveParam(kh)) {
+            kh->redraw();
         }
     }
 

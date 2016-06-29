@@ -66,7 +66,9 @@ NATRON_NAMESPACE_ENTER;
 struct KnobGuiPrivate;
 
 class KnobGui
-    : public QObject, public KnobGuiI, public boost::enable_shared_from_this<KnobGui>
+    : public QObject
+    , public KnobGuiI
+    , public boost::enable_shared_from_this<KnobGui>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -80,10 +82,14 @@ public:
         eKnobWarningChoiceMenuOutOfDate
     };
 
+public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobGui(const KnobPtr& knob,
             KnobGuiContainerI* container);
 
+public:
     virtual ~KnobGui() OVERRIDE;
 
     void initialize();

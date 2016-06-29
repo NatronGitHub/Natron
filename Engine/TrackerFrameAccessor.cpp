@@ -137,7 +137,7 @@ natronImageToLibMvFloatImageForChannels(const Image* source,
     unsigned int srcRowElements = source->getRowElements();
 
     assert( source->getBounds().contains(roi) );
-    const float* src_pixels = (const float*)racc.pixelAt(roi.x1, roi.y2 - 1);
+    const float* src_pixels = (const float*)racc.pixelAt(roi.x1, roi.y1);
     assert(src_pixels);
     float* dst_pixels = mvImg.Data();
     assert(dst_pixels);
@@ -151,7 +151,7 @@ natronImageToLibMvFloatImageForChannels(const Image* source,
     int h = roi.height();
     int w = roi.width();
     for ( int y = 0; y < h; ++y,
-          src_pixels -= (srcRowElements + compsCount * w) ) {
+          src_pixels += (srcRowElements - compsCount * w) ) {
         for (int x = 0; x < w; ++x,
              src_pixels += compsCount,
              ++dst_pixels) {
@@ -261,13 +261,15 @@ TrackerFrameAccessor::invertYCoordinate(double yIn,
 
 void
 TrackerFrameAccessor::convertLibMVRegionToRectI(const mv::Region& region,
-                                                int formatHeight,
+                                                int /*formatHeight*/,
                                                 RectI* roi)
 {
     roi->x1 = region.min(0);
     roi->x2 = region.max(0);
-    roi->y1 = invertYCoordinate(region.max(1), formatHeight);
-    roi->y2 = invertYCoordinate(region.min(1), formatHeight);
+    roi->y1 = region.min(1);
+    //roi->y1 = invertYCoordinate(region.max(1), formatHeight);
+    roi->y2 = region.max(1);
+    //roi->y2 = invertYCoordinate(region.min(1), formatHeight);
 }
 
 /*
@@ -342,7 +344,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     NodePtr node = _imp->context->getNode();
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
-    AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );

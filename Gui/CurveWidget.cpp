@@ -548,14 +548,16 @@ CurveWidget::paintGL()
         glClear(GL_COLOR_BUFFER_BIT);
         glCheckErrorIgnoreOSXBug();
 
-        _imp->drawScale();
-
         boost::shared_ptr<OfxParamOverlayInteract> customInteract = getCustomInteract();
         if (customInteract) {
             RenderScale scale(1.);
             customInteract->setCallingViewport(this);
             customInteract->drawAction(0, scale, 0, customInteract->hasColorPicker() ? &customInteract->getLastColorPickerColor() : 0);
         }
+
+        _imp->drawScale();
+
+
 
         if (_imp->_timelineEnabled) {
             _imp->drawTimelineMarkers();

@@ -84,6 +84,9 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
                     serialization.size = (*it2)->dataSize();
                     serialization.filePath = (*it2)->getFilePath();
                     serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
+
+                    (*it2)->syncBackingFile();
+                    
                     tableOfContents->push_back(serialization);
 #ifdef DEBUG
                     if ( !_isTiled && !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {

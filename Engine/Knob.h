@@ -371,16 +371,21 @@ typedef std::list<KnobChange> KnobChanges;
 
 class KnobI
     : public OverlaySupport
-      , public boost::enable_shared_from_this<KnobI>
+    , public boost::enable_shared_from_this<KnobI>
 {
     friend class KnobHolder;
 
 public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobI()
     {
     }
 
+public:
+
+    // dtor
     virtual ~KnobI()
     {
     }

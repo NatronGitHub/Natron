@@ -568,7 +568,7 @@ AppInstance::load(const CLArgs& cl,
 {
     // Initialize the knobs of the project before loading anything else.
     assert(!_imp->_currentProject); // < This function may only be called once per AppInstance
-    _imp->_currentProject.reset( new Project( shared_from_this() ) );
+    _imp->_currentProject = Project::create( shared_from_this() );
     _imp->_currentProject->initializeKnobsPublic();
 
     loadInternal(cl, makeEmptyInstance);
