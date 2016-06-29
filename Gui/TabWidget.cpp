@@ -97,7 +97,7 @@ public:
         , _type(TabWidget::eDropRectNone)
         , _widget(pane)
     {
-        setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
+        setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
         setAttribute(Qt::WA_TranslucentBackground);
         setAttribute(Qt::WA_ShowWithoutActivating);
         setStyleSheet( QString::fromUtf8("background:transparent;") );
