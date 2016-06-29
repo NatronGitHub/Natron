@@ -351,7 +351,7 @@ DocumentationManager::handler(QHttpRequest *req,
     QFileInfo staticFileInfo;
     if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".css") ) || page.endsWith( QString::fromUtf8(".js") ) || page.endsWith( QString::fromUtf8(".txt") ) || page.endsWith( QString::fromUtf8(".png") ) || page.endsWith( QString::fromUtf8(".jpg") ) ) {
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
-            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") );
+            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") );
         } else {
             staticFileInfo = docDir + page;
         }

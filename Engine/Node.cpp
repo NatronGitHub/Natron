@@ -4318,8 +4318,9 @@ Node::makeDocumentation(bool genHTML) const
         QFile iconFile(pluginIcon);
         if ( iconFile.exists() ) {
             if (genHTML) {
-                pluginIconUrl.append(QString::fromUtf8("/LOCAL_FILE/"));
+                pluginIconUrl.append( QString::fromUtf8("/LOCAL_FILE/") );
                 pluginIconUrl.append(pluginIcon);
+                pluginIconUrl.replace( QString::fromUtf8("\\"), QString::fromUtf8("/") );
             } else {
                 pluginIconUrl.append(pluginID);
                 pluginIconUrl.append(QString::fromUtf8(".png"));
