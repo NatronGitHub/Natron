@@ -425,7 +425,6 @@ public:
         if ( !path.empty() && (count != 0) ) {
             //if the backing file has already the good size and we just wanted to re-open the mapping
             _backingFile->resize(count);
-            _backingFile->flush(MemoryFile::eFlushTypeAsync, 0, 0);
         }
     }
 
@@ -566,7 +565,7 @@ public:
             }
         } else if (_storageMode == eStorageModeDisk) {
             if (_backingFile) {
-                bool flushOk = _backingFile->flush(MemoryFile::eFlushTypeSync, 0, 0);
+                bool flushOk = _backingFile->flush(MemoryFile::eFlushTypeAsync, 0, 0);
                 _backingFile.reset();
                 if (!flushOk) {
                     throw std::runtime_error("Failed to flush RAM data to backing file.");
@@ -580,6 +579,15 @@ public:
             if (_glTexture) {
                 _glTexture.reset();
             }
+        }
+    }
+
+    void syncBackingFile() const
+    {
+        if (_backingFile) {
+            _backingFile->flush(MemoryFile::eFlushTypeAsync, 0, 0);
+        } else if (_cacheFile && _entry) {
+            _cacheFile->file->flush(MemoryFile::eFlushTypeAsync, _cacheFile->file->data() + _cacheFileDataOffset, _entry->getCacheTileSizeBytes());
         }
     }
 
