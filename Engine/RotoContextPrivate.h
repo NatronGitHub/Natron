@@ -794,32 +794,32 @@ public:
         , skewY()
         , skewOrder()
         , center()
-        , brushSize( new KnobDouble(NULL, tr(kRotoBrushSizeParamLabel), 1, false) )
-        , brushSpacing( new KnobDouble(NULL, tr(kRotoBrushSpacingParamLabel), 1, false) )
-        , brushHardness( new KnobDouble(NULL, tr(kRotoBrushHardnessParamLabel), 1, false) )
-        , effectStrength( new KnobDouble(NULL, tr(kRotoBrushEffectParamLabel), 1, false) )
-        , pressureOpacity( new KnobBool(NULL, tr(kRotoBrushPressureOpacityParamLabel), 1, false) )
-        , pressureSize( new KnobBool(NULL, tr(kRotoBrushPressureSizeParamLabel), 1, false) )
-        , pressureHardness( new KnobBool(NULL, tr(kRotoBrushPressureHardnessParamLabel), 1, false) )
-        , buildUp( new KnobBool(NULL, tr(kRotoBrushBuildupParamLabel), 1, false) )
-        , visiblePortion( new KnobDouble(NULL, tr(kRotoBrushVisiblePortionParamLabel), 2, false) )
-        , cloneTranslate( new KnobDouble(NULL, tr(kRotoBrushTranslateParamLabel), 2, false) )
-        , cloneRotate( new KnobDouble(NULL, tr(kRotoBrushRotateParamLabel), 1, false) )
-        , cloneScale( new KnobDouble(NULL, tr(kRotoBrushScaleParamLabel), 2, false) )
-        , cloneScaleUniform( new KnobBool(NULL, tr(kRotoBrushScaleUniformParamLabel), 1, false) )
-        , cloneSkewX( new KnobDouble(NULL, tr(kRotoBrushSkewXParamLabel), 1, false) )
-        , cloneSkewY( new KnobDouble(NULL, tr(kRotoBrushSkewYParamLabel), 1, false) )
-        , cloneSkewOrder( new KnobChoice(NULL, tr(kRotoBrushSkewOrderParamLabel), 1, false) )
-        , cloneCenter( new KnobDouble(NULL, tr(kRotoBrushCenterParamLabel), 2, false) )
-        , cloneFilter( new KnobChoice(NULL, tr(kRotoBrushFilterParamLabel), 1, false) )
-        , cloneBlackOutside( new KnobBool(NULL, tr(kRotoBrushBlackOutsideParamLabel), 1, false) )
-        , sourceColor( new KnobChoice(NULL, tr(kRotoBrushSourceColorLabel), 1, false) )
-        , timeOffset( new KnobInt(NULL, tr(kRotoBrushTimeOffsetParamLabel), 1, false) )
-        , timeOffsetMode( new KnobChoice(NULL, tr(kRotoBrushTimeOffsetModeParamLabel), 1, false) )
+        , brushSize( new KnobDouble(NULL, tr(kRotoBrushSizeParamLabel), 1, true) )
+        , brushSpacing( new KnobDouble(NULL, tr(kRotoBrushSpacingParamLabel), 1, true) )
+        , brushHardness( new KnobDouble(NULL, tr(kRotoBrushHardnessParamLabel), 1, true) )
+        , effectStrength( new KnobDouble(NULL, tr(kRotoBrushEffectParamLabel), 1, true) )
+        , pressureOpacity( new KnobBool(NULL, tr(kRotoBrushPressureOpacityParamLabel), 1, true) )
+        , pressureSize( new KnobBool(NULL, tr(kRotoBrushPressureSizeParamLabel), 1, true) )
+        , pressureHardness( new KnobBool(NULL, tr(kRotoBrushPressureHardnessParamLabel), 1, true) )
+        , buildUp( new KnobBool(NULL, tr(kRotoBrushBuildupParamLabel), 1, true) )
+        , visiblePortion( new KnobDouble(NULL, tr(kRotoBrushVisiblePortionParamLabel), 2, true) )
+        , cloneTranslate( new KnobDouble(NULL, tr(kRotoBrushTranslateParamLabel), 2, true) )
+        , cloneRotate( new KnobDouble(NULL, tr(kRotoBrushRotateParamLabel), 1, true) )
+        , cloneScale( new KnobDouble(NULL, tr(kRotoBrushScaleParamLabel), 2, true) )
+        , cloneScaleUniform( new KnobBool(NULL, tr(kRotoBrushScaleUniformParamLabel), 1, true) )
+        , cloneSkewX( new KnobDouble(NULL, tr(kRotoBrushSkewXParamLabel), 1, true) )
+        , cloneSkewY( new KnobDouble(NULL, tr(kRotoBrushSkewYParamLabel), 1, true) )
+        , cloneSkewOrder( new KnobChoice(NULL, tr(kRotoBrushSkewOrderParamLabel), 1, true) )
+        , cloneCenter( new KnobDouble(NULL, tr(kRotoBrushCenterParamLabel), 2, true) )
+        , cloneFilter( new KnobChoice(NULL, tr(kRotoBrushFilterParamLabel), 1, true) )
+        , cloneBlackOutside( new KnobBool(NULL, tr(kRotoBrushBlackOutsideParamLabel), 1, true) )
+        , sourceColor( new KnobChoice(NULL, tr(kRotoBrushSourceColorLabel), 1, true) )
+        , timeOffset( new KnobInt(NULL, tr(kRotoBrushTimeOffsetParamLabel), 1, true) )
+        , timeOffsetMode( new KnobChoice(NULL, tr(kRotoBrushTimeOffsetModeParamLabel), 1, true) )
         , knobs()
         , cacheAccessMutex()
     {
-        opacity.reset( new KnobDouble(NULL, tr(kRotoOpacityParamLabel), 1, false) );
+        opacity.reset( new KnobDouble(NULL, tr(kRotoOpacityParamLabel), 1, true) );
         opacity->setHintToolTip( tr(kRotoOpacityHint) );
         opacity->setName(kRotoOpacityParam);
         opacity->populate();
@@ -830,7 +830,7 @@ public:
         opacity->setDefaultValue(ROTO_DEFAULT_OPACITY);
         knobs.push_back(opacity);
 
-        feather.reset( new KnobDouble(NULL, tr(kRotoFeatherParamLabel), 1, false) );
+        feather.reset( new KnobDouble(NULL, tr(kRotoFeatherParamLabel), 1, true) );
         feather->setHintToolTip( tr(kRotoFeatherHint) );
         feather->setName(kRotoFeatherParam);
         feather->populate();
@@ -840,7 +840,7 @@ public:
         feather->setDefaultValue(ROTO_DEFAULT_FEATHER);
         knobs.push_back(feather);
 
-        featherFallOff.reset( new KnobDouble(NULL, tr(kRotoFeatherFallOffParamLabel), 1, false) );
+        featherFallOff.reset( new KnobDouble(NULL, tr(kRotoFeatherFallOffParamLabel), 1, true) );
         featherFallOff->setHintToolTip( tr(kRotoFeatherFallOffHint) );
         featherFallOff->setName(kRotoFeatherFallOffParam);
         featherFallOff->populate();
@@ -852,7 +852,7 @@ public:
         knobs.push_back(featherFallOff);
 
 
-        lifeTime.reset( new KnobChoice(NULL, tr(kRotoDrawableItemLifeTimeParamLabel), 1, false) );
+        lifeTime.reset( new KnobChoice(NULL, tr(kRotoDrawableItemLifeTimeParamLabel), 1, true) );
         lifeTime->setHintToolTip( tr(kRotoDrawableItemLifeTimeParamHint) );
         lifeTime->populate();
         lifeTime->setName(kRotoDrawableItemLifeTimeParam);
@@ -867,13 +867,13 @@ public:
         lifeTime->setDefaultValue(isPaintingNode ? 0 : 3);
         knobs.push_back(lifeTime);
 
-        lifeTimeFrame.reset( new KnobInt(NULL, tr(kRotoDrawableItemLifeTimeFrameParamLabel), 1, false) );
+        lifeTimeFrame.reset( new KnobInt(NULL, tr(kRotoDrawableItemLifeTimeFrameParamLabel), 1, true) );
         lifeTimeFrame->setHintToolTip( tr(kRotoDrawableItemLifeTimeFrameParamHint) );
         lifeTimeFrame->setName(kRotoDrawableItemLifeTimeFrameParam);
         lifeTimeFrame->populate();
         knobs.push_back(lifeTimeFrame);
 
-        activated.reset( new KnobBool(NULL, tr(kRotoActivatedParamLabel), 1, false) );
+        activated.reset( new KnobBool(NULL, tr(kRotoActivatedParamLabel), 1, true) );
         activated->setHintToolTip( tr(kRotoActivatedHint) );
         activated->setName(kRotoActivatedParam);
         activated->populate();
@@ -881,7 +881,7 @@ public:
         knobs.push_back(activated);
 
 #ifdef NATRON_ROTO_INVERTIBLE
-        inverted.reset( new KnobBool(NULL, tr(kRotoInvertedParamLabel), 1, false) );
+        inverted.reset( new KnobBool(NULL, tr(kRotoInvertedParamLabel), 1, true) );
         inverted->setHintToolTip( tr(kRotoInvertedHint) );
         inverted->setName(kRotoInvertedParam);
         inverted->populate();
@@ -889,7 +889,7 @@ public:
         knobs.push_back(inverted);
 #endif
 
-        color.reset( new KnobColor(NULL, tr(kRotoColorParamLabel), 3, false) );
+        color.reset( new KnobColor(NULL, tr(kRotoColorParamLabel), 3, true) );
         color->setHintToolTip( tr(kRotoColorHint) );
         color->setName(kRotoColorParam);
         color->populate();
@@ -898,26 +898,26 @@ public:
         color->setDefaultValue(ROTO_DEFAULT_COLOR_B, 2);
         knobs.push_back(color);
 
-        compOperator.reset( new KnobChoice(NULL, tr(kRotoCompOperatorParamLabel), 1, false) );
+        compOperator.reset( new KnobChoice(NULL, tr(kRotoCompOperatorParamLabel), 1, true) );
         compOperator->setHintToolTip( tr(kRotoCompOperatorHint) );
         compOperator->setName(kRotoCompOperatorParam);
         compOperator->populate();
         knobs.push_back(compOperator);
 
 
-        translate.reset( new KnobDouble(NULL, tr(kRotoDrawableItemTranslateParamLabel), 2, false) );
+        translate.reset( new KnobDouble(NULL, tr(kRotoDrawableItemTranslateParamLabel), 2, true) );
         translate->setName(kRotoDrawableItemTranslateParam);
         translate->setHintToolTip( tr(kRotoDrawableItemTranslateParamHint) );
         translate->populate();
         knobs.push_back(translate);
 
-        rotate.reset( new KnobDouble(NULL, tr(kRotoDrawableItemRotateParamLabel), 1, false) );
+        rotate.reset( new KnobDouble(NULL, tr(kRotoDrawableItemRotateParamLabel), 1, true) );
         rotate->setName(kRotoDrawableItemRotateParam);
         rotate->setHintToolTip( tr(kRotoDrawableItemRotateParamHint) );
         rotate->populate();
         knobs.push_back(rotate);
 
-        scale.reset( new KnobDouble(NULL, tr(kRotoDrawableItemScaleParamLabel), 2, false) );
+        scale.reset( new KnobDouble(NULL, tr(kRotoDrawableItemScaleParamLabel), 2, true) );
         scale->setName(kRotoDrawableItemScaleParam);
         scale->setHintToolTip( tr(kRotoDrawableItemScaleParamHint) );
         scale->populate();
@@ -925,26 +925,26 @@ public:
         scale->setDefaultValue(1, 1);
         knobs.push_back(scale);
 
-        scaleUniform.reset( new KnobBool(NULL, tr(kRotoDrawableItemScaleUniformParamLabel), 1, false) );
+        scaleUniform.reset( new KnobBool(NULL, tr(kRotoDrawableItemScaleUniformParamLabel), 1, true) );
         scaleUniform->setName(kRotoDrawableItemScaleUniformParam);
         scaleUniform->setHintToolTip( tr(kRotoDrawableItemScaleUniformParamHint) );
         scaleUniform->populate();
         scaleUniform->setDefaultValue(true);
         knobs.push_back(scaleUniform);
 
-        skewX.reset( new KnobDouble(NULL, tr(kRotoDrawableItemSkewXParamLabel), 1, false) );
+        skewX.reset( new KnobDouble(NULL, tr(kRotoDrawableItemSkewXParamLabel), 1, true) );
         skewX->setName(kRotoDrawableItemSkewXParam);
         skewX->setHintToolTip( tr(kRotoDrawableItemSkewXParamHint) );
         skewX->populate();
         knobs.push_back(skewX);
 
-        skewY.reset( new KnobDouble(NULL, tr(kRotoDrawableItemSkewYParamLabel), 1, false) );
+        skewY.reset( new KnobDouble(NULL, tr(kRotoDrawableItemSkewYParamLabel), 1, true) );
         skewY->setName(kRotoDrawableItemSkewYParam);
         skewY->setHintToolTip( tr(kRotoDrawableItemSkewYParamHint) );
         skewY->populate();
         knobs.push_back(skewY);
 
-        skewOrder.reset( new KnobChoice(NULL, tr(kRotoDrawableItemSkewOrderParamLabel), 1, false) );
+        skewOrder.reset( new KnobChoice(NULL, tr(kRotoDrawableItemSkewOrderParamLabel), 1, true) );
         skewOrder->setName(kRotoDrawableItemSkewOrderParam);
         skewOrder->setHintToolTip( tr(kRotoDrawableItemSkewOrderParamHint) );
         skewOrder->populate();
@@ -956,13 +956,13 @@ public:
             skewOrder->populateChoices(choices);
         }
 
-        center.reset( new KnobDouble(NULL, tr(kRotoDrawableItemCenterParamLabel), 2, false) );
+        center.reset( new KnobDouble(NULL, tr(kRotoDrawableItemCenterParamLabel), 2, true) );
         center->setName(kRotoDrawableItemCenterParam);
         center->setHintToolTip( tr(kRotoDrawableItemCenterParamHint) );
         center->populate();
         knobs.push_back(center);
 
-        extraMatrix.reset( new KnobDouble(NULL, tr(kRotoDrawableItemExtraMatrixParamLabel), 9, false) );
+        extraMatrix.reset( new KnobDouble(NULL, tr(kRotoDrawableItemExtraMatrixParamLabel), 9, true) );
         extraMatrix->setName(kRotoDrawableItemExtraMatrixParam);
         extraMatrix->setHintToolTip( tr(kRotoDrawableItemExtraMatrixParamHint) );
         extraMatrix->populate();
@@ -1170,7 +1170,7 @@ public:
         knobs.push_back(timeOffsetMode);
 
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-        motionBlur.reset( new KnobDouble(NULL, tr(kRotoMotionBlurParamLabel), 1, false) );
+        motionBlur.reset( new KnobDouble(NULL, tr(kRotoMotionBlurParamLabel), 1, true) );
         motionBlur->setName(kRotoPerShapeMotionBlurParam);
         motionBlur->setHintToolTip( tr(kRotoMotionBlurParamHint) );
         motionBlur->populate();
@@ -1181,7 +1181,7 @@ public:
         motionBlur->setMaximum(4);
         knobs.push_back(motionBlur);
 
-        shutter.reset( new KnobDouble(NULL, tr(kRotoShutterParamLabel), 1, false) );
+        shutter.reset( new KnobDouble(NULL, tr(kRotoShutterParamLabel), 1, true) );
         shutter->setName(kRotoPerShapeShutterParam);
         shutter->setHintToolTip( tr(kRotoShutterParamHint) );
         shutter->populate();
@@ -1192,7 +1192,7 @@ public:
         shutter->setMaximum(2);
         knobs.push_back(shutter);
 
-        shutterType.reset( new KnobChoice(NULL, tr(kRotoShutterOffsetTypeParamLabel), 1, false) );
+        shutterType.reset( new KnobChoice(NULL, tr(kRotoShutterOffsetTypeParamLabel), 1, true) );
         shutterType->setName(kRotoPerShapeShutterOffsetTypeParam);
         shutterType->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
         shutterType->populate();
@@ -1211,7 +1211,7 @@ public:
         }
         knobs.push_back(shutterType);
 
-        customOffset.reset( new KnobDouble(NULL, tr(kRotoShutterCustomOffsetParamLabel), 1, false) );
+        customOffset.reset( new KnobDouble(NULL, tr(kRotoShutterCustomOffsetParamLabel), 1, true) );
         customOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         customOffset->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
         customOffset->populate();
@@ -1393,13 +1393,13 @@ public:
 
         boost::shared_ptr<KnobPage> shapePage, strokePage, generalPage, clonePage, transformPage;
 
-        generalPage = AppManager::createKnob<KnobPage>(effect.get(), tr("General"), 1, false);
-        shapePage = AppManager::createKnob<KnobPage>(effect.get(), tr("Shape"), 1, false);
-        strokePage = AppManager::createKnob<KnobPage>(effect.get(), tr("Stroke"), 1, false);
-        clonePage = AppManager::createKnob<KnobPage>(effect.get(), tr("Clone"), 1, false);
-        transformPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Transform"), 1, false);
+        generalPage = AppManager::createKnob<KnobPage>(effect.get(), tr("General"), 1, true);
+        shapePage = AppManager::createKnob<KnobPage>(effect.get(), tr("Shape"), 1, true);
+        strokePage = AppManager::createKnob<KnobPage>(effect.get(), tr("Stroke"), 1, true);
+        clonePage = AppManager::createKnob<KnobPage>(effect.get(), tr("Clone"), 1, true);
+        transformPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Transform"), 1, true);
 
-        boost::shared_ptr<KnobDouble> opacityKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoOpacityParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> opacityKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoOpacityParamLabel), 1, true);
         opacityKnob->setHintToolTip( tr(kRotoOpacityHint) );
         opacityKnob->setName(kRotoOpacityParam);
         opacityKnob->setMinimum(0.);
@@ -1413,7 +1413,7 @@ public:
         knobs.push_back(opacityKnob);
         opacity = opacityKnob;
 
-        boost::shared_ptr<KnobColor> ck = AppManager::createKnob<KnobColor>(effect.get(), tr(kRotoColorParamLabel), 3, false);
+        boost::shared_ptr<KnobColor> ck = AppManager::createKnob<KnobColor>(effect.get(), tr(kRotoColorParamLabel), 3, true);
         ck->setHintToolTip( tr(kRotoColorHint) );
         ck->setName(kRotoColorParam);
         ck->setDefaultValue(ROTO_DEFAULT_COLOR_R, 0);
@@ -1425,7 +1425,7 @@ public:
         knobs.push_back(ck);
         colorKnob = ck;
 
-        boost::shared_ptr<KnobChoice> lifeTimeKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoDrawableItemLifeTimeParamLabel), 1, false);
+        boost::shared_ptr<KnobChoice> lifeTimeKnob = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoDrawableItemLifeTimeParamLabel), 1, true);
         lifeTimeKnob->setHintToolTip( tr(kRotoDrawableItemLifeTimeParamHint) );
         lifeTimeKnob->setName(kRotoDrawableItemLifeTimeParam);
         lifeTimeKnob->setAddNewLine(false);
@@ -1449,7 +1449,7 @@ public:
         knobs.push_back(lifeTimeKnob);
         lifeTime = lifeTimeKnob;
 
-        boost::shared_ptr<KnobInt> lifeTimeFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kRotoDrawableItemLifeTimeFrameParamLabel), 1, false);
+        boost::shared_ptr<KnobInt> lifeTimeFrameKnob = AppManager::createKnob<KnobInt>(effect.get(), tr(kRotoDrawableItemLifeTimeFrameParamLabel), 1, true);
         lifeTimeFrameKnob->setHintToolTip( tr(kRotoDrawableItemLifeTimeFrameParamHint) );
         lifeTimeFrameKnob->setName(kRotoDrawableItemLifeTimeFrameParam);
         lifeTimeFrameKnob->setSecretByDefault(!isPaintNode);
@@ -1460,7 +1460,7 @@ public:
         knobs.push_back(lifeTimeFrameKnob);
         lifeTimeFrame = lifeTimeFrameKnob;
 
-        boost::shared_ptr<KnobBool> activatedKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoActivatedParamLabel), 1, false);
+        boost::shared_ptr<KnobBool> activatedKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoActivatedParamLabel), 1, true);
         activatedKnob->setHintToolTip( tr(kRotoActivatedHint) );
         activatedKnob->setName(kRotoActivatedParam);
         activatedKnob->setAddNewLine(true);
@@ -1473,7 +1473,7 @@ public:
         activated = activatedKnob;
 
 #ifdef NATRON_ROTO_INVERTIBLE
-        boost::shared_ptr<KnobBool> invertedKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoInvertedParamLabel), 1, false);
+        boost::shared_ptr<KnobBool> invertedKnob = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoInvertedParamLabel), 1, true);
         invertedKnob->setHintToolTip( tr(kRotoInvertedHint) );
         invertedKnob->setName(kRotoInvertedParam);
         invertedKnob->setDefaultValue(false);
@@ -1484,7 +1484,7 @@ public:
         inverted = invertedKnob;
 #endif
 
-        boost::shared_ptr<KnobDouble> featherKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoFeatherParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> featherKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoFeatherParamLabel), 1, true);
         featherKnob->setHintToolTip( tr(kRotoFeatherHint) );
         featherKnob->setName(kRotoFeatherParam);
         featherKnob->setMinimum(0);
@@ -1498,7 +1498,7 @@ public:
         shapeKnobs.push_back(featherKnob);
         feather = featherKnob;
 
-        boost::shared_ptr<KnobDouble> featherFallOffKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoFeatherFallOffParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> featherFallOffKnob = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoFeatherFallOffParamLabel), 1, true);
         featherFallOffKnob->setHintToolTip( tr(kRotoFeatherFallOffHint) );
         featherFallOffKnob->setName(kRotoFeatherFallOffParam);
         featherFallOffKnob->setMinimum(0.001);
@@ -1514,7 +1514,7 @@ public:
         featherFallOff = featherFallOffKnob;
 
         {
-            boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushSourceColorLabel), 1, false);
+            boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushSourceColorLabel), 1, true);
             sourceType->setName(kRotoBrushSourceColor);
             sourceType->setHintToolTip( tr(kRotoBrushSourceColorHint) );
             sourceType->setDefaultValue(1);
@@ -1535,7 +1535,7 @@ public:
             cloneKnobs.push_back(sourceType);
             sourceTypeKnob = sourceType;
 
-            boost::shared_ptr<KnobDouble> translate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushTranslateParamLabel), 2, false);
+            boost::shared_ptr<KnobDouble> translate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushTranslateParamLabel), 2, true);
             translate->setName(kRotoBrushTranslateParam);
             translate->setHintToolTip( tr(kRotoBrushTranslateParamHint) );
             translate->setDefaultAllDimensionsEnabled(false);
@@ -1545,7 +1545,7 @@ public:
             cloneKnobs.push_back(translate);
             cloneTranslateKnob = translate;
 
-            boost::shared_ptr<KnobDouble> rotate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushRotateParamLabel), 1, false);
+            boost::shared_ptr<KnobDouble> rotate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushRotateParamLabel), 1, true);
             rotate->setName(kRotoBrushRotateParam);
             rotate->setHintToolTip( tr(kRotoBrushRotateParamHint) );
             rotate->setDefaultAllDimensionsEnabled(false);
@@ -1556,7 +1556,7 @@ public:
             cloneKnobs.push_back(rotate);
             cloneRotateKnob = rotate;
 
-            boost::shared_ptr<KnobDouble> scale = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushScaleParamLabel), 2, false);
+            boost::shared_ptr<KnobDouble> scale = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushScaleParamLabel), 2, true);
             scale->setName(kRotoBrushScaleParam);
             scale->setHintToolTip( tr(kRotoBrushScaleParamHint) );
             scale->setDefaultValue(1, 0);
@@ -1572,7 +1572,7 @@ public:
             knobs.push_back(scale);
             cloneScaleKnob = scale;
 
-            boost::shared_ptr<KnobBool> scaleUniform = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoBrushScaleUniformParamLabel), 1, false);
+            boost::shared_ptr<KnobBool> scaleUniform = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoBrushScaleUniformParamLabel), 1, true);
             scaleUniform->setName(kRotoBrushScaleUniformParam);
             scaleUniform->setHintToolTip( tr(kRotoBrushScaleUniformParamHint) );
             scaleUniform->setDefaultValue(true);
@@ -1583,7 +1583,7 @@ public:
             knobs.push_back(scaleUniform);
             cloneUniformKnob = scaleUniform;
 
-            boost::shared_ptr<KnobDouble> skewX = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSkewXParamLabel), 1, false);
+            boost::shared_ptr<KnobDouble> skewX = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSkewXParamLabel), 1, true);
             skewX->setName(kRotoBrushSkewXParam);
             skewX->setHintToolTip( tr(kRotoBrushSkewXParamHint) );
             skewX->setDefaultAllDimensionsEnabled(false);
@@ -1594,7 +1594,7 @@ public:
             knobs.push_back(skewX);
             cloneSkewXKnob = skewX;
 
-            boost::shared_ptr<KnobDouble> skewY = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSkewYParamLabel), 1, false);
+            boost::shared_ptr<KnobDouble> skewY = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSkewYParamLabel), 1, true);
             skewY->setName(kRotoBrushSkewYParam);
             skewY->setHintToolTip( tr(kRotoBrushSkewYParamHint) );
             skewY->setDefaultAllDimensionsEnabled(false);
@@ -1605,7 +1605,7 @@ public:
             knobs.push_back(skewY);
             cloneSkewYKnob = skewY;
 
-            boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushSkewOrderParamLabel), 1, false);
+            boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushSkewOrderParamLabel), 1, true);
             skewOrder->setName(kRotoBrushSkewOrderParam);
             skewOrder->setHintToolTip( tr(kRotoBrushSkewOrderParamHint) );
             skewOrder->setDefaultValue(0);
@@ -1622,7 +1622,7 @@ public:
             knobs.push_back(skewOrder);
             cloneSkewOrderKnob = skewOrder;
 
-            boost::shared_ptr<KnobDouble> center = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushCenterParamLabel), 2, false);
+            boost::shared_ptr<KnobDouble> center = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushCenterParamLabel), 2, true);
             center->setName(kRotoBrushCenterParam);
             center->setHintToolTip( tr(kRotoBrushCenterParamHint) );
             center->setDefaultAllDimensionsEnabled(false);
@@ -1658,7 +1658,7 @@ public:
                                               boost::shared_ptr<KnobBool>() /*invert*/,
                                               boost::shared_ptr<KnobBool>() /*interactive*/);
 
-            boost::shared_ptr<KnobChoice> filter = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushFilterParamLabel), 1, false);
+            boost::shared_ptr<KnobChoice> filter = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushFilterParamLabel), 1, true);
             filter->setName(kRotoBrushFilterParam);
             filter->setHintToolTip( tr(kRotoBrushFilterParamHint) );
             {
@@ -1692,7 +1692,7 @@ public:
             knobs.push_back(filter);
             cloneFilterKnob = filter;
 
-            boost::shared_ptr<KnobBool> blackOutside = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoBrushBlackOutsideParamLabel), 1, false);
+            boost::shared_ptr<KnobBool> blackOutside = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoBrushBlackOutsideParamLabel), 1, true);
             blackOutside->setName(kRotoBrushBlackOutsideParam);
             blackOutside->setHintToolTip( tr(kRotoBrushBlackOutsideParamHint) );
             blackOutside->setDefaultValue(true);
@@ -1702,7 +1702,7 @@ public:
             cloneKnobs.push_back(blackOutside);
             cloneBlackOutsideKnob = blackOutside;
 
-            boost::shared_ptr<KnobInt> timeOffset = AppManager::createKnob<KnobInt>(effect.get(), tr(kRotoBrushTimeOffsetParamLabel), 1, false);
+            boost::shared_ptr<KnobInt> timeOffset = AppManager::createKnob<KnobInt>(effect.get(), tr(kRotoBrushTimeOffsetParamLabel), 1, true);
             timeOffset->setName(kRotoBrushTimeOffsetParam);
             timeOffset->setHintToolTip( tr(kRotoBrushTimeOffsetParamHint) );
             timeOffset->setDisplayMinimum(-100);
@@ -1715,7 +1715,7 @@ public:
             knobs.push_back(timeOffset);
             timeOffsetKnob = timeOffset;
 
-            boost::shared_ptr<KnobChoice> timeOffsetMode = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushTimeOffsetModeParamLabel), 1, false);
+            boost::shared_ptr<KnobChoice> timeOffsetMode = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoBrushTimeOffsetModeParamLabel), 1, true);
             timeOffsetMode->setName(kRotoBrushTimeOffsetModeParam);
             timeOffsetMode->setHintToolTip( tr(kRotoBrushTimeOffsetModeParamHint) );
             {
@@ -1731,7 +1731,7 @@ public:
             cloneKnobs.push_back(timeOffsetMode);
             timeOffsetModeKnob = timeOffsetMode;
 
-            boost::shared_ptr<KnobDouble> brushSize = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSizeParamLabel), 1, false);
+            boost::shared_ptr<KnobDouble> brushSize = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSizeParamLabel), 1, true);
             brushSize->setName(kRotoBrushSizeParam);
             brushSize->setHintToolTip( tr(kRotoBrushSizeParamHint) );
             brushSize->setDefaultValue(25);
@@ -1744,7 +1744,7 @@ public:
             strokeKnobs.push_back(brushSize);
             brushSizeKnob = brushSize;
 
-            boost::shared_ptr<KnobDouble> brushSpacing = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSpacingParamLabel), 1, false);
+            boost::shared_ptr<KnobDouble> brushSpacing = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushSpacingParamLabel), 1, true);
             brushSpacing->setName(kRotoBrushSpacingParam);
             brushSpacing->setHintToolTip( tr(kRotoBrushSpacingParamHint) );
             brushSpacing->setDefaultValue(0.1);
@@ -1757,7 +1757,7 @@ public:
             strokeKnobs.push_back(brushSpacing);
             brushSpacingKnob = brushSpacing;
 
-            boost::shared_ptr<KnobDouble> brushHardness = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushHardnessParamLabel), 1, false);
+            boost::shared_ptr<KnobDouble> brushHardness = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushHardnessParamLabel), 1, true);
             brushHardness->setName(kRotoBrushHardnessParam);
             brushHardness->setHintToolTip( tr(kRotoBrushHardnessParamHint) );
             brushHardness->setDefaultValue(0.2);
@@ -1770,7 +1770,7 @@ public:
             strokeKnobs.push_back(brushHardness);
             brushHardnessKnob = brushHardness;
 
-            boost::shared_ptr<KnobDouble> effectStrength = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushEffectParamLabel), 1, false);
+            boost::shared_ptr<KnobDouble> effectStrength = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushEffectParamLabel), 1, true);
             effectStrength->setName(kRotoBrushEffectParam);
             effectStrength->setHintToolTip( tr(kRotoBrushEffectParamHint) );
             effectStrength->setDefaultValue(15);
@@ -1843,7 +1843,7 @@ public:
             strokePage->addKnob(buildUp);
             buildUpKnob = buildUp;
 
-            boost::shared_ptr<KnobDouble> visiblePortion = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushVisiblePortionParamLabel), 2, false);
+            boost::shared_ptr<KnobDouble> visiblePortion = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoBrushVisiblePortionParamLabel), 2, true);
             visiblePortion->setName(kRotoBrushVisiblePortionParam);
             visiblePortion->setHintToolTip( tr(kRotoBrushVisiblePortionParamHint) );
             visiblePortion->setDefaultValue(0, 0);
@@ -1864,7 +1864,7 @@ public:
             brushVisiblePortionKnob = visiblePortion;
         }
 
-        boost::shared_ptr<KnobDouble> translate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemTranslateParamLabel), 2, false);
+        boost::shared_ptr<KnobDouble> translate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemTranslateParamLabel), 2, true);
         translate->setName(kRotoDrawableItemTranslateParam);
         translate->setHintToolTip( tr(kRotoDrawableItemTranslateParamHint) );
         translate->setDefaultAllDimensionsEnabled(false);
@@ -1873,7 +1873,7 @@ public:
         knobs.push_back(translate);
         translateKnob = translate;
 
-        boost::shared_ptr<KnobDouble> rotate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemRotateParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> rotate = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemRotateParamLabel), 1, true);
         rotate->setName(kRotoDrawableItemRotateParam);
         rotate->setHintToolTip( tr(kRotoDrawableItemRotateParamHint) );
         rotate->setDefaultAllDimensionsEnabled(false);
@@ -1883,7 +1883,7 @@ public:
         knobs.push_back(rotate);
         rotateKnob = rotate;
 
-        boost::shared_ptr<KnobDouble> scale = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemScaleParamLabel), 2, false);
+        boost::shared_ptr<KnobDouble> scale = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemScaleParamLabel), 2, true);
         scale->setName(kRotoDrawableItemScaleParam);
         scale->setHintToolTip( tr(kRotoDrawableItemScaleParamHint) );
         scale->setDefaultValue(1, 0);
@@ -1898,7 +1898,7 @@ public:
         knobs.push_back(scale);
         scaleKnob = scale;
 
-        boost::shared_ptr<KnobBool> scaleUniform = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoDrawableItemScaleUniformParamLabel), 1, false);
+        boost::shared_ptr<KnobBool> scaleUniform = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoDrawableItemScaleUniformParamLabel), 1, true);
         scaleUniform->setName(kRotoDrawableItemScaleUniformParam);
         scaleUniform->setHintToolTip( tr(kRotoDrawableItemScaleUniformParamHint) );
         scaleUniform->setDefaultValue(true);
@@ -1908,7 +1908,7 @@ public:
         knobs.push_back(scaleUniform);
         scaleUniformKnob = scaleUniform;
 
-        boost::shared_ptr<KnobDouble> skewX = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemSkewXParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> skewX = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemSkewXParamLabel), 1, true);
         skewX->setName(kRotoDrawableItemSkewXParam);
         skewX->setHintToolTip( tr(kRotoDrawableItemSkewXParamHint) );
         skewX->setDefaultAllDimensionsEnabled(false);
@@ -1918,7 +1918,7 @@ public:
         knobs.push_back(skewX);
         skewXKnob = skewX;
 
-        boost::shared_ptr<KnobDouble> skewY = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemSkewYParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> skewY = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemSkewYParamLabel), 1, true);
         skewY->setName(kRotoDrawableItemSkewYParam);
         skewY->setHintToolTip( tr(kRotoDrawableItemSkewYParamHint) );
         skewY->setDefaultAllDimensionsEnabled(false);
@@ -1928,7 +1928,7 @@ public:
         knobs.push_back(skewY);
         skewYKnob = skewY;
 
-        boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoDrawableItemSkewOrderParamLabel), 1, false);
+        boost::shared_ptr<KnobChoice> skewOrder = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoDrawableItemSkewOrderParamLabel), 1, true);
         skewOrder->setName(kRotoDrawableItemSkewOrderParam);
         skewOrder->setHintToolTip( tr(kRotoDrawableItemSkewOrderParamHint) );
         skewOrder->setDefaultValue(0);
@@ -1944,7 +1944,7 @@ public:
         knobs.push_back(skewOrder);
         skewOrderKnob = skewOrder;
 
-        boost::shared_ptr<KnobDouble> center = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemCenterParamLabel), 2, false);
+        boost::shared_ptr<KnobDouble> center = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemCenterParamLabel), 2, true);
         center->setName(kRotoDrawableItemCenterParam);
         center->setHintToolTip( tr(kRotoDrawableItemCenterParamHint) );
         center->setDefaultAllDimensionsEnabled(false);
@@ -1965,7 +1965,7 @@ public:
         resetCenterKnob = resetCenter;
 
 
-        boost::shared_ptr<KnobDouble> extraMatrix = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemExtraMatrixParamLabel), 9, false);
+        boost::shared_ptr<KnobDouble> extraMatrix = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemExtraMatrixParamLabel), 9, true);
         extraMatrix->setName(kRotoDrawableItemExtraMatrixParam);
         extraMatrix->setHintToolTip( tr(kRotoDrawableItemExtraMatrixParamHint) );
         extraMatrix->setDefaultAllDimensionsEnabled(false);
@@ -1991,7 +1991,7 @@ public:
 
 
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
-        boost::shared_ptr<KnobPage> mbPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Motion Blur"), 1, false);
+        boost::shared_ptr<KnobPage> mbPage = AppManager::createKnob<KnobPage>(effect.get(), tr("Motion Blur"), 1, true);
         boost::shared_ptr<KnobChoice> motionBlurType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoMotionBlurModeParamLabel), 1, true);
         motionBlurType->setName(kRotoMotionBlurModeParam);
         motionBlurType->setHintToolTip( tr(kRotoMotionBlurModeParamHint) );
@@ -2008,7 +2008,7 @@ public:
 
 
         //////Per shape motion blur parameters
-        boost::shared_ptr<KnobDouble> motionBlur = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoMotionBlurParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> motionBlur = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoMotionBlurParamLabel), 1, true);
         motionBlur->setName(kRotoPerShapeMotionBlurParam);
         motionBlur->setHintToolTip( tr(kRotoMotionBlurParamHint) );
         motionBlur->setDefaultValue(0);
@@ -2023,7 +2023,7 @@ public:
         motionBlurKnob = motionBlur;
         knobs.push_back(motionBlur);
 
-        boost::shared_ptr<KnobDouble> shutter = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> shutter = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterParamLabel), 1, true);
         shutter->setName(kRotoPerShapeShutterParam);
         shutter->setHintToolTip( tr(kRotoShutterParamHint) );
         shutter->setDefaultValue(0.5);
@@ -2038,7 +2038,7 @@ public:
         shutterKnob = shutter;
         knobs.push_back(shutter);
 
-        boost::shared_ptr<KnobChoice> shutterType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoShutterOffsetTypeParamLabel), 1, false);
+        boost::shared_ptr<KnobChoice> shutterType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoShutterOffsetTypeParamLabel), 1, true);
         shutterType->setName(kRotoPerShapeShutterOffsetTypeParam);
         shutterType->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
         shutterType->setDefaultValue(0);
@@ -2062,7 +2062,7 @@ public:
         shapeKnobs.push_back(shutterType);
         knobs.push_back(shutterType);
 
-        boost::shared_ptr<KnobDouble> customOffset = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterCustomOffsetParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> customOffset = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterCustomOffsetParamLabel), 1, true);
         customOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         customOffset->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
         customOffset->setDefaultValue(0);
@@ -2074,7 +2074,7 @@ public:
         knobs.push_back(customOffset);
 
         //////Global motion blur parameters
-        boost::shared_ptr<KnobDouble> globalMotionBlur = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoMotionBlurParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> globalMotionBlur = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoMotionBlurParamLabel), 1, true);
         globalMotionBlur->setName(kRotoGlobalMotionBlurParam);
         globalMotionBlur->setHintToolTip( tr(kRotoMotionBlurParamHint) );
         globalMotionBlur->setDefaultValue(0);
@@ -2087,7 +2087,7 @@ public:
         globalMotionBlurKnob = globalMotionBlur;
         knobs.push_back(globalMotionBlur);
 
-        boost::shared_ptr<KnobDouble> globalShutter = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> globalShutter = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterParamLabel), 1, true);
         globalShutter->setName(kRotoGlobalShutterParam);
         globalShutter->setHintToolTip( tr(kRotoShutterParamHint) );
         globalShutter->setDefaultValue(0.5);
@@ -2100,7 +2100,7 @@ public:
         globalShutterKnob = globalShutter;
         knobs.push_back(globalShutter);
 
-        boost::shared_ptr<KnobChoice> globalShutterType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoShutterOffsetTypeParamLabel), 1, false);
+        boost::shared_ptr<KnobChoice> globalShutterType = AppManager::createKnob<KnobChoice>(effect.get(), tr(kRotoShutterOffsetTypeParamLabel), 1, true);
         globalShutterType->setName(kRotoGlobalShutterOffsetTypeParam);
         globalShutterType->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
         globalShutterType->setDefaultValue(0);
@@ -2122,7 +2122,7 @@ public:
         globalShutterTypeKnob = globalShutterType;
         knobs.push_back(globalShutterType);
 
-        boost::shared_ptr<KnobDouble> globalCustomOffset = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterCustomOffsetParamLabel), 1, false);
+        boost::shared_ptr<KnobDouble> globalCustomOffset = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoShutterCustomOffsetParamLabel), 1, true);
         globalCustomOffset->setName(kRotoPerShapeShutterCustomOffsetParam);
         globalCustomOffset->setHintToolTip( tr(kRotoShutterCustomOffsetParamHint) );
         globalCustomOffset->setDefaultValue(0);

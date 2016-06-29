@@ -2118,6 +2118,7 @@ TransformInteract::penMotion(double time,
         // no need to redraw overlay since it is slave to the paramaters
         EffectInstPtr holder = _overlay->getNode()->getNode()->getEffectInstance();
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
+        KeyFrame k;
         if (centerChanged) {
             boost::shared_ptr<KnobDouble> knob = _center.lock();
             knob->setValues(center.x, center.y, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
@@ -2132,15 +2133,15 @@ TransformInteract::penMotion(double time,
         }
         if (rotateChanged) {
             boost::shared_ptr<KnobDouble> knob = _rotate.lock();
-            knob->setValue(rotate, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(rotate, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         if (skewXChanged) {
             boost::shared_ptr<KnobDouble> knob = _skewX.lock();
-            knob->setValue(skewX, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewX, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         if (skewYChanged) {
             boost::shared_ptr<KnobDouble> knob = _skewY.lock();
-            knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited);
+            knob->setValue(skewY, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, &k);
         }
         holder->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOff);
     } else if (didSomething || valuesChanged) {
