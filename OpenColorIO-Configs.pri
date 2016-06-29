@@ -29,6 +29,12 @@ macx {
 }
 !macx {
     OCIO.path = $$OUT_PWD/OpenColorIO-Configs
+    unix {
+        isEmpty(PREFIX) {
+            PREFIX = /usr/local
+        }
+        OCIO.path = $${PREFIX}/share/OpenColorIO-Configs
+    }
     INSTALLS += OCIO
     OCIO_extra.path = $$OUT_PWD/OpenColorIO-Configs
     #INSTALLS += OCIO_extra

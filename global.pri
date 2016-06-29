@@ -415,5 +415,20 @@ coverage {
   QMAKE_CLEAN += $(OBJECTS_DIR)/*.gcda $(OBJECTS_DIR)/*.gcno
 }
 
+# install targets on unix
+unix:!macx {
+    isEmpty(PREFIX) {
+        PREFIX = /usr/local
+    }
+    target.path = $${PREFIX}/bin
+    target_icons.path = $${PREFIX}/share/icons
+    target_icons.files = $PWD/../Gui/Resources/Images/natronIcon256_linux.png $PWD/../Gui/Resources/Images/natronProjectIcon_linux.png
+    target_mime.path = $${PREFIX}/share/mime/application
+    target_mime.files = $PWD/../Gui/Resources/Mime/x-natron.xml
+    target_desktop.path = $${PREFIX}/share/applications
+    target_desktop.files = $PWD/../Gui/Resources/Applications/Natron.desktop
+    INSTALLS += target_icons target_mime target_desktop
+}
+
 # and finally...
 include(config.pri)

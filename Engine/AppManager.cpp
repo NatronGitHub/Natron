@@ -1612,7 +1612,7 @@ AppManager::loadPythonGroups()
         findAllScriptsRecursive(d, allPlugins, &foundInit, &foundInitGui);
     }
     if ( foundInit.isEmpty() ) {
-        QString message = tr("Info: init.py script not loaded (this is not an error and relevant only if you are using the application's Python functionnalities)");
+        QString message = tr("Info: init.py script not loaded (this is not an error)");
         appPTR->setLoadingStatus(message);
         if ( !appPTR->isBackground() ) {
             std::cout << message.toStdString() << std::endl;
@@ -1630,7 +1630,7 @@ AppManager::loadPythonGroups()
 
     if ( !appPTR->isBackground() ) {
         if ( foundInitGui.isEmpty() ) {
-            QString message = tr("Info: initGui.py script not loaded (this is not an error and relevant only if you are using the application's Python functionnalities)");
+            QString message = tr("Info: initGui.py script not loaded (this is not an error)");
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;
