@@ -5778,7 +5778,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     }
 
     if (mustWarnFPS) {
-        QString fpsWarning = tr("Several input with different different frame rates "
+        QString fpsWarning = tr("Several input with different frame rates "
                                 "is not handled correctly by this node. To remove this warning make sure all inputs have "
                                 "the same frame-rate, either by adjusting project settings or the upstream Read node.");
         warnings[Node::eStreamWarningFrameRate] = fpsWarning;
