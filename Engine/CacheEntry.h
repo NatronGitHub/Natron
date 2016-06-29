@@ -322,6 +322,8 @@ public:
     virtual size_t size() const = 0;
     virtual double getTime() const = 0;
     virtual U64 getElementsCountFromParams() const = 0;
+
+    virtual void syncBackingFile() const = 0;
 };
 
 
@@ -1016,6 +1018,12 @@ public:
         QReadLocker k(&_entryLock);
 
         return _data.isAllocated();
+    }
+
+    virtual void syncBackingFile() const OVERRIDE FINAL
+    {
+        QWriteLocker k(&_entryLock);
+        return _data.syncBackingFile();
     }
 
     /**
