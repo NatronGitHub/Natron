@@ -342,7 +342,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     NodePtr node = _imp->context->getNode();
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
-    AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
     if (isAbortable) {
         isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, node->getEffectInstance() );

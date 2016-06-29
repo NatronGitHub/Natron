@@ -60,15 +60,24 @@ NATRON_NAMESPACE_ENTER;
 struct ProjectPrivate;
 
 class Project
-    :  public KnobHolder, public NodeCollection, public AfterQuitProcessingI, public boost::noncopyable, public boost::enable_shared_from_this<Project>
+    :  public KnobHolder
+    , public NodeCollection
+    , public AfterQuitProcessingI
+    , public boost::noncopyable
+    , public boost::enable_shared_from_this<Project>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Project(const AppInstPtr& appInstance);
+
+public:
+    static boost::shared_ptr<Project> create(const AppInstPtr& appInstance) {
+        return boost::shared_ptr<Project>( new Project(appInstance) );
+    }
 
     virtual ~Project();
 

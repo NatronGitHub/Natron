@@ -633,7 +633,7 @@ Node::createRotoContextConditionnally()
     ///Initialize the roto context if any
     if ( isRotoNode() || isRotoPaintingNode() ) {
         _imp->effect->beginChanges();
-        _imp->rotoContext.reset( new RotoContext( shared_from_this() ) );
+        _imp->rotoContext = RotoContext::create( shared_from_this() );
         _imp->effect->endChanges(true);
         _imp->rotoContext->createBaseLayer();
     }
@@ -646,7 +646,7 @@ Node::createTrackerContextConditionnally()
     assert(_imp->effect);
     ///Initialize the tracker context if any
     if ( _imp->effect->isBuiltinTrackerNode() ) {
-        _imp->trackContext.reset( new TrackerContext( shared_from_this() ) );
+        _imp->trackContext = TrackerContext::create( shared_from_this() );
     }
 }
 
@@ -6302,6 +6302,7 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
 {
     assert(_imp->renderWatcher);
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
+    Q_UNUSED(taskID);
     assert(args);
     NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
     assert(thisArgs);
@@ -6621,7 +6622,7 @@ Node::makePreviewImage(SequenceTime time,
 
 
     {
-        AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
@@ -7722,7 +7723,7 @@ Node::onInputChanged(int inputNb,
          * The plug-in might call getImage, set a valid thread storage on the tree.
          **/
         double time = getApp()->getTimeLine()->currentFrame();
-        AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );

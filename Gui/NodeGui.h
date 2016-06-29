@@ -130,16 +130,19 @@ class NodeGui
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-
-             Q_INTERFACES(QGraphicsItem)
+    Q_INTERFACES(QGraphicsItem)
 
 public:
 
-
     typedef std::vector<Edge*> InputEdges;
+
+public:
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     NodeGui(QGraphicsItem *parent = 0);
 
+public:
     void initialize(NodeGraph* dag,
                     const NodePtr & internalNode);
 

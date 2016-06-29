@@ -89,14 +89,20 @@ public:
 class RotoContextSerialization;
 struct RotoContextPrivate;
 class RotoContext
-    : public QObject, public boost::enable_shared_from_this<RotoContext>
+    : public QObject
+    , public boost::enable_shared_from_this<RotoContext>
 {
     Q_OBJECT
 
-public:
-
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     RotoContext(const NodePtr& node);
+
+public:
+    static boost::shared_ptr<RotoContext> create(const NodePtr& node) {
+        return boost::shared_ptr<RotoContext>( new RotoContext(node) );
+    }
 
     virtual ~RotoContext();
 

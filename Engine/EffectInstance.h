@@ -222,7 +222,8 @@ public:
     };
 
 public:
-
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     /**
      * @brief Constructor used once for each node created. Its purpose is to create the "live instance".
@@ -234,6 +235,9 @@ public:
 
     EffectInstance(const EffectInstance& other);
 
+public:
+
+    // dtor
     virtual ~EffectInstance();
 
 

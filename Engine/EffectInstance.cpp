@@ -113,9 +113,9 @@ EffectInstance::EffectInstance(NodePtr node)
 }
 
 EffectInstance::EffectInstance(const EffectInstance& other)
-: NamedKnobHolder(other)
-, _node(other.getNode())
-, _imp(new Implementation(*other._imp))
+    : NamedKnobHolder(other)
+    , _node( other.getNode() )
+    , _imp( new Implementation(*other._imp) )
 {
     _imp->_publicInterface = this;
 }
@@ -4801,7 +4801,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         ////tries to call getImage it can render with good parameters.
         boost::shared_ptr<ParallelRenderArgsSetter> setter;
         if (reason != eValueChangedReasonTimeChanged) {
-            AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+            AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
             const bool isRenderUserInteraction = true;
             const bool isSequentialRender = false;
             AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );

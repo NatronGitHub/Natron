@@ -81,16 +81,22 @@ public:
 
 
 class AppInstance
-    : public QObject, public boost::noncopyable, public boost::enable_shared_from_this<AppInstance>, public TimeLineKeyFrames
+    : public QObject
+    , public boost::noncopyable
+    , public boost::enable_shared_from_this<AppInstance>
+    , public TimeLineKeyFrames
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     AppInstance(int appID);
+
+public:
 
     virtual ~AppInstance();
 

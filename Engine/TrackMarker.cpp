@@ -1074,7 +1074,7 @@ TrackMarker::getMarkerImage(int time,
         return std::make_pair(ImagePtr(), roi);
     }
 
-    AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
     const bool isRenderUserInteraction = true;
     const bool isSequentialRender = false;
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
