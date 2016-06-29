@@ -4798,6 +4798,9 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
                 redrawOverlayInteract();
             }
         }
+        if (isOverlaySlaveParam(kh)) {
+            kh->redraw();
+        }
     }
 
     ret |= node->onEffectKnobValueChanged(k, reason);
