@@ -123,11 +123,8 @@ TrackMarker::initializeKnobs()
     boost::shared_ptr<KnobInt> defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
     boost::shared_ptr<KnobInt> defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
 
-    int patternHalfSize = defPatternSizeKnob->getValue();
-    patternHalfSize = std::ceil((patternHalfSize + 1) / 2);
-
-    int searchHalfSize = defSearchSizeKnob->getValue();
-    searchHalfSize = std::ceil((searchHalfSize - 1) / 2);
+    double patternHalfSize = defPatternSizeKnob->getValue() / 2.;
+    double searchHalfSize = defSearchSizeKnob->getValue() / 2.;
 
     boost::shared_ptr<KnobDouble> swbbtmLeft = AppManager::createKnob<KnobDouble>(this, tr(kTrackerParamSearchWndBtmLeftLabel), 2, false);
 

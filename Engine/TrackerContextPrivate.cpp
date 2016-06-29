@@ -686,7 +686,7 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
  **/
 void
 TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
-                                                  int formatHeight,
+                                                  int /*formatHeight*/,
                                                   const libmv::TrackRegionResult* result,
                                                   const TrackMarkerPtr& natronMarker)
 {
@@ -703,9 +703,10 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
         errorKnob->setValueAtTime(time, 0., ViewSpec::current(), 0);
     }
 
+    // Blender also adds 0.5 to coordinates
     Point center;
-    center.x = (double)mvMarker.center(0);
-    center.y = (double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
+    center.x = (double)mvMarker.center(0) + 0.5;
+    center.y = mvMarker.center(1) + 0.5; //(double)TrackerFrameAccessor::invertYCoordinate(mvMarker.center(1), formatHeight);
 
     boost::shared_ptr<KnobDouble> offsetKnob = natronMarker->getOffsetKnob();
     Point offset;
@@ -717,17 +718,17 @@ TrackerContextPrivate::setKnobKeyframesFromMarker(const mv::Marker& mvMarker,
     centerKnob->setValuesAtTime(time, center.x, center.y, ViewSpec::current(), eValueChangedReasonNatronInternalEdited);
 
     Point topLeftCorner, topRightCorner, btmRightCorner, btmLeftCorner;
-    topLeftCorner.x = mvMarker.patch.coordinates(0, 0) - offset.x - center.x;
-    topLeftCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0, 1), formatHeight) - offset.y - center.y;
+    topLeftCorner.x = mvMarker.patch.coordinates(3, 0) - offset.x - center.x;//mvMarker.patch.coordinates(0, 0) - offset.x - center.x;
+    topLeftCorner.y = mvMarker.patch.coordinates(3, 1) - offset.y - center.y; //TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(0, 1), formatHeight) - offset.y - center.y;
 
-    topRightCorner.x = mvMarker.patch.coordinates(1, 0) - offset.x - center.x;
-    topRightCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(1, 1), formatHeight) - offset.y - center.y;
+    topRightCorner.x = mvMarker.patch.coordinates(2, 0) - offset.x - center.x;//mvMarker.patch.coordinates(1, 0) - offset.x - center.x;
+    topRightCorner.y = mvMarker.patch.coordinates(2, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(1, 1), formatHeight) - offset.y - center.y;
 
-    btmRightCorner.x = mvMarker.patch.coordinates(2, 0) - offset.x - center.x;
-    btmRightCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(2, 1), formatHeight) - offset.y - center.y;
+    btmRightCorner.x = mvMarker.patch.coordinates(1, 0) - offset.x - center.x;// mvMarker.patch.coordinates(2, 0) - offset.x - center.x;
+    btmRightCorner.y = mvMarker.patch.coordinates(1, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(2, 1), formatHeight) - offset.y - center.y;
 
-    btmLeftCorner.x = mvMarker.patch.coordinates(3, 0) - offset.x - center.x;
-    btmLeftCorner.y = TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(3, 1), formatHeight) - offset.y - center.y;
+    btmLeftCorner.x = mvMarker.patch.coordinates(0, 0) - offset.x - center.x; //mvMarker.patch.coordinates(3, 0) - offset.x - center.x;
+    btmLeftCorner.y = mvMarker.patch.coordinates(0, 1) - offset.y - center.y;//TrackerFrameAccessor::invertYCoordinate(mvMarker.patch.coordinates(3, 1), formatHeight) - offset.y - center.y;
 
     boost::shared_ptr<KnobDouble> pntTopLeftKnob = natronMarker->getPatternTopLeftKnob();
     boost::shared_ptr<KnobDouble> pntTopRightKnob = natronMarker->getPatternTopRightKnob();
@@ -749,7 +750,7 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
                                                    int trackIndex,
                                                    int trackedTime,
                                                    int frameStep,
-                                                   double formatHeight,
+                                                   double /*formatHeight*/,
                                                    mv::Marker* mvMarker)
 {
     boost::shared_ptr<KnobDouble> searchWindowBtmLeftKnob = marker.getSearchWindowBottomLeftKnob();
@@ -879,8 +880,9 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     offsetAtTrackedTime.x = offsetKnob->getValueAtTime(trackedTime, 0);
     offsetAtTrackedTime.y = offsetKnob->getValueAtTime(trackedTime, 1);
 
-    mvMarker->center(0) = centerAtTrackedTime.x;
-    mvMarker->center(1) = TrackerFrameAccessor::invertYCoordinate(centerAtTrackedTime.y, formatHeight);
+    // Blender also substracts 0.5 to coordinates
+    mvMarker->center(0) = centerAtTrackedTime.x - 0.5;
+    mvMarker->center(1) = centerAtTrackedTime.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(centerAtTrackedTime.y, formatHeight);
 
     Point centerPlusOffset;
     centerPlusOffset.x = centerAtTrackedTime.x + offsetAtTrackedTime.x;
@@ -904,23 +906,23 @@ TrackerContextPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     bl.x += centerPlusOffset.x;
     bl.y += centerPlusOffset.y;
 
-    mvMarker->search_region.min(0) = searchWndBtmLeft.x;
-    mvMarker->search_region.min(1) = TrackerFrameAccessor::invertYCoordinate(searchWndTopRight.y, formatHeight);
-    mvMarker->search_region.max(0) = searchWndTopRight.x;
-    mvMarker->search_region.max(1) = TrackerFrameAccessor::invertYCoordinate(searchWndBtmLeft.y, formatHeight);
+    mvMarker->search_region.min(0) = searchWndBtmLeft.x - 0.5;
+    mvMarker->search_region.min(1) = searchWndBtmLeft.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(searchWndTopRight.y, formatHeight);
+    mvMarker->search_region.max(0) = searchWndTopRight.x - 0.5;
+    mvMarker->search_region.max(1) = searchWndTopRight.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(searchWndBtmLeft.y, formatHeight);
 
 
-    mvMarker->patch.coordinates(0, 0) = tl.x;
-    mvMarker->patch.coordinates(0, 1) = TrackerFrameAccessor::invertYCoordinate(tl.y, formatHeight);
+    mvMarker->patch.coordinates(0, 0) = bl.x - 0.5; //tl.x;
+    mvMarker->patch.coordinates(0, 1) = bl.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(tl.y, formatHeight);
 
-    mvMarker->patch.coordinates(1, 0) = tr.x;
-    mvMarker->patch.coordinates(1, 1) = TrackerFrameAccessor::invertYCoordinate(tr.y, formatHeight);
+    mvMarker->patch.coordinates(1, 0) = br.x - 0.5; //tr.x;
+    mvMarker->patch.coordinates(1, 1) = br.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(tr.y, formatHeight);
 
-    mvMarker->patch.coordinates(2, 0) = br.x;
-    mvMarker->patch.coordinates(2, 1) = TrackerFrameAccessor::invertYCoordinate(br.y, formatHeight);
+    mvMarker->patch.coordinates(2, 0) = tr.x - 0.5; //br.x;
+    mvMarker->patch.coordinates(2, 1) = tr.y - 0.5 ;//TrackerFrameAccessor::invertYCoordinate(br.y, formatHeight);
 
-    mvMarker->patch.coordinates(3, 0) = bl.x;
-    mvMarker->patch.coordinates(3, 1) = TrackerFrameAccessor::invertYCoordinate(bl.y, formatHeight);
+    mvMarker->patch.coordinates(3, 0) = tl.x - 0.5; //bl.x;
+    mvMarker->patch.coordinates(3, 1) = tl.y - 0.5; //TrackerFrameAccessor::invertYCoordinate(bl.y, formatHeight);
 } // TrackerContextPrivate::natronTrackerToLibMVTracker
 
 void
