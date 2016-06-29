@@ -1970,6 +1970,16 @@ protected:
 
     }
 
+    virtual bool shouldPreferPluginOverlayOverHostOverlay() const
+    {
+        return true;
+    }
+
+    virtual bool shouldDrawHostOverlay() const
+    {
+        return true;
+    }
+
     virtual void drawOverlay(double /*time*/,
                              const RenderScale & /*renderScale*/,
                              ViewIdx /*view*/)

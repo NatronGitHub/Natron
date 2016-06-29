@@ -252,6 +252,9 @@ NATRON_NAMESPACE_ENTER;
 #define kRotoUIParamRemoveKeyframeLabel "Remove Keyframe"
 #define kRotoUIParamRemoveKeyframeHint "Remove a keyframe at the current time for the selected shape(s), if any"
 
+#define kRotoUIParamHideTransform "hideTransformButton"
+#define kRotoUIParamHideTransformLabel "Hide Transform Handle"
+#define kRotoUIParamHideTransformHint "When checked, even if the Transform tab is visible in the settings panel, the transform handle will be hidden"
 
 // RotoPaint
 #define kRotoUIParamColorWheel "strokeColorButton"
@@ -592,6 +595,7 @@ struct RotoPaintInteract
     boost::weak_ptr<KnobButton> rippleEditEnabledButton;
     boost::weak_ptr<KnobButton> addKeyframeButton;
     boost::weak_ptr<KnobButton> removeKeyframeButton;
+    boost::weak_ptr<KnobButton> hideTransformHandle;
 
     // RotoPaint buttons
     boost::weak_ptr<KnobColor> colorWheelButton;
