@@ -58,6 +58,7 @@ public:
             int internalFormat,
             int glType);
     static void getRecommendedTexParametersForRGBAByteTexture(int* format, int* internalFormat, int* glType);
+    static void getRecommendedTexParametersForRGBAFloatTexture(int* format, int* internalFormat, int* glType);
 
     U32 getTexID() const
     {

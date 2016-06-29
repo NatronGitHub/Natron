@@ -2212,6 +2212,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onCheckerboardSettingsChanged();
     } else if ( k == _powerOf2Tiling.get() ) {
         appPTR->onViewerTileCacheSizeChanged();
+    } else if ( k == _texturesMode.get() &&  !_restoringSettings) {
+         appPTR->onViewerTileCacheSizeChanged();
     } else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {

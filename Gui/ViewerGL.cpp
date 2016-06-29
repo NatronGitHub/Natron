@@ -1605,16 +1605,24 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     if (isPartialRect) {
         // For small partial updates overlays, we make new textures
         int format, internalFormat, glType;
-        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+        if (dataType == Texture::eDataTypeFloat) {
+            Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+        } else {
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        }
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType) );
         textureRectangle = tileRect;
     } else {
         // re-use the existing texture if possible
         tex = _imp->displayTextures[textureIndex].texture;
         if (tex->type() != dataType) {
             int format, internalFormat, glType;
-            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType) );
+            if (dataType == Texture::eDataTypeFloat) {
+                Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+            } else {
+                Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            }
+            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType) );
         }
         textureRectangle.set(roiRoundedToTileSize);
         _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.set(roi);

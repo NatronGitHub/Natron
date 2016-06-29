@@ -574,7 +574,6 @@ public:
         QMutexLocker k(&_tileCacheMutex);
         _isTiled = tiled;
         _tileByteSize = tileByteSize;
-        _cacheFiles.clear();
     }
 
 

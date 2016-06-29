@@ -59,6 +59,14 @@ Texture::getRecommendedTexParametersForRGBAByteTexture(int* format,
     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
 }
 
+void
+Texture::getRecommendedTexParametersForRGBAFloatTexture(int* format, int* internalFormat, int* glType)
+{
+    *format = GL_RGBA;
+    *internalFormat = GL_RGBA32F_ARB;
+    *glType = GL_FLOAT;
+}
+
 bool
 Texture::ensureTextureHasSize(const TextureRect& texRect,
                               const unsigned char* originalRAMBuffer)
