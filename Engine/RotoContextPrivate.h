@@ -322,6 +322,10 @@ CLANG_DIAG_ON(uninitialized)
 #define kRotoResetCenterParamLabel "Reset Center"
 #define kRotoResetCenterParamHint "Reset the transform center"
 
+#define kRotoTransformInteractive "RotoTransformInteractive"
+#define kRotoTransformInteractiveLabel "Interactive"
+#define kRotoTransformInteractiveHint "When check, modifying the transform will directly render the shape in the viewer. When unchecked, modifications are applied when releasing the mouse button."
+
 #define kRotoMotionBlurModeParam "motionBlurMode"
 #define kRotoMotionBlurModeParamLabel "Mode"
 #define kRotoMotionBlurModeParamHint "Per-shape motion blurs applies motion blur independently to each shape and then blends them together." \
@@ -1328,6 +1332,7 @@ public:
     boost::weak_ptr<KnobDouble> rotateKnob;
     boost::weak_ptr<KnobDouble> scaleKnob;
     boost::weak_ptr<KnobBool> scaleUniformKnob;
+    boost::weak_ptr<KnobBool> transformInteractiveKnob;
     boost::weak_ptr<KnobDouble> skewXKnob;
     boost::weak_ptr<KnobDouble> skewYKnob;
     boost::weak_ptr<KnobChoice> skewOrderKnob;
@@ -1964,6 +1969,16 @@ public:
         knobs.push_back(resetCenter);
         resetCenterKnob = resetCenter;
 
+        boost::shared_ptr<KnobBool> transformInteractive = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoTransformInteractiveLabel), 1, true);
+        transformInteractive->setName(kRotoTransformInteractive);
+        transformInteractive->setHintToolTip(tr(kRotoTransformInteractiveHint));
+        transformInteractive->setDefaultValue(true);
+        transformInteractive->setAllDimensionsEnabled(false);
+        transformPage->addKnob(transformInteractive);
+        knobs.push_back(transformInteractive);
+        transformInteractiveKnob = transformInteractive;
+
+
 
         boost::shared_ptr<KnobDouble> extraMatrix = AppManager::createKnob<KnobDouble>(effect.get(), tr(kRotoDrawableItemExtraMatrixParamLabel), 9, true);
         extraMatrix->setName(kRotoDrawableItemExtraMatrixParam);
@@ -1987,7 +2002,7 @@ public:
 
         node.lock()->addTransformInteract(translate, scale, scaleUniform, rotate, skewX, skewY, skewOrder, center,
                                           boost::shared_ptr<KnobBool>() /*invert*/,
-                                          boost::shared_ptr<KnobBool>() /*interactive*/);
+                                          transformInteractive /*interactive*/);
 
 
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR

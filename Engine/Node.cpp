@@ -8227,7 +8227,7 @@ Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
         knobs->addKnob(invert, TransformOverlayKnobs::eKnobsEnumerationInvert);
     }
     if (interactive) {
-        knobs->addKnob(interactive, PositionOverlayKnobs::eKnobsEnumerationInteractive);
+        knobs->addKnob(interactive, TransformOverlayKnobs::eKnobsEnumerationInteractive);
     }
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (!nodeGui) {
