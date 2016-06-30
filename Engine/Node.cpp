@@ -5382,8 +5382,6 @@ bool
 Node::connectInput(const NodePtr & input,
                    int inputNumber)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     assert(input);
 
@@ -5484,8 +5482,6 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
 bool
 Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     assert(input);
     ///Check for cycles: they are forbidden in the graph
@@ -5585,8 +5581,6 @@ Node::replaceInput(const NodePtr& input,
 void
 Node::switchInput0And1()
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     int maxInputs = getMaxInputCount();
     if (maxInputs < 2) {
@@ -5706,8 +5700,6 @@ void
 Node::connectOutput(bool useGuiValues,
                     const NodePtr& output)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(output);
 
     {
@@ -5725,8 +5717,6 @@ Node::connectOutput(bool useGuiValues,
 int
 Node::disconnectInput(int inputNumber)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
 
     NodePtr inputShared;
@@ -5801,8 +5791,6 @@ Node::disconnectInput(int inputNumber)
 int
 Node::disconnectInputInternal(Node* input, bool useGuiValues)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     int found = -1;
     NodePtr inputShared;
@@ -5886,8 +5874,6 @@ Node::disconnectOutput(bool useGuiValues,
                        const Node* output)
 {
     assert(output);
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     int ret = -1;
     {
         QMutexLocker l(&_imp->outputsMutex);
@@ -5958,8 +5944,6 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                  bool triggerRender,
                  bool unslaveKnobs)
 {
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
 
     if ( !_imp->effect || !isActivated() ) {
         return;
@@ -5991,7 +5975,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     if (unslaveKnobs) {
         ///For all knobs that have listeners, invalidate expressions
         NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>( parentCol.get() );
-        const KnobsVec & knobs = getKnobs();
+        KnobsVec  knobs = _imp->effect->getKnobs_mt_safe();
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobI::ListenerDimsMap listeners;
             knobs[i]->getListeners(listeners);
