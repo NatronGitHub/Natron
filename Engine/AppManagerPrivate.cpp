@@ -608,8 +608,14 @@ AppManagerPrivate::initGl()
         missingOpenglError += appPTR->getOpenGLVersion();
         hasRequiredOpenGLVersionAndExtensions = false;
 
+#ifdef DEBUG
+        std::cerr << missingOpenglError.toStdString() << std::endl;
+#endif
+
         return;
     }
+
+    std::cout << "OpenGL Loaded correctly with version " << GLVersion.major << "." << GLVersion.minor << std::endl;
     
     // OpenGL is now read to be used! just include "Global/GLIncludes.h"
 }
