@@ -1482,7 +1482,7 @@ TrackerContext::onSchedulerTrackingFinished()
 void
 TrackerContext::onSchedulerTrackingProgress(double progress)
 {
-    if ( !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
+    if ( getNode()->getApp() && !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
         _imp->scheduler.abortThreadedTask();
     }
 }
