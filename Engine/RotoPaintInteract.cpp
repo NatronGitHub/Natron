@@ -662,6 +662,7 @@ RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& rol
     rippleEditEnabledButton.lock()->setInViewerContextSecret(isPaintRole);
     addKeyframeButton.lock()->setInViewerContextSecret(isPaintRole);
     removeKeyframeButton.lock()->setInViewerContextSecret(isPaintRole);
+    hideTransformHandle.lock()->setInViewerContextSecret(isPaintRole);
 
     // RotoPaint action bar
     colorWheelButton.lock()->setInViewerContextSecret(!isPaintRole);
