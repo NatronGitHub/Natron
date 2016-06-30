@@ -1023,6 +1023,10 @@ EffectInstance::getImage(int inputNb,
             inputImg = convertRAMImageToOpenGLTexture(inputImg);
         }
 
+        if (mapToClipPrefs) {
+            inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), eImagePremultiplicationPremultiplied, channelForMask);
+        }
+
         return inputImg;
     }
 
