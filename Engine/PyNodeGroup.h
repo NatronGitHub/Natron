@@ -40,17 +40,17 @@ NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Group
 {
-    boost::weak_ptr<NodeCollection> _collection;
+    NodeCollectionWPtr _collection;
 
 public:
 
     Group();
 
-    void init(const boost::shared_ptr<NodeCollection>& collection);
+    void init(const NodeCollectionPtr& collection);
 
     virtual ~Group();
 
-    boost::shared_ptr<NodeCollection> getInternalCollection() const
+    NodeCollectionPtr getInternalCollection() const
     {
         return _collection.lock();
     }

@@ -127,7 +127,7 @@ Gui::openRecentFile()
         QString filename = path + f.fileName();
         int openedProject = appPTR->isProjectAlreadyOpened( filename.toStdString() );
         if (openedProject != -1) {
-            AppInstPtr instance = appPTR->getAppInstance(openedProject);
+            AppInstancePtr instance = appPTR->getAppInstance(openedProject);
             if (instance) {
                 GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
                 assert(guiApp);
@@ -144,7 +144,7 @@ Gui::openRecentFile()
             getApp()->getProject()->loadProject( path, f.fileName() );
         } else {
             CLArgs cl;
-            AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+            AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
             newApp->getProject()->loadProject( path, f.fileName() );
         }
     }
@@ -205,7 +205,7 @@ Gui::setColorPickersColor(double r,
 }
 
 void
-Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
+Gui::registerNewColorPicker(KnobColorPtr knob)
 {
     assert(_imp->_projectGui);
     const std::list<ViewerTab*> &viewers = getViewersList();
@@ -218,7 +218,7 @@ Gui::registerNewColorPicker(boost::shared_ptr<KnobColor> knob)
 }
 
 void
-Gui::removeColorPicker(boost::shared_ptr<KnobColor> knob)
+Gui::removeColorPicker(KnobColorPtr knob)
 {
     assert(_imp->_projectGui);
     _imp->_projectGui->removeColorPicker(knob);
@@ -376,7 +376,7 @@ Gui::getToolButtons() const
     return _imp->_toolButtons;
 }
 
-GuiAppInstPtr
+GuiAppInstancePtr
 Gui::getApp() const
 {
     return _imp->_appInstance.lock();
@@ -656,16 +656,16 @@ Gui::onRenderStarted(const QString & sequenceName,
                      int lastFrame,
                      int frameStep,
                      bool canPause,
-                     OutputEffectInstance* writer,
-                     const boost::shared_ptr<ProcessHandler> & process)
+                     const OutputEffectInstancePtr& writer,
+                     const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->_progressPanel->startTask(writer->getNode(), firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
 }
 
 void
-Gui::onRenderRestarted(OutputEffectInstance* writer,
-                       const boost::shared_ptr<ProcessHandler> & process)
+Gui::onRenderRestarted(const OutputEffectInstancePtr& writer,
+                       const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
     _imp->_progressPanel->onTaskRestarted(writer->getNode(), process);
@@ -730,7 +730,7 @@ Gui::onNodeNameChanged(const QString & /*name*/)
     if (!node) {
         return;
     }
-    ViewerInstance* isViewer = node->isEffectViewer();
+    ViewerInstance* isViewer = node->isEffectViewerInstance();
     if (isViewer) {
         Q_EMIT viewersChanged();
     }
@@ -770,7 +770,7 @@ Gui::renderSelectedNode()
         if (!internalNode) {
             continue;
         }
-        EffectInstPtr effect = internalNode->getEffectInstance();
+        EffectInstancePtr effect = internalNode->getEffectInstance();
         if (!effect) {
             continue;
         }
@@ -779,7 +779,7 @@ Gui::renderSelectedNode()
                 //if ((*it)->getNode()->is)
                 ///if the node is a writer, just use it to render!
                 AppInstance::RenderWork w;
-                w.writer = dynamic_cast<OutputEffectInstance*>( effect.get() );
+                w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>(effect);
                 assert(w.writer);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
@@ -802,7 +802,7 @@ Gui::renderSelectedNode()
 #endif
                 if (writer) {
                     AppInstance::RenderWork w;
-                    w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
+                    w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>( writer->getEffectInstance() );
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
@@ -900,7 +900,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         }
     }
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     bool isPlayback = reason == eTimelineChangeReasonPlaybackSeek;
 
     ///Refresh all visible knobs at the current time

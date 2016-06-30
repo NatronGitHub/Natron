@@ -63,12 +63,12 @@ NATRON_NAMESPACE_ENTER;
 
 struct NodeCollectionPrivate
 {
-    AppInstWPtr app;
+    AppInstanceWPtr app;
     NodeGraphI* graph;
     mutable QMutex nodesMutex;
     NodesList nodes;
 
-    NodeCollectionPrivate(const AppInstPtr& app)
+    NodeCollectionPrivate(const AppInstancePtr& app)
         : app(app)
         , graph(0)
         , nodesMutex()
@@ -79,7 +79,7 @@ struct NodeCollectionPrivate
     NodePtr findNodeInternal(const std::string& name, const std::string& recurseName) const;
 };
 
-NodeCollection::NodeCollection(const AppInstPtr& app)
+NodeCollection::NodeCollection(const AppInstancePtr& app)
     : _imp( new NodeCollectionPrivate(app) )
 {
 }
@@ -88,7 +88,7 @@ NodeCollection::~NodeCollection()
 {
 }
 
-AppInstPtr
+AppInstancePtr
 NodeCollection::getApplication() const
 {
     return _imp->app.lock();
@@ -124,7 +124,7 @@ void
 NodeCollection::getNodes_recursive(NodesList& nodes,
                                    bool onlyActive) const
 {
-    std::list<NodeGroup*> groupToRecurse;
+    std::list<NodeGroupPtr> groupToRecurse;
 
     {
         QMutexLocker k(&_imp->nodesMutex);
@@ -133,14 +133,14 @@ NodeCollection::getNodes_recursive(NodesList& nodes,
                 continue;
             }
             nodes.push_back(*it);
-            NodeGroup* isGrp = (*it)->isEffectGroup();
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 groupToRecurse.push_back(isGrp);
             }
         }
     }
 
-    for (std::list<NodeGroup*>::const_iterator it = groupToRecurse.begin(); it != groupToRecurse.end(); ++it) {
+    for (std::list<NodeGroupPtr>::const_iterator it = groupToRecurse.begin(); it != groupToRecurse.end(); ++it) {
         (*it)->getNodes_recursive(nodes, onlyActive);
     }
 }
@@ -207,7 +207,7 @@ NodeCollection::getActiveNodesExpandGroups(NodesList* nodes) const
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
             nodes->push_back(*it);
-            NodeGroup* isGrp = (*it)->isEffectGroup();
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 isGrp->getActiveNodesExpandGroups(nodes);
             }
@@ -216,16 +216,16 @@ NodeCollection::getActiveNodesExpandGroups(NodesList* nodes) const
 }
 
 void
-NodeCollection::getViewers(std::list<ViewerInstance*>* viewers) const
+NodeCollection::getViewers(std::list<ViewerInstancePtr>* viewers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        ViewerInstance* isViewer = (*it)->isEffectViewer();
+        ViewerInstancePtr isViewer = (*it)->isEffectViewerInstance();
         if (isViewer) {
             viewers->push_back(isViewer);
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->getViewers(viewers);
         }
@@ -233,37 +233,37 @@ NodeCollection::getViewers(std::list<ViewerInstance*>* viewers) const
 }
 
 void
-NodeCollection::getWriters(std::list<OutputEffectInstance*>* writers) const
+NodeCollection::getWriters(std::list<OutputEffectInstancePtr>* writers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPartOfProject() ) {
-            OutputEffectInstance* out = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+            OutputEffectInstancePtr out = (*it)->isEffectOutput();
             assert(out);
             writers->push_back(out);
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->getWriters(writers);
         }
     }
 }
 
-static void
-quitAnyProcessingInternal(NodeCollection* grp)
+void
+NodeCollection::quitAnyProcessingInternal()
 {
-    NodesList nodes = grp->getNodes();
+    NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->quitAnyProcessing_non_blocking();
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
-            quitAnyProcessingInternal(isGrp);
+            isGrp->quitAnyProcessingInternal();
         }
-        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
+        PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
         if (isPrecomp) {
-            quitAnyProcessingInternal( isPrecomp->getPrecompApp()->getProject().get() );
+            isPrecomp->getPrecompApp()->getProject()->quitAnyProcessingInternal();
         }
     }
 }
@@ -271,7 +271,7 @@ quitAnyProcessingInternal(NodeCollection* grp)
 void
 NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
 {
-    quitAnyProcessingInternal(this);
+    quitAnyProcessingInternal();
 }
 
 bool
@@ -295,8 +295,8 @@ NodeCollection::hasNodeRendering() const
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->isOutputNode() ) {
-            NodeGroup* isGrp = (*it)->isEffectGroup();
-            PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+            PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
             if (isGrp) {
                 if ( isGrp->hasNodeRendering() ) {
                     return true;
@@ -306,7 +306,7 @@ NodeCollection::hasNodeRendering() const
                     return true;
                 }
             } else {
-                OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( (*it)->getEffectInstance().get() );
+                OutputEffectInstancePtr effect = boost::dynamic_pointer_cast<OutputEffectInstance>( (*it)->getEffectInstance() );
                 if ( effect && effect->getRenderEngine()->hasThreadsWorking() ) {
                     return true;
                 }
@@ -327,11 +327,11 @@ NodeCollection::refreshViewersAndPreviews()
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             assert(*it);
             (*it)->refreshPreviewsAfterProjectLoad();
-            NodeGroup* isGrp = (*it)->isEffectGroup();
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 isGrp->refreshViewersAndPreviews();
             } else {
-                ViewerInstance* n = (*it)->isEffectViewer();
+                ViewerInstancePtr n = (*it)->isEffectViewerInstance();
                 if (n) {
                     n->renderCurrentFrame(true);
                 }
@@ -353,7 +353,7 @@ NodeCollection::refreshPreviews()
         if ( (*it)->isPreviewEnabled() ) {
             (*it)->refreshPreviewImage(time);
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->refreshPreviews();
         }
@@ -373,7 +373,7 @@ NodeCollection::forceRefreshPreviews()
         if ( (*it)->isPreviewEnabled() ) {
             (*it)->computePreviewImage(time);
         }
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->forceRefreshPreviews();
         }
@@ -394,11 +394,11 @@ NodeCollection::clearNodes(bool emitSignal)
         // You should have called quitAnyProcessing before!
         assert( !(*it)->isNodeRendering() );
 
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->clearNodes(emitSignal);
         }
-        PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( (*it)->getEffectInstance().get() );
+        PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
         if (isPrecomp) {
             isPrecomp->getPrecompApp()->getProject()->clearNodes(emitSignal);
         }
@@ -694,9 +694,9 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
     }
 
     ///update the render trees
-    std::list<ViewerInstance* > viewers;
+    std::list<ViewerInstancePtr> viewers;
     created->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
@@ -712,7 +712,7 @@ NodeCollectionPrivate::findNodeInternal(const std::string& name,
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->getScriptName_mt_safe() == name ) {
             if ( !recurseName.empty() ) {
-                NodeGroup* isGrp = (*it)->isEffectGroup();
+                NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
                 if (isGrp) {
                     return isGrp->getNodeByFullySpecifiedName(recurseName);
                 } else {
@@ -790,7 +790,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
                                      bool blockEval)
 {
     NodesList nodes = getNodes();
-    boost::shared_ptr<Project> project = getApplication()->getProject();
+    ProjectPtr project = getApplication()->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
@@ -798,8 +798,8 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
-                KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
+                KnobStringBasePtr isString = dynamic_cast< KnobStringBasePtr >(knobs[j]);
+                KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
@@ -815,7 +815,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
             (*it)->getEffectInstance()->endChanges(blockEval);
 
 
-            NodeGroup* isGrp = (*it)->isEffectGroup();
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 isGrp->fixRelativeFilePaths(projectPathName, newProjectPath, blockEval);
             }
@@ -828,14 +828,14 @@ NodeCollection::fixPathName(const std::string& oldName,
                             const std::string& newName)
 {
     NodesList nodes = getNodes();
-    boost::shared_ptr<Project> project = getApplication()->getProject();
+    ProjectPtr project = getApplication()->getProject();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                Knob<std::string>* isString = dynamic_cast< Knob<std::string>* >( knobs[j].get() );
-                KnobString* isStringKnob = dynamic_cast<KnobString*>(isString);
+                KnobStringBasePtr isString = dynamic_cast< KnobStringBasePtr >(knobs[j]);
+                KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
@@ -851,7 +851,7 @@ NodeCollection::fixPathName(const std::string& oldName,
                 }
             }
 
-            NodeGroup* isGrp = (*it)->isEffectGroup();
+            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
             if (isGrp) {
                 isGrp->fixPathName(oldName, newName);
             }
@@ -889,13 +889,12 @@ NodeCollection::checkIfNodeNameExists(const std::string & n,
     return false;
 }
 
-static void
-recomputeFrameRangeForAllReadersInternal(NodeCollection* group,
-                                         int* firstFrame,
-                                         int* lastFrame,
-                                         bool setFrameRange)
+void
+NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
+                                                         int* lastFrame,
+                                                         bool setFrameRange)
 {
-    NodesList nodes = group->getNodes();
+    NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
@@ -909,9 +908,9 @@ recomputeFrameRangeForAllReadersInternal(NodeCollection* group,
                     *lastFrame = setFrameRange ? thislast : std::max(*lastFrame, (int)thislast);
                 }
             } else {
-                NodeGroup* isGrp = (*it)->isEffectGroup();
+                NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
                 if (isGrp) {
-                    recomputeFrameRangeForAllReadersInternal(isGrp, firstFrame, lastFrame, false);
+                    isGrp->recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, false);
                 }
             }
         }
@@ -922,7 +921,7 @@ void
 NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,
                                                  int* lastFrame)
 {
-    recomputeFrameRangeForAllReadersInternal(this, firstFrame, lastFrame, true);
+    recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, true);
 }
 
 void
@@ -972,7 +971,7 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
         }
 
         //If the node has an attached stroke, that means it belongs to the roto paint tree, hence it is not in the project.
-        boost::shared_ptr<RotoContext> rotoContext = (*it)->getRotoContext();
+        RotoContextPtr rotoContext = (*it)->getRotoContext();
         if (args && rotoContext) {
             for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
                 boost::shared_ptr<ParallelRenderArgs> args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
@@ -983,12 +982,12 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
         }
 
 
-        const NodeGroup* isGrp = (*it)->isEffectGroup();
+        const NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             isGrp->getParallelRenderArgs(argsMap);
         }
 
-        const PrecompNode* isPrecomp = dynamic_cast<const PrecompNode*>( (*it)->getEffectInstance().get() );
+        const PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
         if (isPrecomp) {
             isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
         }
@@ -1003,7 +1002,7 @@ struct NodeGroupPrivate
     bool isDeactivatingGroup;
     bool isActivatingGroup;
     bool isEditable;
-    boost::shared_ptr<KnobButton> exportAsTemplate;
+    KnobButtonPtr exportAsTemplate;
 
     NodeGroupPrivate()
         : nodesLock(QMutex::Recursive)
@@ -1021,7 +1020,7 @@ struct NodeGroupPrivate
 
 NodeGroup::NodeGroup(const NodePtr &node)
     : OutputEffectInstance(node)
-    , NodeCollection( node ? node->getApp() : AppInstPtr() )
+    , NodeCollection( node ? node->getApp() : AppInstancePtr() )
     , _imp( new NodeGroupPrivate() )
 {
     setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
@@ -1161,18 +1160,18 @@ NodeGroup::isInputOptional(int inputNb) const
             return false;
         }
     }
-    GroupInput* input = dynamic_cast<GroupInput*>( n->getEffectInstance().get() );
+    GroupInputPtr input = n->isEffectGroupInput();
 
     assert(input);
     if (!input) {
         return false;
     }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
+    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsOptionalParamName);
     assert(knob);
     if (!knob) {
         return false;
     }
-    KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
+    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
     assert(isBool);
 
     return isBool ? isBool->getValue() : false;
@@ -1205,18 +1204,18 @@ NodeGroup::isInputMask(int inputNb) const
             return false;
         }
     }
-    GroupInput* input = dynamic_cast<GroupInput*>( n->getEffectInstance().get() );
+    GroupInputPtr input = n->isEffectGroupInput();
 
     assert(input);
     if (!input) {
         return false;
     }
-    KnobPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
+    KnobIPtr knob = input->getKnobByName(kNatronGroupInputIsMaskParamName);
     assert(knob);
     if (!knob) {
         return false;
     }
-    KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
+    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
     assert(isBool);
 
     return isBool ? isBool->getValue() : false;
@@ -1225,12 +1224,12 @@ NodeGroup::isInputMask(int inputNb) const
 void
 NodeGroup::initializeKnobs()
 {
-    KnobPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
+    KnobIPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
 
     assert(nodePage);
-    KnobPage* isPage = dynamic_cast<KnobPage*>( nodePage.get() );
+    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(nodePage);
     assert(isPage);
-    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( this, tr("Export as PyPlug") );
+    _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Export as PyPlug") );
     _imp->exportAsTemplate->setName("exportAsPyPlug");
     _imp->exportAsTemplate->setHintToolTip( tr("Export this group as a Python group script (PyPlug) that can be shared and/or later "
                                                "on re-used as a plug-in.") );
@@ -1249,7 +1248,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
 
     {
         QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+        GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
             for (U32 i = 0; i < _imp->inputs.size(); ++i) {
                 NodePtr input = _imp->inputs[i].lock();
@@ -1268,10 +1267,10 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
             ///The input must have been tracked before
             assert(false);
         }
-        GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
+        GroupOutputPtr isOutput = boost::dynamic_pointer_cast<GroupOutput>( node->getEffectInstance() );
         if (isOutput) {
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
-                if (it->lock()->getEffectInstance().get() == isOutput) {
+                if (it->lock()->getEffectInstance() == isOutput) {
                     _imp->outputs.erase(it);
                     break;
                 }
@@ -1307,13 +1306,13 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
 
     {
         QMutexLocker k(&_imp->nodesLock);
-        GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+        GroupInputPtr isInput = node->isEffectGroupInput();
         if (isInput) {
             _imp->inputs.push_back(node);
             _imp->guiInputs.push_back(node);
             thisNode->initializeInputs();
         }
-        GroupOutput* isOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
+        GroupOutputPtr isOutput = boost::dynamic_pointer_cast<GroupOutput>( node->getEffectInstance() );
         if (isOutput) {
             _imp->outputs.push_back(node);
             _imp->guiOutputs.push_back(node);
@@ -1347,7 +1346,7 @@ NodeGroup::notifyInputMaskStateChanged(const NodePtr& /*node*/)
 void
 NodeGroup::notifyNodeNameChanged(const NodePtr& node)
 {
-    GroupInput* isInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
+    GroupInputPtr isInput = node->isEffectGroupInput();
 
     if (isInput) {
         getNode()->initializeInputs();
@@ -1487,7 +1486,7 @@ NodeGroup::purgeCaches()
 }
 
 bool
-NodeGroup::knobChanged(KnobI* k,
+NodeGroup::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum /*reason*/,
                        ViewSpec /*view*/,
                        double /*time*/,
@@ -1589,22 +1588,22 @@ escapeString(const std::string& str)
 
 static bool
 exportKnobValues(int indentLevel,
-                 const KnobPtr knob,
+                 const KnobIPtr knob,
                  const QString& paramFullName,
                  bool mustDefineParam,
                  QTextStream& ts)
 {
     bool hasExportedValue = false;
 
-    Knob<std::string>* isStr = dynamic_cast<Knob<std::string>*>( knob.get() );
-    AnimatingKnobStringHelper* isAnimatedStr = dynamic_cast<AnimatingKnobStringHelper*>( knob.get() );
-    Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
-    Knob<int>* isInt = dynamic_cast<Knob<int>*>( knob.get() );
-    Knob<bool>* isBool = dynamic_cast<Knob<bool>*>( knob.get() );
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-    KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );
-    KnobString* isStringKnob = dynamic_cast<KnobString*>( knob.get() );
+    KnobStringBasePtr isStr = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+    AnimatingKnobStringHelperPtr isAnimatedStr = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
+    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
+    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
+    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
+    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
+    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(knob);
 
     ///Don't export this kind of parameter. Mainly this is the html label of the node which is 99% of times empty
     if ( isStringKnob &&
@@ -1616,7 +1615,7 @@ exportKnobValues(int indentLevel,
         return false;
     }
 
-    EffectInstance* holderIsEffect = dynamic_cast<EffectInstance*>( knob->getHolder() );
+    EffectInstancePtr holderIsEffect = boost::dynamic_pointer_cast<EffectInstance>( knob->getHolder() );
 
     if (isChoice && holderIsEffect) {
         //Do not serialize mask channel selector if the mask is not enabled
@@ -1639,7 +1638,7 @@ exportKnobValues(int indentLevel,
                     WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("if param is not None:") );
                 }
             }
-            boost::shared_ptr<Curve> curve = isParametric->getParametricCurve(i);
+            CurvePtr curve = isParametric->getParametricCurve(i);
             double r, g, b;
             isParametric->getCurveColor(i, &r, &g, &b);
             WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setCurveColor(") + NUM_INT(i) + QString::fromUtf8(", ") +
@@ -1692,7 +1691,7 @@ exportKnobValues(int indentLevel,
                 }
             }
         } else { // !isParametric
-            boost::shared_ptr<Curve> curve = knob->getCurve(ViewIdx(0), i, true);
+            CurvePtr curve = knob->getCurve(ViewIdx(0), i, true);
             if (curve) {
                 KeyFrameSet keys = curve->getKeyFrames_mt_safe();
 
@@ -1840,31 +1839,31 @@ exportKnobValues(int indentLevel,
 
 static void
 exportUserKnob(int indentLevel,
-               const KnobPtr& knob,
+               const KnobIPtr& knob,
                const QString& fullyQualifiedNodeName,
-               KnobGroup* group,
-               KnobPage* page,
+               const KnobGroupPtr& group,
+               KnobPagePtr page,
                QTextStream& ts)
 {
-    KnobInt* isInt = dynamic_cast<KnobInt*>( knob.get() );
-    KnobDouble* isDouble = dynamic_cast<KnobDouble*>( knob.get() );
-    KnobBool* isBool = dynamic_cast<KnobBool*>( knob.get() );
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
-    KnobColor* isColor = dynamic_cast<KnobColor*>( knob.get() );
-    KnobString* isStr = dynamic_cast<KnobString*>( knob.get() );
-    KnobFile* isFile = dynamic_cast<KnobFile*>( knob.get() );
-    KnobOutputFile* isOutFile = dynamic_cast<KnobOutputFile*>( knob.get() );
-    KnobPath* isPath = dynamic_cast<KnobPath*>( knob.get() );
-    KnobGroup* isGrp = dynamic_cast<KnobGroup*>( knob.get() );
-    KnobButton* isButton = dynamic_cast<KnobButton*>( knob.get() );
-    KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( knob.get() );
-    KnobParametric* isParametric = dynamic_cast<KnobParametric*>( knob.get() );
+    KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
+    KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
+    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
+    KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(knob);
+    KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
+    KnobOutputFilePtr isOutFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+    KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(knob);
+    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
+    KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(knob);
+    KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
     boost::shared_ptr<KnobI > aliasedParam;
     {
         KnobI::ListenerDimsMap listeners;
         knob->getListeners(listeners);
         if ( !listeners.empty() ) {
-            KnobPtr listener = listeners.begin()->first.lock();
+            KnobIPtr listener = listeners.begin()->first.lock();
             if ( listener && (listener->getAliasMaster() == knob) ) {
                 aliasedParam = listener;
             }
@@ -1984,7 +1983,7 @@ exportUserKnob(int indentLevel,
                                                  ESC( isChoice->getName() ) +
                                                  QString::fromUtf8(", ") + ESC( isChoice->getLabel() ) + QString::fromUtf8(")") );
 
-        KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>( aliasedParam.get() );
+        KnobChoicePtr aliasedIsChoice = boost::dynamic_pointer_cast<KnobChoice>( aliasedParam.get() );
 
         if (!aliasedIsChoice) {
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
@@ -2241,13 +2240,13 @@ exportBezierPointAtTime(int indentLevel,
 static void
 exportRotoLayer(int indentLevel,
                 const std::list<boost::shared_ptr<RotoItem> >& items,
-                const boost::shared_ptr<RotoLayer>& layer,
+                const RotoLayerPtr& layer,
                 QTextStream& ts)
 {
     QString parentLayerName = QString::fromUtf8( layer->getScriptName().c_str() ) + QString::fromUtf8("_layer");
 
     for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
 
         if (isBezier) {
@@ -2269,22 +2268,22 @@ exportRotoLayer(int indentLevel,
             QString visibleStr = isBezier->isGloballyActivated() ? QString::fromUtf8("True") : QString::fromUtf8("False");
             WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("bezier.setVisible(") + visibleStr + QString::fromUtf8(")") );
 
-            boost::shared_ptr<KnobBool> activatedKnob = isBezier->getActivatedKnob();
+            KnobBoolPtr activatedKnob = isBezier->getActivatedKnob();
             exportKnobValues(indentLevel, activatedKnob, QString::fromUtf8("bezier.getActivatedParam()"), true, ts);
 
-            boost::shared_ptr<KnobDouble> featherDist = isBezier->getFeatherKnob();
+            KnobDoublePtr featherDist = isBezier->getFeatherKnob();
             exportKnobValues(indentLevel, featherDist, QString::fromUtf8("bezier.getFeatherDistanceParam()"), true, ts);
 
-            boost::shared_ptr<KnobDouble> opacityKnob = isBezier->getOpacityKnob();
+            KnobDoublePtr opacityKnob = isBezier->getOpacityKnob();
             exportKnobValues(indentLevel, opacityKnob, QString::fromUtf8("bezier.getOpacityParam()"), true, ts);
 
-            boost::shared_ptr<KnobDouble> fallOffKnob = isBezier->getFeatherFallOffKnob();
+            KnobDoublePtr fallOffKnob = isBezier->getFeatherFallOffKnob();
             exportKnobValues(indentLevel, fallOffKnob, QString::fromUtf8("bezier.getFeatherFallOffParam()"), true, ts);
 
-            boost::shared_ptr<KnobColor> colorKnob = isBezier->getColorKnob();
+            KnobColorPtr colorKnob = isBezier->getColorKnob();
             exportKnobValues(indentLevel, colorKnob, QString::fromUtf8("bezier.getColorParam()"), true, ts);
 
-            boost::shared_ptr<KnobChoice> compositing = isBezier->getOperatorKnob();
+            KnobChoicePtr compositing = isBezier->getOperatorKnob();
             exportKnobValues(indentLevel, compositing, QString::fromUtf8("bezier.getCompositingOperatorParam()"), true, ts);
 
 
@@ -2346,7 +2345,7 @@ exportAllNodeKnobs(int indentLevel,
                    QTextStream& ts)
 {
     const KnobsVec& knobs = node->getKnobs();
-    std::list<KnobPage*> userPages;
+    std::list<KnobPagePtr> userPages;
 
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         if ( (*it2)->getIsPersistant() && !(*it2)->isUserKnob() ) {
@@ -2363,7 +2362,7 @@ exportAllNodeKnobs(int indentLevel,
         }
 
         if ( (*it2)->isUserKnob() ) {
-            KnobPage* isPage = dynamic_cast<KnobPage*>( it2->get() );
+            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it2);
             if (isPage) {
                 userPages.push_back(isPage);
             }
@@ -2373,7 +2372,7 @@ exportAllNodeKnobs(int indentLevel,
         WRITE_STATIC_LINE("");
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create the user parameters");
     }
-    for (std::list<KnobPage*>::iterator it2 = userPages.begin(); it2 != userPages.end(); ++it2) {
+    for (std::list<KnobPagePtr>::iterator it2 = userPages.begin(); it2 != userPages.end(); ++it2) {
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.") + QString::fromUtf8( (*it2)->getName().c_str() ) +
                                                  QString::fromUtf8(" = lastNode.createPageParam(") + ESC( (*it2)->getName() ) + QString::fromUtf8(", ") +
                                                  ESC( (*it2)->getLabel() ) + QString::fromUtf8(")") );
@@ -2405,14 +2404,14 @@ exportAllNodeKnobs(int indentLevel,
         WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("lastNode.refreshUserParamsGUI()");
     }
 
-    boost::shared_ptr<RotoContext> roto = node->getRotoContext();
+    RotoContextPtr roto = node->getRotoContext();
     if (roto) {
-        const std::list<boost::shared_ptr<RotoLayer> >& layers = roto->getLayers();
+        const std::list<RotoLayerPtr >& layers = roto->getLayers();
 
         if ( !layers.empty() ) {
             WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# For the roto node, create all layers and beziers");
             WRITE_INDENT(indentLevel); WRITE_STRING("roto = lastNode.getRotoContext()");
-            boost::shared_ptr<RotoLayer> baseLayer = layers.front();
+            RotoLayerPtr baseLayer = layers.front();
             QString baseLayerName = QString::fromUtf8( baseLayer->getScriptName().c_str() );
             QString baseLayerToken = baseLayerName + QString::fromUtf8("_layer");
             WRITE_INDENT(indentLevel); WRITE_STRING( baseLayerToken + QString::fromUtf8(" = roto.getBaseLayer()") );
@@ -2446,7 +2445,7 @@ exportKnobLinks(int indentLevel,
         bool hasDefined = false;
 
         //Check for alias link
-        KnobPtr alias = (*it2)->getAliasMaster();
+        KnobIPtr alias = (*it2)->getAliasMaster();
         if (alias) {
             if (!hasDefined) {
                 WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
@@ -2454,13 +2453,13 @@ exportKnobLinks(int indentLevel,
             }
             hasExportedLink = true;
 
-            EffectInstance* aliasHolder = dynamic_cast<EffectInstance*>( alias->getHolder() );
+            EffectInstancePtr aliasHolder = boost::dynamic_pointer_cast<EffectInstance>( alias->getHolder() );
             assert(aliasHolder);
             if (!aliasHolder) {
                 throw std::logic_error("exportKnobLinks");
             }
             QString aliasName;
-            if ( aliasHolder == groupNode->getEffectInstance().get() ) {
+            if ( aliasHolder == groupNode->getEffectInstance() ) {
                 aliasName = groupName;
             } else {
                 aliasName = groupName + QString::fromUtf8( aliasHolder->getNode()->getScriptName_mt_safe().c_str() );
@@ -2484,7 +2483,7 @@ exportKnobLinks(int indentLevel,
                                                              hasRetVar + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
                 }
 
-                std::pair<int, KnobPtr > master = (*it2)->getMaster(i);
+                std::pair<int, KnobIPtr > master = (*it2)->getMaster(i);
                 if (master.second) {
                     if (!hasDefined) {
                         WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("param = ") + paramName);
@@ -2492,13 +2491,13 @@ exportKnobLinks(int indentLevel,
                     }
                     hasExportedLink = true;
 
-                    EffectInstance* masterHolder = dynamic_cast<EffectInstance*>( master.second->getHolder() );
+                    EffectInstancePtr masterHolder = boost::dynamic_pointer_cast<EffectInstance>( master.second->getHolder() );
                     assert(masterHolder);
                     if (!masterHolder) {
                         throw std::logic_error("exportKnobLinks");
                     }
                     QString masterName;
-                    if ( masterHolder == groupNode->getEffectInstance().get() ) {
+                    if ( masterHolder == groupNode->getEffectInstance() ) {
                         masterName = groupName;
                     } else {
                         masterName = groupName + QString::fromUtf8( masterHolder->getNode()->getScriptName_mt_safe().c_str() );
@@ -2521,17 +2520,16 @@ exportKnobLinks(int indentLevel,
     return hasExportedLink;
 } // exportKnobLinks
 
-static void
-exportGroupInternal(int indentLevel,
-                    const NodeCollection* collection,
-                    const NodePtr& upperLevelGroupNode,
-                    const QString& upperLevelGroupName,
-                    QTextStream& ts)
+void
+NodeCollection::exportGroupInternal(int indentLevel,
+                                    const NodePtr& upperLevelGroupNode,
+                                    const QString& upperLevelGroupName,
+                                    QTextStream& ts)
 {
     WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("# Create all nodes in the group");
     WRITE_STATIC_LINE("");
 
-    const NodeGroup* isGroup = dynamic_cast<const NodeGroup*>(collection);
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     NodePtr groupNode;
     if (isGroup) {
         groupNode = isGroup->getNode();
@@ -2548,7 +2546,7 @@ exportGroupInternal(int indentLevel,
     }
 
 
-    NodesList nodes = collection->getNodes();
+    NodesList nodes = getNodes();
     NodesList exportedNodes;
 
     ///Re-order nodes so we're sure Roto nodes get exported in the end since they may depend on Trackers
@@ -2565,7 +2563,7 @@ exportGroupInternal(int indentLevel,
 
     for (NodesList::iterator it = newNodes.begin(); it != newNodes.end(); ++it) {
         ///Don't create viewer while exporting
-        ViewerInstance* isViewer = (*it)->isEffectViewer();
+        ViewerInstancePtr isViewer = (*it)->isEffectViewerInstance();
         if (isViewer) {
             continue;
         }
@@ -2641,10 +2639,10 @@ exportGroupInternal(int indentLevel,
             WRITE_STATIC_LINE("");
         }
 
-        NodeGroup* isGrp = (*it)->isEffectGroup();
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
             WRITE_INDENT(indentLevel); WRITE_STRING(groupName + QString::fromUtf8("group = ") + nodeNameInScript);
-            exportGroupInternal(indentLevel, isGrp, groupNode, groupName, ts);
+            isGrp->exportGroupInternal(indentLevel, groupNode, groupName, ts);
             WRITE_STATIC_LINE("");
         }
     }
@@ -2756,7 +2754,7 @@ NodeCollection::exportGroupToPython(const QString& pluginID,
 
     WRITE_STATIC_LINE("def createInstance(app,group):");
 
-    exportGroupInternal(1, this, NodePtr(), QString(), ts);
+    exportGroupInternal(1, NodePtr(), QString(), ts);
 
     ///Import user hand-written code
     WRITE_INDENT(1); WRITE_STATIC_LINE("try:");

@@ -88,7 +88,7 @@ struct ProgressTaskInfoPrivate
 public:
     ProgressPanel* panel;
     NodeWPtr node;
-    ProgressTaskInfo* _publicInterface;
+    ProgressTaskInfo* _publicInterface; // can not be a smart ptr
     TableItem* nameItem;
     TableItem* progressItem;
     TableItem* statusItem;
@@ -113,7 +113,7 @@ public:
     boost::scoped_ptr<TimeLapse> timer;
     boost::scoped_ptr<QTimer> refreshLabelTimer;
     QString message;
-    boost::shared_ptr<ProcessHandler> process;
+    ProcessHandlerPtr process;
 
     ProgressTaskInfoPrivate(ProgressPanel* panel,
                             const NodePtr& node,
@@ -124,7 +124,7 @@ public:
                             const bool canPause,
                             const bool canCancel,
                             const QString& message,
-                            const boost::shared_ptr<ProcessHandler>& process)
+                            const ProcessHandlerPtr& process)
         : panel(panel)
         , node(node)
         , _publicInterface(publicInterface)
@@ -178,7 +178,7 @@ ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
                                    const bool canPause,
                                    const bool canCancel,
                                    const QString& message,
-                                   const boost::shared_ptr<ProcessHandler>& process)
+                                   const ProcessHandlerPtr& process)
     : QObject()
     , _imp( new ProgressTaskInfoPrivate(panel, node, this, firstFrame, lastFrame, frameStep, canPause, canCancel, message, process) )
 {
@@ -249,7 +249,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         _imp->refreshButtons();
     }
     NodePtr node = getNode();
-    OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() );
+    OutputEffectInstancePtr effect = boost::dynamic_pointer_cast<OutputEffectInstance>( node->getEffectInstance() );
     node->getApp()->removeRenderFromQueue(effect);
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
@@ -283,7 +283,7 @@ ProgressTaskInfo::restartTask()
         } else {
             firstFrame =  _imp->lastRenderedFrame;
         }
-        AppInstance::RenderWork w( dynamic_cast<OutputEffectInstance*>( node->getEffectInstance().get() ),
+        AppInstance::RenderWork w( boost::dynamic_pointer_cast<OutputEffectInstance>( node->getEffectInstance() ),
                                    firstFrame,
                                    _imp->lastFrame,
                                    _imp->frameStep,
@@ -309,7 +309,7 @@ ProgressTaskInfo::onRenderEngineFrameComputed(int frame,
     if (!r && !process) {
         return;
     }
-    OutputEffectInstance* output = r ? r->getOutput().get() : process->getWriter();
+    OutputEffectInstancePtr output = r ? r->getOutput() : process->getWriter();
     if (!output) {
         return;
     }
@@ -325,7 +325,7 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     if (!r && !process) {
         return;
     }
-    OutputEffectInstance* output = r ? r->getOutput().get() : process->getWriter();
+    OutputEffectInstancePtr output = r ? r->getOutput() : process->getWriter();
     if (!output) {
         return;
     }
@@ -361,7 +361,7 @@ ProgressTaskInfo::getNode() const
     return _imp->node.lock();
 }
 
-boost::shared_ptr<ProcessHandler>
+ProcessHandlerPtr
 ProgressTaskInfo::getProcess() const
 {
     return _imp->process;
@@ -632,7 +632,7 @@ ProgressTaskInfo::createCellWidgets()
 } // ProgressTaskInfo::createCellWidgets
 
 void
-ProgressTaskInfo::setProcesshandler(const boost::shared_ptr<ProcessHandler>& process)
+ProgressTaskInfo::setProcesshandler(const ProcessHandlerPtr& process)
 {
     _imp->process = process;
 }
@@ -678,7 +678,7 @@ ProgressTaskInfoPrivate::refreshButtons()
     case ProgressTaskInfo::eProgressTaskStatusFinished: {
         pauseTasksButton->setEnabled(false);
         NodePtr node = getNode();
-        EffectInstPtr effect;
+        EffectInstancePtr effect;
         if (node) {
             effect = node->getEffectInstance();
         }

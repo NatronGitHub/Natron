@@ -166,7 +166,7 @@ to_qcolor(double r,
 void
 Gui::loadStyleSheet()
 {
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     QColor selCol, sunkCol, baseCol, raisedCol, txtCol, intCol, kfCol, disCol, eCol, altCol, lightSelCol;
 
     //settings->
@@ -332,7 +332,7 @@ Gui::minimize()
 }
 
 ViewerTab*
-Gui::addNewViewerTab(ViewerInstance* viewer,
+Gui::addNewViewerTab(const ViewerInstancePtr& viewer,
                      TabWidget* where)
 {
     if (!viewer) {
@@ -342,7 +342,7 @@ Gui::addNewViewerTab(ViewerInstance* viewer,
     NodesGuiList activeNodeViewerUi, nodeViewerUi;
 
     //Don't create tracker & roto interface for file dialog preview viewer
-    boost::shared_ptr<NodeCollection> group = viewer->getNode()->getGroup();
+    NodeCollectionPtr group = viewer->getNode()->getGroup();
     if (group) {
         if ( !_imp->_viewerTabs.empty() ) {
             ( *_imp->_viewerTabs.begin() )->getNodesViewerInterface(&nodeViewerUi, &activeNodeViewerUi);
@@ -482,11 +482,11 @@ Gui::removeViewerTab(ViewerTab* tab,
     }
     tab->abortRendering();
     NodeGraph* graph = 0;
-    NodeGroup* isGrp = 0;
-    boost::shared_ptr<NodeCollection> collection;
+    NodeGroupPtr isGrp = 0;
+    NodeCollectionPtr collection;
     if ( tab->getInternalNode() && tab->getInternalNode()->getNode() ) {
-        boost::shared_ptr<NodeCollection> collection = tab->getInternalNode()->getNode()->getGroup();
-        isGrp = dynamic_cast<NodeGroup*>( collection.get() );
+        NodeCollectionPtr collection = tab->getInternalNode()->getNode()->getGroup();
+        isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
     }
 
 
@@ -511,7 +511,7 @@ Gui::removeViewerTab(ViewerTab* tab,
             nodes = collection->getNodes();
         }
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            ViewerInstance* isViewer = (*it)->isEffectViewer();
+            ViewerInstance* isViewer = (*it)->isEffectViewerInstance();
             if ( !isViewer || ( isViewer == tab->getInternalNode() ) || !(*it)->isActivated() ) {
                 continue;
             }
@@ -980,11 +980,11 @@ Gui::getToolButtonMenuOpened() const
     return _imp->_toolButtonMenuOpened;
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::createNewProject()
 {
     CLArgs cl;
-    AppInstPtr app = appPTR->newAppInstance(cl, false);
+    AppInstancePtr app = appPTR->newAppInstance(cl, false);
 
     app->execOnProjectCreatedCallback();
 
@@ -1009,32 +1009,32 @@ Gui::openProject()
         std::string patternCpy = selectedFile;
         std::string path = SequenceParsing::removePath(patternCpy);
         _imp->_lastLoadProjectOpenedDir = QString::fromUtf8( path.c_str() );
-        AppInstPtr appInstance = openProjectInternal(selectedFile, true);
+        AppInstancePtr appInstance = openProjectInternal(selectedFile, true);
         Q_UNUSED(appInstance);
     }
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::openProject(const std::string & filename)
 {
     return openProjectInternal(filename, true);
 }
 
-AppInstPtr
+AppInstancePtr
 Gui::openProjectInternal(const std::string & absoluteFileName,
                          bool attemptToLoadAutosave)
 {
     QFileInfo file( QString::fromUtf8( absoluteFileName.c_str() ) );
 
     if ( !file.exists() ) {
-        return AppInstPtr();
+        return AppInstancePtr();
     }
     QString fileUnPathed = file.fileName();
     QString path = file.path() + QLatin1Char('/');
     int openedProject = appPTR->isProjectAlreadyOpened(absoluteFileName);
 
     if (openedProject != -1) {
-        AppInstPtr instance = appPTR->getAppInstance(openedProject);
+        AppInstancePtr instance = appPTR->getAppInstance(openedProject);
         if (instance) {
             GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
             if (guiApp) {
@@ -1045,8 +1045,8 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         }
     }
 
-    AppInstPtr ret;
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    AppInstancePtr ret;
+    ProjectPtr project = getApp()->getProject();
     ///if the current graph has no value, just load the project in the same window
     if ( project->isGraphWorthLess() ) {
         bool ok = project->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
@@ -1055,7 +1055,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
         }
     } else {
         CLArgs cl;
-        AppInstPtr newApp = appPTR->newAppInstance(cl, false);
+        AppInstancePtr newApp = appPTR->newAppInstance(cl, false);
         bool ok  = newApp->getProject()->loadProject( path, fileUnPathed, false, attemptToLoadAutosave);
         if (ok) {
             ret = newApp;
@@ -1095,7 +1095,7 @@ updateRecentFiles(const QString & filename)
 bool
 Gui::saveProject()
 {
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
 
     if ( project->hasProjectBeenSavedByUser() ) {
         QString projectFilename = project->getProjectFilename();
@@ -1164,7 +1164,7 @@ Gui::saveProjectAs()
 void
 Gui::saveAndIncrVersion()
 {
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
     QString path = project->getProjectPath();
     QString name = project->getProjectFilename();
     int currentVersion = 0;
@@ -1259,7 +1259,7 @@ Gui::createReader()
         } else {
             graph = _imp->_nodeGraphArea;
         }
-        boost::shared_ptr<NodeCollection> group = graph->getGroup();
+        NodeCollectionPtr group = graph->getGroup();
         assert(group);
 
 #ifdef NATRON_ENABLE_IO_META_NODES
@@ -1333,7 +1333,7 @@ Gui::createWriter()
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
     CreateNodeArgs args(PLUGINID_NATRON_WRITE, group);

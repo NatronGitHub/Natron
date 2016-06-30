@@ -81,7 +81,7 @@ nodeHasAnimation(const NodeGuiPtr &nodeGui)
     for (KnobsVec::const_iterator it = knobs.begin();
          it != knobs.end();
          ++it) {
-        KnobPtr knob = *it;
+        KnobIPtr knob = *it;
 
         if ( knob->hasAnimation() ) {
             return true;
@@ -101,7 +101,7 @@ nodeCanAnimate(const NodePtr &node)
     for (KnobsVec::const_iterator it = knobs.begin();
          it != knobs.end();
          ++it) {
-        KnobPtr knob = *it;
+        KnobIPtr knob = *it;
 
         if ( knob->isAnimationEnabled() ) {
             return true;
@@ -322,7 +322,7 @@ DopeSheet::addNode(NodeGuiPtr nodeGui)
         return;
     }
 
-    EffectInstPtr effectInstance = node->getEffectInstance();
+    EffectInstancePtr effectInstance = node->getEffectInstance();
     std::string pluginID = node->getPluginID();
 
 #ifndef NATRON_ENABLE_IO_META_NODES
@@ -463,7 +463,7 @@ boost::shared_ptr<DSNode> DopeSheet::findDSNode(Node *node) const
     return boost::shared_ptr<DSNode>();
 }
 
-boost::shared_ptr<DSNode> DopeSheet::findDSNode(const KnobPtr &knob) const
+boost::shared_ptr<DSNode> DopeSheet::findDSNode(const KnobIPtr &knob) const
 {
     for (DSTreeItemNodeMap::const_iterator it = _imp->treeItemNodeMap.begin(); it != _imp->treeItemNodeMap.end(); ++it) {
         boost::shared_ptr<DSNode>dsNode = (*it).second;
@@ -502,14 +502,14 @@ boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(const KnobGui* knobGui) const
 bool
 DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
 
     return (parentGroup);
 }
 
 boost::shared_ptr<DSNode> DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
-    boost::shared_ptr<NodeGroup> parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
     boost::shared_ptr<DSNode> parentGroupDSNode;
 
     if (parentGroup) {
@@ -525,7 +525,7 @@ std::vector<boost::shared_ptr<DSNode> > DopeSheet::getImportantNodes(DSNode *dsN
     DopeSheetItemType nodeType = dsNode->getItemType();
 
     if (nodeType == eDopeSheetItemTypeGroup) {
-        NodeGroup *nodeGroup = dsNode->getInternalNode()->isEffectGroup();
+        NodeGroupPtr nodeGroup = dsNode->getInternalNode()->isEffectNodeGroup();
         assert(nodeGroup);
 
         NodesList nodes = nodeGroup->getNodes();
@@ -652,7 +652,7 @@ DopeSheet::moveSelectedKeysAndNodes(double dt)
         if (!knobDs) {
             continue;
         }
-        boost::shared_ptr<Curve> curve = knobDs->getKnobGui()->getCurve( ViewIdx(0), knobDs->getDimension() );
+        CurvePtr curve = knobDs->getKnobGui()->getCurve( ViewIdx(0), knobDs->getDimension() );
         assert(curve);
         KeyFrame prevKey, nextKey;
         if ( curve->getNextKeyframeTime( (*it)->key.getTime(), &nextKey ) ) {
@@ -697,11 +697,11 @@ DopeSheet::trimReaderLeft(const boost::shared_ptr<DSNode> &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
 
@@ -724,11 +724,11 @@ DopeSheet::trimReaderRight(const boost::shared_ptr<DSNode> &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
     int firstFrame = firstFrameKnob->getValue();
@@ -749,11 +749,11 @@ DopeSheet::canSlipReader(const boost::shared_ptr<DSNode> &reader) const
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
@@ -777,11 +777,11 @@ DopeSheet::slipReader(const boost::shared_ptr<DSNode> &reader,
 {
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     assert(firstFrameKnob);
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     assert(lastFrameKnob);
-    Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+    KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
     assert(originalFrameRangeKnob);
 
     ///Slipping means moving the timeOffset parameter by dt and moving firstFrame and lastFrame by -dt
@@ -1009,7 +1009,7 @@ public:
     int dimension;
     QTreeWidgetItem *nameItem;
     KnobGuiWPtr knobGui;
-    KnobWPtr knob;
+    KnobIWPtr knob;
 };
 
 DSKnobPrivate::DSKnobPrivate()
@@ -1098,7 +1098,7 @@ DSKnob::getKnobGui() const
     return _imp->knobGui.lock();
 }
 
-KnobPtr
+KnobIPtr
 DSKnob::getInternalKnob() const
 {
     return _imp->knob.lock();
@@ -1448,7 +1448,7 @@ DSNodePrivate::initGroupNode()
        }
        NodePtr natronnode = node->getNode();
        assert(natronnode);
-       NodeGroup* nodegroup = dynamic_cast<NodeGroup *>(natronnode->getEffectInstance());
+       NodeGroupPtr nodegroup = dynamic_cast<NodeGroup *>(natronnode->getEffectInstance());
        assert(nodegroup);
        if (!nodegroup) {
          return;
@@ -1481,7 +1481,7 @@ DSNode::DSNode(DopeSheet *model,
 
     for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator it = knobs.begin();
          it != knobs.end(); ++it) {
-        KnobPtr knob = it->first.lock();
+        KnobIPtr knob = it->first.lock();
         if (!knob) {
             continue;
         }

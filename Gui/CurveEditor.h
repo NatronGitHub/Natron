@@ -75,7 +75,7 @@ public:
 
     NodeCurveEditorElement(QTreeWidget* tree,
                            CurveEditor* curveWidget,
-                           const KnobPtr& internalKnob,
+                           const KnobIPtr& internalKnob,
                            int dimension,
                            QTreeWidgetItem* item,
                            const boost::shared_ptr<CurveGui>& curve);
@@ -114,7 +114,7 @@ public:
         return _knob.lock();
     }
 
-    KnobPtr getInternalKnob() const WARN_UNUSED_RETURN;
+    KnobIPtr getInternalKnob() const WARN_UNUSED_RETURN;
 
     void checkVisibleState(bool autoSelectOnShow);
 
@@ -138,7 +138,7 @@ private:
     CurveEditor* _curveWidget;
     QTreeWidget* _treeWidget;
     KnobGuiWPtr _knob;
-    KnobWPtr _internalKnob;
+    KnobIWPtr _internalKnob;
     int _dimension;
 };
 
@@ -220,7 +220,7 @@ public:
 
     QString getName() const;
 
-    boost::shared_ptr<RotoContext> getContext() const;
+    RotoContextPtr getContext() const;
     const std::list<NodeCurveEditorElement*>& getElements() const;
     NodeCurveEditorElement* findElement(const KnobGuiPtr& knob, int dimension) const;
 
@@ -330,7 +330,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     CurveEditor(Gui* gui,
-                boost::shared_ptr<TimeLine> timeline,
+                const TimeLinePtr& timeline,
                 QWidget* parent = 0);
 
     virtual ~CurveEditor() OVERRIDE;
@@ -344,7 +344,7 @@ public:
 
     void setTreeWidgetWidth(int width);
 
-    void centerOn(const std::vector<boost::shared_ptr<Curve> > & curves);
+    void centerOn(const std::vector<CurvePtr > & curves);
 
     std::pair<QAction*, QAction*> getUndoRedoActions() const WARN_UNUSED_RETURN;
     std::list<boost::shared_ptr<CurveGui> > findCurve(const KnobGuiPtr& knob, int dimension) const WARN_UNUSED_RETURN;

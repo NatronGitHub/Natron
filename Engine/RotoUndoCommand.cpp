@@ -634,7 +634,7 @@ RemoveCurveUndoCommand::redo()
 
 
 AddStrokeUndoCommand::AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                                           const boost::shared_ptr<RotoStrokeItem>& item)
+                                           const RotoStrokeItemPtr& item)
     : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)
@@ -682,7 +682,7 @@ AddStrokeUndoCommand::redo()
 }
 
 AddMultiStrokeUndoCommand::AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                                                     const boost::shared_ptr<RotoStrokeItem>& item)
+                                                     const RotoStrokeItemPtr& item)
     : UndoCommand()
     , _roto(roto)
     , _firstRedoCalled(false)

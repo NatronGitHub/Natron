@@ -56,7 +56,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct DockablePanelPrivate
 {
-    DockablePanel* _publicInterface;
+    DockablePanel* _publicInterface; // can not be a smart ptr
     Gui* _gui;
     QVBoxLayout* _container; /*!< ptr to the layout containing this DockablePanel*/
 
@@ -98,7 +98,7 @@ struct DockablePanelPrivate
     ///THe visibility of the knobs before the hide/show unmodified button is clicked
     ///to show only the knobs that need to afterwards
     std::map<KnobGuiWPtr, bool> _knobsVisibilityBeforeHideModif;
-    KnobHolder* _holder;
+    KnobHolderPtr _holder;
     bool _useScrollAreasForTabs;
     DockablePanel::HeaderModeEnum _mode;
     mutable QMutex _isClosedMutex;
@@ -112,7 +112,7 @@ struct DockablePanelPrivate
 
     DockablePanelPrivate(DockablePanel* publicI,
                          Gui* gui,
-                         KnobHolder* holder,
+                         const KnobHolderPtr& holder,
                          QVBoxLayout* container,
                          DockablePanel::HeaderModeEnum headerMode,
                          bool useScrollAreasForTabs,

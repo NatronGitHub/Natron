@@ -160,14 +160,14 @@ bool
 ViewerTabPrivate::getOverlayTransform(double time,
                                       ViewIdx view,
                                       const NodePtr& target,
-                                      EffectInstance* currentNode,
+                                      const EffectInstancePtr& currentNode,
                                       Transform::Matrix3x3* transform) const
 {
-    if ( currentNode == target->getEffectInstance().get() ) {
+    if ( currentNode == target->getEffectInstance() ) {
         return true;
     }
     RenderScale s(1.);
-    EffectInstPtr input;
+    EffectInstancePtr input;
     StatusEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
     if ( !currentNode->getNode()->isNodeDisabled() && currentNode->getNode()->getCurrentCanTransform() ) {
@@ -186,7 +186,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = maxInp - 1; i >= 0; --i) {
-            EffectInstPtr inp = currentNode->getInput(i);
+            EffectInstancePtr inp = currentNode->getInput(i);
             bool optional = currentNode->isInputOptional(i);
             if (inp) {
                 if (optional) {
@@ -241,7 +241,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
 } // ViewerTabPrivate::getOverlayTransform
 
 static double
-transformTimeForNode(EffectInstance* currentNode,
+transformTimeForNode(const EffectInstancePtr& currentNode,
                      double inTime)
 {
     U64 nodeHash = currentNode->getHash();
@@ -268,10 +268,10 @@ bool
 ViewerTabPrivate::getTimeTransform(double time,
                                    ViewIdx view,
                                    const NodePtr& target,
-                                   EffectInstance* currentNode,
+                                   const EffectInstancePtr& currentNode,
                                    double *newTime) const
 {
-    if ( currentNode == target->getEffectInstance().get() ) {
+    if ( currentNode == target->getEffectInstance() ) {
         *newTime = time;
 
         return true;
@@ -291,7 +291,7 @@ ViewerTabPrivate::getTimeTransform(double time,
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = maxInp - 1; i >= 0; --i) {
-        EffectInstPtr inp = currentNode->getInput(i);
+        EffectInstancePtr inp = currentNode->getInput(i);
         bool optional = currentNode->isInputOptional(i);
         if (inp) {
             if (optional) {
@@ -339,7 +339,7 @@ ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
     int activeInputIdx[2];
 
     viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
-    EffectInstPtr activeInput[2] = {EffectInstPtr(), EffectInstPtr()};
+    EffectInstancePtr activeInput[2] = {EffectInstancePtr(), EffectInstancePtr()};
     for (int i = 0; i < 2; ++i) {
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
         if (activeInput[i]) {

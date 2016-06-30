@@ -89,7 +89,7 @@ private:
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
         int nKnobs = _knobs.size();
         ar & ::boost::serialization::make_nvp("NbItems", nKnobs);
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
             ar & ::boost::serialization::make_nvp("Item", **it);
         }
 
@@ -152,7 +152,7 @@ private:
 
     BOOST_SERIALIZATION_SPLIT_MEMBER()
 
-    std::list<boost::shared_ptr<KnobSerialization> > _knobs;
+    std::list<KnobSerializationPtr> _knobs;
     double _overlayColor[4];
 };
 

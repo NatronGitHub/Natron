@@ -52,7 +52,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct BackdropGuiPrivate
 {
-    BackdropGui* _publicInterface;
+    BackdropGui* _publicInterface; // can not be a smart ptr
     NodeGraphTextItem* label;
 
     BackdropGuiPrivate(BackdropGui* publicInterface)
@@ -79,10 +79,10 @@ BackdropGui::~BackdropGui()
 std::string
 BackdropGuiPrivate::getLabelValue() const
 {
-    KnobPtr k = _publicInterface->getNode()->getKnobByName("Label");
+    KnobIPtr k = _publicInterface->getNode()->getKnobByName("Label");
 
     assert(k);
-    KnobString* isStr = dynamic_cast<KnobString*>( k.get() );
+    KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(k);
     assert(isStr);
 
     return isStr ? isStr->getValue() : "";
@@ -105,7 +105,7 @@ BackdropGui::createGui()
     _imp->label->setDefaultTextColor( QColor(0, 0, 0, 255) );
     _imp->label->setZValue(getBaseDepth() + 1);
 
-    EffectInstPtr effect = getNode()->getEffectInstance();
+    EffectInstancePtr effect = getNode()->getEffectInstance();
     assert(effect);
     Backdrop* isBd = dynamic_cast<Backdrop*>( effect.get() );
     assert(isBd);

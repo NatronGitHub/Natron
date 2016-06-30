@@ -68,7 +68,7 @@ public:
     boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
     QTreeWidgetItem* getTreeItemForRotoItem(const boost::shared_ptr<RotoItem> & item) const;
     std::string getNodeName() const;
-    boost::shared_ptr<RotoContext> getContext() const;
+    RotoContextPtr getContext() const;
 
     void clearSelection();
 
@@ -190,7 +190,7 @@ private:
 class DroppedTreeItem
 {
 public:
-    boost::shared_ptr<RotoLayer> newParentLayer;
+    RotoLayerPtr newParentLayer;
     int insertIndex;
     QTreeWidgetItem* newParentItem;
     QTreeWidgetItem* dropped;

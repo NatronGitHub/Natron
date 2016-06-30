@@ -933,9 +933,9 @@ enum SplineChangedReason
 }
 
 
-Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
+Bezier::Bezier(const RotoContextPtr& ctx,
                const std::string & name,
-               const boost::shared_ptr<RotoLayer>& parent,
+               const RotoLayerPtr& parent,
                bool isOpenBezier)
     : RotoDrawableItem(ctx, name, parent, false)
     , _imp( new BezierPrivate(isOpenBezier) )
@@ -943,7 +943,7 @@ Bezier::Bezier(const boost::shared_ptr<RotoContext>& ctx,
 }
 
 Bezier::Bezier(const Bezier & other,
-               const boost::shared_ptr<RotoLayer>& parent)
+               const RotoLayerPtr& parent)
     : RotoDrawableItem( other.getContext(), other.getScriptName(), other.getParentLayer(), false )
     , _imp( new BezierPrivate(false) )
 {

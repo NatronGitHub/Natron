@@ -51,7 +51,7 @@ public:
     ~KnobFactory();
 
     template <typename K>
-    boost::shared_ptr<K> createKnob(KnobHolder*  holder,
+    boost::shared_ptr<K> createKnob(const KnobHolderPtr& holder,
                                     const std::string &label,
                                     int dimension = 1,
                                     bool declaredByPlugin = true) const
@@ -61,7 +61,7 @@ public:
 
 private:
     boost::shared_ptr<KnobHelper> createKnob(const std::string &id,
-                                             KnobHolder* holder,
+                                             const KnobHolderPtr& holder,
                                              const std::string &label,
                                              int dimension = 1,
                                              bool declaredByPlugin = true) const WARN_UNUSED_RETURN;

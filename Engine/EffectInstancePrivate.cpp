@@ -345,7 +345,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     , overlaysViewport(0)
     , attachedContextsMutex(QMutex::Recursive)
     , attachedContexts()
-    , mainInstance(0)
+    , mainInstance()
     , isDoingInstanceSafeRender(false)
     , renderClonesMutex()
     , renderClonesPool()
@@ -353,7 +353,7 @@ EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
 }
 
 EffectInstance::Implementation::Implementation(const Implementation& other)
-: _publicInterface(0)
+: _publicInterface()
 , tlsData(other.tlsData)
 , duringInteractActionMutex()
 , duringInteractAction(other.duringInteractAction)
@@ -384,7 +384,7 @@ EffectInstance::Implementation::Implementation(const Implementation& other)
 }
 
 void
-EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
+EffectInstance::Implementation::runChangedParamCallback(const KnobIPtr& k,
                                                         bool userEdited,
                                                         const std::string & callback)
 {
@@ -429,14 +429,14 @@ EffectInstance::Implementation::runChangedParamCallback(KnobI* k,
     std::string thisNodeVar = appID + ".";
     thisNodeVar.append( _publicInterface->getNode()->getFullyQualifiedName() );
 
-    boost::shared_ptr<NodeCollection> collection = _publicInterface->getNode()->getGroup();
+    NodeCollectionPtr collection = _publicInterface->getNode()->getGroup();
     assert(collection);
     if (!collection) {
         return;
     }
 
     std::string thisGroupVar;
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeGroupPtr isParentGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
     if (isParentGrp) {
         std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
         std::string nodeFullName = appID + "." + nodeName;
@@ -589,7 +589,7 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    ViewIdx view,
                                                                    bool isIdentity,
                                                                    double identityTime,
-                                                                   const EffectInstPtr& identityInput,
+                                                                   const EffectInstancePtr& identityInput,
                                                                    const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                                                                    const EffectInstance::InputImagesMap& inputImages,
                                                                    const RoIMap & roiMap,

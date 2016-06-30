@@ -77,7 +77,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
         if ( nearbyNode->getSettingPanel() ) {
             getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
         } else {
-            ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewer();
+            ViewerInstance* isViewer = nearbyNode->getNode()->isEffectViewerInstance();
             if (isViewer) {
                 ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
                 assert(viewer);
@@ -120,7 +120,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, NodeGui* nearbyNode)
     }
 
     if ( casIsShift ) {
-        NodeGroup* isGrp = nearbyNode->getNode()->isEffectGroup();
+        NodeGroupPtr isGrp = nearbyNode->getNode()->isEffectNodeGroup();
         if ( isGrp && isGrp->isSubGraphUserVisible() ) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
@@ -225,8 +225,8 @@ NodeGraph::onNodeCreationDialogFinished()
 void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(collection);
     bool groupEdited = true;
 
     if (isGroup) {

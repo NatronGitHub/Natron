@@ -165,7 +165,7 @@ private:
     {
         boost::shared_ptr<RotoDrawableItem> oldCurve, curve;
         std::list<int> points;
-        boost::shared_ptr<RotoLayer> parentLayer;
+        RotoLayerPtr parentLayer;
         bool curveRemoved;
         int indexInLayer;
     };
@@ -209,7 +209,7 @@ private:
     struct RemovedCurve
     {
         boost::shared_ptr<RotoDrawableItem> curve;
-        boost::shared_ptr<RotoLayer> layer;
+        RotoLayerPtr layer;
         int indexInLayer;
     };
 
@@ -238,7 +238,7 @@ class AddStrokeUndoCommand
 public:
 
     AddStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                         const boost::shared_ptr<RotoStrokeItem>& item);
+                         const RotoStrokeItemPtr& item);
 
     virtual ~AddStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;
@@ -248,8 +248,8 @@ private:
 
     boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
-    boost::shared_ptr<RotoStrokeItem> _item;
-    boost::shared_ptr<RotoLayer> _layer;
+    RotoStrokeItemPtr _item;
+    RotoLayerPtr _layer;
     int _indexInLayer;
 };
 
@@ -261,7 +261,7 @@ class AddMultiStrokeUndoCommand
 public:
 
     AddMultiStrokeUndoCommand(const boost::shared_ptr<RotoPaintInteract>& roto,
-                              const boost::shared_ptr<RotoStrokeItem>& item);
+                              const RotoStrokeItemPtr& item);
 
     virtual ~AddMultiStrokeUndoCommand();
     virtual void undo() OVERRIDE FINAL;
@@ -271,10 +271,10 @@ private:
 
     boost::weak_ptr<RotoPaintInteract> _roto;
     bool _firstRedoCalled;
-    boost::shared_ptr<RotoStrokeItem> _item;
-    boost::shared_ptr<RotoLayer> _layer;
+    RotoStrokeItemPtr _item;
+    RotoLayerPtr _layer;
     int _indexInLayer;
-    boost::shared_ptr<Curve> _xCurve, _yCurve, _pCurve;
+    CurvePtr _xCurve, _yCurve, _pCurve;
     bool isRemoved;
 };
 
@@ -464,7 +464,7 @@ public:
 private:
     bool _firstRedoCalled;
     boost::weak_ptr<RotoPaintInteract> _roto;
-    boost::shared_ptr<RotoLayer> _parentLayer;
+    RotoLayerPtr _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _oldCurve, _newCurve;
     bool _curveNonExistant;
@@ -503,7 +503,7 @@ public:
 private:
     bool _firstRedoCalled;
     boost::weak_ptr<RotoPaintInteract> _roto;
-    boost::shared_ptr<RotoLayer> _parentLayer;
+    RotoLayerPtr _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _curve;
     bool _create;
@@ -541,7 +541,7 @@ public:
 private:
     bool _firstRedoCalled;
     boost::weak_ptr<RotoPaintInteract> _roto;
-    boost::shared_ptr<RotoLayer> _parentLayer;
+    RotoLayerPtr _parentLayer;
     int _indexInLayer;
     boost::shared_ptr<Bezier> _curve;
     bool _create;

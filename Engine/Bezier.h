@@ -81,13 +81,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    Bezier(const boost::shared_ptr<RotoContext>& context,
+    Bezier(const RotoContextPtr& context,
            const std::string & name,
-           const boost::shared_ptr<RotoLayer>& parent,
+           const RotoLayerPtr& parent,
            bool isOpenBezier);
 
     Bezier(const Bezier & other,
-           const boost::shared_ptr<RotoLayer>& parent);
+           const RotoLayerPtr& parent);
 
     virtual ~Bezier();
 

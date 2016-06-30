@@ -307,7 +307,7 @@ public:
 
     void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
 
-    boost::shared_ptr<MultiInstancePanel> getMultiInstancePanel() const;
+    MultiInstancePanelPtr getMultiInstancePanel() const;
 
     void setParentMultiInstance(const NodeGuiPtr & parent);
 
@@ -325,9 +325,9 @@ public:
      * @brief Serialize this node. If this is a multi-instance node, every instance will
      * be serialized, hence the list.
      **/
-    void serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const;
+    void serializeInternal(std::list<NodeSerializationPtr >& internalSerialization) const;
     void restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization);
+                         const std::list<NodeSerializationPtr >& internalSerialization);
 
     void setMergeHintActive(bool active);
 
@@ -385,7 +385,7 @@ public:
     virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
     virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void removePositionHostOverlay(KnobI* knob) OVERRIDE FINAL;
+    virtual void removePositionHostOverlay(const KnobIPtr& knob) OVERRIDE FINAL;
     virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
                                        const std::string& pluginLabel,
                                        const std::string& pluginID,
@@ -407,7 +407,7 @@ public:
      **/
     virtual void setCurrentCursor(CursorEnum defaultCursor) OVERRIDE FINAL;
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
-    virtual void showGroupKnobAsDialog(KnobGroup* group) OVERRIDE FINAL;
+    virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) OVERRIDE FINAL;
 
 protected:
 
@@ -638,8 +638,8 @@ private:
     ///For each knob that has a link to another parameter, display an arrow
     struct LinkedKnob
     {
-        KnobWPtr master;
-        KnobWPtr slave;
+        KnobIWPtr master;
+        KnobIWPtr slave;
 
         // Is this link valid (counter for all dimensions)
         int linkInValid;

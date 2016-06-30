@@ -1070,7 +1070,7 @@ OutputSchedulerThread::startRender()
 
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    EffectInstPtr effect = _imp->outputEffect.lock();
+    EffectInstancePtr effect = _imp->outputEffect.lock();
     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
     if (isWriteNode) {
         NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
@@ -1156,7 +1156,7 @@ OutputSchedulerThread::stopRender()
     _imp->waitForRenderThreadsToQuit();
 
     ///If the output effect is sequential (only WriteFFMPEG for now)
-    EffectInstPtr effect = _imp->outputEffect.lock();
+    EffectInstancePtr effect = _imp->outputEffect.lock();
     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effect.get() );
     if (isWriteNode) {
         NodePtr embeddedWriter = isWriteNode->getEmbeddedWriter();
@@ -1463,7 +1463,7 @@ OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
             if (isAbortableThread) {
                 bool userInteraction;
                 AbortableRenderInfoPtr abortInfo;
-                EffectInstPtr treeRoot;
+                EffectInstancePtr treeRoot;
                 isAbortableThread->getAbortInfo(&userInteraction, &abortInfo, &treeRoot);
                 if (abortInfo) {
                     abortInfo->setAborted();
@@ -2244,7 +2244,7 @@ private:
             // Do not catch exceptions: if an exception occurs here it is probably fatal, since
             // it comes from Natron itself. All exceptions from plugins are already caught
             // by the HostSupport library.
-            EffectInstPtr activeInputToRender;
+            EffectInstancePtr activeInputToRender;
             //if (renderDirectly) {
             activeInputToRender = output;
             WriteNode* isWriteNode = dynamic_cast<WriteNode*>( output.get() );
@@ -2335,7 +2335,7 @@ private:
                                                                                                                components,
                                                                                                                imageDepth,
                                                                                                                false,
-                                                                                                               activeInputToRender.get(),
+                                                                                                               activeInputToRender,
                                                                                                                eStorageModeRAM,
                                                                                                                time) );
                 EffectInstance::RenderRoIRetCode retCode;
@@ -2449,7 +2449,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                                                                        components,
                                                                                                        imageDepth,
                                                                                                        false,
-                                                                                                       effect.get(),
+                                                                                                       effect,
                                                                                                        eStorageModeRAM,
                                                                                                        frame.time,
                                                                                                        inputImages) );
@@ -3057,7 +3057,7 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( _imp->output.lock().get() );
+    ViewerInstancePtr isViewer = boost::dynamic_pointer_cast<ViewerInstance>( _imp->output.lock() );
     if (!isViewer) {
         qDebug() << "RenderEngine::renderCurrentFrame for a writer is unsupported";
 
@@ -3369,7 +3369,7 @@ public:
     ViewIdx view;
     int time;
     RenderStatsPtr stats;
-    ViewerInstance* viewer;
+    ViewerInstancePtr viewer;
     U64 viewerHash;
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
@@ -3384,7 +3384,7 @@ public:
         , view(0)
         , time(0)
         , stats()
-        , viewer(0)
+        , viewer()
         , viewerHash(0)
         , request()
         , scheduler(0)
@@ -3399,12 +3399,12 @@ public:
     CurrentFrameFunctorArgs(ViewIdx view,
                             int time,
                             const RenderStatsPtr& stats,
-                            ViewerInstance* viewer,
+                            const ViewerInstancePtr& viewer,
                             U64 viewerHash,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
                             bool canAbort,
                             const NodePtr& isRotoPaintRequest,
-                            const boost::shared_ptr<RotoStrokeItem>& strokeItem,
+                            const RotoStrokeItemPtr& strokeItem,
                             bool isRotoNeatRender)
         : GenericThreadStartArgs()
         , view(view)
@@ -3436,7 +3436,7 @@ public:
 class RenderCurrentFrameFunctorRunnable;
 struct ViewerCurrentFrameRequestSchedulerPrivate
 {
-    ViewerInstance* viewer;
+    ViewerInstancePtr viewer;
     QThreadPool* threadPool;
     QMutex producedFramesMutex;
     ProducedFrameSet producedFrames;
@@ -3455,7 +3455,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     // Used to attribute an age to each renderCurrentFrameRequest
     U64 ageCounter;
 
-    ViewerCurrentFrameRequestSchedulerPrivate(ViewerInstance* viewer)
+    ViewerCurrentFrameRequestSchedulerPrivate(const ViewerInstancePtr& viewer)
         : viewer(viewer)
         , threadPool( QThreadPool::globalInstance() )
         , producedFramesMutex()
@@ -3570,7 +3570,7 @@ public:
         if (_args->request) {
 #ifdef DEBUG
             for (BufferableObjectList::iterator it = ret.begin(); it != ret.end(); ++it) {
-                UpdateViewerParams* isParams = dynamic_cast<UpdateViewerParams*>( it->get() );
+                UpdateViewerParams* isParams = dynamic_cast<UpdateViewerParams*>(*it);
                 assert(isParams);
                 assert( !isParams->tiles.empty() );
                 for (std::list<UpdateViewerParams::CachedTile>::iterator it2 = isParams->tiles.begin(); it2 != isParams->tiles.end(); ++it2) {
@@ -3821,7 +3821,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
 
     bool isTracking = _imp->viewer->isDoingPartialUpdates();
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
     _imp->viewer->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 

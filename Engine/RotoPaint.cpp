@@ -66,7 +66,7 @@ RotoPaint::getPluginDescription() const
     return "RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...";
 }
 
-RotoPaint::RotoPaint(NodePtr node,
+RotoPaint::RotoPaint(const NodePtr& node,
                      bool isPaintByDefault)
     : EffectInstance(node)
     , _imp( new RotoPaintPrivate(this, isPaintByDefault) )
@@ -186,12 +186,12 @@ void
 RotoPaint::initializeKnobs()
 {
     //This page is created in the RotoContext, before initializeKnobs() is called.
-    boost::shared_ptr<KnobPage> generalPage = boost::dynamic_pointer_cast<KnobPage>( getKnobByName("General") );
+    KnobPagePtr generalPage = boost::dynamic_pointer_cast<KnobPage>( getKnobByName("General") );
 
     assert(generalPage);
 
 
-    boost::shared_ptr<KnobSeparator> sep = AppManager::createKnob<KnobSeparator>(this, tr("Output"), 1, false);
+    KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(this, tr("Output"), 1, false);
     generalPage->addKnob(sep);
 
 
@@ -202,7 +202,7 @@ RotoPaint::initializeKnobs()
     Q_UNUSED(channelSelectorSupported);
 
     for (int i = 0; i < 4; ++i) {
-        boost::shared_ptr<KnobBool> enabled =  AppManager::createKnob<KnobBool>(this, channelLabels[i], 1, false);
+        KnobBoolPtr enabled =  AppManager::createKnob<KnobBool>(this, channelLabels[i], 1, false);
         enabled->setName(channelNames[i]);
         enabled->setAnimationEnabled(false);
         enabled->setAddNewLine(i == 3);
@@ -213,7 +213,7 @@ RotoPaint::initializeKnobs()
     }
 
 
-    boost::shared_ptr<KnobBool> premultKnob = AppManager::createKnob<KnobBool>(this, tr("Premultiply"), 1, false);
+    KnobBoolPtr premultKnob = AppManager::createKnob<KnobBool>(this, tr("Premultiply"), 1, false);
     premultKnob->setName("premultiply");
     premultKnob->setHintToolTip( tr("When checked, the red, green and blue channels of the output are premultiplied by the alpha channel.\n"
                                     "This will result in the pixels outside of the shapes and paint strokes being black and transparent.\n"
@@ -225,7 +225,7 @@ RotoPaint::initializeKnobs()
     _imp->premultKnob = premultKnob;
     generalPage->addKnob(premultKnob);
 
-    boost::shared_ptr<RotoContext> context = getNode()->getRotoContext();
+    RotoContextPtr context = getNode()->getRotoContext();
     assert(context);
     QObject::connect( context.get(), SIGNAL(refreshViewerOverlays()), this, SLOT(onRefreshAsked()) );
     QObject::connect( context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onSelectionChanged(int)) );
@@ -234,7 +234,7 @@ RotoPaint::initializeKnobs()
 
 
     /// Initializing the viewer interface
-    boost::shared_ptr<KnobButton> autoKeyingEnabled = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamAutoKeyingEnabledLabel) );
+    KnobButtonPtr autoKeyingEnabled = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamAutoKeyingEnabledLabel) );
     autoKeyingEnabled->setName(kRotoUIParamAutoKeyingEnabled);
     autoKeyingEnabled->setHintToolTip( tr(kRotoUIParamAutoKeyingEnabledHint) );
     autoKeyingEnabled->setEvaluateOnChange(false);
@@ -247,7 +247,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(autoKeyingEnabled);
     _imp->ui->autoKeyingEnabledButton = autoKeyingEnabled;
 
-    boost::shared_ptr<KnobButton> featherLinkEnabled = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamFeatherLinkEnabledLabel) );
+    KnobButtonPtr featherLinkEnabled = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamFeatherLinkEnabledLabel) );
     featherLinkEnabled->setName(kRotoUIParamFeatherLinkEnabled);
     featherLinkEnabled->setCheckable(true);
     featherLinkEnabled->setEvaluateOnChange(false);
@@ -260,7 +260,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(featherLinkEnabled);
     _imp->ui->featherLinkEnabledButton = featherLinkEnabled;
 
-    boost::shared_ptr<KnobButton> displayFeatherEnabled = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamDisplayFeatherLabel) );
+    KnobButtonPtr displayFeatherEnabled = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamDisplayFeatherLabel) );
     displayFeatherEnabled->setName(kRotoUIParamDisplayFeather);
     displayFeatherEnabled->setHintToolTip( tr(kRotoUIParamDisplayFeatherHint) );
     displayFeatherEnabled->setEvaluateOnChange(false);
@@ -274,7 +274,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(displayFeatherEnabled);
     _imp->ui->displayFeatherEnabledButton = displayFeatherEnabled;
 
-    boost::shared_ptr<KnobButton> stickySelection = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamStickySelectionEnabledLabel) );
+    KnobButtonPtr stickySelection = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamStickySelectionEnabledLabel) );
     stickySelection->setName(kRotoUIParamStickySelectionEnabled);
     stickySelection->setHintToolTip( tr(kRotoUIParamStickySelectionEnabledHint) );
     stickySelection->setEvaluateOnChange(false);
@@ -287,7 +287,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(stickySelection);
     _imp->ui->stickySelectionEnabledButton = stickySelection;
 
-    boost::shared_ptr<KnobButton> bboxClickAnywhere = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamStickyBboxLabel) );
+    KnobButtonPtr bboxClickAnywhere = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamStickyBboxLabel) );
     bboxClickAnywhere->setName(kRotoUIParamStickyBbox);
     bboxClickAnywhere->setHintToolTip( tr(kRotoUIParamStickyBboxHint) );
     bboxClickAnywhere->setEvaluateOnChange(false);
@@ -300,7 +300,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(bboxClickAnywhere);
     _imp->ui->bboxClickAnywhereButton = bboxClickAnywhere;
 
-    boost::shared_ptr<KnobButton> rippleEditEnabled = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRippleEditLabel) );
+    KnobButtonPtr rippleEditEnabled = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRippleEditLabel) );
     rippleEditEnabled->setName(kRotoUIParamRippleEdit);
     rippleEditEnabled->setHintToolTip( tr(kRotoUIParamRippleEditLabelHint) );
     rippleEditEnabled->setEvaluateOnChange(false);
@@ -313,7 +313,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(rippleEditEnabled);
     _imp->ui->rippleEditEnabledButton = rippleEditEnabled;
 
-    boost::shared_ptr<KnobButton> addKeyframe = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamAddKeyFrameLabel) );
+    KnobButtonPtr addKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamAddKeyFrameLabel) );
     addKeyframe->setName(kRotoUIParamAddKeyFrame);
     addKeyframe->setEvaluateOnChange(false);
     addKeyframe->setHintToolTip( tr(kRotoUIParamAddKeyFrameHint) );
@@ -323,7 +323,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(addKeyframe);
     _imp->ui->addKeyframeButton = addKeyframe;
 
-    boost::shared_ptr<KnobButton> removeKeyframe = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRemoveKeyframeLabel) );
+    KnobButtonPtr removeKeyframe = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRemoveKeyframeLabel) );
     removeKeyframe->setName(kRotoUIParamRemoveKeyframe);
     removeKeyframe->setHintToolTip( tr(kRotoUIParamRemoveKeyframeHint) );
     removeKeyframe->setEvaluateOnChange(false);
@@ -334,7 +334,7 @@ RotoPaint::initializeKnobs()
     _imp->ui->removeKeyframeButton = removeKeyframe;
 
 
-    boost::shared_ptr<KnobButton> hideTransform = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamHideTransformLabel) );
+    KnobButtonPtr hideTransform = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamHideTransformLabel) );
     hideTransform->setName(kRotoUIParamHideTransform);
     hideTransform->setHintToolTip( tr(kRotoUIParamHideTransformHint) );
     hideTransform->setEvaluateOnChange(false);
@@ -348,7 +348,7 @@ RotoPaint::initializeKnobs()
     _imp->ui->hideTransformHandle = hideTransform;
     // RotoPaint
 
-    boost::shared_ptr<KnobBool> multiStroke = AppManager::createKnob<KnobBool>( this, tr(kRotoUIParamMultiStrokeEnabledLabel) );
+    KnobBoolPtr multiStroke = AppManager::createKnob<KnobBool>( shared_from_this(), tr(kRotoUIParamMultiStrokeEnabledLabel) );
     multiStroke->setName(kRotoUIParamMultiStrokeEnabled);
     multiStroke->setInViewerContextLabel( tr(kRotoUIParamMultiStrokeEnabledLabel) );
     multiStroke->setHintToolTip( tr(kRotoUIParamMultiStrokeEnabledHint) );
@@ -358,7 +358,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(multiStroke);
     _imp->ui->multiStrokeEnabled = multiStroke;
 
-    boost::shared_ptr<KnobColor> colorWheel = AppManager::createKnob<KnobColor>(this, tr(kRotoUIParamColorWheelLabel), 3);
+    KnobColorPtr colorWheel = AppManager::createKnob<KnobColor>(this, tr(kRotoUIParamColorWheelLabel), 3);
     colorWheel->setName(kRotoUIParamColorWheel);
     colorWheel->setHintToolTip( tr(kRotoUIParamColorWheelHint) );
     colorWheel->setEvaluateOnChange(false);
@@ -369,7 +369,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(colorWheel);
     _imp->ui->colorWheelButton = colorWheel;
 
-    boost::shared_ptr<KnobChoice> blendingModes = AppManager::createKnob<KnobChoice>( this, tr(kRotoUIParamBlendingOpLabel) );
+    KnobChoicePtr blendingModes = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kRotoUIParamBlendingOpLabel) );
     blendingModes->setName(kRotoUIParamBlendingOp);
     blendingModes->setHintToolTip( tr(kRotoUIParamBlendingOpHint) );
     blendingModes->setEvaluateOnChange(false);
@@ -384,7 +384,7 @@ RotoPaint::initializeKnobs()
     _imp->ui->compositingOperatorChoice = blendingModes;
 
 
-    boost::shared_ptr<KnobDouble> opacityKnob = AppManager::createKnob<KnobDouble>( this, tr(kRotoUIParamOpacityLabel) );
+    KnobDoublePtr opacityKnob = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kRotoUIParamOpacityLabel) );
     opacityKnob->setName(kRotoUIParamOpacity);
     opacityKnob->setInViewerContextLabel( tr(kRotoUIParamOpacityLabel) );
     opacityKnob->setHintToolTip( tr(kRotoUIParamOpacityHint) );
@@ -397,7 +397,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(opacityKnob);
     _imp->ui->opacitySpinbox = opacityKnob;
 
-    boost::shared_ptr<KnobButton> pressureOpacity = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamPressureOpacityLabel) );
+    KnobButtonPtr pressureOpacity = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamPressureOpacityLabel) );
     pressureOpacity->setName(kRotoUIParamPressureOpacity);
     pressureOpacity->setHintToolTip( tr(kRotoUIParamPressureOpacityHint) );
     pressureOpacity->setEvaluateOnChange(false);
@@ -410,7 +410,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(pressureOpacity);
     _imp->ui->pressureOpacityButton = pressureOpacity;
 
-    boost::shared_ptr<KnobDouble> sizeKnob = AppManager::createKnob<KnobDouble>( this, tr(kRotoUIParamSizeLabel) );
+    KnobDoublePtr sizeKnob = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kRotoUIParamSizeLabel) );
     sizeKnob->setName(kRotoUIParamSize);
     sizeKnob->setInViewerContextLabel( tr(kRotoUIParamSizeLabel) );
     sizeKnob->setHintToolTip( tr(kRotoUIParamSizeHint) );
@@ -423,7 +423,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(sizeKnob);
     _imp->ui->sizeSpinbox = sizeKnob;
 
-    boost::shared_ptr<KnobButton> pressureSize = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamPressureSizeLabel) );
+    KnobButtonPtr pressureSize = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamPressureSizeLabel) );
     pressureSize->setName(kRotoUIParamPressureSize);
     pressureSize->setHintToolTip( tr(kRotoUIParamPressureSizeHint) );
     pressureSize->setEvaluateOnChange(false);
@@ -436,7 +436,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(pressureSize);
     _imp->ui->pressureSizeButton = pressureSize;
 
-    boost::shared_ptr<KnobDouble> hardnessKnob = AppManager::createKnob<KnobDouble>( this, tr(kRotoUIParamHardnessLabel) );
+    KnobDoublePtr hardnessKnob = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kRotoUIParamHardnessLabel) );
     hardnessKnob->setName(kRotoUIParamHardness);
     hardnessKnob->setInViewerContextLabel( tr(kRotoUIParamHardnessLabel) );
     hardnessKnob->setHintToolTip( tr(kRotoUIParamHardnessHint) );
@@ -449,7 +449,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(hardnessKnob);
     _imp->ui->hardnessSpinbox = hardnessKnob;
 
-    boost::shared_ptr<KnobButton> pressureHardness = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamPressureHardnessLabel) );
+    KnobButtonPtr pressureHardness = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamPressureHardnessLabel) );
     pressureHardness->setName(kRotoUIParamPressureHardness);
     pressureHardness->setHintToolTip( tr(kRotoUIParamPressureHardnessHint) );
     pressureHardness->setEvaluateOnChange(false);
@@ -462,7 +462,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(pressureHardness);
     _imp->ui->pressureHardnessButton = pressureHardness;
 
-    boost::shared_ptr<KnobButton> buildUp = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamBuildUpLabel) );
+    KnobButtonPtr buildUp = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamBuildUpLabel) );
     buildUp->setName(kRotoUIParamBuildUp);
     buildUp->setInViewerContextLabel( tr(kRotoUIParamBuildUpLabel) );
     buildUp->setHintToolTip( tr(kRotoUIParamBuildUpHint) );
@@ -476,7 +476,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(buildUp);
     _imp->ui->buildUpButton = buildUp;
 
-    boost::shared_ptr<KnobDouble> effectStrength = AppManager::createKnob<KnobDouble>( this, tr(kRotoUIParamEffectLabel) );
+    KnobDoublePtr effectStrength = AppManager::createKnob<KnobDouble>( shared_from_this(), tr(kRotoUIParamEffectLabel) );
     effectStrength->setName(kRotoUIParamEffect);
     effectStrength->setInViewerContextLabel( tr(kRotoUIParamEffectLabel) );
     effectStrength->setHintToolTip( tr(kRotoUIParamEffectHint) );
@@ -489,7 +489,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(effectStrength);
     _imp->ui->effectSpinBox = effectStrength;
 
-    boost::shared_ptr<KnobInt> timeOffsetSb = AppManager::createKnob<KnobInt>( this, tr(kRotoUIParamTimeOffsetLabel) );
+    KnobIntPtr timeOffsetSb = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kRotoUIParamTimeOffsetLabel) );
     timeOffsetSb->setName(kRotoUIParamTimeOffset);
     timeOffsetSb->setInViewerContextLabel( tr(kRotoUIParamTimeOffsetLabel) );
     timeOffsetSb->setHintToolTip( tr(kRotoUIParamTimeOffsetHint) );
@@ -500,7 +500,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(timeOffsetSb);
     _imp->ui->timeOffsetSpinBox = timeOffsetSb;
 
-    boost::shared_ptr<KnobChoice> timeOffsetMode = AppManager::createKnob<KnobChoice>( this, tr(kRotoUIParamTimeOffsetLabel) );
+    KnobChoicePtr timeOffsetMode = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kRotoUIParamTimeOffsetLabel) );
     timeOffsetMode->setName(kRotoUIParamTimeOffset);
     timeOffsetMode->setHintToolTip( tr(kRotoUIParamTimeOffsetHint) );
     timeOffsetMode->setEvaluateOnChange(false);
@@ -517,7 +517,7 @@ RotoPaint::initializeKnobs()
     generalPage->addKnob(timeOffsetMode);
     _imp->ui->timeOffsetModeChoice = timeOffsetMode;
 
-    boost::shared_ptr<KnobChoice> sourceType = AppManager::createKnob<KnobChoice>( this, tr(kRotoUIParamSourceTypeLabel) );
+    KnobChoicePtr sourceType = AppManager::createKnob<KnobChoice>( shared_from_this(), tr(kRotoUIParamSourceTypeLabel) );
     sourceType->setName(kRotoUIParamSourceType);
     sourceType->setHintToolTip( tr(kRotoUIParamSourceTypeHint) );
     sourceType->setEvaluateOnChange(false);
@@ -537,7 +537,7 @@ RotoPaint::initializeKnobs()
     _imp->ui->sourceTypeChoice = sourceType;
 
 
-    boost::shared_ptr<KnobButton> resetCloneOffset = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamResetCloneOffsetLabel) );
+    KnobButtonPtr resetCloneOffset = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamResetCloneOffsetLabel) );
     resetCloneOffset->setName(kRotoUIParamResetCloneOffset);
     resetCloneOffset->setHintToolTip( tr(kRotoUIParamResetCloneOffsetHint) );
     resetCloneOffset->setEvaluateOnChange(false);
@@ -590,12 +590,12 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(resetCloneOffset);
 
 
-    boost::shared_ptr<KnobPage> toolbar = AppManager::createKnob<KnobPage>( this, std::string(kRotoUIParamToolbar) );
+    KnobPagePtr toolbar = AppManager::createKnob<KnobPage>( shared_from_this(), std::string(kRotoUIParamToolbar) );
     toolbar->setAsToolBar(true);
     toolbar->setEvaluateOnChange(false);
     toolbar->setSecretByDefault(true);
     _imp->ui->toolbarPage = toolbar;
-    boost::shared_ptr<KnobGroup> selectionToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamSelectionToolButtonLabel) );
+    KnobGroupPtr selectionToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamSelectionToolButtonLabel) );
     selectionToolButton->setName(kRotoUIParamSelectionToolButton);
     selectionToolButton->setAsToolButton(true);
     selectionToolButton->setEvaluateOnChange(false);
@@ -603,7 +603,7 @@ RotoPaint::initializeKnobs()
     selectionToolButton->setInViewerContextCanHaveShortcut(true);
     toolbar->addKnob(selectionToolButton);
     _imp->ui->selectToolGroup = selectionToolButton;
-    boost::shared_ptr<KnobGroup> editPointsToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamEditPointsToolButtonLabel) );
+    KnobGroupPtr editPointsToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamEditPointsToolButtonLabel) );
     editPointsToolButton->setName(kRotoUIParamEditPointsToolButton);
     editPointsToolButton->setAsToolButton(true);
     editPointsToolButton->setEvaluateOnChange(false);
@@ -611,7 +611,7 @@ RotoPaint::initializeKnobs()
     editPointsToolButton->setInViewerContextCanHaveShortcut(true);
     toolbar->addKnob(editPointsToolButton);
     _imp->ui->pointsEditionToolGroup = editPointsToolButton;
-    boost::shared_ptr<KnobGroup> editBezierToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamBezierEditionToolButtonLabel) );
+    KnobGroupPtr editBezierToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamBezierEditionToolButtonLabel) );
     editBezierToolButton->setName(kRotoUIParamBezierEditionToolButton);
     editBezierToolButton->setAsToolButton(true);
     editBezierToolButton->setEvaluateOnChange(false);
@@ -619,7 +619,7 @@ RotoPaint::initializeKnobs()
     editBezierToolButton->setInViewerContextCanHaveShortcut(true);
     toolbar->addKnob(editBezierToolButton);
     _imp->ui->bezierEditionToolGroup = editBezierToolButton;
-    boost::shared_ptr<KnobGroup> paintToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamPaintBrushToolButtonLabel) );
+    KnobGroupPtr paintToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamPaintBrushToolButtonLabel) );
     paintToolButton->setName(kRotoUIParamPaintBrushToolButton);
     paintToolButton->setAsToolButton(true);
     paintToolButton->setEvaluateOnChange(false);
@@ -628,9 +628,9 @@ RotoPaint::initializeKnobs()
     toolbar->addKnob(paintToolButton);
     _imp->ui->paintBrushToolGroup = paintToolButton;
 
-    boost::shared_ptr<KnobGroup> cloneToolButton, effectToolButton, mergeToolButton;
+    KnobGroupPtr cloneToolButton, effectToolButton, mergeToolButton;
     if (_imp->isPaintByDefault) {
-        cloneToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamCloneBrushToolButtonLabel) );
+        cloneToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamCloneBrushToolButtonLabel) );
         cloneToolButton->setName(kRotoUIParamCloneBrushToolButton);
         cloneToolButton->setAsToolButton(true);
         cloneToolButton->setEvaluateOnChange(false);
@@ -638,7 +638,7 @@ RotoPaint::initializeKnobs()
         cloneToolButton->setInViewerContextCanHaveShortcut(true);
         toolbar->addKnob(cloneToolButton);
         _imp->ui->cloneBrushToolGroup = cloneToolButton;
-        effectToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamEffectBrushToolButtonLabel) );
+        effectToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamEffectBrushToolButtonLabel) );
         effectToolButton->setName(kRotoUIParamEffectBrushToolButton);
         effectToolButton->setAsToolButton(true);
         effectToolButton->setEvaluateOnChange(false);
@@ -646,7 +646,7 @@ RotoPaint::initializeKnobs()
         effectToolButton->setInViewerContextCanHaveShortcut(true);
         toolbar->addKnob(effectToolButton);
         _imp->ui->effectBrushToolGroup = effectToolButton;
-        mergeToolButton = AppManager::createKnob<KnobGroup>( this, tr(kRotoUIParamMergeBrushToolButtonLabel) );
+        mergeToolButton = AppManager::createKnob<KnobGroup>( shared_from_this(), tr(kRotoUIParamMergeBrushToolButtonLabel) );
         mergeToolButton->setName(kRotoUIParamMergeBrushToolButton);
         mergeToolButton->setAsToolButton(true);
         mergeToolButton->setEvaluateOnChange(false);
@@ -658,7 +658,7 @@ RotoPaint::initializeKnobs()
 
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamSelectAllToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamSelectAllToolButtonActionLabel) );
         tool->setName(kRotoUIParamSelectAllToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamSelectAllToolButtonActionHint) );
         tool->setCheckable(true);
@@ -670,7 +670,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectAllAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamSelectPointsToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamSelectPointsToolButtonActionLabel) );
         tool->setName(kRotoUIParamSelectPointsToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamSelectPointsToolButtonActionHint) );
         tool->setCheckable(true);
@@ -682,7 +682,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamSelectShapesToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamSelectShapesToolButtonActionLabel) );
         tool->setName(kRotoUIParamSelectShapesToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamSelectShapesToolButtonActionHint) );
         tool->setCheckable(true);
@@ -694,7 +694,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectCurvesAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamSelectFeatherPointsToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamSelectFeatherPointsToolButtonActionLabel) );
         tool->setName(kRotoUIParamSelectFeatherPointsToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamSelectFeatherPointsToolButtonActionHint) );
         tool->setCheckable(true);
@@ -706,7 +706,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectFeatherPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamAddPointsToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamAddPointsToolButtonActionLabel) );
         tool->setName(kRotoUIParamAddPointsToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamAddPointsToolButtonActionHint) );
         tool->setCheckable(true);
@@ -718,7 +718,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->addPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRemovePointsToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRemovePointsToolButtonActionLabel) );
         tool->setName(kRotoUIParamRemovePointsToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamRemovePointsToolButtonAction) );
         tool->setCheckable(true);
@@ -730,7 +730,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->removePointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamCuspPointsToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamCuspPointsToolButtonActionLabel) );
         tool->setName(kRotoUIParamCuspPointsToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamCuspPointsToolButtonActionHint) );
         tool->setCheckable(true);
@@ -742,7 +742,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->cuspPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamSmoothPointsToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamSmoothPointsToolButtonActionLabel) );
         tool->setName(kRotoUIParamSmoothPointsToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamSmoothPointsToolButtonActionHint) );
         tool->setCheckable(true);
@@ -754,7 +754,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->smoothPointsAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamOpenCloseCurveToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamOpenCloseCurveToolButtonActionLabel) );
         tool->setName(kRotoUIParamOpenCloseCurveToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamOpenCloseCurveToolButtonActionHint) );
         tool->setCheckable(true);
@@ -767,7 +767,7 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRemoveFeatherToolButtonAction) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRemoveFeatherToolButtonAction) );
         tool->setName(kRotoUIParamRemoveFeatherToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamRemoveFeatherToolButtonActionHint) );
         tool->setCheckable(true);
@@ -780,7 +780,7 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamDrawBezierToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamDrawBezierToolButtonActionLabel) );
         tool->setName(kRotoUIParamDrawBezierToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamDrawBezierToolButtonActionHint) );
         tool->setCheckable(true);
@@ -793,7 +793,7 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamDrawEllipseToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamDrawEllipseToolButtonActionLabel) );
         tool->setName(kRotoUIParamDrawEllipseToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamDrawEllipseToolButtonActionHint) );
         tool->setCheckable(true);
@@ -806,7 +806,7 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamDrawRectangleToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamDrawRectangleToolButtonActionLabel) );
         tool->setName(kRotoUIParamDrawRectangleToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamDrawRectangleToolButtonActionHint) );
         tool->setCheckable(true);
@@ -818,7 +818,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->drawRectangleAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamDrawBrushToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamDrawBrushToolButtonActionLabel) );
         tool->setName(kRotoUIParamDrawBrushToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamDrawBrushToolButtonActionHint) );
         tool->setCheckable(true);
@@ -830,7 +830,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->brushAction = tool;
     }
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamPencilToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamPencilToolButtonActionLabel) );
         tool->setName(kRotoUIParamPencilToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamPencilToolButtonAction) );
         tool->setCheckable(true);
@@ -843,7 +843,7 @@ RotoPaint::initializeKnobs()
     }
 
     {
-        boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamEraserToolButtonActionLabel) );
+        KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamEraserToolButtonActionLabel) );
         tool->setName(kRotoUIParamEraserToolButtonAction);
         tool->setHintToolTip( tr(kRotoUIParamEraserToolButtonActionHint) );
         tool->setCheckable(true);
@@ -856,7 +856,7 @@ RotoPaint::initializeKnobs()
     }
     if (_imp->isPaintByDefault) {
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamCloneToolButtonActionLabel) );
+            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamCloneToolButtonActionLabel) );
             tool->setName(kRotoUIParamCloneToolButtonAction);
             tool->setHintToolTip( tr(kRotoUIParamCloneToolButtonActionHint) );
             tool->setCheckable(true);
@@ -868,7 +868,7 @@ RotoPaint::initializeKnobs()
             _imp->ui->cloneAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRevealToolButtonAction) );
+            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRevealToolButtonAction) );
             tool->setName(kRotoUIParamRevealToolButtonAction);
             tool->setHintToolTip( tr(kRotoUIParamRevealToolButtonActionHint) );
             tool->setCheckable(true);
@@ -882,7 +882,7 @@ RotoPaint::initializeKnobs()
 
 
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamBlurToolButtonActionLabel) );
+            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamBlurToolButtonActionLabel) );
             tool->setName(kRotoUIParamBlurToolButtonAction);
             tool->setHintToolTip( tr(kRotoUIParamBlurToolButtonActionHint) );
             tool->setCheckable(true);
@@ -894,7 +894,7 @@ RotoPaint::initializeKnobs()
             _imp->ui->blurAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamSmearToolButtonActionLabel) );
+            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamSmearToolButtonActionLabel) );
             tool->setName(kRotoUIParamSmearToolButtonAction);
             tool->setHintToolTip( tr(kRotoUIParamSmearToolButtonActionHint) );
             tool->setCheckable(true);
@@ -906,7 +906,7 @@ RotoPaint::initializeKnobs()
             _imp->ui->smearAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamDodgeToolButtonActionLabel) );
+            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamDodgeToolButtonActionLabel) );
             tool->setName(kRotoUIParamDodgeToolButtonAction);
             tool->setHintToolTip( tr(kRotoUIParamDodgeToolButtonActionHint) );
             tool->setCheckable(true);
@@ -918,7 +918,7 @@ RotoPaint::initializeKnobs()
             _imp->ui->dodgeAction = tool;
         }
         {
-            boost::shared_ptr<KnobButton> tool = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamBurnToolButtonActionLabel) );
+            KnobButtonPtr tool = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamBurnToolButtonActionLabel) );
             tool->setName(kRotoUIParamBurnToolButtonAction);
             tool->setHintToolTip( tr(kRotoUIParamBurnToolButtonActionHint) );
             tool->setCheckable(true);
@@ -932,13 +932,13 @@ RotoPaint::initializeKnobs()
     } // if (_imp->isPaintByDefault) {
 
     // Right click menu
-    boost::shared_ptr<KnobChoice> rightClickMenu = AppManager::createKnob<KnobChoice>( this, std::string(kRotoUIParamRightClickMenu) );
+    KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( shared_from_this(), std::string(kRotoUIParamRightClickMenu) );
     rightClickMenu->setSecretByDefault(true);
     rightClickMenu->setEvaluateOnChange(false);
     generalPage->addKnob(rightClickMenu);
     _imp->ui->rightClickMenuKnob = rightClickMenu;
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionRemoveItemsLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionRemoveItemsLabel) );
         action->setName(kRotoUIParamRightClickMenuActionRemoveItems);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -948,7 +948,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->removeItemsMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionCuspItemsLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionCuspItemsLabel) );
         action->setName(kRotoUIParamRightClickMenuActionCuspItems);
         action->setEvaluateOnChange(false);
         action->setSecretByDefault(true);
@@ -958,7 +958,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->cuspItemMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionSmoothItemsLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionSmoothItemsLabel) );
         action->setName(kRotoUIParamRightClickMenuActionSmoothItems);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -968,7 +968,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->smoothItemMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionRemoveItemsFeatherLabel) );
         action->setName(kRotoUIParamRightClickMenuActionRemoveItemsFeather);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -978,7 +978,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->removeItemFeatherMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionNudgeBottomLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeBottomLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeBottom);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -988,7 +988,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeBottomMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionNudgeLeftLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeLeftLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeLeft);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -998,7 +998,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeLeftMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionNudgeTopLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeTopLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeTop);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -1008,7 +1008,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeTopMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionNudgeRightLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionNudgeRightLabel) );
         action->setName(kRotoUIParamRightClickMenuActionNudgeRight);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -1018,7 +1018,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->nudgeRightMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionSelectAllLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionSelectAllLabel) );
         action->setName(kRotoUIParamRightClickMenuActionSelectAll);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -1027,7 +1027,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->selectAllMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionOpenCloseLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionOpenCloseLabel) );
         action->setName(kRotoUIParamRightClickMenuActionOpenClose);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -1037,7 +1037,7 @@ RotoPaint::initializeKnobs()
         _imp->ui->openCloseMenuAction = action;
     }
     {
-        boost::shared_ptr<KnobButton> action = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamRightClickMenuActionLockShapesLabel) );
+        KnobButtonPtr action = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kRotoUIParamRightClickMenuActionLockShapesLabel) );
         action->setName(kRotoUIParamRightClickMenuActionLockShapes);
         action->setSecretByDefault(true);
         action->setEvaluateOnChange(false);
@@ -1047,8 +1047,8 @@ RotoPaint::initializeKnobs()
         _imp->ui->lockShapeMenuAction = action;
     }
 
-    boost::shared_ptr<KnobButton> defaultAction;
-    boost::shared_ptr<KnobGroup> defaultRole;
+    KnobButtonPtr defaultAction;
+    KnobGroupPtr defaultRole;
     if (_imp->isPaintByDefault) {
         defaultAction = _imp->ui->brushAction.lock();
         defaultRole = _imp->ui->paintBrushToolGroup.lock();
@@ -1113,7 +1113,7 @@ RotoPaint::shouldPreferPluginOverlayOverHostOverlay() const
 bool
 RotoPaint::shouldDrawHostOverlay() const
 {
-    boost::shared_ptr<KnobButton> b = _imp->ui->hideTransformHandle.lock();
+    KnobButtonPtr b = _imp->ui->hideTransformHandle.lock();
     if (!b) {
         return true;
     }
@@ -1126,15 +1126,15 @@ RotoPaint::onKnobsLoaded()
     _imp->ui->selectedItems = getNode()->getRotoContext()->getSelectedCurves();
 
     // Figure out which toolbutton was selected last
-    boost::shared_ptr<KnobPage> toolbar = _imp->ui->toolbarPage.lock();
+    KnobPagePtr toolbar = _imp->ui->toolbarPage.lock();
     if (toolbar) {
-        std::vector<KnobPtr> toolbarChildren = toolbar->getChildren();
+        KnobsVec toolbarChildren = toolbar->getChildren();
         for (std::size_t i = 0; i < toolbarChildren.size(); ++i) {
-            boost::shared_ptr<KnobGroup> isChildGroup = boost::dynamic_pointer_cast<KnobGroup>(toolbarChildren[i]);
+            KnobGroupPtr isChildGroup = boost::dynamic_pointer_cast<KnobGroup>(toolbarChildren[i]);
             if ( isChildGroup && isChildGroup->getValue() ) {
-                std::vector<KnobPtr> toolbuttonsChildren = isChildGroup->getChildren();
-                for (std::vector<KnobPtr>::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
-                    boost::shared_ptr<KnobButton> isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
+                KnobsVec toolbuttonsChildren = isChildGroup->getChildren();
+                for (KnobsVec::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
+                    KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
                     if ( isButton && isButton->getValue() ) {
                         _imp->ui->setCurrentTool(isButton);
                         _imp->ui->onRoleChangedInternal(isChildGroup);
@@ -1149,7 +1149,7 @@ RotoPaint::onKnobsLoaded()
 }
 
 bool
-RotoPaint::knobChanged(KnobI* k,
+RotoPaint::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum reason,
                        ViewSpec view,
                        double time,
@@ -1160,15 +1160,15 @@ RotoPaint::knobChanged(KnobI* k,
     }
 
 
-    boost::shared_ptr<RotoContext> ctx = getNode()->getRotoContext();
+    RotoContextPtr ctx = getNode()->getRotoContext();
 
     if (!ctx) {
         return false;
     }
     bool ret = true;
-    KnobPtr kShared = k->shared_from_this();
-    boost::shared_ptr<KnobButton> isBtn = boost::dynamic_pointer_cast<KnobButton>(kShared);
-    boost::shared_ptr<KnobGroup> isGrp = boost::dynamic_pointer_cast<KnobGroup>(kShared);
+    KnobIPtr kShared = k->shared_from_this();
+    KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(kShared);
+    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(kShared);
     if ( isBtn && _imp->ui->onToolChangedInternal(isBtn) ) {
         return true;
     } else if ( isGrp && _imp->ui->onRoleChangedInternal(isGrp) ) {
@@ -1194,7 +1194,7 @@ RotoPaint::knobChanged(KnobI* k,
         _imp->ui->cloneOffset.first = _imp->ui->cloneOffset.second = 0;
     } else if ( k == _imp->ui->addKeyframeButton.lock().get() ) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
+            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
             if (!isBezier) {
                 continue;
             }
@@ -1203,7 +1203,7 @@ RotoPaint::knobChanged(KnobI* k,
         getNode()->getRotoContext()->evaluateChange();
     } else if ( k == _imp->ui->removeKeyframeButton.lock().get() ) {
         for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
+            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
             if (!isBezier) {
                 continue;
             }
@@ -1258,7 +1258,7 @@ RotoPaint::knobChanged(KnobI* k,
             ///select all the control points of all selected beziers
             _imp->ui->selectedCps.clear();
             for (SelectedItems::iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
-                Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
+                Bezier* isBezier = dynamic_cast<Bezier*>(*it);
                 if (!isBezier) {
                     continue;
                 }
@@ -1319,14 +1319,14 @@ StatusEnum
 RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 {
     metadata.setImageComponents( -1, ImageComponents::getRGBAComponents() );
-    /*boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
+    /*KnobBoolPtr premultKnob = _imp->premultKnob.lock();
        assert(premultKnob);
        bool premultiply = premultKnob->getValue();
        if (premultiply) {
         metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
        } else {
         ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
-        EffectInstPtr input = getInput(0);
+        EffectInstancePtr input = getInput(0);
         if (input) {
             srcPremult = input->getPremult();
         }
@@ -1397,7 +1397,7 @@ RotoPaint::getRegionsOfInterest(double time,
                                 ViewIdx view,
                                 RoIMap* ret)
 {
-    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    RotoContextPtr roto = getNode()->getRotoContext();
     NodePtr bottomMerge = roto->getRotoPaintBottomMergeNode();
 
     if (bottomMerge) {
@@ -1417,7 +1417,7 @@ RotoPaint::isIdentity(double time,
 {
     *inputView = view;
     NodePtr node = getNode();
-    EffectInstPtr maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
+    EffectInstancePtr maskInput = getInput(ROTOPAINT_MASK_INPUT_INDEX);
     if (maskInput) {
         RectD maskRod;
         bool isProjectFormat;
@@ -1447,7 +1447,7 @@ RotoPaint::isIdentity(double time,
 StatusEnum
 RotoPaint::render(const RenderActionArgs& args)
 {
-    boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
+    RotoContextPtr roto = getNode()->getRotoContext();
     std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder();
     ImageBitDepthEnum bgDepth = getBitDepth(0);
     std::list<ImageComponents> neededComps;
@@ -1457,7 +1457,7 @@ RotoPaint::render(const RenderActionArgs& args)
         neededComps.push_back(plane->first);
     }
 
-    boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
+    KnobBoolPtr premultKnob = _imp->premultKnob.lock();
     assert(premultKnob);
     bool premultiply = premultKnob->getValueAtTime(args.time);
 
@@ -1637,7 +1637,7 @@ RotoPaint::clearLastRenderedImage()
     NodePtr node = getNode();
 
     if (node) {
-        boost::shared_ptr<RotoContext> roto = node->getRotoContext();
+        RotoContextPtr roto = node->getRotoContext();
         assert(roto);
         roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         for (NodesList::iterator it = rotoPaintNodes.begin(); it != rotoPaintNodes.end(); ++it) {
@@ -1678,8 +1678,8 @@ RotoPaint::drawOverlay(double time,
             }
 
 
-            Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( it->get() );
+            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it);
             if (isStroke) {
                 if (_imp->ui->selectedTool != eRotoToolSelectAll) {
                     continue;
@@ -2117,7 +2117,7 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
 
 
     bool featherVisible = _imp->ui->isFeatherVisible();
-    boost::shared_ptr<RotoContext> ctx = getNode()->getRotoContext();
+    RotoContextPtr ctx = getNode()->getRotoContext();
     assert(ctx);
     std::list<boost::shared_ptr<RotoDrawableItem> > curves = ctx->getCurvesByRenderOrder();
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::const_iterator it = curves.begin(); it != curves.end(); ++it) {
@@ -2229,7 +2229,7 @@ RotoPaint::onOverlayPenDown(double time,
         }
     }
 
-    boost::shared_ptr<RotoContext> context = node->getRotoContext();
+    RotoContextPtr context = node->getRotoContext();
     assert(context);
 
     const bool featherVisible = _imp->ui->isFeatherVisible();
@@ -2595,7 +2595,7 @@ RotoPaint::onOverlayPenDown(double time,
             if (_imp->ui->strokeBeingPaint &&
                 _imp->ui->strokeBeingPaint->getParentLayer() &&
                 multiStrokeEnabled) {
-                boost::shared_ptr<RotoLayer> layer = _imp->ui->strokeBeingPaint->getParentLayer();
+                RotoLayerPtr layer = _imp->ui->strokeBeingPaint->getParentLayer();
                 if (!layer) {
                     layer = context->findDeepestSelectedLayer();
                     if (!layer) {
@@ -2607,7 +2607,7 @@ RotoPaint::onOverlayPenDown(double time,
 
                 context->getNode()->getApp()->setUserIsPainting(context->getNode(), _imp->ui->strokeBeingPaint, true);
 
-                boost::shared_ptr<KnobInt> lifeTimeFrameKnob = _imp->ui->strokeBeingPaint->getLifeTimeFrameKnob();
+                KnobIntPtr lifeTimeFrameKnob = _imp->ui->strokeBeingPaint->getLifeTimeFrameKnob();
                 lifeTimeFrameKnob->setValue( context->getTimelineCurrentTime() );
 
                 _imp->ui->strokeBeingPaint->appendPoint( true, RotoPoint(pos.x(), pos.y(), pressure, timestamp) );
@@ -2650,7 +2650,7 @@ RotoPaint::onOverlayPenMotion(double time,
 
     getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
-    boost::shared_ptr<RotoContext> context = getNode()->getRotoContext();
+    RotoContextPtr context = getNode()->getRotoContext();
     assert(context);
     if (!context) {
         return false;
@@ -2714,7 +2714,7 @@ RotoPaint::onOverlayPenMotion(double time,
         if ( (_imp->ui->state != eEventStateDraggingControlPoint) && (_imp->ui->state != eEventStateDraggingSelectedControlPoints) ) {
             for (SelectedItems::const_iterator it = _imp->ui->selectedItems.begin(); it != _imp->ui->selectedItems.end(); ++it) {
                 int index = -1;
-                Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
+                Bezier* isBezier = dynamic_cast<Bezier*>(*it);
                 if (isBezier) {
                     std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > nb =
                         isBezier->isNearbyControlPoint(pos.x(), pos.y(), cpTol, Bezier::eControlPointSelectionPrefWhateverFirst, &index);
@@ -3001,7 +3001,7 @@ RotoPaint::onOverlayPenMotion(double time,
         break;
     }
     case eEventStateDraggingBrushSize: {
-        boost::shared_ptr<KnobDouble> sizeSb = _imp->ui->sizeSpinbox.lock();
+        KnobDoublePtr sizeSb = _imp->ui->sizeSpinbox.lock();
         double size = 0;
         if (sizeSb) {
             size = sizeSb->getValue();
@@ -3017,7 +3017,7 @@ RotoPaint::onOverlayPenMotion(double time,
         break;
     }
     case eEventStateDraggingBrushOpacity: {
-        boost::shared_ptr<KnobDouble> opaSb = _imp->ui->sizeSpinbox.lock();
+        KnobDoublePtr opaSb = _imp->ui->sizeSpinbox.lock();
         double opa = 0;
         if (opaSb) {
             opa = opaSb->getValue();
@@ -3056,7 +3056,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
                           double /*pressure*/,
                           double /*timestamp*/)
 {
-    boost::shared_ptr<RotoContext> context = getNode()->getRotoContext();
+    RotoContextPtr context = getNode()->getRotoContext();
 
     assert(context);
     if (!context) {

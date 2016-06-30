@@ -304,7 +304,7 @@ class OfxParamOverlayInteract
 
 public:
 
-    OfxParamOverlayInteract(KnobI* knob,
+    OfxParamOverlayInteract(const KnobIPtr& knob,
                             OFX::Host::Interact::Descriptor &desc,
                             void *effectInstance);
 

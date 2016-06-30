@@ -268,7 +268,7 @@ public:
     Gui *gui;
 
     // necessary to retrieve some useful values for drawing
-    boost::shared_ptr<TimeLine> timeline;
+    TimeLinePtr timeline;
 
     //
     std::map<DSNode *, FrameRange > nodeRanges;
@@ -679,7 +679,7 @@ std::vector<DopeSheetKey> DopeSheetViewPrivate::isNearByKeyframe(const boost::sh
     assert(dsKnob);
 
     std::vector<DopeSheetKey> ret;
-    KnobPtr knob = dsKnob->getKnobGui()->getKnob();
+    KnobIPtr knob = dsKnob->getKnobGui()->getKnob();
     int dim = dsKnob->getDimension();
     int startDim = 0;
     int endDim = knob->getDimension();
@@ -875,7 +875,7 @@ DopeSheetViewPrivate::drawScale() const
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
 
     // Retrieve the appropriate settings for drawing
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double scaleR, scaleG, scaleB;
     settings->getDopeSheetEditorScaleColor(&scaleR, &scaleG, &scaleB);
 
@@ -1054,7 +1054,7 @@ DopeSheetViewPrivate::drawNodeRow(const boost::shared_ptr<DSNode> dsNode) const
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsNode->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double rootR, rootG, rootB, rootA;
 
     settings->getDopeSheetEditorRootRowBackgroundColor(&rootR, &rootG, &rootB, &rootA);
@@ -1084,7 +1084,7 @@ DopeSheetViewPrivate::drawKnobRow(const boost::shared_ptr<DSKnob> dsKnob) const
     GLProtectAttrib a(GL_CURRENT_BIT | GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT);
     QRectF nameItemRect = hierarchyView->visualItemRect( dsKnob->getTreeItem() );
     QRectF rowRect = nameItemRectToRowRect(nameItemRect);
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double bkR, bkG, bkB, bkA;
     if ( dsKnob->isMultiDimRoot() ) {
         settings->getDopeSheetEditorRootRowBackgroundColor(&bkR, &bkG, &bkB, &bkA);
@@ -1153,12 +1153,12 @@ DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
         if ( isSelected && (dsNode->getItemType() == eDopeSheetItemTypeReader) ) {
             NodePtr node = dsNode->getInternalNode();
 
-            Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+            KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
             assert(firstFrameKnob);
 
             double speedValue = 1.0f;
 
-            Knob<int> *originalFrameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
+            KnobIntBase *originalFrameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameOriginalFrameRange).get() );
             assert(originalFrameRangeKnob);
 
             int originalFirstFrame = originalFrameRangeKnob->getValue(0);
@@ -1218,7 +1218,7 @@ DopeSheetViewPrivate::drawRange(const boost::shared_ptr<DSNode> &dsNode) const
         }
 
         if ( isSelected && (dsNode->getItemType() == eDopeSheetItemTypeReader) ) {
-            boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+            SettingsPtr settings = appPTR->getCurrentSettings();
             double selectionColorRGB[3];
             settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
             QColor selectionColor;
@@ -1252,7 +1252,7 @@ DopeSheetViewPrivate::drawKeyframes(const boost::shared_ptr<DSNode> &dsNode) con
 {
     running_in_main_thread_and_context(q_ptr);
 
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double selectionColorRGB[3];
     settings->getSelectionColor(&selectionColorRGB[0], &selectionColorRGB[1], &selectionColorRGB[2]);
     QColor selectionColor;
@@ -1488,7 +1488,7 @@ DopeSheetViewPrivate::drawProjectBounds() const
     double projectStart, projectEnd;
     gui->getApp()->getFrameRange(&projectStart, &projectEnd);
 
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double colorR, colorG, colorB;
     settings->getTimelineBoundsColor(&colorR, &colorG, &colorB);
 
@@ -1530,7 +1530,7 @@ DopeSheetViewPrivate::drawCurrentFrameIndicator()
     int currentFrame = timeline->currentFrame();
 
     // Retrieve settings for drawing
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double colorR, colorG, colorB;
     settings->getTimelinePlayheadColor(&colorR, &colorG, &colorB);
 
@@ -1777,7 +1777,7 @@ DopeSheetViewPrivate::computeSelectedKeysBRect()
     }
 
     for (std::vector<boost::shared_ptr<DSNode> >::iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-        std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find( it->get() );
+        std::map<DSNode *, FrameRange >::const_iterator foundRange = nodeRanges.find(*it);
         if ( foundRange == nodeRanges.end() ) {
             continue;
         }
@@ -1873,15 +1873,15 @@ DopeSheetViewPrivate::computeReaderRange(DSNode *reader)
 
     NodePtr node = reader->getInternalNode();
 
-    Knob<int> *startingTimeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
+    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameStartingTime).get() );
     if (!startingTimeKnob) {
         return;
     }
-    Knob<int> *firstFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
+    KnobIntBase *firstFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameFirstFrame).get() );
     if (!firstFrameKnob) {
         return;
     }
-    Knob<int> *lastFrameKnob = dynamic_cast<Knob<int> *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
+    KnobIntBase *lastFrameKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName(kReaderParamNameLastFrame).get() );
     if (!lastFrameKnob) {
         return;
     }
@@ -2014,7 +2014,7 @@ DopeSheetViewPrivate::computeTimeOffsetRange(DSNode *timeOffset)
             FrameRange nearestReaderRange = nodeRanges.find( nearestReader.get() )->second; // map::at() is C++11
 
             // Retrieve the time offset values
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( timeOffset->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             int timeOffsetValue = timeOffsetKnob->getValue();
@@ -2044,7 +2044,7 @@ DopeSheetViewPrivate::computeFRRange(DSNode *frameRange)
 
     NodePtr node = frameRange->getInternalNode();
 
-    Knob<int> *frameRangeKnob = dynamic_cast<Knob<int> *>( node->getKnobByName("frameRange").get() );
+    KnobIntBase *frameRangeKnob = dynamic_cast<KnobIntBase *>( node->getKnobByName("frameRange").get() );
     assert(frameRangeKnob);
 
     FrameRange range;
@@ -2074,7 +2074,7 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
 
     FrameRange range;
     std::set<double> times;
-    NodeGroup* nodegroup = node->isEffectGroup();
+    NodeGroupPtr nodegroup = node->isEffectNodeGroup();
     assert(nodegroup);
     if (!nodegroup) {
         throw std::logic_error("DopeSheetViewPrivate::computeGroupRange: node is not a group");
@@ -2114,7 +2114,7 @@ DopeSheetViewPrivate::computeGroupRange(DSNode *group)
              it != knobs.end();
              ++it) {
             const KnobGuiPtr& knobGui = (*it).second;
-            KnobPtr knob = knobGui->getKnob();
+            KnobIPtr knob = knobGui->getKnob();
 
             if ( !knob->isAnimationEnabled() || !knob->hasAnimation() ) {
                 continue;
@@ -2229,7 +2229,7 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
             if (gui) {
                 gui->setDraftRenderEnabled(true);
             }
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             double newFirstFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -2244,7 +2244,7 @@ DopeSheetViewPrivate::onMouseLeftButtonDrag(QMouseEvent *e)
             if (gui) {
                 gui->setDraftRenderEnabled(true);
             }
-            Knob<int> *timeOffsetKnob = dynamic_cast<Knob<int> *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
+            KnobIntBase *timeOffsetKnob = dynamic_cast<KnobIntBase *>( currentEditedReader->getInternalNode()->getKnobByName(kReaderParamNameTimeOffset).get() );
             assert(timeOffsetKnob);
 
             double newLastFrame = std::floor(currentTime - timeOffsetKnob->getValue() + 0.5);
@@ -2525,7 +2525,7 @@ DopeSheetViewPrivate::updateCurveWidgetFrameRange()
 DopeSheetView::DopeSheetView(DopeSheet *model,
                              HierarchyView *hierarchyView,
                              Gui *gui,
-                             const boost::shared_ptr<TimeLine> &timeline,
+                             const TimeLinePtr &timeline,
                              QWidget *parent)
     : QGLWidget(parent)
     , _imp( new DopeSheetViewPrivate(this) )
@@ -2538,7 +2538,7 @@ DopeSheetView::DopeSheetView(DopeSheet *model,
     setMouseTracking(true);
 
     if (timeline) {
-        boost::shared_ptr<Project> project = gui->getApp()->getProject();
+        ProjectPtr project = gui->getApp()->getProject();
         assert(project);
 
         connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
@@ -2953,7 +2953,7 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
             const std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> > &knobs = dsNode->getNodeGui()->getKnobs();
 
             for (std::list<std::pair<boost::weak_ptr<KnobI>, KnobGuiPtr> >::const_iterator knobIt = knobs.begin(); knobIt != knobs.end(); ++knobIt) {
-                KnobPtr knob = knobIt->first.lock();
+                KnobIPtr knob = knobIt->first.lock();
                 const KnobGuiPtr& knobGui = knobIt->second;
                 connect( knob->getSignalSlotHandler().get(), SIGNAL(keyFrameMoved(ViewSpec,int,double,double)),
                          this, SLOT(onKeyframeChanged()) );
@@ -2970,7 +2970,7 @@ DopeSheetView::onNodeAdded(DSNode *dsNode)
     } else if (nodeType == eDopeSheetItemTypeReader) {
         // The dopesheet view must refresh if the user set some values in the settings panel
         // so we connect some signals/slots
-        KnobPtr lastFrameKnob = node->getKnobByName(kReaderParamNameLastFrame);
+        KnobIPtr lastFrameKnob = node->getKnobByName(kReaderParamNameLastFrame);
         if (!lastFrameKnob) {
             return;
         }
@@ -3082,8 +3082,8 @@ DopeSheetView::onRangeNodeChanged(ViewSpec /*view*/,
     {
         KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender);
         if (knobHandler) {
-            KnobHolder *holder = knobHandler->getKnob()->getHolder();
-            EffectInstance *effectInstance = dynamic_cast<EffectInstance *>(holder);
+            KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
+            EffectInstancePtr effectInstance = boost::dynamic_pointer_cast<EffectInstance>(holder);
             assert(effectInstance);
             if (!effectInstance) {
                 return;
@@ -3219,7 +3219,7 @@ DopeSheetView::paintGL()
     zoomTop = _imp->zoomContext.top();
 
     // Retrieve the appropriate settings for drawing
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     double bgR, bgG, bgB;
     settings->getDopeSheetEditorBackgroundColor(&bgR, &bgG, &bgB);
 
@@ -3586,11 +3586,11 @@ DopeSheetView::mouseDoubleClickEvent(QMouseEvent *e)
             std::vector<DopeSheetKey> toPaste;
             double keyframeTime = std::floor(_imp->zoomContext.toZoomCoordinates(e->pos().x(), 0).x() + 0.5);
             int dim = dsKnob->getDimension();
-            KnobPtr knob = dsKnob->getInternalKnob();
+            KnobIPtr knob = dsKnob->getInternalKnob();
             bool hasKeyframe = false;
             for (int i = 0; i < knob->getDimension(); ++i) {
                 if ( (i == dim) || (dim == -1) ) {
-                    boost::shared_ptr<Curve> curve = knob->getGuiCurve(ViewIdx(0), i);
+                    CurvePtr curve = knob->getGuiCurve(ViewIdx(0), i);
                     KeyFrame k;
                     if ( curve && curve->getKeyFrameWithTime(keyframeTime, &k) ) {
                         hasKeyframe = true;

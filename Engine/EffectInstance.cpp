@@ -100,8 +100,8 @@ EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
     _imp->addInputImageTempPointer(inputNb, img);
 }
 
-EffectInstance::EffectInstance(NodePtr node)
-    : NamedKnobHolder( node ? node->getApp() : AppInstPtr() )
+EffectInstance::EffectInstance(const NodePtr& node)
+    : NamedKnobHolder( node ? node->getApp() : AppInstancePtr() )
     , _node(node)
     , _imp( new Implementation(this) )
 {
@@ -385,7 +385,7 @@ EffectInstance::getRenderHash() const
 bool
 EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
                                         const AbortableRenderInfoPtr& abortInfo,
-                                        const EffectInstPtr& treeRoot)
+                                        const EffectInstancePtr& treeRoot)
 {
     if (!isRenderResponseToUserInteraction) {
         // Rendering is playback or render on disk
@@ -397,7 +397,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 
         // Fallback on the flag set on the node that requested the render in OutputSchedulerThread
         if (treeRoot) {
-            OutputEffectInstance* effect = dynamic_cast<OutputEffectInstance*>( treeRoot.get() );
+            OutputEffectInstancePtr effect = boost::dynamic_pointer_cast<OutputEffectInstance>(treeRoot);
             assert(effect);
             if (effect) {
                 return effect->isSequentialRenderBeingAborted();
@@ -421,7 +421,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 
         // If this node can start sequential renders (e.g: start playback like on the viewer or render on disk) and it is already doing a sequential render, abort
         // this render
-        OutputEffectInstance* isRenderEffect = dynamic_cast<OutputEffectInstance*>( treeRoot.get() );
+        OutputEffectInstancePtr isRenderEffect = boost::dynamic_pointer_cast<OutputEffectInstance>(treeRoot);
         if (isRenderEffect) {
             if ( isRenderEffect->isDoingSequentialRender() ) {
                 return true;
@@ -451,7 +451,7 @@ EffectInstance::aborted() const
      **/
     bool isRenderUserInteraction;
     AbortableRenderInfoPtr abortInfo;
-    EffectInstPtr treeRoot;
+    EffectInstancePtr treeRoot;
 
 
     if ( !isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot) ) {
@@ -535,7 +535,7 @@ EffectInstance::hasOutputConnected() const
     return getNode()->hasOutputConnected();
 }
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getInput(int n) const
 {
     NodePtr inputNode = getNode()->getInput(n);
@@ -544,7 +544,7 @@ EffectInstance::getInput(int n) const
         return inputNode->getEffectInstance();
     }
 
-    return EffectInstPtr();
+    return EffectInstancePtr();
 }
 
 std::string
@@ -572,7 +572,7 @@ EffectInstance::retrieveGetImageDataUponFailure(const double time,
                                                 bool* isIdentity_p,
                                                 double* identityTime,
                                                 ViewIdx* inputView,
-                                                EffectInstPtr* identityInput_p,
+                                                EffectInstancePtr* identityInput_p,
                                                 bool* duringPaintStroke_p,
                                                 RectD* rod_p,
                                                 RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -703,7 +703,7 @@ EffectInstance::getImage(int inputNb,
     }
 
     ///The input we want the image from
-    EffectInstPtr inputEffect;
+    EffectInstancePtr inputEffect;
 
     //Check for transform redirections
     boost::shared_ptr<InputMatrixMap> transformRedirections;
@@ -732,7 +732,7 @@ EffectInstance::getImage(int inputNb,
     int channelForMask = -1;
 
     ///Is this node a roto node or not. If so, find out if this input is the roto-brush
-    boost::shared_ptr<RotoContext> roto;
+    RotoContextPtr roto;
     boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
 
     if (attachedStroke) {
@@ -788,7 +788,7 @@ EffectInstance::getImage(int inputNb,
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RoIMap inputsRoI;
     bool isIdentity = false;
-    EffectInstPtr identityInput;
+    EffectInstancePtr identityInput;
     double inputIdentityTime = 0.;
     ViewIdx inputIdentityView(view);
     U64 nodeHash;
@@ -881,7 +881,7 @@ EffectInstance::getImage(int inputNb,
     } else if (!roiWasInRequestPass) {
         //We did not have a request pass, use if possible the result of getRegionsOfInterest found in the TLS
         //If not, fallback on input RoD
-        EffectInstPtr inputToFind;
+        EffectInstancePtr inputToFind;
         if (useRotoInput) {
             if ( getNode()->getRotoContext() ) {
                 inputToFind = shared_from_this();
@@ -982,7 +982,7 @@ EffectInstance::getImage(int inputNb,
                     //If the roto is inverted, we need to fill the full RoD of the input
                     bool inverted = attachedStroke->getInverted(time);
                     if (inverted) {
-                        EffectInstPtr rotoInput = getInput(0);
+                        EffectInstancePtr rotoInput = getInput(0);
                         if (rotoInput) {
                             bool isProjectFormat;
                             StatusEnum st = rotoInput->getRegionOfDefinition_public(rotoInput->getRenderHash(), time, scale, view, &rotoSrcRod, &isProjectFormat);
@@ -1043,7 +1043,7 @@ EffectInstance::getImage(int inputNb,
                                                                     requestedComps,
                                                                     depth,
                                                                     true,
-                                                                    this,
+                                                                    shared_from_this(),
                                                                     returnStorage,
                                                                     thisEffectRenderTime,
                                                                     inputImagesThreadLocal), &inputImages);
@@ -1171,7 +1171,7 @@ EffectInstance::getRegionOfDefinition(U64 hash,
         if ( isInputMask(i) ) {
             continue;
         }
-        EffectInstPtr input = getInput(i);
+        EffectInstancePtr input = getInput(i);
         if (input) {
             RectD inputRod;
             bool isProjectFormat;
@@ -1231,7 +1231,7 @@ EffectInstance::ifInfiniteApplyHeuristic(U64 hash,
         calcDefaultRegionOfDefinition(hash, time, scale, view, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
-            EffectInstPtr input = getInput(i);
+            EffectInstancePtr input = getInput(i);
             if (input) {
                 RectD inputRod;
                 bool isProjectFormat;
@@ -1311,7 +1311,7 @@ EffectInstance::getRegionsOfInterest(double time,
     bool tilesSupported = supportsTiles();
 
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        EffectInstPtr input = getInput(i);
+        EffectInstancePtr input = getInput(i);
         if (input) {
             if (tilesSupported) {
                 ret->insert( std::make_pair(input, renderWindow) );
@@ -1346,7 +1346,7 @@ EffectInstance::getFramesNeeded(double time,
         if ( isInputRotoBrush(i) ) {
             ret.insert( std::make_pair(i, defViewRange) );
         } else {
-            EffectInstPtr input = getInput(i);
+            EffectInstancePtr input = getInput(i);
             if (input) {
                 ret.insert( std::make_pair(i, defViewRange) );
             }
@@ -1364,7 +1364,7 @@ EffectInstance::getFrameRange(double *first,
     *first = INT_MIN;
     *last = INT_MAX;
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        EffectInstPtr input = getInput(i);
+        EffectInstancePtr input = getInput(i);
         if (input) {
             double inpFirst, inpLast;
             input->getFrameRange(&inpFirst, &inpLast);
@@ -1390,9 +1390,9 @@ EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* n
     _didEmit = node->notifyRenderingStarted();
 
     // If the node is in a group, notify also the group
-    boost::shared_ptr<NodeCollection> group = node->getGroup();
+    NodeCollectionPtr group = node->getGroup();
     if (group) {
-        NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
+        NodeGroupPtr isGroupNode = boost::dynamic_pointer_cast<NodeGroup>(group);
         if (isGroupNode) {
             _didGroupEmit = isGroupNode->getNode()->notifyRenderingStarted();
         }
@@ -1405,9 +1405,9 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
         _node->notifyRenderingEnded();
     }
     if (_didGroupEmit) {
-        boost::shared_ptr<NodeCollection> group = _node->getGroup();
+        NodeCollectionPtr group = _node->getGroup();
         if (group) {
-            NodeGroup* isGroupNode = dynamic_cast<NodeGroup*>(group.get());
+            NodeGroupPtr isGroupNode = boost::dynamic_pointer_cast<NodeGroup>(group);
             if (isGroupNode) {
                 isGroupNode->getNode()->notifyRenderingEnded();
             }
@@ -1834,7 +1834,7 @@ EffectInstance::tryConcatenateTransforms(double time,
     assert(inputHoldingTransforms.empty() || canApplyTransform);
 
     Transform::Matrix3x3 thisNodeTransform;
-    EffectInstPtr inputToTransform;
+    EffectInstancePtr inputToTransform;
     bool getTransformSucceeded = false;
 
     if (canTransform) {
@@ -1850,7 +1850,7 @@ EffectInstance::tryConcatenateTransforms(double time,
 
     if ( (canTransform && getTransformSucceeded) || ( !canTransform && canApplyTransform && !inputHoldingTransforms.empty() ) ) {
         for (std::list<int>::iterator it = inputHoldingTransforms.begin(); it != inputHoldingTransforms.end(); ++it) {
-            EffectInstPtr input = getInput(*it);
+            EffectInstancePtr input = getInput(*it);
             if (!input) {
                 continue;
             }
@@ -1890,7 +1890,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                     if (stat == eStatusOK) {
                         matricesByOrder.push_back(m);
                         if (inputToTransform) {
-                            im.newInputNbToFetchFrom = input->getInputNumber( inputToTransform.get() );
+                            im.newInputNbToFetchFrom = input->getInputNumber(inputToTransform);
                             im.newInputEffect = input;
                             input = inputToTransform;
                         }
@@ -1999,12 +1999,12 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 } // EffectInstance::allocateImagePlane
 
 void
-EffectInstance::transformInputRois(const EffectInstance* self,
+EffectInstance::transformInputRois(const EffectInstancePtr& self,
                                    const boost::shared_ptr<InputMatrixMap> & inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputsRoi,
-                                   std::map<int, EffectInstPtr>* reroutesMap)
+                                   std::map<int, EffectInstancePtr>* reroutesMap)
 {
     if (!inputTransforms) {
         return;
@@ -2012,7 +2012,7 @@ EffectInstance::transformInputRois(const EffectInstance* self,
     //Transform the RoIs by the inverse of the transform matrix (which is in pixel coordinates)
     for (InputMatrixMap::const_iterator it = inputTransforms->begin(); it != inputTransforms->end(); ++it) {
         RectD transformedRenderWindow;
-        EffectInstPtr effectInTransformInput = self->getInput(it->first);
+        EffectInstancePtr effectInTransformInput = self->getInput(it->first);
         assert(effectInTransformInput);
 
 
@@ -2499,7 +2499,7 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                                                                                        comps,
                                                                                                        outputClipPrefDepth,
                                                                                                        false,
-                                                                                                       _publicInterface,
+                                                                                                       _publicInterface->shared_from_this(),
                                                                                                        planes.useOpenGL ? eStorageModeGLTex : eStorageModeRAM,
                                                                                                        time) );
         if (!tls->currentRenderArgs.identityInput) {
@@ -3013,11 +3013,11 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
 void
 EffectInstance::openImageFileKnob()
 {
-    const std::vector< KnobPtr > & knobs = getKnobs();
+    const std::vector< KnobIPtr > & knobs = getKnobs();
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobFile::typeNameStatic() ) {
-            boost::shared_ptr<KnobFile> fk = boost::dynamic_pointer_cast<KnobFile>(knobs[i]);
+            KnobFilePtr fk = boost::dynamic_pointer_cast<KnobFile>(knobs[i]);
             assert(fk);
             if ( fk->isInputImageFile() ) {
                 std::string file = fk->getValue();
@@ -3027,7 +3027,7 @@ EffectInstance::openImageFileKnob()
                 break;
             }
         } else if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            boost::shared_ptr<KnobOutputFile> fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
+            KnobOutputFilePtr fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 std::string file = fk->getValue();
@@ -3041,7 +3041,7 @@ EffectInstance::openImageFileKnob()
 }
 
 void
-EffectInstance::onSignificantEvaluateAboutToBeCalled(KnobI* knob)
+EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob)
 {
     //We changed, abort any ongoing current render to refresh them with a newer version
     abortAnyEvaluation();
@@ -3087,9 +3087,9 @@ EffectInstance::evaluate(bool isSignificant,
 
 
     double time = getCurrentTime();
-    std::list<ViewerInstance* > viewers;
+    std::list<ViewerInstancePtr> viewers;
     node->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin();
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
          it != viewers.end();
          ++it) {
         if (isSignificant) {
@@ -3134,10 +3134,10 @@ EffectInstance::clearPersistentMessage(bool recurse)
 }
 
 int
-EffectInstance::getInputNumber(const EffectInstance* inputEffect) const
+EffectInstance::getInputNumber(const EffectInstancePtr& inputEffect) const
 {
     for (int i = 0; i < getMaxInputCount(); ++i) {
-        if (getInput(i).get() == inputEffect) {
+        if (getInput(i) == inputEffect) {
             return i;
         }
     }
@@ -3196,7 +3196,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            boost::shared_ptr<KnobOutputFile> fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
+            KnobOutputFilePtr fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 fk->setValue(pattern);
@@ -3266,14 +3266,14 @@ EffectInstance::unregisterPluginMemory(size_t nBytes)
 
 void
 EffectInstance::onAllKnobsSlaved(bool isSlave,
-                                 KnobHolder* master)
+                                 const KnobHolderPtr& master)
 {
     getNode()->onAllKnobsSlaved(isSlave, master);
 }
 
 void
-EffectInstance::onKnobSlaved(const KnobPtr& slave,
-                             const KnobPtr& master,
+EffectInstance::onKnobSlaved(const KnobIPtr& slave,
+                             const KnobIPtr& master,
                              int dimension,
                              bool isSlave)
 {
@@ -3696,7 +3696,7 @@ EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool
 {
     const KnobsVec& knobs = getKnobs();
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
-        const KnobPtr& k = *it2;
+        const KnobIPtr& k = *it2;
         if (!k) {
             continue;
         }
@@ -3745,7 +3745,7 @@ StatusEnum
 EffectInstance::getTransform_public(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    EffectInstPtr* inputToTransform,
+                                    EffectInstancePtr* inputToTransform,
                                     Transform::Matrix3x3* transform)
 {
     RECURSIVE_ACTION();
@@ -4056,7 +4056,7 @@ EffectInstance::endSequenceRender_public(double first,
     return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
 }
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getOrCreateRenderInstance()
 {
     QMutexLocker k(&_imp->renderClonesMutex);
@@ -4067,13 +4067,13 @@ EffectInstance::getOrCreateRenderInstance()
     }
     // Ok get a clone
     if (!_imp->renderClonesPool.empty()) {
-        EffectInstPtr ret =  _imp->renderClonesPool.front();
+        EffectInstancePtr ret =  _imp->renderClonesPool.front();
         _imp->renderClonesPool.pop_front();
         ret->_imp->isDoingInstanceSafeRender = true;
         return ret;
     }
 
-    EffectInstPtr clone = createRenderClone();
+    EffectInstancePtr clone = createRenderClone();
     if (!clone) {
         // We have no way but to use this node since the effect does not support render clones
         _imp->isDoingInstanceSafeRender = true;
@@ -4091,7 +4091,7 @@ EffectInstance::clearRenderInstances()
 }
 
 void
-EffectInstance::releaseRenderInstance(const EffectInstPtr& instance)
+EffectInstance::releaseRenderInstance(const EffectInstancePtr& instance)
 {
     if (!instance) {
         return;
@@ -4242,9 +4242,9 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                                                 double time,
                                                 ViewIdx view,
                                                 ComponentsAvailableMap* comps,
-                                                std::list<EffectInstance*>* markedNodes)
+                                                std::list<EffectInstancePtr>* markedNodes)
 {
-    if ( std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end() ) {
+    if ( std::find(markedNodes->begin(), markedNodes->end(), shared_from_this()) != markedNodes->end() ) {
         return;
     }
 
@@ -4397,7 +4397,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
         }
     }
 
-    markedNodes->push_back(this);
+    markedNodes->push_back( shared_from_this() );
 
 
     if (useLayerChoice && useThisNodeComponentsNeeded) {
@@ -4412,7 +4412,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
                                        bool useThisNodeComponentsNeeded,
                                        double time,
                                        ComponentsAvailableMap* comps,
-                                       std::list<EffectInstance*>* markedNodes)
+                                       std::list<EffectInstancePtr>* markedNodes)
 {
     getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, ViewIdx(0), comps, markedNodes);
 }
@@ -4428,7 +4428,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
     ///Union components over all views
     //for (int view = 0; view < nViews; ++view) {
     ///Edit: Just call for 1 view, it should not matter as this should be view agnostic.
-    std::list<EffectInstance*> marks;
+    std::list<EffectInstancePtr> marks;
 
     getComponentsAvailableRecursive(useLayerChoice, useThisNodeComponentsNeeded, time, ViewIdx(0), comps, &marks);
 
@@ -4554,7 +4554,7 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
     ///For each input get their needed components
     int maxInput = getMaxInputCount();
     for (int i = 0; i < maxInput; ++i) {
-        EffectInstPtr input = getInput(i);
+        EffectInstancePtr input = getInput(i);
         bool isRotoInput = isInputRotoBrush(i);
         if (isRotoInput) {
             ///Copy for the roto input the output needed comps
@@ -4624,7 +4624,7 @@ EffectInstance::isMaskEnabled(int inputNb) const
 }
 
 bool
-EffectInstance::onKnobValueChanged(KnobI* /*k*/,
+EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
                                    ViewSpec /*view*/,
@@ -4749,20 +4749,20 @@ EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
 }
 
 void
-EffectInstance::addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob)
+EffectInstance::addOverlaySlaveParam(const KnobIPtr& knob)
 {
     _imp->overlaySlaves.push_back(knob);
 }
 
 bool
-EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
+EffectInstance::isOverlaySlaveParam(const KnobIConstPtr& knob) const
 {
     for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->overlaySlaves.begin(); it != _imp->overlaySlaves.end(); ++it) {
-        boost::shared_ptr<KnobI> k = it->lock();
+        KnobIPtr k = it->lock();
         if (!k) {
             continue;
         }
-        if (k.get() == knob) {
+        if (k == knob) {
             return true;
         }
     }
@@ -4771,7 +4771,7 @@ EffectInstance::isOverlaySlaveParam(const KnobI* knob) const
 }
 
 bool
-EffectInstance::onKnobValueChanged_public(KnobI* k,
+EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                           ValueChangedReasonEnum reason,
                                           double time,
                                           ViewSpec view,
@@ -4781,7 +4781,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && dynamic_cast<KnobButton*>(k) && node->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && boost::dynamic_pointer_cast<KnobButton>(k) && node->isNodeDisabled() ) {
         return false;
     }
 
@@ -4794,7 +4794,7 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
     const ViewIdx viewIdx( ( view.isAll() || view.isCurrent() ) ? 0 : view );
     bool wasFormatKnobCaught = node->handleFormatKnob(k);
-    KnobHelper* kh = dynamic_cast<KnobHelper*>(k);
+    KnobHelperPtr kh = boost::dynamic_pointer_cast<KnobHelper>(k);
     assert(kh);
     if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
         ////We set the thread storage render args so that if the instance changed action
@@ -4903,7 +4903,7 @@ EffectInstance::aboutToRestoreDefaultValues()
  * When cycling through the tree, we prefer non optional inputs and we span inputs
  * from last to first.
  **/
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getNearestNonDisabled() const
 {
     NodePtr node = getNode();
@@ -4912,8 +4912,8 @@ EffectInstance::getNearestNonDisabled() const
         return node->getEffectInstance();
     } else {
         ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-        std::list<EffectInstPtr> nonOptionalInputs;
-        std::list<EffectInstPtr> optionalInputs;
+        std::list<EffectInstancePtr> nonOptionalInputs;
+        std::list<EffectInstancePtr> optionalInputs;
         bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
 
         ///Find an input named A
@@ -4930,7 +4930,7 @@ EffectInstance::getNearestNonDisabled() const
         for (int i = 0; i < maxinputs; ++i) {
             std::string inputLabel = getInputLabel(i);
             if (inputLabel == inputNameToFind) {
-                EffectInstPtr inp = getInput(i);
+                EffectInstancePtr inp = getInput(i);
                 if (inp) {
                     nonOptionalInputs.push_front(inp);
                     break;
@@ -4941,15 +4941,15 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         if ( (foundOther != -1) && nonOptionalInputs.empty() ) {
-            EffectInstPtr inp = getInput(foundOther);
+            EffectInstancePtr inp = getInput(foundOther);
             if (inp) {
                 nonOptionalInputs.push_front(inp);
             }
         }
 
         ///If we found A or B so far, cycle through them
-        for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
@@ -4959,7 +4959,7 @@ EffectInstance::getNearestNonDisabled() const
         ///We cycle in reverse by default. It should be a setting of the application.
         ///In this case it will return input B instead of input A of a merge for example.
         for (int i = 0; i < maxinputs; ++i) {
-            EffectInstPtr inp = getInput(i);
+            EffectInstancePtr inp = getInput(i);
             bool optional = isInputOptional(i);
             if (inp) {
                 if (optional) {
@@ -4971,16 +4971,16 @@ EffectInstance::getNearestNonDisabled() const
         }
 
         ///Cycle through all non optional inputs first
-        for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
         }
 
         ///Cycle through optional inputs...
-        for (std::list<EffectInstPtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabled();
+        for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabled();
             if (inputRet) {
                 return inputRet;
             }
@@ -4991,14 +4991,14 @@ EffectInstance::getNearestNonDisabled() const
     }
 } // EffectInstance::getNearestNonDisabled
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 {
     assert( getNode()->isNodeDisabled() );
 
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<EffectInstPtr> nonOptionalInputs;
-    std::list<EffectInstPtr> optionalInputs;
+    std::list<EffectInstancePtr> nonOptionalInputs;
+    std::list<EffectInstancePtr> optionalInputs;
     int localPreferredInput = -1;
     bool useInputA = appPTR->getCurrentSettings()->isMergeAutoConnectingToAInput();
     ///Find an input named A
@@ -5015,7 +5015,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     for (int i = 0; i < maxinputs; ++i) {
         std::string inputLabel = getInputLabel(i);
         if (inputLabel == inputNameToFind) {
-            EffectInstPtr inp = getInput(i);
+            EffectInstancePtr inp = getInput(i);
             if (inp) {
                 nonOptionalInputs.push_front(inp);
                 localPreferredInput = i;
@@ -5027,7 +5027,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     if ( (foundOther != -1) && nonOptionalInputs.empty() ) {
-        EffectInstPtr inp = getInput(foundOther);
+        EffectInstancePtr inp = getInput(foundOther);
         if (inp) {
             nonOptionalInputs.push_front(inp);
             localPreferredInput = foundOther;
@@ -5035,9 +5035,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     ///If we found A or B so far, cycle through them
-    for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -5048,7 +5048,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     ///We cycle in reverse by default. It should be a setting of the application.
     ///In this case it will return input B instead of input A of a merge for example.
     for (int i = 0; i < maxinputs; ++i) {
-        EffectInstPtr inp = getInput(i);
+        EffectInstancePtr inp = getInput(i);
         bool optional = isInputOptional(i);
         if (inp) {
             if (optional) {
@@ -5067,9 +5067,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
 
 
     ///Cycle through all non optional inputs first
-    for (std::list<EffectInstPtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -5077,9 +5077,9 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     }
 
     ///Cycle through optional inputs...
-    for (std::list<EffectInstPtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+    for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         if ( (*it)->getNode()->isNodeDisabled() ) {
-            EffectInstPtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
+            EffectInstancePtr inputRet = (*it)->getNearestNonDisabledPrevious(inputNb);
             if (inputRet) {
                 return inputRet;
             }
@@ -5091,7 +5091,7 @@ EffectInstance::getNearestNonDisabledPrevious(int* inputNb)
     return shared_from_this();
 } // EffectInstance::getNearestNonDisabledPrevious
 
-EffectInstPtr
+EffectInstancePtr
 EffectInstance::getNearestNonIdentity(double time)
 {
     U64 hash = getRenderHash();
@@ -5109,7 +5109,7 @@ EffectInstance::getNearestNonIdentity(double time)
         if (inputNbIdentity < 0) {
             return shared_from_this();
         }
-        EffectInstPtr effect = getInput(inputNbIdentity);
+        EffectInstancePtr effect = getInput(inputNbIdentity);
 
         return effect ? effect->getNearestNonIdentity(time) : shared_from_this();
     }
@@ -5146,7 +5146,7 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
     NodePtr node = getNode();
 
     assert(node);
-    std::list<OutputEffectInstance*> outputNodes;
+    std::list<OutputEffectInstancePtr> outputNodes;
     NodeGroup* isGroup = dynamic_cast<NodeGroup*>(this);
     if (isGroup) {
         NodesList inputOutputs;
@@ -5158,7 +5158,7 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
         boost::shared_ptr<RotoDrawableItem> attachedStroke = getNode()->getAttachedRotoItem();
         if (attachedStroke) {
             ///For nodes internal to the rotopaint tree, check outputs of the rotopaint node instead
-            boost::shared_ptr<RotoContext> context = attachedStroke->getContext();
+            RotoContextPtr context = attachedStroke->getContext();
             assert(context);
             if (context) {
                 NodePtr rotonode = context->getNode();
@@ -5170,7 +5170,7 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
             node->hasOutputNodesConnected(&outputNodes);
         }
     }
-    for (std::list<OutputEffectInstance*>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
+    for (std::list<OutputEffectInstancePtr>::const_iterator it = outputNodes.begin(); it != outputNodes.end(); ++it) {
         //Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
         //well not be finished
         if (keepOldestRender) {
@@ -5256,7 +5256,7 @@ EffectInstance::checkCanSetValueAndWarn() const
 
 static
 void
-isFrameVaryingOrAnimated_impl(const EffectInstance* node,
+isFrameVaryingOrAnimated_impl(const EffectInstanceConstPtr& node,
                               bool *ret)
 {
     if ( node->isFrameVarying() || node->getHasAnimation() || node->getNode()->getRotoContext() ) {
@@ -5264,9 +5264,9 @@ isFrameVaryingOrAnimated_impl(const EffectInstance* node,
     } else {
         int maxInputs = node->getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
-            EffectInstPtr input = node->getInput(i);
+            EffectInstanceConstPtr input = node->getInput(i);
             if (input) {
-                isFrameVaryingOrAnimated_impl(input.get(), ret);
+                isFrameVaryingOrAnimated_impl(input, ret);
                 if (*ret) {
                     return;
                 }
@@ -5280,7 +5280,7 @@ EffectInstance::isFrameVaryingOrAnimated_Recursive() const
 {
     bool ret = false;
 
-    isFrameVaryingOrAnimated_impl(this, &ret);
+    isFrameVaryingOrAnimated_impl(shared_from_this(), &ret);
 
     return ret;
 }
@@ -5304,9 +5304,9 @@ EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
 }
 
 static ImageComponents
-getUnmappedComponentsForInput(EffectInstance* self,
+getUnmappedComponentsForInput(const EffectInstancePtr& self,
                               int inputNb,
-                              const std::vector<EffectInstPtr>& inputs,
+                              const std::vector<EffectInstancePtr>& inputs,
                               const ImageComponents& firstNonOptionalConnectedInputComps)
 {
     ImageComponents rawComps;
@@ -5354,7 +5354,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     //Default to the project frame rate
     double frameRate = getApp()->getProjectFrameRate();
-    std::vector<EffectInstPtr> inputs(nInputs);
+    std::vector<EffectInstancePtr> inputs(nInputs);
 
     // Find the components of the first non optional connected input
     // They will be used for disconnected input
@@ -5371,7 +5371,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     ImagePremultiplicationEnum premult = eImagePremultiplicationOpaque;
     bool premultSet = false;
     for (int i = 0; i < nInputs; ++i) {
-        const EffectInstPtr& input = inputs[i];
+        const EffectInstancePtr& input = inputs[i];
         if (input) {
             frameRate = std::max( frameRate, input->getFrameRate() );
         }
@@ -5384,7 +5384,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             }
         }
 
-        ImageComponents rawComp = getUnmappedComponentsForInput(this, i, inputs, firstNonOptionalConnectedInputComps);
+        ImageComponents rawComp = getUnmappedComponentsForInput(shared_from_this(), i, inputs, firstNonOptionalConnectedInputComps);
         ImageBitDepthEnum rawDepth = input ? input->getBitDepth(-1) : eImageBitDepthFloat;
         ImagePremultiplicationEnum rawPreMult = input ? input->getPremult() : eImagePremultiplicationPremultiplied;
 
@@ -5441,11 +5441,11 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     // now add the input gubbins to the per inputs metadatas
     for (int i = -1; i < (int)inputs.size(); ++i) {
-        EffectInstance* effect = 0;
+        EffectInstancePtr effect;
         if (i >= 0) {
-            effect = inputs[i].get();
+            effect = inputs[i];
         } else {
-            effect = this;
+            effect = shared_from_this();
         }
 
         double par;
@@ -5481,7 +5481,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
             metadata.setBitDepth(i, depth);
         } else {
-            ImageComponents rawComps = getUnmappedComponentsForInput(this, i, inputs, firstNonOptionalConnectedInputComps);
+            ImageComponents rawComps = getUnmappedComponentsForInput(shared_from_this(), i, inputs, firstNonOptionalConnectedInputComps);
             ImageBitDepthEnum rawDepth = effect ? effect->getBitDepth(-1) : eImageBitDepthFloat;
 
             if ( rawComps.isColorPlane() ) {
@@ -5584,7 +5584,7 @@ EffectInstance::refreshMetaDatas_recursive(std::list<Node*> & markedNodes)
         return false;
     }
 
-    ClipPreferencesRunning_RAII runningflag_(this);
+    ClipPreferencesRunning_RAII runningflag_( shared_from_this() );
     bool ret = refreshMetaDatas_public(false);
     node->refreshIdentityState();
 
@@ -5748,7 +5748,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     const bool supportsMultipleDepth = _publicInterface->supportsMultipleClipsBitDepth();
     const bool supportsMultiplePARS = _publicInterface->supportsMultipleClipsPAR();
     const bool supportsMultipleFPS = _publicInterface->supportsMultipleClipsFPS();
-    std::vector<EffectInstPtr> inputs(nInputs);
+    std::vector<EffectInstancePtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
         inputs[i] = _publicInterface->getInput(i);
     }

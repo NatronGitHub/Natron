@@ -3815,7 +3815,7 @@ ViewerGL::updateInfoWidgetColorPicker(const QPointF & imgPos,
     Format dispW = getDisplayWindow();
     RectD canonicalDispW = dispW.toCanonicalFormat();
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
 
     _imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
@@ -4082,7 +4082,7 @@ ViewerGL::getSelectionRectangle(double &left,
     top = std::max( topLeft.y(), btmRight.y() );
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 ViewerGL::getTimeline() const
 {
     return _imp->viewerTab->getTimeLine();

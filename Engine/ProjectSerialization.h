@@ -80,17 +80,17 @@ class ProjectSerialization
 {
     NodeCollectionSerialization _nodes;
     std::list<Format> _additionalFormats;
-    std::list< boost::shared_ptr<KnobSerialization> > _projectKnobs;
+    std::list<KnobSerializationPtr> _projectKnobs;
     SequenceTime _timelineCurrent;
     qint64 _creationDate;
-    AppInstWPtr _app;
+    AppInstanceWPtr _app;
     unsigned int _version;
 
     ProjectBeingLoadedInfo _projectLoadedInfo;
 
 public:
 
-    ProjectSerialization(const AppInstPtr& app)
+    ProjectSerialization(const AppInstancePtr& app)
         : _timelineCurrent(0)
         , _creationDate(0)
         , _app(app)
@@ -187,7 +187,7 @@ public:
         ar & ::boost::serialization::make_nvp("NodesCollection", _nodes);
         int knobsCount = _projectKnobs.size();
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
-        for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = _projectKnobs.begin();
+        for (std::list<KnobSerializationPtr>::const_iterator it = _projectKnobs.begin();
              it != _projectKnobs.end();
              ++it) {
             ar & ::boost::serialization::make_nvp( "item", *(*it) );
@@ -238,7 +238,7 @@ public:
             ar & ::boost::serialization::make_nvp("GitCommit", _projectLoadedInfo.gitCommit);
             ar & ::boost::serialization::make_nvp("OS", _projectLoadedInfo.osStr);
             ar & ::boost::serialization::make_nvp("Bits", _projectLoadedInfo.bits);
-            AppInstPtr app = _app.lock();
+            AppInstancePtr app = _app.lock();
             assert(app);
             app->setProjectBeingLoadedInfo(_projectLoadedInfo);
 
@@ -248,7 +248,7 @@ public:
             int nodesCount;
             ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
             for (int i = 0; i < nodesCount; ++i) {
-                boost::shared_ptr<NodeSerialization> ns(new NodeSerialization);
+                NodeSerializationPtr ns(new NodeSerialization);
                 ar & ::boost::serialization::make_nvp("item", *ns);
                 _nodes.addNodeSerialization(ns);
             }

@@ -62,7 +62,7 @@ private:
 
 public:
     static boost::shared_ptr<NodeViewerContext> create(const NodeGuiPtr& node,
-                                                       ViewerTab* viewer)
+                                                       ViewerTab* viewer) WARN_UNUSED_RETURN
     {
         return boost::shared_ptr<NodeViewerContext>( new NodeViewerContext(node, viewer) );
     }
@@ -88,7 +88,7 @@ public:
     virtual Gui* getGui() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const QUndoCommand* getLastUndoCommand() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void pushUndoCommand(QUndoCommand* cmd) OVERRIDE FINAL;
-    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getItemsSpacingOnSameLine() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void setCurrentTool(const QString& toolID, bool notifyNode);

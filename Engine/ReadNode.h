@@ -57,12 +57,6 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new ReadNode(n);
-    }
-
     /**
      * @brief Returns if the given plug-in is compatible with this ReadNode container.
      * by default all nodes which inherits GenericReader in OpenFX are.
@@ -70,7 +64,15 @@ public:
     static bool isBundledReader(const std::string& pluginID, bool wasProjectCreatedWithLowerCaseIDs);
     bool isBundledReader(const std::string& pluginID);
 
-    ReadNode(NodePtr n);
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    ReadNode(const NodePtr& n);
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new ReadNode(node) );
+    }
 
     virtual ~ReadNode();
 
@@ -115,8 +117,8 @@ private:
     virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& serialization) OVERRIDE FINAL;
-    virtual bool knobChanged(KnobI* k,
+    virtual void onKnobsAboutToBeLoaded(const NodeSerializationPtr& serialization) OVERRIDE FINAL;
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,

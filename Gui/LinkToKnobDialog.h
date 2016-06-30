@@ -63,7 +63,7 @@ public:
 
     virtual ~LinkToKnobDialog();
 
-    KnobPtr getSelectedKnobs() const;
+    KnobIPtr getSelectedKnobs() const;
 
 public Q_SLOTS:
 

@@ -89,7 +89,7 @@ class DopeSheetEditor
 {
 public:
     DopeSheetEditor(Gui *gui,
-                    boost::shared_ptr<TimeLine> timeline,
+                    const TimeLinePtr& timeline,
                     QWidget *parent = 0);
     ~DopeSheetEditor();
 

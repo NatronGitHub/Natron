@@ -193,8 +193,8 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
     }
 
 
-    boost::shared_ptr<NodeCollection> collection = getGroup();
-    NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collection.get() );
+    NodeCollectionPtr collection = getGroup();
+    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
@@ -269,7 +269,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
             ///build the _nodesWithinBDAtPenDown map
             _imp->_nodesWithinBDAtPenDown.clear();
             for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-                BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
+                BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
                 if (isBd) {
                     NodesGuiList nodesWithin = getNodesWithinBackdrop(*it);
                     _imp->_nodesWithinBDAtPenDown.insert( std::make_pair(*it, nodesWithin) );
@@ -312,9 +312,9 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
 
         assert( getGui() );
-        GuiAppInstPtr guiApp = getGui()->getApp();
+        GuiAppInstancePtr guiApp = getGui()->getApp();
         assert(guiApp);
-        boost::shared_ptr<Project> project = guiApp->getProject();
+        ProjectPtr project = guiApp->getProject();
         assert(project);
         bool ok = project->disconnectNodes(inputNode, outputNode);
         if (!ok) {

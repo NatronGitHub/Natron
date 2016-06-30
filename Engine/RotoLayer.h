@@ -66,9 +66,9 @@ class RotoLayer
 {
 public:
 
-    RotoLayer(const boost::shared_ptr<RotoContext>& context,
+    RotoLayer(const RotoContextPtr& context,
               const std::string & name,
-              const boost::shared_ptr<RotoLayer>& parent);
+              const RotoLayerPtr& parent);
 
     explicit RotoLayer(const RotoLayer & other);
 

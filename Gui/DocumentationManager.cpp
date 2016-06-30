@@ -203,7 +203,7 @@ DocumentationManager::handler(QHttpRequest *req,
             body = parser(notFound, docDir).toUtf8();
         }
     } else if ( page == QString::fromUtf8("_prefs.html") ) {
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         QString html = settings->makeHTMLDocumentation(true);
         html = parser(html, docDir);
         body = html.toUtf8();

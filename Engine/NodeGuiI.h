@@ -141,7 +141,7 @@ public:
     virtual bool hasHostOverlay() const = 0;
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) = 0;
     virtual bool hasHostOverlayForParam(const KnobI* param) = 0;
-    virtual void removePositionHostOverlay(KnobI* knob) = 0;
+    virtual void removePositionHostOverlay(const KnobIPtr& knob) = 0;
     virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
                                        const std::string& pluginLabel,
                                        const std::string& pluginID,
@@ -170,7 +170,7 @@ public:
     /**
      * @brief Make up a dialog with the content of the group
      **/
-    virtual void showGroupKnobAsDialog(KnobGroup* group) = 0;
+    virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) = 0;
 };
 
 NATRON_NAMESPACE_EXIT;

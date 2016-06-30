@@ -47,16 +47,17 @@ private:
     boost::weak_ptr<KnobBool> optional;
     boost::weak_ptr<KnobBool> mask;
 
-public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
-    {
-        return new GroupInput(n);
-    }
-
-    GroupInput(NodePtr n)
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    GroupInput(const NodePtr& n)
         : NoOpBase(n)
     {
+    }
+
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new GroupInput(node) );
     }
 
     virtual std::string getPluginID() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -86,7 +87,7 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual bool knobChanged(KnobI * k,
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,

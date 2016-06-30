@@ -51,7 +51,7 @@ NATRON_NAMESPACE_ENTER;
 
 /***********************************KnobFile*****************************************/
 
-KnobFile::KnobFile(KnobHolder* holder,
+KnobFile::KnobFile(const KnobHolderPtr& holder,
                    const std::string &description,
                    int dimension,
                    bool declaredByPlugin)
@@ -68,7 +68,7 @@ void
 KnobFile::reloadFile()
 {
     assert( getHolder() );
-    EffectInstance* effect = dynamic_cast<EffectInstance*>( getHolder() );
+    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( getHolder() );
     if (effect) {
         effect->purgeCaches();
         effect->clearPersistentMessage(false);
@@ -117,11 +117,11 @@ KnobFile::getFileName(int time,
 
 /***********************************KnobOutputFile*****************************************/
 
-KnobOutputFile::KnobOutputFile(KnobHolder* holder,
+KnobOutputFile::KnobOutputFile(const KnobHolderPtr& holder,
                                const std::string &description,
                                int dimension,
                                bool declaredByPlugin)
-    : Knob<std::string>(holder, description, dimension, declaredByPlugin)
+    : KnobStringBase(holder, description, dimension, declaredByPlugin)
     , _isOutputImage(false)
     , _sequenceDialog(true)
 {
@@ -164,7 +164,7 @@ KnobOutputFile::generateFileNameAtTime(SequenceTime time,
 
 /***********************************KnobPath*****************************************/
 
-KnobPath::KnobPath(KnobHolder* holder,
+KnobPath::KnobPath(const KnobHolderPtr& holder,
                    const std::string &description,
                    int dimension,
                    bool declaredByPlugin)

@@ -52,7 +52,7 @@ public:
 
 
     CurveGui(CurveWidget *curveWidget,
-             boost::shared_ptr<Curve>  curve,
+             CurvePtr  curve,
              const QString & name,
              const QColor & color,
              int thickness = 1);
@@ -116,7 +116,7 @@ public:
      * The coordinates are those of the curve, not of the widget.
      **/
     virtual double evaluate(bool useExpr, double x) const = 0;
-    virtual boost::shared_ptr<Curve>  getInternalCurve() const;
+    virtual CurvePtr  getInternalCurve() const;
 
     void drawCurve(int curveIndex, int curvesCount);
 
@@ -145,7 +145,7 @@ private:
 
 protected:
 
-    boost::shared_ptr<Curve> _internalCurve; ///ptr to the internal curve
+    CurvePtr _internalCurve; ///ptr to the internal curve
     CurveWidget* _curveWidget;
 
 private:
@@ -170,7 +170,7 @@ public:
 
 
     KnobCurveGui(CurveWidget *curveWidget,
-                 boost::shared_ptr<Curve>  curve,
+                 CurvePtr  curve,
                  const KnobGuiPtr& knob,
                  int dimension,
                  const QString & name,
@@ -179,9 +179,9 @@ public:
 
 
     KnobCurveGui(CurveWidget *curveWidget,
-                 boost::shared_ptr<Curve>  curve,
-                 const KnobPtr& knob,
-                 const boost::shared_ptr<RotoContext>& roto,
+                 CurvePtr  curve,
+                 const KnobIPtr& knob,
+                 const RotoContextPtr& roto,
                  int dimension,
                  const QString & name,
                  const QColor & color,
@@ -189,7 +189,7 @@ public:
 
     virtual ~KnobCurveGui();
 
-    virtual boost::shared_ptr<Curve>  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual CurvePtr  getInternalCurve() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     KnobGuiPtr getKnobGui() const
     {
@@ -197,9 +197,9 @@ public:
     }
 
     virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    boost::shared_ptr<RotoContext> getRotoContext() const { return _roto; }
+    RotoContextPtr getRotoContext() const { return _roto; }
 
-    KnobPtr getInternalKnob() const;
+    KnobIPtr getInternalKnob() const;
 
     int getDimension() const
     {
@@ -216,8 +216,8 @@ public Q_SLOTS:
 
 private:
 
-    boost::shared_ptr<RotoContext> _roto;
-    KnobPtr _internalKnob;
+    RotoContextPtr _roto;
+    KnobIPtr _internalKnob;
     KnobGuiWPtr _knob; //< ptr to the knob holding this curve
     int _dimension; //< which dimension is this curve representing
 };
@@ -229,14 +229,14 @@ public:
 
     BezierCPCurveGui(CurveWidget *curveWidget,
                      const boost::shared_ptr<Bezier>& bezier,
-                     const boost::shared_ptr<RotoContext>& roto,
+                     const RotoContextPtr& roto,
                      const QString & name,
                      const QColor & color,
                      int thickness = 1);
 
     virtual ~BezierCPCurveGui();
 
-    boost::shared_ptr<RotoContext> getRotoContext() const { return _rotoContext; }
+    RotoContextPtr getRotoContext() const { return _rotoContext; }
 
     boost::shared_ptr<Bezier> getBezier() const;
     virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -257,7 +257,7 @@ private:
 
 
     boost::shared_ptr<Bezier> _bezier;
-    boost::shared_ptr<RotoContext> _rotoContext;
+    RotoContextPtr _rotoContext;
 };
 
 NATRON_NAMESPACE_EXIT;

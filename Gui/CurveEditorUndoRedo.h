@@ -175,7 +175,7 @@ private:
 
 private:
     boost::shared_ptr<CurveGui> _guiCurve;
-    boost::shared_ptr<Curve> _oldCurve;
+    CurvePtr _oldCurve;
 };
 
 //////////////////////////////REMOVE  MULTIPLE KEYS COMMAND//////////////////////////////////////////////

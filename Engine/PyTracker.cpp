@@ -56,7 +56,7 @@ Track::getScriptName() const
 Param*
 Track::getParam(const QString& scriptName) const
 {
-    KnobPtr knob = _marker->getKnobByName( scriptName.toStdString() );
+    KnobIPtr knob = _marker->getKnobByName( scriptName.toStdString() );
 
     if (!knob) {
         return 0;

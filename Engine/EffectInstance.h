@@ -120,7 +120,6 @@ NATRON_NAMESPACE_ENTER;
 class EffectInstance
     : public NamedKnobHolder
       , public LockManagerI<Image>
-      , public boost::enable_shared_from_this<EffectInstance>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -148,7 +147,7 @@ public:
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
         EffectInstance::InputImagesMap inputImagesList;
-        const EffectInstance* caller;
+        EffectInstancePtr caller;
         ImageBitDepthEnum bitdepth; //< the requested bit depth
         bool byPassCache;
         bool calledFromGetImage;
@@ -171,7 +170,7 @@ public:
             , preComputedRoD()
             , components()
             , inputImagesList()
-            , caller(0)
+            , caller()
             , bitdepth(eImageBitDepthFloat)
             , byPassCache(false)
             , calledFromGetImage(false)
@@ -191,7 +190,7 @@ public:
                        const std::list<ImageComponents> & components_,
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
-                       const EffectInstance* caller,
+                       EffectInstancePtr caller,
                        StorageModeEnum returnStorage,
                        double callerRenderTime,
                        const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
@@ -221,7 +220,7 @@ public:
         eSupportsYes = 1
     };
 
-public:
+protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, OutputEffectInstance, PrecompNode, ReadNode, RotoPaint, RotoSmear
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
@@ -231,11 +230,23 @@ public:
      * called just to be able to call a few virtuals fonctions.
      * The constructor is always called by the main thread of the application.
      **/
-    explicit EffectInstance(NodePtr node);
+    explicit EffectInstance(const NodePtr& node);
 
     EffectInstance(const EffectInstance& other);
 
 public:
+    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    //{
+    //    return EffectInstancePtr( new EffectInstance(node) );
+    //}
+
+    boost::shared_ptr<EffectInstance> shared_from_this() {
+        return boost::dynamic_pointer_cast<EffectInstance>(KnobHolder::shared_from_this());
+    }
+
+    boost::shared_ptr<const EffectInstance> shared_from_this() const {
+        return boost::dynamic_pointer_cast<const EffectInstance>(KnobHolder::shared_from_this());
+    }
 
     // dtor
     virtual ~EffectInstance();
@@ -306,7 +317,7 @@ public:
      * @brief Returns input n. It might be NULL if the input is not connected.
      * MT-Safe
      **/
-    EffectInstPtr getInput(int n) const WARN_UNUSED_RETURN;
+    EffectInstancePtr getInput(int n) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Forwarded to the node holding the effect
@@ -721,7 +732,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual bool onKnobValueChanged_public(KnobI* k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
+    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSpec view, bool originatedFromMainThread) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -729,19 +740,19 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    EffectInstPtr getNearestNonDisabled() const;
+    EffectInstancePtr getNearestNonDisabled() const;
 
     /**
      * @brief Same as getNearestNonDisabled() except that it returns the *last* disabled node before the nearest non disabled node.
      * @param inputNb[out] The inputNb of the node that is non disabled.
      **/
-    EffectInstPtr getNearestNonDisabledPrevious(int* inputNb);
+    EffectInstancePtr getNearestNonDisabledPrevious(int* inputNb);
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    EffectInstPtr getNearestNonIdentity(double time);
+    EffectInstancePtr getNearestNonIdentity(double time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
@@ -971,7 +982,7 @@ protected:
     virtual StatusEnum getTransform(double /*time*/,
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/,
-                                    EffectInstPtr* /*inputToTransform*/,
+                                    EffectInstancePtr* /*inputToTransform*/,
                                     Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
     {
         return eStatusReplyDefault;
@@ -984,7 +995,7 @@ public:
     StatusEnum getTransform_public(double time,
                                    const RenderScale & renderScale,
                                    ViewIdx view,
-                                   EffectInstPtr* inputToTransform,
+                                   EffectInstancePtr* inputToTransform,
                                    Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
 
 protected:
@@ -1397,7 +1408,7 @@ public:
 
     struct RectToRender
     {
-        EffectInstPtr identityInput;
+        EffectInstancePtr identityInput;
         RectI rect;
         RoIMap inputRois;
         EffectInstance::InputImagesMap imgs;
@@ -1487,11 +1498,11 @@ protected:
 
     class CanSetSetValueFlag_RAII
     {
-        EffectInstance* effect;
+        EffectInstancePtr effect;
 
 public:
 
-        CanSetSetValueFlag_RAII(EffectInstance* effect,
+        CanSetSetValueFlag_RAII(const EffectInstancePtr& effect,
                                 bool canSetValue)
             : effect(effect)
         {
@@ -1519,7 +1530,7 @@ public:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual bool knobChanged(KnobI* /*k*/,
+    virtual bool knobChanged(const KnobIPtr& /*k*/,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSpec /*view*/,
                              double /*time*/,
@@ -1580,7 +1591,7 @@ public:
     bool setCurrentCursor(const QString& customCursorFilePath);
 
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,
@@ -1650,16 +1661,16 @@ public:
     /**
      * @brief Flag that the overlays should be redrawn when this knob changes.
      **/
-    void addOverlaySlaveParam(const boost::shared_ptr<KnobI>& knob);
+    void addOverlaySlaveParam(const KnobIPtr& knob);
 
-    bool isOverlaySlaveParam(const KnobI* knob) const;
+    bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
 
 
     /**
      * @brief Returns the components available on each input for this effect at the given time.
      **/
     void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstance*>* markedNodes);
+    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstancePtr>* markedNodes);
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
@@ -1698,7 +1709,7 @@ public:
         return false;
     }
 
-    virtual void onKnobsAboutToBeLoaded(const boost::shared_ptr<NodeSerialization>& /*serialization*/) {}
+    virtual void onKnobsAboutToBeLoaded(const NodeSerializationPtr& /*serialization*/) {}
 
     virtual void onKnobsLoaded() {}
 
@@ -1708,7 +1719,7 @@ public:
     virtual void onEffectCreated(bool /*mayCreateFileDialog*/,
                                  const CreateNodeArgs& /*args*/) {}
 
-    virtual void onKnobSlaved(const KnobPtr& slave, const KnobPtr& master,
+    virtual void onKnobSlaved(const KnobIPtr& slave, const KnobIPtr& master,
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 
@@ -1744,7 +1755,7 @@ protected:
      * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
      * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
      **/
-    virtual EffectInstPtr createRenderClone() { return EffectInstPtr(); }
+    virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
 
 
     /**
@@ -1756,10 +1767,10 @@ protected:
 
 private:
 
-    EffectInstPtr getOrCreateRenderInstance();
+    EffectInstancePtr getOrCreateRenderInstance();
 
 
-    void releaseRenderInstance(const EffectInstPtr& instance);
+    void releaseRenderInstance(const EffectInstancePtr& instance);
 
     /**
      * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
@@ -1794,7 +1805,7 @@ private:
                                          double time,
                                          ViewIdx view,
                                          ComponentsAvailableMap* comps,
-                                         std::list<EffectInstance*>* markedNodes);
+                                         std::list<EffectInstancePtr>* markedNodes);
 
 public:
 
@@ -1820,12 +1831,12 @@ public:
                                   InputMatrixMap* inputTransforms);
 
 
-    static void transformInputRois(const EffectInstance* self,
+    static void transformInputRois(const EffectInstancePtr& self,
                                    const boost::shared_ptr<InputMatrixMap>& inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
-                                   std::map<int, EffectInstPtr>* reroutesMap);
+                                   std::map<int, EffectInstancePtr>* reroutesMap);
     struct RenderArgs
     {
         RectD rod; //!< the effect's RoD in CANONICAL coordinates
@@ -1836,7 +1847,7 @@ public:
         bool validArgs; //< are the args valid ?
         bool isIdentity;
         double identityTime;
-        EffectInstPtr identityInput;
+        EffectInstancePtr identityInput;
         EffectInstance::InputImagesMap inputImages;
         std::map<ImageComponents, PlaneToRender> outputPlanes;
 
@@ -2118,7 +2129,7 @@ private:
      * downscaled, because the plugin does not support render scale.
      * @returns True if the render call succeeded, false otherwise.
      **/
-    static RenderRoIStatusEnum renderRoIInternal(EffectInstance* self,
+    static RenderRoIStatusEnum renderRoIInternal(const EffectInstancePtr& self,
                                                  double time,
                                                  const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
                                                  RenderSafetyEnum safety,
@@ -2156,7 +2167,7 @@ private:
                                              EffectInstance::InputImagesMap *inputImages,
                                              RoIMap* inputsRoI);
 
-    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstPtr& app,
+    static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                                                  const boost::shared_ptr<Image>& inputImage,
                                                                  const RectI& roi,
                                                                  const ImageComponents& targetComponents,
@@ -2179,7 +2190,7 @@ private:
                                          bool* isIdentity_p,
                                          double* identityTime,
                                          ViewIdx *inputView,
-                                         EffectInstPtr* identityInput_p,
+                                         EffectInstancePtr* identityInput_p,
                                          bool* duringPaintStroke_p,
                                          RectD* rod_p,
                                          RoIMap* inputRois_p, //!< output, only set if optionalBoundsParam != NULL
@@ -2204,8 +2215,8 @@ private:
                             boost::shared_ptr<Image>* downscaleImage);
 
 
-    virtual void onSignificantEvaluateAboutToBeCalled(KnobI* knob) OVERRIDE FINAL;
-    virtual void onAllKnobsSlaved(bool isSlave, KnobHolder* master) OVERRIDE FINAL;
+    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob) OVERRIDE FINAL;
+    virtual void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master) OVERRIDE FINAL;
     enum RenderingFunctorRetEnum
     {
         eRenderingFunctorRetFailed, //< must stop rendering
@@ -2219,16 +2230,16 @@ private:
     /**
      * @brief Returns the index of the input if inputEffect is a valid input connected to this effect, otherwise returns -1.
      **/
-    int getInputNumber(const EffectInstance* inputEffect) const;
+    int getInputNumber(const EffectInstancePtr& inputEffect) const;
 };
 
 class ClipPreferencesRunning_RAII
 {
-    EffectInstance* _effect;
+    EffectInstancePtr _effect;
 
 public:
 
-    ClipPreferencesRunning_RAII(EffectInstance* effect)
+    ClipPreferencesRunning_RAII(const EffectInstancePtr& effect)
         : _effect(effect)
     {
         _effect->setClipPreferencesRunning(true);
@@ -2245,7 +2256,7 @@ public:
  * @typedef Any plug-in should have a static function called BuildEffect with the following signature.
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
-typedef EffectInstance* (*EffectBuilder)(NodePtr);
+typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
 
 NATRON_NAMESPACE_EXIT;
 

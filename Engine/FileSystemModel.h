@@ -62,7 +62,8 @@ public:
 
     // Note: when switching to C++11, we can add variadic templates:
     //template<typename ... T>
-    //static boost::shared_ptr<FileSystemItem> create( T&& ... all ) {
+    //static boost::shared_ptr<FileSystemItem> create( T&& ... all ) WARN_UNUSED_RETURN
+    //{
     //    return boost::shared_ptr<FileSystemItem>( new FileSystemItem( std::forward<T>(all)... ) );
     //}
     static boost::shared_ptr<FileSystemItem> create( const boost::shared_ptr<FileSystemModel>& model,
@@ -72,7 +73,7 @@ public:
                                                      const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
                                                      const QDateTime& dateModified,
                                                      quint64 size,
-                                                     const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() )
+                                                     const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() ) WARN_UNUSED_RETURN
     {
         return boost::shared_ptr<FileSystemItem>( new FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) );
     }

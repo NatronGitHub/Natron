@@ -282,7 +282,7 @@ public:
     virtual void makeOpenGLcontextCurrent() OVERRIDE FINAL;
     virtual void removeGUI() OVERRIDE FINAL;
     virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
-    virtual boost::shared_ptr<TimeLine> getTimeline() const OVERRIDE FINAL;
+    virtual TimeLinePtr getTimeline() const OVERRIDE FINAL;
 
 public:
 

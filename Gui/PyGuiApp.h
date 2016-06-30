@@ -118,11 +118,11 @@ private:
 
 public:
 
-    GuiApp(const GuiAppInstPtr& app);
+    GuiApp(const GuiAppInstancePtr& app);
 
     virtual ~GuiApp();
 
-    GuiAppInstPtr getInternalGuiApp() const
+    GuiAppInstancePtr getInternalGuiApp() const
     {
         return _app.lock();
     }

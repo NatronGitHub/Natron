@@ -207,15 +207,18 @@ class PyPanel;
 class PyTabWidget;
 NATRON_PYTHON_NAMESPACE_EXIT;
 
-typedef boost::shared_ptr<GuiAppInstance> GuiAppInstPtr;
-typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
-typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
-typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
-typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
-typedef std::list<NodeGuiPtr> NodesGuiList;
-typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
+typedef boost::shared_ptr<GuiAppInstance> GuiAppInstancePtr;
 typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
+typedef boost::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
+typedef boost::shared_ptr<NodeGui> NodeGuiPtr;
+typedef boost::shared_ptr<NodeViewerContext> NodeViewerContextPtr;
+typedef boost::shared_ptr<ProgressTaskInfo> ProgressTaskInfoPtr;
+typedef boost::shared_ptr<TrackerPanelV1> TrackerPanelV1PtrPtr;
 typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
+typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
+typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
+typedef std::list<NodeGuiPtr> NodesGuiList;
+
 NATRON_NAMESPACE_EXIT;
 
 

@@ -383,7 +383,7 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
                                                 double &y) const
 {
     assert( getOfxEffectInstance() );
-    std::list<ViewerInstance*> attachedViewers;
+    std::list<ViewerInstancePtr> attachedViewers;
     getOfxEffectInstance()->getNode()->hasViewersConnected(&attachedViewers);
     ///get the render scale of the 1st viewer
     if ( !attachedViewers.empty() ) {
@@ -444,7 +444,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 {
     // note: the order for parameter types is the same as in ofxParam.h
     OFX::Host::Param::Instance* instance = NULL;
-    KnobPtr knob;
+    KnobIPtr knob;
     bool paramShouldBePersistant = true;
     bool secretByDefault = descriptor.getSecret();
     bool enabledByDefault = descriptor.getEnabled();
@@ -526,7 +526,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     } else if (paramType == kOfxParamTypeGroup) {
         OfxGroupInstance *ret = new OfxGroupInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        KnobGroup* isGroup = dynamic_cast<KnobGroup*>(knob.get());
+        KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
         assert(isGroup);
         if (isGroup) {
             bool haveShortcut = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextCanHaveShortcut);
@@ -553,7 +553,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             qDebug() << "- " << ret->getProperties().getStringProperty(kOfxParamPropPageChild, i).c_str();
         }
 #endif
-        KnobPage* isPage = dynamic_cast<KnobPage*>(knob.get());
+        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
         assert(isPage);
         if (isPage) {
             bool isInToolbar = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextIsInToolbar);
@@ -567,7 +567,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         if (isToggableButton) {
-            KnobButton* isBtn = dynamic_cast<KnobButton*>(knob.get());
+            KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(knob);
             assert(isBtn);
             if (isBtn) {
                 isBtn->setCheckable(true);
@@ -691,7 +691,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
 
 struct PageOrdered
 {
-    boost::shared_ptr<KnobPage> page;
+    KnobPagePtr page;
     std::list<OfxParamToKnob*> paramsOrdered;
 };
 
@@ -713,7 +713,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         if (!isKnownKnob) {
             continue;
         }
-        KnobPtr associatedKnob = isKnownKnob->getKnob();
+        KnobIPtr associatedKnob = isKnownKnob->getKnob();
         if (!associatedKnob) {
             continue;
         }
@@ -745,8 +745,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
                     ///Add a separator in the group if needed
                     if ( associatedKnob->isSeparatorActivated() ) {
                         std::string separatorName = (*it)->getName() + "_separator";
-                        KnobHolder* knobHolder = associatedKnob->getHolder();
-                        boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                        KnobHolderPtr knobHolder = associatedKnob->getHolder();
+                        KnobSeparatorPtr sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
                         if (sep) {
                             sep->resetParent();
                         } else {
@@ -776,7 +776,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     if ( !finalPages.empty() ) {
         mainPage = finalPages.begin();
     } else {
-        boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
+        KnobPagePtr page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
         boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
         pageData->page = page;
         finalPages.push_back(pageData);
@@ -799,13 +799,13 @@ OfxImageEffectInstance::addParamsToTheirParents()
             continue;
         }
 
-        KnobPtr knob = isKnownKnob->getKnob();
+        KnobIPtr knob = isKnownKnob->getKnob();
         assert(knob);
         if (!knob) {
             continue;
         }
 
-        KnobPage* isPage = dynamic_cast<KnobPage*>( knob.get() );
+        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
         if (isPage) {
             continue;
         }
@@ -848,7 +848,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
 
     // For all pages, append their knobs in order
     for (PagesOrdered::iterator itPage = finalPages.begin(); itPage != finalPages.end(); ++itPage) {
-        boost::shared_ptr<KnobPage> pageKnob = (*itPage)->page;
+        KnobPagePtr pageKnob = (*itPage)->page;
 
         for (std::list<OfxParamToKnob*>::iterator itParam = (*itPage)->paramsOrdered.begin(); itParam != (*itPage)->paramsOrdered.end(); ++itParam) {
             OfxParamToKnob* isKnownKnob = *itParam;
@@ -857,15 +857,15 @@ OfxImageEffectInstance::addParamsToTheirParents()
                 continue;
             }
 
-            KnobPtr child = isKnownKnob->getKnob();
+            KnobIPtr child = isKnownKnob->getKnob();
             assert(child);
             if ( !child->getParentKnob() ) {
                 pageKnob->addKnob(child);
 
                 if ( child->isSeparatorActivated() ) {
                     std::string separatorName = child->getName() + "_separator";
-                    KnobHolder* knobHolder = child->getHolder();
-                    boost::shared_ptr<KnobSeparator> sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
+                    KnobHolderPtr knobHolder = child->getHolder();
+                    KnobSeparatorPtr sep = knobHolder->getKnobByNameAndType<KnobSeparator>(separatorName);
                     if (sep) {
                         sep->resetParent();
                     } else {
@@ -901,7 +901,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxParamToKnob* isKnownKnob = dynamic_cast<OfxParamToKnob*>(param);
         assert(isKnownKnob);
         if (isKnownKnob) {
-            KnobPtr knob = isKnownKnob->getKnob();
+            KnobIPtr knob = isKnownKnob->getKnob();
             assert(knob);
             effect->addKnobToViewerUI(knob);
         }

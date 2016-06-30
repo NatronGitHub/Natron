@@ -54,7 +54,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &description,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -62,7 +62,7 @@ public:
         return new KnobFile(holder, description, dimension, declaredByPlugin);
     }
 
-    KnobFile(KnobHolder* holder,
+    KnobFile(const KnobHolderPtr& holder,
              const std::string &description,
              int dimension,
              bool declaredByPlugin);
@@ -114,7 +114,7 @@ private:
 /******************************KnobOutputFile**************************************/
 
 class KnobOutputFile
-    :  public QObject, public Knob<std::string>
+    :  public QObject, public KnobStringBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -122,7 +122,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &description,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -130,7 +130,7 @@ public:
         return new KnobOutputFile(holder, description, dimension, declaredByPlugin);
     }
 
-    KnobOutputFile(KnobHolder* holder,
+    KnobOutputFile(const KnobHolderPtr& holder,
                    const std::string &description,
                    int dimension,
                    bool declaredByPlugin);
@@ -193,7 +193,7 @@ class KnobPath
 {
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &description,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -201,7 +201,7 @@ public:
         return new KnobPath(holder, description, dimension, declaredByPlugin);
     }
 
-    KnobPath(KnobHolder* holder,
+    KnobPath(const KnobHolderPtr& holder,
              const std::string &description,
              int dimension,
              bool declaredByPlugin);

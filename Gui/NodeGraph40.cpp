@@ -261,7 +261,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
 
         ///Also copy all nodes within the backdrop
-        BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
         if (isBd) {
             NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
@@ -279,7 +279,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
             return;
         }
-        ViewerInstance* isViewer = (*it)->getNode()->isEffectViewer();
+        ViewerInstance* isViewer = (*it)->getNode()->isEffectViewerInstance();
         if (isViewer) {
             Dialogs::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
 
@@ -296,11 +296,11 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
     QPointF offset( scenePos.x() - ( (xmax + xmin) / 2. ), scenePos.y() -  ( (ymax + ymin) / 2. ) );
     std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
-    std::list <boost::shared_ptr<NodeSerialization> > serializations;
+    std::list <NodeSerializationPtr > serializations;
     std::list <NodeGuiPtr > newNodesList;
     std::map<std::string, std::string> oldNewScriptNameMapping;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        boost::shared_ptr<NodeSerialization>  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
+        NodeSerializationPtr  internalSerialization( new NodeSerialization( (*it)->getNode() ) );
         boost::shared_ptr<NodeGuiSerialization> guiSerialization(new NodeGuiSerialization);
         (*it)->serialize( guiSerialization.get() );
         NodeGuiPtr clone = _imp->pasteNode(internalSerialization, guiSerialization, offset,
@@ -324,7 +324,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
 
 
     //Restore links once all children are created for alias knobs/expressions
-    std::list <boost::shared_ptr<NodeSerialization> >::iterator itS = serializations.begin();
+    std::list <NodeSerializationPtr >::iterator itS = serializations.begin();
     for (std::list <NodeGuiPtr > ::iterator it = newNodesList.begin(); it != newNodesList.end(); ++it, ++itS) {
         (*it)->getNode()->restoreKnobsLinks(**itS, allNodes, oldNewScriptNameMapping);
     }
@@ -353,7 +353,7 @@ NodeGraph::decloneSelectedNodes()
 
 
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        BackdropGui* isBd = dynamic_cast<BackdropGui*>( it->get() );
+        BackdropGui* isBd = dynamic_cast<BackdropGui*>(*it);
         if (isBd) {
             ///Also copy all nodes within the backdrop
             NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
@@ -410,13 +410,13 @@ NodeGraph::invalidateAllNodesParenting()
     for (NodesGuiList::iterator it = _imp->_nodes.begin(); it != _imp->_nodes.end(); ++it) {
         (*it)->setParentItem(NULL);
         if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem( it->get() );
+            (*it)->scene()->removeItem(*it);
         }
     }
     for (NodesGuiList::iterator it = _imp->_nodesTrash.begin(); it != _imp->_nodesTrash.end(); ++it) {
         (*it)->setParentItem(NULL);
         if ( (*it)->scene() ) {
-            (*it)->scene()->removeItem( it->get() );
+            (*it)->scene()->removeItem(*it);
         }
     }
 }

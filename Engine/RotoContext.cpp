@@ -193,7 +193,7 @@ void
 RotoContext::createBaseLayer()
 {
     ////Add the base layer
-    boost::shared_ptr<RotoLayer> base = addLayerInternal(false);
+    RotoLayerPtr base = addLayerInternal(false);
 
     deselect(base, RotoItem::eSelectionReasonOther);
 }
@@ -202,7 +202,7 @@ RotoContext::~RotoContext()
 {
 }
 
-boost::shared_ptr<RotoLayer>
+RotoLayerPtr
 RotoContext::getOrCreateBaseLayer()
 {
     QMutexLocker k(&_imp->rotoContextMutex);
@@ -217,21 +217,21 @@ RotoContext::getOrCreateBaseLayer()
     return _imp->layers.front();
 }
 
-boost::shared_ptr<RotoLayer>
+RotoLayerPtr
 RotoContext::addLayerInternal(bool declarePython)
 {
-    boost::shared_ptr<RotoContext> this_shared = shared_from_this();
+    RotoContextPtr this_shared = shared_from_this();
 
     assert(this_shared);
 
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    boost::shared_ptr<RotoLayer> item;
+    RotoLayerPtr item;
     std::string name = generateUniqueName(kRotoLayerBaseName);
     int indexInLayer = -1;
     {
-        boost::shared_ptr<RotoLayer> deepestLayer;
-        boost::shared_ptr<RotoLayer> parentLayer;
+        RotoLayerPtr deepestLayer;
+        RotoLayerPtr parentLayer;
         {
             QMutexLocker l(&_imp->rotoContextMutex);
             deepestLayer = _imp->findDeepestSelectedLayer();
@@ -239,7 +239,7 @@ RotoContext::addLayerInternal(bool declarePython)
             if (!deepestLayer) {
                 ///find out if there's a base layer, if so add to the base layer,
                 ///otherwise create the base layer
-                for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+                for (std::list<RotoLayerPtr >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
                     int hierarchy = (*it)->getHierarchyLevel();
                     if (hierarchy == 0) {
                         parentLayer = *it;
@@ -251,7 +251,7 @@ RotoContext::addLayerInternal(bool declarePython)
             }
         }
 
-        item.reset( new RotoLayer( this_shared, name, boost::shared_ptr<RotoLayer>() ) );
+        item.reset( new RotoLayer( this_shared, name, RotoLayerPtr() ) );
         if (parentLayer) {
             parentLayer->addItem(item, declarePython);
             indexInLayer = parentLayer->getItems().size() - 1;
@@ -272,16 +272,16 @@ RotoContext::addLayerInternal(bool declarePython)
     return item;
 } // RotoContext::addLayerInternal
 
-boost::shared_ptr<RotoLayer>
+RotoLayerPtr
 RotoContext::addLayer()
 {
     return addLayerInternal(true);
 } // addLayer
 
 void
-RotoContext::addLayer(const boost::shared_ptr<RotoLayer> & layer)
+RotoContext::addLayer(const RotoLayerPtr & layer)
 {
-    std::list<boost::shared_ptr<RotoLayer> >::iterator it = std::find(_imp->layers.begin(), _imp->layers.end(), layer);
+    std::list<RotoLayerPtr >::iterator it = std::find(_imp->layers.begin(), _imp->layers.end(), layer);
 
     if ( it == _imp->layers.end() ) {
         _imp->layers.push_back(layer);
@@ -298,7 +298,7 @@ RotoContext::getLastInsertedItem() const
 }
 
 #ifdef NATRON_ROTO_INVERTIBLE
-boost::shared_ptr<KnobBool>
+KnobBoolPtr
 RotoContext::getInvertedKnob() const
 {
     return _imp->inverted.lock();
@@ -306,7 +306,7 @@ RotoContext::getInvertedKnob() const
 
 #endif
 
-boost::shared_ptr<KnobColor>
+KnobColorPtr
 RotoContext::getColorKnob() const
 {
     return _imp->colorKnob.lock();
@@ -419,14 +419,14 @@ RotoContext::makeBezier(double x,
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    boost::shared_ptr<RotoLayer> parentLayer;
-    boost::shared_ptr<RotoContext> this_shared = boost::dynamic_pointer_cast<RotoContext>( shared_from_this() );
+    RotoLayerPtr parentLayer;
+    RotoContextPtr this_shared = boost::dynamic_pointer_cast<RotoContext>( shared_from_this() );
     assert(this_shared);
     std::string name = generateUniqueName(baseName);
 
     {
         QMutexLocker l(&_imp->rotoContextMutex);
-        boost::shared_ptr<RotoLayer> deepestLayer = _imp->findDeepestSelectedLayer();
+        RotoLayerPtr deepestLayer = _imp->findDeepestSelectedLayer();
 
 
         if (!deepestLayer) {
@@ -442,7 +442,7 @@ RotoContext::makeBezier(double x,
         }
     }
     assert(parentLayer);
-    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, boost::shared_ptr<RotoLayer>(), isOpenBezier) );
+    boost::shared_ptr<Bezier> curve( new Bezier(this_shared, name, RotoLayerPtr(), isOpenBezier) );
     curve->createNodes();
 
     int indexInLayer = -1;
@@ -466,15 +466,15 @@ RotoContext::makeBezier(double x,
     return curve;
 } // makeBezier
 
-boost::shared_ptr<RotoStrokeItem>
+RotoStrokeItemPtr
 RotoContext::makeStroke(RotoStrokeType type,
                         const std::string& baseName,
                         bool clearSel)
 {
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
-    boost::shared_ptr<RotoLayer> parentLayer;
-    boost::shared_ptr<RotoContext> this_shared = boost::dynamic_pointer_cast<RotoContext>( shared_from_this() );
+    RotoLayerPtr parentLayer;
+    RotoContextPtr this_shared = boost::dynamic_pointer_cast<RotoContext>( shared_from_this() );
     assert(this_shared);
     std::string name = generateUniqueName(baseName);
 
@@ -482,7 +482,7 @@ RotoContext::makeStroke(RotoStrokeType type,
         QMutexLocker l(&_imp->rotoContextMutex);
         ++_imp->age; // increase age
 
-        boost::shared_ptr<RotoLayer> deepestLayer = _imp->findDeepestSelectedLayer();
+        RotoLayerPtr deepestLayer = _imp->findDeepestSelectedLayer();
 
 
         if (!deepestLayer) {
@@ -498,7 +498,7 @@ RotoContext::makeStroke(RotoStrokeType type,
         }
     }
     assert(parentLayer);
-    boost::shared_ptr<RotoStrokeItem> curve( new RotoStrokeItem( type, this_shared, name, boost::shared_ptr<RotoLayer>() ) );
+    RotoStrokeItemPtr curve( new RotoStrokeItem( type, this_shared, name, RotoLayerPtr() ) );
     int indexInLayer = -1;
     if (parentLayer) {
         indexInLayer = 0;
@@ -584,7 +584,7 @@ void
 RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
                                    RotoItem::SelectionReasonEnum reason)
 {
-    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
     boost::shared_ptr<RotoItem> foundSelected;
 
     {
@@ -608,7 +608,7 @@ RotoContext::removeItemRecursively(const boost::shared_ptr<RotoItem>& item,
         }
         QMutexLocker l(&_imp->rotoContextMutex);
 
-        for (std::list<boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+        for (std::list<RotoLayerPtr >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
             if (*it == isLayer) {
                 _imp->layers.erase(it);
                 break;
@@ -625,7 +625,7 @@ RotoContext::removeItem(const boost::shared_ptr<RotoItem>& item,
     ///MT-safe: only called on the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    boost::shared_ptr<RotoLayer> layer = item->getParentLayer();
+    RotoLayerPtr layer = item->getParentLayer();
     if (layer) {
         layer->removeItem(item);
     }
@@ -636,7 +636,7 @@ RotoContext::removeItem(const boost::shared_ptr<RotoItem>& item,
 }
 
 void
-RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
+RotoContext::addItem(const RotoLayerPtr& layer,
                      int indexInLayer,
                      const boost::shared_ptr<RotoItem> & item,
                      RotoItem::SelectionReasonEnum reason)
@@ -649,9 +649,9 @@ RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
         }
 
         QMutexLocker l(&_imp->rotoContextMutex);
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
         if (isLayer) {
-            std::list<boost::shared_ptr<RotoLayer> >::iterator foundLayer = std::find(_imp->layers.begin(), _imp->layers.end(), isLayer);
+            std::list<RotoLayerPtr >::iterator foundLayer = std::find(_imp->layers.begin(), _imp->layers.end(), isLayer);
             if ( foundLayer == _imp->layers.end() ) {
                 _imp->layers.push_back(isLayer);
             }
@@ -661,7 +661,7 @@ RotoContext::addItem(const boost::shared_ptr<RotoLayer>& layer,
     Q_EMIT itemInserted(indexInLayer, reason);
 }
 
-const std::list< boost::shared_ptr<RotoLayer> > &
+const std::list< RotoLayerPtr > &
 RotoContext::getLayers() const
 {
     ///MT-safe: only called on the main-thread
@@ -683,7 +683,7 @@ RotoContext::isNearbyBezier(double x,
 
     QMutexLocker l(&_imp->rotoContextMutex);
     std::list<std::pair<boost::shared_ptr<Bezier>, std::pair<int, double> > > nearbyBeziers;
-    for (std::list< boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+    for (std::list< RotoLayerPtr >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
         const RotoItems & items = (*it)->getItems();
         for (RotoItems::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
             boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(*it2);
@@ -735,7 +735,7 @@ RotoContext::onLifeTimeKnobValueChanged(ViewSpec view,
     }
     int lifetime_i = _imp->lifeTime.lock()->getValue();
     _imp->activated.lock()->setSecret(lifetime_i != 3);
-    boost::shared_ptr<KnobInt> frame = _imp->lifeTimeFrame.lock();
+    KnobIntPtr frame = _imp->lifeTimeFrame.lock();
     frame->setSecret(lifetime_i == 3);
     if (lifetime_i != 3) {
         frame->setValue(getTimelineCurrentTime(), view);
@@ -830,7 +830,7 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
 
     bool rodSet = false;
     NodePtr activeRotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> activeStroke;
+    RotoStrokeItemPtr activeStroke;
     bool isDrawing;
     getNode()->getApp()->getActiveRotoDrawingStroke(&activeRotoPaintNode, &activeStroke, &isDrawing);
     if (!isDrawing) {
@@ -842,8 +842,8 @@ RotoContext::getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoIt
         bool first = true;
         RectD bbox;
         for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
-            Bezier* isBezier = dynamic_cast<Bezier*>( it2->get() );
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( it2->get() );
+            Bezier* isBezier = dynamic_cast<Bezier*>(*it2);
+            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it2);
             if (isBezier && !isStroke) {
                 if ( isBezier->isActivated(time)  && (isBezier->getControlPointsCount() > 1) ) {
                     RectD splineRoD = isBezier->getBoundingBox(t);
@@ -894,7 +894,7 @@ const
     {
         QMutexLocker l(&_imp->rotoContextMutex);
 
-        for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+        for (std::list<RotoLayerPtr >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
             RotoItems items = (*it)->getItems_mt_safe();
             for (RotoItems::iterator it2 = items.begin(); it2 != items.end(); ++it2) {
                 allItems.push_back(*it2);
@@ -923,9 +923,9 @@ RotoContext::isRotoPaintTreeConcatenatableInternal(const std::list<boost::shared
                 return false;
             }
         }
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( it->get() );
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it);
         if (!isStroke) {
-            assert( dynamic_cast<Bezier*>( it->get() ) );
+            assert( dynamic_cast<Bezier*>(*it) );
         } else {
             if (isStroke->getBrushType() != eRotoStrokeTypeSolid) {
                 return false;
@@ -983,13 +983,13 @@ RotoContext::save(RotoContextSerialization* obj) const
 
 static void
 linkItemsKnobsRecursively(RotoContext* ctx,
-                          const boost::shared_ptr<RotoLayer> & layer)
+                          const RotoLayerPtr & layer)
 {
     const RotoItems & items = layer->getItems();
 
     for (RotoItems::const_iterator it = items.begin(); it != items.end(); ++it) {
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
 
         if (isBezier) {
             ctx->select(isBezier, RotoItem::eSelectionReasonOther);
@@ -1016,14 +1016,14 @@ RotoContext::load(const RotoContextSerialization & obj)
 
     assert(_imp->layers.size() == 1);
 
-    boost::shared_ptr<RotoLayer> baseLayer = _imp->layers.front();
+    RotoLayerPtr baseLayer = _imp->layers.front();
 
     baseLayer->load(obj._baseLayer);
 
     for (std::list<std::string>::const_iterator it = obj._selectedItems.begin(); it != obj._selectedItems.end(); ++it) {
         boost::shared_ptr<RotoItem> item = getItemByName(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
         if (isBezier) {
             select(isBezier, RotoItem::eSelectionReasonOther);
         } else if (isLayer) {
@@ -1145,8 +1145,8 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( it->get() );
+            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it);
             if ( !isStroke && isBezier && !isBezier->isLockedRecursive() ) {
                 if ( isBezier->isOpenBezier() ) {
                     ++nbUnlockedStrokes;
@@ -1168,9 +1168,9 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
 
 
     boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>( item.get() );
-    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(item);
 
     if (isDrawable) {
         if ( !isStroke && isBezier && !isBezier->isLockedRecursive() ) {
@@ -1191,13 +1191,13 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
             }
         }
 
-        const std::list<KnobPtr >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<KnobPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
+        for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-                KnobPtr thisKnob = it2->lock();
+                KnobIPtr thisKnob = it2->lock();
                 if ( thisKnob->getName() == (*it)->getName() ) {
                     //Clone current state
-                    thisKnob->cloneAndUpdateGui( it->get() );
+                    thisKnob->cloneAndUpdateGui(*it);
 
                     //Slave internal knobs of the bezier
                     assert( (*it)->getDimension() == thisKnob->getDimension() );
@@ -1231,12 +1231,12 @@ RotoContext::selectInternal(const boost::shared_ptr<RotoItem> & item)
 
     ///enable the knobs
     if ( (nbUnlockedBeziers > 0) || (nbUnlockedStrokes > 0) ) {
-        KnobPtr strengthKnob = _imp->brushEffectKnob.lock();
-        KnobPtr sourceTypeKnob = _imp->sourceTypeKnob.lock();
-        KnobPtr timeOffsetKnob = _imp->timeOffsetKnob.lock();
-        KnobPtr timeOffsetModeKnob = _imp->timeOffsetModeKnob.lock();
+        KnobIPtr strengthKnob = _imp->brushEffectKnob.lock();
+        KnobIPtr sourceTypeKnob = _imp->sourceTypeKnob.lock();
+        KnobIPtr timeOffsetKnob = _imp->timeOffsetKnob.lock();
+        KnobIPtr timeOffsetModeKnob = _imp->timeOffsetModeKnob.lock();
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            KnobPtr k = it->lock();
+            KnobIPtr k = it->lock();
             if (!k) {
                 continue;
             }
@@ -1299,11 +1299,11 @@ RotoContext::onSelectedKnobCurveChanged()
     KnobSignalSlotHandler* handler = qobject_cast<KnobSignalSlotHandler*>( sender() );
 
     if (handler) {
-        KnobPtr knob = handler->getKnob();
+        KnobIPtr knob = handler->getKnob();
         for (std::list<boost::weak_ptr<KnobI> >::const_iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            KnobPtr k = it->lock();
+            KnobIPtr k = it->lock();
             if ( k->getName() == knob->getName() ) {
-                k->clone( knob.get() );
+                k->clone(knob);
                 break;
             }
         }
@@ -1329,8 +1329,8 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
         _imp->selectedItems.erase(foundSelected);
 
         for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-            Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
-            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( it->get() );
+            Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+            RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it);
             if ( !isStroke && isBezier && !isBezier->isLockedRecursive() ) {
                 ++nbBeziersUnLockedBezier;
             } else if (isStroke) {
@@ -1342,18 +1342,18 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
     bool strokeDirty = nbStrokesUnlocked > 1;
     boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(b);
     RotoDrawableItem* isDrawable = dynamic_cast<RotoDrawableItem*>( b.get() );
-    boost::shared_ptr<RotoStrokeItem> isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(b);
-    boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(b);
+    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(b);
+    RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(b);
     if (isDrawable) {
         ///first-off set the context knobs to the value of this bezier
 
-        const std::list<KnobPtr >& drawableKnobs = isDrawable->getKnobs();
-        for (std::list<KnobPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
+        const std::list<KnobIPtr >& drawableKnobs = isDrawable->getKnobs();
+        for (std::list<KnobIPtr >::const_iterator it = drawableKnobs.begin(); it != drawableKnobs.end(); ++it) {
             for (std::list<boost::weak_ptr<KnobI> >::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-                KnobPtr knob = it2->lock();
+                KnobIPtr knob = it2->lock();
                 if ( knob->getName() == (*it)->getName() ) {
                     //Clone current state
-                    knob->cloneAndUpdateGui( it->get() );
+                    knob->cloneAndUpdateGui(*it);
 
                     //Slave internal knobs of the bezier
                     assert( (*it)->getDimension() == knob->getDimension() );
@@ -1389,7 +1389,7 @@ RotoContext::deselectInternal(boost::shared_ptr<RotoItem> b)
 
     if ( (nbBeziersUnLockedBezier == 0) || (nbStrokesUnlocked == 0) ) {
         for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            KnobPtr k = it->lock();
+            KnobIPtr k = it->lock();
             if (!k) {
                 continue;
             }
@@ -1410,7 +1410,7 @@ RotoContext::resetTransformsCenter(bool doClone,
 
     getItemsRegionOfDefinition(getSelectedItems(), time, ViewIdx(0), &bbox);
     if (doTransform) {
-        boost::shared_ptr<KnobDouble> centerKnob = _imp->centerKnob.lock();
+        KnobDoublePtr centerKnob = _imp->centerKnob.lock();
         centerKnob->beginChanges();
         dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 0);
         dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 1);
@@ -1418,7 +1418,7 @@ RotoContext::resetTransformsCenter(bool doClone,
         centerKnob->endChanges();
     }
     if (doClone) {
-        boost::shared_ptr<KnobDouble> centerKnob = _imp->cloneCenterKnob.lock();
+        KnobDoublePtr centerKnob = _imp->cloneCenterKnob.lock();
         centerKnob->beginChanges();
         dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 0);
         dynamic_cast<KnobI*>( centerKnob.get() )->removeAnimation(ViewSpec::all(), 1);
@@ -1440,15 +1440,15 @@ RotoContext::resetCloneTransformCenter()
 }
 
 void
-RotoContext::resetTransformInternal(const boost::shared_ptr<KnobDouble>& translate,
-                                    const boost::shared_ptr<KnobDouble>& scale,
-                                    const boost::shared_ptr<KnobDouble>& center,
-                                    const boost::shared_ptr<KnobDouble>& rotate,
-                                    const boost::shared_ptr<KnobDouble>& skewX,
-                                    const boost::shared_ptr<KnobDouble>& skewY,
-                                    const boost::shared_ptr<KnobBool>& scaleUniform,
-                                    const boost::shared_ptr<KnobChoice>& skewOrder,
-                                    const boost::shared_ptr<KnobDouble>& extraMatrix)
+RotoContext::resetTransformInternal(const KnobDoublePtr& translate,
+                                    const KnobDoublePtr& scale,
+                                    const KnobDoublePtr& center,
+                                    const KnobDoublePtr& rotate,
+                                    const KnobDoublePtr& skewX,
+                                    const KnobDoublePtr& skewY,
+                                    const KnobBoolPtr& scaleUniform,
+                                    const KnobChoicePtr& skewOrder,
+                                    const KnobDoublePtr& extraMatrix)
 {
     std::list<KnobI*> knobs;
 
@@ -1475,15 +1475,15 @@ RotoContext::resetTransformInternal(const boost::shared_ptr<KnobDouble>& transla
 void
 RotoContext::resetTransform()
 {
-    boost::shared_ptr<KnobDouble> translate = _imp->translateKnob.lock();
-    boost::shared_ptr<KnobDouble> center = _imp->centerKnob.lock();
-    boost::shared_ptr<KnobDouble> scale = _imp->scaleKnob.lock();
-    boost::shared_ptr<KnobDouble> rotate = _imp->rotateKnob.lock();
-    boost::shared_ptr<KnobBool> uniform = _imp->scaleUniformKnob.lock();
-    boost::shared_ptr<KnobDouble> skewX = _imp->skewXKnob.lock();
-    boost::shared_ptr<KnobDouble> skewY = _imp->skewYKnob.lock();
-    boost::shared_ptr<KnobChoice> skewOrder = _imp->skewOrderKnob.lock();
-    boost::shared_ptr<KnobDouble> extraMatrix = _imp->extraMatrixKnob.lock();
+    KnobDoublePtr translate = _imp->translateKnob.lock();
+    KnobDoublePtr center = _imp->centerKnob.lock();
+    KnobDoublePtr scale = _imp->scaleKnob.lock();
+    KnobDoublePtr rotate = _imp->rotateKnob.lock();
+    KnobBoolPtr uniform = _imp->scaleUniformKnob.lock();
+    KnobDoublePtr skewX = _imp->skewXKnob.lock();
+    KnobDoublePtr skewY = _imp->skewYKnob.lock();
+    KnobChoicePtr skewOrder = _imp->skewOrderKnob.lock();
+    KnobDoublePtr extraMatrix = _imp->extraMatrixKnob.lock();
 
     resetTransformInternal(translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, extraMatrix);
 }
@@ -1491,20 +1491,20 @@ RotoContext::resetTransform()
 void
 RotoContext::resetCloneTransform()
 {
-    boost::shared_ptr<KnobDouble> translate = _imp->cloneTranslateKnob.lock();
-    boost::shared_ptr<KnobDouble> center = _imp->cloneCenterKnob.lock();
-    boost::shared_ptr<KnobDouble> scale = _imp->cloneScaleKnob.lock();
-    boost::shared_ptr<KnobDouble> rotate = _imp->cloneRotateKnob.lock();
-    boost::shared_ptr<KnobBool> uniform = _imp->cloneUniformKnob.lock();
-    boost::shared_ptr<KnobDouble> skewX = _imp->cloneSkewXKnob.lock();
-    boost::shared_ptr<KnobDouble> skewY = _imp->cloneSkewYKnob.lock();
-    boost::shared_ptr<KnobChoice> skewOrder = _imp->cloneSkewOrderKnob.lock();
+    KnobDoublePtr translate = _imp->cloneTranslateKnob.lock();
+    KnobDoublePtr center = _imp->cloneCenterKnob.lock();
+    KnobDoublePtr scale = _imp->cloneScaleKnob.lock();
+    KnobDoublePtr rotate = _imp->cloneRotateKnob.lock();
+    KnobBoolPtr uniform = _imp->cloneUniformKnob.lock();
+    KnobDoublePtr skewX = _imp->cloneSkewXKnob.lock();
+    KnobDoublePtr skewY = _imp->cloneSkewYKnob.lock();
+    KnobChoicePtr skewOrder = _imp->cloneSkewOrderKnob.lock();
 
-    resetTransformInternal( translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, boost::shared_ptr<KnobDouble>() );
+    resetTransformInternal( translate, scale, center, rotate, skewX, skewY, uniform, skewOrder, KnobDoublePtr() );
 }
 
 bool
-RotoContext::knobChanged(KnobI* k,
+RotoContext::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum /*reason*/,
                          ViewSpec /*view*/,
                          double /*time*/,
@@ -1552,7 +1552,7 @@ RotoContext::getLastItemLocked() const
 }
 
 static void
-addOrRemoveKeyRecursively(const boost::shared_ptr<RotoLayer>& isLayer,
+addOrRemoveKeyRecursively(const RotoLayerPtr& isLayer,
                           double time,
                           bool add,
                           bool removeAll)
@@ -1560,7 +1560,7 @@ addOrRemoveKeyRecursively(const boost::shared_ptr<RotoLayer>& isLayer,
     const RotoItems & items = isLayer->getItems();
 
     for (RotoItems::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
-        boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(*it2);
+        RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(*it2);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it2);
         if (isBezier) {
             if (add) {
@@ -1587,7 +1587,7 @@ RotoContext::setKeyframeOnSelectedCurves()
     double time = getTimelineCurrentTime();
     QMutexLocker l(&_imp->rotoContextMutex);
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             isBezier->setKeyframe(time);
@@ -1605,7 +1605,7 @@ RotoContext::removeAnimationOnSelectedCurves()
 
     double time = getTimelineCurrentTime();
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             isBezier->removeAnimation();
@@ -1626,7 +1626,7 @@ RotoContext::removeKeyframeOnSelectedCurves()
 
     double time = getTimelineCurrentTime();
     for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-        boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             isBezier->removeKeyframe(time);
@@ -1637,7 +1637,7 @@ RotoContext::removeKeyframeOnSelectedCurves()
 }
 
 static void
-findOutNearestKeyframeRecursively(const boost::shared_ptr<RotoLayer>& layer,
+findOutNearestKeyframeRecursively(const RotoLayerPtr& layer,
                                   bool previous,
                                   double time,
                                   int* nearest)
@@ -1645,7 +1645,7 @@ findOutNearestKeyframeRecursively(const boost::shared_ptr<RotoLayer>& layer,
     const RotoItems & items = layer->getItems();
 
     for (RotoItems::const_iterator it = items.begin(); it != items.end(); ++it) {
-        boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         if (isBezier) {
             if (previous) {
@@ -1680,7 +1680,7 @@ RotoContext::goToPreviousKeyframe()
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-            boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+            RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
             boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
             if (isBezier) {
                 int t = isBezier->getPreviousKeyframeTime(time);
@@ -1714,7 +1714,7 @@ RotoContext::goToNextKeyframe()
     {
         QMutexLocker l(&_imp->rotoContextMutex);
         for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
-            boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+            RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
             boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
             if (isBezier) {
                 int t = isBezier->getNextKeyframeTime(time);
@@ -1737,7 +1737,7 @@ RotoContext::goToNextKeyframe()
 
 static void
 appendToSelectedCurvesRecursively(std::list< boost::shared_ptr<RotoDrawableItem> > * curves,
-                                  const boost::shared_ptr<RotoLayer>& isLayer,
+                                  const RotoLayerPtr& isLayer,
                                   double time,
                                   bool onlyActives,
                                   bool addStrokes)
@@ -1745,7 +1745,7 @@ appendToSelectedCurvesRecursively(std::list< boost::shared_ptr<RotoDrawableItem>
     RotoItems items = isLayer->getItems_mt_safe();
 
     for (RotoItems::const_iterator it = items.begin(); it != items.end(); ++it) {
-        boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+        RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(*it);
         boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
         RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( isDrawable.get() );
         if (isStroke && !addStrokes) {
@@ -1782,7 +1782,7 @@ RotoContext::getSelectedCurves() const
         QMutexLocker l(&_imp->rotoContextMutex);
         for (std::list<boost::shared_ptr<RotoItem> >::iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
             assert(*it);
-            boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
+            RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
             boost::shared_ptr<RotoDrawableItem> isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(*it);
             if (isDrawable) {
                 drawables.push_back(isDrawable);
@@ -1808,7 +1808,7 @@ RotoContext::getCurvesByRenderOrder(bool onlyActivated) const
         return ret;
     }
     ///Note this might not be the timeline's current frame if this is a render thread.
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return ret;
     }
@@ -1831,23 +1831,23 @@ RotoContext::getNCurves() const
     return (int)curves.size();
 }
 
-boost::shared_ptr<RotoLayer>
+RotoLayerPtr
 RotoContext::getLayerByName(const std::string & n) const
 {
     QMutexLocker l(&_imp->rotoContextMutex);
 
-    for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+    for (std::list<RotoLayerPtr >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
         if ( (*it)->getScriptName() == n ) {
             return *it;
         }
     }
 
-    return boost::shared_ptr<RotoLayer>();
+    return RotoLayerPtr();
 }
 
 static void
 findItemRecursively(const std::string & n,
-                    const boost::shared_ptr<RotoLayer> & layer,
+                    const RotoLayerPtr & layer,
                     boost::shared_ptr<RotoItem>* ret)
 {
     if (layer->getScriptName() == n) {
@@ -1855,7 +1855,7 @@ findItemRecursively(const std::string & n,
     } else {
         const RotoItems & items = layer->getItems();
         for (RotoItems::const_iterator it2 = items.begin(); it2 != items.end(); ++it2) {
-            boost::shared_ptr<RotoLayer> isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it2);
+            RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it2);
             if ( (*it2)->getScriptName() == n ) {
                 *ret = *it2;
 
@@ -1873,14 +1873,14 @@ RotoContext::getItemByName(const std::string & n) const
     boost::shared_ptr<RotoItem> ret;
     QMutexLocker l(&_imp->rotoContextMutex);
 
-    for (std::list<boost::shared_ptr<RotoLayer> >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+    for (std::list<RotoLayerPtr >::const_iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
         findItemRecursively(n, *it, &ret);
     }
 
     return ret;
 }
 
-boost::shared_ptr<RotoLayer>
+RotoLayerPtr
 RotoContext::getDeepestSelectedLayer() const
 {
     QMutexLocker l(&_imp->rotoContextMutex);
@@ -1888,7 +1888,7 @@ RotoContext::getDeepestSelectedLayer() const
     return findDeepestSelectedLayer();
 }
 
-boost::shared_ptr<RotoLayer>
+RotoLayerPtr
 RotoContext::findDeepestSelectedLayer() const
 {
     QMutexLocker k(&_imp->rotoContextMutex);
@@ -1913,10 +1913,10 @@ void
 RotoContext::evaluateChange_noIncrement()
 {
     //Used for the rotopaint to optimize the portion to render (render only the bbox of the last tick of the mouse move)
-    std::list<ViewerInstance* > viewers;
+    std::list<ViewerInstancePtr> viewers;
 
     getNode()->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin();
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
          it != viewers.end();
          ++it) {
         (*it)->renderCurrentFrame(true);
@@ -1926,10 +1926,10 @@ RotoContext::evaluateChange_noIncrement()
 void
 RotoContext::clearViewersLastRenderedStrokes()
 {
-    std::list<ViewerInstance* > viewers;
+    std::list<ViewerInstancePtr> viewers;
 
     getNode()->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it = viewers.begin();
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin();
          it != viewers.end();
          ++it) {
         (*it)->clearLastRenderedImage();
@@ -1966,7 +1966,7 @@ RotoContext::onItemLockedChanged(const boost::shared_ptr<RotoItem>& item,
     bool enabled = nbBeziersUnLockedBezier > 0;
 
     for (std::list<boost::weak_ptr<KnobI> >::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        KnobPtr knob = it->lock();
+        KnobIPtr knob = it->lock();
         if (!knob) {
             continue;
         }
@@ -2015,7 +2015,7 @@ RotoContext::getBeziersKeyframeTimes(std::list<double> *times) const
 
     for (std::list< boost::shared_ptr<RotoDrawableItem> > ::iterator it = splines.begin(); it != splines.end(); ++it) {
         std::set<double> splineKeys;
-        Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
+        Bezier* isBezier = dynamic_cast<Bezier*>(*it);
         if (!isBezier) {
             continue;
         }
@@ -2033,8 +2033,8 @@ dequeueActionForLayer(RotoLayer* layer,
     RotoItems items = layer->getItems_mt_safe();
 
     for (RotoItems::iterator it = items.begin(); it != items.end(); ++it) {
-        Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
-        RotoLayer* isLayer = dynamic_cast<RotoLayer*>( it->get() );
+        Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+        RotoLayer* isLayer = dynamic_cast<RotoLayer*>(*it);
         if (isBezier) {
             *evaluate = *evaluate | isBezier->dequeueGuiActions();
         } else if (isLayer) {
@@ -2059,7 +2059,7 @@ RotoContext::dequeueGuiActions()
     }
 }
 
-boost::shared_ptr<KnobChoice>
+KnobChoicePtr
 RotoContext::getMotionBlurTypeKnob() const
 {
 #ifdef NATRON_ROTO_ENABLE_MOTION_BLUR
@@ -2067,7 +2067,7 @@ RotoContext::getMotionBlurTypeKnob() const
     return _imp->motionBlurTypeKnob.lock();
 #else
 
-    return boost::shared_ptr<KnobChoice>();
+    return KnobChoicePtr();
 #endif
 }
 
@@ -3072,9 +3072,9 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
 
     assert(dotPatterns.size() == ROTO_PRESSURE_LEVELS);
 
-    boost::shared_ptr<KnobDouble> brushSizeKnob = stroke->getBrushSizeKnob();
+    KnobDoublePtr brushSizeKnob = stroke->getBrushSizeKnob();
     double brushSize = brushSizeKnob->getValueAtTime(time);
-    boost::shared_ptr<KnobDouble> brushSpacingKnob = stroke->getBrushSpacingKnob();
+    KnobDoublePtr brushSpacingKnob = stroke->getBrushSpacingKnob();
     double brushSpacing = brushSpacingKnob->getValueAtTime(time);
     if (brushSpacing == 0.) {
         return distToNext;
@@ -3083,18 +3083,18 @@ RotoContextPrivate::renderStroke(cairo_t* cr,
 
     brushSpacing = std::max(brushSpacing, 0.05);
 
-    boost::shared_ptr<KnobDouble> brushHardnessKnob = stroke->getBrushHardnessKnob();
+    KnobDoublePtr brushHardnessKnob = stroke->getBrushHardnessKnob();
     double brushHardness = brushHardnessKnob->getValueAtTime(time);
-    boost::shared_ptr<KnobDouble> visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
+    KnobDoublePtr visiblePortionKnob = stroke->getBrushVisiblePortionKnob();
     double writeOnStart = visiblePortionKnob->getValueAtTime(time, 0);
     double writeOnEnd = visiblePortionKnob->getValueAtTime(time, 1);
     if ( (writeOnEnd - writeOnStart) <= 0. ) {
         return distToNext;
     }
 
-    boost::shared_ptr<KnobBool> pressureOpacityKnob = stroke->getPressureOpacityKnob();
-    boost::shared_ptr<KnobBool> pressureSizeKnob = stroke->getPressureSizeKnob();
-    boost::shared_ptr<KnobBool> pressureHardnessKnob = stroke->getPressureHardnessKnob();
+    KnobBoolPtr pressureOpacityKnob = stroke->getPressureOpacityKnob();
+    KnobBoolPtr pressureSizeKnob = stroke->getPressureSizeKnob();
+    KnobBoolPtr pressureHardnessKnob = stroke->getPressureHardnessKnob();
     bool pressureAffectsOpacity = pressureOpacityKnob->getValueAtTime(time);
     bool pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
     bool pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
@@ -4625,7 +4625,7 @@ RotoContext::getOrCreateGlobalMergeNode(int *availableInputIndex)
     fixedNamePrefix.append( QLatin1Char('_') );
 
 
-    CreateNodeArgs args( PLUGINID_OFX_MERGE,  boost::shared_ptr<NodeCollection>() );
+    CreateNodeArgs args( PLUGINID_OFX_MERGE,  NodeCollectionPtr() );
     args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
     args.setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, fixedNamePrefix.toStdString());
     
@@ -4685,8 +4685,8 @@ RotoContext::refreshRotoPaintTree()
 
         if (globalMerge) {
             {
-                KnobPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
-                KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
+                KnobIPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
+                KnobChoicePtr mergeOp = boost::dynamic_pointer_cast<KnobChoice>( mergeOperatorKnob.get() );
                 if (mergeOp) {
                     mergeOp->setValue(blendingOperator);
                 }
@@ -4751,7 +4751,7 @@ RotoContext::declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item)
 void
 RotoContext::declarePythonFields()
 {
-    for (std::list< boost::shared_ptr<RotoLayer> >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
+    for (std::list< RotoLayerPtr >::iterator it = _imp->layers.begin(); it != _imp->layers.end(); ++it) {
         declareItemAsPythonField(*it);
     }
 }

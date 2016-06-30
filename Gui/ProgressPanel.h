@@ -73,10 +73,10 @@ public:
                     const bool canPause,
                     const bool canCancel,
                     const QString& message,
-                    const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>() );
+                    const ProcessHandlerPtr& process = ProcessHandlerPtr() );
 
     void onTaskRestarted( const NodePtr& node,
-                          const boost::shared_ptr<ProcessHandler>& process = boost::shared_ptr<ProcessHandler>() );
+                          const ProcessHandlerPtr& process = ProcessHandlerPtr() );
 
     /**
      * @brief Start progress report for the given node. The progress bar will be displayed only if the estimated remaining
@@ -111,11 +111,11 @@ public Q_SLOTS:
 
     void onCancelTasksTriggered();
 
-    void doProgressStartOnMainThread(const boost::shared_ptr<Node>& node, const QString &message, const QString &messageid, bool canCancel);
+    void doProgressStartOnMainThread(const NodePtr& node, const QString &message, const QString &messageid, bool canCancel);
 
     void doProgressOnMainThread(const ProgressTaskInfoPtr& task, double progress);
 
-    void doProgressEndOnMainThread(const boost::shared_ptr<Node>& node);
+    void doProgressEndOnMainThread(const NodePtr& node);
 
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
@@ -127,11 +127,11 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
-    void s_doProgressStartOnMainThread(const boost::shared_ptr<Node>& node, const QString &message, const QString &messageid, bool canCancel);
+    void s_doProgressStartOnMainThread(const NodePtr& node, const QString &message, const QString &messageid, bool canCancel);
 
     void s_doProgressUpdateOnMainThread(const ProgressTaskInfoPtr& task, double progress);
 
-    void s_doProgressEndOnMainThread(const boost::shared_ptr<Node>& node);
+    void s_doProgressEndOnMainThread(const NodePtr& node);
 
 private:
     void getSelectedTaskInternal(const QItemSelection& selected, std::list<ProgressTaskInfoPtr>& selection) const;

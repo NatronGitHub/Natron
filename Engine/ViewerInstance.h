@@ -46,7 +46,7 @@ typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 struct ViewerArgs
 {
-    EffectInstPtr activeInputToRender;
+    EffectInstancePtr activeInputToRender;
     bool forceRender;
     int activeInputIndex;
     U64 activeInputHash;
@@ -70,10 +70,13 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     friend class ViewerCurrentFrameRequestScheduler;
 
-public:
-    static EffectInstance* BuildEffect(NodePtr n) WARN_UNUSED_RETURN;
+private: // derives from EffectInstance
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    ViewerInstance(const NodePtr& node);
 
-    ViewerInstance(NodePtr node);
+public:
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN;
 
     virtual ~ViewerInstance();
 
@@ -209,7 +212,7 @@ public:
                                                      ViewIdx view,
                                                      U64 viewerHash,
                                                      const NodePtr& rotoPaintNode,
-                                                     const boost::shared_ptr<RotoStrokeItem>& strokeItem,
+                                                     const RotoStrokeItemPtr& strokeItem,
                                                      const boost::shared_ptr<RenderStats>& stats,
                                                      boost::shared_ptr<ViewerArgs>* argsA,
                                                      boost::shared_ptr<ViewerArgs>* argsB);
@@ -284,7 +287,7 @@ public:
 
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
-    boost::shared_ptr<TimeLine> getTimeline() const;
+    TimeLinePtr getTimeline() const;
 
     void getTimelineBounds(int* first, int* last) const;
 

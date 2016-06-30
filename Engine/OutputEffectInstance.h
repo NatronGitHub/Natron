@@ -68,11 +68,18 @@ private:
     std::list<RenderSequenceArgs> _renderSequenceRequests;
     boost::shared_ptr<RenderEngine> _engine;
 
-public:
-
-    OutputEffectInstance(NodePtr node);
+protected: // derives from EffectInstance, parent of AbstractOfxEffectInstance, OfxEffectInstance, DiskCacheNode, NodeGroup, NoOpBase, ViewerInstance
+    // TODO: enable_shared_from_this
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    OutputEffectInstance(const NodePtr& node);
 
     OutputEffectInstance(const OutputEffectInstance& other);
+
+public:
+    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    //{
+    //    return EffectInstancePtr( new OutputEffectInstance(node) );
+    //}
 
     virtual ~OutputEffectInstance();
 

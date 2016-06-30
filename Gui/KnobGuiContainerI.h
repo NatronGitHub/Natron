@@ -48,7 +48,7 @@ public:
     virtual Gui* getGui() const = 0;
     virtual const QUndoCommand* getLastUndoCommand() const = 0;
     virtual void pushUndoCommand(QUndoCommand* cmd) = 0;
-    virtual KnobGuiPtr getKnobGui(const KnobPtr& knob) const = 0;
+    virtual KnobGuiPtr getKnobGui(const KnobIPtr& knob) const = 0;
     virtual int getItemsSpacingOnSameLine() const = 0;
     virtual void refreshTabWidgetMaxHeight() {}
 

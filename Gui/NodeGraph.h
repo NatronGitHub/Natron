@@ -67,14 +67,14 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
     explicit NodeGraph(Gui* gui,
-                       const boost::shared_ptr<NodeCollection>& group,
+                       const NodeCollectionPtr& group,
                        QGraphicsScene* scene = 0,
                        QWidget *parent = 0);
 
     virtual ~NodeGraph();
 
     static void makeFullyQualifiedLabel(Node* node, std::string* ret);
-    boost::shared_ptr<NodeCollection> getGroup() const;
+    NodeCollectionPtr getGroup() const;
     const std::list< NodeGuiPtr > & getSelectedNodes() const;
     NodeGuiPtr createNodeGUI(const NodePtr & node,
                              const CreateNodeArgs& args);
@@ -141,7 +141,7 @@ public:
     bool areOptionalInputsAutoHidden() const;
 
     void copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                   const boost::shared_ptr<NodeCollection>& group,
+                                   const NodeCollectionPtr& group,
                                    std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes);
 
     virtual void onNodesCleared() OVERRIDE FINAL;

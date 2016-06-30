@@ -157,7 +157,7 @@ public:
     Implementation(const Implementation& other);
 
 public:
-    EffectInstance* _publicInterface;
+    EffectInstance* _publicInterface; // can not be a smart ptr
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
     boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
@@ -215,12 +215,12 @@ public:
 
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower
-    EffectInstance* mainInstance; // pointer to the main-instance if this instance is a clone
+    EffectInstancePtr mainInstance; // pointer to the main-instance if this instance is a clone
     bool isDoingInstanceSafeRender; // true if this intance is rendering
     mutable QMutex renderClonesMutex;
-    std::list<EffectInstPtr> renderClonesPool;
+    std::list<EffectInstancePtr> renderClonesPool;
 
-    void runChangedParamCallback(KnobI* k, bool userEdited, const std::string & callback);
+    void runChangedParamCallback(const KnobIPtr& k, bool userEdited, const std::string & callback);
 
     void setDuringInteractAction(bool b);
 
@@ -276,7 +276,7 @@ public:
                          ViewIdx view,
                          bool isIdentity,
                          double identityTime,
-                         const EffectInstPtr& identityInput,
+                         const EffectInstancePtr& identityInput,
                          const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
@@ -380,7 +380,7 @@ public:
 
     static bool aborted(bool isRenderResponseToUserInteraction,
                         const AbortableRenderInfoPtr& abortInfo,
-                        const EffectInstPtr& treeRoot)  WARN_UNUSED_RETURN;
+                        const EffectInstancePtr& treeRoot)  WARN_UNUSED_RETURN;
 
     void checkMetadata(NodeMetadata &metadata);
 };

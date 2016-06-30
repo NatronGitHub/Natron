@@ -215,7 +215,7 @@ public:
 
     bool hasHostOverlayForParam(const KnobI* param);
 
-    void removePositionHostOverlay(KnobI* knob);
+    void removePositionHostOverlay(const KnobIPtr& knob);
 
     bool isEmpty() const;
 

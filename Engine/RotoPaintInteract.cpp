@@ -111,7 +111,7 @@ RotoPaintInteract::redrawOverlays()
     p->publicInterface->redrawOverlayInteract();
 }
 
-boost::shared_ptr<RotoContext>
+RotoContextPtr
 RotoPaintInteract::getContext()
 {
     return p->publicInterface->getNode()->getRotoContext();
@@ -120,7 +120,7 @@ RotoPaintInteract::getContext()
 bool
 RotoPaintInteract::isFeatherVisible() const
 {
-    boost::shared_ptr<KnobButton> b =  displayFeatherEnabledButton.lock();
+    KnobButtonPtr b =  displayFeatherEnabledButton.lock();
 
     if (b) {
         return b->getValue();
@@ -132,7 +132,7 @@ RotoPaintInteract::isFeatherVisible() const
 bool
 RotoPaintInteract::isStickySelectionEnabled() const
 {
-    boost::shared_ptr<KnobButton> b =  stickySelectionEnabledButton.lock();
+    KnobButtonPtr b =  stickySelectionEnabledButton.lock();
 
     if (b) {
         return b->getValue();
@@ -144,7 +144,7 @@ RotoPaintInteract::isStickySelectionEnabled() const
 bool
 RotoPaintInteract::isMultiStrokeEnabled() const
 {
-    boost::shared_ptr<KnobBool> b =  multiStrokeEnabled.lock();
+    KnobBoolPtr b =  multiStrokeEnabled.lock();
 
     if (b) {
         return b->getValue();
@@ -156,7 +156,7 @@ RotoPaintInteract::isMultiStrokeEnabled() const
 bool
 RotoPaintInteract::isBboxClickAnywhereEnabled() const
 {
-    boost::shared_ptr<KnobButton> b = bboxClickAnywhereButton.lock();
+    KnobButtonPtr b = bboxClickAnywhereButton.lock();
 
     return b ? b->getValue() : false;
 }
@@ -484,7 +484,7 @@ RotoPaintInteract::clearCPSSelection()
 void
 RotoPaintInteract::clearBeziersSelection()
 {
-    boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr ctx = p->publicInterface->getNode()->getRotoContext();
 
     assert(ctx);
     ctx->clearSelection(RotoItem::eSelectionReasonOverlayInteract);
@@ -494,7 +494,7 @@ RotoPaintInteract::clearBeziersSelection()
 bool
 RotoPaintInteract::removeItemFromSelection(const boost::shared_ptr<RotoDrawableItem>& b)
 {
-    boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr ctx = p->publicInterface->getNode()->getRotoContext();
 
     assert(ctx);
     for (SelectedItems::iterator fb = selectedItems.begin(); fb != selectedItems.end(); ++fb) {
@@ -544,7 +544,7 @@ handleControlPointMaximum(double time,
 }
 
 bool
-RotoPaintInteract::getRoleForGroup(const boost::shared_ptr<KnobGroup>& k,
+RotoPaintInteract::getRoleForGroup(const KnobGroupPtr& k,
                                    RotoRoleEnum* role) const
 {
     bool ret = true;
@@ -571,7 +571,7 @@ RotoPaintInteract::getRoleForGroup(const boost::shared_ptr<KnobGroup>& k,
 }
 
 bool
-RotoPaintInteract::getToolForAction(const boost::shared_ptr<KnobButton>& k,
+RotoPaintInteract::getToolForAction(const KnobButtonPtr& k,
                                     RotoToolEnum* tool) const
 {
     bool ret = true;
@@ -628,7 +628,7 @@ RotoPaintInteract::getToolForAction(const boost::shared_ptr<KnobButton>& k,
 } // RotoPaintInteract::getToolForAction
 
 bool
-RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& roleGroup)
+RotoPaintInteract::onRoleChangedInternal(const KnobGroupPtr& roleGroup)
 {
     RotoRoleEnum role;
 
@@ -686,7 +686,7 @@ RotoPaintInteract::onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& rol
 } // RotoPaintInteract::onRoleChangedInternal
 
 bool
-RotoPaintInteract::onToolChangedInternal(const boost::shared_ptr<KnobButton>& actionButton)
+RotoPaintInteract::onToolChangedInternal(const KnobButtonPtr& actionButton)
 {
     RotoToolEnum tool;
 
@@ -755,21 +755,21 @@ RotoPaintInteract::onToolChangedInternal(const boost::shared_ptr<KnobButton>& ac
 } // RotoPaintInteract::onToolChangedInternal
 
 void
-RotoPaintInteract::setCurrentTool(const boost::shared_ptr<KnobButton>& tool)
+RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
 {
     if (!tool) {
         return;
     }
-    KnobPtr parentKnob = tool->getParentKnob();
-    boost::shared_ptr<KnobGroup> parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+    KnobIPtr parentKnob = tool->getParentKnob();
+    KnobGroupPtr parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
     assert(parentGroup);
     if (!parentGroup) {
         return;
     }
 
 
-    boost::shared_ptr<KnobGroup> curGroup = selectedToolRole.lock();
-    boost::shared_ptr<KnobButton> curTool = selectedToolAction.lock();
+    KnobGroupPtr curGroup = selectedToolRole.lock();
+    KnobButtonPtr curTool = selectedToolAction.lock();
     if ( curGroup && (curGroup != parentGroup) ) {
         curGroup->setValue(false);
     }
@@ -847,7 +847,7 @@ RotoPaintInteract::handleBezierSelection(const boost::shared_ptr<Bezier> & curve
         }
         selectedItems.push_back(curve);
 
-        boost::shared_ptr<RotoContext> ctx = p->publicInterface->getNode()->getRotoContext();
+        RotoContextPtr ctx = p->publicInterface->getNode()->getRotoContext();
         assert(ctx);
         ctx->select(curve, RotoItem::eSelectionReasonOverlayInteract);
     }
@@ -889,7 +889,7 @@ RotoPaintInteract::handleControlPointSelection(const std::pair<boost::shared_ptr
 void
 RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& /*cp*/)
 {
-    boost::shared_ptr<KnobChoice> menu = rightClickMenuKnob.lock();
+    KnobChoicePtr menu = rightClickMenuKnob.lock();
 
     if (!menu) {
         return;
@@ -910,7 +910,7 @@ RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& /*
 void
 RotoPaintInteract::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
 {
-    boost::shared_ptr<KnobChoice> menu = rightClickMenuKnob.lock();
+    KnobChoicePtr menu = rightClickMenuKnob.lock();
 
     if (!menu) {
         return;
@@ -970,10 +970,10 @@ void
 RotoPaintInteract::checkViewersAreDirectlyConnected()
 {
     NodePtr rotoNode = p->publicInterface->getNode();
-    std::list<ViewerInstance*> viewers;
+    std::list<ViewerInstancePtr> viewers;
 
     rotoNode->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         NodePtr viewerNode = (*it)->getNode();
         int maxInputs = viewerNode->getMaxInputCount();
         int hasBranchConnectedToRoto = -1;
@@ -1047,7 +1047,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
         return;
     }
 
-    boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr context = p->publicInterface->getNode()->getRotoContext();
 
 
     if (prepareForLater || !strokeBeingPaint) {
@@ -1058,27 +1058,27 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
             return;
         }
         std::string name = context->generateUniqueName(itemName);
-        strokeBeingPaint.reset( new RotoStrokeItem( strokeType, context, name, boost::shared_ptr<RotoLayer>() ) );
+        strokeBeingPaint.reset( new RotoStrokeItem( strokeType, context, name, RotoLayerPtr() ) );
         strokeBeingPaint->createNodes(false);
     }
 
 
     assert(strokeBeingPaint);
-    boost::shared_ptr<KnobColor> colorKnob = strokeBeingPaint->getColorKnob();
-    boost::shared_ptr<KnobChoice> operatorKnob = strokeBeingPaint->getOperatorKnob();
-    boost::shared_ptr<KnobDouble> opacityKnob = strokeBeingPaint->getOpacityKnob();
-    boost::shared_ptr<KnobDouble> sizeKnob = strokeBeingPaint->getBrushSizeKnob();
-    boost::shared_ptr<KnobDouble> hardnessKnob = strokeBeingPaint->getBrushHardnessKnob();
-    boost::shared_ptr<KnobBool> pressureOpaKnob = strokeBeingPaint->getPressureOpacityKnob();
-    boost::shared_ptr<KnobBool> pressureSizeKnob = strokeBeingPaint->getPressureSizeKnob();
-    boost::shared_ptr<KnobBool> pressureHardnessKnob = strokeBeingPaint->getPressureHardnessKnob();
-    boost::shared_ptr<KnobBool> buildUpKnob = strokeBeingPaint->getBuildupKnob();
-    boost::shared_ptr<KnobChoice> timeOffsetModeKnob = strokeBeingPaint->getTimeOffsetModeKnob();
-    boost::shared_ptr<KnobChoice> sourceTypeKnob = strokeBeingPaint->getBrushSourceTypeKnob();
-    boost::shared_ptr<KnobInt> timeOffsetKnob = strokeBeingPaint->getTimeOffsetKnob();
-    boost::shared_ptr<KnobDouble> translateKnob = strokeBeingPaint->getBrushCloneTranslateKnob();
-    boost::shared_ptr<KnobDouble> effectKnob = strokeBeingPaint->getBrushEffectKnob();
-    boost::shared_ptr<KnobColor> colorWheel = colorWheelButton.lock();
+    KnobColorPtr colorKnob = strokeBeingPaint->getColorKnob();
+    KnobChoicePtr operatorKnob = strokeBeingPaint->getOperatorKnob();
+    KnobDoublePtr opacityKnob = strokeBeingPaint->getOpacityKnob();
+    KnobDoublePtr sizeKnob = strokeBeingPaint->getBrushSizeKnob();
+    KnobDoublePtr hardnessKnob = strokeBeingPaint->getBrushHardnessKnob();
+    KnobBoolPtr pressureOpaKnob = strokeBeingPaint->getPressureOpacityKnob();
+    KnobBoolPtr pressureSizeKnob = strokeBeingPaint->getPressureSizeKnob();
+    KnobBoolPtr pressureHardnessKnob = strokeBeingPaint->getPressureHardnessKnob();
+    KnobBoolPtr buildUpKnob = strokeBeingPaint->getBuildupKnob();
+    KnobChoicePtr timeOffsetModeKnob = strokeBeingPaint->getTimeOffsetModeKnob();
+    KnobChoicePtr sourceTypeKnob = strokeBeingPaint->getBrushSourceTypeKnob();
+    KnobIntPtr timeOffsetKnob = strokeBeingPaint->getTimeOffsetKnob();
+    KnobDoublePtr translateKnob = strokeBeingPaint->getBrushCloneTranslateKnob();
+    KnobDoublePtr effectKnob = strokeBeingPaint->getBrushEffectKnob();
+    KnobColorPtr colorWheel = colorWheelButton.lock();
     double color[4];
     for (int i = 0; i < 3; ++i) {
         color[i] = colorWheel->getValue(i);
@@ -1109,7 +1109,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     buildUpKnob->setValue(buildUp);
     effectKnob->setValue(effectValue);
     if (!prepareForLater) {
-        boost::shared_ptr<KnobInt> lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
+        KnobIntPtr lifeTimeFrameKnob = strokeBeingPaint->getLifeTimeFrameKnob();
         lifeTimeFrameKnob->setValue( context->getTimelineCurrentTime() );
     }
     if ( (strokeType == eRotoStrokeTypeClone) || (strokeType == eRotoStrokeTypeReveal) ) {
@@ -1119,7 +1119,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
         translateKnob->setValues(-cloneOffset.first, -cloneOffset.second, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
     }
     if (!prepareForLater) {
-        boost::shared_ptr<RotoLayer> layer = context->findDeepestSelectedLayer();
+        RotoLayerPtr layer = context->findDeepestSelectedLayer();
         if (!layer) {
             layer = context->getOrCreateBaseLayer();
         }
@@ -1449,8 +1449,8 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
     double acceptance = 10 * pixelScale.second;
 
     for (SelectedItems::const_iterator it = selectedItems.begin(); it != selectedItems.end(); ++it) {
-        Bezier* isBezier = dynamic_cast<Bezier*>( it->get() );
-        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>( it->get() );
+        Bezier* isBezier = dynamic_cast<Bezier*>(*it);
+        RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(*it);
         assert(isStroke || isBezier);
         if ( isStroke || !isBezier || ( isBezier && isBezier->isOpenBezier() ) ) {
             continue;
@@ -1637,7 +1637,7 @@ RotoPaintInteract::smoothSelectedCurve()
     std::pair<double, double> pixelScale;
 
     p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-    boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr context = p->publicInterface->getNode()->getRotoContext();
     double time = context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -1679,7 +1679,7 @@ RotoPaintInteract::cuspSelectedCurve()
     std::pair<double, double> pixelScale;
 
     p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-    boost::shared_ptr<RotoContext> context = p->publicInterface->getNode()->getRotoContext();
+    RotoContextPtr context = p->publicInterface->getNode()->getRotoContext();
     double time = context->getTimelineCurrentTime();
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -1811,7 +1811,7 @@ RotoPaintInteract::onCurveLockedChangedRecursive(const boost::shared_ptr<RotoIte
                                                  bool* ret)
 {
     boost::shared_ptr<Bezier> b = boost::dynamic_pointer_cast<Bezier>(item);
-    boost::shared_ptr<RotoLayer> layer = boost::dynamic_pointer_cast<RotoLayer>(item);
+    RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(item);
 
     if (b) {
         if ( item->isLockedRecursive() ) {

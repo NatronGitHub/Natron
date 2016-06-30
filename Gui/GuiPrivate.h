@@ -255,7 +255,7 @@ public:
     bool keyUpEventHasVisitedFocusWidget;
     bool applicationConsoleVisible;
 
-    GuiPrivate(const GuiAppInstPtr& app,
+    GuiPrivate(const GuiAppInstancePtr& app,
                Gui* gui);
 
     void restoreGuiGeometry();

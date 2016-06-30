@@ -32,7 +32,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-NoOpBase::NoOpBase(NodePtr n)
+NoOpBase::NoOpBase(const NodePtr& n)
     : OutputEffectInstance(n)
 {
     setSupportsRenderScaleMaybe(eSupportsYes);
@@ -84,7 +84,7 @@ StatusEnum
 NoOpBase::getTransform(double /*time*/,
                        const RenderScale & /*renderScale*/,
                        ViewIdx /*view*/,
-                       EffectInstPtr* inputToTransform,
+                       EffectInstancePtr* inputToTransform,
                        Transform::Matrix3x3* transform)
 {
     *inputToTransform = getInput(0);

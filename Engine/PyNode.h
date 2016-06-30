@@ -103,17 +103,17 @@ public:
 
 class UserParamHolder
 {
-    KnobHolder* _holder;
+    KnobHolderWPtr _holder;
 
 public:
 
     UserParamHolder();
 
-    UserParamHolder(KnobHolder* holder);
+    UserParamHolder(const KnobHolderPtr& holder);
 
     virtual ~UserParamHolder() {}
 
-    void setHolder(KnobHolder* holder);
+    void setHolder(const KnobHolderPtr& holder);
 
     /////////////Functions to create custom parameters//////////////////////////
     ///////////////////////////////////////////////////////////////////////////
@@ -368,7 +368,7 @@ public:
 
     RectD getRegionOfDefinition(double time, int /* Python API: do not use ViewIdx */ view) const;
 
-    static Param* createParamWrapperForKnob(const KnobPtr& knob);
+    static Param* createParamWrapperForKnob(const KnobIPtr& knob);
 
     void setSubGraphEditable(bool editable);
 

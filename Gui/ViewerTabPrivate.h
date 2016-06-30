@@ -61,7 +61,7 @@ struct ViewerTabPrivate
 
     typedef std::map<int, InputName> InputNamesMap;
 
-    ViewerTab* publicInterface;
+    ViewerTab* publicInterface; // can not be a smart ptr
 
     /*OpenGL viewer*/
     ViewerGL* viewer;
@@ -204,13 +204,13 @@ struct ViewerTabPrivate
     bool getOverlayTransform(double time,
                              ViewIdx view,
                              const NodePtr& target,
-                             EffectInstance* currentNode,
+                             const EffectInstancePtr& currentNode,
                              Transform::Matrix3x3* transform) const;
 
     bool getTimeTransform(double time,
                           ViewIdx view,
                           const NodePtr& target,
-                          EffectInstance* currentNode,
+                          const EffectInstancePtr& currentNode,
                           double *newTime) const;
 
 #endif

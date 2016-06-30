@@ -74,15 +74,22 @@ public:
 
 struct GuiAppInstancePrivate;
 class GuiAppInstance
-    : public AppInstance
+    : public AppInstance // derives from boost::enable_shared_from_this<>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     GuiAppInstance(int appID);
+
+public:
+    static boost::shared_ptr<AppInstance> create(int appID) WARN_UNUSED_RETURN
+    {
+        return boost::shared_ptr<AppInstance>( new GuiAppInstance(appID) );
+    }
 
     virtual ~GuiAppInstance();
 
@@ -140,10 +147,10 @@ public:
     virtual void notifyRenderStarted(const QString & sequenceName,
                                      int firstFrame, int lastFrame,
                                      int frameStep, bool canPause,
-                                     OutputEffectInstance* writer,
-                                     const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
-    virtual void notifyRenderRestarted( OutputEffectInstance* writer,
-                                        const boost::shared_ptr<ProcessHandler> & process) OVERRIDE FINAL;
+                                     const OutputEffectInstancePtr& writer,
+                                     const ProcessHandlerPtr & process) OVERRIDE FINAL;
+    virtual void notifyRenderRestarted( const OutputEffectInstancePtr& writer,
+                                        const ProcessHandlerPtr & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
     void setViewersCurrentView(ViewIdx view);
@@ -187,8 +194,8 @@ public:
 
     void clearOverlayRedrawRequests();
 
-    void setKnobDnDData(QDrag* drag, const KnobPtr& knob, int dimension);
-    void getKnobDnDData(QDrag** drag,  KnobPtr* knob, int* dimension) const;
+    void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, int dimension);
+    void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, int* dimension) const;
 
     bool checkAllReadersModificationDate(bool errorAndWarn);
 
@@ -206,7 +213,7 @@ public Q_SLOTS:
     virtual bool isRenderStatsActionChecked() const OVERRIDE FINAL;
     virtual bool save(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool saveAs(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual AppInstPtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AppInstancePtr loadProject(const std::string& filename) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ///Close the current project but keep the window
     virtual bool resetProject()  OVERRIDE FINAL;
@@ -215,7 +222,7 @@ public Q_SLOTS:
     virtual bool closeProject()  OVERRIDE FINAL;
 
     ///Opens a new window
-    virtual AppInstPtr newProject()  OVERRIDE FINAL;
+    virtual AppInstancePtr newProject()  OVERRIDE FINAL;
 
     void handleFileOpenEvent(const std::string& filename);
 
@@ -240,15 +247,15 @@ public:
     virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
                                      double *distNextIn, boost::shared_ptr<Image>* strokeImage) const OVERRIDE FINAL;
     virtual int getStrokeLastIndex() const OVERRIDE FINAL;
-    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* stroke, int* strokeIndex) const OVERRIDE FINAL;
+    virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke, int* strokeIndex) const OVERRIDE FINAL;
     virtual void updateStrokeImage(const boost::shared_ptr<Image>& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
     virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
     virtual void setUserIsPainting(const NodePtr& rotopaintNode,
-                                   const boost::shared_ptr<RotoStrokeItem>& stroke,
+                                   const RotoStrokeItemPtr& stroke,
                                    bool isPainting) OVERRIDE FINAL;
     virtual void getActiveRotoDrawingStroke(NodePtr* node,
-                                            boost::shared_ptr<RotoStrokeItem>* stroke,
+                                            RotoStrokeItemPtr* stroke,
                                             bool* isPainting) const OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
     ///////////////// OVERRIDEN FROM TIMELINEKEYFRAMES
@@ -272,7 +279,7 @@ public:
 
 private:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect) OVERRIDE FINAL;
+    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect) OVERRIDE FINAL;
     virtual void createNodeGui(const NodePtr &node,
                                const NodePtr&  parentMultiInstance,
                                const CreateNodeArgs& args) OVERRIDE FINAL;

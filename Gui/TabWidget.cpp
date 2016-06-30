@@ -194,7 +194,7 @@ private:
 
 struct TabWidgetPrivate
 {
-    TabWidget* _publicInterface;
+    TabWidget* _publicInterface; // can not be a smart ptr
     Gui* gui;
     QVBoxLayout* mainLayout;
     std::vector<std::pair<PanelWidget*, ScriptObject*> > tabs; // the actual tabs
@@ -1079,14 +1079,14 @@ TabWidget::removeTab(int index,
         /*
            If the tab is a group pane, try to find the parent group pane in this pane and set it active
          */
-        boost::shared_ptr<NodeCollection> collect = isGraph->getGroup();
+        NodeCollectionPtr collect = isGraph->getGroup();
         assert(collect);
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collect.get() );
+        NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( collect.get() );
         if (isGroup) {
             collect = isGroup->getNode()->getGroup();
             if (collect) {
                 NodeGraph* parentGraph = 0;
-                isGroup  = dynamic_cast<NodeGroup*>( collect.get() );
+                isGroup  = boost::dynamic_pointer_cast<NodeGroup>( collect.get() );
                 if (isGroup) {
                     parentGraph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
                 } else {

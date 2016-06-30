@@ -58,15 +58,15 @@ public:
 
     virtual ~TabGroup();
 
-    QGridLayout* addTab(const boost::shared_ptr<KnobGroup>& group, const QString &label);
+    QGridLayout* addTab(const KnobGroupPtr& group, const QString &label);
 
-    void removeTab(KnobGroup* group);
+    void removeTab(const KnobGroupPtr& group);
 
     bool isEmpty() const;
 
-    void refreshTabSecretNess(KnobGroup* group);
+    void refreshTabSecretNess(const KnobGroupPtr& group);
 
-    void refreshTabSecretNess(KnobGroup* group, bool secret);
+    void refreshTabSecretNess(const KnobGroupPtr& group, bool secret);
 
 public Q_SLOTS:
 

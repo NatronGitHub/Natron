@@ -82,7 +82,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 NATRON_NAMESPACE_ENTER;
 
 
-OutputEffectInstance::OutputEffectInstance(NodePtr node)
+OutputEffectInstance::OutputEffectInstance(const NodePtr& node)
     : EffectInstance(node)
     , _outputEffectDataLock()
     , _renderSequenceRequests()
@@ -174,8 +174,8 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
         viewsToRender.push_back(mainView);
     }
 
-    KnobPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
-    KnobOutputFile* outputFileName = outputFileNameKnob ? dynamic_cast<KnobOutputFile*>( outputFileNameKnob.get() ) : 0;
+    KnobIPtr outputFileNameKnob = getKnobByName(kOfxImageEffectFileParamName);
+    KnobOutputFilePtr outputFileName = outputFileNameKnob ? boost::dynamic_pointer_cast<KnobOutputFile>( outputFileNameKnob.get() ) : 0;
     std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
 
     if ( isViewAware() ) {
@@ -189,10 +189,10 @@ OutputEffectInstance::renderFullSequence(bool isBlocking,
             ///all views will be overwritten to the same file
             ///If this is WriteOIIO, check the parameter "viewsSelector" to determine if the user wants to encode all
             ///views to a single file or not
-            KnobPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
+            KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
             bool hasViewChoice = false;
             if ( viewsKnob && !viewsKnob->getIsSecret() ) {
-                KnobChoice* viewsChoice = dynamic_cast<KnobChoice*>( viewsKnob.get() );
+                KnobChoicePtr viewsChoice = boost::dynamic_pointer_cast<KnobChoice>( viewsKnob.get() );
                 if (viewsChoice) {
                     hasViewChoice = true;
                     int viewChoice_i = viewsChoice->getValue();
@@ -332,10 +332,10 @@ void
 OutputEffectInstance::createWriterPath()
 {
     ///Make sure that the file path exists
-    KnobPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileParam = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileParam) {
-        Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( fileParam.get() );
+        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>( fileParam.get() );
         if (isString) {
             std::string pattern = isString->getValue();
             std::string path = SequenceParsing::removePath(pattern);
@@ -407,10 +407,10 @@ OutputEffectInstance::reportStats(int time,
                                   const std::map<NodePtr, NodeRenderStats > & stats)
 {
     std::string filename;
-    KnobPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
+    KnobIPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
 
     if (fileKnob) {
-        KnobOutputFile* strKnob = dynamic_cast<KnobOutputFile*>( fileKnob.get() );
+        KnobOutputFilePtr strKnob = boost::dynamic_pointer_cast<KnobOutputFile>( fileKnob.get() );
         if  (strKnob) {
             QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( 0, ViewIdx(view) ), getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
             QtCompat::removeFileExtension(qfileName);

@@ -354,7 +354,7 @@ class TrackerContextPrivate
 public:
 
 
-    TrackerContext * _publicInterface;
+    TrackerContext * _publicInterface; // can not be a smart ptr
     boost::weak_ptr<Node> node;
     std::list<boost::weak_ptr<KnobI> > perTrackKnobs;
 
@@ -384,7 +384,7 @@ public:
     boost::weak_ptr<KnobBool> robustModel;
     boost::weak_ptr<KnobDouble> fittingError;
     boost::weak_ptr<KnobDouble> fittingErrorWarnIfAbove;
-    boost::weak_ptr<KnobString> fittingErrorWarning;
+    KnobStringWPtr fittingErrorWarning;
     boost::weak_ptr<KnobInt> referenceFrame;
     boost::weak_ptr<KnobButton> setCurrentFrameButton;
     boost::weak_ptr<KnobInt> jitterPeriod;
@@ -392,7 +392,7 @@ public:
     boost::weak_ptr<KnobInt> smoothCornerPin;
     boost::weak_ptr<KnobBool> autoGenerateTransform;
     boost::weak_ptr<KnobButton> generateTransformButton;
-    boost::weak_ptr<KnobString> transformOutOfDateLabel;
+    KnobStringWPtr transformOutOfDateLabel;
     boost::weak_ptr<KnobSeparator> transformControlsSeparator;
     boost::weak_ptr<KnobBool> disableTransform;
     boost::weak_ptr<KnobDouble> translate;
@@ -485,7 +485,7 @@ public:
 
 
     TrackerContextPrivate(TrackerContext* publicInterface,
-                          const boost::shared_ptr<Node> &node);
+                          const NodePtr &node);
 
     virtual ~TrackerContextPrivate()
     {

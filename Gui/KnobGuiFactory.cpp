@@ -59,7 +59,7 @@ using std::pair;
 /*Class inheriting KnobGui, must have a function named BuildKnobGui with the following signature.
    This function should in turn call a specific class-based static function with the appropriate param.*/
 typedef KnobHelper *(*KnobBuilder)(KnobHolder  *holder, const std::string &description, int dimension);
-typedef KnobGui *(*KnobGuiBuilder)(KnobPtr knob, KnobGuiContainerI* panel);
+typedef KnobGui *(*KnobGuiBuilder)(KnobIPtr knob, KnobGuiContainerI* panel);
 
 /***********************************FACTORY******************************************/
 KnobGuiFactory::KnobGuiFactory()
@@ -110,7 +110,7 @@ KnobGuiFactory::loadBultinKnobs()
 }
 
 KnobGui *
-KnobGuiFactory::createGuiForKnob(KnobPtr knob,
+KnobGuiFactory::createGuiForKnob(KnobIPtr knob,
                                  KnobGuiContainerI *container) const
 {
     assert(knob);

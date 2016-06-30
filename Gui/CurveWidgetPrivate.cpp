@@ -65,7 +65,7 @@ NATRON_NAMESPACE_ENTER;
 
 CurveWidgetPrivate::CurveWidgetPrivate(Gui* gui,
                                        CurveSelection* selectionModel,
-                                       boost::shared_ptr<TimeLine> timeline,
+                                       const TimeLinePtr& timeline,
                                        CurveWidget* widget)
     : _lastMousePos()
     , zoomCtx()
@@ -359,7 +359,7 @@ CurveWidgetPrivate::drawTimelineMarkers()
 
     double cursorR, cursorG, cursorB;
     double boundsR, boundsG, boundsB;
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelinePlayheadColor(&cursorR, &cursorG, &cursorB);
     settings->getTimelineBoundsColor(&boundsR, &boundsG, &boundsB);
 
@@ -446,7 +446,7 @@ CurveWidgetPrivate::drawScale()
     const double smallestTickSizePixel = 5.; // tick size (in pixels) for alpha = 0.
     const double largestTickSizePixel = 1000.; // tick size (in pixels) for alpha = 1.
     double gridR, gridG, gridB;
-    boost::shared_ptr<Settings> sett = appPTR->getCurrentSettings();
+    SettingsPtr sett = appPTR->getCurrentSettings();
     sett->getCurveEditorGridColor(&gridR, &gridG, &gridB);
 
 
@@ -637,7 +637,7 @@ CurveWidgetPrivate::isNearbyCurve(const QPoint &pt,
             double yCurve;
 
             try {
-                boost::shared_ptr<Curve> internalCurve = (*it)->getInternalCurve();
+                CurvePtr internalCurve = (*it)->getInternalCurve();
                 yCurve = (*it)->evaluate( internalCurve && !internalCurve->isAnimated(), openGL_pos.x() );
             } catch (...) {
                 yCurve = (*it)->evaluate( false, openGL_pos.x() );
@@ -1166,14 +1166,14 @@ CurveWidgetPrivate::moveSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }
             }
         }
 
-        boost::shared_ptr<Curve> curve = it->first->getInternalCurve();
+        CurvePtr curve = it->first->getInternalCurve();
         std::vector<MoveKeysCommand::KeyToMove>& vect = keysToMove[it->first];
         if (curve) {
             for (std::list<KeyPtr>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -1309,7 +1309,7 @@ CurveWidgetPrivate::transformSelectedKeyFrames(const QPointF & oldClick_opengl,
             KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
             if (knobUI) {
                 int curveDim = isKnobCurve->getDimension();
-                KnobPtr internalKnob = knobUI->getKnob();
+                KnobIPtr internalKnob = knobUI->getKnob();
                 if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                     continue;
                 }

@@ -90,13 +90,16 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
-    // TODO: enable_shared_from_this
+protected: // parent of GuiAppInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     AppInstance(int appID);
 
 public:
+    static boost::shared_ptr<AppInstance> create(int appID) WARN_UNUSED_RETURN
+    {
+        return boost::shared_ptr<AppInstance>( new AppInstance(appID) );
+    }
 
     virtual ~AppInstance();
 
@@ -106,7 +109,7 @@ public:
 
     struct RenderWork
     {
-        OutputEffectInstance* writer;
+        OutputEffectInstancePtr writer;
         int firstFrame;
         int lastFrame;
         int frameStep;
@@ -114,7 +117,7 @@ public:
         bool isRestart;
 
         RenderWork()
-            : writer(0)
+            : writer()
             , firstFrame(0)
             , lastFrame(0)
             , frameStep(0)
@@ -123,7 +126,7 @@ public:
         {
         }
 
-        RenderWork(OutputEffectInstance* writer,
+        RenderWork(const OutputEffectInstancePtr& writer,
                    int firstFrame,
                    int lastFrame,
                    int frameStep,
@@ -163,8 +166,8 @@ public:
 
     NodePtr getNodeByFullySpecifiedName(const std::string & name) const;
 
-    boost::shared_ptr<Project> getProject() const;
-    boost::shared_ptr<TimeLine> getTimeLine() const;
+    ProjectPtr getProject() const;
+    TimeLinePtr getTimeLine() const;
 
     /*true if the user is NOT scrubbing the timeline*/
     virtual bool shouldRefreshPreview() const
@@ -224,13 +227,13 @@ public:
                                      int /*lastFrame*/,
                                      int /*frameStep*/,
                                      bool /*canPause*/,
-                                     OutputEffectInstance* /*writer*/,
-                                     const boost::shared_ptr<ProcessHandler> & /*process*/)
+                                     const OutputEffectInstancePtr& /*writer*/,
+                                     const ProcessHandlerPtr & /*process*/)
     {
     }
 
-    virtual void notifyRenderRestarted( OutputEffectInstance* /*writer*/,
-                                        const boost::shared_ptr<ProcessHandler> & /*process*/)
+    virtual void notifyRenderRestarted( const OutputEffectInstancePtr& /*writer*/,
+                                        const ProcessHandlerPtr & /*process*/)
     {
     }
 
@@ -298,7 +301,7 @@ public:
 
 public:
 
-    void addInvalidExpressionKnob(const KnobPtr& knob);
+    void addInvalidExpressionKnob(const KnobIPtr& knob);
     void removeInvalidExpressionKnob(const KnobI* knob);
     void recheckInvalidExpressions();
 
@@ -355,11 +358,11 @@ public:
     virtual void setDraftRenderEnabled(bool /*b*/) {}
 
     virtual void setUserIsPainting(const NodePtr& /*rotopaintNode*/,
-                                   const boost::shared_ptr<RotoStrokeItem>& /*stroke*/,
+                                   const RotoStrokeItemPtr& /*stroke*/,
                                    bool /*isPainting*/) {}
 
     virtual void getActiveRotoDrawingStroke(NodePtr* /*node*/,
-                                            boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
+                                            RotoStrokeItemPtr* /*stroke*/,
                                             bool* /*isPainting*/) const { }
 
     virtual bool isRenderStatsActionChecked() const { return false; }
@@ -367,7 +370,7 @@ public:
     bool saveTemp(const std::string& filename);
     virtual bool save(const std::string& filename);
     virtual bool saveAs(const std::string& filename);
-    virtual AppInstPtr loadProject(const std::string& filename);
+    virtual AppInstancePtr loadProject(const std::string& filename);
 
     ///Close the current project but keep the window
     virtual bool resetProject();
@@ -376,7 +379,7 @@ public:
     virtual bool closeProject();
 
     ///Opens a new window
-    virtual AppInstPtr newProject();
+    virtual AppInstancePtr newProject();
     virtual void* getOfxHostOSHandle() const { return NULL; }
 
     virtual void updateLastPaintStrokeData(int /*newAge*/,
@@ -389,7 +392,7 @@ public:
 
     virtual int getStrokeLastIndex() const { return -1; }
 
-    virtual void getStrokeAndMultiStrokeIndex(boost::shared_ptr<RotoStrokeItem>* /*stroke*/,
+    virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* /*stroke*/,
                                               int* /*strokeIndex*/) const {}
 
     virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
@@ -405,7 +408,7 @@ public:
 
     virtual RectD getPaintStrokeWholeBbox() const { return RectD(); }
 
-    void removeRenderFromQueue(OutputEffectInstance* writer);
+    void removeRenderFromQueue(const OutputEffectInstancePtr& writer);
     virtual void reloadScriptEditorFonts() {}
 
     const ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
@@ -439,7 +442,7 @@ Q_SIGNALS:
 
 protected:
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const boost::shared_ptr<NodeSerialization>& serialization, bool autoConnect);
+    virtual void onGroupCreationFinished(const NodePtr& node, const NodeSerializationPtr& serialization, bool autoConnect);
     virtual void createNodeGui(const NodePtr& /*node*/,
                                const NodePtr& /*parentmultiinstance*/,
                                const CreateNodeArgs& /*args*/)
@@ -448,7 +451,7 @@ protected:
 
 private:
 
-    void startNextQueuedRender(OutputEffectInstance* finishedWriter);
+    void startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter);
 
 
     void getWritersWorkForCL(const CLArgs& cl, std::list<AppInstance::RenderWork>& requests);
@@ -468,11 +471,11 @@ private:
 
 class CreatingNodeTreeFlag_RAII
 {
-    AppInstWPtr _app;
+    AppInstanceWPtr _app;
 
 public:
 
-    CreatingNodeTreeFlag_RAII(const AppInstPtr& app)
+    CreatingNodeTreeFlag_RAII(const AppInstancePtr& app)
         : _app(app)
     {
         app->setIsCreatingNodeTree(true);
@@ -480,7 +483,7 @@ public:
 
     ~CreatingNodeTreeFlag_RAII()
     {
-        AppInstPtr a = _app.lock();
+        AppInstancePtr a = _app.lock();
 
         if (a) {
             a->setIsCreatingNodeTree(false);

@@ -87,7 +87,7 @@ using std::make_pair;
 
 //=============================KnobGuiParametric===================================
 
-KnobGuiParametric::KnobGuiParametric(KnobPtr knob,
+KnobGuiParametric::KnobGuiParametric(KnobIPtr knob,
                                      KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , treeColumn(NULL)
@@ -114,7 +114,7 @@ KnobGuiParametric::removeSpecificGui()
 void
 KnobGuiParametric::createWidget(QHBoxLayout* layout)
 {
-    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    KnobParametricPtr knob = _knob.lock();
     QObject::connect( knob.get(), SIGNAL(curveChanged(int)), this, SLOT(onCurveChanged(int)) );
     boost::shared_ptr<OfxParamOverlayInteract> interact = knob->getCustomInteract();
 
@@ -139,7 +139,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
 
     layout->addWidget(treeColumn);
 
-    _curveWidget = new CurveWidget( getGui(), this, boost::shared_ptr<TimeLine>(), layout->parentWidget() );
+    _curveWidget = new CurveWidget( getGui(), this, TimeLinePtr(), layout->parentWidget() );
     _curveWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     if (interact) {
         _curveWidget->setCustomInteract(interact);
@@ -214,7 +214,7 @@ KnobGuiParametric::_show()
 void
 KnobGuiParametric::setEnabled()
 {
-    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    KnobParametricPtr knob = _knob.lock();
     bool b = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     _tree->setEnabled(b);
@@ -284,7 +284,7 @@ void
 KnobGuiParametric::resetSelectedCurves()
 {
     QList<QTreeWidgetItem*> selected = _tree->selectedItems();
-    boost::shared_ptr<KnobParametric> k = _knob.lock();
+    KnobParametricPtr k = _knob.lock();
     for (int i = 0; i < selected.size(); ++i) {
         //find the items in the curves
         for (CurveGuis::iterator it = _curves.begin(); it != _curves.end(); ++it) {
@@ -297,7 +297,7 @@ KnobGuiParametric::resetSelectedCurves()
     k->evaluateValueChange(0, k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiParametric::getKnob() const
 {
     return _knob.lock();
@@ -309,7 +309,7 @@ KnobGuiParametric::refreshDimensionName(int dim)
     if ( (dim < 0) || ( dim >= (int)_curves.size() ) ) {
         return;
     }
-    boost::shared_ptr<KnobParametric> knob = _knob.lock();
+    KnobParametricPtr knob = _knob.lock();
     CurveDescriptor& found = _curves[dim];
     QString name = QString::fromUtf8( knob->getDimensionName(dim).c_str() );
     found.curve->setName(name);

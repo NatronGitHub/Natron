@@ -80,10 +80,10 @@ public:
     AppTLS globalTLS;
     AppManager::AppTypeEnum _appType; //< the type of app
     mutable QMutex _appInstancesMutex;
-    std::vector<AppInstPtr> _appInstances; //< the instances mapped against their ID
+    std::vector<AppInstancePtr> _appInstances; //< the instances mapped against their ID
     int _availableID; //< the ID for the next instance
     int _topLevelInstanceID; //< the top level app ID
-    boost::shared_ptr<Settings> _settings; //< app settings
+    SettingsPtr _settings; //< app settings
     std::vector<Format> _formats; //<a list of the "base" formats available in the application
     PluginsMap _plugins; //< list of the plugins
     IOPluginsMap readerPlugins; // for all reader plug-ins which are best suited for each format

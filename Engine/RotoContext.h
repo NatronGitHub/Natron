@@ -100,8 +100,9 @@ private:
     RotoContext(const NodePtr& node);
 
 public:
-    static boost::shared_ptr<RotoContext> create(const NodePtr& node) {
-        return boost::shared_ptr<RotoContext>( new RotoContext(node) );
+    static RotoContextPtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    {
+        return RotoContextPtr( new RotoContext(node) );
     }
 
     virtual ~RotoContext();
@@ -115,7 +116,7 @@ public:
 
     void createBaseLayer();
 
-    boost::shared_ptr<RotoLayer> getOrCreateBaseLayer();
+    RotoLayerPtr getOrCreateBaseLayer();
 
     /**
      * @brief Returns true when the context is empty (it has no shapes)
@@ -147,11 +148,11 @@ public:
     /**
      * @brief Create a new layer to the currently selected layer.
      **/
-    boost::shared_ptr<RotoLayer> addLayer();
+    RotoLayerPtr addLayer();
 
 private:
 
-    boost::shared_ptr<RotoLayer> addLayerInternal(bool declarePython);
+    RotoLayerPtr addLayerInternal(bool declarePython);
 
 public:
 
@@ -159,7 +160,7 @@ public:
     /**
      * @brief Add an existing layer to the layers
      **/
-    void addLayer(const boost::shared_ptr<RotoLayer> & layer);
+    void addLayer(const RotoLayerPtr & layer);
 
 
     /**
@@ -169,7 +170,7 @@ public:
     boost::shared_ptr<Bezier> makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
     boost::shared_ptr<Bezier> makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
     boost::shared_ptr<Bezier> makeSquare(double x, double y, double initialSize, double time);
-    boost::shared_ptr<RotoStrokeItem> makeStroke(RotoStrokeType type,
+    RotoStrokeItemPtr makeStroke(RotoStrokeType type,
                                                  const std::string& baseName,
                                                  bool clearSel);
     std::string generateUniqueName(const std::string& baseName);
@@ -181,12 +182,12 @@ public:
     void removeItem(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason = RotoItem::eSelectionReasonOther);
 
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(const boost::shared_ptr<RotoLayer>& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item, RotoItem::SelectionReasonEnum reason);
+    void addItem(const RotoLayerPtr& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item, RotoItem::SelectionReasonEnum reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
      **/
-    const std::list< boost::shared_ptr<RotoLayer> > & getLayers() const;
+    const std::list< RotoLayerPtr > & getLayers() const;
 
     /**
      * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
@@ -304,15 +305,15 @@ public:
 
     NodePtr getNode() const;
 
-    boost::shared_ptr<RotoLayer> getLayerByName(const std::string & n) const;
+    RotoLayerPtr getLayerByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
     boost::shared_ptr<RotoItem> getLastInsertedItem() const;
 
 #ifdef NATRON_ROTO_INVERTIBLE
-    boost::shared_ptr<KnobBool> getInvertedKnob() const;
+    KnobBoolPtr getInvertedKnob() const;
 #endif
 
-    boost::shared_ptr<KnobColor> getColorKnob() const;
+    KnobColorPtr getColorKnob() const;
 
     void resetTransformCenter();
 
@@ -326,21 +327,21 @@ public:
 
 private:
 
-    void resetTransformInternal(const boost::shared_ptr<KnobDouble>& translate,
-                                const boost::shared_ptr<KnobDouble>& scale,
-                                const boost::shared_ptr<KnobDouble>& center,
-                                const boost::shared_ptr<KnobDouble>& rotate,
-                                const boost::shared_ptr<KnobDouble>& skewX,
-                                const boost::shared_ptr<KnobDouble>& skewY,
-                                const boost::shared_ptr<KnobBool>& scaleUniform,
-                                const boost::shared_ptr<KnobChoice>& skewOrder,
-                                const boost::shared_ptr<KnobDouble>& extraMatrix);
+    void resetTransformInternal(const KnobDoublePtr& translate,
+                                const KnobDoublePtr& scale,
+                                const KnobDoublePtr& center,
+                                const KnobDoublePtr& rotate,
+                                const KnobDoublePtr& skewX,
+                                const KnobDoublePtr& skewY,
+                                const KnobBoolPtr& scaleUniform,
+                                const KnobChoicePtr& skewOrder,
+                                const KnobDoublePtr& extraMatrix);
 
 public:
 
-    boost::shared_ptr<KnobChoice> getMotionBlurTypeKnob() const;
+    KnobChoicePtr getMotionBlurTypeKnob() const;
     boost::shared_ptr<RotoItem> getLastItemLocked() const;
-    boost::shared_ptr<RotoLayer> getDeepestSelectedLayer() const;
+    RotoLayerPtr getDeepestSelectedLayer() const;
 
     void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason);
 
@@ -383,7 +384,7 @@ public:
      * @brief First searches through the selected layer which one is the deepest in the hierarchy.
      * If nothing is found, it searches through the selected items and find the deepest selected item's layer
      **/
-    boost::shared_ptr<RotoLayer> findDeepestSelectedLayer() const;
+    RotoLayerPtr findDeepestSelectedLayer() const;
 
     void dequeueGuiActions();
 
@@ -404,7 +405,7 @@ public:
 
     void s_breakMultiStroke() { Q_EMIT breakMultiStroke(); }
 
-    bool knobChanged(KnobI* k,
+    bool knobChanged(const KnobIPtr& k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
                      double time,

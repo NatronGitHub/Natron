@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ENTER;
 
 /*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
    This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef KnobHelper* (*KnobBuilder)(KnobHolder* holder, const std::string &label, int dimension, bool declaredByPlugin);
+typedef KnobHelper* (*KnobBuilder)(const KnobHolderPtr& holder, const std::string &label, int dimension, bool declaredByPlugin);
 
 /***********************************FACTORY******************************************/
 KnobFactory::KnobFactory()
@@ -95,7 +95,7 @@ KnobFactory::loadBultinKnobs()
 }
 
 boost::shared_ptr<KnobHelper> KnobFactory::createKnob(const std::string &id,
-                                                      KnobHolder*  holder,
+                                                      const KnobHolderPtr& holder,
                                                       const std::string &label,
                                                       int dimension,
                                                       bool declaredByPlugin) const

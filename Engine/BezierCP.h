@@ -80,12 +80,12 @@ public:
 
     virtual ~BezierCP();
 
-    boost::shared_ptr<Curve> getXCurve() const;
-    boost::shared_ptr<Curve> getYCurve() const;
-    boost::shared_ptr<Curve> getLeftXCurve() const;
-    boost::shared_ptr<Curve> getLeftYCurve() const;
-    boost::shared_ptr<Curve> getRightXCurve() const;
-    boost::shared_ptr<Curve> getRightYCurve() const;
+    CurvePtr getXCurve() const;
+    CurvePtr getYCurve() const;
+    CurvePtr getLeftXCurve() const;
+    CurvePtr getLeftYCurve() const;
+    CurvePtr getRightXCurve() const;
+    CurvePtr getRightYCurve() const;
 
     void clone(const BezierCP & other);
 

@@ -88,7 +88,7 @@ TabGroup::isEmpty() const
 }
 
 QGridLayout*
-TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,
+TabGroup::addTab(const KnobGroupPtr& group,
                  const QString& label)
 {
     TabGroupTab* tabGroup = 0;
@@ -125,7 +125,7 @@ TabGroup::addTab(const boost::shared_ptr<KnobGroup>& group,
 }
 
 void
-TabGroup::removeTab(KnobGroup* group)
+TabGroup::removeTab(const KnobGroupPtr& group)
 {
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
         if (_imp->tabs[i].groupKnob.lock().get() == group) {
@@ -136,7 +136,7 @@ TabGroup::removeTab(KnobGroup* group)
 }
 
 void
-TabGroup::refreshTabSecretNess(KnobGroup* groupKnob,
+TabGroup::refreshTabSecretNess(const KnobGroupPtr& groupKnob,
                                bool secret)
 {
     bool isVisible = !secret;
@@ -165,7 +165,7 @@ TabGroup::refreshTabSecretNess(KnobGroup* groupKnob,
 }
 
 void
-TabGroup::refreshTabSecretNess(KnobGroup* groupKnob)
+TabGroup::refreshTabSecretNess(const KnobGroupPtr& groupKnob)
 {
     refreshTabSecretNess( groupKnob, groupKnob->getIsSecret() );
 }
@@ -179,12 +179,12 @@ TabGroup::onGroupKnobSecretChanged()
         return;
     }
 
-    KnobPtr knob = handler->getKnob();
+    KnobIPtr knob = handler->getKnob();
     if (!knob) {
         return;
     }
 
-    KnobGroup* groupKnob = dynamic_cast<KnobGroup*>( knob.get() );
+    KnobGroupPtr groupKnob = boost::dynamic_pointer_cast<KnobGroup>(knob);
     if (!groupKnob) {
         return;
     }

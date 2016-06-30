@@ -88,7 +88,7 @@ using std::make_pair;
 
 //=============================GROUP_KNOB_GUI===================================
 
-KnobGuiGroup::KnobGuiGroup(KnobPtr knob,
+KnobGuiGroup::KnobGuiGroup(KnobIPtr knob,
                            KnobGuiContainerI *container)
     : KnobGui(knob, container)
     , _checked(false)
@@ -165,7 +165,7 @@ KnobGuiGroup::setCheckedInternal(bool checked,
     _checked = checked;
 
     if (userRequested) {
-        boost::shared_ptr<KnobGroup> knob = _knob.lock();
+        KnobGroupPtr knob = _knob.lock();
         if (knob) {
             knob->setValue(checked, ViewSpec::all(), 0, eValueChangedReasonUserEdited, 0);
         }
@@ -270,7 +270,7 @@ KnobGuiGroup::_show()
 void
 KnobGuiGroup::setEnabled()
 {
-    boost::shared_ptr<KnobGroup> knob = _knob.lock();
+    KnobGroupPtr knob = _knob.lock();
     bool enabled = knob->isEnabled(0)  && !knob->isSlave(0) && knob->getExpression(0).empty();
 
     if (_button) {
@@ -308,7 +308,7 @@ KnobGuiGroup::setEnabled()
     }
 }
 
-KnobPtr
+KnobIPtr
 KnobGuiGroup::getKnob() const
 {
     return _knob.lock();

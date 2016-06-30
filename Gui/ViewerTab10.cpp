@@ -495,9 +495,9 @@ ViewerTab::~ViewerTab()
     if ( getGui() ) {
         NodeGraph* graph = 0;
         if (_imp->viewerNode) {
-            boost::shared_ptr<NodeCollection> collection = _imp->viewerNode->getNode()->getGroup();
+            NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
             if (collection) {
-                NodeGroup* isGrp = dynamic_cast<NodeGroup*>( collection.get() );
+                NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
                 if (isGrp) {
                     NodeGraphI* graph_i = isGrp->getNodeGraph();
                     if (graph_i) {

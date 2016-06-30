@@ -73,7 +73,7 @@ public Q_SLOTS:
 
     void saveChangesAndClose();
 
-    void onSettingChanged(KnobI* knob);
+    void onSettingChanged(const KnobIPtr& knob);
 
     void openHelp();
 

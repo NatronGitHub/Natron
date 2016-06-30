@@ -96,7 +96,7 @@ public:
 
 private:
 
-    boost::shared_ptr<RotoLayer> _layer;
+    RotoLayerPtr _layer;
 };
 
 class BezierCurve
@@ -175,7 +175,7 @@ class Roto
 {
 public:
 
-    Roto(const boost::shared_ptr<RotoContext>& ctx);
+    Roto(const RotoContextPtr& ctx);
 
     ~Roto();
 
@@ -188,7 +188,7 @@ public:
 
 private:
 
-    boost::shared_ptr<RotoContext> _ctx;
+    RotoContextPtr _ctx;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

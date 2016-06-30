@@ -393,7 +393,7 @@ NATRON_NAMESPACE_ENTER;
 struct RotoPaintInteract;
 struct RotoPaintPrivate
 {
-    RotoPaint* publicInterface;
+    RotoPaint* publicInterface; // can not be a smart ptr
     bool isPaintByDefault;
     boost::weak_ptr<KnobBool> premultKnob;
     boost::weak_ptr<KnobBool> enabledKnobs[4];
@@ -517,7 +517,7 @@ struct RotoPaintInteract
     boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
     //only relevant when the state is DRAGGING_X_TANGENT
     SelectedCP featherBarBeingDragged, featherBarBeingHovered;
-    boost::shared_ptr<RotoStrokeItem> strokeBeingPaint;
+    RotoStrokeItemPtr strokeBeingPaint;
     std::pair<double, double> cloneOffset;
     QPointF click; // used for drawing ellipses and rectangles, to handle center/constrain. May also be used for the selection bbox.
     RotoToolEnum selectedTool;
@@ -621,14 +621,14 @@ private:
     RotoPaintInteract(RotoPaintPrivate* p);
 
 public:
-    static boost::shared_ptr<RotoPaintInteract> create(RotoPaintPrivate* p)
+    static boost::shared_ptr<RotoPaintInteract> create(RotoPaintPrivate* p) WARN_UNUSED_RETURN
     {
         return boost::shared_ptr<RotoPaintInteract>( new RotoPaintInteract(p) );
     }
 
     bool isFeatherVisible() const;
 
-    boost::shared_ptr<RotoContext> getContext();
+    RotoContextPtr getContext();
 
     RotoToolEnum getSelectedTool() const
     {
@@ -639,12 +639,12 @@ public:
 
     bool isMultiStrokeEnabled() const;
 
-    bool getRoleForGroup(const boost::shared_ptr<KnobGroup>& group, RotoRoleEnum* role) const;
-    bool getToolForAction(const boost::shared_ptr<KnobButton>& action, RotoToolEnum* tool) const;
+    bool getRoleForGroup(const KnobGroupPtr& group, RotoRoleEnum* role) const;
+    bool getToolForAction(const KnobButtonPtr& action, RotoToolEnum* tool) const;
 
-    bool onRoleChangedInternal(const boost::shared_ptr<KnobGroup>& roleGroup);
+    bool onRoleChangedInternal(const KnobGroupPtr& roleGroup);
 
-    bool onToolChangedInternal(const boost::shared_ptr<KnobButton>& actionButton);
+    bool onToolChangedInternal(const KnobButtonPtr& actionButton);
 
     void clearSelection();
 
@@ -719,7 +719,7 @@ public:
 
     void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
 
-    void setCurrentTool(const boost::shared_ptr<KnobButton>& tool);
+    void setCurrentTool(const KnobButtonPtr& tool);
 
     void onBreakMultiStrokeTriggered();
 

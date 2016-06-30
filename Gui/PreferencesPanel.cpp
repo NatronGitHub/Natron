@@ -718,7 +718,7 @@ PreferencesPanel::createGui()
     QGridLayout* pluginsFrameLayout = 0;
     QTreeWidgetItem* uiTabTreeItem = 0;
     for (std::size_t i = 0; i < _imp->tabs.size(); ++i) {
-        boost::shared_ptr<KnobPage> pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
+        KnobPagePtr pageKnob = _imp->tabs[i].page.lock()->pageKnob.lock();
         if (pageKnob->getName() == "plugins") {
             pluginsFrameLayout = _imp->tabs[i].page.lock()->gridLayout;
         } else if (pageKnob->getName() == "userInterfacePage") {
@@ -1009,11 +1009,11 @@ PreferencesPanelPrivate::createPreferenceTab(const KnobPageGuiPtr& page,
     }
 
     QTreeWidgetItem* parentItem = 0;
-    boost::shared_ptr<KnobPage> pageKnob = page->pageKnob.lock();
+    KnobPagePtr pageKnob = page->pageKnob.lock();
     if (pageKnob) {
         // In the preferences, there may be sub-pages
-        KnobPtr hasParent = pageKnob->getParentKnob();
-        boost::shared_ptr<KnobPage> parentPage;
+        KnobIPtr hasParent = pageKnob->getParentKnob();
+        KnobPagePtr parentPage;
         if (hasParent) {
             parentPage = boost::dynamic_pointer_cast<KnobPage>(hasParent);
             if (parentPage) {
@@ -1082,7 +1082,7 @@ PreferencesPanel::onPageLabelChanged(const KnobPageGuiPtr& page)
 }
 
 void
-PreferencesPanel::onSettingChanged(KnobI* knob)
+PreferencesPanel::onSettingChanged(const KnobIPtr& knob)
 {
     for (U32 i = 0; i < _imp->changedKnobs.size(); ++i) {
         if (_imp->changedKnobs[i] == knob) {
@@ -1170,7 +1170,7 @@ void
 PreferencesPanel::closeEvent(QCloseEvent*)
 {
     if ( !_imp->closeIsOK && (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) ) {
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         if ( !_imp->changedKnobs.empty() ) {
             settings->beginChanges();
             settings->restoreKnobsFromSettings(_imp->changedKnobs);

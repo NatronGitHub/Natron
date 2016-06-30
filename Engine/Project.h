@@ -72,11 +72,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
-    Project(const AppInstPtr& appInstance);
+    Project(const AppInstancePtr& appInstance);
 
 public:
-    static boost::shared_ptr<Project> create(const AppInstPtr& appInstance) {
-        return boost::shared_ptr<Project>( new Project(appInstance) );
+    static ProjectPtr create(const AppInstancePtr& appInstance) WARN_UNUSED_RETURN
+    {
+        return ProjectPtr( new Project(appInstance) );
     }
 
     virtual ~Project();
@@ -181,7 +182,7 @@ public:
 
     void toggleAutoPreview();
 
-    boost::shared_ptr<TimeLine> getTimeLine() const WARN_UNUSED_RETURN;
+    TimeLinePtr getTimeLine() const WARN_UNUSED_RETURN;
 
     int currentFrame() const WARN_UNUSED_RETURN;
 
@@ -276,7 +277,7 @@ public:
 
     double getProjectFrameRate() const;
 
-    boost::shared_ptr<KnobPath> getEnvVarKnob() const;
+    KnobPathPtr getEnvVarKnob() const;
     std::string getOnProjectLoadCB() const;
     std::string getOnProjectSaveCB() const;
     std::string getOnProjectCloseCB() const;
@@ -345,7 +346,7 @@ public:
 
     bool addFormat(const std::string& formatSpec);
 
-    void setTimeLine(const boost::shared_ptr<TimeLine>& timeline);
+    void setTimeLine(const TimeLinePtr& timeline);
 
 public Q_SLOTS:
 
@@ -424,7 +425,7 @@ private:
      * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
      * not done already.
      **/
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,

@@ -122,8 +122,8 @@ BaseTest::createNode(const QString & pluginID,
 }
 
 void
-BaseTest::connectNodes(NodePtr input,
-                       NodePtr output,
+BaseTest::connectNodes(const NodePtr& input,
+                       const NodePtr& output,
                        int inputNumber,
                        bool expectedReturnValue)
 {
@@ -150,8 +150,8 @@ BaseTest::connectNodes(NodePtr input,
 }
 
 void
-BaseTest::disconnectNodes(NodePtr input,
-                          NodePtr output,
+BaseTest::disconnectNodes(const NodePtr& input,
+                          const NodePtr& output,
                           bool expectedReturnvalue)
 {
     if (expectedReturnvalue) {
@@ -232,9 +232,9 @@ TEST_F(BaseTest, GenerateDot)
 
     ASSERT_TRUE(generator && writer);
 
-    KnobPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
+    KnobIPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE(frameRange);
-    KnobInt* knob = dynamic_cast<KnobInt*>( frameRange.get() );
+    KnobIntPtr knob = boost::dynamic_pointer_cast<KnobInt>(frameRange);
     ASSERT_TRUE(knob);
     knob->setValue(1, ViewSpec::all(), 0);
     knob->setValue(1, ViewSpec::all(), 1);
@@ -252,7 +252,7 @@ TEST_F(BaseTest, GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = dynamic_cast<OutputEffectInstance*>( writer->getEffectInstance().get() );
+    w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>( writer->getEffectInstance() );
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;
@@ -270,8 +270,8 @@ TEST_F(BaseTest, SetValues)
     NodePtr generator = createNode(_generatorPluginID);
 
     assert(generator);
-    KnobPtr knob = generator->getKnobByName("noiseZSlope");
-    KnobDouble* radius = dynamic_cast<KnobDouble*>( knob.get() );
+    KnobIPtr knob = generator->getKnobByName("noiseZSlope");
+    KnobDoublePtr radius = boost::dynamic_pointer_cast<KnobDouble>(knob);
     EXPECT_TRUE(radius != 0);
     if (!radius) {
         return;

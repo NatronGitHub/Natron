@@ -191,7 +191,7 @@ public:
     /**
      * @brief Must return a pointer to the current timeline used by the Viewer
      **/
-    virtual boost::shared_ptr<TimeLine> getTimeline() const = 0;
+    virtual TimeLinePtr getTimeline() const = 0;
 
     /**
      * @brief Must save all relevant OpenGL bits so that they can be restored as-is after the draw action of a plugin.

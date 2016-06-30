@@ -95,7 +95,7 @@ getSplitPath(const QString& path)
 
 struct FileSystemModelPrivate
 {
-    FileSystemModel* _publicInterface;
+    FileSystemModel* _publicInterface; // can not be a smart ptr
     SortableViewI* view;
 
     ///A background thread that fetches info about the file-system and reports when done

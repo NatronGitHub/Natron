@@ -44,11 +44,11 @@ GroupInput::getPluginDescription() const
 void
 GroupInput::initializeKnobs()
 {
-    boost::shared_ptr<KnobPage> page = AppManager::createKnob<KnobPage>( this, tr("Controls") );
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
 
     page->setName("controls");
 
-    boost::shared_ptr<KnobBool> optKnob = AppManager::createKnob<KnobBool>( this, tr("Optional") );
+    KnobBoolPtr optKnob = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Optional") );
     optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
                                 "for the render to work.") );
     optKnob->setAnimationEnabled(false);
@@ -56,7 +56,7 @@ GroupInput::initializeKnobs()
     page->addKnob(optKnob);
     optional = optKnob;
 
-    boost::shared_ptr<KnobBool> maskKnob = AppManager::createKnob<KnobBool>( this, tr("Mask") );
+    KnobBoolPtr maskKnob = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Mask") );
     maskKnob->setHintToolTip( tr("When checked, this input of the group will be considered as a mask. A mask is always optional.") );
     maskKnob->setAnimationEnabled(false);
     maskKnob->setName(kNatronGroupInputIsMaskParamName);
@@ -65,7 +65,7 @@ GroupInput::initializeKnobs()
 }
 
 bool
-GroupInput::knobChanged(KnobI* k,
+GroupInput::knobChanged(const KnobIPtr& k,
                         ValueChangedReasonEnum /*reason*/,
                         ViewSpec /*view*/,
                         double /*time*/,
@@ -73,17 +73,17 @@ GroupInput::knobChanged(KnobI* k,
 {
     bool ret = true;
 
-    if ( k == optional.lock().get() ) {
-        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+    if ( k == optional.lock() ) {
+        NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputOptionalStateChanged( getNode() );
-    } else if ( k == mask.lock().get() ) {
+    } else if ( k == mask.lock() ) {
         bool isMask = mask.lock()->getValue();
         if (isMask) {
             optional.lock()->setValue(true);
         } else {
             optional.lock()->setValue(false);
         }
-        boost::shared_ptr<NodeCollection> group = getNode()->getGroup();
+        NodeCollectionPtr group = getNode()->getGroup();
         group->notifyInputMaskStateChanged( getNode() );
     } else {
         ret = false;

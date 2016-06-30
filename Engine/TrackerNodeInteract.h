@@ -293,7 +293,7 @@ class TrackerNode;
 class TrackerNodeInteract;
 struct TrackerNodePrivate
 {
-    TrackerNode* publicInterface;
+    TrackerNode* publicInterface; // can not be a smart ptr
     boost::shared_ptr<TrackerNodeInteract> ui;
 
     TrackerNodePrivate(TrackerNode* publicInterface);
@@ -468,7 +468,7 @@ public:
                                          const QPointF& point,
                                          const QPointF& handleSize);
 
-    bool isNearbyPoint(const boost::shared_ptr<KnobDouble>& knob,
+    bool isNearbyPoint(const KnobDoublePtr& knob,
                        double xWidget,
                        double yWidget,
                        double toleranceWidget,

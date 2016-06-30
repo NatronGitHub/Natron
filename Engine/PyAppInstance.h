@@ -49,7 +49,7 @@ class AppSettings
 {
 public:
 
-    AppSettings(const boost::shared_ptr<Settings>& settings);
+    AppSettings(const SettingsPtr& settings);
 
     Param* getParam(const QString& scriptName) const;
     std::list<Param*> getParams() const;
@@ -60,7 +60,7 @@ public:
 
 private:
 
-    boost::shared_ptr<Settings> _settings;
+    SettingsPtr _settings;
 };
 
 
@@ -257,18 +257,18 @@ class App
     Q_DECLARE_TR_FUNCTIONS(App)
 
 private:
-    AppInstWPtr _instance;
+    AppInstanceWPtr _instance;
 
 public:
 
 
-    App(const AppInstPtr& instance);
+    App(const AppInstancePtr& instance);
 
     virtual ~App() {}
 
     int getAppID() const;
 
-    AppInstPtr getInternalApp() const;
+    AppInstancePtr getInternalApp() const;
 
     /**
      * @brief Creates a new instance of the plugin identified by the given pluginID.
@@ -326,7 +326,7 @@ protected:
     void renderInternal(bool forceBlocking, const std::list<Effect*>& effects, const std::list<int>& firstFrames, const std::list<int>& lastFrames,
                         const std::list<int>& frameSteps);
 
-    boost::shared_ptr<NodeCollection> getCollectionFromGroup(Group* group) const;
+    NodeCollectionPtr getCollectionFromGroup(Group* group) const;
 };
 
 NATRON_PYTHON_NAMESPACE_EXIT;

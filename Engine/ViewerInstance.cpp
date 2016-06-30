@@ -105,7 +105,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static void scaleToTexture8bits(const RectI& roi,
                                 const RenderViewerArgs & args,
-                                ViewerInstance* viewer,
+                                const ViewerInstancePtr& viewer,
                                 const UpdateViewerParams::CachedTile& tile,
                                 U32* output);
 static void scaleToTexture32bits(const RectI& roi,
@@ -117,7 +117,7 @@ static MinMaxVal findAutoContrastVminVmax(boost::shared_ptr<const Image> inputIm
                                                          const RectI & rect);
 static void renderFunctor(const RectI& roi,
                           const RenderViewerArgs & args,
-                          ViewerInstance* viewer,
+                          const ViewerInstancePtr& viewer,
                           UpdateViewerParams::CachedTile tile);
 
 /**
@@ -158,16 +158,16 @@ ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
     return lut;
 }
 
-EffectInstance*
-ViewerInstance::BuildEffect(NodePtr n)
+EffectInstancePtr
+ViewerInstance::create(const NodePtr& node)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    return new ViewerInstance(n);
+    return EffectInstancePtr( new ViewerInstance(node) );
 }
 
-ViewerInstance::ViewerInstance(NodePtr node)
+ViewerInstance::ViewerInstance(const NodePtr& node)
     : OutputEffectInstance(node)
     , _imp( new ViewerInstancePrivate(this) )
 {
@@ -282,7 +282,7 @@ ViewerInstance::getFrameRange(double *first,
     int activeInputs[2];
 
     getActiveInputs(activeInputs[0], activeInputs[1]);
-    EffectInstPtr n1 = getInput(activeInputs[0]);
+    EffectInstancePtr n1 = getInput(activeInputs[0]);
     if (n1) {
         n1->getFrameRange_public(n1->getRenderHash(), &inpFirst, &inpLast);
     }
@@ -292,7 +292,7 @@ ViewerInstance::getFrameRange(double *first,
     inpFirst = 1;
     inpLast = 1;
 
-    EffectInstPtr n2 = getInput(activeInputs[1]);
+    EffectInstancePtr n2 = getInput(activeInputs[1]);
     if (n2) {
         n2->getFrameRange_public(n2->getRenderHash(), &inpFirst, &inpLast);
         if (inpFirst < *first) {
@@ -421,7 +421,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                                              ViewIdx view,
                                              U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
-                                             const boost::shared_ptr<RotoStrokeItem>& activeStroke,
+                                             const RotoStrokeItemPtr& activeStroke,
                                              const boost::shared_ptr<RenderStats>& stats,
                                              boost::shared_ptr<ViewerArgs>* argsA,
                                              boost::shared_ptr<ViewerArgs>* argsB)
@@ -476,7 +476,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
         NodesList rotoPaintNodes;
         if (rotoPaintNode) {
             if (activeStroke) {
-                EffectInstPtr rotoLive = rotoPaintNode->getEffectInstance();
+                EffectInstancePtr rotoLive = rotoPaintNode->getEffectInstance();
                 assert(rotoLive);
                 bool ok = rotoLive->getThreadLocalRotoPaintTreeNodes(&rotoPaintNodes);
                 assert(ok);
@@ -506,7 +506,7 @@ ViewerInstance::getViewerArgsAndRenderViewer(SequenceTime time,
                 lastAge = getApp()->getStrokeLastIndex();
 
                 //Get the active paint stroke so far and its multi-stroke index
-                boost::shared_ptr<RotoStrokeItem> currentlyPaintedStroke;
+                RotoStrokeItemPtr currentlyPaintedStroke;
                 int currentlyPaintedStrokeMultiIndex;
                 getApp()->getStrokeAndMultiStrokeIndex(&currentlyPaintedStroke, &currentlyPaintedStrokeMultiIndex);
 
@@ -1249,7 +1249,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 
 
     // The active input providing the image is the first upstream non disabled node
-    EffectInstPtr upstreamInput = getInput(outArgs->activeInputIndex);
+    EffectInstancePtr upstreamInput = getInput(outArgs->activeInputIndex);
     outArgs->activeInputToRender.reset();
     if (upstreamInput) {
         outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled();
@@ -1977,7 +1977,7 @@ ViewerInstance::updateViewer(boost::shared_ptr<UpdateViewerParams> & frame)
 void
 renderFunctor(const RectI& roi,
               const RenderViewerArgs & args,
-              ViewerInstance* viewer,
+              const ViewerInstancePtr& viewer,
               UpdateViewerParams::CachedTile tile)
 {
     if ( (args.bitDepth == eImageBitDepthFloat) ) {
@@ -2112,7 +2112,7 @@ void
 scaleToTexture8bits_generic(const RectI& roi,
                             const RenderViewerArgs & args,
                             int nComps,
-                            ViewerInstance* viewer,
+                            const ViewerInstancePtr& viewer,
                             const UpdateViewerParams::CachedTile& tile,
                             U32* tileBuffer)
 {
@@ -2343,7 +2343,7 @@ template <typename PIX, int maxValue, int nComps, bool opaque, bool matteOverlay
 void
 scaleToTexture8bits_internal(const RectI& roi,
                              const RenderViewerArgs & args,
-                             ViewerInstance* viewer,
+                             const ViewerInstancePtr& viewer,
                              const UpdateViewerParams::CachedTile& tile,
                              U32* output)
 {
@@ -2354,7 +2354,7 @@ template <typename PIX, int maxValue, int nComps, bool opaque, int rOffset, int 
 void
 scaleToTexture8bitsForMatte(const RectI& roi,
                             const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
+                            const ViewerInstancePtr& viewer,
                             const UpdateViewerParams::CachedTile& tile,
                             U32* output)
 {
@@ -2371,7 +2371,7 @@ template <typename PIX, int maxValue, bool opaque, int rOffset, int gOffset, int
 void
 scaleToTexture8bitsForDepthForComponents(const RectI& roi,
                                          const RenderViewerArgs & args,
-                                         ViewerInstance* viewer,
+                                         const ViewerInstancePtr& viewer,
                                          const UpdateViewerParams::CachedTile& tile,
                                          U32* output)
 {
@@ -2405,7 +2405,7 @@ template <typename PIX, int maxValue, bool opaque>
 void
 scaleToTexture8bitsForPremult(const RectI& roi,
                               const RenderViewerArgs & args,
-                              ViewerInstance* viewer,
+                              const ViewerInstancePtr& viewer,
                               const UpdateViewerParams::CachedTile& tile,
                               U32* output)
 {
@@ -2456,7 +2456,7 @@ template <typename PIX, int maxValue>
 void
 scaleToTexture8bitsForDepth(const RectI& roi,
                             const RenderViewerArgs & args,
-                            ViewerInstance* viewer,
+                            const ViewerInstancePtr& viewer,
                             const UpdateViewerParams::CachedTile& tile,
                             U32* output)
 {
@@ -2475,7 +2475,7 @@ scaleToTexture8bitsForDepth(const RectI& roi,
 void
 scaleToTexture8bits(const RectI& roi,
                     const RenderViewerArgs & args,
-                    ViewerInstance* viewer,
+                    const ViewerInstancePtr& viewer,
                     const UpdateViewerParams::CachedTile& tile,
                     U32* output)
 {
@@ -2894,7 +2894,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
 
 
         NodePtr rotoPaintNode;
-        boost::shared_ptr<RotoStrokeItem> curStroke;
+        RotoStrokeItemPtr curStroke;
         bool isDrawing = false;
         instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 
@@ -3353,7 +3353,7 @@ ViewerInstance::getLastRenderedTime() const
     return _imp->uiContext ? _imp->uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 ViewerInstance::getTimeline() const
 {
     return _imp->uiContext ? _imp->uiContext->getTimeline() : getApp()->getTimeLine();

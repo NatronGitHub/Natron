@@ -58,7 +58,7 @@ NATRON_NAMESPACE_ENTER;
 /******************************KnobInt**************************************/
 
 class KnobInt
-    : public QObject, public Knob<int>
+    : public QObject, public KnobIntBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -66,7 +66,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -74,12 +74,12 @@ public:
         return new KnobInt(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobInt(KnobHolder* holder,
+    KnobInt(const KnobHolderPtr& holder,
             const std::string &label,
             int dimension,
             bool declaredByPlugin);
 
-    KnobInt(KnobHolder* holder,
+    KnobInt(const KnobHolderPtr& holder,
             const QString &label,
             int dimension,
             bool declaredByPlugin);
@@ -139,11 +139,11 @@ private:
 /******************************KnobBool**************************************/
 
 class KnobBool
-    :  public Knob<bool>
+    :  public KnobBoolBase
 {
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -151,12 +151,12 @@ public:
         return new KnobBool(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobBool(KnobHolder* holder,
+    KnobBool(const KnobHolderPtr& holder,
              const std::string &label,
              int dimension,
              bool declaredByPlugin);
 
-    KnobBool(KnobHolder* holder,
+    KnobBool(const KnobHolderPtr& holder,
              const QString &label,
              int dimension,
              bool declaredByPlugin);
@@ -187,7 +187,7 @@ private:
 /******************************KnobDouble**************************************/
 
 class KnobDouble
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -196,7 +196,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
 
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -204,12 +204,12 @@ public:
         return new KnobDouble(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobDouble(KnobHolder* holder,
+    KnobDouble(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin );
 
-    KnobDouble(KnobHolder* holder,
+    KnobDouble(const KnobHolderPtr& holder,
                const QString &label,
                int dimension,
                bool declaredByPlugin );
@@ -374,11 +374,11 @@ private:
 /******************************KnobButton**************************************/
 
 class KnobButton
-    : public Knob<bool>
+    : public KnobBoolBase
 {
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -386,12 +386,12 @@ public:
         return new KnobButton(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobButton(KnobHolder* holder,
+    KnobButton(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
 
-    KnobButton(KnobHolder* holder,
+    KnobButton(const KnobHolderPtr& holder,
                const QString &label,
                int dimension,
                bool declaredByPlugin);
@@ -466,7 +466,7 @@ public:
 };
 
 class KnobChoice
-    : public QObject, public Knob<int>
+    : public QObject, public KnobIntBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -480,7 +480,7 @@ public:
     // The clear() function will be called right before attempting to compare the first member of the entries to merge to b.
     // Then throughout the cycling of the internal entries, b will remain at the same value and temporary data can be used.
     typedef bool (*MergeMenuEqualityFunctor)(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* userData);
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -488,12 +488,12 @@ public:
         return new KnobChoice(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobChoice(KnobHolder* holder,
+    KnobChoice(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
 
-    KnobChoice(KnobHolder* holder,
+    KnobChoice(const KnobHolderPtr& holder,
                const QString &label,
                int dimension,
                bool declaredByPlugin);
@@ -546,7 +546,7 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
-    void choiceRestoration(KnobChoice* knob, const ChoiceExtraData* data);
+    void choiceRestoration(const KnobChoicePtr& knob, const ChoiceExtraData* data);
 
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
@@ -588,18 +588,18 @@ Q_SIGNALS:
 
 private:
 
-    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
+    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
 
     void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,
                              KnobChoiceMergeEntriesData* mergingData = 0);
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void handleSignalSlotsForAliasLink(const KnobPtr& alias, bool connect) OVERRIDE FINAL;
+    virtual void handleSignalSlotsForAliasLink(const KnobIPtr& alias, bool connect) OVERRIDE FINAL;
     virtual void onInternalValueChanged(int dimension, double time, ViewSpec view) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
-    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
+    virtual bool cloneExtraDataAndCheckIfChanged(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
 
 private:
 
@@ -615,11 +615,11 @@ private:
 /******************************KnobSeparator**************************************/
 
 class KnobSeparator
-    : public Knob<bool>
+    : public KnobBoolBase
 {
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -627,12 +627,12 @@ public:
         return new KnobSeparator(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobSeparator(KnobHolder* holder,
+    KnobSeparator(const KnobHolderPtr& holder,
                   const std::string &label,
                   int dimension,
                   bool declaredByPlugin);
 
-    KnobSeparator(KnobHolder* holder,
+    KnobSeparator(const KnobHolderPtr& holder,
                   const QString &label,
                   int dimension,
                   bool declaredByPlugin);
@@ -661,7 +661,7 @@ private:
  * In dimension 4 the knob will have R,G,B and A channels.
  **/
 class KnobColor
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -669,7 +669,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -677,12 +677,12 @@ public:
         return new KnobColor(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobColor(KnobHolder* holder,
+    KnobColor(const KnobHolderPtr& holder,
               const std::string &label,
               int dimension,
               bool declaredByPlugin);
 
-    KnobColor(KnobHolder* holder,
+    KnobColor(const KnobHolderPtr& holder,
               const QString &label,
               int dimension,
               bool declaredByPlugin);
@@ -746,7 +746,7 @@ class KnobString
 public:
 
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -754,12 +754,12 @@ public:
         return new KnobString(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobString(KnobHolder* holder,
+    KnobString(const KnobHolderPtr& holder,
                const std::string &label,
                int dimension,
                bool declaredByPlugin);
 
-    KnobString(KnobHolder* holder,
+    KnobString(const KnobHolderPtr& holder,
                const QString &label,
                int dimension,
                bool declaredByPlugin);
@@ -851,7 +851,7 @@ private:
 
 /******************************KnobGroup**************************************/
 class KnobGroup
-    :  public QObject, public Knob<bool>
+    :  public QObject, public KnobBoolBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -864,7 +864,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -872,25 +872,25 @@ public:
         return new KnobGroup(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobGroup(KnobHolder* holder,
+    KnobGroup(const KnobHolderPtr& holder,
               const std::string &label,
               int dimension,
               bool declaredByPlugin);
 
-    KnobGroup(KnobHolder* holder,
+    KnobGroup(const KnobHolderPtr& holder,
               const QString &label,
               int dimension,
               bool declaredByPlugin);
 
-    void addKnob(const KnobPtr& k);
-    void removeKnob(KnobI* k);
+    void addKnob(const KnobIPtr& k);
+    void removeKnob(const KnobIPtr& k);
 
-    bool moveOneStepUp(KnobI* k);
-    bool moveOneStepDown(KnobI* k);
+    bool moveOneStepUp(const KnobIPtr& k);
+    bool moveOneStepDown(const KnobIPtr& k);
 
-    void insertKnob(int index, const KnobPtr& k);
+    void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobPtr > getChildren() const;
+    std::vector< KnobIPtr > getChildren() const;
 
     void setAsTab();
 
@@ -918,7 +918,7 @@ private:
 /******************************PAGE_KNOB**************************************/
 
 class KnobPage
-    :  public QObject, public Knob<bool>
+    :  public QObject, public KnobBoolBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -926,7 +926,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -934,17 +934,17 @@ public:
         return new KnobPage(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobPage(KnobHolder* holder,
+    KnobPage(const KnobHolderPtr& holder,
              const std::string &label,
              int dimension,
              bool declaredByPlugin);
 
-    KnobPage(KnobHolder* holder,
+    KnobPage(const KnobHolderPtr& holder,
              const QString &label,
              int dimension,
              bool declaredByPlugin);
 
-    void addKnob(const KnobPtr& k);
+    void addKnob(const KnobIPtr& k);
 
     void setAsToolBar(bool b)
     {
@@ -956,14 +956,14 @@ public:
         return _isToolBar;
     }
 
-    bool moveOneStepUp(KnobI* k);
-    bool moveOneStepDown(KnobI* k);
+    bool moveOneStepUp(const KnobIPtr& k);
+    bool moveOneStepDown(const KnobIPtr& k);
 
-    void removeKnob(KnobI* k);
+    void removeKnob(const KnobIPtr& k);
 
-    void insertKnob(int index, const KnobPtr& k);
+    void insertKnob(int index, const KnobIPtr& k);
 
-    std::vector< KnobPtr >  getChildren() const;
+    std::vector< KnobIPtr >  getChildren() const;
     static const std::string & typeNameStatic();
 
 private:
@@ -981,19 +981,19 @@ private:
 /******************************KnobParametric**************************************/
 
 class KnobParametric
-    :  public QObject, public Knob<double>
+    :  public QObject, public KnobDoubleBase
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     mutable QMutex _curvesMutex;
-    std::vector< boost::shared_ptr<Curve> > _curves, _defaultCurves;
+    std::vector< CurvePtr > _curves, _defaultCurves;
     std::vector<RGBAColourD> _curvesColor;
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -1001,12 +1001,12 @@ public:
         return new KnobParametric(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobParametric(KnobHolder* holder,
+    KnobParametric(const KnobHolderPtr& holder,
                    const std::string &label,
                    int dimension,
                    bool declaredByPlugin );
 
-    KnobParametric(KnobHolder* holder,
+    KnobParametric(const KnobHolderPtr& holder,
                    const QString &label,
                    int dimension,
                    bool declaredByPlugin );
@@ -1020,8 +1020,8 @@ public:
     void setDefaultCurvesFromCurves();
 
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
-    boost::shared_ptr<Curve> getParametricCurve(int dimension) const;
-    boost::shared_ptr<Curve> getDefaultParametricCurve(int dimension) const;
+    CurvePtr getParametricCurve(int dimension) const;
+    CurvePtr getDefaultParametricCurve(int dimension) const;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, int dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum getValue(int dimension, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
@@ -1075,14 +1075,14 @@ Q_SIGNALS:
 
 private:
 
-    virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
+    virtual void onKnobAboutToAlias(const KnobIPtr& slave) OVERRIDE FINAL;
     virtual void resetExtraToDefaultValue(int dimension) OVERRIDE FINAL;
     virtual bool hasModificationsVirtual(int dimension) const OVERRIDE FINAL;
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
-    virtual bool cloneExtraDataAndCheckIfChanged(KnobI* other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
-    virtual void cloneExtraData(KnobI* other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
+    virtual bool cloneExtraDataAndCheckIfChanged(const KnobIPtr& other, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
+    virtual void cloneExtraData(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
 
@@ -1090,15 +1090,15 @@ private:
  * @brief A Table containing strings. The number of columns is static.
  **/
 class KnobTable
-    : public Knob<std::string>
+    : public KnobStringBase
 {
 public:
-    KnobTable(KnobHolder* holder,
+    KnobTable(const KnobHolderPtr& holder,
               const std::string &description,
               int dimension,
               bool declaredByPlugin);
 
-    KnobTable(KnobHolder* holder,
+    KnobTable(const KnobHolderPtr& holder,
               const QString &description,
               int dimension,
               bool declaredByPlugin);
@@ -1155,7 +1155,7 @@ class KnobLayers
 
 public:
 
-    static KnobHelper * BuildKnob(KnobHolder* holder,
+    static KnobHelper * BuildKnob(const KnobHolderPtr& holder,
                                   const std::string &label,
                                   int dimension,
                                   bool declaredByPlugin = true)
@@ -1163,7 +1163,7 @@ public:
         return new KnobLayers(holder, label, dimension, declaredByPlugin);
     }
 
-    KnobLayers(KnobHolder* holder,
+    KnobLayers(const KnobHolderPtr& holder,
                const std::string &description,
                int dimension,
                bool declaredByPlugin)

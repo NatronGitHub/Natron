@@ -64,7 +64,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct EdgePrivate
 {
-    Edge* _publicInterface;
+    Edge* _publicInterface; // can not be a smart ptr
     bool isOutputEdge;
     int inputNb;
     double angle;
@@ -302,7 +302,7 @@ bool
 Edge::computeVisibility(bool hovered) const
 {
     NodeGuiPtr dst = _imp->dest.lock();
-    EffectInstPtr effect;
+    EffectInstancePtr effect;
 
     if ( dst && dst->getNode() ) {
         effect = dst->getNode()->getEffectInstance();
@@ -328,7 +328,7 @@ Edge::computeVisibility(bool hovered) const
             NodeGuiPtr src = _imp->source.lock();
 
             //The viewer does not hide its optional edges
-            bool isViewer = effect ? dynamic_cast<ViewerInstance*>( effect.get() ) != 0 : false;
+            bool isViewer = effect ? boost::dynamic_pointer_cast<ViewerInstancePtr>(effect) : false;
             bool isReader = effect ? effect->isReader() : false;
             bool autoHide = areOptionalInputsAutoHidden();
             bool isSelected = dst->getIsSelected();
@@ -351,7 +351,7 @@ void
 Edge::refreshState(bool hovered)
 {
     NodeGuiPtr dst = _imp->dest.lock();
-    EffectInstPtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstPtr();
+    EffectInstancePtr effect = dst ? dst->getNode()->getEffectInstance() : EffectInstancePtr();
 
     if (effect) {
         ///Refresh properties

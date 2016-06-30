@@ -52,7 +52,7 @@ struct ToolButtonPrivate
     QAction* _action;
     boost::weak_ptr<PluginGroupNode> _pluginToolButton;
 
-    ToolButtonPrivate(const GuiAppInstPtr& app,
+    ToolButtonPrivate(const GuiAppInstancePtr& app,
                       const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                       const QString & pluginID,
                       int major,
@@ -75,7 +75,7 @@ struct ToolButtonPrivate
     }
 };
 
-ToolButton::ToolButton(const GuiAppInstPtr& app,
+ToolButton::ToolButton(const GuiAppInstancePtr& app,
                        const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                        const QString & pluginID,
                        int major,
@@ -184,12 +184,12 @@ ToolButton::getPluginToolButton() const
 void
 ToolButton::onTriggered()
 {
-    GuiAppInstPtr app = _imp->_app.lock();
+    GuiAppInstancePtr app = _imp->_app.lock();
 
     if (!app) {
         return;
     }
-    boost::shared_ptr<NodeCollection> group = app->getGui()->getLastSelectedNodeCollection();
+    NodeCollectionPtr group = app->getGui()->getLastSelectedNodeCollection();
 
     assert(group);
     CreateNodeArgs args(_imp->_id.toStdString(), group);

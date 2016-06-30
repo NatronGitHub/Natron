@@ -1464,7 +1464,7 @@ public:
     /** @brief This function can be called to remove a specific entry from the cache. For example a frame
      * that has had its render aborted but already belong to the cache.
      **/
-    void removeEntry(EntryTypePtr entry)
+    void removeEntry(const EntryTypePtr& entry)
     {
         ///early return if entry is NULL
         if (!entry) {

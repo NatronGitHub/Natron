@@ -85,10 +85,10 @@ GuiApplicationManagerPrivate::removePluginToolButtonInternal(const boost::shared
                 }
                 removePluginToolButtonInternal(*it, newGrouping);
                 if ( (*it)->getChildren().empty() ) {
-                    n->tryRemoveChild( it->get() );
+                    n->tryRemoveChild(*it);
                 }
             } else {
-                n->tryRemoveChild( it->get() );
+                n->tryRemoveChild(*it);
             }
             break;
         }

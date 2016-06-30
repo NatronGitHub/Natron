@@ -120,7 +120,7 @@ Gui::setupUi()
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
 
-    boost::shared_ptr<Project> project = getApp()->getProject();
+    ProjectPtr project = getApp()->getProject();
 
     _imp->_projectGui = new ProjectGui(this);
     _imp->_projectGui->create(project,
@@ -202,10 +202,10 @@ void
 Gui::createGroupGui(const NodePtr & group,
                     const CreateNodeArgs& args)
 {
-    boost::shared_ptr<NodeGroup> isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
-    boost::shared_ptr<NodeCollection> collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
+    NodeCollectionPtr collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);
     assert(collection);
 
     TabWidget* where = 0;
@@ -226,7 +226,7 @@ Gui::createGroupGui(const NodePtr & group,
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     if ( where && !serialization && !getApp()->isCreatingPythonGroup() ) {
         where->appendTab(nodeGraph, nodeGraph);
@@ -306,7 +306,7 @@ Gui::getActiveViewer() const
     return _imp->_activeViewer;
 }
 
-boost::shared_ptr<NodeCollection>
+NodeCollectionPtr
 Gui::getLastSelectedNodeCollection() const
 {
     NodeGraph* graph = 0;
@@ -316,7 +316,7 @@ Gui::getLastSelectedNodeCollection() const
     } else {
         graph = _imp->_nodeGraphArea;
     }
-    boost::shared_ptr<NodeCollection> group = graph->getGroup();
+    NodeCollectionPtr group = graph->getGroup();
     assert(group);
 
     return group;

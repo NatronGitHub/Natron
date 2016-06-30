@@ -60,12 +60,12 @@ struct KnobsClipBoard
 {
     KnobClipBoardType type;
     int dimension;
-    KnobPtr serialization;
+    KnobIPtr serialization;
 };
 
 struct GuiApplicationManagerPrivate
 {
-    GuiApplicationManager* _publicInterface;
+    GuiApplicationManager* _publicInterface; // can not be a smart ptr
     std::list<boost::shared_ptr<PluginGroupNode> > _topLevelToolButtons;
     boost::scoped_ptr<KnobsClipBoard> _knobsClipBoard;
     boost::scoped_ptr<KnobGuiFactory> _knobGuiFactory;

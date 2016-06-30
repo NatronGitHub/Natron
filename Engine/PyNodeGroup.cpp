@@ -40,7 +40,7 @@ Group::Group()
 }
 
 void
-Group::init(const boost::shared_ptr<NodeCollection>& collection)
+Group::init(const NodeCollectionPtr& collection)
 {
     _collection = collection;
 }

@@ -57,7 +57,7 @@ public:
      **/
     void setAbortInfo(bool isRenderResponseToUserInteraction,
                       const AbortableRenderInfoPtr& abortInfo,
-                      const EffectInstPtr& treeRoot);
+                      const EffectInstancePtr& treeRoot);
 
     /**
      * @brief Clear any render-specific abort info held on this thread
@@ -70,7 +70,7 @@ public:
      **/
     bool getAbortInfo(bool* isRenderResponseToUserInteraction,
                       AbortableRenderInfoPtr* abortInfo,
-                      EffectInstPtr* treeRoot) const;
+                      EffectInstancePtr* treeRoot) const;
 
     // For debug purposes, so that the debugger can display the thread name
     void setThreadName(const std::string& threadName);

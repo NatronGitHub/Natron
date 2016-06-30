@@ -108,7 +108,7 @@ KnobWidgetDnD::mousePress(QMouseEvent* e)
 {
     _imp->userInputSinceFocusIn = true;
     KnobGuiPtr guiKnob = _imp->getKnob();
-    KnobPtr internalKnob = guiKnob->getKnob();
+    KnobIPtr internalKnob = guiKnob->getKnob();
     if (!internalKnob) {
         return false;
     }
@@ -192,7 +192,7 @@ KnobWidgetDnD::startDrag()
     drag->setMimeData(mimeData);
 
     KnobGuiPtr guiKnob = _imp->getKnob();
-    KnobPtr internalKnob = guiKnob->getKnob();
+    KnobIPtr internalKnob = guiKnob->getKnob();
     if (!internalKnob) {
         return;
     }
@@ -218,7 +218,7 @@ KnobWidgetDnD::startDrag()
 
 
     QString knobLine;
-    EffectInstance* isEffect = dynamic_cast<EffectInstance*>( internalKnob->getHolder() );
+    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( internalKnob->getHolder() );
     if (isEffect) {
         knobLine.append( QString::fromUtf8( isEffect->getNode()->getFullyQualifiedName().c_str() ) );
         knobLine += QLatin1Char('.');
@@ -303,9 +303,9 @@ bool
 KnobWidgetDnDPrivate::canDrop(bool warn,
                               bool setCursor) const
 {
-    KnobPtr source;
+    KnobIPtr source;
     KnobGuiPtr guiKnob = knob.lock();
-    KnobPtr thisKnob = guiKnob->getKnob();
+    KnobIPtr thisKnob = guiKnob->getKnob();
 
     if ( !thisKnob->isEnabled(0) ) {
         return false;
@@ -363,12 +363,12 @@ KnobWidgetDnD::drop(QDropEvent* e)
 
     if ( formats.contains( QString::fromUtf8(KNOB_DND_MIME_DATA_KEY) ) && _imp->canDrop(true, false) ) {
         KnobGuiPtr guiKnob = _imp->getKnob();
-        KnobPtr source;
-        KnobPtr thisKnob = guiKnob->getKnob();
+        KnobIPtr source;
+        KnobIPtr thisKnob = guiKnob->getKnob();
         int srcDim;
         QDrag* drag;
         guiKnob->getGui()->getApp()->getKnobDnDData(&drag, &source, &srcDim);
-        guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobPtr(), -1);
+        guiKnob->getGui()->getApp()->setKnobDnDData(0, KnobIPtr(), -1);
         if ( source && (source != thisKnob) ) {
             int targetDim = _imp->dimension;
             if ( (targetDim == 0) && !guiKnob->getAllDimensionsVisible() ) {
@@ -377,12 +377,12 @@ KnobWidgetDnD::drop(QDropEvent* e)
 
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
             if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier | Qt::ShiftModifier) ) {
-                EffectInstance* effect = dynamic_cast<EffectInstance*>( source->getHolder() );
+                EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( source->getHolder() );
                 if (!effect) {
                     return false;
                 }
-                boost::shared_ptr<NodeCollection> group = effect->getNode()->getGroup();
-                NodeGroup* isGroup = dynamic_cast<NodeGroup*>( group.get() );
+                NodeCollectionPtr group = effect->getNode()->getGroup();
+                NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
                 std::string expr;
                 std::stringstream ss;
                 if (isGroup) {

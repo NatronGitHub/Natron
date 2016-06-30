@@ -121,7 +121,7 @@ struct TimelineGuiPrivate
     TimeLineGui *parent;
     ViewerInstance* viewer;
     ViewerTab* viewerTab;
-    boost::shared_ptr<TimeLine> timeline; ///< ptr to the internal timeline
+    TimeLinePtr timeline; ///< ptr to the internal timeline
     Gui* gui; ///< ptr to the gui
     bool alphaCursor; ///< should cursor be drawn semi-transparent
     QPoint lastMouseEventWidgetCoord;
@@ -144,7 +144,7 @@ struct TimelineGuiPrivate
     QTimer keyframeChangesUpdateTimer;
 
     TimelineGuiPrivate(TimeLineGui *qq,
-                       ViewerInstance* viewer,
+                       const ViewerInstancePtr& viewer,
                        Gui* gui,
                        ViewerTab* viewerTab)
         : parent(qq)
@@ -200,8 +200,8 @@ struct TimelineGuiPrivate
     }
 };
 
-TimeLineGui::TimeLineGui(ViewerInstance* viewer,
-                         boost::shared_ptr<TimeLine> timeline,
+TimeLineGui::TimeLineGui(const ViewerInstancePtr& viewer,
+                         TimeLinePtr timeline,
                          Gui* gui,
                          ViewerTab* viewerTab)
     : QGLWidget(viewerTab)
@@ -220,9 +220,9 @@ TimeLineGui::~TimeLineGui()
 }
 
 void
-TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
+TimeLineGui::setTimeline(const TimeLinePtr& timeline)
 {
-    GuiAppInstPtr app = _imp->gui->getApp();
+    GuiAppInstancePtr app = _imp->gui->getApp();
 
     assert(app);
     if (_imp->timeline) {
@@ -240,7 +240,7 @@ TimeLineGui::setTimeline(const boost::shared_ptr<TimeLine>& timeline)
     _imp->timeline = timeline;
 }
 
-boost::shared_ptr<TimeLine>
+TimeLinePtr
 TimeLineGui::getTimeline() const
 {
     return _imp->timeline;
@@ -353,7 +353,7 @@ TimeLineGui::paintGL()
     double top = bottom +  h / (double)_imp->tlZoomCtx.zoomFactor;
     double right = left +  (w / (double)_imp->tlZoomCtx.zoomFactor);
     double clearR, clearG, clearB;
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     settings->getTimelineBGColor(&clearR, &clearG, &clearB);
 
     if ( (left == right) || (top == bottom) ) {
@@ -996,7 +996,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
         }
         _imp->gui->refreshAllPreviews();
 
-        boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+        SettingsPtr settings = appPTR->getCurrentSettings();
         bool onEditingFinishedOnly = settings->getRenderOnEditingFinishedOnly();
         bool autoProxyEnabled = settings->isAutoProxyEnabled();
 

@@ -76,7 +76,7 @@ ViewerTab::drawOverlays(double time,
                         const RenderScale & renderScale) const
 {
     NodePtr rotoPaintNode;
-    boost::shared_ptr<RotoStrokeItem> curStroke;
+    RotoStrokeItemPtr curStroke;
     bool isDrawing;
 
     getGui()->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
@@ -140,7 +140,7 @@ ViewerTab::drawOverlays(double time,
 #endif
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            EffectInstPtr effect = (*it)->getEffectInstance();
+            EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             effect->drawOverlay_public(time, renderScale, view);
@@ -222,7 +222,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
 
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
     if (!isInActiveViewerUI) {
-        EffectInstPtr effect = node->getEffectInstance();
+        EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, pen);
@@ -359,7 +359,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            EffectInstPtr effect = (*it)->getEffectInstance();
+            EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
@@ -448,7 +448,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
             getGui()->setDraftRenderEnabled(true);
         }
 
-        EffectInstPtr effect = node->getEffectInstance();
+        EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
@@ -628,7 +628,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            EffectInstPtr effect = (*it)->getEffectInstance();
+            EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
             effect->setCurrentViewportForOverlays_public(_imp->viewer);
             didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
@@ -674,7 +674,7 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
         return false;
     }
 
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     assert(effect);
     const KnobsVec& knobs = effect->getKnobs();
     std::string pluginShortcutGroup;
@@ -685,8 +685,8 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
             }
             if ( isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey) ) {
                 // This only works for groups and buttons, as defined in the spec
-                KnobButton* isButton = dynamic_cast<KnobButton*>( it->get() );
-                KnobGroup* isGrp = dynamic_cast<KnobGroup*>( it->get() );
+                KnobButton* isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
+                KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(*it);
                 bool ret = false;
 
                 if (isButton) {
@@ -743,7 +743,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
 
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
     if (!isInActiveViewerUI) {
-        EffectInstPtr effect = node->getEffectInstance();
+        EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
@@ -772,7 +772,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
                                  QKeyEvent* e)
 {
     bool didSomething = false;
-    GuiAppInstPtr app = getGui()->getApp();
+    GuiAppInstancePtr app = getGui()->getApp();
 
     if ( !app  || app->isClosing() ) {
         return false;
@@ -842,7 +842,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
                                QKeyEvent* e)
 {
     bool didSomething = false;
-    GuiAppInstPtr app = getGui()->getApp();
+    GuiAppInstancePtr app = getGui()->getApp();
 
     if ( !app || app->isClosing() ) {
         return false;
@@ -855,7 +855,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        EffectInstPtr effect = (*it)->getEffectInstance();
+        EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -933,7 +933,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
 
     bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(node);
     if (!isInActiveViewerUI) {
-        EffectInstPtr effect = node->getEffectInstance();
+        EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
         effect->setCurrentViewportForOverlays_public(_imp->viewer);
 
@@ -1024,7 +1024,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     NodesList nodes;
     getGui()->getNodesEntitledForOverlays(nodes);
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        EffectInstPtr effect = (*it)->getEffectInstance();
+        EffectInstancePtr effect = (*it)->getEffectInstance();
         assert(effect);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -1086,7 +1086,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
 #endif
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            EffectInstPtr effect = (*it)->getEffectInstance();
+            EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
 
             effect->setCurrentViewportForOverlays_public(_imp->viewer);

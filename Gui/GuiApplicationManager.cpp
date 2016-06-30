@@ -1071,7 +1071,7 @@ GuiApplicationManager::hideSplashScreen()
 
 void
 GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
-                                        const KnobPtr& serialization,
+                                        const KnobIPtr& serialization,
                                         int dimension)
 {
     _imp->_knobsClipBoard->serialization = serialization;
@@ -1081,7 +1081,7 @@ GuiApplicationManager::setKnobClipBoard(KnobClipBoardType type,
 
 void
 GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
-                                        KnobPtr *serialization,
+                                        KnobIPtr *serialization,
                                         int* dimension) const
 {
     *serialization = _imp->_knobsClipBoard->serialization;
@@ -1128,7 +1128,7 @@ GuiApplicationManager::updateAboutWindowLibrariesVersion()
     const AppInstanceVec& instances = getAppInstances();
 
     for (AppInstanceVec::const_iterator it = instances.begin(); it != instances.end(); ++it) {
-        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>( it->get() );
+        GuiAppInstance* isGuiInstance = dynamic_cast<GuiAppInstance*>(*it);
         if (isGuiInstance) {
             Gui* gui = isGuiInstance->getGui();
             if (gui) {

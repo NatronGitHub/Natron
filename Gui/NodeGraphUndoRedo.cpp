@@ -138,15 +138,15 @@ void
 AddMultipleNodesCommand::undo()
 {
     _isUndone = true;
-    std::list<ViewerInstance*> viewersToRefresh;
+    std::list<ViewerInstancePtr> viewersToRefresh;
 
 
     for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         NodeGuiPtr node = it->lock();
-        std::list<ViewerInstance* > viewers;
+        std::list<ViewerInstancePtr> viewers;
         node->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
             if ( foundViewer == viewersToRefresh.end() ) {
                 viewersToRefresh.push_back(*it2);
             }
@@ -162,7 +162,7 @@ AddMultipleNodesCommand::undo()
 
     _graph->getGui()->getApp()->triggerAutoSave();
 
-    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
@@ -174,7 +174,7 @@ void
 AddMultipleNodesCommand::redo()
 {
     _isUndone = false;
-    std::list<ViewerInstance*> viewersToRefresh;
+    std::list<ViewerInstancePtr> viewersToRefresh;
     std::list<NodeGuiPtr > nodes;
     for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
         nodes.push_back( it->lock() );
@@ -188,7 +188,7 @@ AddMultipleNodesCommand::redo()
     }
 
 
-    if ( (nodes.size() != 1) || !nodes.front()->getNode()->isEffectGroup() ) {
+    if ( (nodes.size() != 1) || !nodes.front()->getNode()->isEffectNodeGroup() ) {
         _graph->setSelection(nodes);
     }
 
@@ -196,10 +196,10 @@ AddMultipleNodesCommand::redo()
     _graph->getGui()->getApp()->triggerAutoSave();
 
     for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        std::list<ViewerInstance* > viewers;
+        std::list<ViewerInstancePtr> viewers;
         (*it)->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
             if ( foundViewer == viewersToRefresh.end() ) {
                 viewersToRefresh.push_back(*it2);
             }
@@ -207,7 +207,7 @@ AddMultipleNodesCommand::redo()
     }
 
 
-    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         if ( (*it)->getUiContext() ) {
             (*it)->renderCurrentFrame(true);
         }
@@ -267,7 +267,7 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 void
 RemoveMultipleNodesCommand::undo()
 {
-    std::list<ViewerInstance*> viewersToRefresh;
+    std::list<ViewerInstancePtr> viewersToRefresh;
     std::list<SequenceTime> allKeysToAdd;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
 
@@ -290,10 +290,10 @@ RemoveMultipleNodesCommand::undo()
         if ( node->isSettingsPanelVisible() ) {
             node->getNode()->showKeyframesOnTimeline( next == _nodes.end() );
         }
-        std::list<ViewerInstance* > viewers;
+        std::list<ViewerInstancePtr> viewers;
         node->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
             if ( foundViewer == viewersToRefresh.end() ) {
                 viewersToRefresh.push_back(*it2);
             }
@@ -304,7 +304,7 @@ RemoveMultipleNodesCommand::undo()
             ++next;
         }
     } // for(it)
-    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -321,7 +321,7 @@ RemoveMultipleNodesCommand::redo()
 {
     _isRedone = true;
 
-    std::list<ViewerInstance*> viewersToRefresh;
+    std::list<ViewerInstancePtr> viewersToRefresh;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
     if ( next != _nodes.end() ) {
         ++next;
@@ -332,10 +332,10 @@ RemoveMultipleNodesCommand::redo()
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
         NodesWList outputs = node->getNode()->getGuiOutputs();
-        std::list<ViewerInstance* > viewers;
+        std::list<ViewerInstancePtr> viewers;
         node->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstance*>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
+        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
             if ( foundViewer == viewersToRefresh.end() ) {
                 viewersToRefresh.push_back(*it2);
             }
@@ -375,8 +375,8 @@ RemoveMultipleNodesCommand::redo()
                             if (input) {
                                 inspector->setActiveInputAndRefresh(i, true);
                                 ///make sure we don't refresh it a second time
-                                std::list<ViewerInstance*>::iterator foundViewer =
-                                    std::find( viewersToRefresh.begin(), viewersToRefresh.end(), inspector->isEffectViewer() );
+                                std::list<ViewerInstancePtr>::iterator foundViewer =
+                                    std::find( viewersToRefresh.begin(), viewersToRefresh.end(), inspector->isEffectViewerInstance() );
                                 if ( foundViewer != viewersToRefresh.end() ) {
                                     viewersToRefresh.erase(foundViewer);
                                 }
@@ -397,7 +397,7 @@ RemoveMultipleNodesCommand::redo()
         }
     } // for(it)
 
-    for (std::list<ViewerInstance* >::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
@@ -445,7 +445,7 @@ ConnectCommand::undo()
     }
 
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
+    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -473,7 +473,7 @@ ConnectCommand::redo()
     }
 
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
+    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -489,7 +489,7 @@ ConnectCommand::doConnect(const NodeGuiPtr &oldSrc,
     NodePtr internalDst =  dst->getNode();
     NodePtr internalNewSrc = newSrc ? newSrc->getNode() : NodePtr();
     NodePtr internalOldSrc = oldSrc ? oldSrc->getNode() : NodePtr();
-    ViewerInstance* isViewer = internalDst->isEffectViewer();
+    ViewerInstance* isViewer = internalDst->isEffectViewerInstance();
 
 
     if (isViewer) {
@@ -570,7 +570,7 @@ InsertNodeCommand::undo()
         doConnect( _inputEdge->getSource(), NodeGuiPtr(), _inputEdge->getDest(), _inputEdge->getInputNumber() );
     }
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
+    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -620,7 +620,7 @@ InsertNodeCommand::redo()
         }
     }
 
-    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewer();
+    ViewerInstance* isDstAViewer = dst->getNode()->isEffectViewerInstance();
     if (!isDstAViewer) {
         _graph->getGui()->getApp()->triggerAutoSave();
     }
@@ -628,9 +628,9 @@ InsertNodeCommand::redo()
     newSrcInternal->endInputEdition(false);
     dstInternal->endInputEdition(false);
 
-    std::list<ViewerInstance* > viewers;
+    std::list<ViewerInstancePtr> viewers;
     dstInternal->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstance* >::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
+    for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
         (*it2)->renderCurrentFrame(true);
     }
 
@@ -713,7 +713,7 @@ void
 DecloneMultipleNodesCommand::undo()
 {
     for (std::list<NodeToDeclone>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node.lock()->getNode()->getEffectInstance()->slaveAllKnobs( it->master.lock()->getEffectInstance().get(), false );
+        it->node.lock()->getNode()->getEffectInstance()->slaveAllKnobs( it->master.lock()->getEffectInstance(), false );
     }
 
     _graph->getGui()->getApp()->triggerAutoSave();
@@ -1125,7 +1125,7 @@ EnableNodesCommand::redo()
 }
 
 LoadNodePresetsCommand::LoadNodePresetsCommand(const NodeGuiPtr & node,
-                                               const std::list<boost::shared_ptr<NodeSerialization> >& serialization,
+                                               const std::list<NodeSerializationPtr >& serialization,
                                                QUndoCommand *parent)
     : QUndoCommand(parent)
     , _firstRedoCalled(false)
@@ -1155,7 +1155,7 @@ LoadNodePresetsCommand::undo()
 
     NodeGuiPtr node = _node.lock();
     NodePtr internalNode = node->getNode();
-    boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
+    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
     internalNode->loadKnobs(*_oldSerialization.front(), true);
     if (panel) {
         std::list< NodePtr > newChildren, oldChildren;
@@ -1174,7 +1174,7 @@ LoadNodePresetsCommand::redo()
 {
     NodeGuiPtr node = _node.lock();
     NodePtr internalNode = node->getNode();
-    boost::shared_ptr<MultiInstancePanel> panel = node->getMultiInstancePanel();
+    MultiInstancePanelPtr panel = node->getMultiInstancePanel();
 
     if (!_firstRedoCalled) {
         ///Serialize the current state of the node
@@ -1190,7 +1190,7 @@ LoadNodePresetsCommand::redo()
 
         int k = 0;
 
-        for (std::list<boost::shared_ptr<NodeSerialization> >::const_iterator it = _newSerializations.begin();
+        for (std::list<NodeSerializationPtr >::const_iterator it = _newSerializations.begin();
              it != _newSerializations.end(); ++it, ++k) {
             if (k > 0) {  /// this is a multi-instance child, create it
                 NodePtr newNode = panel->createNewInstance(false);
@@ -1216,7 +1216,7 @@ LoadNodePresetsCommand::redo()
 
     NodesList allNodes;
     internalNode->getGroup()->getActiveNodes(&allNodes);
-    NodeGroup* isGroup = internalNode->isEffectGroup();
+    NodeGroupPtr isGroup = internalNode->isEffectNodeGroup();
     if (isGroup) {
         isGroup->getActiveNodes(&allNodes);
     }
@@ -1354,7 +1354,7 @@ ExtractNodeUndoRedoCommand::~ExtractNodeUndoRedoCommand()
 void
 ExtractNodeUndoRedoCommand::undo()
 {
-    std::set<ViewerInstance* > viewers;
+    std::set<ViewerInstancePtr> viewers;
 
     for (std::list<ExtractedTree>::iterator it = _trees.begin(); it != _trees.end(); ++it) {
         NodeGuiPtr output = it->output.node.lock();
@@ -1394,15 +1394,15 @@ ExtractNodeUndoRedoCommand::undo()
             node->refreshPosition(curPos.x() - 200, curPos.y(), true);
         }
 
-        std::list<ViewerInstance* > tmp;
+        std::list<ViewerInstancePtr> tmp;
         output->getNode()->hasViewersConnected(&tmp);
 
-        for (std::list<ViewerInstance* >::iterator it2 = tmp.begin(); it2 != tmp.end(); ++it2) {
+        for (std::list<ViewerInstancePtr>::iterator it2 = tmp.begin(); it2 != tmp.end(); ++it2) {
             viewers.insert(*it2);
         }
     }
 
-    for (std::set<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
@@ -1413,14 +1413,14 @@ ExtractNodeUndoRedoCommand::undo()
 void
 ExtractNodeUndoRedoCommand::redo()
 {
-    std::set<ViewerInstance* > viewers;
+    std::set<ViewerInstancePtr> viewers;
 
     for (std::list<ExtractedTree>::iterator it = _trees.begin(); it != _trees.end(); ++it) {
-        std::list<ViewerInstance* > tmp;
+        std::list<ViewerInstancePtr> tmp;
         NodeGuiPtr output = it->output.node.lock();
         output->getNode()->hasViewersConnected(&tmp);
 
-        for (std::list<ViewerInstance* >::iterator it2 = tmp.begin(); it2 != tmp.end(); ++it2) {
+        for (std::list<ViewerInstancePtr>::iterator it2 = tmp.begin(); it2 != tmp.end(); ++it2) {
             viewers.insert(*it2);
         }
 
@@ -1490,7 +1490,7 @@ ExtractNodeUndoRedoCommand::redo()
         }
     }
 
-    for (std::set<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
@@ -1581,7 +1581,7 @@ GroupFromSelectionCommand::redo()
         groupPosition.ry() /= sz;
     }
 
-    boost::shared_ptr<NodeGroup> isGrp;
+    NodeGroupPtr isGrp;
     if (_firstRedoCalled) {
         isGrp = boost::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
         assert(isGrp);
@@ -1775,9 +1775,9 @@ GroupFromSelectionCommand::redo()
     _graph->setSelection(nodesToSelect);
 
 
-    std::list<ViewerInstance*> viewers;
+    std::list<ViewerInstancePtr> viewers;
     _graph->getGroup()->getViewers(&viewers);
-    for (std::list<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
     NodeGraphI* graph_i = isGrp->getNodeGraph();
@@ -1801,7 +1801,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
     setText( tr("Inline group(s)") );
 
     for (std::list<NodeGuiPtr >::const_iterator it = groupNodes.begin(); it != groupNodes.end(); ++it) {
-        NodeGroup* group = (*it)->getNode()->isEffectGroup();
+        NodeGroupPtr group = (*it)->getNode()->isEffectNodeGroup();
         assert(group);
         if (!group) {
             continue;
@@ -1819,8 +1819,8 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
 
         std::list<NodeGuiPtr > nodesToCopy;
         for (NodesList::iterator it2 = nodes.begin(); it2 != nodes.end(); ++it2) {
-            GroupInput* inp = dynamic_cast<GroupInput*>( (*it2)->getEffectInstance().get() );
-            GroupOutput* output = dynamic_cast<GroupOutput*>( (*it2)->getEffectInstance().get() );
+            GroupInputPtr inp = (*it2)->isEffectGroupInput();
+            GroupOutputPtr output = (*it2)->isEffectGroupOutput();
             if ( !inp && !output && !(*it2)->getParentMultiInstance() ) {
                 boost::shared_ptr<NodeGuiI> gui_i = (*it2)->getNodeGui();
                 assert(gui_i);
@@ -1992,16 +1992,16 @@ InlineGroupCommand::~InlineGroupCommand()
 void
 InlineGroupCommand::undo()
 {
-    std::set<ViewerInstance*> viewers;
+    std::set<ViewerInstancePtr> viewers;
     std::list<NodeGuiPtr> nodesToSelect;
 
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
             groupNode->getNode()->activate(NodesList(), true, false);
-            std::list<ViewerInstance*> connectedViewers;
+            std::list<ViewerInstancePtr> connectedViewers;
             groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
+            for (std::list<ViewerInstancePtr>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
                 viewers.insert(*it2);
             }
             for (std::list<boost::weak_ptr<NodeGui> >::iterator it2 = it->inlinedNodes.begin();
@@ -2015,7 +2015,7 @@ InlineGroupCommand::undo()
         nodesToSelect.push_back(groupNode);
     }
     _graph->setSelection(nodesToSelect);
-    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
 
@@ -2025,15 +2025,15 @@ InlineGroupCommand::undo()
 void
 InlineGroupCommand::redo()
 {
-    std::set<ViewerInstance*> viewers;
+    std::set<ViewerInstancePtr> viewers;
     std::list<NodeGuiPtr> nodesToSelect;
 
     for (std::list<InlinedGroup>::iterator it = _groupNodes.begin(); it != _groupNodes.end(); ++it) {
         NodeGuiPtr groupNode = it->group.lock();
         if (groupNode) {
-            std::list<ViewerInstance*> connectedViewers;
+            std::list<ViewerInstancePtr> connectedViewers;
             groupNode->getNode()->hasViewersConnected(&connectedViewers);
-            for (std::list<ViewerInstance*>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
+            for (std::list<ViewerInstancePtr>::iterator it2 = connectedViewers.begin(); it2 != connectedViewers.end(); ++it2) {
                 viewers.insert(*it2);
             }
             groupNode->getNode()->deactivate(NodesList(), true, false, true, false, false);
@@ -2066,7 +2066,7 @@ InlineGroupCommand::redo()
     }
     _graph->setSelection(nodesToSelect);
 
-    for (std::set<ViewerInstance*>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
         (*it)->renderCurrentFrame(true);
     }
     _graph->getGui()->getApp()->triggerAutoSave();

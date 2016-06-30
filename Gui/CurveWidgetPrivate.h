@@ -78,7 +78,7 @@ class CurveWidgetPrivate
 public:
     CurveWidgetPrivate(Gui* gui,
                        CurveSelection* selection,
-                       boost::shared_ptr<TimeLine> timeline,
+                       const TimeLinePtr& timeline,
                        CurveWidget* widget);
 
     ~CurveWidgetPrivate();
@@ -172,7 +172,7 @@ public:
     QRectF _selectedKeyFramesBbox;
     QLineF _selectedKeyFramesCrossVertLine;
     QLineF _selectedKeyFramesCrossHorizLine;
-    boost::shared_ptr<TimeLine> _timeline;
+    TimeLinePtr _timeline;
     bool _timelineEnabled;
     std::pair<MoveTangentCommand::SelectedTangentEnum, KeyPtr> _selectedDerivative;
     bool _evaluateOnPenUp; //< true if we must re-evaluate the nodes associated to the selected keyframes on penup

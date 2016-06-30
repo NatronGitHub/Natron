@@ -127,10 +127,11 @@ public:
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackerContext(const boost::shared_ptr<Node> &node);
+    TrackerContext(const NodePtr &node);
 
 public:
-    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node) {
+    static boost::shared_ptr<TrackerContext> create(const NodePtr &node) WARN_UNUSED_RETURN
+    {
         return boost::shared_ptr<TrackerContext>( new TrackerContext(node) );
     }
 
@@ -141,14 +142,14 @@ public:
     void save(TrackerContextSerialization* serialization) const;
 
 
-    boost::shared_ptr<Node> getNode() const;
-    boost::shared_ptr<KnobChoice> getCorrelationScoreTypeKnob() const;
-    boost::shared_ptr<KnobBool> getEnabledKnob() const;
-    boost::shared_ptr<KnobPage> getTrackingPageKnob() const;
+    NodePtr getNode() const;
+    KnobChoicePtr getCorrelationScoreTypeKnob() const;
+    KnobBoolPtr getEnabledKnob() const;
+    KnobPagePtr getTrackingPageKnob() const;
 
-    boost::shared_ptr<KnobInt> getDefaultMarkerPatternWinSizeKnob() const;
+    KnobIntPtr getDefaultMarkerPatternWinSizeKnob() const;
 
-    boost::shared_ptr<KnobInt> getDefaultMarkerSearchWinSizeKnob() const;
+    KnobIntPtr getDefaultMarkerSearchWinSizeKnob() const;
 
     bool isTrackerPMEnabled() const;
 
@@ -281,7 +282,7 @@ public:
 
     void inputChanged(int inputNb);
 
-    bool knobChanged(KnobI* k,
+    bool knobChanged(const KnobIPtr& k,
                      ValueChangedReasonEnum reason,
                      ViewSpec view,
                      double time,
@@ -294,17 +295,17 @@ public:
 
     void declareItemAsPythonField(const TrackMarkerPtr& item);
 
-    /*boost::shared_ptr<KnobDouble> getSearchWindowBottomLeftKnob() const;
-       boost::shared_ptr<KnobDouble> getSearchWindowTopRightKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternTopLeftKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternTopRightKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternBtmRightKnob() const;
-       boost::shared_ptr<KnobDouble> getPatternBtmLeftKnob() const;
-       boost::shared_ptr<KnobDouble> getWeightKnob() const;
-       boost::shared_ptr<KnobDouble> getCenterKnob() const;
-       boost::shared_ptr<KnobDouble> getOffsetKnob() const;
-       boost::shared_ptr<KnobDouble> getCorrelationKnob() const;
-       boost::shared_ptr<KnobChoice> getMotionModelKnob() const;*/
+    /*KnobDoublePtr getSearchWindowBottomLeftKnob() const;
+       KnobDoublePtr getSearchWindowTopRightKnob() const;
+       KnobDoublePtr getPatternTopLeftKnob() const;
+       KnobDoublePtr getPatternTopRightKnob() const;
+       KnobDoublePtr getPatternBtmRightKnob() const;
+       KnobDoublePtr getPatternBtmLeftKnob() const;
+       KnobDoublePtr getWeightKnob() const;
+       KnobDoublePtr getCenterKnob() const;
+       KnobDoublePtr getOffsetKnob() const;
+       KnobDoublePtr getCorrelationKnob() const;
+       KnobChoicePtr getMotionModelKnob() const;*/
 
     void s_keyframeSetOnTrack(const TrackMarkerPtr& marker,
                               int key) { Q_EMIT keyframeSetOnTrack(marker, key); }
@@ -439,8 +440,8 @@ public:
     TrackArgs(int start,
               int end,
               int step,
-              const boost::shared_ptr<TimeLine>& timeline,
-              ViewerInstance* viewer,
+              const TimeLinePtr& timeline,
+              const ViewerInstancePtr& viewer,
               const boost::shared_ptr<mv::AutoTrack>& autoTrack,
               const boost::shared_ptr<TrackerFrameAccessor>& fa,
               const std::vector<boost::shared_ptr<TrackMarkerAndOptions> >& tracks,
@@ -465,7 +466,7 @@ public:
 
     int getStep() const;
 
-    boost::shared_ptr<TimeLine> getTimeLine() const;
+    TimeLinePtr getTimeLine() const;
     ViewerInstance* getViewer() const;
 
     int getNumTracks() const;

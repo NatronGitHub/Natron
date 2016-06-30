@@ -39,14 +39,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    OneViewNode(const NodePtr& n);
+
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new OneViewNode(n);
+        return EffectInstancePtr( new OneViewNode(node) );
     }
-
-    OneViewNode(NodePtr n);
 
     virtual ~OneViewNode();
 

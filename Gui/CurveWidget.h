@@ -72,7 +72,7 @@ public:
     /*Pass a null timeline ptr if you don't want interaction with the global timeline. */
     CurveWidget(Gui* gui,
                 CurveSelection* selection,
-                boost::shared_ptr<TimeLine> timeline = boost::shared_ptr<TimeLine>(),
+                TimeLinePtr timeline = TimeLinePtr(),
                 QWidget* parent = NULL,
                 const QGLWidget* shareWidget = NULL);
 

@@ -64,11 +64,11 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 {
     ///For all frames/views needed, call recursively on inputs with the appropriate RoI
 
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     bool isRoto = node->isRotoPaintingNode();
 
-    //Same as FramesNeededMap but we also get a pointer to EffectInstance* as key
-    typedef std::map<EffectInstPtr, std::pair</*inputNb*/ int, FrameRangesMap> > PreRenderFrames;
+    //Same as FramesNeededMap but we also get a pointer to EffectInstancePtr as key
+    typedef std::map<EffectInstancePtr, std::pair</*inputNb*/ int, FrameRangesMap> > PreRenderFrames;
 
     PreRenderFrames framesToRender;
     //Add frames needed to the frames to render
@@ -92,7 +92,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         }
 
         //Redirect for transforms if needed
-        EffectInstPtr inputEffect;
+        EffectInstancePtr inputEffect;
         if (reroutesMap) {
             InputMatrixMap::const_iterator foundReroute = reroutesMap->find(inputNb);
             if ( foundReroute != reroutesMap->end() ) {
@@ -134,7 +134,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
     }
 
     for (PreRenderFrames::const_iterator it = framesToRender.begin(); it != framesToRender.end(); ++it) {
-        const EffectInstPtr& inputEffect = it->first;
+        const EffectInstancePtr& inputEffect = it->first;
         NodePtr inputNode = inputEffect->getNode();
         assert(inputNode);
 
@@ -327,7 +327,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                      FrameRequestMap& requests)
 {
     boost::shared_ptr<NodeFrameRequest> nodeRequest;
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
 
     assert(effect);
 
@@ -451,7 +451,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         //Should fail on the assert above
         return eStatusFailed;
     } else if (fvRequest->globalData.identityInputNb != -1) {
-        EffectInstPtr inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
+        EffectInstancePtr inputEffectIdentity = effect->getInput(fvRequest->globalData.identityInputNb);
         if (inputEffectIdentity) {
             fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
 
@@ -494,7 +494,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     ///Transform Rois and get the reroutes map
     if (useTransforms) {
         if (fvRequest->globalData.transforms) {
-            fvRequest->globalData.reroutesMap.reset( new std::map<int, EffectInstPtr>() );
+            fvRequest->globalData.reroutesMap.reset( new std::map<int, EffectInstancePtr>() );
             transformInputRois( effect.get(), fvRequest->globalData.transforms, par, nodeRequest->mappedScale, &fvPerRequestData.inputsRoi, fvRequest->globalData.reroutesMap.get() );
         }
     }
@@ -721,13 +721,13 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         const NodePtr& node = it->first;
         nodes.push_back(node);
 
-        EffectInstPtr liveInstance = node->getEffectInstance();
+        EffectInstancePtr liveInstance = node->getEffectInstance();
         assert(liveInstance);
         bool duringPaintStrokeCreation = activeRotoPaintNode && node->isDuringPaintStrokeCreation();
         RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
         PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
         NodesList rotoPaintNodes;
-        boost::shared_ptr<RotoContext> roto = node->getRotoContext();
+        RotoContextPtr roto = node->getRotoContext();
         if (roto) {
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         }
@@ -757,7 +757,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
                 U64 nodeHash = (*it2)->getHashValue();
 
                 assert(*it2);
-                EffectInstPtr childLiveInstance = (*it2)->getEffectInstance();
+                EffectInstancePtr childLiveInstance = (*it2)->getEffectInstance();
                 assert(childLiveInstance);
                 RenderSafetyEnum childSafety = (*it2)->getCurrentRenderThreadSafety();
                 PluginOpenGLRenderSupport childGlSupport = (*it2)->getCurrentOpenGLRenderSupport();
@@ -766,7 +766,7 @@ ParallelRenderArgsSetter::ParallelRenderArgsSetter(double time,
         }
 
 
-        /* NodeGroup* isGrp = node->isEffectGroup();
+        /* NodeGroupPtr isGrp = node->isEffectNodeGroup();
            if (isGrp) {
              isGrp->setParallelRenderArgs(time, view, isRenderUserInteraction, isSequential, canAbort,  renderAge, treeRoot, request, textureIndex, timeline, activeRotoPaintNode, isAnalysis, draftMode,stats);
            }*/
@@ -785,7 +785,7 @@ ParallelRenderArgsSetter::updateNodesRequest(const FrameRequestMap& request)
         }
 
         NodesList rotoPaintNodes;
-        boost::shared_ptr<RotoContext> roto = (*it)->getRotoContext();
+        RotoContextPtr roto = (*it)->getRotoContext();
         if (roto) {
             roto->getRotoPaintTreeNodes(&rotoPaintNodes);
         }
@@ -850,7 +850,7 @@ ParallelRenderArgsSetter::~ParallelRenderArgsSetter()
             }
         }
 
-        /* NodeGroup* isGrp = (*it)->isEffectGroup();
+        /* NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
            if (isGrp) {
              isGrp->invalidateParallelRenderArgs();
            }*/
@@ -897,7 +897,7 @@ ParallelRenderArgs::ParallelRenderArgs()
 bool
 ParallelRenderArgs::isCurrentFrameRenderNotAbortable() const
 {
-    boost::shared_ptr<AbortableRenderInfo> info = abortInfo.lock();
+    AbortableRenderInfoPtr info = abortInfo.lock();
 
     return isRenderResponseToUserInteraction && ( !info || !info->canAbort() );
 }

@@ -103,7 +103,7 @@ CurveWidget::getUndoStack() const
 
 CurveWidget::CurveWidget(Gui* gui,
                          CurveSelection* selection,
-                         boost::shared_ptr<TimeLine> timeline,
+                         TimeLinePtr timeline,
                          QWidget* parent,
                          const QGLWidget* shareWidget)
     : QGLWidget(parent, shareWidget)
@@ -116,7 +116,7 @@ CurveWidget::CurveWidget(Gui* gui,
     setMouseTracking(true);
 
     if (timeline) {
-        boost::shared_ptr<Project> project = gui->getApp()->getProject();
+        ProjectPtr project = gui->getApp()->getProject();
         assert(project);
         QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimeLineFrameChanged(SequenceTime,int)) );
         QObject::connect( project.get(), SIGNAL(frameRangeChanged(int,int)), this, SLOT(onTimeLineBoundariesChanged(int,int)) );
@@ -647,7 +647,7 @@ CurveWidget::mouseDoubleClickEvent(QMouseEvent* e)
         KnobGuiPtr knobUI = isKnobCurve->getKnobGui();
         if (knobUI) {
             int curveDim = isKnobCurve->getDimension();
-            KnobPtr internalKnob = knobUI->getKnob();
+            KnobIPtr internalKnob = knobUI->getKnob();
             if ( internalKnob && ( !internalKnob->isEnabled(curveDim) || internalKnob->isSlave(curveDim) ) ) {
                 return;
             }
@@ -973,22 +973,22 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                 _imp->_gui->setDraftRenderEnabled(false);
             }
 
-            std::map<KnobHolder*, bool> toEvaluate;
-            std::list<boost::shared_ptr<RotoContext> > rotoToEvaluate;
+            std::map<KnobHolderPtr, bool> toEvaluate;
+            std::list<RotoContextPtr > rotoToEvaluate;
             for (SelectedKeys::iterator it = _imp->_selectedKeyFrames.begin(); it != _imp->_selectedKeyFrames.end(); ++it) {
                 KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->first.get() );
                 BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( it->first.get() );
                 if (isKnobCurve) {
                     if ( !isKnobCurve->getKnobGui() ) {
-                        boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
+                        RotoContextPtr roto = isKnobCurve->getRotoContext();
                         assert(roto);
                         rotoToEvaluate.push_back(roto);
                     } else {
-                        KnobPtr knob = isKnobCurve->getInternalKnob();
+                        KnobIPtr knob = isKnobCurve->getInternalKnob();
                         assert(knob);
-                        KnobHolder* holder = knob->getHolder();
+                        KnobHolderPtr holder = knob->getHolder();
                         assert(holder);
-                        std::map<KnobHolder*, bool>::iterator found = toEvaluate.find(holder);
+                        std::map<KnobHolderPtr, bool>::iterator found = toEvaluate.find(holder);
                         bool evaluateOnChange = knob->getEvaluateOnChange();
                         if ( ( found != toEvaluate.end() ) && !found->second && evaluateOnChange ) {
                             found->second = true;
@@ -1000,10 +1000,10 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
                     rotoToEvaluate.push_back( isBezierCurve->getRotoContext() );
                 }
             }
-            for (std::map<KnobHolder*, bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
+            for (std::map<KnobHolderPtr, bool>::iterator it = toEvaluate.begin(); it != toEvaluate.end(); ++it) {
                 it->first->incrHashAndEvaluate(it->second, false);
             }
-            for (std::list<boost::shared_ptr<RotoContext> >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
+            for (std::list<RotoContextPtr >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
                 (*it)->evaluateChange();
             }
         } else if (_imp->_state == eEventStateDraggingTangent) {
@@ -1015,11 +1015,11 @@ CurveWidget::mouseReleaseEvent(QMouseEvent*)
             BezierCPCurveGui* isBezierCurve = dynamic_cast<BezierCPCurveGui*>( _imp->_selectedDerivative.second->curve.get() );
             if (isKnobCurve) {
                 if ( !isKnobCurve->getKnobGui() ) {
-                    boost::shared_ptr<RotoContext> roto = isKnobCurve->getRotoContext();
+                    RotoContextPtr roto = isKnobCurve->getRotoContext();
                     assert(roto);
                     roto->evaluateChange();
                 } else {
-                    KnobPtr toEvaluate = isKnobCurve->getInternalKnob();
+                    KnobIPtr toEvaluate = isKnobCurve->getInternalKnob();
                     assert(toEvaluate);
                     toEvaluate->getHolder()->incrHashAndEvaluate(true, false);
                 }
@@ -2019,10 +2019,10 @@ CurveWidget::exportCurveToAscii()
 
     std::vector<boost::shared_ptr<CurveGui> > curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
         if ( (*it)->isVisible() && isKnobCurve ) {
-            KnobPtr knob = isKnobCurve->getInternalKnob();
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+            KnobIPtr knob = isKnobCurve->getInternalKnob();
+            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );
 
@@ -2097,10 +2097,10 @@ CurveWidget::importCurveFromAscii()
 
     std::vector<boost::shared_ptr<CurveGui> > curves;
     for (Curves::iterator it = _imp->_curves.begin(); it != _imp->_curves.end(); ++it) {
-        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->get() );
+        KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it);
         if ( (*it)->isVisible() && isKnobCurve ) {
-            KnobPtr knob = isKnobCurve->getInternalKnob();
-            Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
+            KnobIPtr knob = isKnobCurve->getInternalKnob();
+            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
             if (isString) {
                 Dialogs::warningDialog( tr("Curve Editor").toStdString(), tr("String curves cannot be imported/exported.").toStdString() );
 

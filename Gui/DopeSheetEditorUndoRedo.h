@@ -180,8 +180,8 @@ private:
     struct TransformKeyData
     {
         DSKeyPtrList keys;
-        boost::shared_ptr<Curve> oldCurve;
-        boost::shared_ptr<Curve> newCurve;
+        CurvePtr oldCurve;
+        CurvePtr newCurve;
     };
 
     typedef std::map<boost::shared_ptr<DSKnob>, TransformKeyData> TransformKeys;
@@ -392,7 +392,7 @@ public:
     void redo() OVERRIDE FINAL;
 
 
-    static void setKeyValueFromKnob(const KnobPtr& knob, double keyTime, KeyFrame* key);
+    static void setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key);
 private:
     /**
      * @brief If 'add' is true, paste the keyframes contained in the dope

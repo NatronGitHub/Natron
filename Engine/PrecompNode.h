@@ -45,14 +45,15 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+private: // derives from EffectInstance
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    PrecompNode(const NodePtr& n);
+
 public:
-
-    static EffectInstance* BuildEffect(NodePtr n)
+    static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
-        return new PrecompNode(n);
+        return EffectInstancePtr( new PrecompNode(node) );
     }
-
-    PrecompNode(NodePtr n);
 
     virtual ~PrecompNode();
 
@@ -106,7 +107,7 @@ public:
 
     void getPrecompInputs(NodesList* nodes) const;
 
-    AppInstPtr getPrecompApp() const;
+    AppInstancePtr getPrecompApp() const;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
 public Q_SLOTS:
@@ -119,7 +120,7 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsLoaded() OVERRIDE FINAL;
-    virtual bool knobChanged(KnobI* k,
+    virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSpec view,
                              double time,

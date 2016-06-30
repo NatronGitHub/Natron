@@ -112,7 +112,7 @@ public:
     explicit DopeSheetView(DopeSheet *model,
                            HierarchyView *hierarchyView,
                            Gui *gui,
-                           const boost::shared_ptr<TimeLine> &timeline,
+                           const TimeLinePtr &timeline,
                            QWidget *parent = 0);
 
     virtual ~DopeSheetView() OVERRIDE;

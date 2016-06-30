@@ -128,24 +128,24 @@ ProjectPrivate::restoreFromSerialization(const ProjectSerialization & obj,
         formatKnob->populateChoices(entries);
         autoSetProjectFormat = false;
 
-        const std::list< boost::shared_ptr<KnobSerialization> > & projectSerializedValues = obj.getProjectKnobsValues();
-        const std::vector< KnobPtr > & projectKnobs = _publicInterface->getKnobs();
+        const std::list<KnobSerializationPtr> & projectSerializedValues = obj.getProjectKnobsValues();
+        const std::vector< KnobIPtr > & projectKnobs = _publicInterface->getKnobs();
 
         /// 1) restore project's knobs.
         for (U32 i = 0; i < projectKnobs.size(); ++i) {
             ///try to find a serialized value for this knob
-            for (std::list< boost::shared_ptr<KnobSerialization> >::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
+            for (std::list<KnobSerializationPtr>::const_iterator it = projectSerializedValues.begin(); it != projectSerializedValues.end(); ++it) {
                 if ( (*it)->getName() == projectKnobs[i]->getName() ) {
                     ///EDIT: Allow non persistent params to be loaded if we found a valid serialization for them
                     //if ( projectKnobs[i]->getIsPersistant() ) {
 
-                    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( projectKnobs[i].get() );
+                    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>( projectKnobs[i].get() );
                     if (isChoice) {
                         const TypeExtraData* extraData = (*it)->getExtraData();
                         const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                         assert(choiceData);
                         if (choiceData) {
-                            KnobChoice* serializedKnob = dynamic_cast<KnobChoice*>( (*it)->getKnob().get() );
+                            KnobChoicePtr serializedKnob = boost::dynamic_pointer_cast<KnobChoice>( (*it)->getKnob().get() );
                             assert(serializedKnob);
                             if (serializedKnob) {
                                 isChoice->choiceRestoration(serializedKnob, choiceData);

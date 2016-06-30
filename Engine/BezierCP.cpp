@@ -793,37 +793,37 @@ BezierCP::smoothPoint(bool useGuiCurves,
     return keyframeSet;
 } // BezierCP::smoothPoint
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getXCurve() const
 {
     return _imp->curveX;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getYCurve() const
 {
     return _imp->curveY;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getLeftXCurve() const
 {
     return _imp->curveLeftBezierX;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getLeftYCurve() const
 {
     return _imp->curveLeftBezierY;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getRightXCurve() const
 {
     return _imp->curveRightBezierX;
 }
 
-boost::shared_ptr<Curve>
+CurvePtr
 BezierCP::getRightYCurve() const
 {
     return _imp->curveRightBezierY;

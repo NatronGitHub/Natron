@@ -106,7 +106,7 @@ ItemBase::getVisible() const
 Layer*
 ItemBase::getParentLayer() const
 {
-    boost::shared_ptr<RotoLayer> layer =  _item->getParentLayer();
+    RotoLayerPtr layer =  _item->getParentLayer();
 
     if (layer) {
         return new Layer(layer);
@@ -123,7 +123,7 @@ ItemBase::getParam(const QString& name) const
     if (!drawable) {
         return 0;
     }
-    KnobPtr knob = drawable->getKnobByName( name.toStdString() );
+    KnobIPtr knob = drawable->getKnobByName( name.toStdString() );
     if (!knob) {
         return 0;
     }
@@ -459,7 +459,7 @@ BezierCurve::getCompositingOperator() const
 BooleanParam*
 BezierCurve::getActivatedParam() const
 {
-    boost::shared_ptr<KnobBool> ret = _bezier->getActivatedKnob();
+    KnobBoolPtr ret = _bezier->getActivatedKnob();
 
     if (ret) {
         return new BooleanParam(ret);
@@ -471,7 +471,7 @@ BezierCurve::getActivatedParam() const
 DoubleParam*
 BezierCurve::getOpacityParam() const
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getOpacityKnob();
+    KnobDoublePtr ret = _bezier->getOpacityKnob();
 
     if (ret) {
         return new DoubleParam(ret);
@@ -483,7 +483,7 @@ BezierCurve::getOpacityParam() const
 DoubleParam*
 BezierCurve::getFeatherDistanceParam() const
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherKnob();
+    KnobDoublePtr ret = _bezier->getFeatherKnob();
 
     if (ret) {
         return new DoubleParam(ret);
@@ -495,7 +495,7 @@ BezierCurve::getFeatherDistanceParam() const
 DoubleParam*
 BezierCurve::getFeatherFallOffParam() const
 {
-    boost::shared_ptr<KnobDouble> ret = _bezier->getFeatherFallOffKnob();
+    KnobDoublePtr ret = _bezier->getFeatherFallOffKnob();
 
     if (ret) {
         return new DoubleParam(ret);
@@ -507,7 +507,7 @@ BezierCurve::getFeatherFallOffParam() const
 ColorParam*
 BezierCurve::getColorParam() const
 {
-    boost::shared_ptr<KnobColor> ret = _bezier->getColorKnob();
+    KnobColorPtr ret = _bezier->getColorKnob();
 
     if (ret) {
         return new ColorParam(ret);
@@ -519,7 +519,7 @@ BezierCurve::getColorParam() const
 ChoiceParam*
 BezierCurve::getCompositingOperatorParam() const
 {
-    boost::shared_ptr<KnobChoice> ret = _bezier->getOperatorKnob();
+    KnobChoicePtr ret = _bezier->getOperatorKnob();
 
     if (ret) {
         return new ChoiceParam(ret);
@@ -528,7 +528,7 @@ BezierCurve::getCompositingOperatorParam() const
     return 0;
 }
 
-Roto::Roto(const boost::shared_ptr<RotoContext>& ctx)
+Roto::Roto(const RotoContextPtr& ctx)
     : _ctx(ctx)
 {
 }
@@ -540,7 +540,7 @@ Roto::~Roto()
 Layer*
 Roto::getBaseLayer() const
 {
-    const std::list<boost::shared_ptr<RotoLayer> >& layers = _ctx->getLayers();
+    const std::list<RotoLayerPtr >& layers = _ctx->getLayers();
 
     if ( !layers.empty() ) {
         return new Layer( layers.front() );
@@ -576,7 +576,7 @@ Roto::getItemByName(const QString& name) const
 Layer*
 Roto::createLayer()
 {
-    boost::shared_ptr<RotoLayer>  layer = _ctx->addLayer();
+    RotoLayerPtr  layer = _ctx->addLayer();
 
     if (layer) {
         return new Layer(layer);

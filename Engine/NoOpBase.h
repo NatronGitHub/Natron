@@ -46,7 +46,15 @@ class NoOpBase
 {
 public:
 
-    NoOpBase(NodePtr n);
+protected: // derives from EffectInstance, parent of Backdrop, Dot, groupInput, GroupOutput
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
+    NoOpBase(const NodePtr& n);
+
+public:
+    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
+    //{
+    //    return EffectInstancePtr( new NoOpBase(node) );
+    //}
 
     virtual int getMajorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -90,7 +98,7 @@ public:
     virtual StatusEnum getTransform(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    EffectInstPtr* inputToTransform,
+                                    EffectInstancePtr* inputToTransform,
                                     Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN

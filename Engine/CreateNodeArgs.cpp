@@ -37,7 +37,7 @@ CreateNodeArgs::CreateNodeArgs()
 }
 
 CreateNodeArgs::CreateNodeArgs(const std::string& pluginID,
-               const boost::shared_ptr<NodeCollection>& group)
+               const NodeCollectionPtr& group)
 : _properties()
 {
     createProperties();

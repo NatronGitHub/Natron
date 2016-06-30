@@ -55,7 +55,7 @@ class ToolButton
 public:
 
 
-    ToolButton( const GuiAppInstPtr& app,
+    ToolButton( const GuiAppInstancePtr& app,
                 const boost::shared_ptr<PluginGroupNode>& pluginToolButton,
                 const QString & pluginID,
                 int major,

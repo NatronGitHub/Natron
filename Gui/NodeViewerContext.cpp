@@ -64,11 +64,11 @@ struct NodeViewerContextPrivate
     Q_DECLARE_TR_FUNCTIONS(NodeViewerContext)
 
 public:
-    NodeViewerContext* publicInterface;
+    NodeViewerContext* publicInterface; // can not be a smart ptr
     NodeGuiWPtr node;
     ViewerGL* viewer;
     ViewerTab* viewerTab;
-    std::map<KnobWPtr, KnobGuiPtr> knobsMapping;
+    std::map<KnobIWPtr, KnobGuiPtr> knobsMapping;
     QString currentRole, currentTool;
     QToolBar* toolbar;
     std::map<QString, ViewerToolButton*> toolButtons;
@@ -183,29 +183,29 @@ NodeViewerContext::createGui()
     }
 
     const KnobsVec& allKnobs = node->getNode()->getKnobs();
-    KnobPage* toolbarPage = 0;
+    KnobPagePtr toolbarPage = 0;
     for (KnobsVec::const_iterator it = allKnobs.begin(); it != allKnobs.end(); ++it) {
-        KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
+        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
         if ( isPage && isPage->getIsToolBar() ) {
             toolbarPage = isPage;
             break;
         }
     }
     if (toolbarPage) {
-        std::vector<KnobPtr> pageChildren = toolbarPage->getChildren();
+        KnobsVec pageChildren = toolbarPage->getChildren();
         if ( !pageChildren.empty() ) {
             _imp->toolbar = new QToolBar(_imp->viewer);
             _imp->toolbar->setOrientation(Qt::Vertical);
 
             for (std::size_t i = 0; i < pageChildren.size(); ++i) {
-                KnobGroup* isGroup = dynamic_cast<KnobGroup*>( pageChildren[i].get() );
+                KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>( pageChildren[i].get() );
                 if (isGroup) {
                     QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)) );
-                    std::vector<KnobPtr> toolButtonChildren = isGroup->getChildren();
+                    KnobsVec toolButtonChildren = isGroup->getChildren();
                     ViewerToolButton* createdToolButton = 0;
                     QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
-                        KnobButton* isButton = dynamic_cast<KnobButton*>( toolButtonChildren[j].get() );
+                        KnobButton* isButton = boost::dynamic_pointer_cast<KnobButton>( toolButtonChildren[j].get() );
                         if (isButton) {
                             QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolActionValueChanged(ViewSpec,int,int)) );
                             const std::string& roleShortcutID = isGroup->getName();
@@ -460,9 +460,9 @@ NodeViewerContext::pushUndoCommand(QUndoCommand* cmd)
 }
 
 KnobGuiPtr
-NodeViewerContext::getKnobGui(const KnobPtr& knob) const
+NodeViewerContext::getKnobGui(const KnobIPtr& knob) const
 {
-    std::map<KnobWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
+    std::map<KnobIWPtr, KnobGuiPtr>::const_iterator found =  _imp->knobsMapping.find(knob);
 
     if ( found == _imp->knobsMapping.end() ) {
         return KnobGuiPtr();
@@ -530,7 +530,7 @@ NodeViewerContext::onToolGroupValueChanged(ViewSpec /*view*/,
     if (!caller) {
         return;
     }
-    KnobPtr knob = caller->getKnob();
+    KnobIPtr knob = caller->getKnob();
     if (!knob) {
         return;
     }
@@ -565,7 +565,7 @@ NodeViewerContext::onToolActionValueChanged(ViewSpec /*view*/,
     if (!caller) {
         return;
     }
-    KnobPtr knob = caller->getKnob();
+    KnobIPtr knob = caller->getKnob();
     if (!knob) {
         return;
     }
@@ -652,22 +652,22 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
             }
         }
 
-        KnobPtr oldGroupKnob = n->getNode()->getKnobByName( oldRole.toStdString() );
-        KnobPtr newGroupKnob = n->getNode()->getKnobByName( newRoleID.toStdString() );
-        KnobPtr oldToolKnob = n->getNode()->getKnobByName( oldTool.toStdString() );
-        KnobPtr newToolKnob = n->getNode()->getKnobByName( newToolID.toStdString() );
+        KnobIPtr oldGroupKnob = n->getNode()->getKnobByName( oldRole.toStdString() );
+        KnobIPtr newGroupKnob = n->getNode()->getKnobByName( newRoleID.toStdString() );
+        KnobIPtr oldToolKnob = n->getNode()->getKnobByName( oldTool.toStdString() );
+        KnobIPtr newToolKnob = n->getNode()->getKnobByName( newToolID.toStdString() );
         assert(newToolKnob && newGroupKnob);
         if (newToolKnob && newGroupKnob) {
 
-            KnobButton* oldIsButton = oldToolKnob ? dynamic_cast<KnobButton*>( oldToolKnob.get() ) : 0;
-            KnobButton* newIsButton = dynamic_cast<KnobButton*>( newToolKnob.get() );
+            KnobButton* oldIsButton = oldToolKnob ? boost::dynamic_pointer_cast<KnobButton>( oldToolKnob.get() ) : 0;
+            KnobButton* newIsButton = boost::dynamic_pointer_cast<KnobButton>( newToolKnob.get() );
             assert(newIsButton);
 
-            KnobGroup* oldIsGroup = oldGroupKnob ? dynamic_cast<KnobGroup*>( oldGroupKnob.get() ) : 0;
-            KnobGroup* newIsGroup = dynamic_cast<KnobGroup*>( newGroupKnob.get() );
+            KnobGroupPtr oldIsGroup = oldGroupKnob ? boost::dynamic_pointer_cast<KnobGroup>( oldGroupKnob.get() ) : 0;
+            KnobGroupPtr newIsGroup = boost::dynamic_pointer_cast<KnobGroup>( newGroupKnob.get() );
             assert(newIsGroup);
             if (newIsButton && newIsGroup) {
-                EffectInstPtr effect = n->getNode()->getEffectInstance();
+                EffectInstancePtr effect = n->getNode()->getEffectInstance();
 
                 if (oldIsGroup) {
                     if (oldIsGroup->getValue() != false) {

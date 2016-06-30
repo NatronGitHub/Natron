@@ -85,7 +85,7 @@ private:
         ar & boost::serialization::make_nvp("Label", _label);
         int nbItems = (int)_knobs.size();
         ar & boost::serialization::make_nvp("NbItems", nbItems);
-        for (std::list<boost::shared_ptr<KnobSerialization> >::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
+        for (std::list<KnobSerializationPtr>::const_iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
             ar & boost::serialization::make_nvp("Item", **it);
         }
 
@@ -130,7 +130,7 @@ private:
     bool _enabled;
     bool _isPM;
     std::string _label, _scriptName;
-    std::list<boost::shared_ptr<KnobSerialization> > _knobs;
+    std::list<KnobSerializationPtr> _knobs;
     std::list<int> _userKeys;
 };
 

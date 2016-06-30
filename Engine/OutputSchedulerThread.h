@@ -560,7 +560,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-    ViewerCurrentFrameRequestScheduler(ViewerInstance* viewer);
+    ViewerCurrentFrameRequestScheduler(const ViewerInstancePtr& viewer);
 
     virtual ~ViewerCurrentFrameRequestScheduler();
 

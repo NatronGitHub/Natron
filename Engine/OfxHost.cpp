@@ -695,7 +695,7 @@ OfxHost::getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* 
 } // OfxHost::getPluginContextAndDescribe
 
 boost::shared_ptr<AbstractOfxEffectInstance>
-OfxHost::createOfxEffect(NodePtr node,
+OfxHost::createOfxEffect(const NodePtr& node,
                          const CreateNodeArgs& args
 #ifndef NATRON_ENABLE_IO_META_NODES
                          ,
@@ -713,8 +713,9 @@ OfxHost::createOfxEffect(NodePtr node,
     assert(plugin && desc && ctx != eContextNone);
 
 
-    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect( new OfxEffectInstance(node) );
-    boost::shared_ptr<NodeSerialization> serialization = args.getProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization);
+    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect = boost::dynamic_pointer_cast<AbstractOfxEffectInstance>( )OfxEffectInstance::create(node) );
+    assert(hostSideEffect);
+    NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     if ( node && !node->getEffectInstance() ) {
@@ -1621,7 +1622,9 @@ OfxHost::requestDialog(OfxImageEffectHandle instance,
     Q_UNUSED(inArgs);
     OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
     OfxImageEffectInstance *effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
-    appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
+    if (effectInstance) {
+        appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
+    }
 
     return kOfxStatOK;
 }

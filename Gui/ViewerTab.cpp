@@ -68,8 +68,8 @@ static void
 makeFullyQualifiedLabel(Node* node,
                         std::string* ret)
 {
-    boost::shared_ptr<NodeCollection> parent = node->getGroup();
-    NodeGroup* isParentGrp = dynamic_cast<NodeGroup*>( parent.get() );
+    NodeCollectionPtr parent = node->getGroup();
+    NodeGroupPtr isParentGrp = boost::dynamic_pointer_cast<NodeGroup>(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -718,7 +718,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playbackMode_Button->setToolTip( GuiUtils::convertFromPlainText(tr("Behaviour to adopt when the playback hit the end of the range: loop,bounce or stop."), Qt::WhiteSpaceNormal) );
 
 
-    boost::shared_ptr<TimeLine> timeline = getGui()->getApp()->getTimeLine();
+    TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
     QPixmap tripleSyncUnlockPix, tripleSyncLockedPix;
     appPTR->getIcon(NATRON_PIXMAP_UNLOCKED, pixmapIconSize, &tripleSyncUnlockPix);
     appPTR->getIcon(NATRON_PIXMAP_LOCKED, pixmapIconSize, &tripleSyncLockedPix);

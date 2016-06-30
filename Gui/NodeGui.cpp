@@ -248,7 +248,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
-    OutputEffectInstance* isOutput = dynamic_cast<OutputEffectInstance*>( internalNode->getEffectInstance().get() );
+    OutputEffectInstance* isOutput = boost::dynamic_pointer_cast<OutputEffectInstance>( internalNode->getEffectInstance() );
     if (isOutput) {
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
@@ -267,7 +267,7 @@ NodeGui::initialize(NodeGraph* dag,
         assert(parentGui);
         if ( parentGui && parentGui->isSettingsPanelVisible() ) {
             ensurePanelCreated();
-            boost::shared_ptr<MultiInstancePanel> panel = parentGui->getMultiInstancePanel();
+            MultiInstancePanelPtr panel = parentGui->getMultiInstancePanel();
             assert(panel);
             panel->onChildCreated(internalNode);
         }
@@ -277,9 +277,9 @@ NodeGui::initialize(NodeGraph* dag,
 
     //Refresh the merge operator icon
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
-        KnobPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
+        KnobIPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
-        KnobString* strKnob = dynamic_cast<KnobString*>( knob.get() );
+        KnobStringPtr strKnob = boost::dynamic_pointer_cast<KnobString>(knob);
         if (strKnob) {
             onNodeExtraLabelChanged( QString::fromUtf8( strKnob->getValue().c_str() ) );
         }
@@ -300,7 +300,7 @@ NodeGui::initialize(NodeGraph* dag,
 
 
     ///Make the output edge
-    EffectInstPtr iseffect = internalNode->getEffectInstance();
+    EffectInstancePtr iseffect = internalNode->getEffectInstance();
     Backdrop* isBd = dynamic_cast<Backdrop*>( iseffect.get() );
     if ( !isBd && !internalNode->isOutputNode() ) {
         _outputEdge = new Edge( thisAsShared, parentItem() );
@@ -328,8 +328,8 @@ void
 NodeGui::setColorFromGrouping()
 {
     NodePtr internalNode = getNode();
-    EffectInstPtr iseffect = internalNode->getEffectInstance();
-    boost::shared_ptr<Settings> settings = appPTR->getCurrentSettings();
+    EffectInstancePtr iseffect = internalNode->getEffectInstance();
+    SettingsPtr settings = appPTR->getCurrentSettings();
     float r, g, b;
     Backdrop* isBd = dynamic_cast<Backdrop*>( iseffect.get() );
     std::list<std::string> grouping;
@@ -383,7 +383,7 @@ NodeGui::restoreStateAfterCreation()
     ///Refresh the disabled knob
 
     setColorFromGrouping();
-    boost::shared_ptr<KnobBool> disabledknob = internalNode->getDisabledKnob();
+    KnobBoolPtr disabledknob = internalNode->getDisabledKnob();
     if ( disabledknob && disabledknob->getValue() ) {
         onDisabledKnobToggled(true);
     }
@@ -426,7 +426,7 @@ NodeGui::ensurePanelCreated()
 
     //Ensure panel for all children if multi-instance
 
-    boost::shared_ptr<MultiInstancePanel> panel = getMultiInstancePanel();
+    MultiInstancePanelPtr panel = getMultiInstancePanel();
     if (_mainInstancePanel && panel) {
         panel->setRedrawOnSelectionChanged(false);
 
@@ -481,7 +481,7 @@ NodeGui::createPanel(QVBoxLayout* container,
 
     if ( node->getEffectInstance()->getMakeSettingsPanel() ) {
         assert(container);
-        boost::shared_ptr<MultiInstancePanel> multiPanel;
+        MultiInstancePanelPtr multiPanel;
         if ( node->isTrackerNodePlugin() && node->isMultiInstance() && node->getParentMultiInstanceName().empty() ) {
             multiPanel.reset( new TrackerPanelV1(thisAsShared) );
 
@@ -489,7 +489,7 @@ NodeGui::createPanel(QVBoxLayout* container,
             ///The "real" panel showed on the gui will be the _settingsPanel, but we still need to create
             ///another panel for the main-instance (hidden) knobs to function properly (and also be showed in the CurveEditor)
 
-            _mainInstancePanel = new NodeSettingsPanel( boost::shared_ptr<MultiInstancePanel>(), _graph->getGui(),
+            _mainInstancePanel = new NodeSettingsPanel( MultiInstancePanelPtr(), _graph->getGui(),
                                                         thisAsShared, container, container->parentWidget() );
             _mainInstancePanel->blockSignals(true);
             _mainInstancePanel->setClosed(true);
@@ -629,8 +629,8 @@ NodeGui::createGui()
 
     onAvailableViewsChanged();
 
-    GroupInput* isGroupInput = dynamic_cast<GroupInput*>( node->getEffectInstance().get() );
-    GroupOutput* isGroupOutput = dynamic_cast<GroupOutput*>( node->getEffectInstance().get() );
+    GroupInputPtr isGroupInput = node->isEffectGroupInput();
+    GroupOutputPtr isGroupOutput = boost::dynamic_pointer_cast<GroupOutput>( node->getEffectInstance() );
 
     if (!isGroupInput && !isGroupOutput) {
         QGradientStops ptGrad;
@@ -967,7 +967,7 @@ NodeGui::refreshPositionEnd(double x,
 
         for (NodesGuiList::const_iterator it = allNodes.begin(); it != allNodes.end(); ++it) {
             if ( (*it)->isVisible() && (it->get() != this) && (*it)->intersects(bbox) ) {
-                setAboveItem( it->get() );
+                setAboveItem(*it);
             }
         }
     }
@@ -1154,7 +1154,7 @@ NodeGui::changePosition(double dx,
 void
 NodeGui::refreshDashedStateOfEdges()
 {
-    ViewerInstance* viewer = getNode()->isEffectViewer();
+    ViewerInstance* viewer = getNode()->isEffectViewerInstance();
 
     if (viewer) {
         int activeInputs[2];
@@ -1351,7 +1351,7 @@ NodeGui::initializeInputsForInspector()
     ///If the node is a viewer, display 1 input and another one aside and hide all others.
     ///If the node is something else (switch, merge) show 2 inputs and another one aside an hide all others.
 
-    bool isViewer = node->isEffectViewer() != 0;
+    bool isViewer = node->isEffectViewerInstance() != 0;
     int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
     double piDividedbyX = M_PI / (maxInitiallyOnTopVisibleInputs + 1);
     double angle =  piDividedbyX;
@@ -1532,7 +1532,7 @@ NodeGui::refreshEdgesVisibilityInternal(bool hovered)
     NodePtr node = getNode();
     InspectorNode* isInspector = dynamic_cast<InspectorNode*>( node.get() );
     if (isInspector) {
-        bool isViewer = node->isEffectViewer() != 0;
+        bool isViewer = node->isEffectViewerInstance() != 0;
         int maxInitiallyOnTopVisibleInputs = isViewer ? 1 : 2;
         bool inputAsideDisplayed = false;
 
@@ -1636,7 +1636,7 @@ NodeGui::refreshCurrentBrush()
 bool
 NodeGui::isSelectedInParentMultiInstance(const Node* node) const
 {
-    boost::shared_ptr<MultiInstancePanel> multiInstance = getMultiInstancePanel();
+    MultiInstancePanelPtr multiInstance = getMultiInstancePanel();
 
     if (!multiInstance) {
         return false;
@@ -1838,7 +1838,7 @@ NodeGui::showGui()
             output->doRefreshEdgesGUI();
         }
     }
-    ViewerInstance* viewer = node->isEffectViewer();
+    ViewerInstance* viewer = node->isEffectViewerInstance();
     if (viewer) {
         _graph->getGui()->activateViewerTab(viewer);
     } else {
@@ -1848,7 +1848,7 @@ NodeGui::showGui()
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->setNodeViewerInterface(thisShared);
 
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
@@ -1877,7 +1877,7 @@ NodeGui::activate(bool triggerRender)
         showGui();
     } else {
         ///don't show gui if it is a multi instance child, but still Q_EMIT the begin edit action
-        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
+        OfxEffectInstance* ofxNode = dynamic_cast<OfxEffectInstance*>( node->getEffectInstance() );
         if (ofxNode) {
             ofxNode->effectInstance()->beginInstanceEditAction();
         }
@@ -1886,9 +1886,9 @@ NodeGui::activate(bool triggerRender)
     //_graph->getGui()->getCurveEditor()->addNode(shared_from_this());
 
     if (!isMultiInstanceChild && triggerRender) {
-        std::list<ViewerInstance* > viewers;
+        std::list<ViewerInstancePtr> viewers;
         getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->renderCurrentFrame(true);
         }
     }
@@ -1923,7 +1923,7 @@ NodeGui::hideGui()
         it->second.arrow->hide();
     }
     NodePtr node = getNode();
-    ViewerInstance* isViewer = node->isEffectViewer();
+    ViewerInstance* isViewer = node->isEffectViewerInstance();
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (viewerGui) {
@@ -1939,7 +1939,7 @@ NodeGui::hideGui()
         NodeGuiPtr thisShared = shared_from_this();
         _graph->getGui()->removeNodeViewerInterface(thisShared, false);
 
-        NodeGroup* isGrp = node->isEffectGroup();
+        NodeGroupPtr isGrp = node->isEffectNodeGroup();
         if ( isGrp && isGrp->isSubGraphUserVisible() ) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
@@ -1962,7 +1962,7 @@ NodeGui::deactivate(bool triggerRender)
     if (!isMultiInstanceChild) {
         hideGui();
     }
-    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance().get() );
+    OfxEffectInstance* ofxNode = !node ? 0 : dynamic_cast<OfxEffectInstance*>( node->getEffectInstance() );
     if (ofxNode) {
         ofxNode->effectInstance()->endInstanceEditAction();
     }
@@ -1975,9 +1975,9 @@ NodeGui::deactivate(bool triggerRender)
     }
 
     if (!isMultiInstanceChild && triggerRender) {
-        std::list<ViewerInstance* > viewers;
+        std::list<ViewerInstancePtr> viewers;
         getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->renderCurrentFrame(true);
         }
     }
@@ -2094,23 +2094,23 @@ NodeGui::serialize(NodeGuiSerialization* serializationObject) const
 }
 
 void
-NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization) const
+NodeGui::serializeInternal(std::list<NodeSerializationPtr >& internalSerialization) const
 {
     NodePtr node = getNode();
-    boost::shared_ptr<NodeSerialization> thisSerialization( new NodeSerialization(node, false) );
+    NodeSerializationPtr thisSerialization( new NodeSerialization(node, false) );
 
     internalSerialization.push_back(thisSerialization);
 
     ///For multi-instancs, serialize children too
     if ( node->isMultiInstance() ) {
         assert(_settingsPanel);
-        boost::shared_ptr<MultiInstancePanel> panel = _settingsPanel->getMultiInstancePanel();
+        MultiInstancePanelPtr panel = _settingsPanel->getMultiInstancePanel();
         assert(panel);
 
         const std::list<std::pair<NodeWPtr, bool> >& instances = panel->getInstances();
         for (std::list<std::pair<NodeWPtr, bool> >::const_iterator it = instances.begin();
              it != instances.end(); ++it) {
-            boost::shared_ptr<NodeSerialization> childSerialization( new NodeSerialization(it->first.lock(), false) );
+            NodeSerializationPtr childSerialization( new NodeSerialization(it->first.lock(), false) );
             internalSerialization.push_back(childSerialization);
         }
     }
@@ -2118,7 +2118,7 @@ NodeGui::serializeInternal(std::list<boost::shared_ptr<NodeSerialization> >& int
 
 void
 NodeGui::restoreInternal(const NodeGuiPtr& thisShared,
-                         const std::list<boost::shared_ptr<NodeSerialization> >& internalSerialization)
+                         const std::list<NodeSerializationPtr >& internalSerialization)
 {
     assert(internalSerialization.size() >= 1);
 
@@ -2201,7 +2201,7 @@ NodeGui::refreshRenderingIndicator()
     if (!node) {
         return;
     }
-    EffectInstPtr effect = node->getEffectInstance();
+    EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
         return;
     }
@@ -2214,7 +2214,7 @@ NodeGui::refreshRenderingIndicator()
             _inputEdges[i]->turnOffRenderingColor();
         }
     }
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>( effect.get() );
+    ViewerInstancePtr isViewer = boost::dynamic_pointer_cast<ViewerInstancePtr>(effect);
     if (isViewer) {
         ViewerGL* hasUI = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (hasUI) {
@@ -2356,7 +2356,7 @@ makeLinkString(Node* masterNode,
 void
 NodeGui::onKnobExpressionChanged(const KnobGui* knob)
 {
-    KnobPtr internalKnob = knob->getKnob();
+    KnobIPtr internalKnob = knob->getKnob();
 
     for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
         int totalLinks = 0;
@@ -2364,7 +2364,7 @@ NodeGui::onKnobExpressionChanged(const KnobGui* knob)
         bool isCurrentLink = false;
 
         for (std::list<LinkedKnob>::iterator it2 = it->second.knobs.begin(); it2 != it->second.knobs.end(); ++it2) {
-            KnobPtr slave = it2->slave.lock();
+            KnobIPtr slave = it2->slave.lock();
             if (slave == internalKnob) {
                 isCurrentLink = true;
             }
@@ -2542,7 +2542,7 @@ NodeGui::destroyGui()
 
     //Remove nodegraph if group
     if ( internalNode->getEffectInstance() ) {
-        NodeGroup* isGrp = internalNode->isEffectGroup();
+        NodeGroupPtr isGrp = internalNode->isEffectNodeGroup();
         if (isGrp) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             if (graph_i) {
@@ -2560,7 +2560,7 @@ NodeGui::destroyGui()
     if (internalNode) {
         ///remove the node from the clipboard if it is
         NodeClipBoard &cb = appPTR->getNodeClipBoard();
-        for (std::list< boost::shared_ptr<NodeSerialization> >::iterator it = cb.nodes.begin();
+        for (std::list< NodeSerializationPtr >::iterator it = cb.nodes.begin();
              it != cb.nodes.end(); ++it) {
             if ( (*it)->getNode() == internalNode ) {
                 cb.nodes.erase(it);
@@ -3048,9 +3048,9 @@ NodeGui::onSwitchInputActionTriggered()
 
     if (node->getMaxInputCount() >= 2) {
         node->switchInput0And1();
-        std::list<ViewerInstance* > viewers;
+        std::list<ViewerInstancePtr> viewers;
         node->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstance* >::iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
             (*it)->renderCurrentFrame(true);
         }
         update();
@@ -3167,12 +3167,12 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
     }
 }
 
-boost::shared_ptr<MultiInstancePanel> NodeGui::getMultiInstancePanel() const
+MultiInstancePanelPtr NodeGui::getMultiInstancePanel() const
 {
     if (_settingsPanel) {
         return _settingsPanel->getMultiInstancePanel();
     } else {
-        return boost::shared_ptr<MultiInstancePanel>();
+        return MultiInstancePanelPtr();
     }
 }
 
@@ -3276,7 +3276,7 @@ NodeGui::exportGroupAsPythonScript()
     if (!node) {
         return;
     }
-    NodeGroup* isGroup = node->isEffectGroup();
+    NodeGroupPtr isGroup = node->isEffectNodeGroup();
     if (!isGroup) {
         qDebug() << "Attempting to export a non-group as a python script.";
 
@@ -3502,7 +3502,7 @@ NodeGui::hasHostOverlayForParam(const KnobI* param)
 }
 
 void
-NodeGui::removePositionHostOverlay(KnobI* knob)
+NodeGui::removePositionHostOverlay(const KnobIPtr& knob)
 {
     if (_hostOverlay) {
         _hostOverlay->removePositionHostOverlay(knob);
@@ -3526,7 +3526,7 @@ NodeGui::setPluginIDAndVersion(const std::list<std::string>& /*grouping*/,
         getSettingPanel()->setPluginIDAndVersion(pluginLabel, pluginID, pluginDesc, version);
     }
 
-    boost::shared_ptr<Settings> currentSettings = appPTR->getCurrentSettings();
+    SettingsPtr currentSettings = appPTR->getCurrentSettings();
     QPixmap p( QString::fromUtf8( pluginIconFilePath.c_str() ) );
 
     if ( p.isNull() || !currentSettings->isPluginIconActivatedOnNodeGraph() ) {
@@ -3821,7 +3821,7 @@ public:
 
 
     GroupKnobDialog(Gui* gui,
-                    const KnobGroup* group);
+                    const KnobGroupConstPtr& group);
 
     virtual ~GroupKnobDialog()
     {
@@ -3829,13 +3829,13 @@ public:
 };
 
 GroupKnobDialog::GroupKnobDialog(Gui* gui,
-                                 const KnobGroup* group)
+                                 const KnobGroupConstPtr group)
     : NATRON_PYTHON_NAMESPACE::PyModalDialog(gui, eStandardButtonNoButton)
 {
     setWindowTitle( QString::fromUtf8( group->getLabel().c_str() ) );
-    std::vector<KnobPtr> children = group->getChildren();
+    KnobsVec children = group->getChildren();
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), boost::shared_ptr<KnobPage>(), boost::shared_ptr<KnobGroup>(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
+        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), KnobPagePtr(), KnobGroupPtr(), i, true, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
         duplicate->setAddNewLine( children[i]->isNewLineActivated() );
     }
 
@@ -3843,7 +3843,7 @@ GroupKnobDialog::GroupKnobDialog(Gui* gui,
 }
 
 void
-NodeGui::showGroupKnobAsDialog(KnobGroup* group)
+NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
 {
     assert( QThread::currentThread() == qApp->thread() );
     assert(group);
@@ -3880,11 +3880,11 @@ NodeGui::onRightClickMenuKnobPopulated()
         return;
     }
 
-    KnobPtr rightClickKnob = node->getKnobByName(kNatronOfxParamRightClickMenu);
+    KnobIPtr rightClickKnob = node->getKnobByName(kNatronOfxParamRightClickMenu);
     if (!rightClickKnob) {
         return;
     }
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( rightClickKnob.get() );
+    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>( rightClickKnob.get() );
     if (!isChoice) {
         return;
     }
@@ -3895,12 +3895,12 @@ NodeGui::onRightClickMenuKnobPopulated()
 
     Menu m(isViewer);
     for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
-        KnobPtr knob = node->getKnobByName(*it);
+        KnobIPtr knob = node->getKnobByName(*it);
         if (!knob) {
             // Plug-in specified invalid knob name in the menu
             continue;
         }
-        KnobButton* button = dynamic_cast<KnobButton*>( knob.get() );
+        KnobButton* button = boost::dynamic_pointer_cast<KnobButton>(knob);
         if (!button) {
             // Plug-in must only use buttons inside menu
             continue;
@@ -3932,12 +3932,12 @@ NodeGui::onRightClickActionTriggered()
     const std::vector<std::pair<QString, QKeySequence> >& shortcuts = action->getShortcuts();
     assert( !shortcuts.empty() );
     std::string knobName = shortcuts.front().first.toStdString();
-    KnobPtr knob = getNode()->getKnobByName(knobName);
+    KnobIPtr knob = getNode()->getKnobByName(knobName);
     if (!knob) {
         // Plug-in specified invalid knob name in the menu
         return;
     }
-    KnobButton* button = dynamic_cast<KnobButton*>( knob.get() );
+    KnobButton* button = boost::dynamic_pointer_cast<KnobButton>(knob);
     if (!button) {
         // Plug-in must only use buttons inside menu
         return;
