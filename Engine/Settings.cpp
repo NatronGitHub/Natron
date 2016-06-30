@@ -2499,6 +2499,9 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "</head>\n<body>\n";
         ts << "<div class=\"related\">\n<h3>" << tr("Navigation") << "</h3>\n<ul>\n";
         ts << "<li><a href=\"/index.html\">" << tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) << "</a> &raquo;</li>\n";
+        ts << "<li><a href=\"/_group.html\">";
+        ts << tr("Reference Guide");
+        ts << "</a> &raquo;</li>";
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n";

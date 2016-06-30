@@ -6,6 +6,7 @@ Contents:
 .. toctree::
     :maxdepth: 1
 
+    _prefs.rst
     _groupOther.rst
     _groupViews.rst
     _groupImage.rst

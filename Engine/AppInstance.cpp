@@ -1460,6 +1460,7 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("Contents:\n\n") );
         groupMD.append( QString::fromUtf8(".. toctree::\n") );
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
+        groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
         Q_FOREACH(const QString &category, categories) {
             QString plugMD;
