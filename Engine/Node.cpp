@@ -800,7 +800,12 @@ Node::load(const CreateNodeArgs& args)
     {
         std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
-        hasDefaultFilename = foundFileName != defaultParamValues.end() && !foundFileName->empty();
+        if (foundFileName != defaultParamValues.end()) {
+            std::string propName(kCreateNodeArgsPropParamValue);
+            propName += "_";
+            propName += kOfxImageEffectFileParamName;
+            hasDefaultFilename = !args.getProperty<std::string>(propName).empty();
+        }
     }
     bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPartOfProject && !hasDefaultFilename && getGroup();
 
@@ -6165,7 +6170,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     }
 
 
-    if ( !getApp()->getProject()->isProjectClosing() ) {
+    AppInstPtr app = getApp();
+    if ( app && !app->getProject()->isProjectClosing() ) {
         _imp->runOnNodeDeleteCB();
     }
 

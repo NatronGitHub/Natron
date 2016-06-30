@@ -1226,8 +1226,33 @@ DockablePanel::onOverlayColorDialogColorChanged(const QColor& color)
 
 
     if ( (_imp->_mode  != eHeaderModeReadOnlyName) && _imp->_overlayButton ) {
-        QPixmap p(15, 15);
-        p.fill(color);
+
+        // Replace the circle portion from the icon with the color picked by the user
+        int iconSize = TO_DPIX(NATRON_MEDIUM_BUTTON_ICON_SIZE);
+        QPixmap pixOverlay;
+        appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
+
+        QImage img = pixOverlay.toImage();
+        if (!img.isNull()) {
+            int width = img.width();
+            int height = img.height();
+
+            for (int y = 0; y < height; ++y) {
+                QRgb* pix = reinterpret_cast<QRgb*>(img.scanLine(y));
+                for (int x = 0; x < width; ++x) {
+                    int alpha = qAlpha(*pix);
+                    int r = int((float)color.red() * alpha / 255.f);
+                    int g = int((float)color.green() * alpha / 255.f);
+                    int b = int((float)color.blue() * alpha / 255.f);
+
+                    *pix = qRgba(r,g,b, alpha);
+                    ++pix;
+                }
+            }
+        }
+        //QPixmap p(15, 15);
+        //p.fill(color);
+        QPixmap p = QPixmap::fromImage(img);
         _imp->_overlayButton->setIcon( QIcon(p) );
         {
             QMutexLocker k(&_imp->_currentColorMutex);

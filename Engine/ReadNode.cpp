@@ -1073,7 +1073,10 @@ ReadNode::onEffectCreated(bool mayCreateFileDialog,
         std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
         if (foundFileName != defaultParamValues.end()) {
-            pattern = *foundFileName;
+            std::string propName(kCreateNodeArgsPropParamValue);
+            propName += "_";
+            propName += kOfxImageEffectFileParamName;
+            pattern = args.getProperty<std::string>(propName);
         }
     }
     _imp->createReadNode( throwErrors, pattern, boost::shared_ptr<NodeSerialization>() );
