@@ -264,7 +264,7 @@ Plugin::getOfxDesc(ContextEnum* ctx) const
 bool
 Plugin::getIsUserCreatable() const
 {
-    return !_isInternalOnly && _activated;
+    return !_isInternalOnly && _activated && !_isDeprecated;
 }
 
 void
