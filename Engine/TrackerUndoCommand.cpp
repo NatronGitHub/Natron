@@ -73,8 +73,10 @@ AddTrackCommand::redo()
     if (!_isFirstRedo) {
         for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
             context->insertMarker(it->second, it->first);
-            context->addTrackToSelection(it->second, TrackerContext::eTrackSelectionInternal);
         }
+    }
+    for (std::map<int, TrackMarkerPtr >::const_iterator it = _markers.begin(); it != _markers.end(); ++it) {
+        context->addTrackToSelection(it->second, TrackerContext::eTrackSelectionInternal);
     }
 
     context->endEditSelection(TrackerContext::eTrackSelectionInternal);
