@@ -1006,6 +1006,8 @@ KnobGuiValue::onSpinBoxValueChanged()
         }
     }
 
+    updateExtraGui(newValue);
+
     if (_imp->slider) {
         _imp->slider->seekScalePosition(newValue[0]);
     }
