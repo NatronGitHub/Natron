@@ -1404,7 +1404,7 @@ AppInstance::exportDocs(const QString path)
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                 if (plugin) {
-                    if (!plugin->getIsForInternalUseOnly() && plugin->getPythonModule().isEmpty() /*&& ( pluginID != QString::fromUtf8("fr.inria.built-in.Tracker") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferRead") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferWrite") )*/) {
+                    if (!plugin->getIsForInternalUseOnly() ) {
                         QStringList groups = plugin->getGrouping();
                         categories << groups.at(0);
                         QStringList plugList;
