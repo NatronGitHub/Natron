@@ -474,7 +474,9 @@ ComboBox::createMenu()
         }
     }
     _clicked = false;
-    setFocus();
+    if (focusPolicy() != Qt::NoFocus) {
+        setFocus();
+    }
     update();
 }
 
