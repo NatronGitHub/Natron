@@ -5189,7 +5189,7 @@ double
 EffectInstance::getCurrentTime() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
     if (!app) {
         return 0.;
     }

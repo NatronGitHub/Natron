@@ -626,7 +626,7 @@ KnobHelper::populate()
     for (int i = 0; i < _imp->dimension; ++i) {
         _imp->enabled[i] = true;
         if ( canAnimate() ) {
-            _imp->curves[i] = CurvePtr( new Curve(this, i) );
+            _imp->curves[i] = CurvePtr( new Curve(shared_from_this(), i) );
         }
         _imp->animationLevel[i] = eAnimationLevelNone;
 
@@ -4442,7 +4442,7 @@ KnobI::areTypesCompatibleForSlave(const KnobIPtr& lhs,
     KnobColorPtr lhsIsColor = boost::dynamic_pointer_cast<KnobColor>(lhs);
     KnobDoublePtr rhsIsDouble = boost::dynamic_pointer_cast<KnobDouble>(rhs);
     KnobColorPtr rhsIsColor = boost::dynamic_pointer_cast<KnobColor>(rhs);
-#pragme message WARN("BUG? is a double param really compatible with an int param?")
+#pragma message WARN("BUG? is a double param really compatible with an int param?")
     if ( (lhsIsDouble || lhsIsColor || lhsIsInt) && (rhsIsColor || rhsIsDouble || rhsIsInt) ) {
         return true;
     }
@@ -4767,7 +4767,7 @@ KnobHolder::insertKnob(int index,
 }
 
 void
-KnobHolder::removeKnobFromList(const KnobIPtr& knob)
+KnobHolder::removeKnobFromList(const KnobIConstPtr& knob)
 {
     QMutexLocker kk(&_imp->knobsMutex);
 
@@ -6018,7 +6018,7 @@ KnobHolder::getPageIndex(const KnobPagePtr page) const
     int pageIndex = 0;
 
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
-        KnobPagePtr ispage = boost::dynamic_pointer_cast<KnobPage>( _imp->knobs[i].get() );
+        KnobPagePtr ispage = boost::dynamic_pointer_cast<KnobPage>(_imp->knobs[i]);
         if (ispage) {
             if (page == ispage) {
                 return pageIndex;
@@ -6204,7 +6204,7 @@ AnimatingKnobStringHelper::saveAnimation(std::map<int, std::string>* keyframes) 
 template class Knob<int>;
 template class Knob<double>;
 template class Knob<bool>;
-template class KnobStringBase;
+template class Knob<std::string>;
 
 NATRON_NAMESPACE_EXIT;
 

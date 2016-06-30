@@ -3234,9 +3234,9 @@ Bezier::rightDerivativeAtPoint(bool useGuiCurves,
 }
 
 void
-Bezier::save(RotoItemSerialization* obj) const
+Bezier::save(const RotoItemSerializationPtr& obj) const
 {
-    BezierSerialization* s = dynamic_cast<BezierSerialization*>(obj);
+    BezierSerializationPtr s = boost::dynamic_pointer_cast<BezierSerialization>(obj);
 
     if (s) {
         QMutexLocker l(&itemMutex);

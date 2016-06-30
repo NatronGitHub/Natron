@@ -2859,7 +2859,7 @@ Knob<T>::dequeueValuesSet(bool disableEvaluation)
         QMutexLocker kql(&_setValuesQueueMutex);
         QMutexLocker k(&_valueMutex);
         for (typename std::list<QueuedSetValuePtr >::const_iterator it = _setValuesQueue.begin(); it != _setValuesQueue.end(); ++it) {
-            QueuedSetValueAtTime* isAtTime = dynamic_cast<QueuedSetValueAtTime*>(*it);
+            QueuedSetValueAtTimePtr isAtTime = boost::dynamic_pointer_cast<QueuedSetValueAtTime>(*it);
             bool blockValueChanges = (*it)->valueChangesBlocked();
 
             if (!isAtTime) {

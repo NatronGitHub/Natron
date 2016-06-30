@@ -1335,7 +1335,7 @@ AddKnobDialogPrivate::setKnobMinMax(const KnobIPtr& knob)
 {
     int dim = knob->getDimension();
 
-    Knob<T>* k = dynamic_cast<Knob<T>*>(knob);
+    boost::shared_ptr<Knob<T> > k = boost::dynamic_pointer_cast<Knob<T> >(knob);
     assert(k);
     if (!k) {
         return;

@@ -249,7 +249,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
             effect->getNode()->addPositionInteract(thisSharedDouble,
                                                    KnobBoolPtr() /*interactive*/);
         } else {
-            effect->getNode()->removePositionHostOverlay(this);
+            effect->getNode()->removePositionHostOverlay( shared_from_this() );
         }
         _hasHostOverlayHandle = handle;
     }
@@ -777,7 +777,7 @@ KnobChoice::refreshMenu()
         // In OpenFX we reset the menu with a button
         KnobIPtr hasRefreshButton = holder->getKnobByName(getName() + "RefreshButton");
         if (hasRefreshButton) {
-            KnobButton* button = boost::dynamic_pointer_cast<KnobButton>( hasRefreshButton.get() );
+            KnobButtonPtr button = boost::dynamic_pointer_cast<KnobButton>(hasRefreshButton);
             if (button) {
                 button->trigger();
             }
@@ -1091,7 +1091,7 @@ KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
 void
 KnobChoice::onOriginalKnobPopulated()
 {
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>( sender() );
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( sender() );
 
     if (!isChoice) {
         return;
@@ -1117,19 +1117,19 @@ KnobChoice::handleSignalSlotsForAliasLink(const KnobIPtr& alias,
                                           bool connect)
 {
     assert(alias);
-    KnobChoicePtr aliasIsChoice = boost::dynamic_pointer_cast<KnobChoice>( alias.get() );
+    KnobChoicePtr aliasIsChoice = boost::dynamic_pointer_cast<KnobChoice>(alias);
     if (!aliasIsChoice) {
         return;
     }
     if (connect) {
-        QObject::connect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
-        QObject::connect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
-        QObject::connect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
+        QObject::connect( this, SIGNAL(populated()), aliasIsChoice.get(), SLOT(onOriginalKnobPopulated()) );
+        QObject::connect( this, SIGNAL(entriesReset()), aliasIsChoice.get(), SLOT(onOriginalKnobEntriesReset()) );
+        QObject::connect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice.get(),
                           SLOT(onOriginalKnobEntryAppend(QString,QString)) );
     } else {
-        QObject::disconnect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
-        QObject::disconnect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
-        QObject::disconnect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
+        QObject::disconnect( this, SIGNAL(populated()), aliasIsChoice.get(), SLOT(onOriginalKnobPopulated()) );
+        QObject::disconnect( this, SIGNAL(entriesReset()), aliasIsChoice.get(), SLOT(onOriginalKnobEntriesReset()) );
+        QObject::disconnect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice.get(),
                              SLOT(onOriginalKnobEntryAppend(QString,QString)) );
     }
 }
@@ -1642,10 +1642,10 @@ KnobPage::insertKnob(int index,
 }
 
 void
-KnobPage::removeKnob(KnobI* k)
+KnobPage::removeKnob(const KnobIPtr& k)
 {
     for (std::vector<boost::weak_ptr<KnobI> >::iterator it = _children.begin(); it != _children.end(); ++it) {
-        if (it->lock().get() == k) {
+        if (it->lock() == k) {
             _children.erase(it);
 
             return;
@@ -1654,10 +1654,10 @@ KnobPage::removeKnob(KnobI* k)
 }
 
 bool
-KnobPage::moveOneStepUp(KnobI* k)
+KnobPage::moveOneStepUp(const KnobIPtr& k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock().get() == k) {
+        if (_children[i].lock() == k) {
             if (i == 0) {
                 return false;
             }
@@ -1672,10 +1672,10 @@ KnobPage::moveOneStepUp(KnobI* k)
 }
 
 bool
-KnobPage::moveOneStepDown(KnobI* k)
+KnobPage::moveOneStepDown(const KnobIPtr& k)
 {
     for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock().get() == k) {
+        if (_children[i].lock() == k) {
             if (i == _children.size() - 1) {
                 return false;
             }
@@ -1706,8 +1706,8 @@ KnobParametric::KnobParametric(const KnobHolderPtr& holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = CurvePtr( new Curve(this, i) );
-        _defaultCurves[i] = CurvePtr( new Curve(this, i) );
+        _curves[i] = CurvePtr( new Curve(shared_from_this(), i) );
+        _defaultCurves[i] = CurvePtr( new Curve(shared_from_this(), i) );
     }
 }
 
@@ -1725,8 +1725,8 @@ KnobParametric::KnobParametric(const KnobHolderPtr& holder,
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
         _curvesColor[i] = color;
-        _curves[i] = CurvePtr( new Curve(this, i) );
-        _defaultCurves[i] = CurvePtr( new Curve(this, i) );
+        _curves[i] = CurvePtr( new Curve(shared_from_this(), i) );
+        _defaultCurves[i] = CurvePtr( new Curve(shared_from_this(), i) );
     }
 }
 
@@ -1778,7 +1778,7 @@ KnobParametric::getCurveColor(int dimension,
     assert( dimension < (int)_curvesColor.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = dynamic_cast<KnobParametricPtr>(master.second);
+        KnobParametricPtr m = boost::dynamic_pointer_cast<KnobParametric>(master.second);
         assert(m);
 
         return m->getCurveColor(dimension, r, g, b);
@@ -1816,7 +1816,7 @@ KnobParametric::getDefaultParametricCurve(int dimension) const
     assert( dimension >= 0 && dimension < (int)_curves.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = dynamic_cast<KnobParametricPtr>(master.second);
+        KnobParametricPtr m = boost::dynamic_pointer_cast<KnobParametric>(master.second);
         assert(m);
 
         return m->getDefaultParametricCurve(dimension);
@@ -1832,7 +1832,7 @@ CurvePtr KnobParametric::getParametricCurve(int dimension) const
     assert( dimension < (int)_curves.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = dynamic_cast<KnobParametricPtr>(master.second);
+        KnobParametricPtr m = boost::dynamic_pointer_cast<KnobParametric>(master.second);
         assert(m);
 
         return m->getParametricCurve(dimension);
@@ -2075,11 +2075,11 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
 }
 
 void
-KnobParametric::cloneExtraData(KnobI* other,
+KnobParametric::cloneExtraData(const KnobIPtr& other,
                                int dimension,
                                int otherDimension)
 {
-    KnobParametricPtr isParametric = dynamic_cast<KnobParametricPtr>(other);
+    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(other);
 
     if (!isParametric) {
         return;
@@ -2099,12 +2099,12 @@ KnobParametric::cloneExtraData(KnobI* other,
 }
 
 bool
-KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
+KnobParametric::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
                                                 int dimension,
                                                 int otherDimension)
 {
     ///Mt-safe as Curve is MT-safe
-    KnobParametricPtr isParametric = dynamic_cast<KnobParametricPtr>(other);
+    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(other);
 
     if (!isParametric) {
         return false;
@@ -2127,13 +2127,13 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(KnobI* other,
 }
 
 void
-KnobParametric::cloneExtraData(KnobI* other,
+KnobParametric::cloneExtraData(const KnobIPtr& other,
                                double offset,
                                const RangeD* range,
                                int dimension,
                                int otherDimension)
 {
-    KnobParametricPtr isParametric = dynamic_cast<KnobParametricPtr>(other);
+    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(other);
 
     if (!isParametric) {
         return;
@@ -2212,14 +2212,14 @@ KnobParametric::hasModificationsVirtual(int dimension) const
 void
 KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
 {
-    KnobParametricPtr isParametric = dynamic_cast<KnobParametricPtr>(slave);
+    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(slave);
 
     if (isParametric) {
         _defaultCurves.resize( isParametric->_defaultCurves.size() );
         _curvesColor.resize( isParametric->_curvesColor.size() );
         assert( _curvesColor.size() == _defaultCurves.size() );
         for (std::size_t i = 0; i < isParametric->_defaultCurves.size(); ++i) {
-            _defaultCurves[i].reset( new Curve(this, i) );
+            _defaultCurves[i].reset( new Curve(shared_from_this(), i) );
             _defaultCurves[i]->clone(*isParametric->_defaultCurves[i]);
             _curvesColor[i] = isParametric->_curvesColor[i];
         }

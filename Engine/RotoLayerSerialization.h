@@ -91,9 +91,9 @@ private:
         int numChildren = (int)children.size();
         ar & ::boost::serialization::make_nvp("NumChildren", numChildren);
         for (std::list < RotoItemSerializationPtr >::const_iterator it = children.begin(); it != children.end(); ++it) {
-            BezierSerialization* isBezier = dynamic_cast<BezierSerialization*>(*it);
-            RotoStrokeItemSerialization* isStroke = dynamic_cast<RotoStrokeItemSerialization*>(*it);
-            RotoLayerSerialization* isLayer = dynamic_cast<RotoLayerSerialization*>(*it);
+            BezierSerializationPtr isBezier = boost::dynamic_pointer_cast<BezierSerialization>(*it);
+            RotoStrokeItemSerializationPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItemSerialization>(*it);
+            RotoLayerSerializationPtr isLayer = boost::dynamic_pointer_cast<RotoLayerSerialization>(*it);
             int type = 0;
             if (isBezier && !isStroke) {
                 type = 0;

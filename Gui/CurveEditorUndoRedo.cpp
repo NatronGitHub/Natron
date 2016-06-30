@@ -752,7 +752,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
     if (isKnobCurve) {
         KnobIPtr attachedKnob = isKnobCurve->getInternalKnob();
         assert(attachedKnob);
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>( attachedKnob.get() );
+        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(attachedKnob);
         double left = undo ? _oldLeft : _newLeft;
         double right = undo ? _oldRight : _newRight;
         KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;

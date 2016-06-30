@@ -422,7 +422,7 @@ createElementsForKnob(QTreeWidgetItem* parent,
     }
 
     CurveWidget* curveWidget = curveEditor->getCurveWidget();
-    KnobHelper* helper = dynamic_cast<KnobHelper*>(k);
+    KnobHelperPtr helper = boost::dynamic_pointer_cast<KnobHelper>(k);
     assert(helper);
     if (!helper) {
         // coverity[dead_error_line]

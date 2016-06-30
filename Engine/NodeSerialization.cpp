@@ -62,7 +62,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
         _inputs.clear();
 
         if ( n->isOpenFXNode() ) {
-            OfxEffectInstancePtr effect = dynamic_cast<OfxEffectInstance*>( n->getEffectInstance() );
+            OfxEffectInstancePtr effect = boost::dynamic_pointer_cast<OfxEffectInstance>( n->getEffectInstance() );
             assert(effect);
             if (effect) {
                 effect->syncPrivateData_other_thread();

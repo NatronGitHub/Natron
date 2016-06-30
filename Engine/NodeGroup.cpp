@@ -798,7 +798,7 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = dynamic_cast< KnobStringBasePtr >(knobs[j]);
+                KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knobs[j]);
                 KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
@@ -834,7 +834,7 @@ NodeCollection::fixPathName(const std::string& oldName,
         if ( (*it)->isActivated() ) {
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = dynamic_cast< KnobStringBasePtr >(knobs[j]);
+                KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knobs[j]);
                 KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
@@ -1494,7 +1494,7 @@ NodeGroup::knobChanged(const KnobIPtr& k,
 {
     bool ret = true;
 
-    if ( k == _imp->exportAsTemplate.get() ) {
+    if (k == _imp->exportAsTemplate) {
         boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
@@ -1983,7 +1983,7 @@ exportUserKnob(int indentLevel,
                                                  ESC( isChoice->getName() ) +
                                                  QString::fromUtf8(", ") + ESC( isChoice->getLabel() ) + QString::fromUtf8(")") );
 
-        KnobChoicePtr aliasedIsChoice = boost::dynamic_pointer_cast<KnobChoice>( aliasedParam.get() );
+        KnobChoicePtr aliasedIsChoice = boost::dynamic_pointer_cast<KnobChoice>(aliasedParam);
 
         if (!aliasedIsChoice) {
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
@@ -2378,7 +2378,7 @@ exportAllNodeKnobs(int indentLevel,
                                                  ESC( (*it2)->getLabel() ) + QString::fromUtf8(")") );
         KnobsVec children =  (*it2)->getChildren();
         for (KnobsVec::const_iterator it3 = children.begin(); it3 != children.end(); ++it3) {
-            exportUserKnob(indentLevel, *it3, QString::fromUtf8("lastNode"), 0, *it2, ts);
+            exportUserKnob(indentLevel, *it3, QString::fromUtf8("lastNode"), KnobGroupPtr(), *it2, ts);
         }
     }
 

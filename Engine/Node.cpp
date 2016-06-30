@@ -2937,7 +2937,7 @@ Node::getFullyQualifiedNameInternal(const std::string& scriptName) const
         prependGroupNameRecursive(parent, ret);
     } else {
         NodeCollectionPtr hasParentGroup = getGroup();
-        NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( hasParentGroup.get() );
+        NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
         if (isGrp) {
             NodePtr grpNode = isGrp->getNode();
             if (grpNode) {
@@ -3345,9 +3345,9 @@ Node::findRightClickMenuKnob(const KnobsVec& knobs)
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->getName() == kNatronOfxParamRightClickMenu) {
             KnobIPtr rightClickKnob = knobs[i];
-            KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>( rightClickKnob.get() );
+            KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(rightClickKnob);
             if (isChoice) {
-                QObject::connect( isChoice, SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
+                QObject::connect( isChoice.get(), SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
             }
             break;
         }
@@ -3868,7 +3868,7 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
             if (!isWriter) {
                 if (foundEnabled[i]->getParentKnob() == mainPage) {
                     //foundEnabled[i]->setAddNewLine(i == 3);
-                    mainPage->removeKnob( foundEnabled[i].get() );
+                    mainPage->removeKnob(foundEnabled[i]);
                     mainPage->insertKnob(i, foundEnabled[i]);
                 }
             }
@@ -4027,7 +4027,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
     if (mainPage) {
         for (std::size_t i = 0; i < foundPluginDefaultKnobsToReorder.size(); ++i) {
             if ( foundPluginDefaultKnobsToReorder[i].second && (foundPluginDefaultKnobsToReorder[i].second->getParentKnob() == mainPage) ) {
-                mainPage->removeKnob( foundPluginDefaultKnobsToReorder[i].second.get() );
+                mainPage->removeKnob(foundPluginDefaultKnobsToReorder[i].second);
                 mainPage->addKnob(foundPluginDefaultKnobsToReorder[i].second);
             }
         }
@@ -4041,7 +4041,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
                 if (i > 0) {
                     KnobsVec::iterator prev = it;
                     --prev;
-                    if ( !dynamic_pointer_cast<KnobSeparator>(prev) ) {
+                    if ( !boost::dynamic_pointer_cast<KnobSeparator>(*prev) ) {
                         KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(_imp->effect, std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
@@ -4209,7 +4209,7 @@ Node::handleFormatKnob(const KnobIPtr& knob)
         return false;
     }
 
-    if ( knob != choice.get() ) {
+    if (knob != choice) {
         return false;
     }
     if (choice->getIsSecret()) {
@@ -4256,7 +4256,7 @@ Node::refreshFormatParamChoice(const std::vector<std::string>& entries,
     choice->setDefaultValue(defValue);
     if (!loadingProject) {
         //changedKnob was not called because we are initializing knobs
-        handleFormatKnob( choice.get() );
+        handleFormatKnob(choice);
     } else {
         if ( curIndex < (int)entries.size() ) {
             choice->setValue(curIndex);
@@ -4606,11 +4606,11 @@ Node::setEffect(const EffectInstancePtr& effect)
     NodePtr thisShared = shared_from_this();
     NodePtr ioContainer = _imp->ioContainer.lock();
     if (ioContainer) {
-        ReadNode* isReader = dynamic_cast<ReadNode*>( ioContainer->getEffectInstance() );
+        ReadNodePtr isReader = boost::dynamic_pointer_cast<ReadNode>( ioContainer->getEffectInstance() );
         if (isReader) {
             isReader->setEmbeddedReader(thisShared);
         } else {
-            WriteNode* isWriter = dynamic_cast<WriteNode*>( ioContainer->getEffectInstance() );
+            WriteNodePtr isWriter = boost::dynamic_pointer_cast<WriteNode>( ioContainer->getEffectInstance() );
             assert(isWriter);
             if (isWriter) {
                 isWriter->setEmbeddedWriter(thisShared);
@@ -4666,7 +4666,7 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
         return applyNodeRedirectionsUpstream(isGrp->getOutputNodeInput(useGuiInput), useGuiInput);
     }
 
-    PrecompNode* isPrecomp = dynamic_cast<PrecompNode*>( node->getEffectInstance() );
+    PrecompNodePtr isPrecomp = node->isEffectPrecompNode();
     if (isPrecomp) {
         //The node is a precomp, instead jump directly to the output node of the precomp
         return applyNodeRedirectionsUpstream(isPrecomp->getOutputNode(), useGuiInput);
@@ -4791,10 +4791,10 @@ Node::getOutputsWithGroupRedirection(NodesList& outputs) const
 void
 Node::hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const
 {
-    OutputEffectInstancePtr thisWriter = boost::dynamic_pointer_cast<OutputEffectInstance>( _imp->effect.get() );
+    OutputEffectInstancePtr thisWriter = boost::dynamic_pointer_cast<OutputEffectInstance>(_imp->effect);
 
     if ( thisWriter && thisWriter->isOutput() && !boost::dynamic_pointer_cast<GroupOutput>(thisWriter) ) {
-        std::list<OutputEffectInstance* >::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
+        std::list<OutputEffectInstancePtr>::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
         if ( alreadyExists == writers->end() ) {
             writers->push_back(thisWriter);
         }
@@ -5472,7 +5472,7 @@ void
 Node::Implementation::ifGroupForceHashChangeOfInputs()
 {
     ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( effect.get() );
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(effect);
 
     if ( isGrp && !isGrp->getApp()->isCreatingNodeTree() ) {
         NodesList inputsOutputs;
@@ -6006,8 +6006,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 if (!effectParent) {
                     continue;
                 }
-                NodeGroupPtr isEffectParentGroup = boost::dynamic_pointer_cast<NodeGroup>( effectParent.get() );
-                if ( isEffectParentGroup && ( isEffectParentGroup == _imp->effect.get() ) ) {
+                NodeGroupPtr isEffectParentGroup = boost::dynamic_pointer_cast<NodeGroup>(effectParent);
+                if ( isEffectParentGroup && (isEffectParentGroup == _imp->effect) ) {
                     continue;
                 }
 
@@ -6154,7 +6154,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
 
     ///If the node is a group, deactivate all nodes within the group
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( _imp->effect.get() );
+    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(_imp->effect);
     if (isGrp) {
         isGrp->setIsDeactivatingGroup(true);
         NodesList nodes = isGrp->getNodes();
@@ -6170,7 +6170,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     }
 
 
-    AppInstPtr app = getApp();
+    AppInstancePtr app = getApp();
     if ( app && !app->getProject()->isProjectClosing() ) {
         _imp->runOnNodeDeleteCB();
     }

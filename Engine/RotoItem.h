@@ -141,7 +141,7 @@ public:
      * the serialization object.
      * Derived implementations must call the parent class implementation.
      **/
-    virtual void save(RotoItemSerialization* obj) const;
+    virtual void save(const RotoItemSerializationPtr& obj) const;
 
     /**
      * @brief Must be implemented by the derived class to load the state from

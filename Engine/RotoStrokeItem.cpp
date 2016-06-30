@@ -687,7 +687,7 @@ void
 RotoStrokeItem::save(RotoItemSerialization* obj) const
 {
     RotoDrawableItem::save(obj);
-    RotoStrokeItemSerialization* s = dynamic_cast<RotoStrokeItemSerialization*>(obj);
+    RotoStrokeItemSerialization* s = boost::dynamic_pointer_cast<RotoStrokeItemSerialization>(obj);
 
     assert(s);
     if (!s) {

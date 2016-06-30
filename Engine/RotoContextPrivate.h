@@ -1969,7 +1969,7 @@ public:
         knobs.push_back(resetCenter);
         resetCenterKnob = resetCenter;
 
-        boost::shared_ptr<KnobBool> transformInteractive = AppManager::createKnob<KnobBool>(effect.get(), tr(kRotoTransformInteractiveLabel), 1, true);
+        KnobBoolPtr transformInteractive = AppManager::createKnob<KnobBool>(effect, tr(kRotoTransformInteractiveLabel), 1, true);
         transformInteractive->setName(kRotoTransformInteractive);
         transformInteractive->setHintToolTip(tr(kRotoTransformInteractiveHint));
         transformInteractive->setDefaultValue(true);

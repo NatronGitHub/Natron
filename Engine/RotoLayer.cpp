@@ -160,9 +160,9 @@ RotoLayer::clone(const RotoItem* other)
 }
 
 void
-RotoLayer::save(RotoItemSerialization *obj) const
+RotoLayer::save(const RotoItemSerializationPtr& obj) const
 {
-    RotoLayerSerialization* s = dynamic_cast<RotoLayerSerialization*>(obj);
+    RotoLayerSerializationPtr s = boost::dynamic_pointer_cast<RotoLayerSerialization>(obj);
 
     assert(s);
     if (!s) {
