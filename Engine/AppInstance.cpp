@@ -1415,7 +1415,7 @@ AppInstance::exportDocs(const QString path)
                         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
                         args.setProperty(kCreateNodeArgsPropSilent, true);
                         qDebug() << pluginID;
-                        NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
+                        NodePtr node = createNode(args);
                         if (node) {
                             QDir mdDir(path);
                             if ( !mdDir.exists() ) {
