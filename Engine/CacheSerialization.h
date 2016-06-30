@@ -84,6 +84,9 @@ Cache<EntryType>::save(CacheTOC* tableOfContents)
                     serialization.size = (*it2)->dataSize();
                     serialization.filePath = (*it2)->getFilePath();
                     serialization.dataOffsetInFile = (*it2)->getOffsetInFile();
+
+                    (*it2)->syncBackingFile();
+                    
                     tableOfContents->push_back(serialization);
 #ifdef DEBUG
                     if ( !_isTiled && !CacheAPI::checkFileNameMatchesHash(serialization.filePath, serialization.hash) ) {
@@ -131,7 +134,9 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
 
         try {
             value = new EntryType(it->key, it->params, this);
-
+            if (it->size != getTileSizeBytes()) {
+                continue;
+            }
             ///This will not put the entry back into RAM, instead we just insert back the entry into the disk cache
             value->restoreMetaDataFromFile(it->size, it->filePath, it->dataOffsetInFile);
         } catch (const std::exception & e) {

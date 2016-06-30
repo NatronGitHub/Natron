@@ -107,7 +107,9 @@ public:
 
 class TrackerContextPrivate;
 class TrackerContext
-    : public QObject, public boost::enable_shared_from_this<TrackerContext>, public TrackerParamsProvider
+    : public QObject
+    , public boost::enable_shared_from_this<TrackerContext>
+, public TrackerParamsProvider
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -122,8 +124,15 @@ public:
         eTrackSelectionInternal,
     };
 
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     TrackerContext(const boost::shared_ptr<Node> &node);
+
+public:
+    static boost::shared_ptr<TrackerContext> create(const boost::shared_ptr<Node> &node) {
+        return boost::shared_ptr<TrackerContext>( new TrackerContext(node) );
+    }
 
     virtual ~TrackerContext();
 

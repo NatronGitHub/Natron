@@ -574,7 +574,6 @@ public:
         QMutexLocker k(&_tileCacheMutex);
         _isTiled = tiled;
         _tileByteSize = tileByteSize;
-        _cacheFiles.clear();
     }
 
 
@@ -720,7 +719,6 @@ private:
         }
 
         // Notify the memory file that this portion of the file is valid
-        foundAvailableFile->file->flush(MemoryFile::eFlushTypeAsync, foundAvailableFile->file->data() + *dataOffset, _tileByteSize);
         foundAvailableFile->usedTiles[foundTileIndex] = true;
         return foundAvailableFile;
     }

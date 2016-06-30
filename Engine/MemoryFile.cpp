@@ -370,13 +370,16 @@ MemoryFile::flush(FlushTypeEnum type, void* data, std::size_t size)
             if (ret) {
                 ret = (bool)::FlushFileBuffers(_imp->file_handle);
             }
+            return ret;
         } break;
         case eFlushTypeAsync:
             return (bool)::FlushViewOfFile(ptr, n) != 0;
         case eFlushTypeInvalidate:
+            return true;
             break;
     }
 #endif
+    return false;
 }
 
 MemoryFile::~MemoryFile()

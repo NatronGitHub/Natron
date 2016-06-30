@@ -2295,7 +2295,7 @@ private:
                 rod.toPixelEnclosing(scale, par, &renderWindow);
 
 
-                AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+                AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
                 if (isAbortableThread) {
                     isAbortableThread->setAbortInfo(isRenderDueToRenderInteraction, abortInfo, activeInputToRender);
                 }
@@ -2413,7 +2413,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     const bool isSequentialRender = true;
 
     for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-        AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
 
         setAbortInfo(isRenderDueToRenderInteraction, abortInfo, effect);
 

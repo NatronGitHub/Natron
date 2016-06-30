@@ -697,6 +697,25 @@ TrackerNode::onInputChanged(int inputNb)
     _imp->ui->refreshSelectedMarkerTexture();
 }
 
+struct CenterPointDisplayInfo
+{
+    double x;
+    double y;
+    double err;
+    bool isValid;
+
+    CenterPointDisplayInfo()
+    : x(0)
+    , y(0)
+    , err(0)
+    , isValid(false)
+    {
+
+    }
+};
+
+typedef std::map<double, CenterPointDisplayInfo> CenterPointsMap;
+
 void
 TrackerNode::drawOverlay(double time,
                          const RenderScale & /*renderScale*/,
@@ -884,31 +903,88 @@ TrackerNode::drawOverlay(double time,
                     name += ' ';
                     name += tr("(disabled)").toStdString();
                 }
-                std::map<int, std::pair<Point, double> > centerPoints;
-                int floorTime = std::floor(time + 0.5);
+                CenterPointsMap centerPoints;
                 boost::shared_ptr<Curve> xCurve = centerKnob->getCurve(ViewSpec::current(), 0);
                 boost::shared_ptr<Curve> yCurve = centerKnob->getCurve(ViewSpec::current(), 1);
                 boost::shared_ptr<Curve> errorCurve = errorKnob->getCurve(ViewSpec::current(), 0);
 
-                for (int i = 0; i < MAX_CENTER_POINTS_DISPLAYED / 2; ++i) {
-                    KeyFrame k;
-                    int keyTimes[2] = {floorTime + i, floorTime - i};
+                {
+                    KeyFrameSet xKeyframes = xCurve->getKeyFrames_mt_safe();
+                    KeyFrameSet yKeyframes = yCurve->getKeyFrames_mt_safe();
+                    KeyFrameSet errKeyframes;
+                    if (showErrorColor) {
+                        errKeyframes = errorCurve->getKeyFrames_mt_safe();
+                    }
 
-                    for (int j = 0; j < 2; ++j) {
-                        if ( xCurve->getKeyFrameWithTime(keyTimes[j], &k) ) {
-                            std::pair<Point, double>& p = centerPoints[k.getTime()];
-                            p.first.x = k.getValue();
-                            p.first.y = INT_MIN;
+                    // Try first to do an optimized case in O(N) where we assume that all 3 curves have the same keyframes
+                    // at the same time
+                    KeyFrameSet remainingXKeys,remainingYKeys, remainingErrKeys;
+                    if (xKeyframes.size() == yKeyframes.size() && (!showErrorColor || xKeyframes.size() == errKeyframes.size())) {
+                        KeyFrameSet::iterator errIt = errKeyframes.begin();
+                        KeyFrameSet::iterator xIt = xKeyframes.begin();
+                        KeyFrameSet::iterator yIt = yKeyframes.begin();
 
-                            if ( yCurve->getKeyFrameWithTime(keyTimes[j], &k) ) {
-                                p.first.y = k.getValue();
+                        bool setsHaveDifferentKeyTimes = false;
+                        while (xIt!=xKeyframes.end()) {
+                            if (xIt->getTime() != yIt->getTime() || (showErrorColor && xIt->getTime() != errIt->getTime())) {
+                                setsHaveDifferentKeyTimes = true;
+                                break;
                             }
-                            if ( showErrorColor && errorCurve->getKeyFrameWithTime(keyTimes[j], &k) ) {
-                                p.second = k.getValue();
+                            CenterPointDisplayInfo& p = centerPoints[xIt->getTime()];
+                            p.x = xIt->getValue();
+                            p.y = yIt->getValue();
+                            if ( showErrorColor ) {
+                                p.err = errIt->getValue();
+                            }
+                            p.isValid = true;
+
+                            ++xIt;
+                            ++yIt;
+                            if (showErrorColor) {
+                                ++errIt;
+                            }
+
+                        }
+                        if (setsHaveDifferentKeyTimes) {
+                            remainingXKeys.insert(xIt, xKeyframes.end());
+                            remainingYKeys.insert(yIt, yKeyframes.end());
+                            if (showErrorColor) {
+                                remainingErrKeys.insert(errIt, errKeyframes.end());
                             }
                         }
+                    } else {
+                        remainingXKeys = xKeyframes;
+                        remainingYKeys = yKeyframes;
+                        if (showErrorColor) {
+                            remainingErrKeys = errKeyframes;
+                        }
                     }
+                    for (KeyFrameSet::iterator xIt = remainingXKeys.begin(); xIt != remainingXKeys.end(); ++xIt) {
+                        CenterPointDisplayInfo& p = centerPoints[xIt->getTime()];
+                        p.x = xIt->getValue();
+                        p.isValid = false;
+                    }
+                    for (KeyFrameSet::iterator yIt = remainingYKeys.begin(); yIt != remainingYKeys.end(); ++yIt) {
+                        CenterPointsMap::iterator foundPoint = centerPoints.find(yIt->getTime());
+                        if (foundPoint == centerPoints.end()) {
+                            continue;
+                        }
+                        foundPoint->second.y = yIt->getValue();
+                        if (!showErrorColor) {
+                            foundPoint->second.isValid = true;
+                        }
+                    }
+                    for (KeyFrameSet::iterator errIt = remainingErrKeys.begin(); errIt != remainingErrKeys.end(); ++errIt) {
+                        CenterPointsMap::iterator foundPoint = centerPoints.find(errIt->getTime());
+                        if (foundPoint == centerPoints.end()) {
+                            continue;
+                        }
+                        foundPoint->second.err = errIt->getValue();
+                        foundPoint->second.isValid = true;
+                    }
+
                 }
+
 
 
                 for (int l = 0; l < 2; ++l) {
@@ -920,12 +996,15 @@ TrackerNode::drawOverlay(double time,
                     GL_GPU::glMatrixMode(GL_MODELVIEW);
 
                     ///Draw center position
+
                     GL_GPU::glEnable(GL_LINE_SMOOTH);
                     GL_GPU::glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
                     GL_GPU::glBegin(GL_LINE_STRIP);
                     GL_GPU::glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
-                    for (std::map<int, std::pair<Point, double> >::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
-                        GL_GPU::glVertex2d(it->second.first.x, it->second.first.y);
+                    for (CenterPointsMap::iterator it = centerPoints.begin(); it != centerPoints.end(); ++it) {
+                        if (it->second.isValid) {
+                            GL_GPU::glVertex2d(it->second.x, it->second.y);
+                        }
                     }
                     GL_GPU::glEnd();
                     GL_GPU::glDisable(GL_LINE_SMOOTH);
@@ -936,7 +1015,10 @@ TrackerNode::drawOverlay(double time,
                         GL_GPU::glColor3f(0.5 * l, 0.5 * l, 0.5 * l);
                     }
 
-                    for (std::map<int, std::pair<Point, double> >::iterator it2 = centerPoints.begin(); it2 != centerPoints.end(); ++it2) {
+                    for (CenterPointsMap::iterator it2 = centerPoints.begin(); it2 != centerPoints.end(); ++it2) {
+                        if (!it2->second.isValid) {
+                            continue;
+                        }
                         if (showErrorColor) {
                             if (l != 0) {
                                 /*
@@ -945,7 +1027,7 @@ TrackerNode::drawOverlay(double time,
                                    Also clamp to the interval if the correlation is higher, and reverse.
                                  */
 
-                                double error = boost::algorithm::clamp(it2->second.second, 0., CORRELATION_ERROR_MAX_DISPLAY);
+                                double error = boost::algorithm::clamp(it2->second.err, 0., CORRELATION_ERROR_MAX_DISPLAY);
                                 double mappedError = 0.33 - 0.33 * error / CORRELATION_ERROR_MAX_DISPLAY;
                                 float r, g, b;
                                 Color::hsv_to_rgb(mappedError, 1, 1, &r, &g, &b);
@@ -954,7 +1036,7 @@ TrackerNode::drawOverlay(double time,
                                 GL_GPU::glColor3f(0., 0., 0.);
                             }
                         }
-                        GL_GPU::glVertex2d(it2->second.first.x, it2->second.first.y);
+                        GL_GPU::glVertex2d(it2->second.x, it2->second.y);
                     }
                     GL_GPU::glEnd();
                     GL_GPU::glDisable(GL_POINT_SMOOTH);

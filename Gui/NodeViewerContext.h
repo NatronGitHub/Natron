@@ -29,6 +29,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/scoped_ptr.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated)
@@ -46,17 +47,25 @@ NATRON_NAMESPACE_ENTER;
 struct NodeViewerContextPrivate;
 class NodeViewerContext
     : public QObject
-      , public KnobGuiContainerI
-      , public boost::enable_shared_from_this<NodeViewerContext>
+    , public KnobGuiContainerI
+    , public boost::enable_shared_from_this<NodeViewerContext>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     NodeViewerContext(const NodeGuiPtr& node,
                       ViewerTab* viewer);
+
+public:
+    static boost::shared_ptr<NodeViewerContext> create(const NodeGuiPtr& node,
+                                                       ViewerTab* viewer)
+    {
+        return boost::shared_ptr<NodeViewerContext>( new NodeViewerContext(node, viewer) );
+    }
 
     void createGui();
 

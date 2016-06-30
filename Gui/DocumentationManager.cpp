@@ -285,6 +285,7 @@ DocumentationManager::handler(QHttpRequest *req,
                              .arg( tr("Reference Guide") ) );
                 html.append(navFooter);
                 html.append(groupBodyStart);
+
                 for (int i = 0; i < plugins.size(); ++i) {
                     QStringList pluginInfo = plugins.at(i);
                     QString plugID, plugName;
@@ -317,6 +318,8 @@ DocumentationManager::handler(QHttpRequest *req,
             html.append(navHeader);
             html.append(navFooter);
             html.append(groupBodyStart);
+            html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("Preferences") ) );
+
             QStringList groups;
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
@@ -351,7 +354,7 @@ DocumentationManager::handler(QHttpRequest *req,
     QFileInfo staticFileInfo;
     if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".css") ) || page.endsWith( QString::fromUtf8(".js") ) || page.endsWith( QString::fromUtf8(".txt") ) || page.endsWith( QString::fromUtf8(".png") ) || page.endsWith( QString::fromUtf8(".jpg") ) ) {
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
-            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") );
+            staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") );
         } else {
             staticFileInfo = docDir + page;
         }

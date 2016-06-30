@@ -30,6 +30,7 @@
 #include "Global/GlobalDefines.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
@@ -55,13 +56,14 @@ NATRON_NAMESPACE_ENTER;
 struct AbortableRenderInfoPrivate;
 class AbortableRenderInfo
     : public QObject
-      , public boost::enable_shared_from_this<AbortableRenderInfo>
+    , public boost::enable_shared_from_this<AbortableRenderInfo>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     /**
      * @brief Create new infos for a specific render that can be aborted with the given age.
@@ -76,6 +78,26 @@ public:
      * @brief Same as AbortableRenderInfo(true, 0)
      **/
     AbortableRenderInfo();
+
+public:
+    // public constructors
+
+    // Note: when switching to C++11, we can add variadic templates:
+    //template<typename ... T>
+    //static boost::shared_ptr<AbortableRenderInfo> create( T&& ... all ) {
+    //    return boost::shared_ptr<AbortableRenderInfo>( new AbortableRenderInfo( std::forward<T>(all)... ) );
+    //}
+
+    static boost::shared_ptr<AbortableRenderInfo> create(bool canAbort,
+                                                         U64 age)
+    {
+        return boost::shared_ptr<AbortableRenderInfo>( new AbortableRenderInfo(canAbort, age) );
+    }
+
+    static boost::shared_ptr<AbortableRenderInfo> create()
+    {
+        return boost::shared_ptr<AbortableRenderInfo>( new AbortableRenderInfo() );
+    }
 
     ~AbortableRenderInfo();
 

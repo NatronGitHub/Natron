@@ -329,11 +329,23 @@ RotoPaint::initializeKnobs()
     removeKeyframe->setEvaluateOnChange(false);
     removeKeyframe->setSecretByDefault(true);
     removeKeyframe->setInViewerContextCanHaveShortcut(true);
-    removeKeyframe->setInViewerContextNewLineActivated(true);
     removeKeyframe->setIconLabel(NATRON_IMAGES_PATH "removeKF.png");
     generalPage->addKnob(removeKeyframe);
     _imp->ui->removeKeyframeButton = removeKeyframe;
 
+
+    boost::shared_ptr<KnobButton> hideTransform = AppManager::createKnob<KnobButton>( this, tr(kRotoUIParamHideTransformLabel) );
+    hideTransform->setName(kRotoUIParamHideTransform);
+    hideTransform->setHintToolTip( tr(kRotoUIParamHideTransformHint) );
+    hideTransform->setEvaluateOnChange(false);
+    hideTransform->setSecretByDefault(true);
+    hideTransform->setCheckable(true);
+    hideTransform->setInViewerContextCanHaveShortcut(true);
+    hideTransform->setInViewerContextNewLineActivated(true);
+    hideTransform->setIconLabel(NATRON_IMAGES_PATH "");
+    generalPage->addKnob(hideTransform);
+    addOverlaySlaveParam(hideTransform);
+    _imp->ui->hideTransformHandle = hideTransform;
     // RotoPaint
 
     boost::shared_ptr<KnobBool> multiStroke = AppManager::createKnob<KnobBool>( this, tr(kRotoUIParamMultiStrokeEnabledLabel) );
@@ -546,6 +558,7 @@ RotoPaint::initializeKnobs()
     addKnobToViewerUI(rippleEditEnabled);
     addKnobToViewerUI(addKeyframe);
     addKnobToViewerUI(removeKeyframe);
+    addKnobToViewerUI(hideTransform);
 
     // RotoPaint
     addKnobToViewerUI(multiStroke);
@@ -1060,6 +1073,7 @@ RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRippleEdit, kRotoUIParamRippleEditLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamAddKeyFrame, kRotoUIParamAddKeyFrameLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRemoveKeyframe, kRotoUIParamRemoveKeyframeLabel) );
+    shortcuts->push_back( PluginActionShortcut(kRotoUIParamHideTransform, kRotoUIParamHideTransformLabel, Key_T) );
 
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureOpacity, kRotoUIParamPressureOpacityLabel) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamPressureSize, kRotoUIParamPressureSizeLabel) );
@@ -1088,6 +1102,22 @@ RotoPaint::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionSelectAll, kRotoUIParamRightClickMenuActionSelectAllLabel, Key_A, eKeyboardModifierControl) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionOpenClose, kRotoUIParamRightClickMenuActionOpenCloseLabel, Key_Return) );
     shortcuts->push_back( PluginActionShortcut(kRotoUIParamRightClickMenuActionLockShapes, kRotoUIParamRightClickMenuActionLockShapesLabel, Key_L, eKeyboardModifierShift) );
+}
+
+bool
+RotoPaint::shouldPreferPluginOverlayOverHostOverlay() const
+{
+    return !_imp->ui->ctrlDown;
+}
+
+bool
+RotoPaint::shouldDrawHostOverlay() const
+{
+    boost::shared_ptr<KnobButton> b = _imp->ui->hideTransformHandle.lock();
+    if (!b) {
+        return true;
+    }
+    return !b->getValue();
 }
 
 void
@@ -1567,11 +1597,12 @@ RotoPaint::render(const RenderActionArgs& args)
 
                     if ( bgImg->getComponents() != plane->second->getComponents() ) {
                         RectI intersection;
-                        args.roi.intersect(bgImg->getBounds(), &intersection);
-                        bgImg->convertToFormat( intersection,
+                        if (args.roi.intersect(bgImg->getBounds(), &intersection)) {
+                            bgImg->convertToFormat( intersection,
                                                 getApp()->getDefaultColorSpaceForBitDepth( rotoImagesIt->second->getBitDepth() ),
                                                 getApp()->getDefaultColorSpaceForBitDepth( plane->second->getBitDepth() ), 3
                                                 , false, false, plane->second.get() );
+                        }
                     } else {
                         plane->second->pasteFrom(*bgImg, args.roi, false);
                     }

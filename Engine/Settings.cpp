@@ -2257,6 +2257,8 @@ Settings::onKnobValueChanged(KnobI* k,
         appPTR->onCheckerboardSettingsChanged();
     } else if ( k == _powerOf2Tiling.get() ) {
         appPTR->onViewerTileCacheSizeChanged();
+    } else if ( k == _texturesMode.get() &&  !_restoringSettings) {
+         appPTR->onViewerTileCacheSizeChanged();
     } else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
@@ -2542,6 +2544,9 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "</head>\n<body>\n";
         ts << "<div class=\"related\">\n<h3>" << tr("Navigation") << "</h3>\n<ul>\n";
         ts << "<li><a href=\"/index.html\">" << tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) << "</a> &raquo;</li>\n";
+        ts << "<li><a href=\"/_group.html\">";
+        ts << tr("Reference Guide");
+        ts << "</a> &raquo;</li>";
         ts << "</ul>\n</div>\n";
         ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
         ts << "<div class=\"section\">\n";

@@ -1339,7 +1339,9 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     if (!isOpenGLViewer) {
         return;
     }
-
+    if (!ret.first) {
+        return;
+    }
     isOpenGLViewer->makeOpenGLcontextCurrent();
 
     showMarkerTexture = true;

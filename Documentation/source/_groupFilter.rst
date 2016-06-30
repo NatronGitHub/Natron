@@ -6,6 +6,12 @@ Contents:
 .. toctree::
     :maxdepth: 1
 
+    plugins/fr.inria.AngleBlur.rst
+    plugins/fr.inria.DropShadow.rst
+    plugins/fr.inria.Fill.rst
+    plugins/fr.inria.Glow.rst
+    plugins/fr.inria.ZMask.rst
+    plugins/fr.inria.ZRemap.rst
     plugins/net.sf.cimg.CImgBilateral.rst
     plugins/net.sf.cimg.CImgBilateralGuided.rst
     plugins/net.sf.cimg.CImgBloom.rst

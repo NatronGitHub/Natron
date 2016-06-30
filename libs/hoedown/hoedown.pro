@@ -15,7 +15,7 @@ include(../../config.pri)
 
 # hoedown has too many "unused parameter" warnings
 *clang*|*g++*|*xcode {
-  QMAKE_CFLAGS_WARN_ON += -Wno-unused-parameter
+  QMAKE_CFLAGS_WARN_ON += -Wno-unused-parameter -Wno-missing-declarations
 }
 
 OBJECTS_DIR = build

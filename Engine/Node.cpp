@@ -633,7 +633,7 @@ Node::createRotoContextConditionnally()
     ///Initialize the roto context if any
     if ( isRotoNode() || isRotoPaintingNode() ) {
         _imp->effect->beginChanges();
-        _imp->rotoContext.reset( new RotoContext( shared_from_this() ) );
+        _imp->rotoContext = RotoContext::create( shared_from_this() );
         _imp->effect->endChanges(true);
         _imp->rotoContext->createBaseLayer();
     }
@@ -646,7 +646,7 @@ Node::createTrackerContextConditionnally()
     assert(_imp->effect);
     ///Initialize the tracker context if any
     if ( _imp->effect->isBuiltinTrackerNode() ) {
-        _imp->trackContext.reset( new TrackerContext( shared_from_this() ) );
+        _imp->trackContext = TrackerContext::create( shared_from_this() );
     }
 }
 
@@ -800,7 +800,12 @@ Node::load(const CreateNodeArgs& args)
     {
         std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
-        hasDefaultFilename = foundFileName != defaultParamValues.end() && !foundFileName->empty();
+        if (foundFileName != defaultParamValues.end()) {
+            std::string propName(kCreateNodeArgsPropParamValue);
+            propName += "_";
+            propName += kOfxImageEffectFileParamName;
+            hasDefaultFilename = !args.getProperty<std::string>(propName).empty();
+        }
     }
     bool canOpenFileDialog = !isSilentCreation && !serialization && _imp->isPartOfProject && !hasDefaultFilename && getGroup();
 
@@ -4318,8 +4323,9 @@ Node::makeDocumentation(bool genHTML) const
         QFile iconFile(pluginIcon);
         if ( iconFile.exists() ) {
             if (genHTML) {
-                pluginIconUrl.append(QString::fromUtf8("/LOCAL_FILE/"));
+                pluginIconUrl.append( QString::fromUtf8("/LOCAL_FILE/") );
                 pluginIconUrl.append(pluginIcon);
+                pluginIconUrl.replace( QString::fromUtf8("\\"), QString::fromUtf8("/") );
             } else {
                 pluginIconUrl.append(pluginID);
                 pluginIconUrl.append(QString::fromUtf8(".png"));
@@ -5381,8 +5387,6 @@ bool
 Node::connectInput(const NodePtr & input,
                    int inputNumber)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     assert(input);
 
@@ -5483,8 +5487,6 @@ Node::Implementation::ifGroupForceHashChangeOfInputs()
 bool
 Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool useGuiInputs)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     assert(input);
     ///Check for cycles: they are forbidden in the graph
@@ -5584,8 +5586,6 @@ Node::replaceInput(const NodePtr& input,
 void
 Node::switchInput0And1()
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     int maxInputs = getMaxInputCount();
     if (maxInputs < 2) {
@@ -5705,8 +5705,6 @@ void
 Node::connectOutput(bool useGuiValues,
                     const NodePtr& output)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(output);
 
     {
@@ -5724,8 +5722,6 @@ Node::connectOutput(bool useGuiValues,
 int
 Node::disconnectInput(int inputNumber)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
 
     NodePtr inputShared;
@@ -5800,8 +5796,6 @@ Node::disconnectInput(int inputNumber)
 int
 Node::disconnectInputInternal(Node* input, bool useGuiValues)
 {
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->inputsInitialized);
     int found = -1;
     NodePtr inputShared;
@@ -5885,8 +5879,6 @@ Node::disconnectOutput(bool useGuiValues,
                        const Node* output)
 {
     assert(output);
-    ////Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
     int ret = -1;
     {
         QMutexLocker l(&_imp->outputsMutex);
@@ -5957,8 +5949,6 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                  bool triggerRender,
                  bool unslaveKnobs)
 {
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
 
     if ( !_imp->effect || !isActivated() ) {
         return;
@@ -5990,7 +5980,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     if (unslaveKnobs) {
         ///For all knobs that have listeners, invalidate expressions
         NodeGroup* isParentGroup = dynamic_cast<NodeGroup*>( parentCol.get() );
-        const KnobsVec & knobs = getKnobs();
+        KnobsVec  knobs = _imp->effect->getKnobs_mt_safe();
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobI::ListenerDimsMap listeners;
             knobs[i]->getListeners(listeners);
@@ -6180,7 +6170,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     }
 
 
-    if ( !getApp()->getProject()->isProjectClosing() ) {
+    AppInstPtr app = getApp();
+    if ( app && !app->getProject()->isProjectClosing() ) {
         _imp->runOnNodeDeleteCB();
     }
 
@@ -6302,6 +6293,7 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
 {
     assert(_imp->renderWatcher);
     assert(taskID == (int)NodeRenderWatcher::eBlockingTaskQuitAnyProcessing);
+    Q_UNUSED(taskID);
     assert(args);
     NodeDestroyNodeInternalArgs* thisArgs = dynamic_cast<NodeDestroyNodeInternalArgs*>( args.get() );
     assert(thisArgs);
@@ -6621,7 +6613,7 @@ Node::makePreviewImage(SequenceTime time,
 
 
     {
-        AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(true, 0) );
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(true, 0);
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
@@ -7722,7 +7714,7 @@ Node::onInputChanged(int inputNb,
          * The plug-in might call getImage, set a valid thread storage on the tree.
          **/
         double time = getApp()->getTimeLine()->currentFrame();
-        AbortableRenderInfoPtr abortInfo( new AbortableRenderInfo(false, 0) );
+        AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
         const bool isRenderUserInteraction = true;
         const bool isSequentialRender = false;
         AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
@@ -8235,7 +8227,7 @@ Node::addTransformInteract(const boost::shared_ptr<KnobDouble>& translate,
         knobs->addKnob(invert, TransformOverlayKnobs::eKnobsEnumerationInvert);
     }
     if (interactive) {
-        knobs->addKnob(interactive, PositionOverlayKnobs::eKnobsEnumerationInteractive);
+        knobs->addKnob(interactive, TransformOverlayKnobs::eKnobsEnumerationInteractive);
     }
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
     if (!nodeGui) {
@@ -9672,6 +9664,18 @@ addIdentityNodesRecursively(const Node* caller,
                 }
             }
         }
+
+        //If the node is a group, add all its inputs
+        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(output->getEffectInstance().get());
+        if (isGrp) {
+            NodesList inputOutputs;
+            isGrp->getInputsOutputs(&inputOutputs, false);
+            for (NodesList::iterator it2 = inputOutputs.begin(); it2 != inputOutputs.end(); ++it2) {
+                outputsToAdd.push_back(*it2);
+            }
+
+        }
+
     }
     nodeOutputs.insert( nodeOutputs.end(), outputsToAdd.begin(), outputsToAdd.end() );
     for (NodesWList::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
@@ -9727,6 +9731,12 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                     ///changes to the viewer that will need this image.
                     return true;
                 }
+            }
+
+            RotoPaint* isRoto = dynamic_cast<RotoPaint*>(output->getEffectInstance().get());
+            if (isRoto) {
+                // THe roto internally makes multiple references to the input so cache it
+                return true;
             }
 
             if (!isFrameVaryingOrAnimated) {
@@ -10281,6 +10291,10 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     if (getScriptName_mt_safe().empty()) {
         return;
     }
+
+    if (getIOContainer()) {
+        return;
+    }
     PythonGILLocker pgl;
     PyObject* mainModule = appPTR->getMainModule();
     assert(mainModule);
@@ -10293,14 +10307,19 @@ Node::declareNodeVariableToPython(const std::string& nodeName)
     Q_UNUSED(nodeObj);
 
     if (!alreadyDefined) {
-        std::string script = nodeFullName + " = " + appID + ".getNode(\"";
-        script.append(nodeName);
-        script.append("\")\n");
+        std::stringstream ss;
+        ss << nodeFullName << " = " << appID << ".getNode(\"" << nodeName << "\")\n";
+#ifdef DEBUG
+        ss << "if not " << nodeFullName << ":\n";
+        ss << "    print \"[BUG]: " << nodeFullName << " does not exist!\"";
+#endif
+        std::string script = ss.str();
+        std::string output;
         std::string err;
         if ( !appPTR->isBackground() ) {
             getApp()->printAutoDeclaredVariable(script);
         }
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
+        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
             qDebug() << err.c_str();
         }
     }
@@ -10343,6 +10362,10 @@ Node::deleteNodeVariableToPython(const std::string& nodeName)
         return;
     }
 
+    if (getIOContainer()) {
+        return;
+    }
+
     AppInstPtr app = getApp();
     if (!app) {
         return;
@@ -10382,7 +10405,12 @@ Node::declarePythonFields()
     }
 
     std::locale locale;
-    std::string nodeName = getFullyQualifiedName();
+    std::string nodeName;
+    if (getIOContainer()) {
+        nodeName = getIOContainer()->getFullyQualifiedName();
+    } else {
+        nodeName = getFullyQualifiedName();
+    }
     std::string appID = getApp()->getAppIDString();
     bool alreadyDefined = false;
     std::string nodeFullName = appID + "." + nodeName;
@@ -10396,6 +10424,10 @@ Node::declarePythonFields()
 
 
     std::stringstream ss;
+#ifdef DEBUG
+    ss << "if not " << nodeFullName << ":\n";
+    ss << "    print \"[BUG]: " << nodeFullName << " is not defined!\"\n";
+#endif
     const KnobsVec& knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         const std::string& knobName = knobs[i]->getName();
@@ -10414,7 +10446,8 @@ Node::declarePythonFields()
             getApp()->printAutoDeclaredVariable(script);
         }
         std::string err;
-        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, 0) ) {
+        std::string output;
+        if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, &err, &output) ) {
             qDebug() << err.c_str();
         }
     }
@@ -10432,7 +10465,12 @@ Node::removeParameterFromPython(const std::string& parameterName)
     }
     PythonGILLocker pgl;
     std::string appID = getApp()->getAppIDString();
-    std::string nodeName = getFullyQualifiedName();
+    std::string nodeName;
+    if (getIOContainer()) {
+        nodeName = getIOContainer()->getFullyQualifiedName();
+    } else {
+        nodeName = getFullyQualifiedName();
+    }
     std::string nodeFullName = appID + "." + nodeName;
     bool alreadyDefined = false;
     PyObject* nodeObj = NATRON_PYTHON_NAMESPACE::getAttrRecursive(nodeFullName, NATRON_PYTHON_NAMESPACE::getMainModule(), &alreadyDefined);

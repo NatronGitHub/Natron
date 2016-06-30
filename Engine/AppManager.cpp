@@ -601,7 +601,7 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
 
-    if (_imp->hasInitializedOpenGLFunctions) {
+    if (_imp->hasInitializedOpenGLFunctions && _imp->hasRequiredOpenGLVersionAndExtensions) {
         OSGLContext::getGPUInfos(_imp->openGLRenderers);
         for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
             qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
@@ -689,14 +689,16 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         GL_CPU::load();
 
         if (createOpenGLContext) {
-            try {
-                OSGLContext::checkOpenGLVersion(true);
-            } catch (const std::exception& e) {
-                if ( !_imp->missingOpenglError.isEmpty() ) {
-                    _imp->missingOpenglError = QString::fromUtf8( e.what() );
+            if (_imp->hasRequiredOpenGLVersionAndExtensions) {
+                try {
+                    OSGLContext::checkOpenGLVersion(true);
+                } catch (const std::exception& e) {
+                    if ( !_imp->missingOpenglError.isEmpty() ) {
+                        _imp->missingOpenglError = QString::fromUtf8( e.what() );
+                    }
                 }
             }
-
+            
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
             glContext->unsetCurrentContextNoRender(true);
 
@@ -1630,7 +1632,7 @@ AppManager::loadPythonGroups()
         findAllScriptsRecursive(d, allPlugins, &foundInit, &foundInitGui);
     }
     if ( foundInit.isEmpty() ) {
-        QString message = tr("Info: init.py script not loaded (this is not an error and relevant only if you are using the application's Python functionnalities)");
+        QString message = tr("Info: init.py script not loaded (this is not an error)");
         appPTR->setLoadingStatus(message);
         if ( !appPTR->isBackground() ) {
             std::cout << message.toStdString() << std::endl;
@@ -1648,7 +1650,7 @@ AppManager::loadPythonGroups()
 
     if ( !appPTR->isBackground() ) {
         if ( foundInitGui.isEmpty() ) {
-            QString message = tr("Info: initGui.py script not loaded (this is not an error and relevant only if you are using the application's Python functionnalities)");
+            QString message = tr("Info: initGui.py script not loaded (this is not an error)");
             appPTR->setLoadingStatus(message);
             if ( !appPTR->isBackground() ) {
                 std::cout << message.toStdString() << std::endl;

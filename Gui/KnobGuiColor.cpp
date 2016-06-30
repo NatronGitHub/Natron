@@ -511,7 +511,6 @@ KnobGuiColor::showColorDialog()
 
         onSpinBoxValueChanged();
 
-        updateExtraGui(color);
     }
 
     if ( getGui() ) {

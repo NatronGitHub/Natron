@@ -229,7 +229,7 @@ public:
             ++renderAge[texIndex];
         }
 
-        AbortableRenderInfoPtr info( new AbortableRenderInfo(canAbort, ret) );
+        AbortableRenderInfoPtr info = AbortableRenderInfo::create(canAbort, ret);
 
         return info;
     }

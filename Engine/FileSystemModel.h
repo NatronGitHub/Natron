@@ -47,9 +47,8 @@ struct FileSystemItemPrivate;
 class FileSystemItem
     : public boost::enable_shared_from_this<FileSystemItem>
 {
-public:
-
-
+private:
+    // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     FileSystemItem( const boost::shared_ptr<FileSystemModel>& model,
                     bool isDir,
                     const QString& filename,
@@ -58,6 +57,25 @@ public:
                     const QDateTime& dateModified,
                     quint64 size,
                     const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() );
+public:
+    // public constructors
+
+    // Note: when switching to C++11, we can add variadic templates:
+    //template<typename ... T>
+    //static boost::shared_ptr<FileSystemItem> create( T&& ... all ) {
+    //    return boost::shared_ptr<FileSystemItem>( new FileSystemItem( std::forward<T>(all)... ) );
+    //}
+    static boost::shared_ptr<FileSystemItem> create( const boost::shared_ptr<FileSystemModel>& model,
+                                                     bool isDir,
+                                                     const QString& filename,
+                                                     const QString& userFriendlySequenceName,
+                                                     const boost::shared_ptr<SequenceParsing::SequenceFromFiles>& sequence,
+                                                     const QDateTime& dateModified,
+                                                     quint64 size,
+                                                     const boost::shared_ptr<FileSystemItem>& parent = boost::shared_ptr<FileSystemItem>() )
+    {
+        return boost::shared_ptr<FileSystemItem>( new FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) );
+    }
 
     ~FileSystemItem();
 
@@ -181,7 +199,8 @@ public:
 
 struct FileSystemModelPrivate;
 class FileSystemModel
-    : public QAbstractItemModel, public boost::enable_shared_from_this<FileSystemModel>
+    : public QAbstractItemModel
+    , public boost::enable_shared_from_this<FileSystemModel>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT

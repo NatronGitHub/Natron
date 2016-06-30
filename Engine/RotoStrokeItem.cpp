@@ -564,7 +564,6 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
 
     QMutexLocker k(&itemMutex);
     assert( !_imp->strokes.empty() );
-    assert( lastMultiStrokeIndex >= 0 && lastMultiStrokeIndex < (int)_imp->strokes.size() );
     if ( (lastMultiStrokeIndex < 0) || ( lastMultiStrokeIndex >= (int)_imp->strokes.size() ) ) {
         return false;
     }
@@ -613,7 +612,9 @@ RotoStrokeItem::getMostRecentStrokeChangesSinceAge(double time,
         lastAge = 0;
     }
 
-    assert( lastAge < (int)xCurve.size() );
+    if (lastAge >= (int) xCurve.size()) {
+        return false;
+    }
 
     KeyFrameSet realX, realY, realP;
     KeyFrameSet::iterator xIt = xCurve.begin();

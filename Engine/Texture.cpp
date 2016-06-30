@@ -68,6 +68,14 @@ Texture::getRecommendedTexParametersForRGBAByteTexture(int* format,
     *glType = GL_UNSIGNED_INT_8_8_8_8_REV;
 }
 
+void
+Texture::getRecommendedTexParametersForRGBAFloatTexture(int* format, int* internalFormat, int* glType)
+{
+    *format = GL_RGBA;
+    *internalFormat = GL_RGBA32F_ARB;
+    *glType = GL_FLOAT;
+}
+
 template <typename GL>
 void ensureTextureHasSizeInternal(const unsigned char* originalRAMBuffer,
                                   int target,
@@ -80,6 +88,7 @@ void ensureTextureHasSizeInternal(const unsigned char* originalRAMBuffer,
                                   int glType,
                                   int w,
                                   int h)
+
 {
     GLProtectAttrib<GL> a(GL_ENABLE_BIT);
     GL::glEnable(target);

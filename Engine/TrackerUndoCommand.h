@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include <list>
+#include <map>
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
@@ -57,8 +58,8 @@ public:
 private:
 
     //Hold shared_ptrs otherwise no one is holding a shared_ptr while items are removed from the context
-
-    std::list<TrackMarkerPtr > _markers;
+    bool _isFirstRedo;
+    std::map<int, TrackMarkerPtr> _markers;
     boost::weak_ptr<TrackerContext> _context;
 };
 
