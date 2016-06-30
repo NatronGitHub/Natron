@@ -296,7 +296,7 @@ class CreateNodeArgs
         createProperty<bool>(kCreateNodeArgsPropOutOfProject, false);
         createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
         createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
-        createProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        createProperty<bool>(kCreateNodeArgsPropAutoConnect, true);
         createProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
         createProperty<bool>(kCreateNodeArgsPropSilent, false);
         createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);

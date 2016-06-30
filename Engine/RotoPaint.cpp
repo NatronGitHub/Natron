@@ -1597,11 +1597,12 @@ RotoPaint::render(const RenderActionArgs& args)
 
                     if ( bgImg->getComponents() != plane->second->getComponents() ) {
                         RectI intersection;
-                        args.roi.intersect(bgImg->getBounds(), &intersection);
-                        bgImg->convertToFormat( intersection,
+                        if (args.roi.intersect(bgImg->getBounds(), &intersection)) {
+                            bgImg->convertToFormat( intersection,
                                                 getApp()->getDefaultColorSpaceForBitDepth( rotoImagesIt->second->getBitDepth() ),
                                                 getApp()->getDefaultColorSpaceForBitDepth( plane->second->getBitDepth() ), 3
                                                 , false, false, plane->second.get() );
+                        }
                     } else {
                         plane->second->pasteFrom(*bgImg, args.roi, false);
                     }

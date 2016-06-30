@@ -392,7 +392,7 @@ public:
 
     bool progressUpdate(const NodePtr& node, double t);
 
-    void ensureProgressPanelVisible();
+    PanelWidget* ensureProgressPanelVisible();
     void ensureScriptEditorVisible();
 
     /*Useful function that saves on disk the image in png format.
