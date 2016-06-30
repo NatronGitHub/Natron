@@ -697,13 +697,15 @@ Gui::ensureScriptEditorVisible()
     }
 }
 
-void
+PanelWidget*
 Gui::ensureProgressPanelVisible()
 {
     TabWidget* pane = _imp->_progressPanel->getParentPane();
 
     if (pane != 0) {
+        PanelWidget* ret = pane->currentWidget();
         pane->setCurrentWidget(_imp->_progressPanel);
+        return ret;
     } else {
         pane = _imp->_nodeGraphArea->getParentPane();
         if (!pane) {
@@ -713,12 +715,14 @@ Gui::ensureProgressPanelVisible()
                 tabs = _imp->_panes;
             }
             if ( tabs.empty() ) {
-                return;
+                return 0;
             }
             pane = tabs.front();
         }
         assert(pane);
+        PanelWidget* ret = pane->currentWidget();
         pane->moveProgressPanelHere();
+        return ret;
     }
 }
 
