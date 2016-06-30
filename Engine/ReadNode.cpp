@@ -658,6 +658,10 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         args.setProperty<boost::shared_ptr<NodeSerialization> >(kCreateNodeArgsPropNodeSerialization, serialization);
         args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
 
+        if (serialization) {
+            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        }
+
         //Set a pre-value for the inputfile knob only if it did not exist
         if (!filename.empty() && !serialization) {
             args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);

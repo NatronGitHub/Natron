@@ -741,6 +741,10 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if (!filename.empty() && !serialization) {
             args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
         }
+        if (serialization) {
+            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        }
+
         embeddedPlugin = _publicInterface->getApp()->createNode(args);
         if (pluginIDKnob) {
             pluginIDKnob->setValue(writerPluginID);
