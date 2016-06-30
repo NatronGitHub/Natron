@@ -5980,7 +5980,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     if (unslaveKnobs) {
         ///For all knobs that have listeners, invalidate expressions
         NodeGroupPtr isParentGroup = parentCol->isNodeGroup();
-        const KnobsVec&  knobs = _imp->effect->getKnobs_mt_safe();
+        KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobI::ListenerDimsMap listeners;
             knobs[i]->getListeners(listeners);
