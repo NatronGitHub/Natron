@@ -1023,6 +1023,10 @@ EffectInstance::getImage(int inputNb,
             inputImg = convertRAMImageToOpenGLTexture(inputImg);
         }
 
+        if (mapToClipPrefs) {
+            inputImg = convertPlanesFormatsIfNeeded(getApp(), inputImg, pixelRoI, clipPrefComps, depth, getNode()->usesAlpha0ToConvertFromRGBToRGBA(), eImagePremultiplicationPremultiplied, channelForMask);
+        }
+
         return inputImg;
     }
 
@@ -5185,9 +5189,12 @@ double
 EffectInstance::getCurrentTime() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
+    AppInstPtr app = getApp();
+    if (!app) {
+        return 0.;
+    }
     if (!tls) {
-        return getApp()->getTimeLine()->currentFrame();
+        return app->getTimeLine()->currentFrame();
     }
     if (tls->currentRenderArgs.validArgs) {
         return tls->currentRenderArgs.time;
@@ -5198,7 +5205,7 @@ EffectInstance::getCurrentTime() const
         return tls->frameArgs.back()->time;
     }
 
-    return getApp()->getTimeLine()->currentFrame();
+    return app->getTimeLine()->currentFrame();
 }
 
 ViewIdx

@@ -600,7 +600,7 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings.reset( new Settings() );
     _imp->_settings->initializeKnobsPublic();
 
-    if (_imp->hasInitializedOpenGLFunctions) {
+    if (_imp->hasInitializedOpenGLFunctions && _imp->hasRequiredOpenGLVersionAndExtensions) {
         OSGLContext::getGPUInfos(_imp->openGLRenderers);
         for (std::list<OpenGLRendererInfo>::iterator it = _imp->openGLRenderers.begin(); it != _imp->openGLRenderers.end(); ++it) {
             qDebug() << "Found OpenGL Renderer:" << it->rendererName.c_str() << ", Vendor:" << it->vendorName.c_str()
@@ -683,14 +683,16 @@ AppManager::initializeOpenGLFunctionsOnce(bool createOpenGLContext)
         // The following requires a valid OpenGL context to be created
         _imp->initGl();
         if (createOpenGLContext) {
-            try {
-                OSGLContext::checkOpenGLVersion();
-            } catch (const std::exception& e) {
-                if ( !_imp->missingOpenglError.isEmpty() ) {
-                    _imp->missingOpenglError = QString::fromUtf8( e.what() );
+            if (_imp->hasRequiredOpenGLVersionAndExtensions) {
+                try {
+                    OSGLContext::checkOpenGLVersion();
+                } catch (const std::exception& e) {
+                    if ( !_imp->missingOpenglError.isEmpty() ) {
+                        _imp->missingOpenglError = QString::fromUtf8( e.what() );
+                    }
                 }
             }
-
+            
             _imp->renderingContextPool->releaseGLContextFromRender(glContext);
             glContext->unsetCurrentContextNoRender();
 

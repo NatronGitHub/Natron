@@ -223,8 +223,8 @@ ProgressPanel::onShowProgressPanelTimerTriggered()
     }
     for (TasksOrdered::iterator it = _imp->tasksOrdered.begin(); it != _imp->tasksOrdered.end(); ++it) {
         if ( (*it) == _imp->lastTaskAdded ) {
+            _imp->lastTaskAdded->onShowProgressPanelTimerTimeout();
             _imp->lastTaskAdded.reset();
-            getGui()->ensureProgressPanelVisible();
 
             return;
         }

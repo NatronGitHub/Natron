@@ -33,7 +33,7 @@
         <file alias="LICENSE-Qt-LGPL.txt">../tools/license/components/LICENSE-Qt-LGPL.txt</file>
         <file alias="LICENSE-Schroedinger.txt">../tools/license/components/LICENSE-Schroedinger.txt</file>
         <file alias="LICENSE-SeExpr.txt">../tools/license/components/LICENSE-SeExpr.txt</file>
-        <file alias="LICENSE-TinyXML.txt">../tools/license/components/LICENSE-TinyXML.txt</file>
+        <file alias="LICENSE-TinyXML.txt">../tools/license/components/LICENSE-TinyXML.txt</file> 
         <file alias="LICENSE-bzip2.txt">../tools/license/components/LICENSE-bzip2.txt</file>
         <file alias="LICENSE-expat.txt">../tools/license/components/LICENSE-expat.txt</file>
         <file alias="LICENSE-fontconfig.txt">../tools/license/components/LICENSE-fontconfig.txt</file>

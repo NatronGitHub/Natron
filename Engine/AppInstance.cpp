@@ -1404,7 +1404,7 @@ AppInstance::exportDocs(const QString path)
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                 if (plugin) {
-                    if (!plugin->getIsForInternalUseOnly() && plugin->getPythonModule().isEmpty() /*&& ( pluginID != QString::fromUtf8("fr.inria.built-in.Tracker") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferRead") ) && ( pluginID != QString::fromUtf8("net.sf.openfx.TimeBufferWrite") )*/) {
+                    if (!plugin->getIsForInternalUseOnly() ) {
                         QStringList groups = plugin->getGrouping();
                         categories << groups.at(0);
                         QStringList plugList;
@@ -1415,7 +1415,7 @@ AppInstance::exportDocs(const QString path)
                         args.setProperty(kCreateNodeArgsPropOutOfProject, true);
                         args.setProperty(kCreateNodeArgsPropSilent, true);
                         qDebug() << pluginID;
-                        NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
+                        NodePtr node = createNode(args);
                         if (node) {
                             QDir mdDir(path);
                             if ( !mdDir.exists() ) {
@@ -1460,6 +1460,7 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("Contents:\n\n") );
         groupMD.append( QString::fromUtf8(".. toctree::\n") );
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
+        groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
         Q_FOREACH(const QString &category, categories) {
             QString plugMD;

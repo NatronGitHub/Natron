@@ -635,6 +635,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         ItemData d;
         KnobChoicePtr motionModel = marker.getMotionModelKnob();
         ComboBox* cb = new ComboBox;
+        cb->setFocusPolicy(Qt::NoFocus);
         std::vector<std::string> choices, helps;
         TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
         cb->setCurrentIndex( motionModel->getValue() );

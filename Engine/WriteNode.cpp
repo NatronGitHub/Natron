@@ -741,6 +741,10 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
         if (!filename.empty() && !serialization) {
             args.addParamDefaultValue<std::string>(kOfxImageEffectFileParamName, filename);
         }
+        if (serialization) {
+            args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
+        }
+
         embeddedPlugin = _publicInterface->getApp()->createNode(args);
         if (pluginIDKnob) {
             pluginIDKnob->setValue(writerPluginID);
@@ -1028,7 +1032,10 @@ WriteNode::onEffectCreated(bool mayCreateFileDialog,
         std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
         if (foundFileName != defaultParamValues.end()) {
-            pattern = *foundFileName;
+            std::string propName(kCreateNodeArgsPropParamValue);
+            propName += "_";
+            propName += kOfxImageEffectFileParamName;
+            pattern = args.getProperty<std::string>(propName);
         }
     }
 

@@ -465,39 +465,41 @@ GenericSchedulerThread::run()
 {
     for (;; ) {
         // Get the args to do the work
-        ThreadStartArgsPtr args;
         TaskQueueBehaviorEnum behavior = tasksQueueBehaviour();
-        {
-            QMutexLocker k(&_imp->enqueuedTasksMutex);
-            switch (behavior) {
-            case eTaskQueueBehaviorProcessInOrder: {
-                if ( !_imp->enqueuedTasks.empty() ) {
-                    args = _imp->enqueuedTasks.front();
-                    _imp->enqueuedTasks.pop_front();
-                }
-                break;
-            }
-            case eTaskQueueBehaviorSkipToMostRecent: {
-                if ( !_imp->enqueuedTasks.empty() ) {
-                    args = _imp->enqueuedTasks.back();
-                    _imp->enqueuedTasks.clear();
-                }
-                break;
-            }
-            }
-        }
         ThreadStateEnum state = eThreadStateActive;
         {
-            _imp->setThreadState(eThreadStateActive);
-            Q_EMIT stateChanged( (int)state );
-        }
-
-
-        if ( args && !args->isNull() ) {
-            // Do the work!
-            state = threadLoopOnce(args);
-        }
-
+            ThreadStartArgsPtr args;
+            {
+                QMutexLocker k(&_imp->enqueuedTasksMutex);
+                switch (behavior) {
+                    case eTaskQueueBehaviorProcessInOrder: {
+                        if ( !_imp->enqueuedTasks.empty() ) {
+                            args = _imp->enqueuedTasks.front();
+                            _imp->enqueuedTasks.pop_front();
+                        }
+                        break;
+                    }
+                    case eTaskQueueBehaviorSkipToMostRecent: {
+                        if ( !_imp->enqueuedTasks.empty() ) {
+                            args = _imp->enqueuedTasks.back();
+                            _imp->enqueuedTasks.clear();
+                        }
+                        break;
+                    }
+                }
+            }
+            {
+                _imp->setThreadState(eThreadStateActive);
+                Q_EMIT stateChanged( (int)state );
+            }
+            
+            
+            if ( args && !args->isNull() ) {
+                // Do the work!
+                state = threadLoopOnce(args);
+            }
+        }  // ThreadStartArgsPtr args;
+        
         // The implementation might call resolveState from threadLoopOnce. If not, it will return eThreadStateActive by default so make
         // sure resolveState was called at least once
         if (state == eThreadStateActive) {

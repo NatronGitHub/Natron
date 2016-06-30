@@ -123,6 +123,8 @@ public:
 
 public Q_SLOTS:
 
+    void onShowProgressPanelTimerTimeout();
+
     void onRefreshLabelTimeout();
 
     /**
