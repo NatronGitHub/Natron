@@ -92,7 +92,7 @@ const char* rotoRamp_FragmentShader =
 "   float t;\n"
 "#ifdef RAMP_P_LINEAR\n"
 "   t = t * t * t;\n"
-"#endif"
+"#endif\n"
 "#ifdef RAMP_EASE_IN\n"
 "   t = t * t * (2 - t);\n"
 "#endif\n"

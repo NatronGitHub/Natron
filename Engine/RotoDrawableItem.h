@@ -207,7 +207,9 @@ public:
                                         const ImageBitDepthEnum depth,
                                         const unsigned int mipmapLevel,
                                         const RectD& rotoNodeSrcRod,
-                                        const OSGLContextPtr& glContext);
+                                        const OSGLContextPtr& glContext,
+                                        const AbortableRenderInfoPtr& abortInfo,
+                                        StorageModeEnum requestedStorage);
 
 private:
 

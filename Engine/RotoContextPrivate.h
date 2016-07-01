@@ -2192,7 +2192,7 @@ public:
         std::vector<ParametricPoint> bezierPolygonJoined;
 
         // indices (from 0 to n) of the points in bezierPoygonJoined
-        std::vector<int> bezierPolygonIndices;
+        std::vector<int*> bezierPolygonIndices;
 
         // The computed mesh for the feather
         std::vector<RotoFeatherVertex> featherMesh;

@@ -239,7 +239,7 @@ public:
     , _height(0)
     , _buffer(0)
     {
-        assert(c && c->isGPUContext());
+        assert(c);
     }
 
     /**
@@ -263,7 +263,7 @@ public:
     , _height(height)
     , _buffer(buffer)
     {
-        assert(c && !c->isGPUContext());
+        assert(c);
     }
 
     void attach()

@@ -994,7 +994,8 @@ EffectInstance::getImage(int inputNb,
                     }
                 }
 
-                inputImg = attachedStroke->renderMask(components, time, view, depth, mipMapLevel, rotoSrcRod, gpuGlContext ? gpuGlContext : cpuGlContext);
+                OSGLContextPtr maskContext;// =  gpuGlContext ? gpuGlContext : cpuGlContext;
+                inputImg = attachedStroke->renderMask(components, time, view, depth, mipMapLevel, rotoSrcRod, maskContext, renderInfo, returnStorage);
 
                 if ( roto->isDoingNeatRender() ) {
                     getApp()->updateStrokeImage(inputImg, 0, false);

@@ -44,7 +44,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-//#define ROTO_RENDER_TRIANGLES_ONLY
+#define ROTO_CAIRO_RENDER_TRIANGLES_ONLY
 
 #include "libtess.h"
 
@@ -2692,7 +2692,9 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
                              const ImageBitDepthEnum depth,
                              const unsigned int mipmapLevel,
                              const RectD& rotoNodeSrcRod,
-                             const OSGLContextPtr& glContext)
+                             const OSGLContextPtr& glContext,
+                             const AbortableRenderInfoPtr& abortInfo,
+                             StorageModeEnum requestedStorage)
 {
     NodePtr node = getContext()->getNode();
     ImagePtr image; // = stroke->getStrokeTimePreview();
@@ -2718,7 +2720,7 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
                                                   /*fullScaleWithDownscaleInputs=*/ false) );
 
 
-    node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), boost::shared_ptr<OSGLContextAttacher>(), &image);
+    node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, requestedStorage, requestedStorage, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), boost::shared_ptr<OSGLContextAttacher>(), &image);
 
 
     if (image) {
@@ -2788,6 +2790,17 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
     RectI pixelRod;
     rotoBbox.toPixelEnclosing(mipmapLevel, 1., &pixelRod);
 
+    //  attach the context now because we need it to allocate the texture
+    boost::scoped_ptr<OSGLContextAttacher> contextLocker;
+    if (glContext) {
+            contextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                        , time
+#endif
+                                                        ));
+        contextLocker->attach();
+
+    }
 
     boost::shared_ptr<ImageParams> params = Image::makeParams(rotoBbox,
                                                               pixelRod,
@@ -2825,17 +2838,45 @@ RotoDrawableItem::renderMask(const ImageComponents& components,
         imgLocker.lock(image);
     }
 
+
     ///Does nothing if image is already alloc
     image->allocateMemory();
 
-    if (glContext) {
-        image = renderMaskInternal_gl(glContext, startTime, endTime, mbFrameStep, time, inverted, mipmapLevel, strokes, image);
-    } else {
-        image = renderMaskInternal_cairo(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
+    // Ok now reattach the context if using mesa because we have the buffer
+    boost::scoped_ptr<Image::WriteAccess> wacc;
+    if (glContext && !glContext->isGPUContext()) {
+        wacc.reset(new Image::WriteAccess(image.get()));
+        unsigned char* data = wacc->pixelAt(pixelRod.x1, pixelRod.y1);
+        assert(data);
+        contextLocker.reset(new OSGLContextAttacher(glContext, abortInfo
+#ifdef DEBUG
+                                                    , time
+#endif
+                                                    , pixelRod.width(), pixelRod.height(), data));
+        contextLocker->attach();
     }
 
+
+    if (glContext) {
+        image = renderMaskInternal_gl(glContext, startTime, endTime, mbFrameStep, time, inverted, mipmapLevel, strokes, image);
+        if (requestedStorage == eStorageModeRAM) {
+            image = node->getEffectInstance()->convertOpenGLTextureToCachedRAMImage(image);
+        }
+    } else {
+        image = renderMaskInternal_cairo(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
+        if (requestedStorage == eStorageModeGLTex) {
+            assert(glContext);
+            if (glContext->isGPUContext()) {
+                image = node->getEffectInstance()->convertRAMImageToOpenGLTexture<GL_GPU>(image);
+            } else {
+                image = node->getEffectInstance()->convertRAMImageToOpenGLTexture<GL_CPU>(image);
+            }
+        }
+    }
+
+
     return image;
-} // RotoDrawableItem::renderMaskFromStroke
+} // RotoDrawableItem::renderMask
 
 boost::shared_ptr<Image>
 RotoDrawableItem::renderMaskInternal_gl(const OSGLContextPtr& glContext,
@@ -2860,7 +2901,7 @@ RotoDrawableItem::renderMaskInternal_gl(const OSGLContextPtr& glContext,
 #pragma message WARN("TODO: strokes with OpenGL")
     } else {
         ///render the bezier only if finished (closed) and activated
-        if ( isBezier->isCurveFinished() && isBezier->isActivated(time) && ( isBezier->getControlPointsCount() <= 1 ) ) {
+        if ( isBezier->isCurveFinished() && isBezier->isActivated(time) && ( isBezier->getControlPointsCount() > 1 ) ) {
             RotoContextPrivate::renderBezier_gl(glContext, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel, image);
         }
     }
@@ -2949,7 +2990,7 @@ RotoDrawableItem::renderMaskInternal_cairo(const RectI & roi,
         }
     } else {
         ///render the bezier only if finished (closed) and activated
-        if ( isBezier->isCurveFinished() && isBezier->isActivated(time) && ( isBezier->getControlPointsCount() <= 1 ) ) {
+        if ( isBezier->isCurveFinished() && isBezier->isActivated(time) && ( isBezier->getControlPointsCount() >1 ) ) {
             RotoContextPrivate::renderBezier_cairo(imgWrapper.ctx, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel);
         }
     }
@@ -3296,14 +3337,11 @@ RotoContextPrivate::renderBezier_cairo(cairo_t* cr,
 
 
 
-#ifdef ROTO_RENDER_TRIANGLES_ONLY
-        std::list<RotoFeatherVertex> featherMesh;
-        std::list<RotoTriangleFans> internalFans;
-        std::list<RotoTriangles> internalTriangles;
-        std::list<RotoTriangleStrips> internalStrips;
-        computeTriangles(bezier, t, mipmapLevel, featherDist, &featherMesh, &internalFans, &internalTriangles, &internalStrips);
-        renderFeather_cairo(featherMesh, shapeColor, fallOff, mesh);
-        renderInternalShape_cairo(internalTriangles, internalFans, internalStrips, shapeColor, mesh);
+#ifdef ROTO_CAIRO_RENDER_TRIANGLES_ONLY
+        PolygonData data;
+        computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
+        renderFeather_cairo(data, shapeColor, fallOff, mesh);
+        renderInternalShape_cairo(data, shapeColor, mesh);
         Q_UNUSED(opacity);
 #else
         renderFeather_old_cairo(bezier, t, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
@@ -3884,11 +3922,13 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
             c_data += 4;
         }
 
+        bool hasUploadedVertices = false;
         {
             // Render internal triangles
             for (std::size_t i = 0; i < data.internalTriangles.size(); ++i) {
                 int nbIds = data.internalTriangles[i].indices.size();
                 if (nbIds) {
+                    hasUploadedVertices = true;
                     if (glContext->isGPUContext()) {
                         renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalTriangles[i].indices[0]));
                     } else {
@@ -3904,10 +3944,11 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
                 int nbIds = data.internalFans[i].indices.size();
                 if (nbIds) {
                     if (glContext->isGPUContext()) {
-                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), false);
+                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), !hasUploadedVertices);
                     } else {
-                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), false);
+                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), !hasUploadedVertices);
                     }
+                    hasUploadedVertices = true;
                 }
             }
 
@@ -3918,10 +3959,11 @@ RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezie
                 int nbIds = data.internalStrips[i].indices.size();
                 if (nbIds) {
                     if (glContext->isGPUContext()) {
-                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), false);
+                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), !hasUploadedVertices);
                     } else {
-                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), false);
+                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), !hasUploadedVertices);
                     }
+                    hasUploadedVertices = true;
                 }
             }
 
@@ -3999,6 +4041,7 @@ static void tess_vertex_callback(void* data /*per-vertex client data*/, void *po
 
     int* p = (int*)data;
     assert(p);
+    assert(*p >= 0 && *p < (int)myData->bezierPolygonJoined.size());
 
     if (myData->stripsBeingEdited) {
         myData->stripsBeingEdited->indices.push_back(*p);
@@ -4028,14 +4071,20 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
     v.x = coords[1];
     v.t = 0;
 
-    myData->bezierPolygonIndices.push_back(myData->bezierPolygonJoined.size());
+    assert(myData->bezierPolygonIndices.size() == myData->bezierPolygonJoined.size());
+
+    int* vertexData =  new int;
+    *vertexData = myData->bezierPolygonJoined.size();
+
+    myData->bezierPolygonIndices.push_back(vertexData);
     myData->bezierPolygonJoined.push_back(v);
 
     /*new->r = w[0]*d[0]->r + w[1]*d[1]->r + w[2]*d[2]->r + w[3]*d[3]->r;
     new->g = w[0]*d[0]->g + w[1]*d[1]->g + w[2]*d[2]->g + w[3]*d[3]->g;
     new->b = w[0]*d[0]->b + w[1]*d[1]->b + w[2]*d[2]->b + w[3]*d[3]->b;
     new->a = w[0]*d[0]->a + w[1]*d[1]->a + w[2]*d[2]->a + w[3]*d[3]->a;*/
-    *dataOut = (void*)&(myData->bezierPolygonIndices.back());
+    assert(*vertexData >= 0 && *vertexData < (int)myData->bezierPolygonIndices.size());
+    *dataOut = (void*)vertexData;
 
 }
 
@@ -4239,13 +4288,22 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
 
     for (std::size_t i = 0; i < outArgs->bezierPolygonIndices.size(); ++i) {
         double coords[3] = {outArgs->bezierPolygonJoined[i].x, outArgs->bezierPolygonJoined[i].y, 1.};
-        outArgs->bezierPolygonIndices[i] = i;
-        libtess_gluTessVertex(tesselator, coords, (void*)(&outArgs->bezierPolygonIndices[i]) /*per-vertex client data*/);
+        int* vertexData =  new int;
+        *vertexData = i;
+        outArgs->bezierPolygonIndices[i] = vertexData;
+        assert(*vertexData >= 0 && *vertexData < (int)outArgs->bezierPolygonJoined.size());
+        libtess_gluTessVertex(tesselator, coords, (void*)(vertexData) /*per-vertex client data*/);
     }
 
     libtess_gluTessEndContour(tesselator);
     libtess_gluTessEndPolygon(tesselator);
     libtess_gluDeleteTess(tesselator);
+
+    // now delete indices
+    for (std::size_t i = 0; i < outArgs->bezierPolygonIndices.size(); ++i) {
+        delete outArgs->bezierPolygonIndices[i];
+    }
+    outArgs->bezierPolygonIndices.clear();
 
     // check for errors
     assert(outArgs->error == 0);
