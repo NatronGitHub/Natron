@@ -2,10 +2,14 @@
 
 ## Version 2.1.0
 
-- The point tracker was completely reworked. It now uses libmv (from Blender).
-- (beta feature) Shadertoy is a new plugin that allows writing plugins using GLSL fragment shaders. It supports CPU rendering using Mesa.
+- The point tracker was completely reworked. It now uses libmv (from Blender). It now allows tracking different motion types (translation, rotation, scaling, perspective) and can be used for anything that needs match-moving or stabilizing.
+- Readers/Writers are now all under the same Read/Write node. If 2 readers/writers can decode/encode the same format, a drop-down allows to choose between them.
+- Python: it is now possible to pass extra properties to the createNode function to control how nodes are created, see (Python reference)[http://natron.readthedocs.io/en/master/devel/PythonReference/NatronEngine/App.html#NatronEngine.NatronEngine.App.createNode].
+- (beta feature) New documentation for Natron: Whenever pressing the "?" button in the properties panel of a node, Natron will open-up a page in your web-browser with documentation for this node. Natron also has a user-guide that is work in progress. 
+You may contribute to this user guide, follow (these)[http://natron.readthedocs.io/en/master/guide/writedoc.html] instructions to enrich the documentation.
+- (beta feature) Shadertoy is a new plugin that allows writing plugins using GLSL fragment shaders. It supports both GPU rendering using OpenGL and CPU rendering using Mesa.
 - (beta feature) OpenGL rendering is now supported (enable it in Preferences/GPU rendering). Tested with the Shadertoy plugin and the HitFilm Ignite plugins.
-- ColorLookup now has a background that makes it easier to use as a color ramp.
+-  ColorLookup now has a background that makes it easier to use as a color ramp.
 - (beta feature) TextFX is a new text plugin with more features than the original text node(s).
 - (beta feature) ReadCDR is a new reader plugin that supports CorelDRAW(R) documents.
 - (beta feature) ReadPDF is a new reader plugin that supports PDF documents.
