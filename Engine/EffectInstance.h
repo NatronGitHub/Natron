@@ -2260,6 +2260,13 @@ public:
  **/
 typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
 
+inline EffectInstancePtr
+isEffectInstance(const KnobHolderPtr& effect)
+{
+    return boost::dynamic_pointer_cast<EffectInstance>(effect);
+}
+
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_EFFECTINSTANCE_H

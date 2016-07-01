@@ -1450,7 +1450,7 @@ RotoContext::resetTransformInternal(const KnobDoublePtr& translate,
                                     const KnobChoicePtr& skewOrder,
                                     const KnobDoublePtr& extraMatrix)
 {
-    std::list<KnobI*> knobs;
+    std::list<KnobIPtr> knobs;
 
     knobs.push_back( translate.get() );
     knobs.push_back( scale.get() );
@@ -1464,7 +1464,7 @@ RotoContext::resetTransformInternal(const KnobDoublePtr& translate,
         knobs.push_back( extraMatrix.get() );
     }
     bool wasEnabled = translate->isEnabled(0);
-    for (std::list<KnobI*>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
+    for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         for (int i = 0; i < (*it)->getDimension(); ++i) {
             (*it)->resetToDefaultValue(i);
         }

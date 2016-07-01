@@ -5997,7 +5997,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                     continue;
                 }
 
-                EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+                EffectInstancePtr isEffect = isEffectInstance(holder);
                 if (!isEffect) {
                     continue;
                 }
@@ -7390,7 +7390,7 @@ Node::onAllKnobsSlaved(bool isSlave,
     assert( QThread::currentThread() == qApp->thread() );
 
     if (isSlave) {
-        EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(master);
+        EffectInstancePtr effect = isEffectInstance(master);
         assert(effect);
         if (effect) {
             NodePtr masterNode = effect->getNode();
@@ -7434,7 +7434,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
 
 
     ///If the holder isn't an effect, ignore it too
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( master->getHolder() );
+    EffectInstancePtr isEffect = isEffectInstance( master->getHolder() );
     NodePtr parentNode;
     if (!isEffect) {
         TrackMarkerPtr isMarker = boost::dynamic_pointer_cast<TrackMarker>( master->getHolder() );

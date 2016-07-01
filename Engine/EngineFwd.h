@@ -362,6 +362,7 @@ typedef boost::weak_ptr<Image> ImageWPtr;
 typedef boost::weak_ptr<KnobGuiI> KnobGuiIWPtr;
 typedef boost::weak_ptr<KnobHolder> KnobHolderWPtr;
 typedef boost::weak_ptr<KnobI> KnobIWPtr;
+typedef boost::weak_ptr<const KnobI> KnobIConstWPtr;
 typedef boost::weak_ptr<KnobString> KnobStringWPtr;
 typedef boost::weak_ptr<Node> NodeWPtr;
 typedef boost::weak_ptr<NodeCollection> NodeCollectionWPtr;

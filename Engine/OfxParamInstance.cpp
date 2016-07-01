@@ -95,9 +95,9 @@ getOfxKeyFrames(const KnobIPtr& knob,
     if ( knob->canAnimate() ) {
         for (int i = startDim; i < endDim; ++i) {
             // Was added for https://github.com/MrKepzie/Natron/issues/690 but cannot figure out what this fixes
-            /*std::list<std::pair<KnobI*,int> > dependencies;
+            /*std::list<std::pair<KnobIPtr,int> > dependencies;
                if (knob->getExpressionDependencies(i, dependencies)) {
-               for (std::list<std::pair<KnobI*,int> >::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
+               for (std::list<std::pair<KnobIPtr,int> >::iterator it = dependencies.begin(); it!=dependencies.end(); ++it) {
                unsigned int tmp;
                getNumKeys(it->first, tmp);
                sum += tmp;
@@ -4333,7 +4333,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     }
 
     StatusEnum stat;
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( _knob.lock()->getHolder() );
+    EffectInstancePtr effect = isEffectInstance( _knob.lock()->getHolder() );
     KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default
     // The initial curve for some plugins may be better with a specific interpolation. Unfortunately, the kOfxParametricSuiteV1 doesn't offer different interpolation methods
 #ifdef DEBUG

@@ -519,7 +519,7 @@ KnobHelper::deleteKnob()
             }
         }
 
-        EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        EffectInstancePtr effect = isEffectInstance(holder);
         if (effect) {
             if ( useHostOverlayHandle() ) {
                 effect->getNode()->removePositionHostOverlay( shared_from_this() );
@@ -2246,7 +2246,7 @@ KnobHelperPrivate::declarePythonVariables(bool addTab,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(h);
+    EffectInstancePtr effect = isEffectInstance(h);
     if (!effect) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
@@ -2416,7 +2416,7 @@ KnobHelper::validateExpression(const std::string& expression,
         throw std::runtime_error("This parameter cannot have an expression");
     }
 
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effect = isEffectInstance(holder);
     if (!effect) {
         throw std::runtime_error("This parameter cannot have an expression");
     }
@@ -2683,7 +2683,7 @@ KnobHelper::replaceNodeNameInExpression(int dimension,
     if (!holder) {
         return;
     }
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr isEffect = isEffectInstance(holder);
     if (!isEffect) {
         return;
     }
@@ -2963,7 +2963,7 @@ KnobHelper::setName(const std::string & name,
     } while (foundItem);
 
 
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effect = isEffectInstance(holder);
     if (effect) {
         NodePtr node = effect->getNode();
         std::string effectScriptName = node->getScriptName_mt_safe();
@@ -4150,7 +4150,7 @@ KnobHelper::randomSeed(double time,
     KnobHolderPtr holder = getHolder();
 
     if (holder) {
-        EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        EffectInstancePtr effect = isEffectInstance(holder);
         if (effect) {
             hash = effect->getHash();
         }
@@ -4247,8 +4247,8 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
         return KnobIPtr();
     }
 
-    EffectInstancePtr otherIsEffect = boost::dynamic_pointer_cast<EffectInstance>(otherHolder);
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr otherIsEffect = isEffectInstance(otherHolder);
+    EffectInstancePtr isEffect = isEffectInstance(holder);
     KnobBool* isBool = dynamic_cast<KnobBool*>(this);
     KnobInt* isInt = dynamic_cast<KnobInt*>(this);
     KnobDouble* isDbl = dynamic_cast<KnobDouble*>(this);
@@ -4541,7 +4541,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
     std::list<KnobIPtr> knobsToInspectRecursive;
 
     for (std::set<KnobIPtr>::iterator it = deps.begin(); it != deps.end(); ++it) {
-        EffectInstancePtr effect  = boost::dynamic_pointer_cast<EffectInstance>( (*it)->getHolder() );
+        EffectInstancePtr effect  = isEffectInstance( (*it)->getHolder() );
         if (effect) {
             NodePtr node = effect->getNode();
 
@@ -4655,7 +4655,7 @@ KnobHolder::KnobHolder(const AppInstancePtr& appInstance)
     QObject::connect( this, SIGNAL(doEndChangesOnMainThread()), this, SLOT(onDoEndChangesOnMainThreadTriggered()) );
     QObject::connect( this, SIGNAL(doEvaluateOnMainThread(bool,bool)), this,
                       SLOT(onDoEvaluateOnMainThread(bool,bool)) );
-    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)), this,
+    QObject::connect( this, SIGNAL(doValueChangeOnMainThread(KnobIPtr,int,double,ViewSpec,bool)), this,
                       SLOT(onDoValueChangeOnMainThread(KnobI*,int,double,ViewSpec,bool)) );
 }
 
@@ -4666,8 +4666,8 @@ KnobHolder::KnobHolder(const KnobHolder& other)
     QObject::connect( this, SIGNAL( doEndChangesOnMainThread() ), this, SLOT( onDoEndChangesOnMainThreadTriggered() ) );
     QObject::connect( this, SIGNAL( doEvaluateOnMainThread(bool, bool) ), this,
                      SLOT( onDoEvaluateOnMainThread(bool, bool) ) );
-    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ), this,
-                     SLOT( onDoValueChangeOnMainThread(KnobI*, int, double, ViewSpec, bool) ) );
+    QObject::connect( this, SIGNAL( doValueChangeOnMainThread(KnobIPtr, int, double, ViewSpec, bool) ), this,
+                     SLOT( onDoValueChangeOnMainThread(KnobIPtr, int, double, ViewSpec, bool) ) );
 }
 
 KnobHolder::~KnobHolder()

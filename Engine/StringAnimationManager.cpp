@@ -64,9 +64,10 @@ struct StringAnimationManagerPrivate
     void* ofxParamHandle;
     mutable QMutex keyframesMutex;
     Keyframes keyframes;
-    const KnobI* knob;
+#pragma message WARN("KnobIPtr or KnobIWPtr?")
+    KnobIWConstPtr knob;
 
-    StringAnimationManagerPrivate(const KnobI* knob)
+    StringAnimationManagerPrivate(const KnobIConstPtr& knob)
         : customInterpolation(NULL)
         , ofxParamHandle(NULL)
         , keyframesMutex()
@@ -76,7 +77,7 @@ struct StringAnimationManagerPrivate
     }
 };
 
-StringAnimationManager::StringAnimationManager(const KnobI* knob)
+StringAnimationManager::StringAnimationManager(const KnobIConstPtr& knob)
     : _imp( new StringAnimationManagerPrivate(knob) )
 {
 }

@@ -236,7 +236,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
     KnobHolderPtr holder = getHolder();
 
     if (holder) {
-        EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        EffectInstancePtr effect = isEffectInstance(holder);
         if (!effect) {
             return;
         }
@@ -384,7 +384,7 @@ KnobDouble::denormalize(const int dimension,
                         const double time,
                         const double value) const
 {
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( getHolder() );
+    EffectInstancePtr effect = isEffectInstance( getHolder() );
 
     assert(effect);
     if (!effect) {
@@ -409,7 +409,7 @@ KnobDouble::normalize(const int dimension,
                       const double time,
                       const double value) const
 {
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( getHolder() );
+    EffectInstancePtr effect = isEffectInstance( getHolder() );
 
     assert(effect);
     if (!effect) {

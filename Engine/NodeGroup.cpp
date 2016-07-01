@@ -1615,7 +1615,7 @@ exportKnobValues(int indentLevel,
         return false;
     }
 
-    EffectInstancePtr holderIsEffect = boost::dynamic_pointer_cast<EffectInstance>( knob->getHolder() );
+    EffectInstancePtr holderIsEffect = isEffectInstance( knob->getHolder() );
 
     if (isChoice && holderIsEffect) {
         //Do not serialize mask channel selector if the mask is not enabled
@@ -2453,7 +2453,7 @@ exportKnobLinks(int indentLevel,
             }
             hasExportedLink = true;
 
-            EffectInstancePtr aliasHolder = boost::dynamic_pointer_cast<EffectInstance>( alias->getHolder() );
+            EffectInstancePtr aliasHolder = isEffectInstance( alias->getHolder() );
             assert(aliasHolder);
             if (!aliasHolder) {
                 throw std::logic_error("exportKnobLinks");
@@ -2491,7 +2491,7 @@ exportKnobLinks(int indentLevel,
                     }
                     hasExportedLink = true;
 
-                    EffectInstancePtr masterHolder = boost::dynamic_pointer_cast<EffectInstance>( master.second->getHolder() );
+                    EffectInstancePtr masterHolder = isEffectInstance( master.second->getHolder() );
                     assert(masterHolder);
                     if (!masterHolder) {
                         throw std::logic_error("exportKnobLinks");

@@ -201,7 +201,7 @@ public:
      **/
     void refreshUserParamsGUI();
 
-    virtual bool onKnobValueChanged(KnobI* k,
+    virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
                                     ViewSpec view,

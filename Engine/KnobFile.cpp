@@ -68,7 +68,7 @@ void
 KnobFile::reloadFile()
 {
     assert( getHolder() );
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( getHolder() );
+    EffectInstancePtr effect = isEffectInstance( getHolder() );
     if (effect) {
         effect->purgeCaches();
         effect->clearPersistentMessage(false);

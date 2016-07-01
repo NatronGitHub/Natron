@@ -2218,7 +2218,7 @@ AppInstance::addInvalidExpressionKnob(const KnobIPtr& knob)
 }
 
 void
-AppInstance::removeInvalidExpressionKnob(const KnobI* knob)
+AppInstance::removeInvalidExpressionKnob(const KnobIConstPtr& knob)
 {
     QMutexLocker k(&_imp->invalidExprKnobsMutex);
 

@@ -1046,7 +1046,7 @@ Knob<T>::setValue(const T & v,
 
 #ifdef DEBUG
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
-        EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        EffectInstancePtr isEffect = isEffectInstance(holder);
         if (isEffect) {
             isEffect->checkCanSetValueAndWarn();
         }
@@ -1246,7 +1246,7 @@ Knob<T>::setValues(const T& value0,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        effect = isEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1309,7 +1309,7 @@ Knob<T>::setValues(const T& value0,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        effect = isEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1352,7 +1352,7 @@ Knob<T>::setValues(const T& value0,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        effect = isEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1451,7 +1451,7 @@ Knob<T>::setValueAtTime(double time,
 
 #ifdef DEBUG
     if ( holder && (reason == eValueChangedReasonPluginEdited) ) {
-        EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        EffectInstancePtr isEffect = isEffectInstance(holder);
         if (isEffect) {
             isEffect->checkCanSetValueAndWarn();
         }
@@ -1598,7 +1598,7 @@ Knob<T>::setValuesAtTime(double time,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        effect = isEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1651,7 +1651,7 @@ Knob<T>::setValuesAtTime(double time,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        effect = isEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
@@ -1706,7 +1706,7 @@ Knob<T>::setValuesAtTime(double time,
     bool doEditEnd = false;
 
     if (holder) {
-        effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        effect = isEffectInstance(holder);
         if (effect) {
             if ( effect->isDoingInteractAction() && !effect->getApp()->isCreatingPythonGroup() ) {
                 effect->setMultipleParamsEditLevel(KnobHolder::eMultipleParamsEditOnCreateNewCommand);
