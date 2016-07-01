@@ -603,6 +603,27 @@ void OSGLFunctions<false>::load_functions() {
     _mglBlitFramebuffer = (PFNGLBLITFRAMEBUFFERPROC)OSMesaGetProcAddress("glBlitFramebuffer");
     _mglRenderbufferStorageMultisample = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)OSMesaGetProcAddress("glRenderbufferStorageMultisample");
     _mglFramebufferTextureLayer = (PFNGLFRAMEBUFFERTEXTURELAYERPROC)OSMesaGetProcAddress("glFramebufferTextureLayer");
+    _mglIsRenderbufferEXT = (PFNGLISRENDERBUFFEREXTPROC)OSMesaGetProcAddress("glIsRenderbufferEXT");
+    _mglBindRenderbufferEXT = (PFNGLBINDRENDERBUFFEREXTPROC)OSMesaGetProcAddress("glBindRenderbufferEXT");
+    _mglDeleteRenderbuffersEXT = (PFNGLDELETERENDERBUFFERSEXTPROC)OSMesaGetProcAddress("glDeleteRenderbuffersEXT");
+    _mglGenRenderbuffersEXT = (PFNGLGENRENDERBUFFERSEXTPROC)OSMesaGetProcAddress("glGenRenderbuffersEXT");
+    _mglRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)OSMesaGetProcAddress("glRenderbufferStorageEXT");
+    _mglGetRenderbufferParameterivEXT = (PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC)OSMesaGetProcAddress("glGetRenderbufferParameterivEXT");
+    _mglIsFramebufferEXT = (PFNGLISFRAMEBUFFEREXTPROC)OSMesaGetProcAddress("glIsFramebufferEXT");
+    _mglBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC)OSMesaGetProcAddress("glBindFramebufferEXT");
+    _mglDeleteFramebuffersEXT = (PFNGLDELETEFRAMEBUFFERSEXTPROC)OSMesaGetProcAddress("glDeleteFramebuffersEXT");
+    _mglGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC)OSMesaGetProcAddress("glGenFramebuffersEXT");
+    _mglCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)OSMesaGetProcAddress("glCheckFramebufferStatusEXT");
+    _mglFramebufferTexture1DEXT = (PFNGLFRAMEBUFFERTEXTURE1DEXTPROC)OSMesaGetProcAddress("glFramebufferTexture1DEXT");
+    _mglFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)OSMesaGetProcAddress("glFramebufferTexture2DEXT");
+    _mglFramebufferTexture3DEXT = (PFNGLFRAMEBUFFERTEXTURE3DEXTPROC)OSMesaGetProcAddress("glFramebufferTexture3DEXT");
+    _mglFramebufferRenderbufferEXT = (PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)OSMesaGetProcAddress("glFramebufferRenderbufferEXT");
+    _mglGetFramebufferAttachmentParameterivEXT = (PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC)OSMesaGetProcAddress("glGetFramebufferAttachmentParameterivEXT");
+    _mglGenerateMipmapEXT = (PFNGLGENERATEMIPMAPEXTPROC)OSMesaGetProcAddress("glGenerateMipmapEXT");
+    _mglBindVertexArrayAPPLE = (PFNGLBINDVERTEXARRAYAPPLEPROC)OSMesaGetProcAddress("glBindVertexArrayAPPLE");
+    _mglDeleteVertexArraysAPPLE = (PFNGLDELETEVERTEXARRAYSAPPLEPROC)OSMesaGetProcAddress("glDeleteVertexArraysAPPLE");
+    _mglGenVertexArraysAPPLE = (PFNGLGENVERTEXARRAYSAPPLEPROC)OSMesaGetProcAddress("glGenVertexArraysAPPLE");
+    _mglIsVertexArrayAPPLE = (PFNGLISVERTEXARRAYAPPLEPROC)OSMesaGetProcAddress("glIsVertexArrayAPPLE");
 #endif // HAVE_OSMESA
 } // load_functions 
 

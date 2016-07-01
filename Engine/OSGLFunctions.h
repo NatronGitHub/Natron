@@ -1081,11 +1081,65 @@ typedef uint64_t GLuint64EXT;
 #define GL_INTENSITY16F_ARB 0x881D
 #define GL_LUMINANCE16F_ARB 0x881E
 #define GL_LUMINANCE_ALPHA16F_ARB 0x881F
+#define GL_INVALID_FRAMEBUFFER_OPERATION_EXT 0x0506
+#define GL_MAX_RENDERBUFFER_SIZE_EXT 0x84E8
+#define GL_FRAMEBUFFER_BINDING_EXT 0x8CA6
+#define GL_RENDERBUFFER_BINDING_EXT 0x8CA7
+#define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT 0x8CD0
+#define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT 0x8CD1
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT 0x8CD2
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT 0x8CD3
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT 0x8CD4
+#define GL_FRAMEBUFFER_COMPLETE_EXT 0x8CD5
+#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT 0x8CD6
+#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT 0x8CD7
+#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT 0x8CD9
+#define GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT 0x8CDA
+#define GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT 0x8CDB
+#define GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT 0x8CDC
+#define GL_FRAMEBUFFER_UNSUPPORTED_EXT 0x8CDD
+#define GL_MAX_COLOR_ATTACHMENTS_EXT 0x8CDF
+#define GL_COLOR_ATTACHMENT0_EXT 0x8CE0
+#define GL_COLOR_ATTACHMENT1_EXT 0x8CE1
+#define GL_COLOR_ATTACHMENT2_EXT 0x8CE2
+#define GL_COLOR_ATTACHMENT3_EXT 0x8CE3
+#define GL_COLOR_ATTACHMENT4_EXT 0x8CE4
+#define GL_COLOR_ATTACHMENT5_EXT 0x8CE5
+#define GL_COLOR_ATTACHMENT6_EXT 0x8CE6
+#define GL_COLOR_ATTACHMENT7_EXT 0x8CE7
+#define GL_COLOR_ATTACHMENT8_EXT 0x8CE8
+#define GL_COLOR_ATTACHMENT9_EXT 0x8CE9
+#define GL_COLOR_ATTACHMENT10_EXT 0x8CEA
+#define GL_COLOR_ATTACHMENT11_EXT 0x8CEB
+#define GL_COLOR_ATTACHMENT12_EXT 0x8CEC
+#define GL_COLOR_ATTACHMENT13_EXT 0x8CED
+#define GL_COLOR_ATTACHMENT14_EXT 0x8CEE
+#define GL_COLOR_ATTACHMENT15_EXT 0x8CEF
+#define GL_DEPTH_ATTACHMENT_EXT 0x8D00
+#define GL_STENCIL_ATTACHMENT_EXT 0x8D20
+#define GL_FRAMEBUFFER_EXT 0x8D40
+#define GL_RENDERBUFFER_EXT 0x8D41
+#define GL_RENDERBUFFER_WIDTH_EXT 0x8D42
+#define GL_RENDERBUFFER_HEIGHT_EXT 0x8D43
+#define GL_RENDERBUFFER_INTERNAL_FORMAT_EXT 0x8D44
+#define GL_STENCIL_INDEX1_EXT 0x8D46
+#define GL_STENCIL_INDEX4_EXT 0x8D47
+#define GL_STENCIL_INDEX8_EXT 0x8D48
+#define GL_STENCIL_INDEX16_EXT 0x8D49
+#define GL_RENDERBUFFER_RED_SIZE_EXT 0x8D50
+#define GL_RENDERBUFFER_GREEN_SIZE_EXT 0x8D51
+#define GL_RENDERBUFFER_BLUE_SIZE_EXT 0x8D52
+#define GL_RENDERBUFFER_ALPHA_SIZE_EXT 0x8D53
+#define GL_RENDERBUFFER_DEPTH_SIZE_EXT 0x8D54
+#define GL_RENDERBUFFER_STENCIL_SIZE_EXT 0x8D55
+#define GL_VERTEX_ARRAY_BINDING_APPLE 0x85B5
 #define GL_ARB_vertex_buffer_object 1
 #define GL_ARB_pixel_buffer_object 1
 #define GL_ARB_vertex_array_object 1
 #define GL_ARB_framebuffer_object 1
 #define GL_ARB_texture_float 1
+#define GL_EXT_framebuffer_object 1
+#define GL_APPLE_vertex_array_object 1
 
 
 
@@ -1669,6 +1723,27 @@ typedef void (*PFNGLGENERATEMIPMAPPROC)(GLenum target);
 typedef void (*PFNGLBLITFRAMEBUFFERPROC)(GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
 typedef void (*PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
 typedef void (*PFNGLFRAMEBUFFERTEXTURELAYERPROC)(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
+typedef GLboolean (*PFNGLISRENDERBUFFEREXTPROC)(GLuint renderbuffer);
+typedef void (*PFNGLBINDRENDERBUFFEREXTPROC)(GLenum target, GLuint renderbuffer);
+typedef void (*PFNGLDELETERENDERBUFFERSEXTPROC)(GLsizei n, const GLuint* renderbuffers);
+typedef void (*PFNGLGENRENDERBUFFERSEXTPROC)(GLsizei n, GLuint* renderbuffers);
+typedef void (*PFNGLRENDERBUFFERSTORAGEEXTPROC)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (*PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC)(GLenum target, GLenum pname, GLint* params);
+typedef GLboolean (*PFNGLISFRAMEBUFFEREXTPROC)(GLuint framebuffer);
+typedef void (*PFNGLBINDFRAMEBUFFEREXTPROC)(GLenum target, GLuint framebuffer);
+typedef void (*PFNGLDELETEFRAMEBUFFERSEXTPROC)(GLsizei n, const GLuint* framebuffers);
+typedef void (*PFNGLGENFRAMEBUFFERSEXTPROC)(GLsizei n, GLuint* framebuffers);
+typedef GLenum (*PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)(GLenum target);
+typedef void (*PFNGLFRAMEBUFFERTEXTURE1DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (*PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (*PFNGLFRAMEBUFFERTEXTURE3DEXTPROC)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+typedef void (*PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (*PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC)(GLenum target, GLenum attachment, GLenum pname, GLint* params);
+typedef void (*PFNGLGENERATEMIPMAPEXTPROC)(GLenum target);
+typedef void (*PFNGLBINDVERTEXARRAYAPPLEPROC)(GLuint array);
+typedef void (*PFNGLDELETEVERTEXARRAYSAPPLEPROC)(GLsizei n, const GLuint* arrays);
+typedef void (*PFNGLGENVERTEXARRAYSAPPLEPROC)(GLsizei n, GLuint* arrays);
+typedef GLboolean (*PFNGLISVERTEXARRAYAPPLEPROC)(GLuint array);
 
 
 
@@ -2271,6 +2346,27 @@ class OSGLFunctions
     PFNGLBLITFRAMEBUFFERPROC _mglBlitFramebuffer;
     PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC _mglRenderbufferStorageMultisample;
     PFNGLFRAMEBUFFERTEXTURELAYERPROC _mglFramebufferTextureLayer;
+    PFNGLISRENDERBUFFEREXTPROC _mglIsRenderbufferEXT;
+    PFNGLBINDRENDERBUFFEREXTPROC _mglBindRenderbufferEXT;
+    PFNGLDELETERENDERBUFFERSEXTPROC _mglDeleteRenderbuffersEXT;
+    PFNGLGENRENDERBUFFERSEXTPROC _mglGenRenderbuffersEXT;
+    PFNGLRENDERBUFFERSTORAGEEXTPROC _mglRenderbufferStorageEXT;
+    PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC _mglGetRenderbufferParameterivEXT;
+    PFNGLISFRAMEBUFFEREXTPROC _mglIsFramebufferEXT;
+    PFNGLBINDFRAMEBUFFEREXTPROC _mglBindFramebufferEXT;
+    PFNGLDELETEFRAMEBUFFERSEXTPROC _mglDeleteFramebuffersEXT;
+    PFNGLGENFRAMEBUFFERSEXTPROC _mglGenFramebuffersEXT;
+    PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC _mglCheckFramebufferStatusEXT;
+    PFNGLFRAMEBUFFERTEXTURE1DEXTPROC _mglFramebufferTexture1DEXT;
+    PFNGLFRAMEBUFFERTEXTURE2DEXTPROC _mglFramebufferTexture2DEXT;
+    PFNGLFRAMEBUFFERTEXTURE3DEXTPROC _mglFramebufferTexture3DEXT;
+    PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC _mglFramebufferRenderbufferEXT;
+    PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC _mglGetFramebufferAttachmentParameterivEXT;
+    PFNGLGENERATEMIPMAPEXTPROC _mglGenerateMipmapEXT;
+    PFNGLBINDVERTEXARRAYAPPLEPROC _mglBindVertexArrayAPPLE;
+    PFNGLDELETEVERTEXARRAYSAPPLEPROC _mglDeleteVertexArraysAPPLE;
+    PFNGLGENVERTEXARRAYSAPPLEPROC _mglGenVertexArraysAPPLE;
+    PFNGLISVERTEXARRAYAPPLEPROC _mglIsVertexArrayAPPLE;
 
 
 public: 
@@ -4603,6 +4699,90 @@ public:
 
     static void glFramebufferTextureLayer(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer) {
         getInstance()._mglFramebufferTextureLayer(target, attachment, texture, level, layer);
+    }
+
+    static GLboolean glIsRenderbufferEXT(GLuint renderbuffer) {
+        return getInstance()._mglIsRenderbufferEXT(renderbuffer);
+    }
+
+    static void glBindRenderbufferEXT(GLenum target, GLuint renderbuffer) {
+        getInstance()._mglBindRenderbufferEXT(target, renderbuffer);
+    }
+
+    static void glDeleteRenderbuffersEXT(GLsizei n, const GLuint* renderbuffers) {
+        getInstance()._mglDeleteRenderbuffersEXT(n, renderbuffers);
+    }
+
+    static void glGenRenderbuffersEXT(GLsizei n, GLuint* renderbuffers) {
+        getInstance()._mglGenRenderbuffersEXT(n, renderbuffers);
+    }
+
+    static void glRenderbufferStorageEXT(GLenum target, GLenum internalformat, GLsizei width, GLsizei height) {
+        getInstance()._mglRenderbufferStorageEXT(target, internalformat, width, height);
+    }
+
+    static void glGetRenderbufferParameterivEXT(GLenum target, GLenum pname, GLint* params) {
+        getInstance()._mglGetRenderbufferParameterivEXT(target, pname, params);
+    }
+
+    static GLboolean glIsFramebufferEXT(GLuint framebuffer) {
+        return getInstance()._mglIsFramebufferEXT(framebuffer);
+    }
+
+    static void glBindFramebufferEXT(GLenum target, GLuint framebuffer) {
+        getInstance()._mglBindFramebufferEXT(target, framebuffer);
+    }
+
+    static void glDeleteFramebuffersEXT(GLsizei n, const GLuint* framebuffers) {
+        getInstance()._mglDeleteFramebuffersEXT(n, framebuffers);
+    }
+
+    static void glGenFramebuffersEXT(GLsizei n, GLuint* framebuffers) {
+        getInstance()._mglGenFramebuffersEXT(n, framebuffers);
+    }
+
+    static GLenum glCheckFramebufferStatusEXT(GLenum target) {
+        return getInstance()._mglCheckFramebufferStatusEXT(target);
+    }
+
+    static void glFramebufferTexture1DEXT(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) {
+        getInstance()._mglFramebufferTexture1DEXT(target, attachment, textarget, texture, level);
+    }
+
+    static void glFramebufferTexture2DEXT(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) {
+        getInstance()._mglFramebufferTexture2DEXT(target, attachment, textarget, texture, level);
+    }
+
+    static void glFramebufferTexture3DEXT(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset) {
+        getInstance()._mglFramebufferTexture3DEXT(target, attachment, textarget, texture, level, zoffset);
+    }
+
+    static void glFramebufferRenderbufferEXT(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) {
+        getInstance()._mglFramebufferRenderbufferEXT(target, attachment, renderbuffertarget, renderbuffer);
+    }
+
+    static void glGetFramebufferAttachmentParameterivEXT(GLenum target, GLenum attachment, GLenum pname, GLint* params) {
+        getInstance()._mglGetFramebufferAttachmentParameterivEXT(target, attachment, pname, params);
+    }
+
+    static void glGenerateMipmapEXT(GLenum target) {
+        getInstance()._mglGenerateMipmapEXT(target);
+    }
+
+    static void glBindVertexArrayAPPLE(GLuint array) {
+        getInstance()._mglBindVertexArrayAPPLE(array);
+    }
+
+    static void glDeleteVertexArraysAPPLE(GLsizei n, const GLuint* arrays) {
+        getInstance()._mglDeleteVertexArraysAPPLE(n, arrays);
+    }
+
+    static void glGenVertexArraysAPPLE(GLsizei n, GLuint* arrays) {
+        getInstance()._mglGenVertexArraysAPPLE(n, arrays);
+    }
+
+    static GLboolean glIsVertexArrayAPPLE(GLuint array) {
+        return getInstance()._mglIsVertexArrayAPPLE(array);
     }
 
 

@@ -2912,6 +2912,111 @@ extern PFNGLFRAMEBUFFERTEXTURELAYERPROC glad_debug_glFramebufferTextureLayer;
 #else
 void extern PFNGLFRAMEBUFFERTEXTURELAYERPROC glad_glFramebufferTextureLayer;
 #endif
+#ifdef DEBUG
+extern PFNGLISRENDERBUFFEREXTPROC glad_debug_glIsRenderbufferEXT;
+#else
+void extern PFNGLISRENDERBUFFEREXTPROC glad_glIsRenderbufferEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLBINDRENDERBUFFEREXTPROC glad_debug_glBindRenderbufferEXT;
+#else
+void extern PFNGLBINDRENDERBUFFEREXTPROC glad_glBindRenderbufferEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLDELETERENDERBUFFERSEXTPROC glad_debug_glDeleteRenderbuffersEXT;
+#else
+void extern PFNGLDELETERENDERBUFFERSEXTPROC glad_glDeleteRenderbuffersEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLGENRENDERBUFFERSEXTPROC glad_debug_glGenRenderbuffersEXT;
+#else
+void extern PFNGLGENRENDERBUFFERSEXTPROC glad_glGenRenderbuffersEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_debug_glRenderbufferStorageEXT;
+#else
+void extern PFNGLRENDERBUFFERSTORAGEEXTPROC glad_glRenderbufferStorageEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_debug_glGetRenderbufferParameterivEXT;
+#else
+void extern PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC glad_glGetRenderbufferParameterivEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLISFRAMEBUFFEREXTPROC glad_debug_glIsFramebufferEXT;
+#else
+void extern PFNGLISFRAMEBUFFEREXTPROC glad_glIsFramebufferEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLBINDFRAMEBUFFEREXTPROC glad_debug_glBindFramebufferEXT;
+#else
+void extern PFNGLBINDFRAMEBUFFEREXTPROC glad_glBindFramebufferEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_debug_glDeleteFramebuffersEXT;
+#else
+void extern PFNGLDELETEFRAMEBUFFERSEXTPROC glad_glDeleteFramebuffersEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLGENFRAMEBUFFERSEXTPROC glad_debug_glGenFramebuffersEXT;
+#else
+void extern PFNGLGENFRAMEBUFFERSEXTPROC glad_glGenFramebuffersEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_debug_glCheckFramebufferStatusEXT;
+#else
+void extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glad_glCheckFramebufferStatusEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_debug_glFramebufferTexture1DEXT;
+#else
+void extern PFNGLFRAMEBUFFERTEXTURE1DEXTPROC glad_glFramebufferTexture1DEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_debug_glFramebufferTexture2DEXT;
+#else
+void extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glad_glFramebufferTexture2DEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_debug_glFramebufferTexture3DEXT;
+#else
+void extern PFNGLFRAMEBUFFERTEXTURE3DEXTPROC glad_glFramebufferTexture3DEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_debug_glFramebufferRenderbufferEXT;
+#else
+void extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC glad_glFramebufferRenderbufferEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_debug_glGetFramebufferAttachmentParameterivEXT;
+#else
+void extern PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC glad_glGetFramebufferAttachmentParameterivEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLGENERATEMIPMAPEXTPROC glad_debug_glGenerateMipmapEXT;
+#else
+void extern PFNGLGENERATEMIPMAPEXTPROC glad_glGenerateMipmapEXT;
+#endif
+#ifdef DEBUG
+extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_debug_glBindVertexArrayAPPLE;
+#else
+void extern PFNGLBINDVERTEXARRAYAPPLEPROC glad_glBindVertexArrayAPPLE;
+#endif
+#ifdef DEBUG
+extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_debug_glDeleteVertexArraysAPPLE;
+#else
+void extern PFNGLDELETEVERTEXARRAYSAPPLEPROC glad_glDeleteVertexArraysAPPLE;
+#endif
+#ifdef DEBUG
+extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_debug_glGenVertexArraysAPPLE;
+#else
+void extern PFNGLGENVERTEXARRAYSAPPLEPROC glad_glGenVertexArraysAPPLE;
+#endif
+#ifdef DEBUG
+extern PFNGLISVERTEXARRAYAPPLEPROC glad_debug_glIsVertexArrayAPPLE;
+#else
+void extern PFNGLISVERTEXARRAYAPPLEPROC glad_glIsVertexArrayAPPLE;
+#endif
 } // extern C
 
 
@@ -5818,6 +5923,111 @@ void OSGLFunctions<true>::load_functions() {
     _mglFramebufferTextureLayer = glad_debug_glFramebufferTextureLayer;
 #else
     _mglFramebufferTextureLayer = glad_glFramebufferTextureLayer;
+#endif
+#ifdef DEBUG
+    _mglIsRenderbufferEXT = glad_debug_glIsRenderbufferEXT;
+#else
+    _mglIsRenderbufferEXT = glad_glIsRenderbufferEXT;
+#endif
+#ifdef DEBUG
+    _mglBindRenderbufferEXT = glad_debug_glBindRenderbufferEXT;
+#else
+    _mglBindRenderbufferEXT = glad_glBindRenderbufferEXT;
+#endif
+#ifdef DEBUG
+    _mglDeleteRenderbuffersEXT = glad_debug_glDeleteRenderbuffersEXT;
+#else
+    _mglDeleteRenderbuffersEXT = glad_glDeleteRenderbuffersEXT;
+#endif
+#ifdef DEBUG
+    _mglGenRenderbuffersEXT = glad_debug_glGenRenderbuffersEXT;
+#else
+    _mglGenRenderbuffersEXT = glad_glGenRenderbuffersEXT;
+#endif
+#ifdef DEBUG
+    _mglRenderbufferStorageEXT = glad_debug_glRenderbufferStorageEXT;
+#else
+    _mglRenderbufferStorageEXT = glad_glRenderbufferStorageEXT;
+#endif
+#ifdef DEBUG
+    _mglGetRenderbufferParameterivEXT = glad_debug_glGetRenderbufferParameterivEXT;
+#else
+    _mglGetRenderbufferParameterivEXT = glad_glGetRenderbufferParameterivEXT;
+#endif
+#ifdef DEBUG
+    _mglIsFramebufferEXT = glad_debug_glIsFramebufferEXT;
+#else
+    _mglIsFramebufferEXT = glad_glIsFramebufferEXT;
+#endif
+#ifdef DEBUG
+    _mglBindFramebufferEXT = glad_debug_glBindFramebufferEXT;
+#else
+    _mglBindFramebufferEXT = glad_glBindFramebufferEXT;
+#endif
+#ifdef DEBUG
+    _mglDeleteFramebuffersEXT = glad_debug_glDeleteFramebuffersEXT;
+#else
+    _mglDeleteFramebuffersEXT = glad_glDeleteFramebuffersEXT;
+#endif
+#ifdef DEBUG
+    _mglGenFramebuffersEXT = glad_debug_glGenFramebuffersEXT;
+#else
+    _mglGenFramebuffersEXT = glad_glGenFramebuffersEXT;
+#endif
+#ifdef DEBUG
+    _mglCheckFramebufferStatusEXT = glad_debug_glCheckFramebufferStatusEXT;
+#else
+    _mglCheckFramebufferStatusEXT = glad_glCheckFramebufferStatusEXT;
+#endif
+#ifdef DEBUG
+    _mglFramebufferTexture1DEXT = glad_debug_glFramebufferTexture1DEXT;
+#else
+    _mglFramebufferTexture1DEXT = glad_glFramebufferTexture1DEXT;
+#endif
+#ifdef DEBUG
+    _mglFramebufferTexture2DEXT = glad_debug_glFramebufferTexture2DEXT;
+#else
+    _mglFramebufferTexture2DEXT = glad_glFramebufferTexture2DEXT;
+#endif
+#ifdef DEBUG
+    _mglFramebufferTexture3DEXT = glad_debug_glFramebufferTexture3DEXT;
+#else
+    _mglFramebufferTexture3DEXT = glad_glFramebufferTexture3DEXT;
+#endif
+#ifdef DEBUG
+    _mglFramebufferRenderbufferEXT = glad_debug_glFramebufferRenderbufferEXT;
+#else
+    _mglFramebufferRenderbufferEXT = glad_glFramebufferRenderbufferEXT;
+#endif
+#ifdef DEBUG
+    _mglGetFramebufferAttachmentParameterivEXT = glad_debug_glGetFramebufferAttachmentParameterivEXT;
+#else
+    _mglGetFramebufferAttachmentParameterivEXT = glad_glGetFramebufferAttachmentParameterivEXT;
+#endif
+#ifdef DEBUG
+    _mglGenerateMipmapEXT = glad_debug_glGenerateMipmapEXT;
+#else
+    _mglGenerateMipmapEXT = glad_glGenerateMipmapEXT;
+#endif
+#ifdef DEBUG
+    _mglBindVertexArrayAPPLE = glad_debug_glBindVertexArrayAPPLE;
+#else
+    _mglBindVertexArrayAPPLE = glad_glBindVertexArrayAPPLE;
+#endif
+#ifdef DEBUG
+    _mglDeleteVertexArraysAPPLE = glad_debug_glDeleteVertexArraysAPPLE;
+#else
+    _mglDeleteVertexArraysAPPLE = glad_glDeleteVertexArraysAPPLE;
+#endif
+#ifdef DEBUG
+    _mglGenVertexArraysAPPLE = glad_debug_glGenVertexArraysAPPLE;
+#else
+    _mglGenVertexArraysAPPLE = glad_glGenVertexArraysAPPLE;
+#endif
+#ifdef DEBUG
+    _mglIsVertexArrayAPPLE = glad_debug_glIsVertexArrayAPPLE;
+#else
+    _mglIsVertexArrayAPPLE = glad_glIsVertexArrayAPPLE;
 #endif
 } // load_functions 
 

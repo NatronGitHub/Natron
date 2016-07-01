@@ -525,8 +525,6 @@ public:
     void setPluginsUseInputImageCopyToRender(bool b);
     bool isCopyInputImageForPluginRenderEnabled() const;
 
-    bool hasPlatformNecessaryOpenGLRequirements(QString* missingOpenGLError = 0) const;
-
     QString getOpenGLVersion() const;
 
     QString getBoostVersion() const;
@@ -551,6 +549,10 @@ public:
      * @brief Returns true if we could correctly fetch needed OpenGL functions and extensions
      **/
     bool isOpenGLLoaded() const;
+
+    bool isTextureFloatSupported() const;
+
+    bool hasOpenGLForRequirements(OpenGLRequirementsTypeEnum type, QString* missingOpenGLError = 0) const;
 
     virtual void updateAboutWindowLibrariesVersion() {}
 

@@ -555,6 +555,12 @@ enum CurveChangeReason
     eCurveChangeReasonInternal
 };
 
+enum OpenGLRequirementsTypeEnum
+{
+    eOpenGLRequirementsTypeViewer,
+    eOpenGLRequirementsTypeRendering
+};
+
 enum DopeSheetItemType
 {
     eDopeSheetItemTypeCommon = 1001,
