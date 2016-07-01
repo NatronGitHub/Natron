@@ -89,11 +89,11 @@ public:
               RotoLayerPtr parent = RotoLayerPtr() );
 
 public:
-    static boost::shared_ptr<RotoItem> create( const RotoContextPtr& context,
+    static RotoItemPtr create( const RotoContextPtr& context,
                                                const std::string & name,
                                                RotoLayerPtr parent = RotoLayerPtr() ) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<RotoItem>( new RotoItem(context, name, parent) );
+        return RotoItemPtr( new RotoItem(context, name, parent) );
     }
 
     virtual ~RotoItem();
@@ -155,7 +155,7 @@ public:
      **/
     std::string getRotoNodeName() const;
     RotoContextPtr getContext() const;
-    boost::shared_ptr<RotoItem> getPreviousItemInLayer() const;
+    RotoItemPtr getPreviousItemInLayer() const;
 
 protected:
 

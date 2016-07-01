@@ -112,7 +112,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                     knob->removeAnimation( ViewIdx(0), isKnobCurve->getDimension() );
                 }
             } else if (isBezierCurve) {
-                boost::shared_ptr<Bezier> b = isBezierCurve->getBezier();
+                BezierPtr b = isBezierCurve->getBezier();
                 assert(b);
                 if (b) {
                     b->removeAnimation();
@@ -328,7 +328,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                         }
                     }
                 } else if (isBezierCurve) {
-                    boost::shared_ptr<Bezier> b = isBezierCurve->getBezier();
+                    BezierPtr b = isBezierCurve->getBezier();
                     assert(b);
                     if (add) {
                         b->setKeyframe( it->second[i].getTime() );

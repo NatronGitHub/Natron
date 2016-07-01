@@ -1697,20 +1697,20 @@ Settings::setDefaultValues()
 } // setDefaultValues
 
 void
-Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
+Settings::warnChangedKnobs(const std::vector<KnobIPtr>& knobs)
 {
     bool didFontWarn = false;
     bool didOCIOWarn = false;
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        if ( ( ( knobs[i] == _fontSize.get() ) ||
-               ( knobs[i] == _systemFontChoice.get() ) )
+        if ( ( ( knobs[i] == _fontSize ) ||
+               ( knobs[i] == _systemFontChoice ) )
              && !didFontWarn ) {
             didOCIOWarn = true;
             Dialogs::warningDialog( tr("Font change").toStdString(),
                                     tr("Changing the font requires a restart of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
-        } else if ( ( ( knobs[i] == _ocioConfigKnob.get() ) ||
-                      ( knobs[i] == _customOcioConfigFile.get() ) )
+        } else if ( ( ( knobs[i] == _ocioConfigKnob ) ||
+                      ( knobs[i] == _customOcioConfigFile ) )
                     && !didOCIOWarn ) {
             didOCIOWarn = true;
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
@@ -1720,10 +1720,10 @@ Settings::warnChangedKnobs(const std::vector<KnobI*>& knobs)
                                        tr("The OpenColorIO config change requires a restart of %1 to be effective.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), &stopAsking);
                 if (stopAsking) {
                     _warnOcioConfigKnobChanged->setValue(false);
-                    saveSetting( _warnOcioConfigKnobChanged.get() );
+                    saveSetting( _warnOcioConfigKnobChanged );
                 }
             }
-        } else if ( knobs[i] == _texturesMode.get() ) {
+        } else if ( knobs[i] == _texturesMode ) {
             AppInstanceVec apps = appPTR->getAppInstances();
             for (AppInstanceVec::iterator it = apps.begin(); it != apps.end(); ++it) {
                 std::list<ViewerInstancePtr> allViewers;
@@ -1740,10 +1740,10 @@ void
 Settings::saveAllSettings()
 {
     const KnobsVec &knobs = getKnobs();
-    std::vector<KnobI*> k( knobs.size() );
+    std::vector<KnobIPtr> k( knobs.size() );
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        k[i] = knobs[i].get();
+        k[i] = knobs[i];
     }
     saveSettings(k, false, true);
 }
@@ -1846,7 +1846,7 @@ Settings::saveSettings(const KnobsVec& knobs,
     if (pluginSettings) {
         savePluginsSettings();
     }
-    std::vector<KnobI*> changedKnobs;
+    std::vector<KnobIPtr> changedKnobs;
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
@@ -2015,14 +2015,14 @@ Settings::restoreSettings()
 
         if (!_settingsExisted) {
             _natronSettingsExist->setValue(true);
-            saveSetting( _natronSettingsExist.get() );
+            saveSetting( _natronSettingsExist );
         }
 
         int appearanceVersion = _defaultAppearanceVersion->getValue();
         if ( _settingsExisted && (appearanceVersion < NATRON_DEFAULT_APPEARANCE_VERSION) ) {
             _defaultAppearanceOutdated = true;
             _defaultAppearanceVersion->setValue(NATRON_DEFAULT_APPEARANCE_VERSION);
-            saveSetting( _defaultAppearanceVersion.get() );
+            saveSetting( _defaultAppearanceVersion );
         }
 
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
@@ -2129,7 +2129,7 @@ crash_application()
 }
 
 bool
-Settings::onKnobValueChanged(KnobI* k,
+Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
                              ViewSpec /*view*/,
@@ -2138,24 +2138,24 @@ Settings::onKnobValueChanged(KnobI* k,
     Q_EMIT settingChanged(k);
     bool ret = true;
 
-    if ( k == _maxViewerDiskCacheGB.get() ) {
+    if ( k == _maxViewerDiskCacheGB ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
         }
-    } else if ( k == _maxDiskCacheNodeGB.get() ) {
+    } else if ( k == _maxDiskCacheNodeGB ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheNodeSize() );
         }
-    } else if ( k == _maxRAMPercent.get() ) {
+    } else if ( k == _maxRAMPercent ) {
         if (!_restoringSettings) {
             appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
         }
         setCachingLabels();
-    } else if ( k == _diskCachePath.get() ) {
+    } else if ( k == _diskCachePath ) {
         appPTR->setDiskCacheLocation( QString::fromUtf8( _diskCachePath->getValue().c_str() ) );
-    } else if ( k == _wipeDiskCache.get() ) {
+    } else if ( k == _wipeDiskCache ) {
         appPTR->wipeAndCreateDiskCacheStructure();
-    } else if ( k == _numberOfThreads.get() ) {
+    } else if ( k == _numberOfThreads ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
         if (nbThreads == -1) {
@@ -2166,19 +2166,19 @@ Settings::onKnobValueChanged(KnobI* k,
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
-    } else if ( k == _nThreadsPerEffect.get() ) {
+    } else if ( k == _nThreadsPerEffect ) {
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
-    } else if ( k == _ocioConfigKnob.get() ) {
+    } else if ( k == _ocioConfigKnob ) {
         if (_ocioConfigKnob->getActiveEntryText_mt_safe() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
             _customOcioConfigFile->setAllDimensionsEnabled(false);
         }
         tryLoadOpenColorIOConfig();
-    } else if ( k == _useThreadPool.get() ) {
+    } else if ( k == _useThreadPool ) {
         bool useTP = _useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
-    } else if ( k == _customOcioConfigFile.get() ) {
+    } else if ( k == _customOcioConfigFile ) {
         if ( _customOcioConfigFile->isEnabled(0) ) {
             tryLoadOpenColorIOConfig();
             bool warnOcioChanged = _warnOcioConfigKnobChanged->getValue();
@@ -2191,62 +2191,62 @@ Settings::onKnobValueChanged(KnobI* k,
                 }
             }
         }
-    } else if ( k == _maxUndoRedoNodeGraph.get() ) {
+    } else if ( k == _maxUndoRedoNodeGraph ) {
         appPTR->setUndoRedoStackLimit( _maxUndoRedoNodeGraph->getValue() );
-    } else if ( k == _maxPanelsOpened.get() ) {
+    } else if ( k == _maxPanelsOpened ) {
         appPTR->onMaxPanelsOpenedChanged( _maxPanelsOpened->getValue() );
-    } else if ( k == _queueRenders.get() ) {
+    } else if ( k == _queueRenders ) {
         appPTR->onQueueRendersChanged( _queueRenders->getValue() );
-    } else if ( ( k == _checkerboardTileSize.get() ) || ( k == _checkerboardColor1.get() ) || ( k == _checkerboardColor2.get() ) ) {
+    } else if ( ( k == _checkerboardTileSize ) || ( k == _checkerboardColor1 ) || ( k == _checkerboardColor2 ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _powerOf2Tiling.get() ) {
+    } else if ( k == _powerOf2Tiling ) {
         appPTR->onViewerTileCacheSizeChanged();
-    } else if ( k == _texturesMode.get() &&  !_restoringSettings) {
+    } else if ( k == _texturesMode &&  !_restoringSettings) {
          appPTR->onViewerTileCacheSizeChanged();
-    } else if ( ( k == _hideOptionalInputsAutomatically.get() ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _hideOptionalInputsAutomatically ) && !_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
-    } else if ( k == _autoProxyWhenScrubbingTimeline.get() ) {
+    } else if ( k == _autoProxyWhenScrubbingTimeline ) {
         _autoProxyLevel->setSecret( !_autoProxyWhenScrubbingTimeline->getValue() );
     } else if ( !_restoringSettings &&
-                ( ( k == _sunkenColor.get() ) ||
-                  ( k == _baseColor.get() ) ||
-                  ( k == _raisedColor.get() ) ||
-                  ( k == _selectionColor.get() ) ||
-                  ( k == _textColor.get() ) ||
-                  ( k == _altTextColor.get() ) ||
-                  ( k == _timelinePlayheadColor.get() ) ||
-                  ( k == _timelineBoundsColor.get() ) ||
-                  ( k == _timelineBGColor.get() ) ||
-                  ( k == _interpolatedColor.get() ) ||
-                  ( k == _keyframeColor.get() ) ||
-                  ( k == _trackerKeyframeColor.get() ) ||
-                  ( k == _cachedFrameColor.get() ) ||
-                  ( k == _diskCachedFrameColor.get() ) ||
-                  ( k == _curveEditorBGColor.get() ) ||
-                  ( k == _gridColor.get() ) ||
-                  ( k == _curveEditorScaleColor.get() ) ||
-                  ( k == _dopeSheetEditorBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorRootSectionBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorKnobSectionBackgroundColor.get() ) ||
-                  ( k == _dopeSheetEditorScaleColor.get() ) ||
-                  ( k == _dopeSheetEditorGridColor.get() ) ||
-                  ( k == _keywordColor.get() ) ||
-                  ( k == _operatorColor.get() ) ||
-                  ( k == _curLineColor.get() ) ||
-                  ( k == _braceColor.get() ) ||
-                  ( k == _defClassColor.get() ) ||
-                  ( k == _stringsColor.get() ) ||
-                  ( k == _commentsColor.get() ) ||
-                  ( k == _selfColor.get() ) ||
-                  ( k == _numbersColor.get() ) ) ) {
+                ( ( k == _sunkenColor ) ||
+                  ( k == _baseColor ) ||
+                  ( k == _raisedColor ) ||
+                  ( k == _selectionColor ) ||
+                  ( k == _textColor ) ||
+                  ( k == _altTextColor ) ||
+                  ( k == _timelinePlayheadColor ) ||
+                  ( k == _timelineBoundsColor ) ||
+                  ( k == _timelineBGColor ) ||
+                  ( k == _interpolatedColor ) ||
+                  ( k == _keyframeColor ) ||
+                  ( k == _trackerKeyframeColor ) ||
+                  ( k == _cachedFrameColor ) ||
+                  ( k == _diskCachedFrameColor ) ||
+                  ( k == _curveEditorBGColor ) ||
+                  ( k == _gridColor ) ||
+                  ( k == _curveEditorScaleColor ) ||
+                  ( k == _dopeSheetEditorBackgroundColor ) ||
+                  ( k == _dopeSheetEditorRootSectionBackgroundColor ) ||
+                  ( k == _dopeSheetEditorKnobSectionBackgroundColor ) ||
+                  ( k == _dopeSheetEditorScaleColor ) ||
+                  ( k == _dopeSheetEditorGridColor ) ||
+                  ( k == _keywordColor ) ||
+                  ( k == _operatorColor ) ||
+                  ( k == _curLineColor ) ||
+                  ( k == _braceColor ) ||
+                  ( k == _defClassColor ) ||
+                  ( k == _stringsColor ) ||
+                  ( k == _commentsColor ) ||
+                  ( k == _selfColor ) ||
+                  ( k == _numbersColor ) ) ) {
         appPTR->reloadStylesheets();
-    } else if ( k == _qssFile.get() ) {
+    } else if ( k == _qssFile ) {
         appPTR->reloadStylesheets();
-    } else if ( k == _hostName.get() ) {
+    } else if ( k == _hostName ) {
         std::string hostName = _hostName->getActiveEntryText_mt_safe();
         bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _customHostName->setSecret(!isCustom);
-    } else if ( ( k == _testCrashReportButton.get() ) && (reason == eValueChangedReasonUserEdited) ) {
+    } else if ( ( k == _testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
         StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
                                                             tr("You are about to make %1 crash to test the reporting system.\n"
                                                                "Do you really want to crash?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false,
@@ -2254,17 +2254,17 @@ Settings::onKnobValueChanged(KnobI* k,
         if (reply == eStandardButtonYes) {
             crash_application();
         }
-    } else if ( ( k == _scriptEditorFontChoice.get() ) || ( k == _scriptEditorFontSize.get() ) ) {
+    } else if ( ( k == _scriptEditorFontChoice ) || ( k == _scriptEditorFontSize ) ) {
         appPTR->reloadScriptEditorFonts();
-    } else if ( k == _pluginUseImageCopyForSource.get() ) {
+    } else if ( k == _pluginUseImageCopyForSource ) {
         appPTR->setPluginsUseInputImageCopyToRender( _pluginUseImageCopyForSource->getValue() );
-    } else if ( k == _enableOpenGL.get() ) {
+    } else if ( k == _enableOpenGL ) {
         appPTR->refreshOpenGLRenderingFlagOnAllInstances();
     } else {
         ret = false;
     }
     if (ret) {
-        if ( ( ( k == _hostName.get() ) || ( k == _customHostName.get() ) ) && !_restoringSettings ) {
+        if ( ( ( k == _hostName ) || ( k == _customHostName ) ) && !_restoringSettings ) {
             Dialogs::warningDialog( tr("Host-name change").toStdString(), tr("Changing this requires a restart of %1 and clearing the OpenFX plug-ins load cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
     }
@@ -2616,7 +2616,7 @@ void
 Settings::setCheckUpdatesEnabled(bool enabled)
 {
     _checkForUpdates->setValue(enabled);
-    saveSetting( _checkForUpdates.get() );
+    saveSetting( _checkForUpdates );
 }
 
 bool
@@ -2635,7 +2635,7 @@ void
 Settings::setMaxPanelsOpened(int maxPanels)
 {
     _maxPanelsOpened->setValue(maxPanels);
-    saveSetting( _maxPanelsOpened.get() );
+    saveSetting( _maxPanelsOpened );
 }
 
 void
@@ -2964,7 +2964,7 @@ Settings::doOCIOStartupCheckIfNeeded()
                                                                 &stopAsking);
         if (stopAsking != !docheck) {
             _ocioStartupCheck->setValue(!stopAsking);
-            saveSetting( _ocioStartupCheck.get() );
+            saveSetting( _ocioStartupCheck );
         }
 
         if (reply == eStandardButtonYes) {
@@ -2977,7 +2977,7 @@ Settings::doOCIOStartupCheckIfNeeded()
             }
             if (defaultIndex != -1) {
                 _ocioConfigKnob->setValue(defaultIndex);
-                saveSetting( _ocioConfigKnob.get() );
+                saveSetting( _ocioConfigKnob );
             } else {
                 Dialogs::warningDialog( "OCIO config", tr("The %2 OCIO config could not be found.\n"
                                                           "This is probably because you're not using the OpenColorIO-Configs folder that should "
@@ -3089,7 +3089,7 @@ void
 Settings::setAutoDeclaredVariablePrintEnabled(bool enabled)
 {
     _echoVariableDeclarationToPython->setValue(enabled);
-    saveSetting( _echoVariableDeclarationToPython.get() );
+    saveSetting( _echoVariableDeclarationToPython );
 }
 
 bool
@@ -3515,7 +3515,7 @@ void
 Settings::setRenderQueuingEnabled(bool enabled)
 {
     _queueRenders->setValue(enabled);
-    saveSetting( _queueRenders.get() );
+    saveSetting( _queueRenders );
 }
 
 bool

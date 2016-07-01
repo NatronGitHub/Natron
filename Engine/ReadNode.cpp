@@ -462,7 +462,7 @@ ReadNodePrivate::destroyReadNode()
             bool mustSerializeKnob;
             bool isGeneric = isGenericKnob( (*it)->getName(), &mustSerializeKnob );
             if (isGeneric && mustSerializeKnob) {
-                boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
+                KnobSerializationPtr s( new KnobSerialization(*it) );
                 serialized.push_back(s);
             }
             if (!isGeneric) {
@@ -491,7 +491,7 @@ ReadNodePrivate::destroyReadNode()
         int n ;
         iArchive >> boost::serialization::make_nvp("numItems", n);
         for (int i = 0; i < n; ++i) {
-            boost::shared_ptr<KnobSerialization> s(new KnobSerialization);
+            KnobSerializationPtr s(new KnobSerialization);
             iArchive >> boost::serialization::make_nvp("item", *s);
             genericKnobsSerialization.push_back(s);
 

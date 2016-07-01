@@ -167,9 +167,9 @@ public:
      * @brief Make a new bezier curve and append it into the currently selected layer.
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
-    boost::shared_ptr<Bezier> makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
-    boost::shared_ptr<Bezier> makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
-    boost::shared_ptr<Bezier> makeSquare(double x, double y, double initialSize, double time);
+    BezierPtr makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
+    BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
+    BezierPtr makeSquare(double x, double y, double initialSize, double time);
     RotoStrokeItemPtr makeStroke(RotoStrokeType type,
                                                  const std::string& baseName,
                                                  bool clearSel);
@@ -179,10 +179,10 @@ public:
      * @brief Removes the given item from the context. This also removes the item from the selection
      * if it was selected. If the item has children, this will also remove all the children.
      **/
-    void removeItem(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason = RotoItem::eSelectionReasonOther);
+    void removeItem(const RotoItemPtr& item, RotoItem::SelectionReasonEnum reason = RotoItem::eSelectionReasonOther);
 
     ///This is here for undo/redo purpose. Do not call this
-    void addItem(const RotoLayerPtr& layer, int indexInLayer, const boost::shared_ptr<RotoItem> & item, RotoItem::SelectionReasonEnum reason);
+    void addItem(const RotoLayerPtr& layer, int indexInLayer, const RotoItemPtr & item, RotoItem::SelectionReasonEnum reason);
     /**
      * @brief Returns a const ref to the layers list. This can only be called from
      * the main thread.
@@ -193,7 +193,7 @@ public:
      * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
      * which would be used to find the exact bezier point lying on the curve.
      **/
-    boost::shared_ptr<Bezier> isNearbyBezier(double x, double y, double acceptance, int* index, double* t, bool *feather) const;
+    BezierPtr isNearbyBezier(double x, double y, double acceptance, int* index, double* t, bool *feather) const;
 
 
     /**
@@ -220,7 +220,7 @@ public:
 private:
 
 
-    void getItemsRegionOfDefinition(const std::list<boost::shared_ptr<RotoItem> >& items, double time, ViewIdx view, RectD* rod) const;
+    void getItemsRegionOfDefinition(const std::list<RotoItemPtr >& items, double time, ViewIdx view, RectD* rod) const;
 
 public:
 
@@ -250,22 +250,22 @@ public:
     /**
      * @brief This must be called by the GUI whenever an item is selected. This is recursive for layers.
      **/
-    void select(const boost::shared_ptr<RotoItem> & b, RotoItem::SelectionReasonEnum reason);
+    void select(const RotoItemPtr & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
     void select(const std::list<boost::shared_ptr<RotoDrawableItem> > & beziers, RotoItem::SelectionReasonEnum reason);
-    void select(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
+    void select(const std::list<RotoItemPtr > & items, RotoItem::SelectionReasonEnum reason);
 
     /**
      * @brief This must be called by the GUI whenever an item is deselected. This is recursive for layers.
      **/
-    void deselect(const boost::shared_ptr<RotoItem> & b, RotoItem::SelectionReasonEnum reason);
+    void deselect(const RotoItemPtr & b, RotoItem::SelectionReasonEnum reason);
 
     ///for convenience
-    void deselect(const std::list<boost::shared_ptr<Bezier> > & beziers, RotoItem::SelectionReasonEnum reason);
-    void deselect(const std::list<boost::shared_ptr<RotoItem> > & items, RotoItem::SelectionReasonEnum reason);
+    void deselect(const std::list<BezierPtr > & beziers, RotoItem::SelectionReasonEnum reason);
+    void deselect(const std::list<RotoItemPtr > & items, RotoItem::SelectionReasonEnum reason);
 
-    void clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason);
+    void clearAndSelectPreviousItem(const RotoItemPtr& item, RotoItem::SelectionReasonEnum reason);
 
     void clearSelection(RotoItem::SelectionReasonEnum reason);
 
@@ -292,7 +292,7 @@ public:
     /**
      * @brief Returns a const ref to the selected items. This can only be called on the main thread.
      **/
-    const std::list< boost::shared_ptr<RotoItem> > & getSelectedItems() const;
+    const std::list< RotoItemPtr > & getSelectedItems() const;
 
     /**
      * @brief Returns a list of all the curves in the order in which they should be rendered.
@@ -306,8 +306,8 @@ public:
     NodePtr getNode() const;
 
     RotoLayerPtr getLayerByName(const std::string & n) const;
-    boost::shared_ptr<RotoItem> getItemByName(const std::string & n) const;
-    boost::shared_ptr<RotoItem> getLastInsertedItem() const;
+    RotoItemPtr getItemByName(const std::string & n) const;
+    RotoItemPtr getLastInsertedItem() const;
 
 #ifdef NATRON_ROTO_INVERTIBLE
     KnobBoolPtr getInvertedKnob() const;
@@ -340,10 +340,10 @@ private:
 public:
 
     KnobChoicePtr getMotionBlurTypeKnob() const;
-    boost::shared_ptr<RotoItem> getLastItemLocked() const;
+    RotoItemPtr getLastItemLocked() const;
     RotoLayerPtr getDeepestSelectedLayer() const;
 
-    void onItemLockedChanged(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason);
+    void onItemLockedChanged(const RotoItemPtr& item, RotoItem::SelectionReasonEnum reason);
 
     void emitRefreshViewerOverlays();
 
@@ -354,8 +354,8 @@ public:
      **/
     std::string getRotoNodeName() const;
 
-    void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
-    void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemScriptNameChanged(const RotoItemPtr& item);
+    void onItemLabelChanged(const RotoItemPtr& item);
 
     void onItemKnobChanged();
 
@@ -363,8 +363,8 @@ public:
 
     void changeItemScriptName(const std::string& oldFullyQualifiedName, const std::string& newFullyQUalifiedName);
 
-    void declareItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
-    void removeItemAsPythonField(const boost::shared_ptr<RotoItem>& item);
+    void declareItemAsPythonField(const RotoItemPtr& item);
+    void removeItemAsPythonField(const RotoItemPtr& item);
 
     /**
      * @brief Rebuilds the connection between nodes used internally by the rotopaint tree
@@ -430,14 +430,14 @@ Q_SIGNALS:
 
     void itemInserted(int, int);
 
-    void itemRemoved(const boost::shared_ptr<RotoItem>&, int);
+    void itemRemoved(const RotoItemPtr&, int);
 
     void refreshViewerOverlays();
 
     void itemLockedChanged(int reason);
 
-    void itemScriptNameChanged(const boost::shared_ptr<RotoItem>&);
-    void itemLabelChanged(const boost::shared_ptr<RotoItem>&);
+    void itemScriptNameChanged(const RotoItemPtr&);
+    void itemLabelChanged(const RotoItemPtr&);
 
 public Q_SLOTS:
 
@@ -456,10 +456,10 @@ private:
 
     NodePtr getOrCreateGlobalMergeNode(int *availableInputIndex);
 
-    void selectInternal(const boost::shared_ptr<RotoItem>& b);
-    void deselectInternal(boost::shared_ptr<RotoItem> b);
+    void selectInternal(const RotoItemPtr& b);
+    void deselectInternal(RotoItemPtr b);
 
-    void removeItemRecursively(const boost::shared_ptr<RotoItem>& item, RotoItem::SelectionReasonEnum reason);
+    void removeItemRecursively(const RotoItemPtr& item, RotoItem::SelectionReasonEnum reason);
 
 
     boost::scoped_ptr<RotoContextPrivate> _imp;

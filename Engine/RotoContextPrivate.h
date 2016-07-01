@@ -559,7 +559,7 @@ struct RotoItemPrivate
     }
 };
 
-typedef std::list< boost::shared_ptr<RotoItem> > RotoItems;
+typedef std::list< RotoItemPtr > RotoItems;
 
 struct RotoLayerPrivate
 {
@@ -1358,9 +1358,9 @@ public:
     std::list<boost::weak_ptr<KnobI> > shapeKnobs;
 
     ///This keeps track  of the items linked to the context knobs
-    std::list<boost::shared_ptr<RotoItem> > selectedItems;
-    boost::shared_ptr<RotoItem> lastInsertedItem;
-    boost::shared_ptr<RotoItem> lastLockedItem;
+    std::list<RotoItemPtr > selectedItems;
+    RotoItemPtr lastInsertedItem;
+    RotoItemPtr lastLockedItem;
     mutable QMutex doingNeatRenderMutex;
     QWaitCondition doingNeatRenderCond;
     bool doingNeatRender;
@@ -2167,7 +2167,7 @@ public:
 
         int minLevel = -1;
         RotoLayerPtr minLayer;
-        for (std::list< boost::shared_ptr<RotoItem> >::const_iterator it = selectedItems.begin();
+        for (std::list< RotoItemPtr >::const_iterator it = selectedItems.begin();
              it != selectedItems.end(); ++it) {
             int lvl = (*it)->getHierarchyLevel();
             if (lvl > minLevel) {

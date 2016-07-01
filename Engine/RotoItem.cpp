@@ -366,7 +366,7 @@ RotoItem::setScriptName(const std::string & name)
         return false;
     }
 
-    boost::shared_ptr<RotoItem> existingItem = getContext()->getItemByName(name);
+    RotoItemPtr existingItem = getContext()->getItemByName(name);
     if ( existingItem && (existingItem.get() != this) ) {
         return false;
     }
@@ -450,7 +450,7 @@ RotoItem::setLabel(const std::string& label)
 }
 
 void
-RotoItem::save(RotoItemSerialization *obj) const
+RotoItem::save(const RotoItemSerializationPtr& obj) const
 {
     RotoLayerPtr parent;
     {
@@ -520,14 +520,14 @@ RotoItem::getRotoNodeName() const
     return getContext()->getRotoNodeName();
 }
 
-static boost::shared_ptr<RotoItem>
+static RotoItemPtr
 getPreviousInLayer(const RotoLayerPtr& layer,
                    const boost::shared_ptr<const RotoItem>& item)
 {
     RotoItems layerItems = layer->getItems_mt_safe();
 
     if ( layerItems.empty() ) {
-        return boost::shared_ptr<RotoItem>();
+        return RotoItemPtr();
     }
     RotoItems::iterator found = layerItems.end();
     if (item) {
@@ -552,7 +552,7 @@ getPreviousInLayer(const RotoLayerPtr& layer,
     //Item was still not found, find in great parent layer
     RotoLayerPtr parentLayer = layer->getParentLayer();
     if (!parentLayer) {
-        return boost::shared_ptr<RotoItem>();
+        return RotoItemPtr();
     }
     RotoItems greatParentItems = parentLayer->getItems_mt_safe();
 
@@ -564,19 +564,19 @@ getPreviousInLayer(const RotoLayerPtr& layer,
         }
     }
     assert( found != greatParentItems.end() );
-    boost::shared_ptr<RotoItem> ret = getPreviousInLayer(parentLayer, layer);
+    RotoItemPtr ret = getPreviousInLayer(parentLayer, layer);
     assert(ret != item);
 
     return ret;
 }
 
-boost::shared_ptr<RotoItem>
+RotoItemPtr
 RotoItem::getPreviousItemInLayer() const
 {
     RotoLayerPtr layer = getParentLayer();
 
     if (!layer) {
-        return boost::shared_ptr<RotoItem>();
+        return RotoItemPtr();
     }
 
     return getPreviousInLayer( layer, shared_from_this() );

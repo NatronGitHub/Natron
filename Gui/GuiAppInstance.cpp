@@ -1621,7 +1621,7 @@ GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
             if (!fileKnobI) {
                 continue;
             }
-            boost::shared_ptr<KnobGuiI> knobUi_i = fileKnobI->getKnobGuiPointer();
+            KnobGuiIPtr knobUi_i = fileKnobI->getKnobGuiPointer();
             KnobGuiFile* isFileKnob = dynamic_cast<KnobGuiFile*>( knobUi_i.get() );
 
             if (!isFileKnob) {

@@ -261,7 +261,7 @@ public:
 
     BezierEditorContext(QTreeWidget* tree,
                         CurveEditor* widget,
-                        const boost::shared_ptr<Bezier>& curve,
+                        const BezierPtr& curve,
                         RotoCurveEditorContext* context);
 
     virtual ~BezierEditorContext() OVERRIDE;
@@ -306,11 +306,11 @@ public Q_SLOTS:
 
     void onNameChanged(const QString & name);
 
-    void onItemNameChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemNameChanged(const RotoItemPtr& item);
 
     void itemInserted(int, int);
 
-    void onItemRemoved(const boost::shared_ptr<RotoItem>& item, int);
+    void onItemRemoved(const RotoItemPtr& item, int);
 
 private:
 

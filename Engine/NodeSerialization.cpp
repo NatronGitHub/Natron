@@ -89,7 +89,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
                 ///For choice do a deepclone because we need entries
                 //bool doCopyKnobs = isChoice ? true : copyKnobs;
 
-                boost::shared_ptr<KnobSerialization> newKnobSer( new KnobSerialization(knobs[i]) );
+                KnobSerializationPtr newKnobSer( new KnobSerialization(knobs[i]) );
                 _knobsValues.push_back(newKnobSer);
             }
         }

@@ -47,11 +47,11 @@ class ItemBase
 {
 public:
 
-    ItemBase(const boost::shared_ptr<RotoItem>& item);
+    ItemBase(const RotoItemPtr& item);
 
     virtual ~ItemBase();
 
-    boost::shared_ptr<RotoItem> getInternalItem() const
+    RotoItemPtr getInternalItem() const
     {
         return _item;
     }
@@ -74,7 +74,7 @@ public:
 
 private:
 
-    boost::shared_ptr<RotoItem> _item;
+    RotoItemPtr _item;
 };
 
 class Layer
@@ -82,7 +82,7 @@ class Layer
 {
 public:
 
-    Layer(const boost::shared_ptr<RotoItem>& item);
+    Layer(const RotoItemPtr& item);
 
     virtual ~Layer();
 
@@ -105,7 +105,7 @@ class BezierCurve
 public:
 
 
-    BezierCurve(const boost::shared_ptr<RotoItem>& item);
+    BezierCurve(const RotoItemPtr& item);
 
     virtual ~BezierCurve();
 
@@ -168,7 +168,7 @@ public:
 
 private:
 
-    boost::shared_ptr<Bezier> _bezier;
+    BezierPtr _bezier;
 };
 
 class Roto

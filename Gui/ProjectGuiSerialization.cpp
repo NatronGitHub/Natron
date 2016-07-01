@@ -298,7 +298,7 @@ PythonPanelSerialization::initialize(NATRON_PYTHON_NAMESPACE::PyPanel* tab,
         //KnobChoicePtr isChoice = isKnobChoice(knob);
 
         if (!isGroup && !isPage && !isButton) {
-            boost::shared_ptr<KnobSerialization> k( new KnobSerialization(knob) );
+            KnobSerializationPtr k( new KnobSerialization(knob) );
             knobs.push_back(k);
         }
         delete *it;

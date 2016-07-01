@@ -526,10 +526,14 @@ IntParam*
 UserParamHolder::createIntParam(const QString& name,
                                 const QString& label)
 {
-    KnobIntPtr knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 1);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -544,10 +548,14 @@ Int2DParam*
 UserParamHolder::createInt2DParam(const QString& name,
                                   const QString& label)
 {
-    KnobIntPtr knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 2);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -562,10 +570,14 @@ Int3DParam*
 UserParamHolder::createInt3DParam(const QString& name,
                                   const QString& label)
 {
-    KnobIntPtr knob = _holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobIntPtr knob = holder->createIntKnob(name.toStdString(), label.toStdString(), 3);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -580,10 +592,14 @@ DoubleParam*
 UserParamHolder::createDoubleParam(const QString& name,
                                    const QString& label)
 {
-    KnobDoublePtr knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 1);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -598,10 +614,14 @@ Double2DParam*
 UserParamHolder::createDouble2DParam(const QString& name,
                                      const QString& label)
 {
-    KnobDoublePtr knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 2);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -616,10 +636,14 @@ Double3DParam*
 UserParamHolder::createDouble3DParam(const QString& name,
                                      const QString& label)
 {
-    KnobDoublePtr knob = _holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobDoublePtr knob = holder->createDoubleKnob(name.toStdString(), label.toStdString(), 3);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -634,10 +658,14 @@ BooleanParam*
 UserParamHolder::createBooleanParam(const QString& name,
                                     const QString& label)
 {
-    KnobBoolPtr knob = _holder->createBoolKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobBoolPtr knob = holder->createBoolKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -652,10 +680,14 @@ ChoiceParam*
 UserParamHolder::createChoiceParam(const QString& name,
                                    const QString& label)
 {
-    KnobChoicePtr knob = _holder->createChoiceKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobChoicePtr knob = holder->createChoiceKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -671,10 +703,14 @@ UserParamHolder::createColorParam(const QString& name,
                                   const QString& label,
                                   bool useAlpha)
 {
-    KnobColorPtr knob = _holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobColorPtr knob = holder->createColorKnob(name.toStdString(), label.toStdString(), useAlpha ? 4 : 3);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -689,10 +725,14 @@ StringParam*
 UserParamHolder::createStringParam(const QString& name,
                                    const QString& label)
 {
-    KnobStringPtr knob = _holder->createStringKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobStringPtr knob = holder->createStringKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -707,10 +747,14 @@ FileParam*
 UserParamHolder::createFileParam(const QString& name,
                                  const QString& label)
 {
-    KnobFilePtr knob = _holder->createFileKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobFilePtr knob = holder->createFileKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -725,10 +769,14 @@ OutputFileParam*
 UserParamHolder::createOutputFileParam(const QString& name,
                                        const QString& label)
 {
-    KnobOutputFilePtr knob = _holder->createOuptutFileKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobOutputFilePtr knob = holder->createOuptutFileKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -743,10 +791,14 @@ PathParam*
 UserParamHolder::createPathParam(const QString& name,
                                  const QString& label)
 {
-    KnobPathPtr knob = _holder->createPathKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobPathPtr knob = holder->createPathKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -761,10 +813,14 @@ ButtonParam*
 UserParamHolder::createButtonParam(const QString& name,
                                    const QString& label)
 {
-    KnobButtonPtr knob = _holder->createButtonKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobButtonPtr knob = holder->createButtonKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -779,10 +835,14 @@ SeparatorParam*
 UserParamHolder::createSeparatorParam(const QString& name,
                                       const QString& label)
 {
-    KnobSeparatorPtr knob = _holder->createSeparatorKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobSeparatorPtr knob = holder->createSeparatorKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -797,10 +857,14 @@ GroupParam*
 UserParamHolder::createGroupParam(const QString& name,
                                   const QString& label)
 {
-    KnobGroupPtr knob = _holder->createGroupKnob( name.toStdString(), label.toStdString() );
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobGroupPtr knob = holder->createGroupKnob( name.toStdString(), label.toStdString() );
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -815,12 +879,11 @@ PageParam*
 UserParamHolder::createPageParam(const QString& name,
                                  const QString& label)
 {
-    if (!_holder) {
-        assert(false);
-
-        return 0;
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
     }
-    KnobPagePtr knob = _holder->createPageKnob( name.toStdString(), label.toStdString() );
+    KnobPagePtr knob = holder->createPageKnob( name.toStdString(), label.toStdString() );
     if (knob) {
         return new PageParam(knob);
     } else {
@@ -833,10 +896,14 @@ UserParamHolder::createParametricParam(const QString& name,
                                        const QString& label,
                                        int nbCurves)
 {
-    KnobParametricPtr knob = _holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return NULL;
+    }
+    KnobParametricPtr knob = holder->createParametricKnob(name.toStdString(), label.toStdString(), nbCurves);
 
     if (knob) {
-        KnobPagePtr userPage = _holder->getOrCreateUserPageKnob();
+        KnobPagePtr userPage = holder->getOrCreateUserPageKnob();
         if (userPage) {
             userPage->addKnob(knob);
         }
@@ -860,7 +927,11 @@ UserParamHolder::removeParam(Param* param)
         return false;
     }
 
-    _holder->deleteKnob(param->getInternalKnob().get(), true);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return false;
+    }
+    holder->deleteKnob(param->getInternalKnob(), true);
 
     return true;
 }
@@ -878,7 +949,11 @@ Effect::getUserPageParam() const
 void
 UserParamHolder::refreshUserParamsGUI()
 {
-    _holder->recreateUserKnobs(false);
+    KnobHolderPtr holder = _holder.lock();
+    if (!holder) {
+        return;
+    }
+    holder->recreateUserKnobs(false);
 }
 
 

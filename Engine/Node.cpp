@@ -866,7 +866,7 @@ Node::load(const CreateNodeArgs& args)
         }
         if ( !images.empty() ) {
             hasUsedFileDialog = true;
-            boost::shared_ptr<KnobSerialization> defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
+            KnobSerializationPtr defaultFile = createDefaultValueForParam(kOfxImageEffectFileParamName, images);
             CreateNodeArgs::DefaultValuesList list;
             list.push_back(defaultFile);
 

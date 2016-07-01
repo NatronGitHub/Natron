@@ -420,8 +420,8 @@ public:
      * for Curve.
      **/
     virtual void populate() = 0;
-    virtual void setKnobGuiPointer(const boost::shared_ptr<KnobGuiI>& ptr) = 0;
-    virtual boost::shared_ptr<KnobGuiI> getKnobGuiPointer() const = 0;
+    virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) = 0;
+    virtual KnobGuiIPtr getKnobGuiPointer() const = 0;
     virtual bool getAllDimensionVisible() const = 0;
     static bool areTypesCompatibleForSlave(const KnobIPtr& lhs, const KnobIPtr& rhs);
 
@@ -1294,8 +1294,8 @@ public:
 
     typedef boost::shared_ptr<KnobTLSData> KnobDataTLSPtr;
 
-    virtual void setKnobGuiPointer(const boost::shared_ptr<KnobGuiI>& ptr) OVERRIDE FINAL;
-    virtual boost::shared_ptr<KnobGuiI> getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) OVERRIDE FINAL;
+    virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getAllDimensionVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     /**
      * @brief Returns the knob was created by a plugin or added automatically by Natron (e.g like mask knobs)

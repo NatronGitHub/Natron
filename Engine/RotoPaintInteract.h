@@ -405,7 +405,7 @@ struct RotoPaintPrivate
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
 ///the feather point and its associated control point
-typedef std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > SelectedCP;
+typedef std::pair<BezierCPPtr, BezierCPPtr > SelectedCP;
 typedef std::list< SelectedCP > SelectedCPs;
 typedef std::list< boost::shared_ptr<RotoDrawableItem> > SelectedItems;
 
@@ -511,10 +511,10 @@ struct RotoPaintInteract
     ////This is by default eSelectedCpsTransformModeTranslateAndScale. When clicking the cross-hair in the center this will toggle the transform mode
     ////like it does in inkscape.
     SelectedCpsTransformModeEnum transformMode;
-    boost::shared_ptr<Bezier> builtBezier; //< the bezier currently being built
-    boost::shared_ptr<Bezier> bezierBeingDragged;
+    BezierPtr builtBezier; //< the bezier currently being built
+    BezierPtr bezierBeingDragged;
     SelectedCP cpBeingDragged; //< the cp being dragged
-    boost::shared_ptr<BezierCP> tangentBeingDragged; //< the control point whose tangent is being dragged.
+    BezierCPPtr tangentBeingDragged; //< the control point whose tangent is being dragged.
     //only relevant when the state is DRAGGING_X_TANGENT
     SelectedCP featherBarBeingDragged, featherBarBeingHovered;
     RotoStrokeItemPtr strokeBeingPaint;
@@ -654,7 +654,7 @@ public:
 
     bool hasSelection() const;
 
-    void onCurveLockedChangedRecursive(const boost::shared_ptr<RotoItem> & item, bool* ret);
+    void onCurveLockedChangedRecursive(const RotoItemPtr & item, bool* ret);
 
     bool removeItemFromSelection(const boost::shared_ptr<RotoDrawableItem>& b);
 
@@ -680,16 +680,16 @@ public:
     ///same as drawArrow but the two ends will make an angle of 90 degrees
     void drawBendedArrow(double centerX, double centerY, double rotate, bool hovered, const std::pair<double, double> & pixelScale);
 
-    void handleBezierSelection(const boost::shared_ptr<Bezier> & curve);
+    void handleBezierSelection(const BezierPtr & curve);
 
-    void handleControlPointSelection(const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & p);
+    void handleControlPointSelection(const std::pair<BezierCPPtr, BezierCPPtr > & p);
 
     void drawSelectedCp(double time,
-                        const boost::shared_ptr<BezierCP> & cp,
+                        const BezierCPPtr & cp,
                         double x, double y,
                         const Transform::Matrix3x3& transform);
 
-    std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> >isNearbyFeatherBar(double time, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
+    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(double time, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
 
@@ -715,9 +715,9 @@ public:
 
     void checkViewersAreDirectlyConnected();
 
-    void showMenuForControlPoint(const boost::shared_ptr<BezierCP>& cp);
+    void showMenuForControlPoint(const BezierCPPtr& cp);
 
-    void showMenuForCurve(const boost::shared_ptr<Bezier> & curve);
+    void showMenuForCurve(const BezierPtr & curve);
 
     void setCurrentTool(const KnobButtonPtr& tool);
 
@@ -729,16 +729,16 @@ public:
      * This can only be called on the main-thread.
      **/
     void setSelection(const std::list<boost::shared_ptr<RotoDrawableItem> > & selectedBeziers,
-                      const std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > > & selectedCps);
-    void setSelection(const boost::shared_ptr<Bezier> & curve,
-                      const std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > & point);
+                      const std::list<std::pair<BezierCPPtr, BezierCPPtr > > & selectedCps);
+    void setSelection(const BezierPtr & curve,
+                      const std::pair<BezierCPPtr, BezierCPPtr > & point);
 
     void getSelection(std::list<boost::shared_ptr<RotoDrawableItem> >* selectedBeziers,
-                      std::list<std::pair<boost::shared_ptr<BezierCP>, boost::shared_ptr<BezierCP> > >* selectedCps);
+                      std::list<std::pair<BezierCPPtr, BezierCPPtr > >* selectedCps);
 
-    void setBuiltBezier(const boost::shared_ptr<Bezier> & curve);
+    void setBuiltBezier(const BezierPtr & curve);
 
-    boost::shared_ptr<Bezier> getBezierBeingBuild() const;
+    BezierPtr getBezierBeingBuild() const;
 
     bool smoothSelectedCurve();
     bool cuspSelectedCurve();

@@ -1263,7 +1263,7 @@ struct BezierEditorContextPrivate
 
 BezierEditorContext::BezierEditorContext(QTreeWidget* tree,
                                          CurveEditor* widget,
-                                         const boost::shared_ptr<Bezier>& curve,
+                                         const BezierPtr& curve,
                                          RotoCurveEditorContext* context)
     : RotoItemEditorContext(tree, widget, boost::dynamic_pointer_cast<RotoDrawableItem>(curve), context)
     , _imp( new BezierEditorContextPrivate() )
@@ -1353,14 +1353,14 @@ RotoCurveEditorContext::RotoCurveEditorContext(CurveEditor* widget,
     _imp->nameItem->setExpanded(true);
     _imp->nameItem->setText( 0, QString::fromUtf8( _imp->node->getNode()->getLabel().c_str() ) );
     QObject::connect( node->getNode().get(), SIGNAL(labelChanged(QString)), this, SLOT(onNameChanged(QString)) );
-    QObject::connect( rotoCtx.get(), SIGNAL(itemRemoved(boost::shared_ptr<RotoItem>,int)), this,
-                      SLOT(onItemRemoved(boost::shared_ptr<RotoItem>,int)) );
+    QObject::connect( rotoCtx.get(), SIGNAL(itemRemoved(RotoItemPtr,int)), this,
+                      SLOT(onItemRemoved(RotoItemPtr,int)) );
     QObject::connect( rotoCtx.get(), SIGNAL(itemInserted(int,int)), this, SLOT(itemInserted(int,int)) );
-    QObject::connect( rotoCtx.get(), SIGNAL(itemLabelChanged(boost::shared_ptr<RotoItem>)), this, SLOT(onItemNameChanged(boost::shared_ptr<RotoItem>)) );
+    QObject::connect( rotoCtx.get(), SIGNAL(itemLabelChanged(RotoItemPtr)), this, SLOT(onItemNameChanged(RotoItemPtr)) );
     std::list<boost::shared_ptr<RotoDrawableItem> > curves = rotoCtx->getCurvesByRenderOrder();
 
     for (std::list<boost::shared_ptr<RotoDrawableItem> >::iterator it = curves.begin(); it != curves.end(); ++it) {
-        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
         RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(*it);
         if (isBezier) {
             BezierEditorContext* c = new BezierEditorContext(tree, widget, isBezier, this);
@@ -1429,7 +1429,7 @@ RotoItemEditorContext::onShapeCloned()
 }
 
 void
-RotoCurveEditorContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& item)
+RotoCurveEditorContext::onItemNameChanged(const RotoItemPtr& item)
 {
     for (std::list<RotoItemEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
         if ( (*it)->getRotoItem() == item ) {
@@ -1439,7 +1439,7 @@ RotoCurveEditorContext::onItemNameChanged(const boost::shared_ptr<RotoItem>& ite
 }
 
 void
-RotoCurveEditorContext::onItemRemoved(const boost::shared_ptr<RotoItem>& item,
+RotoCurveEditorContext::onItemRemoved(const RotoItemPtr& item,
                                       int)
 {
     for (std::list<RotoItemEditorContext*>::iterator it = _imp->curves.begin(); it != _imp->curves.end(); ++it) {
@@ -1459,8 +1459,8 @@ RotoCurveEditorContext::itemInserted(int,
     RotoContextPtr roto = _imp->node->getNode()->getRotoContext();
 
     assert(roto);
-    boost::shared_ptr<RotoItem> item = roto->getLastInsertedItem();
-    boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+    RotoItemPtr item = roto->getLastInsertedItem();
+    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
     RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
     if (isBezier) {
         BezierEditorContext* b = new BezierEditorContext(_imp->tree, _imp->widget, isBezier, this);

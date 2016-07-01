@@ -248,7 +248,7 @@ protected:
 private:
 
 
-    RotoDrawableItem* findPreviousInHierarchy();
+    RotoDrawableItemPtr findPreviousInHierarchy();
     boost::scoped_ptr<RotoDrawableItemPrivate> _imp;
 };
 

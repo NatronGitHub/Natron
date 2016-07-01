@@ -941,7 +941,7 @@ private:
 
 
 template <typename T>
-boost::shared_ptr<KnobSerialization>
+KnobSerializationPtr
 createDefaultValueForParam(const std::string& paramName,
                            const T& value0,
                            const T& value1)
@@ -951,13 +951,13 @@ createDefaultValueForParam(const std::string& paramName,
     knob->populate();
     knob->setName(paramName);
     knob->setValues(value0, value1, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    KnobSerializationPtr ret( new KnobSerialization(knob) );
 
     return ret;
 }
 
 template <typename T>
-boost::shared_ptr<KnobSerialization>
+KnobSerializationPtr
 createDefaultValueForParam(const std::string& paramName,
                            const T& value)
 {
@@ -966,7 +966,7 @@ createDefaultValueForParam(const std::string& paramName,
     knob->populate();
     knob->setName(paramName);
     knob->setValue(value);
-    boost::shared_ptr<KnobSerialization> ret( new KnobSerialization(knob) );
+    KnobSerializationPtr ret( new KnobSerialization(knob) );
 
     return ret;
 }
@@ -1030,7 +1030,7 @@ public:
             } else {
                 //KnobChoicePtr isChoice = isKnobChoice(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
-                boost::shared_ptr<KnobSerialization> serialisation( new KnobSerialization(children[i]) );
+                KnobSerializationPtr serialisation( new KnobSerialization(children[i]) );
                 _children.push_back(serialisation);
             }
         }
@@ -1143,7 +1143,7 @@ private:
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             } else {
-                boost::shared_ptr<KnobSerialization> knob(new KnobSerialization);
+                KnobSerializationPtr knob(new KnobSerialization);
                 ar & ::boost::serialization::make_nvp("item", *knob);
                 _children.push_back(knob);
             }

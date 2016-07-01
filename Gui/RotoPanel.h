@@ -65,14 +65,14 @@ public:
 
     void onTreeOutOfFocusEvent();
 
-    boost::shared_ptr<RotoItem> getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
-    QTreeWidgetItem* getTreeItemForRotoItem(const boost::shared_ptr<RotoItem> & item) const;
+    RotoItemPtr getRotoItemForTreeItem(QTreeWidgetItem* treeItem) const;
+    QTreeWidgetItem* getTreeItemForRotoItem(const RotoItemPtr & item) const;
     std::string getNodeName() const;
     RotoContextPtr getContext() const;
 
     void clearSelection();
 
-    void clearAndSelectPreviousItem(const boost::shared_ptr<RotoItem> & item);
+    void clearAndSelectPreviousItem(const RotoItemPtr & item);
 
     void pushUndoCommand(QUndoCommand* cmd);
 
@@ -120,7 +120,7 @@ public Q_SLOTS:
     void onItemInserted(int index, int reason);
 
     ///An item was removed by the user
-    void onItemRemoved(const boost::shared_ptr<RotoItem>& item, int reason);
+    void onItemRemoved(const RotoItemPtr& item, int reason);
 
     ///An item had its inverted state changed
     void onRotoItemInvertedStateChanged();
@@ -171,8 +171,8 @@ public Q_SLOTS:
 
     void onItemColorDialogEdited(const QColor & color);
 
-    void onItemLabelChanged(const boost::shared_ptr<RotoItem>& item);
-    void onItemScriptNameChanged(const boost::shared_ptr<RotoItem>& item);
+    void onItemLabelChanged(const RotoItemPtr& item);
+    void onItemScriptNameChanged(const RotoItemPtr& item);
 
     void onItemLockChanged(int reason);
 
@@ -194,7 +194,7 @@ public:
     int insertIndex;
     QTreeWidgetItem* newParentItem;
     QTreeWidgetItem* dropped;
-    boost::shared_ptr<RotoItem> droppedRotoItem;
+    RotoItemPtr droppedRotoItem;
 
     DroppedTreeItem()
         : newParentLayer()

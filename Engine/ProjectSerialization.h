@@ -120,7 +120,7 @@ public:
         return _timelineCurrent;
     }
 
-    const std::list< boost::shared_ptr<KnobSerialization>  > & getProjectKnobsValues() const
+    const std::list< KnobSerializationPtr  > & getProjectKnobsValues() const
     {
         return _projectKnobs;
     }
@@ -261,7 +261,7 @@ public:
         ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
 
         for (int i = 0; i < knobsCount; ++i) {
-            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
+            KnobSerializationPtr ks(new KnobSerialization);
             ar & ::boost::serialization::make_nvp("item", *ks);
             _projectKnobs.push_back(ks);
         }

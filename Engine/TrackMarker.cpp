@@ -344,7 +344,7 @@ TrackMarker::save(TrackSerialization* serialization) const
     serialization->_scriptName = _imp->trackScriptName;
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        boost::shared_ptr<KnobSerialization> s( new KnobSerialization(*it) );
+        KnobSerializationPtr s( new KnobSerialization(*it) );
         serialization->_knobs.push_back(s);
     }
     for (std::set<int>::const_iterator it = _imp->userKeyframes.begin(); it != _imp->userKeyframes.end(); ++it) {

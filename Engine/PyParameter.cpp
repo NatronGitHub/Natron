@@ -230,7 +230,7 @@ Param::copy(Param* other,
     if ( !thisKnob->isTypeCompatible(otherKnob) ) {
         return false;
     }
-    thisKnob->cloneAndUpdateGui(otherKnob.get(), dimension);
+    thisKnob->cloneAndUpdateGui(otherKnob, dimension);
 
     return true;
 }
@@ -243,7 +243,7 @@ Param::slaveTo(Param* other,
     KnobIPtr thisKnob = _knob.lock();
     KnobIPtr otherKnob = other->_knob.lock();
 
-    if ( !KnobI::areTypesCompatibleForSlave( thisKnob.get(), otherKnob.get() ) ) {
+    if ( !KnobI::areTypesCompatibleForSlave(thisKnob, otherKnob) ) {
         return false;
     }
     if ( (thisDimension < 0) || ( thisDimension >= thisKnob->getDimension() ) || (otherDimension < 0) || ( otherDimension >= otherKnob->getDimension() ) ) {

@@ -351,7 +351,7 @@ private:
         ar & ::boost::serialization::make_nvp("Plugin_minor_version", _pluginMinorVersion);
         ar & ::boost::serialization::make_nvp("KnobsCount", _nbKnobs);
         for (int i = 0; i < _nbKnobs; ++i) {
-            boost::shared_ptr<KnobSerialization> ks(new KnobSerialization);
+            KnobSerializationPtr ks(new KnobSerialization);
             ar & ::boost::serialization::make_nvp("item", *ks);
             _knobsValues.push_back(ks);
         }

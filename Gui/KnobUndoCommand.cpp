@@ -55,7 +55,7 @@ struct PasteUndoCommandPrivate
     KnobClipBoardType type;
     int fromDimension;
     int targetDimension;
-    boost::shared_ptr<KnobSerialization> originalSerialization;
+    KnobSerializationPtr originalSerialization;
     KnobIPtr fromKnob;
 
     PasteUndoCommandPrivate()

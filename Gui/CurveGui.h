@@ -228,7 +228,7 @@ class BezierCPCurveGui
 public:
 
     BezierCPCurveGui(CurveWidget *curveWidget,
-                     const boost::shared_ptr<Bezier>& bezier,
+                     const BezierPtr& bezier,
                      const RotoContextPtr& roto,
                      const QString & name,
                      const QColor & color,
@@ -238,7 +238,7 @@ public:
 
     RotoContextPtr getRotoContext() const { return _rotoContext; }
 
-    boost::shared_ptr<Bezier> getBezier() const;
+    BezierPtr getBezier() const;
     virtual double evaluate(bool useExpr, double x) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual Curve::YRange getCurveYRange() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool areKeyFramesTimeClampedToIntegers() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
@@ -256,7 +256,7 @@ public:
 private:
 
 
-    boost::shared_ptr<Bezier> _bezier;
+    BezierPtr _bezier;
     RotoContextPtr _rotoContext;
 };
 

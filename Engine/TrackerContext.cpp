@@ -844,11 +844,11 @@ TrackerContext::exportTrackDataFromExportOptions()
             cornerPinToPoints[i] = getCornerPinPoint(createdNode.get(), false, i);
             assert(cornerPinToPoints[i]);
             if (!linked) {
-                cornerPinToPoints[i]->cloneAndUpdateGui( _imp->toPoints[i].lock().get() );
+                cornerPinToPoints[i]->cloneAndUpdateGui( _imp->toPoints[i].lock() );
             } else {
                 bool ok = false;
                 for (int d = 0; d < cornerPinToPoints[i]->getDimension(); ++d) {
-                    ok = dynamic_cast<KnobI*>( cornerPinToPoints[i].get() )->slaveTo(d, _imp->toPoints[i].lock(), d);
+                    ok = cornerPinToPoints[i]->slaveTo(d, _imp->toPoints[i].lock(), d);
                 }
                 (void)ok;
                 assert(ok);
@@ -859,7 +859,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             if (knob) {
                 KnobDoublePtr isType = isKnobDouble(knob);
                 if (isType) {
-                    isType->cloneAndUpdateGui( _imp->cornerPinMatrix.lock().get() );
+                    isType->cloneAndUpdateGui( _imp->cornerPinMatrix.lock() );
                 }
             }
         }
@@ -871,7 +871,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             KnobDoublePtr isDbl = isKnobDouble(translateKnob);
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui( _imp->translate.lock().get() );
+                    isDbl->cloneAndUpdateGui( _imp->translate.lock() );
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->translate.lock(), 0);
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(1, _imp->translate.lock(), 1);
@@ -884,7 +884,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             KnobDoublePtr isDbl = isKnobDouble(scaleKnob);
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui( _imp->scale.lock().get() );
+                    isDbl->cloneAndUpdateGui( _imp->scale.lock() );
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->scale.lock(), 0);
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(1, _imp->scale.lock(), 1);
@@ -897,7 +897,7 @@ TrackerContext::exportTrackDataFromExportOptions()
             KnobDoublePtr isDbl = isKnobDouble(rotateKnob);
             if (isDbl) {
                 if (!linked) {
-                    isDbl->cloneAndUpdateGui( _imp->rotate.lock().get() );
+                    isDbl->cloneAndUpdateGui( _imp->rotate.lock() );
                 } else {
                     dynamic_cast<KnobI*>(isDbl)->slaveTo(0, _imp->rotate.lock(), 0);
                 }
@@ -907,7 +907,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (centerKnob) {
             KnobDoublePtr isDbl = isKnobDouble(centerKnob);
             if (isDbl) {
-                isDbl->cloneAndUpdateGui( _imp->center.lock().get() );
+                isDbl->cloneAndUpdateGui( _imp->center.lock() );
             }
         }
         break;
@@ -919,7 +919,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         KnobBoolPtr isBool = isKnobBool(cpInvertKnob);
         if (isBool) {
             if (!linked) {
-                isBool->cloneAndUpdateGui( _imp->invertTransform.lock().get() );
+                isBool->cloneAndUpdateGui( _imp->invertTransform.lock() );
             } else {
                 dynamic_cast<KnobI*>(isBool)->slaveTo(0, _imp->invertTransform.lock(), 0);
             }
@@ -931,7 +931,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = isKnobDouble(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->motionBlur.lock().get() );
+                isType->cloneAndUpdateGui( _imp->motionBlur.lock() );
             }
         }
     }
@@ -940,7 +940,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = isKnobDouble(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->shutter.lock().get() );
+                isType->cloneAndUpdateGui( _imp->shutter.lock() );
             }
         }
     }
@@ -949,7 +949,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobChoicePtr isType = isKnobChoice(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->shutterOffset.lock().get() );
+                isType->cloneAndUpdateGui( _imp->shutterOffset.lock() );
             }
         }
     }
@@ -958,7 +958,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         if (knob) {
             KnobDoublePtr isType = isKnobDouble(knob);
             if (isType) {
-                isType->cloneAndUpdateGui( _imp->customShutterOffset.lock().get() );
+                isType->cloneAndUpdateGui( _imp->customShutterOffset.lock() );
             }
         }
     }
@@ -993,41 +993,41 @@ TrackerContext::knobChanged(const KnobIPtr& k,
 {
     bool ret = true;
 
-    if ( k == _imp->exportButton.lock().get() ) {
+    if ( k == _imp->exportButton.lock() ) {
         exportTrackDataFromExportOptions();
-    } else if ( k == _imp->setCurrentFrameButton.lock().get() ) {
+    } else if ( k == _imp->setCurrentFrameButton.lock() ) {
         KnobIntPtr refFrame = _imp->referenceFrame.lock();
         refFrame->setValue( _imp->node.lock()->getApp()->getTimeLine()->currentFrame() );
-    } else if ( k == _imp->transformType.lock().get() ) {
+    } else if ( k == _imp->transformType.lock() ) {
         solveTransformParamsIfAutomatic();
         _imp->refreshVisibilityFromTransformType();
-    } else if ( k == _imp->motionType.lock().get() ) {
+    } else if ( k == _imp->motionType.lock() ) {
         solveTransformParamsIfAutomatic();
         _imp->refreshVisibilityFromTransformType();
-    } else if ( k == _imp->jitterPeriod.lock().get() ) {
+    } else if ( k == _imp->jitterPeriod.lock() ) {
         solveTransformParamsIfAutomatic();
-    } else if ( k == _imp->smoothCornerPin.lock().get() ) {
+    } else if ( k == _imp->smoothCornerPin.lock() ) {
         solveTransformParamsIfAutomatic();
-    } else if ( k == _imp->smoothTransform.lock().get() ) {
+    } else if ( k == _imp->smoothTransform.lock() ) {
         solveTransformParamsIfAutomatic();
-    } else if ( k == _imp->referenceFrame.lock().get() ) {
+    } else if ( k == _imp->referenceFrame.lock() ) {
         solveTransformParamsIfAutomatic();
-    } else if ( k == _imp->robustModel.lock().get() ) {
+    } else if ( k == _imp->robustModel.lock() ) {
         solveTransformParamsIfAutomatic();
-    } else if ( k == _imp->generateTransformButton.lock().get() ) {
+    } else if ( k == _imp->generateTransformButton.lock() ) {
         solveTransformParams();
-    } else if ( k == _imp->setFromPointsToInputRod.lock().get() ) {
+    } else if ( k == _imp->setFromPointsToInputRod.lock() ) {
         setFromPointsToInputRod();
-    } else if ( k == _imp->autoGenerateTransform.lock().get() ) {
+    } else if ( k == _imp->autoGenerateTransform.lock() ) {
         solveTransformParams();
         _imp->refreshVisibilityFromTransformType();
     }
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
-    else if ( k == _imp->usePatternMatching.lock().get() ) {
+    else if ( k == _imp->usePatternMatching.lock() ) {
         _imp->refreshVisibilityFromTransformType();
     }
 #endif
-    else if ( k == _imp->disableTransform.lock().get() ) {
+    else if ( k == _imp->disableTransform.lock() ) {
         _imp->refreshVisibilityFromTransformType();
     } else {
         ret = false;
@@ -1746,7 +1746,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
         return false;
     }
 
-    TrackMarkerPM* isTrackerPM = dynamic_cast<TrackMarkerPM*>( track->natronMarker.get() );
+    TrackMarkerPMPtr isTrackerPM = boost::dynamic_pointer_cast<TrackMarkerPM>( track->natronMarker );
     bool ret;
     if (isTrackerPM) {
         ret = TrackerContextPrivate::trackStepTrackerPM(isTrackerPM, args, time);

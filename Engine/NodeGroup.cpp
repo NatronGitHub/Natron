@@ -2217,7 +2217,7 @@ exportUserKnob(int indentLevel,
 
 static void
 exportBezierPointAtTime(int indentLevel,
-                        const boost::shared_ptr<BezierCP>& point,
+                        const BezierCPPtr& point,
                         bool isFeather,
                         double time,
                         int idx,
@@ -2239,20 +2239,20 @@ exportBezierPointAtTime(int indentLevel,
 
 static void
 exportRotoLayer(int indentLevel,
-                const std::list<boost::shared_ptr<RotoItem> >& items,
+                const std::list<RotoItemPtr >& items,
                 const RotoLayerPtr& layer,
                 QTextStream& ts)
 {
     QString parentLayerName = QString::fromUtf8( layer->getScriptName().c_str() ) + QString::fromUtf8("_layer");
 
-    for (std::list<boost::shared_ptr<RotoItem> >::const_iterator it = items.begin(); it != items.end(); ++it) {
+    for (std::list<RotoItemPtr >::const_iterator it = items.begin(); it != items.end(); ++it) {
         RotoLayerPtr isLayer = boost::dynamic_pointer_cast<RotoLayer>(*it);
-        boost::shared_ptr<Bezier> isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
+        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(*it);
 
         if (isBezier) {
             double time;
-            const std::list<boost::shared_ptr<BezierCP> >& cps = isBezier->getControlPoints();
-            const std::list<boost::shared_ptr<BezierCP> >& fps = isBezier->getFeatherPoints();
+            const std::list<BezierCPPtr >& cps = isBezier->getControlPoints();
+            const std::list<BezierCPPtr >& fps = isBezier->getFeatherPoints();
 
             if ( cps.empty() ) {
                 continue;
@@ -2302,8 +2302,8 @@ exportRotoLayer(int indentLevel,
 
             ///Now that all points are created position them
             int idx = 0;
-            std::list<boost::shared_ptr<BezierCP> >::const_iterator fpIt = fps.begin();
-            for (std::list<boost::shared_ptr<BezierCP> >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
+            std::list<BezierCPPtr >::const_iterator fpIt = fps.begin();
+            for (std::list<BezierCPPtr >::const_iterator it2 = cps.begin(); it2 != cps.end(); ++it2, ++fpIt, ++idx) {
                 for (std::set<double>::iterator it3 = kf.begin(); it3 != kf.end(); ++it3) {
                     exportBezierPointAtTime(indentLevel, *it2, false, *it3, idx, ts);
                     exportBezierPointAtTime(indentLevel, *fpIt, true, *it3, idx, ts);
@@ -2331,7 +2331,7 @@ exportRotoLayer(int indentLevel,
 
             WRITE_INDENT(indentLevel); WRITE_STRING(parentLayerName + QString::fromUtf8(".addItem(") + layerName);
 
-            const std::list<boost::shared_ptr<RotoItem> >& items = isLayer->getItems();
+            const std::list<RotoItemPtr >& items = isLayer->getItems();
             exportRotoLayer(indentLevel, items, isLayer, ts);
             WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("del ") + layerName);
         }

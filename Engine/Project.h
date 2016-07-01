@@ -79,6 +79,10 @@ public:
         return ProjectPtr( new Project(appInstance) );
     }
 
+    ProjectPtr shared_from_this() {
+        return boost::dynamic_pointer_cast<Project>(KnobHolder::shared_from_this());
+    }
+
     virtual ~Project();
 
     //these are per project thread-local data

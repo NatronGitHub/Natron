@@ -58,7 +58,7 @@ struct BezierCPPrivate
     double leftX, rightX, leftY, rightY; //< used when there is no keyframe
     double guiLeftX, guiRightX, guiLeftY, guiRightY; //< used when there is no keyframe
 
-    BezierCPPrivate(const boost::shared_ptr<Bezier>& curve)
+    BezierCPPrivate(const BezierPtr& curve)
         : holder(curve)
         , curveX(new Curve)
         , curveY(new Curve)

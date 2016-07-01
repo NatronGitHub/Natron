@@ -58,7 +58,7 @@ NATRON_NAMESPACE_ENTER;
 struct AddKnobDialogPrivate
 {
     KnobIPtr knob;
-    boost::shared_ptr<KnobSerialization> originalKnobSerialization;
+    KnobSerializationPtr originalKnobSerialization;
     KnobIPtr isKnobAlias;
     DockablePanel* panel;
     QVBoxLayout* vLayout;

@@ -690,7 +690,7 @@ KnobCurveGui::setKeyFrameInterpolation(KeyframeTypeEnum interp,
 }
 
 BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
-                                   const boost::shared_ptr<Bezier>& bezier,
+                                   const BezierPtr& bezier,
                                    const RotoContextPtr& roto,
                                    const QString & name,
                                    const QColor & color,
@@ -705,7 +705,7 @@ BezierCPCurveGui::BezierCPCurveGui(CurveWidget *curveWidget,
     }
 }
 
-boost::shared_ptr<Bezier>
+BezierPtr
 BezierCPCurveGui::getBezier() const
 {
     return _bezier;
