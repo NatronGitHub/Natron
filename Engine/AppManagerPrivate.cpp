@@ -583,6 +583,14 @@ AppManagerPrivate::initGLAPISpecific()
 #endif // Q_OS_WIN32
 }
 
+extern "C" {
+extern int GLAD_GL_ARB_vertex_buffer_object;
+extern int GLAD_GL_ARB_framebuffer_object;
+extern int GLAD_GL_ARB_pixel_buffer_object;
+extern int GLAD_GL_ARB_vertex_array_object;
+extern int GLAD_GL_ARB_texture_float;
+}
+
 void
 AppManagerPrivate::initGl()
 {
@@ -600,7 +608,7 @@ AppManagerPrivate::initGl()
 
 
     if ( !gladLoadGL() ||
-        GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 0)) {
+        GLVersion.major < 2 || (GLVersion.major == 2 && GLVersion.minor < 0) || !GLAD_GL_ARB_vertex_buffer_object || !GLAD_GL_ARB_framebuffer_object || !GLAD_GL_ARB_pixel_buffer_object || !GLAD_GL_ARB_vertex_array_object || !GLAD_GL_ARB_texture_float) {
         missingOpenglError = tr("Failed to load required OpenGL functions. " NATRON_APPLICATION_NAME " requires at least OpenGL 2.0 with the following extensions: ");
         missingOpenglError += QString::fromUtf8("GL_ARB_vertex_buffer_object,GL_ARB_pixel_buffer_object,GL_ARB_vertex_array_object,GL_ARB_framebuffer_object,GL_ARB_texture_float");
         missingOpenglError += QLatin1String("\n");
