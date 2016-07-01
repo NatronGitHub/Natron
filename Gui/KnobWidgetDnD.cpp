@@ -382,7 +382,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
                     return false;
                 }
                 NodeCollectionPtr group = effect->getNode()->getGroup();
-                NodeGroupPtr isGroup = isNodeGroup( group.get() );
+                NodeGroupPtr isGroup = isNodeGroup( group );
                 std::string expr;
                 std::stringstream ss;
                 if (isGroup) {

@@ -336,8 +336,8 @@ findKnobsOnSameLine(const KnobsVec& knobs,
             knobsOnSameLine.push_back(knobs[k]);
         } else {
             if ( !knobs[k]->getParentKnob() &&
-                 !isKnobPage( knobs[k].get() ) &&
-                 !isKnobGroup( knobs[k].get() ) ) {
+                 !isKnobPage( knobs[k] ) &&
+                 !isKnobGroup( knobs[k] ) ) {
                 knobsOnSameLine.push_back(knobs[k]);
             }
         }
@@ -352,8 +352,8 @@ findKnobsOnSameLine(const KnobsVec& knobs,
             knobsOnSameLine.push_back(knobs[k + 1]);
         } else {
             if ( !knobs[k + 1]->getParentKnob() &&
-                 !isKnobPage( knobs[k + 1].get() ) &&
-                 !isKnobGroup( knobs[k + 1].get() ) ) {
+                 !isKnobPage( knobs[k + 1] ) &&
+                 !isKnobGroup( knobs[k + 1] ) ) {
                 knobsOnSameLine.push_back(knobs[k + 1]);
             }
         }
@@ -396,7 +396,7 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
     for (KnobsVec::const_iterator it2 = siblingsVec.begin(); it2 != siblingsVec.end(); ++it2) {
         bool makeNewLine = true;
         int lastKnobSpacing = 0;
-        KnobGroup *isGroup = isKnobGroup(*it2);
+        KnobGroupPtr isGroup = isKnobGroup(*it2);
 
         // A vector of all other knobs on the same line
         KnobsVec knobsOnSameLine;
@@ -599,7 +599,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
                 page->gridLayout->addWidget(page->groupAsTab, page->currentRow, 0, 1, 2);
             }
 
-            page->groupAsTab->refreshTabSecretNess( isGroup.get() );
+            page->groupAsTab->refreshTabSecretNess( isGroup );
         } else {
             // This is a group inside a group
             assert(parentIsGroup);

@@ -1148,7 +1148,7 @@ RotoPanelPrivate::insertItemRecursively(double time,
     RotoLayerPtr layer = boost::dynamic_pointer_cast<RotoLayer>(item);
 
     if (drawable) {
-        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( drawable.get() );
+        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>( drawable );
         double overlayColor[4];
         drawable->getOverlayColor(overlayColor);
         QIcon overlayIcon;

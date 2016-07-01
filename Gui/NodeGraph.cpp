@@ -89,7 +89,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-    NodeGroupPtr isGrp = isNodeGroup( group.get() );
+    NodeGroupPtr isGrp = isNodeGroup( group );
     if (isGrp) {
         std::string newName = isGrp->getNode()->getFullyQualifiedName();
         for (std::size_t i = 0; i < newName.size(); ++i) {
@@ -369,12 +369,12 @@ NodeGraph::createNodeGUI(const NodePtr & node,
                          const CreateNodeArgs& args)
 {
     NodeGuiPtr node_ui;
-    Dot* isDot = dynamic_cast<Dot*>( node->getEffectInstance() );
-    Backdrop* isBd = dynamic_cast<Backdrop*>( node->getEffectInstance() );
+    DotPtr isDotNode = isDot( node->getEffectInstance() );
+    BackdropPtr isBd = isBackdrop( node->getEffectInstance() );
     NodeGroupPtr isGrp = isNodeGroup( node->getEffectInstance() );
 
 
-    if (isDot) {
+    if (isDotNode) {
         node_ui.reset( new DotGui(_imp->_nodeRoot) );
     } else if (isBd) {
         node_ui.reset( new BackdropGui(_imp->_nodeRoot) );

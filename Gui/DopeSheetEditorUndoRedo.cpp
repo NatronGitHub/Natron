@@ -32,6 +32,7 @@
 #include "Engine/AppInstance.h"
 #endif
 #include "Engine/Knob.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ReadNode.h"

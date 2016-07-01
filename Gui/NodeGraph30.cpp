@@ -237,7 +237,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
             if (!isEffect) {
                 continue;
             }
-            if ( isGrp && (isEffect->getNode()->getGroup().get() == isGrp) ) {
+            if ( isGrp && (isEffect->getNode()->getGroup() == isGrp) ) {
                 continue;
             }
 

@@ -151,7 +151,7 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     }
     NodeCollectionPtr group = isEffect->getNode()->getGroup();
     group->getActiveNodes(&_imp->allNodes);
-    NodeGroupPtr isGroup = isNodeGroup( group.get() );
+    NodeGroupPtr isGroup = isNodeGroup( group );
     if (isGroup) {
         _imp->allNodes.push_back( isGroup->getNode() );
     }

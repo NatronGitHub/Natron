@@ -168,15 +168,15 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
         break;
     }
     case eKnobClipBoardTypeCopyValue: {
-        KnobIntBasePtr isInt = isKnobIntBase( internalKnob.get() );
-        KnobBoolBasePtr isBool = isKnobBoolBase( internalKnob.get() );
-        KnobDoubleBasePtr isDouble = isKnobDoubleBase( internalKnob.get() );
-        KnobStringBasePtr isString = isKnobStringBase( internalKnob.get() );
+        KnobIntBasePtr isInt = isKnobIntBase( internalKnob );
+        KnobBoolBasePtr isBool = isKnobBoolBase( internalKnob );
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase( internalKnob );
+        KnobStringBasePtr isString = isKnobStringBase( internalKnob );
 
-        KnobIntBasePtr isFromInt = isKnobIntBase( serializedKnob.get() );
-        KnobBoolBasePtr isFromBool = isKnobBoolBase( serializedKnob.get() );
-        KnobDoubleBasePtr isFromDouble = isKnobDoubleBase( serializedKnob.get() );
-        KnobStringBasePtr isFromString = isKnobStringBase( serializedKnob.get() );
+        KnobIntBasePtr isFromInt = isKnobIntBase( serializedKnob );
+        KnobBoolBasePtr isFromBool = isKnobBoolBase( serializedKnob );
+        KnobDoubleBasePtr isFromDouble = isKnobDoubleBase( serializedKnob );
+        KnobStringBasePtr isFromString = isKnobStringBase( serializedKnob );
 
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
@@ -543,7 +543,7 @@ RestoreDefaultsCommand::undo()
         if (!itCloneKnob) {
             continue;
         }
-        itKnob->cloneAndUpdateGui( itCloneKnob.get() );
+        itKnob->cloneAndUpdateGui( itCloneKnob );
 
         if ( itKnob->getHolder()->getApp() ) {
             int dim = itKnob->getDimension();

@@ -40,9 +40,9 @@ struct NumericKnobValidatorPrivate
     KnobGuiWPtr knobUi;
 
     ///Only these knobs have spinboxes
-    KnobGuiDouble* isDoubleGui;
-    KnobGuiColor* isColorGui;
-    KnobGuiInt* isIntGui;
+    KnobGuiDoublePtr isDoubleGui;
+    KnobGuiColorPtr isColorGui;
+    KnobGuiIntPtr isIntGui;
     boost::weak_ptr<KnobDoubleBase > isDouble;
     boost::weak_ptr<KnobIntBase > isInt;
 
@@ -50,9 +50,9 @@ struct NumericKnobValidatorPrivate
                                 const KnobGuiPtr& knob)
         : spinbox(spinbox)
         , knobUi(knob)
-        , isDoubleGui( dynamic_cast<KnobGuiDouble*>(knob) )
-        , isColorGui( dynamic_cast<KnobGuiColor*>(knob) )
-        , isIntGui( dynamic_cast<KnobGuiInt*>(knob) )
+        , isDoubleGui( isKnobGuiDouble(knob) )
+        , isColorGui( isKnobGuiColor(knob) )
+        , isIntGui( isKnobGuiInt(knob) )
     {
         KnobIPtr internalKnob = knob->getKnob();
 

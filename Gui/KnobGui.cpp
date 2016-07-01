@@ -688,7 +688,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     KnobHolderPtr holder = knob->getHolder();
     EffectInstancePtr isEffect = isEffectInstance(holder);
     NodeCollectionPtr collec;
-    NodeGroupPtr isCollecGroup = 0;
+    NodeGroupPtr isCollecGroup;
     if (isEffect) {
         collec = isEffect->getNode()->getGroup();
         isCollecGroup = isNodeGroup(collec);
@@ -706,7 +706,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
             KnobHolderPtr masterHolder = master.second->getHolder();
             if (masterHolder) {
-                TrackMarker* isTrackMarker = dynamic_cast<TrackMarker*>(masterHolder);
+                TrackMarkerPtr isTrackMarker = isTrackMarker(masterHolder);
                 if (isTrackMarker) {
                     knobName.append( isTrackMarker->getContext()->getNode()->getScriptName() );
                     knobName += '.';

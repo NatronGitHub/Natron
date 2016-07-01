@@ -183,7 +183,7 @@ NodeViewerContext::createGui()
     }
 
     const KnobsVec& allKnobs = node->getNode()->getKnobs();
-    KnobPagePtr toolbarPage = 0;
+    KnobPagePtr toolbarPage;
     for (KnobsVec::const_iterator it = allKnobs.begin(); it != allKnobs.end(); ++it) {
         KnobPagePtr isPage = isKnobPage(*it);
         if ( isPage && isPage->getIsToolBar() ) {
@@ -198,14 +198,14 @@ NodeViewerContext::createGui()
             _imp->toolbar->setOrientation(Qt::Vertical);
 
             for (std::size_t i = 0; i < pageChildren.size(); ++i) {
-                KnobGroupPtr isGroup = isKnobGroup( pageChildren[i].get() );
+                KnobGroupPtr isGroup = isKnobGroup( pageChildren[i] );
                 if (isGroup) {
                     QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)) );
                     KnobsVec toolButtonChildren = isGroup->getChildren();
                     ViewerToolButton* createdToolButton = 0;
                     QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
-                        KnobButton* isButton = isKnobButton( toolButtonChildren[j].get() );
+                        KnobButtonPtr isButton = isKnobButton( toolButtonChildren[j] );
                         if (isButton) {
                             QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolActionValueChanged(ViewSpec,int,int)) );
                             const std::string& roleShortcutID = isGroup->getName();
@@ -659,12 +659,12 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
         assert(newToolKnob && newGroupKnob);
         if (newToolKnob && newGroupKnob) {
 
-            KnobButton* oldIsButton = oldToolKnob ? isKnobButton( oldToolKnob.get() ) : 0;
-            KnobButton* newIsButton = isKnobButton( newToolKnob.get() );
+            KnobButton* oldIsButton = oldToolKnob ? isKnobButton( oldToolKnob ) : 0;
+            KnobButton* newIsButton = isKnobButton( newToolKnob );
             assert(newIsButton);
 
-            KnobGroupPtr oldIsGroup = oldGroupKnob ? isKnobGroup( oldGroupKnob.get() ) : 0;
-            KnobGroupPtr newIsGroup = isKnobGroup( newGroupKnob.get() );
+            KnobGroupPtr oldIsGroup = oldGroupKnob ? isKnobGroup( oldGroupKnob ) : 0;
+            KnobGroupPtr newIsGroup = isKnobGroup( newGroupKnob );
             assert(newIsGroup);
             if (newIsButton && newIsGroup) {
                 EffectInstancePtr effect = n->getNode()->getEffectInstance();

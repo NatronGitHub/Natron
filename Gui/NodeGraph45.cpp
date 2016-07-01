@@ -109,7 +109,7 @@ NodeGraph::toggleHideInputs()
 NodesGuiList
 NodeGraph::getNodesWithinBackdrop(const NodeGuiPtr& bd) const
 {
-    BackdropGui* isBd = dynamic_cast<BackdropGui*>( bd.get() );
+    BackdropGuiPtr isBd = boost::dynamic_pointer_cast<BackdropGui>( bd );
 
     if (!isBd) {
         return NodesGuiList();
@@ -587,7 +587,7 @@ NodeGraph::expandSelectedGroups()
 void
 NodeGraph::onGroupNameChanged(const QString& /*name*/)
 {
-    NodeGroupPtr isGrp = isNodeGroup( getGroup().get() );
+    NodeGroupPtr isGrp = isNodeGroup( getGroup() );
 
     assert(isGrp);
     if (isGrp) {
@@ -610,7 +610,7 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
     if (!group) {
         return;
     }
-    NodeGroupPtr isGrp = isNodeGroup( group.get() );
+    NodeGroupPtr isGrp = isNodeGroup( group );
     if (!isGrp) {
         return;
     }

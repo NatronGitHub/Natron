@@ -375,11 +375,11 @@ ManageUserParamsDialog::onAddClicked()
     if ( !selection.isEmpty() ) {
         std::list<TreeItem>::const_iterator item = _imp->findItemForTreeItem( selection.front() );
         if ( item != _imp->items.end() ) {
-            KnobPagePtr isPage = isKnobPage( item->knob.get() );
+            KnobPagePtr isPage = isKnobPage( item->knob );
             if (isPage) {
                 selectedPageName = isPage->getName();
             } else {
-                KnobGroupPtr isGrp = isKnobGroup( item->knob.get() );
+                KnobGroupPtr isGrp = isKnobGroup( item->knob );
                 if (isGrp) {
                     selectedGroupName = isGrp->getName();
                     KnobPagePtr topLevelPage = isGrp->getTopLevelPage();
@@ -437,7 +437,7 @@ ManageUserParamsDialogPrivate::createItemForKnob(const KnobIPtr& knob,
     }
     if (parentKnob) {
         for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
-            if ( it->knob.get() == parentKnob.get() ) {
+            if ( it->knob == parentKnob ) {
                 parent = it->item;
                 break;
             }
@@ -637,7 +637,7 @@ ManageUserParamsDialog::onUpClicked()
                 break;
             }
 
-            if ( !it->knob || !_imp->panel->getHolder()->moveKnobOneStepUp( it->knob.get() ) ) {
+            if ( !it->knob || !_imp->panel->getHolder()->moveKnobOneStepUp( it->knob ) ) {
                 return;
             }
             QList<QTreeWidgetItem*> children = it->item->takeChildren();
@@ -713,7 +713,7 @@ ManageUserParamsDialog::onDownClicked()
 
             bool moveOk = false;
             if (it->knob) {
-                moveOk = _imp->panel->getHolder()->moveKnobOneStepDown( it->knob.get() );
+                moveOk = _imp->panel->getHolder()->moveKnobOneStepDown( it->knob );
             }
             if (!moveOk) {
                 break;
@@ -774,8 +774,8 @@ ManageUserParamsDialog::onSelectionChanged()
         // }
         for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
             if (it->item == item) {
-                KnobPagePtr isPage = isKnobPage( it->knob.get() );
-                KnobGroupPtr isGroup = isKnobGroup( it->knob.get() );
+                KnobPagePtr isPage = isKnobPage( it->knob );
+                KnobGroupPtr isGroup = isKnobGroup( it->knob );
                 if (isPage) {
                     if ( !isPage->isUserKnob() ) {
                         canDelete = false;
