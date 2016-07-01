@@ -154,7 +154,7 @@ protected:
     {
     }
 
-    virtual void showMenuForInstance(Node* /*instance*/)
+    virtual void showMenuForInstance(const NodePtr& /*instance*/)
     {
     }
 

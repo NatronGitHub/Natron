@@ -954,7 +954,7 @@ GuiAppInstance::getLastViewerUsingTimeline() const
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
 
     if (!_imp->lastTimelineViewer) {
-        return 0;
+        return ViewerInstancePtr();
     }
 
     return _imp->lastTimelineViewer->isEffectViewerInstance();
@@ -1566,7 +1566,7 @@ GuiAppInstance::goToPreviousKeyframe()
     std::list<SequenceTime>::iterator lowerBound = std::lower_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
     if ( lowerBound != _imp->timelineKeyframes.begin() ) {
         --lowerBound;
-        timeline->seekFrame(*lowerBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
+        timeline->seekFrame(*lowerBound, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
     }
 }
 
@@ -1581,7 +1581,7 @@ GuiAppInstance::goToNextKeyframe()
     SequenceTime currentFrame = timeline->currentFrame();
     std::list<SequenceTime>::iterator upperBound = std::upper_bound(_imp->timelineKeyframes.begin(), _imp->timelineKeyframes.end(), currentFrame);
     if ( upperBound != _imp->timelineKeyframes.end() ) {
-        timeline->seekFrame(*upperBound, true, NULL, eTimelineChangeReasonPlaybackSeek);
+        timeline->seekFrame(*upperBound, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
     }
 }
 

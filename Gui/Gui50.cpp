@@ -923,7 +923,7 @@ Gui::printAutoDeclaredVariable(const std::string & str)
 }
 
 void
-Gui::exportGroupAsPythonScript(NodeCollection* collection)
+Gui::exportGroupAsPythonScript(const NodeCollectionPtr& collection)
 {
     assert(collection);
     NodesList nodes = collection->getNodes();
@@ -947,7 +947,7 @@ Gui::exportGroupAsPythonScript(NodeCollection* collection)
 void
 Gui::exportProjectAsGroup()
 {
-    exportGroupAsPythonScript( getApp()->getProject().get() );
+    exportGroupAsPythonScript( getApp()->getProject() );
 }
 
 void

@@ -459,7 +459,7 @@ public:
 
     void printAutoDeclaredVariable(const std::string& str);
 
-    void exportGroupAsPythonScript(NodeCollection* collection);
+    void exportGroupAsPythonScript(const NodeCollectionPtr& collection);
 
     void addMenuEntry(const QString& menuGrouping, const std::string& pythonFunction, Qt::Key key, const Qt::KeyboardModifiers& modifiers);
 

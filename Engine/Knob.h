@@ -1708,6 +1708,12 @@ private:
     boost::scoped_ptr<KnobHelperPrivate> _imp;
 };
 
+inline KnobHelperPtr
+isKnobHelper(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobHelper>(knob);
+}
+
 /**
  * @brief A Knob is a parameter, templated by a data type.
  * The template parameter is meant to be used with POD types or strings,

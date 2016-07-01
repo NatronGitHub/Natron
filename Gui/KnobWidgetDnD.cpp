@@ -322,7 +322,7 @@ KnobWidgetDnDPrivate::canDrop(bool warn,
             targetDim = -1;
         }
 
-        if ( !KnobI::areTypesCompatibleForSlave( source.get(), thisKnob.get() ) ) {
+        if ( !KnobI::areTypesCompatibleForSlave( source, thisKnob ) ) {
             if (warn) {
                 Dialogs::errorDialog( tr("Link").toStdString(), tr("You can only link parameters of the same type. To overcome this, use an expression instead.").toStdString() );
             }

@@ -482,7 +482,7 @@ Gui::removeViewerTab(ViewerTab* tab,
     }
     tab->abortRendering();
     NodeGraph* graph = 0;
-    NodeGroupPtr isGrp = 0;
+    NodeGroupPtr isGrp;
     NodeCollectionPtr collection;
     if ( tab->getInternalNode() && tab->getInternalNode()->getNode() ) {
         NodeCollectionPtr collection = tab->getInternalNode()->getNode()->getGroup();

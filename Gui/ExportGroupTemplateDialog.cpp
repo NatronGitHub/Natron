@@ -113,7 +113,7 @@ private:
 struct ExportGroupTemplateDialogPrivate
 {
     Gui* gui;
-    NodeCollection* group;
+    const NodeCollectionPtr& group;
     QGridLayout* mainLayout;
     Label* labelLabel;
     LineEdit* labelEdit;
@@ -132,7 +132,7 @@ struct ExportGroupTemplateDialogPrivate
     PlaceHolderTextEdit* descriptionEdit;
     QDialogButtonBox *buttons;
 
-    ExportGroupTemplateDialogPrivate(NodeCollection* group,
+    ExportGroupTemplateDialogPrivate(const NodeCollectionPtr& group,
                                      Gui* gui)
         : gui(gui)
         , group(group)
@@ -157,7 +157,7 @@ struct ExportGroupTemplateDialogPrivate
     }
 };
 
-ExportGroupTemplateDialog::ExportGroupTemplateDialog(NodeCollection* group,
+ExportGroupTemplateDialog::ExportGroupTemplateDialog(const NodeCollectionPtr& group,
                                                      Gui* gui,
                                                      QWidget* parent)
     : QDialog(parent)

@@ -836,7 +836,7 @@ KnobGuiPath::entryRemoved(const QStringList& row)
     KnobPathPtr knob = _knob.lock();
 
     ///Fix all variables if needed
-    if ( knob && knob->getHolder() && ( knob->getHolder() == getGui()->getApp()->getProject().get() ) &&
+    if ( knob && knob->getHolder() && ( knob->getHolder() == getGui()->getApp()->getProject() ) &&
          appPTR->getCurrentSettings()->isAutoFixRelativeFilePathEnabled() ) {
         getGui()->getApp()->getProject()->fixRelativeFilePaths(row[0].toStdString(), std::string(), false);
     }

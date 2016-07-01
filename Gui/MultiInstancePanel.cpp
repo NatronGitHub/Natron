@@ -2423,7 +2423,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
 
 void
 
-TrackerPanelV1::showMenuForInstance(Node* instance)
+TrackerPanelV1::showMenuForInstance(const NodePtr& instance)
 {
     if ( !getMainInstance()->isPointTrackerNode() ) {
         return;

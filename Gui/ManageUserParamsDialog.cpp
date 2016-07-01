@@ -506,13 +506,13 @@ ManageUserParamsDialog::onDeleteClicked()
                     if (rep != eStandardButtonYes) {
                         return;
                     }
-                    it->knob->getHolder()->deleteKnob(it->knob.get(), true);
+                    it->knob->getHolder()->deleteKnob(it->knob, true);
                     delete it->item;
                     _imp->items.erase(it);
 
                     KnobPagePtr userPage = _imp->panel->getUserPageKnob();
                     if ( userPage && userPage->getChildren().empty() ) {
-                        userPage->getHolder()->deleteKnob(userPage.get(), true);
+                        userPage->getHolder()->deleteKnob(userPage, true);
                     }
                     _imp->saveAndRebuildPages();
                     break;
@@ -536,7 +536,7 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
                         QTreeWidgetItem* parent = it->item->parent();
                         KnobIPtr knob = dialog.getKnob();
                         KnobIPtr newParentKnob = knob->getParentKnob();
-                        KnobPagePtr isPage = isKnobPage( it->knob.get() );
+                        KnobPagePtr isPage = isKnobPage( it->knob );
 
                         if (parent) {
                             if (oldParentKnob != newParentKnob) {

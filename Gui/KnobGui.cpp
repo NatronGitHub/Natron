@@ -69,7 +69,7 @@ KnobGui::initialize()
     if (!_imp->isInViewerUIKnob) {
         knob->setKnobGuiPointer(thisShared);
     }
-    KnobHelper* helper = dynamic_cast<KnobHelper*>(knob);
+    KnobHelperPtr helper = isKnobHelper(knob);
     assert(helper);
     if (helper) {
         KnobSignalSlotHandler* handler = helper->getSignalSlotHandler().get();
