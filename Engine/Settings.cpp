@@ -2027,6 +2027,12 @@ Settings::restoreSettings()
         }
     }
 
+    if (!appPTR->isTextureFloatSupported()) {
+        if (_texturesMode) {
+            _texturesMode->setSecret(true);
+        }
+    }
+
     _settingsExisted = false;
     try {
         _settingsExisted = _natronSettingsExist->getValue();
