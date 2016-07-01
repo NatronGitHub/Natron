@@ -117,7 +117,7 @@ DockablePanel::DockablePanel(Gui* gui,
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::NoFocus);
 
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr isEffect = isEffectInstance(holder);
     QString pluginLabelVersioned;
     if (isEffect) {
         if ( isGroupOutput(isEffect) ) {
@@ -556,7 +556,7 @@ DockablePanel::onPageIndexChanged(int index)
     for (PagesMap::const_iterator it = pages.begin(); it != pages.end(); ++it) {
         if (it->second->tab == curTab) {
             setCurrentPage(it->second);
-            EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(_imp->_holder);
+            EffectInstancePtr isEffect = isEffectInstance(_imp->_holder);
             if ( isEffect && isEffect->getNode()->hasOverlay() ) {
                 isEffect->getApp()->redrawAllViewers();
             }
@@ -609,7 +609,7 @@ DockablePanel::setPluginIDAndVersion(const std::string& pluginLabel,
     if (_imp->_helpButton) {
         _imp->_helpToolTip = QString::fromUtf8( pluginDesc.c_str() );
         _imp->_helpButton->setToolTip( helpString() );
-        EffectInstancePtr iseffect = boost::dynamic_pointer_cast<EffectInstance>(_imp->_holder);
+        EffectInstancePtr iseffect = isEffectInstance(_imp->_holder);
         if (iseffect) {
             _imp->_pluginID = QString::fromUtf8( pluginID.c_str() );
             _imp->_pluginVersionMajor = version;
@@ -848,7 +848,7 @@ DockablePanel::helpString() const
     //Base help
     QString tt;
     bool isMarkdown = false;
-    EffectInstancePtr iseffect = boost::dynamic_pointer_cast<EffectInstance>(_imp->_holder);
+    EffectInstancePtr iseffect = isEffectInstance(_imp->_holder);
 
     if (iseffect) {
         isMarkdown = iseffect->isPluginDescriptionInMarkdown();
@@ -893,7 +893,7 @@ DockablePanel::helpString() const
 void
 DockablePanel::showHelp()
 {
-    EffectInstancePtr iseffect = boost::dynamic_pointer_cast<EffectInstance>(_imp->_holder);
+    EffectInstancePtr iseffect = isEffectInstance(_imp->_holder);
 
     if (iseffect) {
         NodePtr node = iseffect->getNode();
@@ -1417,7 +1417,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 
     assert(emitter);
 
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(_imp->_holder);
+    EffectInstancePtr isEffect = isEffectInstance(_imp->_holder);
     if (isEffect) {
         NodePtr master = isEffect->getNode()->getMasterNode();
         Menu menu(this);
@@ -1492,7 +1492,7 @@ DockablePanel::setKeyOnAllParameters()
 
                     k.keyframes.push_back(kf);
                     k.curveUI = *it2;
-                    KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>(*it2);
+                    KnobCurveGuiPtr isKnobCurve = boost::dynamic_pointer_cast<KnobCurveGui>(*it2);
                     if (isKnobCurve) {
                         k.knobUI = isKnobCurve->getKnobGui();
                         k.dimension = isKnobCurve->getDimension();
@@ -1564,7 +1564,7 @@ DockablePanel::onEnterInGroupClicked()
     if (!effect) {
         throw std::logic_error("");
     }
-    NodeGroupPtr group = isNodeGroup( effect.get() );
+    NodeGroupPtr group = isNodeGroup(effect);
     assert(group);
     if (!group) {
         throw std::logic_error("");
@@ -1673,7 +1673,7 @@ struct ManageUserParamsDialogPrivate
 
     KnobPagePtr getUserPageKnob() const;
 
-    void initializeKnobs(const KnobsVec& knobs, QTreeWidgetItem* parent, std::list<KnobI*>& markedKnobs);
+    void initializeKnobs(const KnobsVec& knobs, QTreeWidgetItem* parent, std::list<KnobIPtr>& markedKnobs);
 
     void rebuildUserPages();
 };

@@ -357,7 +357,7 @@ KnobGuiChoice::onItemNewSelected()
         }
         KnobHolderPtr holder = _knob.lock()->getHolder();
         assert(holder);
-        EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        EffectInstancePtr effect = isEffectInstance(holder);
         assert(effect);
         if (effect) {
             assert( effect->getNode() );

@@ -94,7 +94,7 @@ void
 KnobGuiFile::createWidget(QHBoxLayout* layout)
 {
     KnobFilePtr knob = _knob.lock();
-    EffectInstancePtr holderIsEffect = boost::dynamic_pointer_cast<EffectInstance>( knob->getHolder() );
+    EffectInstancePtr holderIsEffect = isEffectInstance( knob->getHolder() );
 
     if ( holderIsEffect && holderIsEffect->isReader() && (knob->getName() == kOfxImageEffectFileParamName) ) {
         TimeLinePtr timeline = getGui()->getApp()->getTimeLine();
@@ -252,7 +252,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
     if (!knob) {
         return false;
     }
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( knob->getHolder() );
+    EffectInstancePtr effect = isEffectInstance( knob->getHolder() );
     assert(effect);
     if ( !effect || !effect->getNode()->isActivated() ) {
         return false;

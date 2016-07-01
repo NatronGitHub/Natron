@@ -119,7 +119,7 @@ struct ManageUserParamsDialogPrivate
     {
     }
 
-    void initializeKnobs(const KnobsVec& knobs, QTreeWidgetItem* parent, std::list<KnobI*>& markedKnobs);
+    void initializeKnobs(const KnobsVec& knobs, QTreeWidgetItem* parent, std::list<KnobIPtr>& markedKnobs);
 
     void rebuildUserPages();
 
@@ -146,7 +146,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     : QDialog(parent)
     , _imp( new ManageUserParamsDialogPrivate(panel) )
 {
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( panel->getHolder() );
+    EffectInstancePtr effect = isEffectInstance( panel->getHolder() );
     QString title = QString::fromUtf8("User Parameters");
 
     if (effect) {
@@ -177,7 +177,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
 
     QObject::connect( _imp->tree, SIGNAL(itemSelectionChanged()), this, SLOT(onSelectionChanged()) );
     QObject::connect( _imp->tree, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(onItemDoubleClicked(QTreeWidgetItem*,int)) );
-    std::list<KnobI*> markedKnobs;
+    std::list<KnobIPtr> markedKnobs;
     const KnobsVec& knobs = panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr page = isKnobPage(*it);
@@ -272,7 +272,7 @@ createTextForKnob(const KnobIPtr& knob)
         KnobIPtr listener = listeners.begin()->first.lock();
         if ( listener && (listener->getAliasMaster() == knob) ) {
             text += QString::fromUtf8(" (alias of ");
-            EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( listener->getHolder() );
+            EffectInstancePtr effect = isEffectInstance( listener->getHolder() );
             if (effect) {
                 text += QString::fromUtf8( effect->getScriptName_mt_safe().c_str() );
                 text += QLatin1Char('.');
@@ -288,7 +288,7 @@ createTextForKnob(const KnobIPtr& knob)
 void
 ManageUserParamsDialogPrivate::initializeKnobs(const KnobsVec& knobs,
                                                QTreeWidgetItem* parent,
-                                               std::list<KnobI*>& markedKnobs)
+                                               std::list<KnobIPtr>& markedKnobs)
 {
     for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
         if ( std::find( markedKnobs.begin(), markedKnobs.end(), it2->get() ) != markedKnobs.end() ) {

@@ -247,7 +247,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobGuiPtr& kno
     vlist.push_back(v);
 
     KnobHolderPtr holder = knob->getKnob()->getHolder();
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effect = isEffectInstance(holder);
     QString holderName;
     if (effect) {
         holderName = QString::fromUtf8( effect->getNode()->getLabel().c_str() );
@@ -577,7 +577,7 @@ RestoreDefaultsCommand::redo()
     KnobIPtr first = _knobs.front().lock();
     AppInstancePtr app;
     KnobHolderPtr holder = first->getHolder();
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr isEffect = isEffectInstance(holder);
 
     if (holder) {
         app = holder->getApp();

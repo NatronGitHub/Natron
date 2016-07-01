@@ -144,7 +144,7 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     _imp->firstLineLayout->addWidget(_imp->selectNodeLabel);
 
 
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( from->getKnob()->getHolder() );
+    EffectInstancePtr isEffect = isEffectInstance( from->getKnob()->getHolder() );
     assert(isEffect);
     if (!isEffect) {
         throw std::logic_error("");

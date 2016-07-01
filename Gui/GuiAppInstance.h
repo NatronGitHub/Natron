@@ -286,6 +286,12 @@ private:
     boost::scoped_ptr<GuiAppInstancePrivate> _imp;
 };
 
+inline GuiAppInstancePtr
+isGuiAppInstance(const AppInstancePtr& instance)
+{
+    return boost::dynamic_pointer_cast<GuiAppInstance>(instance);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // GUIAPPINSTANCE_H

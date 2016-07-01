@@ -938,7 +938,7 @@ CurveEditor::findCurve(const KnobGuiPtr& knob,
     KnobHolderPtr holder = knob->getKnob()->getHolder();
 
     assert(holder);
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effect = isEffectInstance(holder);
     assert(effect);
 
     std::list<boost::shared_ptr<CurveGui> > ret;
@@ -1504,7 +1504,7 @@ RotoCurveEditorContext::findElement(const KnobGuiPtr& knob,
         return ret;
     }
 
-    EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effect = isEffectInstance(holder);
     if (!effect) {
         return ret;
     }
@@ -1602,7 +1602,7 @@ CurveEditor::setSelectedCurve(const boost::shared_ptr<CurveGui>& curve)
         assert(knob);
         KnobHolderPtr holder = knob->getHolder();
         if (holder) {
-            EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+            EffectInstancePtr effect = isEffectInstance(holder);
             assert(effect);
             if (effect) {
                 ss << effect->getNode()->getFullyQualifiedName();

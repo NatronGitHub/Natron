@@ -256,7 +256,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         throw std::runtime_error( e.what() );
     }
 
-    boost::shared_ptr<GuiAppInstance> thisShared = boost::dynamic_pointer_cast<GuiAppInstance>( shared_from_this() );
+    boost::shared_ptr<GuiAppInstance> thisShared = isGuiAppInstance( shared_from_this() );
     assert(thisShared);
     _imp->_gui = new Gui(thisShared);
     _imp->_gui->createGui();

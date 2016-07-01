@@ -266,7 +266,7 @@ GuiApplicationManagerPrivate::addKeybindInternal(const QString & grouping,
         _actionShortcuts.insert( std::make_pair(grouping, group) );
     }
 
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
+    GuiAppInstancePtr app = isGuiAppInstance( _publicInterface->getTopLevelInstance() );
     if (app) {
         app->getGui()->addShortcut(kA);
     }
@@ -379,7 +379,7 @@ GuiApplicationManagerPrivate::addMouseShortcut(const std::string & grouping,
         _actionShortcuts.insert( std::make_pair(groupingStr, group) );
     }
 
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
+    GuiAppInstancePtr app = isGuiAppInstance( _publicInterface->getTopLevelInstance() );
     if (app) {
         app->getGui()->addShortcut(mA);
     }
@@ -429,7 +429,7 @@ GuiApplicationManagerPrivate::addStandardKeybind(const std::string & grouping,
         _actionShortcuts.insert( std::make_pair(groupingStr, group) );
     }
 
-    GuiAppInstance* app = dynamic_cast<GuiAppInstance*>( _publicInterface->getTopLevelInstance().get() );
+    GuiAppInstancePtr app = isGuiAppInstance( _publicInterface->getTopLevelInstance() );
     if (app) {
         app->getGui()->addShortcut(kA);
     }

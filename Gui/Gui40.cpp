@@ -129,7 +129,7 @@ Gui::openRecentFile()
         if (openedProject != -1) {
             AppInstancePtr instance = appPTR->getAppInstance(openedProject);
             if (instance) {
-                GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
+                GuiAppInstancePtr guiApp = isGuiAppInstance(instance);
                 assert(guiApp);
                 if (guiApp) {
                     guiApp->getGui()->activateWindow();

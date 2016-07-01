@@ -102,7 +102,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
 
 
     if ( !onIconFilePath.isEmpty() && !QFile::exists(onIconFilePath) ) {
-        EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( knob->getHolder() );
+        EffectInstancePtr isEffect = isEffectInstance( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
             QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );
@@ -113,7 +113,7 @@ KnobGuiButton::createWidget(QHBoxLayout* layout)
         }
     }
     if ( !offIconFilePath.isEmpty() && !QFile::exists(offIconFilePath) ) {
-        EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( knob->getHolder() );
+        EffectInstancePtr isEffect = isEffectInstance( knob->getHolder() );
         if (isEffect) {
             //Prepend the resources path
             QString resourcesPath = QString::fromUtf8( isEffect->getNode()->getPluginResourcesPath().c_str() );

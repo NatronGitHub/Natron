@@ -65,7 +65,7 @@ void
 moveReader(const NodePtr &reader,
            double dt)
 {
-    KnobIntBase *startingTimeKnob = dynamic_cast<KnobIntBase *>( reader->getKnobByName(kReaderParamNameStartingTime).get() );
+    KnobIntBasePtr startingTimeKnob = isKnobIntBase( reader->getKnobByName(kReaderParamNameStartingTime) );
     assert(startingTimeKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = startingTimeKnob->setValue(startingTimeKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -75,7 +75,7 @@ void
 moveTimeOffset(const NodePtr& node,
                double dt)
 {
-    KnobIntBasePtr timeOffsetKnob = isKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset).get() );
+    KnobIntBasePtr timeOffsetKnob = isKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset) );
     assert(timeOffsetKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -85,7 +85,7 @@ void
 moveFrameRange(const NodePtr& node,
                double dt)
 {
-    KnobIntBasePtr frameRangeKnob = isKnobIntBase( node->getKnobByName(kFrameRangeParamNameFrameRange).get() );
+    KnobIntBasePtr frameRangeKnob = isKnobIntBase( node->getKnobByName(kFrameRangeParamNameFrameRange) );
     assert(frameRangeKnob);
     frameRangeKnob->setValues(frameRangeKnob->getValue() + dt, frameRangeKnob->getValue(1)  + dt, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
@@ -190,7 +190,7 @@ DSMoveKeysAndNodesCommand::DSMoveKeysAndNodesCommand(const DSKeyPtrList &keys,
     for (DSKeyPtrList::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobHolderPtr holder = (*it)->getContext()->getInternalKnob()->getHolder();
         assert(holder);
-        EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+        EffectInstancePtr isEffect = isEffectInstance(holder);
         if (isEffect) {
             nodesSet.insert( isEffect->getNode() );
         }
@@ -530,7 +530,7 @@ DSLeftTrimReaderCommand::trimLeft(double firstFrame)
         return;
     }
     KnobHolderPtr holder = firstFrameKnob->getHolder();
-    EffectInstancePtr effectInstance = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effectInstance = isEffectInstance(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -617,7 +617,7 @@ DSRightTrimReaderCommand::trimRight(double lastFrame)
         return;
     }
     KnobHolderPtr holder = lastFrameKnob->getHolder();
-    EffectInstancePtr effectInstance = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effectInstance = isEffectInstance(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;
@@ -752,7 +752,7 @@ DSSlipReaderCommand::slipReader(double dt)
     QObject::disconnect( startingTimeKnob->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)),
                          view, SLOT(onRangeNodeChanged(ViewSpec,int,int)) );
     KnobHolderPtr holder = lastFrameKnob->getHolder();
-    EffectInstancePtr effectInstance = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr effectInstance = isEffectInstance(holder);
     assert(effectInstance);
     if (!effectInstance) {
         return;

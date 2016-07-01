@@ -140,7 +140,7 @@ ProjectGuiSerialization::initialize(const ProjectGui* projectGui)
             KnobHolderPtr holder = (*it)->getHolder();
             assert(holder);
 
-            EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+            EffectInstancePtr isEffect = isEffectInstance(holder);
             Project* isProject = dynamic_cast<Project*>(holder);
 
             if (isProject) {

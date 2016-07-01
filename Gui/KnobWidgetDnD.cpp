@@ -218,7 +218,7 @@ KnobWidgetDnD::startDrag()
 
 
     QString knobLine;
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( internalKnob->getHolder() );
+    EffectInstancePtr isEffect = isEffectInstance( internalKnob->getHolder() );
     if (isEffect) {
         knobLine.append( QString::fromUtf8( isEffect->getNode()->getFullyQualifiedName().c_str() ) );
         knobLine += QLatin1Char('.');
@@ -377,7 +377,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
 
             Qt::KeyboardModifiers mods = QApplication::keyboardModifiers();
             if ( ( mods & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier) ) == (Qt::ControlModifier | Qt::ShiftModifier) ) {
-                EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( source->getHolder() );
+                EffectInstancePtr effect = isEffectInstance( source->getHolder() );
                 if (!effect) {
                     return false;
                 }

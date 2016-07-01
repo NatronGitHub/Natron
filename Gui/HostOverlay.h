@@ -56,7 +56,7 @@ public:
 
     virtual ~DefaultInteractI();
 
-    virtual bool isInteractForKnob(const KnobI* knob) const = 0;
+    virtual bool isInteractForKnob(const KnobIConstPtr& knob) const = 0;
     virtual void draw(double time,
                       const RenderScale& renderScale,
                       ViewIdx view,

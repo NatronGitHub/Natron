@@ -1036,7 +1036,7 @@ Gui::openProjectInternal(const std::string & absoluteFileName,
     if (openedProject != -1) {
         AppInstancePtr instance = appPTR->getAppInstance(openedProject);
         if (instance) {
-            GuiAppInstance* guiApp = dynamic_cast<GuiAppInstance*>( instance.get() );
+            GuiAppInstancePtr guiApp = isGuiAppInstance(instance);
             if (guiApp) {
                 guiApp->getGui()->activateWindow();
 

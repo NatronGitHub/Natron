@@ -447,7 +447,7 @@ MoveKeysCommand::move(double dt,
                     rotoToEvaluate.push_back(roto);
                 }
             } else {
-                KnobI* k = isKnobCurve->getInternalKnob().get();
+                KnobIPtr k = isKnobCurve->getInternalKnob();
                 if ( k->getHolder() ) {
                     if ( std::find( differentKnobs.begin(), differentKnobs.end(), k->getHolder() ) == differentKnobs.end() ) {
                         differentKnobs.push_back( k->getHolder() );
@@ -545,8 +545,8 @@ SetKeysInterpolationCommand::SetKeysInterpolationCommand(CurveWidget* widget,
 void
 SetKeysInterpolationCommand::setNewInterpolation(bool undo)
 {
-    std::list<KnobI*> differentKnobs;
-    std::list<RotoContextPtr > rotoToEvaluate;
+    std::list<KnobIPtr> differentKnobs;
+    std::list<RotoContextPtr> rotoToEvaluate;
 
     for (std::list< KeyInterpolationChange >::iterator it = _keys.begin(); it != _keys.end(); ++it) {
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->key->curve.get() );
@@ -558,7 +558,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
                     rotoToEvaluate.push_back(roto);
                 }
             } else {
-                KnobI* k = isKnobCurve->getInternalKnob().get();
+                KnobIPtr k = isKnobCurve->getInternalKnob();
                 if ( std::find(differentKnobs.begin(), differentKnobs.end(), k) == differentKnobs.end() ) {
                     differentKnobs.push_back(k);
                     k->beginChanges();
@@ -601,10 +601,10 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
         }
     }
 
-    for (std::list<KnobI*>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
+    for (std::list<KnobIPtr>::iterator it = differentKnobs.begin(); it != differentKnobs.end(); ++it) {
         (*it)->endChanges();
     }
-    for (std::list<RotoContextPtr >::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
+    for (std::list<RotoContextPtr>::iterator it = rotoToEvaluate.begin(); it != rotoToEvaluate.end(); ++it) {
         (*it)->evaluateChange();
     }
 
@@ -932,7 +932,7 @@ TransformKeysCommand::transformKeys(const Transform::Matrix3x3& matrix)
                     rotoToEvaluate.push_back(roto);
                 }
             } else {
-                KnobI* k = isKnobCurve->getInternalKnob().get();
+                KnobIPtr k = isKnobCurve->getInternalKnob();
                 if ( k->getHolder() ) {
                     if ( std::find( differentKnobs.begin(), differentKnobs.end(), k->getHolder() ) == differentKnobs.end() ) {
                         differentKnobs.push_back( k->getHolder() );

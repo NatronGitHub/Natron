@@ -42,7 +42,7 @@ void
 KnobGui::onCreateAliasOnGroupActionTriggered()
 {
     KnobHolderPtr holder = getKnob()->getHolder();
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr isEffect = isEffectInstance(holder);
 
     assert(isEffect);
     if (!isEffect) {

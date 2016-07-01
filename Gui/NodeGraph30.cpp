@@ -233,7 +233,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
             if (!listener) {
                 continue;
             }
-            EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( listener->getHolder() );
+            EffectInstancePtr isEffect = isEffectInstance( listener->getHolder() );
             if (!isEffect) {
                 continue;
             }
@@ -303,7 +303,7 @@ NodeGraph::deleteSelection()
                     if (!listener) {
                         continue;
                     }
-                    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( listener->getHolder() );
+                    EffectInstancePtr isEffect = isEffectInstance( listener->getHolder() );
 
                     if (!isEffect) {
                         continue;

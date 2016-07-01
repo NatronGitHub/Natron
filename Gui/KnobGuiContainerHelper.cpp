@@ -638,7 +638,7 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr & knob,
                 assert(page);
                 page->gridLayout->addWidget(groupAsTab, page->currentRow, 0, 1, 2);
             }
-            groupAsTab->refreshTabSecretNess( isGroup.get() );
+            groupAsTab->refreshTabSecretNess(isGroup);
         }
     }
     // If widgets for the KnobGui have already been created, don't do the following

@@ -2329,7 +2329,7 @@ DopeSheetViewPrivate::moveCurrentFrameIndicator(double dt)
     double toTime = timeline->currentFrame() + dt;
 
     gui->setDraftRenderEnabled(true);
-    timeline->seekFrame(SequenceTime(toTime), false, 0,
+    timeline->seekFrame(SequenceTime(toTime), false, OutputEffectInstancePtr(),
                         eTimelineChangeReasonDopeSheetEditorSeek);
 }
 
@@ -3083,7 +3083,7 @@ DopeSheetView::onRangeNodeChanged(ViewSpec /*view*/,
         KnobSignalSlotHandler *knobHandler = qobject_cast<KnobSignalSlotHandler *>(signalSender);
         if (knobHandler) {
             KnobHolderPtr holder = knobHandler->getKnob()->getHolder();
-            EffectInstancePtr effectInstance = boost::dynamic_pointer_cast<EffectInstance>(holder);
+            EffectInstancePtr effectInstance = isEffectInstance(holder);
             assert(effectInstance);
             if (!effectInstance) {
                 return;

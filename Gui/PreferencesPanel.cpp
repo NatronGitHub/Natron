@@ -265,7 +265,8 @@ public:
     Button* prefsHelp;
     Button* cancelB;
     Button* okB;
-    std::vector<KnobI*> changedKnobs;
+#pragma message WARN("KnobIPtr or KnobIWPtr?")
+    std::vector<KnobIPtr> changedKnobs;
     bool pluginSettingsChanged;
     bool closeIsOK;
     Label* pluginFilterLabel;
@@ -755,7 +756,7 @@ PreferencesPanel::createGui()
     QObject::connect( _imp->prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
     QObject::connect( _imp->buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
     QObject::connect( _imp->buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
-    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobI*)), this, SLOT(onSettingChanged(KnobI*)) );
+    QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobIPtr)), this, SLOT(onSettingChanged(KnobIPtr)) );
 
 
     // Create plug-ins view

@@ -441,7 +441,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     assert( !knob || knob->isUserKnob() );
 
     {
-        EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( panel->getHolder() );
+        EffectInstancePtr effect = isEffectInstance( panel->getHolder() );
         QString title = QString::fromUtf8("Add Parameter");
         if (!knob) {
             // Add...
@@ -1582,7 +1582,7 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
 
     KnobHolderPtr holder = panel->getHolder();
     assert(holder);
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr isEffect = isEffectInstance(holder);
     assert(isEffect);
     if (isEffect) {
         isEffect->getNode()->declarePythonFields();
@@ -1676,7 +1676,7 @@ AddKnobDialog::onOkClicked()
         KnobHolderPtr holder = _imp->panel->getHolder();
         assert(holder);
 
-        NodeGroupPtr isHolderGroup = isNodeGroup(holder);
+        NodeGroupPtr isHolderGroup = isNodeGroup( isEffectInstance(holder) );
         if (isHolderGroup) {
             //Check if the group has a node with the exact same script name as the param script name, in which case we error
             //otherwise the attribute on the python object would be overwritten
@@ -1714,7 +1714,7 @@ AddKnobDialog::onOkClicked()
     } else {
         oldKnobIsPage = isKnobPage(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
-        effect = boost::dynamic_pointer_cast<EffectInstance>( _imp->knob->getHolder() );
+        effect = isEffectInstance( _imp->knob->getHolder() );
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob);

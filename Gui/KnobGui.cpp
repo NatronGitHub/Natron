@@ -686,7 +686,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
 
     ///find-out to which node that master knob belongs to
     KnobHolderPtr holder = knob->getHolder();
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>(holder);
+    EffectInstancePtr isEffect = isEffectInstance(holder);
     NodeCollectionPtr collec;
     NodeGroupPtr isCollecGroup = 0;
     if (isEffect) {
@@ -781,7 +781,7 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
         }
     }
 
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( knob->getHolder() );
+    EffectInstancePtr isEffect = isEffectInstance( knob->getHolder() );
     if (!isEffect) {
         return KnobIPtr();
     }

@@ -200,13 +200,6 @@ namespace QtMac {
 bool isHighDPIInternal(const QWidget* w);
 }
 
-NATRON_PYTHON_NAMESPACE_ENTER;
-class GuiApp;
-class PyModalDialog;
-class PyPanel;
-class PyTabWidget;
-NATRON_PYTHON_NAMESPACE_EXIT;
-
 typedef boost::shared_ptr<GuiAppInstance> GuiAppInstancePtr;
 typedef boost::shared_ptr<KnobGui> KnobGuiPtr;
 typedef boost::shared_ptr<MultiInstancePanel> MultiInstancePanelPtr;
@@ -218,6 +211,14 @@ typedef boost::weak_ptr<KnobGui> KnobGuiWPtr;
 typedef boost::weak_ptr<NodeGui> NodeGuiWPtr;
 typedef boost::weak_ptr<NodeViewerContext> NodeViewerContextWPtr;
 typedef std::list<NodeGuiPtr> NodesGuiList;
+
+NATRON_PYTHON_NAMESPACE_ENTER;
+class GuiApp;
+class PyModalDialog;
+class PyPanel;
+class PyTabWidget;
+NATRON_PYTHON_NAMESPACE_EXIT;
+
 
 NATRON_NAMESPACE_EXIT;
 

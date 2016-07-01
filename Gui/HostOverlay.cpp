@@ -245,9 +245,9 @@ public:
     {
     }
 
-    virtual bool isInteractForKnob(const KnobI* knob) const OVERRIDE FINAL
+    virtual bool isInteractForKnob(const KnobIConstPtr& knob) const OVERRIDE FINAL
     {
-        return _param.lock().get() == knob;
+        return _param.lock() == knob;
     }
 
     double pointSize() const
@@ -421,18 +421,18 @@ public:
     {
     }
 
-    virtual bool isInteractForKnob(const KnobI* knob) const OVERRIDE FINAL
+    virtual bool isInteractForKnob(const KnobIConstPtr& knob) const OVERRIDE FINAL
     {
-        return knob == _translate.lock().get() ||
-               knob == _scale.lock().get() ||
-               knob == _scaleUniform.lock().get() ||
-               knob == _rotate.lock().get() ||
-               knob == _center.lock().get() ||
-               knob == _skewX.lock().get() ||
-               knob == _skewY.lock().get() ||
-               knob == _skewOrder.lock().get() ||
-               knob == _invert.lock().get() ||
-               knob == _interactive.lock().get();
+        return knob == _translate.lock() ||
+               knob == _scale.lock() ||
+               knob == _scaleUniform.lock() ||
+               knob == _rotate.lock() ||
+               knob == _center.lock() ||
+               knob == _skewX.lock() ||
+               knob == _skewY.lock() ||
+               knob == _skewOrder.lock() ||
+               knob == _invert.lock() ||
+               knob == _interactive.lock();
     }
 
     static double circleRadiusBase() { return 30.; }
@@ -652,24 +652,24 @@ public:
     {
     }
 
-    virtual bool isInteractForKnob(const KnobI* knob) const OVERRIDE FINAL
+    virtual bool isInteractForKnob(const KnobIConstPtr& knob) const OVERRIDE FINAL
     {
         for (int i = 0; i < 4; ++i) {
-            if (_from[i].lock().get() == knob) {
+            if (_from[i].lock() == knob) {
                 return true;
-            } else if (_to[i].lock().get() == knob) {
+            } else if (_to[i].lock() == knob) {
                 return true;
-            } else if (_enable[i].lock().get() == knob) {
+            } else if (_enable[i].lock() == knob) {
                 return true;
             }
         }
-        if (_invert.lock().get() == knob) {
+        if (_invert.lock() == knob) {
             return true;
         }
-        if (_overlayPoints.lock().get() == knob) {
+        if (_overlayPoints.lock() == knob) {
             return true;
         }
-        if (_interactive.lock().get() == knob) {
+        if (_interactive.lock() == knob) {
             return true;
         }
 
@@ -878,7 +878,7 @@ HostOverlay::addInteract(const boost::shared_ptr<HostOverlayKnobs>& knobs)
         return false;
     }
     for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {
-        if ( (*it)->isInteractForKnob( firstKnob.get() ) ) {
+        if ( (*it)->isInteractForKnob(firstKnob) ) {
             return false;
         }
     }

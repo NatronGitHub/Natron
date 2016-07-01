@@ -91,7 +91,7 @@ DialogParamHolder::setParamChangedCallback(const QString& callback)
 }
 
 bool
-DialogParamHolder::onKnobValueChanged(KnobI* k,
+DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
                                       ValueChangedReasonEnum reason,
                                       double time,
                                       ViewSpec view,
@@ -99,7 +99,7 @@ DialogParamHolder::onKnobValueChanged(KnobI* k,
 {
     std::string callback;
     {
-        QMutexLocker k(&_imp->paramChangedCBMutex);
+        QMutexLocker l(&_imp->paramChangedCBMutex);
         callback = _imp->paramChangedCB;
     }
 

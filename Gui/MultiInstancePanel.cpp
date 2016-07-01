@@ -1669,7 +1669,7 @@ MultiInstancePanel::onButtonTriggered(KnobButtonPtr button)
 }
 
 bool
-MultiInstancePanel::onKnobValueChanged(KnobI* k,
+MultiInstancePanel::onKnobValueChanged(const KnobIPtr& k,
                                        ValueChangedReasonEnum reason,
                                        double time,
                                        ViewSpec view,
@@ -2390,7 +2390,7 @@ TrackerPanelPrivateV1::createCornerPinFromSelection(const std::list<Node*> & sel
         if (!linked) {
             toPoints[i]->cloneAndUpdateGui( centers[i].get() );
         } else {
-            EffectInstancePtr effect = boost::dynamic_pointer_cast<EffectInstance>( centers[i]->getHolder() );
+            EffectInstancePtr effect = isEffectInstance( centers[i]->getHolder() );
             assert(effect);
             if (effect) {
                 std::stringstream ss;

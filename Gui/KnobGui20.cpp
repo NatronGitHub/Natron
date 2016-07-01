@@ -283,7 +283,7 @@ KnobGui::linkTo(int dimension)
     KnobIPtr thisKnob = getKnob();
 
     assert(thisKnob);
-    EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( thisKnob->getHolder() );
+    EffectInstancePtr isEffect = isEffectInstance( thisKnob->getHolder() );
     if (!isEffect) {
         return;
     }
@@ -325,7 +325,7 @@ KnobGui::linkTo(int dimension)
                 }
             }
 
-            EffectInstancePtr otherEffect = boost::dynamic_pointer_cast<EffectInstance>( otherKnob->getHolder() );
+            EffectInstancePtr otherEffect = isEffectInstance( otherKnob->getHolder() );
             if (!otherEffect) {
                 return;
             }

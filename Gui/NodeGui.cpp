@@ -2328,9 +2328,9 @@ NodeGui::onAllKnobsSlaved(bool b)
 
 static QString
 makeLinkString(Node* masterNode,
-               KnobI* master,
+               const KnobIPtr& master,
                Node* slaveNode,
-               KnobI* slave)
+               const KnobIPtr& slave)
 {
     QString tt = QString::fromUtf8("<p>");
 
