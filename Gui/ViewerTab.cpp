@@ -918,23 +918,29 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     _imp->playerLayout->addStretch();
 
     _imp->playerLayout->addWidget(_imp->firstFrame_Button);
-    _imp->playerLayout->addWidget(_imp->previousFrame_Button);
     _imp->playerLayout->addWidget(_imp->play_Backward_Button);
     _imp->playerLayout->addWidget(_imp->currentFrameBox);
     _imp->playerLayout->addWidget(_imp->play_Forward_Button);
-    _imp->playerLayout->addWidget(_imp->nextFrame_Button);
     _imp->playerLayout->addWidget(_imp->lastFrame_Button);
 
-    _imp->playerLayout->addStretch();
+    _imp->playerLayout->addSpacing( TO_DPIX(10) );
+
+    _imp->playerLayout->addWidget(_imp->previousFrame_Button);
+    _imp->playerLayout->addWidget(_imp->nextFrame_Button);
+
+    _imp->playerLayout->addSpacing( TO_DPIX(10) );
 
     _imp->playerLayout->addWidget(_imp->previousKeyFrame_Button);
     _imp->playerLayout->addWidget(_imp->nextKeyFrame_Button);
     _imp->playerLayout->addSpacing( TO_DPIX(10) );
+
     _imp->playerLayout->addWidget(_imp->previousIncrement_Button);
     _imp->playerLayout->addWidget(_imp->incrementSpinBox);
     _imp->playerLayout->addWidget(_imp->nextIncrement_Button);
     _imp->playerLayout->addSpacing( TO_DPIX(10) );
 
+
+    _imp->playerLayout->addStretch();
     _imp->playerLayout->addStretch();
 
     _imp->playerLayout->addWidget(_imp->playBackOutputSpinbox);
