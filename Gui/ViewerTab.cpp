@@ -69,7 +69,7 @@ makeFullyQualifiedLabel(Node* node,
                         std::string* ret)
 {
     NodeCollectionPtr parent = node->getGroup();
-    NodeGroupPtr isParentGrp = boost::dynamic_pointer_cast<NodeGroup>(parent);
+    NodeGroupPtr isParentGrp = isNodeGroup(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -969,7 +969,7 @@ ViewerTab::ViewerTab(const std::list<NodeGuiPtr> & existingNodesContext,
     QObject::connect( _imp->nextKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToNextKeyframe()) );
     QObject::connect( _imp->previousKeyFrame_Button, SIGNAL(clicked(bool)), getGui()->getApp().get(), SLOT(goToPreviousKeyframe()) );
     NodePtr wrapperNode = _imp->viewerNode->getNode();
-    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
+    RenderEnginePtr engine = _imp->viewerNode->getRenderEngine();
     QObject::connect( _imp->viewerNode, SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
                       this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
     QObject::connect( wrapperNode.get(), SIGNAL(inputChanged(int)), this, SLOT(onInputChanged(int)) );

@@ -80,6 +80,12 @@ public:
     }
 };
 
+inline GroupOutputPtr
+isGroupOutput(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<GroupOutput>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_GroupOutput_h

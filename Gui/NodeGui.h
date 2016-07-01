@@ -384,7 +384,7 @@ public:
                                            ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) OVERRIDE FINAL;
-    virtual bool hasHostOverlayForParam(const KnobI* param) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void removePositionHostOverlay(const KnobIPtr& knob) OVERRIDE FINAL;
     virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
                                        const std::string& pluginLabel,

@@ -126,7 +126,7 @@ TrackerNode::getPluginShortcuts(std::list<PluginActionShortcut>* shortcuts)
 void
 TrackerNode::initializeKnobs()
 {
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+    TrackerContextPtr context = getNode()->getTrackerContext();
     KnobPagePtr trackingPage = context->getTrackingPageKnob();
     KnobButtonPtr addMarker = AppManager::createKnob<KnobButton>( shared_from_this(), tr(kTrackerUIParamAddTrackLabel) );
 
@@ -558,7 +558,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
                          double time,
                          bool originatedFromMainThread)
 {
-    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
     if (!ctx) {
         return false;
@@ -571,7 +571,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         int first = _imp->ui->trackRangeDialogFirstFrame.lock()->getValue();
         int last = _imp->ui->trackRangeDialogLastFrame.lock()->getValue();
         int step = _imp->ui->trackRangeDialogStep.lock()->getValue();
-        boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+        TrackerContextPtr ctx = getNode()->getTrackerContext();
         if ( ctx->isCurrentlyTracking() ) {
             ctx->abortTracking();
         }
@@ -598,7 +598,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         getNode()->getTrackerContext()->selectAll(TrackerContext::eTrackSelectionInternal);
     } else if ( k == _imp->ui->removeTracksMenuAction.lock().get() ) {
         std::list<TrackMarkerPtr > markers;
-        boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+        TrackerContextPtr context = getNode()->getTrackerContext();
         context->getSelectedMarkers(&markers);
         if ( !markers.empty() ) {
             pushUndoCommand( new RemoveTracksCommand( markers, context ) );
@@ -668,7 +668,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
 void
 TrackerNode::onKnobsLoaded()
 {
-    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
     if (!ctx) {
         return;
@@ -689,7 +689,7 @@ TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
 void
 TrackerNode::onInputChanged(int inputNb)
 {
-    boost::shared_ptr<TrackerContext> ctx = getNode()->getTrackerContext();
+    TrackerContextPtr ctx = getNode()->getTrackerContext();
 
     ctx->inputChanged(inputNb);
 
@@ -737,7 +737,7 @@ TrackerNode::drawOverlay(double time,
 
         std::vector<TrackMarkerPtr > allMarkers;
         std::list<TrackMarkerPtr > selectedMarkers;
-        boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+        TrackerContextPtr context = getNode()->getTrackerContext();
         context->getSelectedMarkers(&selectedMarkers);
         context->getAllMarkers(&allMarkers);
 
@@ -1296,7 +1296,7 @@ TrackerNode::onOverlayPenDown(double time,
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+    TrackerContextPtr context = getNode()->getTrackerContext();
     /*if ( context->onOverlayPenDownInternalNodes( time, renderScale, view, viewportPos, pos, pressure, timestamp, pen, overlay ) ) {
         return true;
        }*/
@@ -1538,7 +1538,7 @@ TrackerNode::onOverlayPenMotion(double time,
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
     bool didSomething = false;
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+    TrackerContextPtr context = getNode()->getTrackerContext();
     Point delta;
     delta.x = pos.x() - _imp->ui->lastMousePos.x();
     delta.y = pos.y() - _imp->ui->lastMousePos.y();
@@ -2429,7 +2429,7 @@ TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
 
     std::vector<TrackMarkerPtr > allMarkers;
     std::list<TrackMarkerPtr > selectedMarkers;
-    boost::shared_ptr<TrackerContext> context = getNode()->getTrackerContext();
+    TrackerContextPtr context = getNode()->getTrackerContext();
     context->getAllMarkers(&allMarkers);
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {
         if ( !allMarkers[i]->isEnabled( allMarkers[i]->getCurrentTime() ) ) {

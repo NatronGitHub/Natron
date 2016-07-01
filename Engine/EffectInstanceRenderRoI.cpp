@@ -245,7 +245,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     assert(tls);
     OSGLContextPtr glContext;
     AbortableRenderInfoPtr abortInfo;
-    boost::shared_ptr<ParallelRenderArgs>  frameArgs;
+    ParallelRenderArgsPtr  frameArgs;
     if ( tls->frameArgs.empty() ) {
         qDebug() << QThread::currentThread() << "[BUG]:" << getScriptName_mt_safe().c_str() <<  "Thread-storage for the render of the frame was not set.";
 
@@ -356,7 +356,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
 
     ///Determine needed planes
-    boost::shared_ptr<ComponentsNeededMap> neededComps(new ComponentsNeededMap);
+    ComponentsNeededMapPtr neededComps(new ComponentsNeededMap);
     ComponentsNeededMap::iterator foundOutputNeededComps;
     std::bitset<4> processChannels;
 
@@ -731,7 +731,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// End Compute RoI /////////////////////////////////////////////////////////////////////////
     const PluginOpenGLRenderSupport openGLSupport = frameArgs->currentOpenglSupport;
     StorageModeEnum storage = eStorageModeRAM;
-    boost::shared_ptr<OSGLContextAttacher> glContextLocker;
+    OSGLContextAttacherPtr glContextLocker;
 
     if ( dynamic_cast<DiskCacheNode*>(this) ) {
         storage = eStorageModeDisk;
@@ -850,7 +850,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
      */
     ImageBitDepthEnum outputDepth = getBitDepth(-1);
     ImageComponents outputClipPrefComps = getComponents(-1);
-    boost::shared_ptr<ImagePlanesToRender> planesToRender(new ImagePlanesToRender);
+    ImagePlanesToRenderPtr planesToRender(new ImagePlanesToRender);
     planesToRender->useOpenGL = storage == eStorageModeGLTex;
     boost::shared_ptr<FramesNeededMap> framesNeeded(new FramesNeededMap);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1142,7 +1142,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
                     continue;
                 }
                 bool isProjectFormat;
-                boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = input->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr inputFrameArgs = input->getParallelRenderArgsTLS();
                 U64 inputHash = (inputFrameArgs) ? inputFrameArgs->nodeHash : input->getHash();
                 StatusEnum stat = input->getRegionOfDefinition_public(inputHash, args.time, args.scale, args.view, &inputRod, &isProjectFormat);
                 if ( (stat != eStatusOK) && !inputRod.isNull() ) {
@@ -1864,13 +1864,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 EffectInstance::RenderRoIStatusEnum
 EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
                                   double time,
-                                  const boost::shared_ptr<ParallelRenderArgs> & frameArgs,
+                                  const ParallelRenderArgsPtr & frameArgs,
                                   RenderSafetyEnum safety,
                                   unsigned int mipMapLevel,
                                   ViewIdx view,
                                   const RectD & rod, //!< effect rod in canonical coords
                                   const double par,
-                                  const boost::shared_ptr<ImagePlanesToRender> & planesToRender,
+                                  const ImagePlanesToRenderPtr & planesToRender,
                                   bool isSequentialRender,
                                   bool isRenderMadeInResponseToUserInteraction,
                                   U64 nodeHash,
@@ -1878,7 +1878,7 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
                                   bool byPassCache,
                                   ImageBitDepthEnum outputClipPrefDepth,
                                   const ImageComponents& outputClipPrefsComps,
-                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                  const ComponentsNeededMapPtr & compsNeeded,
                                   const std::bitset<4> processChannels)
 {
     EffectInstance::RenderRoIStatusEnum retCode;
@@ -1944,9 +1944,9 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
     }
 
 
-    boost::shared_ptr<std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> > > tlsCopy;
+    boost::shared_ptr<std::map<NodePtr, ParallelRenderArgsPtr > > tlsCopy;
     if (safety == eRenderSafetyFullySafeFrame) {
-        tlsCopy.reset(new std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >);
+        tlsCopy.reset(new std::map<NodePtr, ParallelRenderArgsPtr >);
         /*
          * Since we're about to start new threads potentially, copy all the thread local storage on all nodes (any node may be involved in
          * expressions, and we need to retrieve the exact local time of render).

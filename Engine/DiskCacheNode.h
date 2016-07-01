@@ -155,6 +155,12 @@ private:
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };
 
+inline DiskCacheNodePtr
+isDiskCacheNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<DiskCacheNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // DISKCACHENODE_H

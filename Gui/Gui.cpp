@@ -348,7 +348,7 @@ Gui::createViewerGui(const NodePtr& viewer)
     if (!collection) {
         return;
     }
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+    NodeGroupPtr isGrp = isNodeGroup(collection);
     if (isGrp) {
         NodeGraphI* graph_i = isGrp->getNodeGraph();
         assert(graph_i);

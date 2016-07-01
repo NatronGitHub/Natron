@@ -185,7 +185,7 @@ NodeViewerContext::createGui()
     const KnobsVec& allKnobs = node->getNode()->getKnobs();
     KnobPagePtr toolbarPage = 0;
     for (KnobsVec::const_iterator it = allKnobs.begin(); it != allKnobs.end(); ++it) {
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+        KnobPagePtr isPage = isKnobPage(*it);
         if ( isPage && isPage->getIsToolBar() ) {
             toolbarPage = isPage;
             break;
@@ -198,14 +198,14 @@ NodeViewerContext::createGui()
             _imp->toolbar->setOrientation(Qt::Vertical);
 
             for (std::size_t i = 0; i < pageChildren.size(); ++i) {
-                KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>( pageChildren[i].get() );
+                KnobGroupPtr isGroup = isKnobGroup( pageChildren[i].get() );
                 if (isGroup) {
                     QObject::connect( isGroup->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolGroupValueChanged(ViewSpec,int,int)) );
                     KnobsVec toolButtonChildren = isGroup->getChildren();
                     ViewerToolButton* createdToolButton = 0;
                     QString currentActionForGroup;
                     for (std::size_t j = 0; j < toolButtonChildren.size(); ++j) {
-                        KnobButton* isButton = boost::dynamic_pointer_cast<KnobButton>( toolButtonChildren[j].get() );
+                        KnobButton* isButton = isKnobButton( toolButtonChildren[j].get() );
                         if (isButton) {
                             QObject::connect( isButton->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SLOT(onToolActionValueChanged(ViewSpec,int,int)) );
                             const std::string& roleShortcutID = isGroup->getName();
@@ -659,12 +659,12 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
         assert(newToolKnob && newGroupKnob);
         if (newToolKnob && newGroupKnob) {
 
-            KnobButton* oldIsButton = oldToolKnob ? boost::dynamic_pointer_cast<KnobButton>( oldToolKnob.get() ) : 0;
-            KnobButton* newIsButton = boost::dynamic_pointer_cast<KnobButton>( newToolKnob.get() );
+            KnobButton* oldIsButton = oldToolKnob ? isKnobButton( oldToolKnob.get() ) : 0;
+            KnobButton* newIsButton = isKnobButton( newToolKnob.get() );
             assert(newIsButton);
 
-            KnobGroupPtr oldIsGroup = oldGroupKnob ? boost::dynamic_pointer_cast<KnobGroup>( oldGroupKnob.get() ) : 0;
-            KnobGroupPtr newIsGroup = boost::dynamic_pointer_cast<KnobGroup>( newGroupKnob.get() );
+            KnobGroupPtr oldIsGroup = oldGroupKnob ? isKnobGroup( oldGroupKnob.get() ) : 0;
+            KnobGroupPtr newIsGroup = isKnobGroup( newGroupKnob.get() );
             assert(newIsGroup);
             if (newIsButton && newIsGroup) {
                 EffectInstancePtr effect = n->getNode()->getEffectInstance();

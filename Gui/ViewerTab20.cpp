@@ -685,8 +685,8 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
             }
             if ( isKeybind(pluginShortcutGroup, (*it)->getName(), mods, qKey) ) {
                 // This only works for groups and buttons, as defined in the spec
-                KnobButton* isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
-                KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(*it);
+                KnobButton* isButton = isKnobButton(*it);
+                KnobGroupPtr isGrp = isKnobGroup(*it);
                 bool ret = false;
 
                 if (isButton) {

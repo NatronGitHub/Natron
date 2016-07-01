@@ -180,7 +180,7 @@ ManageUserParamsDialog::ManageUserParamsDialog(DockablePanel* panel,
     std::list<KnobI*> markedKnobs;
     const KnobsVec& knobs = panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobPagePtr page = boost::dynamic_pointer_cast<KnobPage>(*it);
+        KnobPagePtr page = isKnobPage(*it);
         if (page) {
             TreeItem pageItem;
             /* if (page->getName() == NATRON_USER_MANAGED_KNOBS_PAGE) {
@@ -305,7 +305,7 @@ ManageUserParamsDialogPrivate::initializeKnobs(const KnobsVec& knobs,
         i.item->setExpanded(true);
         items.push_back(i);
 
-        KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(*it2);
+        KnobGroupPtr isGrp = isKnobGroup(*it2);
         if (isGrp) {
             KnobsVec children = isGrp->getChildren();
             initializeKnobs(children, i.item, markedKnobs);
@@ -375,11 +375,11 @@ ManageUserParamsDialog::onAddClicked()
     if ( !selection.isEmpty() ) {
         std::list<TreeItem>::const_iterator item = _imp->findItemForTreeItem( selection.front() );
         if ( item != _imp->items.end() ) {
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>( item->knob.get() );
+            KnobPagePtr isPage = isKnobPage( item->knob.get() );
             if (isPage) {
                 selectedPageName = isPage->getName();
             } else {
-                KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>( item->knob.get() );
+                KnobGroupPtr isGrp = isKnobGroup( item->knob.get() );
                 if (isGrp) {
                     selectedGroupName = isGrp->getName();
                     KnobPagePtr topLevelPage = isGrp->getTopLevelPage();
@@ -444,7 +444,7 @@ ManageUserParamsDialogPrivate::createItemForKnob(const KnobIPtr& knob,
         }
     }
 
-    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+    KnobPagePtr isPage = isKnobPage(knob);
     if (!parent && !isPage) {
         //Default to user page
         for (std::list<TreeItem>::iterator it = items.begin(); it != items.end(); ++it) {
@@ -536,7 +536,7 @@ ManageUserParamsDialog::onEditClickedInternal(const QList<QTreeWidgetItem*> &sel
                         QTreeWidgetItem* parent = it->item->parent();
                         KnobIPtr knob = dialog.getKnob();
                         KnobIPtr newParentKnob = knob->getParentKnob();
-                        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>( it->knob.get() );
+                        KnobPagePtr isPage = isKnobPage( it->knob.get() );
 
                         if (parent) {
                             if (oldParentKnob != newParentKnob) {
@@ -653,7 +653,7 @@ ManageUserParamsDialog::onUpClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            KnobPagePtr isPage = isKnobPage(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }
@@ -731,7 +731,7 @@ ManageUserParamsDialog::onDownClicked()
             QItemSelectionModel* model = _imp->tree->selectionModel();
             model->select(_imp->tree->indexFromItemPublic(item), QItemSelectionModel::ClearAndSelect);
 
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+            KnobPagePtr isPage = isKnobPage(knob);
             if (isPage) {
                 _imp->panel->setPageActiveIndex(isPage);
             }
@@ -774,8 +774,8 @@ ManageUserParamsDialog::onSelectionChanged()
         // }
         for (std::list<TreeItem>::iterator it = _imp->items.begin(); it != _imp->items.end(); ++it) {
             if (it->item == item) {
-                KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>( it->knob.get() );
-                KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>( it->knob.get() );
+                KnobPagePtr isPage = isKnobPage( it->knob.get() );
+                KnobGroupPtr isGroup = isKnobGroup( it->knob.get() );
                 if (isPage) {
                     if ( !isPage->isUserKnob() ) {
                         canDelete = false;

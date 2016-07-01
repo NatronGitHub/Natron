@@ -64,7 +64,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< NodeSeria
                                                       std::map<std::string, bool>* moduleUpdatesProcessed)
 {
     bool mustShowErrorsLog = false;
-    NodeGroupPtr isNodeGroup = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
+    NodeGroupPtr isNodeGroup = isNodeGroup(group);
     QString groupName;
 
     if (isNodeGroup) {
@@ -268,7 +268,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< NodeSeria
             NodeGroupPtr isGrp = n->isEffectNodeGroup();
             if (isGrp) {
                 EffectInstancePtr sharedEffect = isGrp->shared_from_this();
-                NodeGroupPtr sharedGrp = boost::dynamic_pointer_cast<NodeGroup>(sharedEffect);
+                NodeGroupPtr sharedGrp = isNodeGroup(sharedEffect);
                 NodeCollectionSerialization::restoreFromSerialization(children, sharedGrp, !usingPythonModule, moduleUpdatesProcessed);
             } else {
                 ///For multi-instances, wait for the group to be entirely created then load the sub-tracks in a separate loop.

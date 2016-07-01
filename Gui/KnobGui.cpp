@@ -230,7 +230,7 @@ KnobGui::createGUI(QWidget* fieldContainer,
     }
 
     // Parmetric knobs use the customInteract to actually draw something on top of the background
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    KnobParametricPtr isParametric = isKnobParametric(knob);
     boost::shared_ptr<OfxParamOverlayInteract> customInteract = knob->getCustomInteract();
     if (customInteract && !isParametric) {
         _imp->customInteract = new CustomParamInteract(shared_from_this(), knob->getOfxParamHandle(), customInteract);
@@ -691,7 +691,7 @@ KnobGui::createAnimationMenu(QMenu* menu,
     NodeGroupPtr isCollecGroup = 0;
     if (isEffect) {
         collec = isEffect->getNode()->getGroup();
-        isCollecGroup = boost::dynamic_pointer_cast<NodeGroup>(collec);
+        isCollecGroup = isNodeGroup(collec);
     }
 
 
@@ -806,7 +806,7 @@ KnobGui::createDuplicateOnNode(const EffectInstancePtr& effect,
     }
 
     if (ret) {
-        boost::shared_ptr<NodeGuiI> groupNodeGuiI = effect->getNode()->getNodeGui();
+        NodeGuiIPtr groupNodeGuiI = effect->getNode()->getNodeGui();
         NodeGui* groupNodeGui = dynamic_cast<NodeGui*>( groupNodeGuiI.get() );
         assert(groupNodeGui);
         if (groupNodeGui) {

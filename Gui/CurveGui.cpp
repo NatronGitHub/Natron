@@ -644,7 +644,7 @@ KnobCurveGui::evaluate(bool useExpr,
     if (useExpr) {
         return knob->getValueAtWithExpression(x, ViewIdx(0), _dimension);
     } else {
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+        KnobParametricPtr isParametric = isKnobParametric(knob);
         if (isParametric) {
             return isParametric->getParametricCurve(_dimension)->getValueAt(x);
         } else {
@@ -659,7 +659,7 @@ CurvePtr
 KnobCurveGui::getInternalCurve() const
 {
     KnobIPtr knob = getInternalKnob();
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    KnobParametricPtr isParametric = isKnobParametric(knob);
 
     if (!knob || !isParametric) {
         return CurveGui::getInternalCurve();

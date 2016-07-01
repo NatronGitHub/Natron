@@ -141,6 +141,12 @@ private:
     boost::scoped_ptr<RotoSmearPrivate> _imp;
 };
 
+inline RotoSmearPtr
+isRotoSmear(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<RotoSmear>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOSMEAR_H

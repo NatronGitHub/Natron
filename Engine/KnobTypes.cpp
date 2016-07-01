@@ -243,7 +243,7 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         if ( !effect->getNode() ) {
             return;
         }
-        KnobDoublePtr thisSharedDouble = boost::dynamic_pointer_cast<KnobDouble>(shared_from_this());
+        KnobDoublePtr thisSharedDouble = isKnobDouble(shared_from_this());
         assert(thisSharedDouble);
         if (handle) {
             effect->getNode()->addPositionInteract(thisSharedDouble,
@@ -563,7 +563,7 @@ KnobChoice::cloneExtraData(const KnobIPtr& other,
                            int /*dimension*/,
                            int /*otherDimension*/)
 {
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(other);
+    KnobChoicePtr isChoice = isKnobChoice(other);
 
     if (!isChoice) {
         return;
@@ -578,7 +578,7 @@ KnobChoice::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
                                             int /*dimension*/,
                                             int /*otherDimension*/)
 {
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(other);
+    KnobChoicePtr isChoice = isKnobChoice(other);
 
     if (!isChoice) {
         return false;
@@ -602,7 +602,7 @@ KnobChoice::cloneExtraData(const KnobIPtr& other,
                            int /*dimension*/,
                            int /*otherDimension*/)
 {
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(other);
+    KnobChoicePtr isChoice = isKnobChoice(other);
 
     if (!isChoice) {
         return;
@@ -777,7 +777,7 @@ KnobChoice::refreshMenu()
         // In OpenFX we reset the menu with a button
         KnobIPtr hasRefreshButton = holder->getKnobByName(getName() + "RefreshButton");
         if (hasRefreshButton) {
-            KnobButtonPtr button = boost::dynamic_pointer_cast<KnobButton>(hasRefreshButton);
+            KnobButtonPtr button = isKnobButton(hasRefreshButton);
             if (button) {
                 button->trigger();
             }
@@ -891,7 +891,7 @@ KnobChoice::getActiveEntryText_mt_safe()
     std::pair<int, KnobIPtr> master = getMaster(0);
 
     if (master.second) {
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(master.second);
+        KnobChoicePtr isChoice = isKnobChoice(master.second);
         if (isChoice) {
             return isChoice->getActiveEntryText_mt_safe();
         }
@@ -1080,7 +1080,7 @@ KnobChoice::choiceRestoration(const KnobChoicePtr& knob,
 void
 KnobChoice::onKnobAboutToAlias(const KnobIPtr &slave)
 {
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(slave);
+    KnobChoicePtr isChoice = isKnobChoice(slave);
 
     if (isChoice) {
         populateChoices(isChoice->getEntries_mt_safe(),
@@ -1117,7 +1117,7 @@ KnobChoice::handleSignalSlotsForAliasLink(const KnobIPtr& alias,
                                           bool connect)
 {
     assert(alias);
-    KnobChoicePtr aliasIsChoice = boost::dynamic_pointer_cast<KnobChoice>(alias);
+    KnobChoicePtr aliasIsChoice = isKnobChoice(alias);
     if (!aliasIsChoice) {
         return;
     }
@@ -1778,7 +1778,7 @@ KnobParametric::getCurveColor(int dimension,
     assert( dimension < (int)_curvesColor.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = boost::dynamic_pointer_cast<KnobParametric>(master.second);
+        KnobParametricPtr m = isKnobParametric(master.second);
         assert(m);
 
         return m->getCurveColor(dimension, r, g, b);
@@ -1816,7 +1816,7 @@ KnobParametric::getDefaultParametricCurve(int dimension) const
     assert( dimension >= 0 && dimension < (int)_curves.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = boost::dynamic_pointer_cast<KnobParametric>(master.second);
+        KnobParametricPtr m = isKnobParametric(master.second);
         assert(m);
 
         return m->getDefaultParametricCurve(dimension);
@@ -1832,7 +1832,7 @@ CurvePtr KnobParametric::getParametricCurve(int dimension) const
     assert( dimension < (int)_curves.size() );
     std::pair<int, KnobIPtr >  master = getMaster(dimension);
     if (master.second) {
-        KnobParametricPtr m = boost::dynamic_pointer_cast<KnobParametric>(master.second);
+        KnobParametricPtr m = isKnobParametric(master.second);
         assert(m);
 
         return m->getParametricCurve(dimension);
@@ -2079,7 +2079,7 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
                                int dimension,
                                int otherDimension)
 {
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(other);
+    KnobParametricPtr isParametric = isKnobParametric(other);
 
     if (!isParametric) {
         return;
@@ -2104,7 +2104,7 @@ KnobParametric::cloneExtraDataAndCheckIfChanged(const KnobIPtr& other,
                                                 int otherDimension)
 {
     ///Mt-safe as Curve is MT-safe
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(other);
+    KnobParametricPtr isParametric = isKnobParametric(other);
 
     if (!isParametric) {
         return false;
@@ -2133,7 +2133,7 @@ KnobParametric::cloneExtraData(const KnobIPtr& other,
                                int dimension,
                                int otherDimension)
 {
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(other);
+    KnobParametricPtr isParametric = isKnobParametric(other);
 
     if (!isParametric) {
         return;
@@ -2212,7 +2212,7 @@ KnobParametric::hasModificationsVirtual(int dimension) const
 void
 KnobParametric::onKnobAboutToAlias(const KnobIPtr& slave)
 {
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(slave);
+    KnobParametricPtr isParametric = isKnobParametric(slave);
 
     if (isParametric) {
         _defaultCurves.resize( isParametric->_defaultCurves.size() );

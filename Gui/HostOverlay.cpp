@@ -2950,7 +2950,7 @@ HostOverlay::loseFocus(double time,
 }
 
 bool
-HostOverlay::hasHostOverlayForParam(const KnobI* param)
+HostOverlay::hasHostOverlayForParam(const KnobIConstPtr& param)
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (InteractList::iterator it = _imp->interacts.begin(); it != _imp->interacts.end(); ++it) {

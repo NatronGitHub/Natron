@@ -368,7 +368,7 @@ KnobGuiString::KnobGuiString(KnobIPtr knob,
     , _boldActivated(false)
     , _italicActivated(false)
 {
-    _knob = boost::dynamic_pointer_cast<KnobString>(knob);
+    _knob = isKnobString(knob);
 }
 
 void

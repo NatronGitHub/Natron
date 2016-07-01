@@ -82,7 +82,7 @@ BackdropGuiPrivate::getLabelValue() const
     KnobIPtr k = _publicInterface->getNode()->getKnobByName("Label");
 
     assert(k);
-    KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(k);
+    KnobStringPtr isStr = isKnobString(k);
     assert(isStr);
 
     return isStr ? isStr->getValue() : "";

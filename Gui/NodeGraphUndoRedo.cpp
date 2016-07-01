@@ -1583,7 +1583,7 @@ GroupFromSelectionCommand::redo()
 
     NodeGroupPtr isGrp;
     if (_firstRedoCalled) {
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>(_group.lock()->getNode()->getEffectInstance());
+        isGrp = isNodeGroup(_group.lock()->getNode()->getEffectInstance());
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");
@@ -1598,12 +1598,12 @@ GroupFromSelectionCommand::redo()
 
         NodePtr containerNode = _graph->getGui()->getApp()->createNode(groupArgs);
 
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>( containerNode->getEffectInstance()->shared_from_this() );
+        isGrp = isNodeGroup( containerNode->getEffectInstance()->shared_from_this() );
         assert(isGrp);
         if (!isGrp) {
             throw std::logic_error("GroupFromSelectionCommand::redo()");
         }
-        boost::shared_ptr<NodeGuiI> container_i = containerNode->getNodeGui();
+        NodeGuiIPtr container_i = containerNode->getNodeGui();
         assert(container_i);
         _group = boost::dynamic_pointer_cast<NodeGui>(container_i);
         assert( _group.lock() );
@@ -1822,7 +1822,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
             GroupInputPtr inp = (*it2)->isEffectGroupInput();
             GroupOutputPtr output = (*it2)->isEffectGroupOutput();
             if ( !inp && !output && !(*it2)->getParentMultiInstance() ) {
-                boost::shared_ptr<NodeGuiI> gui_i = (*it2)->getNodeGui();
+                NodeGuiIPtr gui_i = (*it2)->getNodeGui();
                 assert(gui_i);
                 NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                 assert(nodeGui);
@@ -1844,7 +1844,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
         std::list<std::pair<std::string, NodeGuiPtr > > newNodes;
         _graph->pasteCliboard(cb, &newNodes);
 
-        boost::shared_ptr<NodeGuiI> groupGui_i = group->getNode()->getNodeGui();
+        NodeGuiIPtr groupGui_i = group->getNode()->getNodeGui();
         assert(groupGui_i);
         NodeGuiPtr groupGui = boost::dynamic_pointer_cast<NodeGui>(groupGui_i);
         assert(groupGui);
@@ -1883,7 +1883,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 std::map<NodePtr, int> outputConnected;
                 groupInputs[i]->getOutputsConnectedToThisNode(&outputConnected);
 
-                boost::shared_ptr<NodeGuiI> inputGui_i = input->getNodeGui();
+                NodeGuiIPtr inputGui_i = input->getNodeGui();
                 assert(inputGui_i);
                 NodeGuiPtr inputGui = boost::dynamic_pointer_cast<NodeGui>(inputGui_i);
                 assert(inputGui);
@@ -1938,7 +1938,7 @@ InlineGroupCommand::InlineGroupCommand(NodeGraph* graph,
                 std::map<NodePtr, int> outputConnected;
                 group->getNode()->getOutputsConnectedToThisNode(&outputConnected);
                 for (std::map<NodePtr, int>::iterator it2 = outputConnected.begin(); it2 != outputConnected.end(); ++it2) {
-                    boost::shared_ptr<NodeGuiI> outputGui_i = it2->first->getNodeGui();
+                    NodeGuiIPtr outputGui_i = it2->first->getNodeGui();
                     assert(outputGui_i);
                     NodeGuiPtr outputGui = boost::dynamic_pointer_cast<NodeGui>(outputGui_i);
                     assert(outputGui);

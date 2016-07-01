@@ -2499,14 +2499,14 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
                                    const ImageComponents& components,
                                    ImageBitDepthEnum depth,
                                    double distToNext,
-                                   boost::shared_ptr<Image> *image)
+                                   ImagePtr *image)
 {
     double time = getContext()->getTimelineCurrentTime();
     double shapeColor[3];
 
     getColor(time, shapeColor);
 
-    boost::shared_ptr<Image> source = *image;
+    ImagePtr source = *image;
     RectI pixelPointsBbox;
     pointsBbox.toPixelEnclosing(mipmapLevel, par, &pixelPointsBbox);
 
@@ -2683,7 +2683,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
     return distToNext;
 } // RotoStrokeItem::renderSingleStroke
 
-boost::shared_ptr<Image>
+ImagePtr
 RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
                                        const double time,
                                        const ViewIdx view,
@@ -2716,7 +2716,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
 
     {
         QReadLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), boost::shared_ptr<OSGLContextAttacher>(), &image);
+        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, EffectInstance::InputImagesMap(), RenderStatsPtr(), OSGLContextAttacherPtr(), &image);
     }
 
     if (image) {
@@ -2821,7 +2821,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
     return image;
 } // RotoDrawableItem::renderMaskFromStroke
 
-boost::shared_ptr<Image>
+ImagePtr
 RotoDrawableItem::renderMaskInternal(const RectI & roi,
                                      const ImageComponents& components,
                                      const double startTime,
@@ -2832,7 +2832,7 @@ RotoDrawableItem::renderMaskInternal(const RectI & roi,
                                      const ImageBitDepthEnum depth,
                                      const unsigned int mipmapLevel,
                                      const std::list<std::list<std::pair<Point, double> > >& strokes,
-                                     const boost::shared_ptr<Image> &image)
+                                     const ImagePtr &image)
 {
     Q_UNUSED(startTime);
     Q_UNUSED(endTime);
@@ -4686,7 +4686,7 @@ RotoContext::refreshRotoPaintTree()
         if (globalMerge) {
             {
                 KnobIPtr mergeOperatorKnob = globalMerge->getKnobByName(kMergeOFXParamOperation);
-                KnobChoicePtr mergeOp = boost::dynamic_pointer_cast<KnobChoice>( mergeOperatorKnob.get() );
+                KnobChoicePtr mergeOp = isKnobChoice( mergeOperatorKnob.get() );
                 if (mergeOp) {
                     mergeOp->setValue(blendingOperator);
                 }

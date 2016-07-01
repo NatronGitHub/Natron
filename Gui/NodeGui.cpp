@@ -248,7 +248,7 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( this, SIGNAL(previewImageComputed()), this, SLOT(onPreviewImageComputed()) );
     setCacheMode(DeviceCoordinateCache);
 
-    OutputEffectInstance* isOutput = boost::dynamic_pointer_cast<OutputEffectInstance>( internalNode->getEffectInstance() );
+    OutputEffectInstance* isOutput = isOutputEffectInstance( internalNode->getEffectInstance() );
     if (isOutput) {
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
@@ -262,7 +262,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     NodePtr parent = internalNode->getParentMultiInstance();
     if (parent) {
-        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parent->getNodeGui();
+        NodeGuiIPtr parentNodeGui_i = parent->getNodeGui();
         NodeGui* parentGui = dynamic_cast<NodeGui*>( parentNodeGui_i.get() );
         assert(parentGui);
         if ( parentGui && parentGui->isSettingsPanelVisible() ) {
@@ -279,7 +279,7 @@ NodeGui::initialize(NodeGraph* dag,
     if (internalNode->getPluginID() == PLUGINID_OFX_MERGE) {
         KnobIPtr knob = internalNode->getKnobByName(kNatronOfxParamStringSublabelName);
         assert(knob);
-        KnobStringPtr strKnob = boost::dynamic_pointer_cast<KnobString>(knob);
+        KnobStringPtr strKnob = isKnobString(knob);
         if (strKnob) {
             onNodeExtraLabelChanged( QString::fromUtf8( strKnob->getValue().c_str() ) );
         }
@@ -312,7 +312,7 @@ NodeGui::initialize(NodeGraph* dag,
     const std::string parentMultiInstanceName = internalNode->getParentMultiInstanceName();
     if ( !parentMultiInstanceName.empty() ) {
         NodePtr parentNode = internalNode->getGroup()->getNodeByName(parentMultiInstanceName);
-        boost::shared_ptr<NodeGuiI> parentNodeGui_I = parentNode->getNodeGui();
+        NodeGuiIPtr parentNodeGui_I = parentNode->getNodeGui();
         assert(parentNode && parentNodeGui_I);
         NodeGui* parentNodeGui = dynamic_cast<NodeGui*>( parentNodeGui_I.get() );
         assert(parentNodeGui);
@@ -438,7 +438,7 @@ NodeGui::ensurePanelCreated()
         NodesList children;
         getNode()->getChildrenMultiInstance(&children);
         for (NodesList::iterator it = children.begin(); it != children.end(); ++it) {
-            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+            NodeGuiIPtr gui_i = (*it)->getNodeGui();
             assert(gui_i);
             NodeGui* gui = dynamic_cast<NodeGui*>( gui_i.get() );
             assert(gui);
@@ -630,7 +630,7 @@ NodeGui::createGui()
     onAvailableViewsChanged();
 
     GroupInputPtr isGroupInput = node->isEffectGroupInput();
-    GroupOutputPtr isGroupOutput = boost::dynamic_pointer_cast<GroupOutput>( node->getEffectInstance() );
+    GroupOutputPtr isGroupOutput = isGroupOutput( node->getEffectInstance() );
 
     if (!isGroupInput && !isGroupOutput) {
         QGradientStops ptGrad;
@@ -1088,7 +1088,7 @@ NodeGui::refreshPosition(double x,
                     if (!output) {
                         continue;
                     }
-                    boost::shared_ptr<NodeGuiI> node_gui_i = output->getNodeGui();
+                    NodeGuiIPtr node_gui_i = output->getNodeGui();
                     if (!node_gui_i) {
                         continue;
                     }
@@ -1195,7 +1195,7 @@ NodeGui::refreshEdges()
 
         NodePtr input = nodeInputs[i].lock();
         if (input) {
-            boost::shared_ptr<NodeGuiI> nodeInputGui_i = input->getNodeGui();
+            NodeGuiIPtr nodeInputGui_i = input->getNodeGui();
             if (!nodeInputGui_i) {
                 continue;
             }
@@ -1410,7 +1410,7 @@ NodeGui::initializeInputs()
 
         NodePtr input = inputs[i].lock();
         if (input) {
-            boost::shared_ptr<NodeGuiI> gui_i = input->getNodeGui();
+            NodeGuiIPtr gui_i = input->getNodeGui();
             assert(gui_i);
             NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             assert(gui);
@@ -1707,7 +1707,7 @@ NodeGui::connectEdge(int edgeNumber)
     NodeGuiPtr src;
     NodePtr input = inputs[edgeNumber].lock();
     if (input) {
-        boost::shared_ptr<NodeGuiI> ngi = input->getNodeGui();
+        NodeGuiIPtr ngi = input->getNodeGui();
         src = boost::dynamic_pointer_cast<NodeGui>(ngi);
     }
 
@@ -2236,7 +2236,7 @@ NodeGui::moveBelowPositionRecursively(const QRectF & r)
             if (!output) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiI> outputGuiI = output->getNodeGui();
+            NodeGuiIPtr outputGuiI = output->getNodeGui();
             if (!outputGuiI) {
                 continue;
             }
@@ -2294,7 +2294,7 @@ NodeGui::onAllKnobsSlaved(bool b)
     if (b) {
         NodePtr masterNode = node->getMasterNode();
         assert(masterNode);
-        boost::shared_ptr<NodeGuiI> masterNodeGui_i = masterNode->getNodeGui();
+        NodeGuiIPtr masterNodeGui_i = masterNode->getNodeGui();
         assert(masterNodeGui_i);
         NodeGuiPtr masterNodeGui = boost::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
         _masterNodeGui = masterNodeGui;
@@ -2452,7 +2452,7 @@ NodeGui::onKnobsLinksChanged()
         } else {
             ///There's no link to the master node yet
             if ( masterNode && (masterNode->getNodeGui().get() != this) && ( masterNode->getGroup() == getNode()->getGroup() ) ) {
-                boost::shared_ptr<NodeGuiI> master_i = masterNode->getNodeGui();
+                NodeGuiIPtr master_i = masterNode->getNodeGui();
                 NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
                 assert(master);
 
@@ -3492,7 +3492,7 @@ NodeGui::onOverlayFocusLostDefault(double time,
 }
 
 bool
-NodeGui::hasHostOverlayForParam(const KnobI* param)
+NodeGui::hasHostOverlayForParam(const KnobIConstPtr& param)
 {
     if (_hostOverlay) {
         return _hostOverlay->hasHostOverlayForParam(param);
@@ -3884,7 +3884,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!rightClickKnob) {
         return;
     }
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>( rightClickKnob.get() );
+    KnobChoicePtr isChoice = isKnobChoice( rightClickKnob.get() );
     if (!isChoice) {
         return;
     }
@@ -3900,7 +3900,7 @@ NodeGui::onRightClickMenuKnobPopulated()
             // Plug-in specified invalid knob name in the menu
             continue;
         }
-        KnobButton* button = boost::dynamic_pointer_cast<KnobButton>(knob);
+        KnobButton* button = isKnobButton(knob);
         if (!button) {
             // Plug-in must only use buttons inside menu
             continue;
@@ -3937,7 +3937,7 @@ NodeGui::onRightClickActionTriggered()
         // Plug-in specified invalid knob name in the menu
         return;
     }
-    KnobButton* button = boost::dynamic_pointer_cast<KnobButton>(knob);
+    KnobButton* button = isKnobButton(knob);
     if (!button) {
         // Plug-in must only use buttons inside menu
         return;

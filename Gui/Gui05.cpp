@@ -202,7 +202,7 @@ void
 Gui::createGroupGui(const NodePtr & group,
                     const CreateNodeArgs& args)
 {
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( group->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = isNodeGroup( group->getEffectInstance()->shared_from_this() );
 
     assert(isGrp);
     NodeCollectionPtr collection = boost::dynamic_pointer_cast<NodeCollection>(isGrp);

@@ -713,7 +713,7 @@ OfxHost::createOfxEffect(const NodePtr& node,
     assert(plugin && desc && ctx != eContextNone);
 
 
-    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect = boost::dynamic_pointer_cast<AbstractOfxEffectInstance>( )OfxEffectInstance::create(node) );
+    boost::shared_ptr<AbstractOfxEffectInstance> hostSideEffect = boost::dynamic_pointer_cast<AbstractOfxEffectInstance>( OfxEffectInstance::create(node) );
     assert(hostSideEffect);
     NodeSerializationPtr serialization = args.getProperty<NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     std::string fixedName = args.getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);

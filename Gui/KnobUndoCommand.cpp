@@ -168,15 +168,15 @@ PasteUndoCommand::copyFrom(const KnobIPtr& serializedKnob,
         break;
     }
     case eKnobClipBoardTypeCopyValue: {
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>( internalKnob.get() );
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>( internalKnob.get() );
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>( internalKnob.get() );
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>( internalKnob.get() );
+        KnobIntBasePtr isInt = isKnobIntBase( internalKnob.get() );
+        KnobBoolBasePtr isBool = isKnobBoolBase( internalKnob.get() );
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase( internalKnob.get() );
+        KnobStringBasePtr isString = isKnobStringBase( internalKnob.get() );
 
-        KnobIntBasePtr isFromInt = boost::dynamic_pointer_cast<KnobIntBase>( serializedKnob.get() );
-        KnobBoolBasePtr isFromBool = boost::dynamic_pointer_cast<KnobBoolBase>( serializedKnob.get() );
-        KnobDoubleBasePtr isFromDouble = boost::dynamic_pointer_cast<KnobDoubleBase>( serializedKnob.get() );
-        KnobStringBasePtr isFromString = boost::dynamic_pointer_cast<KnobStringBase>( serializedKnob.get() );
+        KnobIntBasePtr isFromInt = isKnobIntBase( serializedKnob.get() );
+        KnobBoolBasePtr isFromBool = isKnobBoolBase( serializedKnob.get() );
+        KnobDoubleBasePtr isFromDouble = isKnobDoubleBase( serializedKnob.get() );
+        KnobStringBasePtr isFromString = isKnobStringBase( serializedKnob.get() );
 
         internalKnob->beginChanges();
         for (int i = 0; i < internalKnob->getDimension(); ++i) {
@@ -321,10 +321,10 @@ MultipleKnobEditsUndoCommand::undo()
             continue;
         }
         knob->beginChanges();
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+        KnobIntBasePtr isInt = isKnobIntBase(knob);
+        KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+        KnobStringBasePtr isString = isKnobStringBase(knob);
         KeyFrame k;
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
@@ -390,10 +390,10 @@ MultipleKnobEditsUndoCommand::redo()
             continue;
         }
         knob->beginChanges();
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+        KnobIntBasePtr isInt = isKnobIntBase(knob);
+        KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+        KnobStringBasePtr isString = isKnobStringBase(knob);
 
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KeyFrame k;

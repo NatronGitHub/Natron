@@ -493,7 +493,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             if ( !it->filename.isEmpty() ) {
                 KnobIPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
                 if (fileKnob) {
-                    KnobOutputFilePtr outFile = boost::dynamic_pointer_cast<KnobOutputFile>(fileKnob);
+                    KnobOutputFilePtr outFile = isKnobOutputFile(fileKnob);
                     if (outFile) {
                         outFile->setValue( it->filename.toStdString() );
                     }
@@ -514,7 +514,7 @@ AppInstance::getWritersWorkForCL(const CLArgs& cl,
             if (!output) {
                 throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
-            GroupOutputPtr isGrpOutput = boost::dynamic_pointer_cast<GroupOutput>( output->getEffectInstance() );
+            GroupOutputPtr isGrpOutput = isGroupOutput( output->getEffectInstance() );
             if (!isGrpOutput) {
                 throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
             }
@@ -672,7 +672,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
             KnobIPtr fileKnob = readNode->getKnobByName(kOfxImageEffectFileParamName);
             if (fileKnob) {
-                KnobFilePtr outFile = boost::dynamic_pointer_cast<KnobFile>(fileKnob);
+                KnobFilePtr outFile = isKnobFile(fileKnob);
                 if (outFile) {
                     outFile->setValue( it->filename.toStdString() );
                 }
@@ -1315,7 +1315,7 @@ AppInstance::createNodeInternal(CreateNodeArgs& args)
         }
     }
 
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+    NodeGroupPtr isGrp = isNodeGroup( node->getEffectInstance()->shared_from_this() );
 
     if (isGrp) {
         bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
@@ -1761,7 +1761,7 @@ AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstancePtr& wri
         *sequenceName = QString();
         KnobIPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
         if (fileKnob) {
-            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(fileKnob);
+            KnobStringBasePtr isString = isKnobStringBase(fileKnob);
             assert(isString);
             if (isString) {
                 *sequenceName = QString::fromUtf8( isString->getValue().c_str() );

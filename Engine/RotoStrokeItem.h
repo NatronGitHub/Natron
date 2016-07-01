@@ -102,7 +102,7 @@ public:
                               const ImageComponents& components,
                               ImageBitDepthEnum depth,
                               double distToNext,
-                              boost::shared_ptr<Image> *wholeStrokeImage);
+                              ImagePtr *wholeStrokeImage);
 
 
     bool getMostRecentStrokeChangesSinceAge(double time,

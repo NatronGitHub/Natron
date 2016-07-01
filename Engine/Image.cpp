@@ -923,7 +923,7 @@ Image::resizeInternal(const Image* srcImg,
                       bool fillWithBlackAndTransparent,
                       bool setBitmapTo1,
                       bool createInCache,
-                      boost::shared_ptr<Image>* outputImage)
+                      ImagePtr* outputImage)
 {
     ///Allocate to resized image
     if (!createInCache) {
@@ -1065,7 +1065,7 @@ bool
 Image::copyAndResizeIfNeeded(const RectI& newBounds,
                              bool fillWithBlackAndTransparent,
                              bool setBitmapTo1,
-                             boost::shared_ptr<Image>* output)
+                             ImagePtr* output)
 {
     assert(getStorageMode() != eStorageModeGLTex);
     if ( getBounds().contains(newBounds) ) {

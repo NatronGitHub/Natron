@@ -75,7 +75,7 @@ void
 moveTimeOffset(const NodePtr& node,
                double dt)
 {
-    KnobIntBasePtr timeOffsetKnob = boost::dynamic_pointer_cast<KnobIntBase>( node->getKnobByName(kTimeOffsetParamNameTimeOffset).get() );
+    KnobIntBasePtr timeOffsetKnob = isKnobIntBase( node->getKnobByName(kTimeOffsetParamNameTimeOffset).get() );
     assert(timeOffsetKnob);
     KnobHelper::ValueChangedReturnCodeEnum s = timeOffsetKnob->setValue(timeOffsetKnob->getValue() + dt, ViewSpec::all(), 0, eValueChangedReasonNatronGuiEdited, 0);
     Q_UNUSED(s);
@@ -85,7 +85,7 @@ void
 moveFrameRange(const NodePtr& node,
                double dt)
 {
-    KnobIntBasePtr frameRangeKnob = boost::dynamic_pointer_cast<KnobIntBase>( node->getKnobByName(kFrameRangeParamNameFrameRange).get() );
+    KnobIntBasePtr frameRangeKnob = isKnobIntBase( node->getKnobByName(kFrameRangeParamNameFrameRange).get() );
     assert(frameRangeKnob);
     frameRangeKnob->setValues(frameRangeKnob->getValue() + dt, frameRangeKnob->getValue(1)  + dt, ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
 }
@@ -929,10 +929,10 @@ DSPasteKeysCommand::redo()
 void
 DSPasteKeysCommand::setKeyValueFromKnob(const KnobIPtr& knob, double keyTime, KeyFrame* key)
 {
-    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
-    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+    KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+    KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+    KnobIntBasePtr isInt = isKnobIntBase(knob);
+    KnobStringBasePtr isString = isKnobStringBase(knob);
 
 
     if (isDouble) {

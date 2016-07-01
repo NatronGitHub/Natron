@@ -128,6 +128,12 @@ private:
     boost::scoped_ptr<PrecompNodePrivate> _imp;
 };
 
+inline PrecompNodePtr
+isPrecompNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<PrecompNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // PRECOMPNODE_H

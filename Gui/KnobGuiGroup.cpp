@@ -96,7 +96,7 @@ KnobGuiGroup::KnobGuiGroup(KnobIPtr knob,
     , _children()
     , _childrenToEnable()
     , _tabGroup(0)
-    , _knob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
+    , _knob( isKnobGroup(knob) )
 {
 }
 

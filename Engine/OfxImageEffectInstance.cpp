@@ -387,7 +387,7 @@ OfxImageEffectInstance::getRenderScaleRecursive(double &x,
     getOfxEffectInstance()->getNode()->hasViewersConnected(&attachedViewers);
     ///get the render scale of the 1st viewer
     if ( !attachedViewers.empty() ) {
-        ViewerInstance* first = attachedViewers.front();
+        ViewerInstancePtr first = attachedViewers.front();
         int mipMapLevel = first->getMipMapLevel();
         x = Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
         y = x;
@@ -526,7 +526,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     } else if (paramType == kOfxParamTypeGroup) {
         OfxGroupInstance *ret = new OfxGroupInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
-        KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
+        KnobGroupPtr isGroup = isKnobGroup(knob);
         assert(isGroup);
         if (isGroup) {
             bool haveShortcut = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextCanHaveShortcut);
@@ -553,7 +553,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
             qDebug() << "- " << ret->getProperties().getStringProperty(kOfxParamPropPageChild, i).c_str();
         }
 #endif
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+        KnobPagePtr isPage = isKnobPage(knob);
         assert(isPage);
         if (isPage) {
             bool isInToolbar = (bool)descriptor.getProperties().getIntProperty(kNatronOfxParamPropInViewerContextIsInToolbar);
@@ -567,7 +567,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         OfxPushButtonInstance *ret = new OfxPushButtonInstance(getOfxEffectInstance(), descriptor);
         knob = ret->getKnob();
         if (isToggableButton) {
-            KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(knob);
+            KnobButtonPtr isBtn = isKnobButton(knob);
             assert(isBtn);
             if (isBtn) {
                 isBtn->setCheckable(true);
@@ -605,7 +605,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
      * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
      * interacting with the Reader or the container is actually the same.
      **/
-    if ( knob->getHolder() != getOfxEffectInstance().get() ) {
+    if ( knob->getHolder() != getOfxEffectInstance() ) {
         getOfxEffectInstance()->addKnob(knob);
     }
 #endif
@@ -721,7 +721,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
             boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
-            pageData->page = boost::dynamic_pointer_cast<KnobPage>(associatedKnob);
+            pageData->page = isKnobPage(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
             for (std::map<int, OFX::Host::Param::Instance*>::const_iterator it2 = children.begin(); it2 != children.end(); ++it2) {
@@ -776,7 +776,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     if ( !finalPages.empty() ) {
         mainPage = finalPages.begin();
     } else {
-        KnobPagePtr page = AppManager::createKnob<KnobPage>( effect.get(), tr("Settings") );
+        KnobPagePtr page = AppManager::createKnob<KnobPage>( effect, tr("Settings") );
         boost::shared_ptr<PageOrdered> pageData( new PageOrdered() );
         pageData->page = page;
         finalPages.push_back(pageData);
@@ -805,7 +805,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
             continue;
         }
 
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+        KnobPagePtr isPage = isKnobPage(knob);
         if (isPage) {
             continue;
         }
@@ -878,7 +878,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
                          * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
                          * interacting with the Reader or the container is actually the same.
                          **/
-                        if ( knobHolder != getOfxEffectInstance().get() ) {
+                        if ( knobHolder != getOfxEffectInstance() ) {
                             getOfxEffectInstance()->addKnob(sep);
                         }
 #endif

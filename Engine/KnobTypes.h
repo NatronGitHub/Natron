@@ -55,6 +55,30 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
+inline KnobBoolBasePtr
+isKnobBoolBase(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobBoolBase>(knob);
+}
+
+inline KnobDoubleBasePtr
+isKnobDoubleBase(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
+}
+
+inline KnobIntBasePtr
+isKnobIntBase(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobIntBase>(knob);
+}
+
+inline KnobStringBasePtr
+isKnobStringBase(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobStringBase>(knob);
+}
+
 /******************************KnobInt**************************************/
 
 class KnobInt
@@ -136,6 +160,12 @@ private:
     static const std::string _typeNameStr;
 };
 
+inline KnobIntPtr
+isKnobInt(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobInt>(knob);
+}
+
 /******************************KnobBool**************************************/
 
 class KnobBool
@@ -183,6 +213,12 @@ private:
 private:
     static const std::string _typeNameStr;
 };
+
+inline KnobBoolPtr
+isKnobBool(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobBool>(knob);
+}
 
 /******************************KnobDouble**************************************/
 
@@ -371,6 +407,12 @@ private:
     static const std::string _typeNameStr;
 };
 
+inline KnobDoublePtr
+isKnobDouble(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobDouble>(knob);
+}
+
 /******************************KnobButton**************************************/
 
 class KnobButton
@@ -448,6 +490,12 @@ private:
     bool _checkable;
     bool _isToolButtonAction;
 };
+
+inline KnobButtonPtr
+isKnobButton(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobButton>(knob);
+}
 
 /******************************KnobChoice**************************************/
 class KnobChoiceMergeEntriesData
@@ -612,6 +660,12 @@ private:
     bool _isCascading;
 };
 
+inline KnobChoicePtr
+isKnobChoice(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobChoice>(knob);
+}
+
 /******************************KnobSeparator**************************************/
 
 class KnobSeparator
@@ -651,6 +705,12 @@ private:
 private:
     static const std::string _typeNameStr;
 };
+
+inline KnobSeparatorPtr
+isKnobSeparator(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobSeparator>(knob);
+}
 
 /******************************RGBA_KNOB**************************************/
 
@@ -736,6 +796,12 @@ private:
     bool _simplifiedMode;
     static const std::string _typeNameStr;
 };
+
+inline KnobColorPtr
+isKnobColor(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobColor>(knob);
+}
 
 /******************************KnobString**************************************/
 
@@ -849,6 +915,12 @@ private:
     bool _isCustom;
 };
 
+inline KnobStringPtr
+isKnobString(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobString>(knob);
+}
+
 /******************************KnobGroup**************************************/
 class KnobGroup
     :  public QObject, public KnobBoolBase
@@ -914,6 +986,11 @@ private:
     static const std::string _typeNameStr;
 };
 
+inline KnobGroupPtr
+isKnobGroup(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobGroup>(knob);
+}
 
 /******************************PAGE_KNOB**************************************/
 
@@ -977,6 +1054,11 @@ private:
     static const std::string _typeNameStr;
 };
 
+inline KnobPagePtr
+isKnobPage(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobPage>(knob);
+}
 
 /******************************KnobParametric**************************************/
 
@@ -1085,6 +1167,12 @@ private:
     virtual void cloneExtraData(const KnobIPtr& other, double offset, const RangeD* range, int dimension = -1, int otherDimension = -1) OVERRIDE FINAL;
     static const std::string _typeNameStr;
 };
+
+inline KnobParametricPtr
+isKnobParametric(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobParametric>(knob);
+}
 
 /**
  * @brief A Table containing strings. The number of columns is static.
@@ -1218,6 +1306,12 @@ private:
 
     static const std::string _typeNameStr;
 };
+
+inline KnobTablePtr
+isKnobTable(const KnobIPtr& knob)
+{
+    return boost::dynamic_pointer_cast<KnobTable>(knob);
+}
 
 NATRON_NAMESPACE_EXIT;
 

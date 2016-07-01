@@ -2921,7 +2921,7 @@ SequenceFileDialog::createViewerPreviewNode()
 
     _preview->viewerNodeInternal = _gui->getApp()->createNode(args);
     assert(_preview->viewerNodeInternal);
-    boost::shared_ptr<NodeGuiI> viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
+    NodeGuiIPtr viewerNodeGui = _preview->viewerNodeInternal->getNodeGui();
     _preview->viewerNode = boost::dynamic_pointer_cast<NodeGui>(viewerNodeGui);
     assert(_preview->viewerNode);
     _preview->viewerNode->hideGui();
@@ -3030,7 +3030,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
     NodePtr reader = findOrCreatePreviewReader(ext);
     if (reader) {
         KnobIPtr foundFileKnob = reader->getKnobByName(kOfxImageEffectFileParamName);
-        KnobFilePtr fileKnob = boost::dynamic_pointer_cast<KnobFile>( foundFileKnob.get() );
+        KnobFilePtr fileKnob = isKnobFile( foundFileKnob.get() );
         if (fileKnob) {
             fileKnob->setValue(pattern);
         }

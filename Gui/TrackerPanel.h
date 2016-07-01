@@ -78,7 +78,7 @@ public:
     TrackMarkerPtr getRowMarker(int row) const;
 
     KnobIPtr getKnobAt(int row, int column, int* dimension) const;
-    boost::shared_ptr<TrackerContext> getContext() const;
+    TrackerContextPtr getContext() const;
 
     NodeGuiPtr getNode() const;
 

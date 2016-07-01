@@ -234,7 +234,7 @@ TEST_F(BaseTest, GenerateDot)
 
     KnobIPtr frameRange = generator->getApp()->getProject()->getKnobByName("frameRange");
     ASSERT_TRUE(frameRange);
-    KnobIntPtr knob = boost::dynamic_pointer_cast<KnobInt>(frameRange);
+    KnobIntPtr knob = isKnobInt(frameRange);
     ASSERT_TRUE(knob);
     knob->setValue(1, ViewSpec::all(), 0);
     knob->setValue(1, ViewSpec::all(), 1);
@@ -252,7 +252,7 @@ TEST_F(BaseTest, GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>( writer->getEffectInstance() );
+    w.writer = isOutputEffectInstance( writer->getEffectInstance() );
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;

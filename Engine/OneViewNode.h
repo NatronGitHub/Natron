@@ -138,6 +138,12 @@ private:
     boost::scoped_ptr<OneViewNodePrivate> _imp;
 };
 
+inline OneViewNodePtr
+isOneViewNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<OneViewNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // ENGINE_ONEVIEWNODE_H

@@ -483,10 +483,10 @@ public:
     std::map<int, ChannelSelector> channelsSelectors;
     std::map<int, MaskSelector> maskSelectors;
     RotoContextPtr rotoContext; //< valid when the node has a rotoscoping context (i.e: paint context)
-    boost::shared_ptr<TrackerContext> trackContext;
+    TrackerContextPtr trackContext;
     mutable QMutex imagesBeingRenderedMutex;
     QWaitCondition imageBeingRenderedCond;
-    std::list< boost::shared_ptr<Image> > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
+    std::list< ImagePtr > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
     std::list <ImageBitDepthEnum> supportedDepths;
 
     ///True when several effect instances are represented under the same node.
@@ -1247,7 +1247,7 @@ Node::getLastPaintStrokePoints(double time,
     }
 }
 
-boost::shared_ptr<Image>
+ImagePtr
 Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                  double par,
                                  const ImageComponents& components,
@@ -1268,7 +1268,7 @@ Node::getOrRenderLastStrokeImage(unsigned int mipMapLevel,
     RectD lastStrokeBbox;
     std::list<std::pair<Point, double> > lastStrokePoints;
     double distNextIn = 0.;
-    boost::shared_ptr<Image> strokeImage;
+    ImagePtr strokeImage;
     getApp()->getRenderStrokeData(&lastStrokeBbox, &lastStrokePoints, &distNextIn, &strokeImage);
     double distToNextOut = stroke->renderSingleStroke(lastStrokeBbox, lastStrokePoints, mipMapLevel, par, components, depth, distNextIn, &strokeImage);
 
@@ -1717,10 +1717,10 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
         for (U32 j = 0; j < nodeKnobs.size(); ++j) {
             if (nodeKnobs[j]->getName() == params[i]) {
                 
-                KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase >(nodeKnobs[j]);
-                boost::shared_ptr<KnobIntBase > isInt = boost::dynamic_pointer_cast<KnobIntBase >(nodeKnobs[j]);
-                boost::shared_ptr<KnobDoubleBase > isDbl = boost::dynamic_pointer_cast<KnobDoubleBase >(nodeKnobs[j]);
-                KnobStringBasePtr isStr = boost::dynamic_pointer_cast<KnobStringBase>(nodeKnobs[j]);
+                KnobBoolBasePtr isBool = isKnobBoolBase(nodeKnobs[j]);
+                boost::shared_ptr<KnobIntBase > isInt = isKnobIntBase(nodeKnobs[j]);
+                boost::shared_ptr<KnobDoubleBase > isDbl = isKnobDoubleBase(nodeKnobs[j]);
+                KnobStringBasePtr isStr = isKnobStringBase(nodeKnobs[j]);
                 int nDims = nodeKnobs[j]->getDimension();
 
                 std::string propName = kCreateNodeArgsPropParamValue;
@@ -1811,7 +1811,7 @@ Node::restoreSublabel()
         if (foundNatronCustomTag == -1) {
             KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
             if (sublabelKnob) {
-                KnobStringPtr sublabelKnobIsString = boost::dynamic_pointer_cast<KnobString>(sublabelKnob);
+                KnobStringPtr sublabelKnobIsString = isKnobString(sublabelKnob);
                 if (sublabelKnobIsString) {
                     QString sublabel = QString::fromUtf8( sublabelKnobIsString->getValue(0).c_str() );
                     if ( !sublabel.isEmpty() ) {
@@ -1863,13 +1863,13 @@ Node::loadKnob(const KnobIPtr & knob,
 
             knob->cloneDefaultValues(serializedKnob);
 
-            KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+            KnobChoicePtr isChoice = isKnobChoice(knob);
             if (isChoice) {
                 const TypeExtraData* extraData = (*it)->getExtraData();
                 const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);
                 assert(choiceData);
                 if (choiceData) {
-                    KnobChoicePtr choiceSerialized = boost::dynamic_pointer_cast<KnobChoice>(serializedKnob);
+                    KnobChoicePtr choiceSerialized = isKnobChoice(serializedKnob);
                     assert(choiceSerialized);
                     if (choiceSerialized) {
                         isChoice->choiceRestoration(choiceSerialized, choiceData);
@@ -2028,7 +2028,7 @@ Node::getPagesOrder() const
     std::list<std::string> ret;
 
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        KnobPagePtr ispage = boost::dynamic_pointer_cast<KnobPage>(*it);
+        KnobPagePtr ispage = isKnobPage(*it);
         if (ispage) {
             ret.push_back( ispage->getName() );
         }
@@ -2050,7 +2050,7 @@ Node::restoreUserKnobs(const NodeSerialization& serialization)
             page->setAsUserKnob(true);
             page->setName( (*it)->getName() );
         } else {
-            page = boost::dynamic_pointer_cast<KnobPage>(found);
+            page = isKnobPage(found);
         }
         if (page) {
             _imp->restoreUserKnobsRecursive( (*it)->getChildren(), KnobGroupPtr(), page );
@@ -2076,7 +2076,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             if (!found) {
                 grp = AppManager::createKnob<KnobGroup>(effect, isGrp->getLabel(), 1, false);
             } else {
-                grp = boost::dynamic_pointer_cast<KnobGroup>(found);
+                grp = isKnobGroup(found);
                 if (!grp) {
                     continue;
                 }
@@ -2096,18 +2096,18 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             assert( isRegular->isUserKnob() );
             KnobIPtr sKnob = isRegular->getKnob();
             KnobIPtr knob;
-            KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(sKnob);
-            KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(sKnob);
-            KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(sKnob);
-            KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(sKnob);
-            KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(sKnob);
-            KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(sKnob);
-            KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(sKnob);
-            KnobOutputFilePtr isOutFile = boost::dynamic_pointer_cast<KnobOutputFile>(sKnob);
-            KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(sKnob);
-            KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(sKnob);
-            KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(sKnob);
-            KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(sKnob);
+            KnobIntPtr isInt = isKnobInt(sKnob);
+            KnobDoublePtr isDbl = isKnobDouble(sKnob);
+            KnobBoolPtr isBool = isKnobBool(sKnob);
+            KnobChoicePtr isChoice = isKnobChoice(sKnob);
+            KnobColorPtr isColor = isKnobColor(sKnob);
+            KnobStringPtr isStr = isKnobString(sKnob);
+            KnobFilePtr isFile = isKnobFile(sKnob);
+            KnobOutputFilePtr isOutFile = isKnobOutputFile(sKnob);
+            KnobPathPtr isPath = isKnobPath(sKnob);
+            KnobButtonPtr isBtn = isKnobButton(sKnob);
+            KnobSeparatorPtr isSep = isKnobSeparator(sKnob);
+            KnobParametricPtr isParametric = isKnobParametric(sKnob);
 
             assert(isInt || isDbl || isBool || isChoice || isColor || isStr || isFile || isOutFile || isPath || isBtn || isSep || isParametric);
 
@@ -2118,7 +2118,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobInt>(effect, isRegular->getLabel(),
                                                         sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobInt>(found);
+                    k = isKnobInt(found);
                     if (!k) {
                         continue;
                     }
@@ -2143,7 +2143,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobDouble>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobDouble>(found);
+                    k = isKnobDouble(found);
                     if (!k) {
                         continue;
                     }
@@ -2164,7 +2164,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 knob = k;
 
                 if ( isRegular->getUseHostOverlayHandle() ) {
-                    KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(knob);
+                    KnobDoublePtr isDbl = isKnobDouble(knob);
                     if (isDbl) {
                         isDbl->setHasHostOverlayHandle(true);
                     }
@@ -2175,7 +2175,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobBool>(effect, isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobBool>(found);
+                    k = isKnobBool(found);
                     if (!k) {
                         continue;
                     }
@@ -2187,7 +2187,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobChoice>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobChoice>(found);
+                    k = isKnobChoice(found);
                     if (!k) {
                         continue;
                     }
@@ -2204,7 +2204,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobColor>(effect, isRegular->getLabel(),
                                                           sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobColor>(found);
+                    k = isKnobColor(found);
                     if (!k) {
                         continue;
                     }
@@ -2229,7 +2229,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobString>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobString>(found);
+                    k = isKnobString(found);
                     if (!k) {
                         continue;
                     }
@@ -2253,7 +2253,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobFile>(effect, isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobFile>(found);
+                    k = isKnobFile(found);
                     if (!k) {
                         continue;
                     }
@@ -2270,7 +2270,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobOutputFile>(effect, isRegular->getLabel(),
                                                                sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobOutputFile>(found);
+                    k = isKnobOutputFile(found);
                     if (!k) {
                         continue;
                     }
@@ -2287,7 +2287,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobPath>(effect, isRegular->getLabel(),
                                                          sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobPath>(found);
+                    k = isKnobPath(found);
                     if (!k) {
                         continue;
                     }
@@ -2304,7 +2304,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobButton>(effect, isRegular->getLabel(),
                                                            sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobButton>(found);
+                    k = isKnobButton(found);
                     if (!k) {
                         continue;
                     }
@@ -2316,7 +2316,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                     k = AppManager::createKnob<KnobSeparator>(effect, isRegular->getLabel(),
                                                               sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobSeparator>(found);
+                    k = isKnobSeparator(found);
                     if (!k) {
                         continue;
                     }
@@ -2327,7 +2327,7 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
                 if (!found) {
                     k = AppManager::createKnob<KnobParametric>(effect, isRegular->getLabel(), sKnob->getDimension(), false);
                 } else {
-                    k = boost::dynamic_pointer_cast<KnobParametric>(found);
+                    k = isKnobParametric(found);
                     if (!k) {
                         continue;
                     }
@@ -2343,10 +2343,10 @@ Node::Implementation::restoreUserKnobsRecursive(const std::list<boost::shared_pt
             if (isChoice) {
                 const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>( isRegular->getExtraData() );
                 assert(data);
-                KnobChoicePtr createdKnob = boost::dynamic_pointer_cast<KnobChoice>(knob);
+                KnobChoicePtr createdKnob = isKnobChoice(knob);
                 assert(createdKnob);
                 if (data && createdKnob) {
-                    KnobChoicePtr sKnobChoice = boost::dynamic_pointer_cast<KnobChoice>(sKnob);
+                    KnobChoicePtr sKnobChoice = isKnobChoice(sKnob);
                     if (sKnobChoice) {
                         createdKnob->choiceRestoration(sKnobChoice, data);
                     }
@@ -2453,7 +2453,7 @@ Node::hasOverlay() const
         return false;
     }
 
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
     if (nodeGui) {
         if ( nodeGui->hasHostOverlay() ) {
             return true;
@@ -2533,7 +2533,7 @@ Node::areAllProcessingThreadsQuit() const
         }
     }
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         if ( !trackerContext->hasTrackerThreadQuit() ) {
             return false;
@@ -2556,7 +2556,7 @@ Node::quitAnyProcessing_non_blocking()
     //Returns when the preview is done computign
     _imp->abortPreview_non_blocking();
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->quitTrackerThread_non_blocking();
     }
@@ -2588,7 +2588,7 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     OutputEffectInstancePtr isOutput = isEffectOutput();
 
     if (isOutput) {
-        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        RenderEnginePtr engine = isOutput->getRenderEngine();
         assert(engine);
         engine->quitEngine(allowThreadsToRestart);
         engine->waitForEngineToQuit_enforce_blocking();
@@ -2597,7 +2597,7 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
     //Returns when the preview is done computign
     _imp->abortPreview_blocking(allowThreadsToRestart);
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->quitTrackerThread_blocking(allowThreadsToRestart);
     }
@@ -2620,7 +2620,7 @@ Node::abortAnyProcessing_non_blocking()
         isOutput->getRenderEngine()->abortRenderingNoRestart();
     }
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->abortTracking();
     }
@@ -2634,13 +2634,13 @@ Node::abortAnyProcessing_blocking()
     OutputEffectInstancePtr isOutput = isEffectOutput();
 
     if (isOutput) {
-        boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+        RenderEnginePtr engine = isOutput->getRenderEngine();
         assert(engine);
         engine->abortRenderingNoRestart();
         engine->waitForAbortToComplete_enforce_blocking();
     }
 
-    boost::shared_ptr<TrackerContext> trackerContext = getTrackerContext();
+    TrackerContextPtr trackerContext = getTrackerContext();
     if (trackerContext) {
         trackerContext->abortTracking_blocking();
     }
@@ -2844,7 +2844,7 @@ Node::getPreferredInputNode() const
     PrecompNodePtr isPrecomp = isEffectPrecompNode();
 
     if (isInput) {
-        NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(getGroup());
+        NodeGroupPtr isGroup = isNodeGroup(getGroup());
         assert(isGroup);
         if (!isGroup) {
             return NodePtr();
@@ -2921,7 +2921,7 @@ prependGroupNameRecursive(const NodePtr& group,
     name.insert(0, ".");
     name.insert( 0, group->getScriptName_mt_safe() );
     NodeCollectionPtr hasParentGroup = group->getGroup();
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+    NodeGroupPtr isGrp = isNodeGroup(hasParentGroup);
     if (isGrp) {
         prependGroupNameRecursive(isGrp->getNode(), name);
     }
@@ -2937,7 +2937,7 @@ Node::getFullyQualifiedNameInternal(const std::string& scriptName) const
         prependGroupNameRecursive(parent, ret);
     } else {
         NodeCollectionPtr hasParentGroup = getGroup();
-        NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(hasParentGroup);
+        NodeGroupPtr isGrp = isNodeGroup(hasParentGroup);
         if (isGrp) {
             NodePtr grpNode = isGrp->getNode();
             if (grpNode) {
@@ -3345,7 +3345,7 @@ Node::findRightClickMenuKnob(const KnobsVec& knobs)
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->getName() == kNatronOfxParamRightClickMenu) {
             KnobIPtr rightClickKnob = knobs[i];
-            KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(rightClickKnob);
+            KnobChoicePtr isChoice = isKnobChoice(rightClickKnob);
             if (isChoice) {
                 QObject::connect( isChoice.get(), SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
             }
@@ -3383,15 +3383,15 @@ Node::findPluginFormatKnobs(const KnobsVec & knobs,
             }
         }
         if (formatSize && formatPar) {
-            _imp->pluginFormatKnobs.formatChoice = boost::dynamic_pointer_cast<KnobChoice>(formatKnob);
+            _imp->pluginFormatKnobs.formatChoice = isKnobChoice(formatKnob);
             formatSize->setEvaluateOnChange(false);
             formatPar->setEvaluateOnChange(false);
             formatSize->setSecret(true);
             formatSize->setSecretByDefault(true);
             formatPar->setSecret(true);
             formatPar->setSecretByDefault(true);
-            _imp->pluginFormatKnobs.size = boost::dynamic_pointer_cast<KnobInt>(formatSize);
-            _imp->pluginFormatKnobs.par = boost::dynamic_pointer_cast<KnobDouble>(formatPar);
+            _imp->pluginFormatKnobs.size = isKnobInt(formatSize);
+            _imp->pluginFormatKnobs.par = isKnobDouble(formatPar);
 
             std::vector<std::string> formats;
             int defValue;
@@ -3808,7 +3808,7 @@ Node::getOrCreateMainPage()
     KnobPagePtr mainPage;
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        KnobPagePtr p = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
+        KnobPagePtr p = isKnobPage(knobs[i]);
         if ( p && (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_INFO) &&
              (p->getLabel() != NATRON_PARAMETER_PAGE_NAME_EXTRA) ) {
             mainPage = p;
@@ -3853,7 +3853,7 @@ Node::findOrCreateChannelEnabled(const KnobPagePtr& mainPage)
         KnobBoolPtr enabled;
         for (std::size_t j = 0; j < knobs.size(); ++j) {
             if (knobs[j]->getOriginalName() == channelNames[i]) {
-                foundEnabled[i] = boost::dynamic_pointer_cast<KnobBool>(knobs[j]);
+                foundEnabled[i] = isKnobBool(knobs[j]);
                 break;
             }
         }
@@ -4041,7 +4041,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
                 if (i > 0) {
                     KnobsVec::iterator prev = it;
                     --prev;
-                    if ( !boost::dynamic_pointer_cast<KnobSeparator>(*prev) ) {
+                    if ( !isKnobSeparator(*prev) ) {
                         KnobSeparatorPtr sep = AppManager::createKnob<KnobSeparator>(_imp->effect, std::string(), 1, false);
                         sep->setName("advancedSep");
                         mainPage->insertKnob(i, sep);
@@ -4189,7 +4189,7 @@ Node::getFrameStepKnobValue() const
     if (!knob) {
         return 1;
     }
-    KnobIntPtr k = boost::dynamic_pointer_cast<KnobInt>(knob);
+    KnobIntPtr k = isKnobInt(knob);
 
     if (!k) {
         return 1;
@@ -4358,17 +4358,17 @@ Node::makeDocumentation(bool genHTML) const
 
         QString defValuesStr, knobType;
         std::vector<std::pair<QString, QString> > dimsDefaultValueStr;
-        KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(*it);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(*it);
-        KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(*it);
-        KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(*it);
-        KnobStringPtr isString = boost::dynamic_pointer_cast<KnobString>(*it);
-        KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(*it);
-        KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(*it);
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(*it);
-        KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(*it);
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
-        KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(*it);
+        KnobIntPtr isInt = isKnobInt(*it);
+        KnobChoicePtr isChoice = isKnobChoice(*it);
+        KnobBoolPtr isBool = isKnobBool(*it);
+        KnobDoublePtr isDbl = isKnobDouble(*it);
+        KnobStringPtr isString = isKnobString(*it);
+        KnobSeparatorPtr isSep = isKnobSeparator(*it);
+        KnobButtonPtr isBtn = isKnobButton(*it);
+        KnobParametricPtr isParametric = isKnobParametric(*it);
+        KnobGroupPtr isGroup = isKnobGroup(*it);
+        KnobPagePtr isPage = isKnobPage(*it);
+        KnobColorPtr isColor = isKnobColor(*it);
 
         if (isInt) {
             knobType = tr("Integer");
@@ -4606,11 +4606,11 @@ Node::setEffect(const EffectInstancePtr& effect)
     NodePtr thisShared = shared_from_this();
     NodePtr ioContainer = _imp->ioContainer.lock();
     if (ioContainer) {
-        ReadNodePtr isReader = boost::dynamic_pointer_cast<ReadNode>( ioContainer->getEffectInstance() );
+        ReadNodePtr isReader = isReadNode( ioContainer->getEffectInstance() );
         if (isReader) {
             isReader->setEmbeddedReader(thisShared);
         } else {
-            WriteNodePtr isWriter = boost::dynamic_pointer_cast<WriteNode>( ioContainer->getEffectInstance() );
+            WriteNodePtr isWriter = isWriteNode( ioContainer->getEffectInstance() );
             assert(isWriter);
             if (isWriter) {
                 isWriter->setEmbeddedWriter(thisShared);
@@ -4677,7 +4677,7 @@ applyNodeRedirectionsUpstream(const NodePtr& node,
         //The node is a group input,  jump to the corresponding input of the group
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+        isGrp = isNodeGroup(collection);
         if (isGrp) {
             return applyNodeRedirectionsUpstream(isGrp->getRealInputForInput(useGuiInput, node), useGuiInput);
         }
@@ -4712,14 +4712,14 @@ applyNodeRedirectionsDownstream(int recurseCounter,
         return;
     }
 
-    GroupOutputPtr isOutput = isEffectGroupOutput();
+    GroupOutputPtr isOutput = node->isEffectGroupOutput();
     if (isOutput) {
         //The node is the output of a group, its outputs are the outputs of the group
         NodeCollectionPtr collection = isOutput->getNode()->getGroup();
         if (!collection) {
             return;
         }
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+        isGrp = isNodeGroup(collection);
         if (isGrp) {
             NodesWList groupOutputs;
             if (useGuiOutputs) {
@@ -4791,9 +4791,9 @@ Node::getOutputsWithGroupRedirection(NodesList& outputs) const
 void
 Node::hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const
 {
-    OutputEffectInstancePtr thisWriter = boost::dynamic_pointer_cast<OutputEffectInstance>(_imp->effect);
+    OutputEffectInstancePtr thisWriter = isEffectOutput();
 
-    if ( thisWriter && thisWriter->isOutput() && !boost::dynamic_pointer_cast<GroupOutput>(thisWriter) ) {
+    if ( thisWriter && thisWriter->isOutput() && !isGroupOutput(thisWriter) ) {
         std::list<OutputEffectInstancePtr>::const_iterator alreadyExists = std::find(writers->begin(), writers->end(), thisWriter);
         if ( alreadyExists == writers->end() ) {
             writers->push_back(thisWriter);
@@ -5472,7 +5472,7 @@ void
 Node::Implementation::ifGroupForceHashChangeOfInputs()
 {
     ///If the node is a group, force a change of the outputs of the GroupInput nodes so the hash of the tree changes downstream
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(effect);
+    NodeGroupPtr isGrp = isNodeGroup(effect);
 
     if ( isGrp && !isGrp->getApp()->isCreatingNodeTree() ) {
         NodesList inputsOutputs;
@@ -5979,7 +5979,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
     if (unslaveKnobs) {
         ///For all knobs that have listeners, invalidate expressions
-        NodeGroupPtr isParentGroup = parentCol->isNodeGroup();
+        NodeGroupPtr isParentGroup = isNodeGroup(parentCol);
         KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
         for (U32 i = 0; i < knobs.size(); ++i) {
             KnobI::ListenerDimsMap listeners;
@@ -6006,7 +6006,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 if (!effectParent) {
                     continue;
                 }
-                NodeGroupPtr isEffectParentGroup = boost::dynamic_pointer_cast<NodeGroup>(effectParent);
+                NodeGroupPtr isEffectParentGroup = isNodeGroup(effectParent);
                 if ( isEffectParentGroup && (isEffectParentGroup == _imp->effect) ) {
                     continue;
                 }
@@ -6154,7 +6154,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
 
     ///If the node is a group, deactivate all nodes within the group
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(_imp->effect);
+    NodeGroupPtr isGrp = isEffectNodeGroup();
     if (isGrp) {
         isGrp->setIsDeactivatingGroup(true);
         NodesList nodes = isGrp->getNodes();
@@ -6254,7 +6254,7 @@ Node::activate(const std::list< NodePtr > & outputsToRestore,
     declareAllPythonAttributes();
 
     ///If the node is a group, activate all nodes within the group first
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( _imp->effect.get() );
+    NodeGroupPtr isGrp = isEffectNodeGroup();
     if (isGrp) {
         isGrp->setIsActivatingGroup(true);
         NodesList nodes = isGrp->getNodes();
@@ -6315,21 +6315,21 @@ Node::doDestroyNodeInternalEnd(bool fromDest,
     }
 
     {
-        boost::shared_ptr<NodeGuiI> guiPtr = _imp->guiPointer.lock();
+        NodeGuiIPtr guiPtr = _imp->guiPointer.lock();
         if (guiPtr) {
             guiPtr->destroyGui();
         }
     }
 
     ///If its a group, clear its nodes
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( _imp->effect.get() );
+    NodeGroupPtr isGrp = isEffectNodeGroup();
     if (isGrp) {
         isGrp->clearNodes(true);
     }
 
 
     ///Quit any rendering
-    OutputEffectInstancePtr isOutput = boost::dynamic_pointer_cast<OutputEffectInstance>( _imp->effect.get() );
+    OutputEffectInstancePtr isOutput = isEffectOutput();
     if (isOutput) {
         isOutput->getRenderEngine()->quitEngine(true);
     }
@@ -6387,7 +6387,7 @@ Node::destroyNodeInternal(bool fromDest,
         doDestroyNodeInternalEnd(true, false);
     } else {
         if (!fromDest) {
-            NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( _imp->effect.get() );
+            NodeGroupPtr isGrp = isEffectNodeGroup();
             NodesList nodesToWatch;
             nodesToWatch.push_back( shared_from_this() );
             if (isGrp) {
@@ -6575,12 +6575,12 @@ Node::makePreviewImage(SequenceTime time,
     bool isProjectFormat;
     RenderScale scale(1.);
     U64 nodeHash = getHashValue();
-    EffectInstancePtr effect = 0;
+    EffectInstancePtr effect;
     NodeGroupPtr isGroup = isEffectNodeGroup();
     if (isGroup) {
         effect = isGroup->getOutputNode(false)->getEffectInstance();
     } else {
-        effect = _imp->effect.get();
+        effect = _imp->effect;
     }
 
     if (!_imp->effect) {
@@ -6631,7 +6631,7 @@ Node::makePreviewImage(SequenceTime time,
                                                   NodePtr(), //rotoPaint node
                                                   false, // isAnalysis
                                                   true, // isDraft
-                                                  boost::shared_ptr<RenderStats>() );
+                                                  RenderStatsPtr() );
         FrameRequestMap request;
         stat = EffectInstance::computeRequestPass(time, ViewIdx(0), mipMapLevel, rod, thisNode, request);
         if (stat == eStatusFailed) {
@@ -6750,55 +6750,61 @@ Node::isRotoPaintingNode() const
 ViewerInstancePtr
 Node::isEffectViewerInstance() const
 {
-    return boost::dynamic_pointer_cast<ViewerInstance>(_imp->effect);
+    return isViewerInstance(_imp->effect);
 }
 
 NodeGroupPtr
 Node::isEffectNodeGroup() const
 {
-    return boost::dynamic_pointer_cast<NodeGroup>(_imp->effect);
+    return isNodeGroup(_imp->effect);
 }
 
 PrecompNodePtr
 Node::isEffectPrecompNode() const
 {
-    return boost::dynamic_pointer_cast<PrecompNode>(_imp->effect);
+    return isPrecompNode(_imp->effect);
 }
 
 OutputEffectInstancePtr
 Node::isEffectOutput() const
 {
-    return boost::dynamic_pointer_cast<OutputEffectInstance>(_imp->effect);
+    return isOutputEffectInstance(_imp->effect);
 }
 
 GroupInputPtr
 Node::isEffectGroupInput() const
 {
-    return boost::dynamic_pointer_cast<GroupInput>(_imp->effect);
+    return isGroupInput(_imp->effect);
 }
 
 GroupOutputPtr
 Node::isEffectGroupOutput() const
 {
-    return boost::dynamic_pointer_cast<GroupOutput>(_imp->effect);
+    return isGroupOutput(_imp->effect);
 }
 
 ReadNodePtr
 Node::isEffectReadNode() const
 {
-    return boost::dynamic_pointer_cast<ReadNode>(_imp->effect);
+    return isReadNode(_imp->effect);
 }
 
 WriteNodePtr
 Node::isEffectWriteNode() const
 {
-    return boost::dynamic_pointer_cast<WriteNode>(_imp->effect);
+    return isWriteNode(_imp->effect);
 }
 
 BackdropPtr
 Node::isEffectBackdrop() const
 {
-    return boost::dynamic_pointer_cast<Backdrop>(_imp->effect);
+    return isBackdrop(_imp->effect);
+}
+
+OneViewNodePtr
+Node::isEffectOneViewNode() const
+{
+    return isOneViewNode(_imp->effect);
 }
 
 RotoContextPtr
@@ -6807,7 +6813,7 @@ Node::getRotoContext() const
     return _imp->rotoContext;
 }
 
-boost::shared_ptr<TrackerContext>
+TrackerContextPtr
 Node::getTrackerContext() const
 {
     return _imp->trackContext;
@@ -7054,7 +7060,7 @@ Node::setPersistentMessage(MessageTypeEnum type,
 #endif
         // Some nodes may be hidden from the user but may still report errors (such that the group is in fact hidden to the user)
         if ( !isPartOfProject() && getGroup() ) {
-            NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( getGroup().get() );
+            NodeGroupPtr isGroup = isNodeGroup(getGroup());
             if (isGroup) {
                 isGroup->setPersistentMessage(type, content);
             }
@@ -7431,7 +7437,7 @@ Node::onKnobSlaved(const KnobIPtr& slave,
     EffectInstancePtr isEffect = boost::dynamic_pointer_cast<EffectInstance>( master->getHolder() );
     NodePtr parentNode;
     if (!isEffect) {
-        TrackMarker* isMarker = dynamic_cast<TrackMarker*>( master->getHolder() );
+        TrackMarkerPtr isMarker = boost::dynamic_pointer_cast<TrackMarker>( master->getHolder() );
         if (isMarker) {
             parentNode = isMarker->getContext()->getNode();
         }
@@ -7599,7 +7605,7 @@ int
 Node::isMaskChannelKnob(const KnobIConstPtr& knob) const
 {
     for (std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
-        if (it->second.channel.lock().get() == knob) {
+        if (it->second.channel.lock() == knob) {
             return it->first;
         }
     }
@@ -7620,10 +7626,10 @@ Node::isMaskEnabled(int inputNb) const
 }
 
 void
-Node::lock(const boost::shared_ptr<Image> & image)
+Node::lock(const ImagePtr & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Image> >::iterator it =
+    std::list<ImagePtr >::iterator it =
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     while ( it != _imp->imagesBeingRendered.end() ) {
@@ -7636,10 +7642,10 @@ Node::lock(const boost::shared_ptr<Image> & image)
 }
 
 bool
-Node::tryLock(const boost::shared_ptr<Image> & image)
+Node::tryLock(const ImagePtr & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Image> >::iterator it =
+    std::list<ImagePtr >::iterator it =
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     if ( it != _imp->imagesBeingRendered.end() ) {
@@ -7653,10 +7659,10 @@ Node::tryLock(const boost::shared_ptr<Image> & image)
 }
 
 void
-Node::unlock(const boost::shared_ptr<Image> & image)
+Node::unlock(const ImagePtr & image)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
-    std::list<boost::shared_ptr<Image> >::iterator it =
+    std::list<ImagePtr >::iterator it =
         std::find(_imp->imagesBeingRendered.begin(), _imp->imagesBeingRendered.end(), image);
 
     ///The image must exist, otherwise this is a bug
@@ -7666,14 +7672,14 @@ Node::unlock(const boost::shared_ptr<Image> & image)
     _imp->imageBeingRenderedCond.wakeAll();
 }
 
-boost::shared_ptr<Image>
+ImagePtr
 Node::getImageBeingRendered(double time,
                             unsigned int mipMapLevel,
                             ViewIdx view)
 {
     QMutexLocker l(&_imp->imagesBeingRenderedMutex);
 
-    for (std::list<boost::shared_ptr<Image> >::iterator it = _imp->imagesBeingRendered.begin();
+    for (std::list<ImagePtr >::iterator it = _imp->imagesBeingRendered.begin();
          it != _imp->imagesBeingRendered.end(); ++it) {
         const ImageKey &key = (*it)->getKey();
         if ( (key._view == view) && ( (*it)->getMipMapLevel() == mipMapLevel ) && (key._time == time) ) {
@@ -7681,7 +7687,7 @@ Node::getImageBeingRendered(double time,
         }
     }
 
-    return boost::shared_ptr<Image>();
+    return ImagePtr();
 }
 
 void
@@ -7774,7 +7780,7 @@ Node::onInputChanged(int inputNb,
                                                   NodePtr(),
                                                   false,
                                                   false,
-                                                  boost::shared_ptr<RenderStats>() );
+                                                  RenderStatsPtr() );
 
 
         ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
@@ -7811,9 +7817,9 @@ Node::onInputChanged(int inputNb,
     /*
        If this is an output node, notify the Group output nodes that their input have changed.
      */
-    GroupOutput<-Ptr isGroupOutput = boost::dynamic_pointer_cast<GroupOutput>( _imp->effect );
+    GroupOutputPtr isGroupOutput = isEffectGroupOutput();
     if (isGroupOutput) {
-        NodeGroupPtr containerGroup = boost::dynamic_pointer_cast<NodeGroup>( isGroupOutput->getNode()->getGroup() );
+        NodeGroupPtr containerGroup = isNodeGroup( isGroupOutput->getNode()->getGroup() );
         if (containerGroup) {
             std::map<NodePtr, int> groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
@@ -7880,9 +7886,9 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         }
     } else if ( _imp->effect->isWriter() ) {
         KnobIPtr sublabelKnob = getKnobByName(kNatronOfxParamStringSublabelName);
-        KnobOutputFilePtr isFile = boost::dynamic_pointer_cast<KnobOutputFile>(fileKnob);
+        KnobOutputFilePtr isFile = isKnobOutputFile(fileKnob);
         if (isFile && sublabelKnob) {
-            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>( sublabelKnob.get() );
+            KnobStringBasePtr isString = isKnobStringBase(sublabelKnob);
 
             std::string pattern = isFile->getValue();
             if (isString) {
@@ -7898,7 +7904,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
         /*
            Check if the filename param has a %V in it, in which case make sure to hide the Views parameter
          */
-        KnobOutputFilePtr fileParam = boost::dynamic_pointer_cast<KnobOutputFile>(fileKnob);
+        KnobOutputFilePtr fileParam = isKnobOutputFile(fileKnob);
         if (fileParam) {
             std::string pattern = fileParam->getValue();
             std::size_t foundViewPattern = pattern.find_first_of("%v");
@@ -7909,7 +7915,7 @@ Node::onFileNameParameterChanged(const KnobIPtr& fileKnob)
                 //We found view pattern
                 KnobIPtr viewsKnob = getKnobByName(kWriteOIIOParamViewsSelector);
                 if (viewsKnob) {
-                    KnobChoicePtr viewsSelector = boost::dynamic_pointer_cast<KnobChoice>( viewsKnob.get() );
+                    KnobChoicePtr viewsSelector = isKnobChoice(viewsKnob);
                     if (viewsSelector) {
                         viewsSelector->setSecret(true);
                     }
@@ -7968,9 +7974,9 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob)
     ///Set the originalFrameRange parameter of the reader if it has one.
     KnobIPtr knob = getKnobByName(kReaderParamNameOriginalFrameRange);
     if (knob) {
-        KnobIntPtr originalFrameRange = boost::dynamic_pointer_cast<KnobInt>(knob);
+        KnobIntPtr originalFrameRange = isKnobInt(knob);
         if ( originalFrameRange && (originalFrameRange->getDimension() == 2) ) {
-            KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(fileKnob);
+            KnobFilePtr isFile = isKnobFile(fileKnob);
             assert(isFile);
             if (!isFile) {
                 throw std::logic_error("Node::computeFrameRangeForReader");
@@ -8008,7 +8014,7 @@ Node::getOverlayColor(double* r,
                       double* g,
                       double* b) const
 {
-    boost::shared_ptr<NodeGuiI> gui_i = getNodeGui();
+    NodeGuiIPtr gui_i = getNodeGui();
 
     if (!gui_i) {
         return false;
@@ -8057,7 +8063,7 @@ Node::drawHostOverlay(double time,
                       const RenderScale& renderScale,
                       ViewIdx view)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         nodeGui->drawHostOverlay(time, renderScale, view);
@@ -8072,7 +8078,7 @@ Node::onOverlayPenDownDefault(double time,
                               const QPointF & pos,
                               double pressure)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayPenDownDefault(time, renderScale, view, viewportPos, pos, pressure);
@@ -8088,7 +8094,7 @@ Node::onOverlayPenDoubleClickedDefault(double time,
                                        const QPointF & viewportPos,
                                        const QPointF & pos)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayPenDoubleClickedDefault(time, renderScale, view, viewportPos, pos);
@@ -8105,7 +8111,7 @@ Node::onOverlayPenMotionDefault(double time,
                                 const QPointF & pos,
                                 double pressure)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayPenMotionDefault(time, renderScale, view, viewportPos, pos, pressure);
@@ -8122,7 +8128,7 @@ Node::onOverlayPenUpDefault(double time,
                             const QPointF & pos,
                             double pressure)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayPenUpDefault(time, renderScale, view, viewportPos, pos, pressure);
@@ -8138,7 +8144,7 @@ Node::onOverlayKeyDownDefault(double time,
                               Key key,
                               KeyboardModifiers modifiers)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayKeyDownDefault(time, renderScale, view, key, modifiers);
@@ -8154,7 +8160,7 @@ Node::onOverlayKeyUpDefault(double time,
                             Key key,
                             KeyboardModifiers modifiers)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayKeyUpDefault(time, renderScale, view, key, modifiers);
@@ -8170,7 +8176,7 @@ Node::onOverlayKeyRepeatDefault(double time,
                                 Key key,
                                 KeyboardModifiers modifiers)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayKeyRepeatDefault(time, renderScale, view, key, modifiers);
@@ -8184,7 +8190,7 @@ Node::onOverlayFocusGainedDefault(double time,
                                   const RenderScale& renderScale,
                                   ViewIdx view)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayFocusGainedDefault(time, renderScale, view);
@@ -8198,7 +8204,7 @@ Node::onOverlayFocusLostDefault(double time,
                                 const RenderScale& renderScale,
                                 ViewIdx view)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->onOverlayFocusLostDefault(time, renderScale, view);
@@ -8210,7 +8216,7 @@ Node::onOverlayFocusLostDefault(double time,
 void
 Node::removePositionHostOverlay(const KnobIPtr& knob)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         nodeGui->removePositionHostOverlay(knob);
@@ -8231,7 +8237,7 @@ Node::addPositionInteract(const KnobDoublePtr& position,
     if (interactive) {
         knobs->addKnob(interactive, PositionOverlayKnobs::eKnobsEnumerationInteractive);
     }
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
     if (!nodeGui) {
         _imp->nativeOverlays.push_back(knobs);
     } else {
@@ -8271,7 +8277,7 @@ Node::addTransformInteract(const KnobDoublePtr& translate,
     if (interactive) {
         knobs->addKnob(interactive, TransformOverlayKnobs::eKnobsEnumerationInteractive);
     }
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
     if (!nodeGui) {
         _imp->nativeOverlays.push_back(knobs);
     } else {
@@ -8324,7 +8330,7 @@ Node::addCornerPinInteract(const KnobDoublePtr& from1,
     if (interactive) {
         knobs->addKnob(interactive, CornerPinOverlayKnobs::eKnobsEnumerationInteractive);
     }
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
     if (!nodeGui) {
         _imp->nativeOverlays.push_back(knobs);
     } else {
@@ -8335,7 +8341,7 @@ Node::addCornerPinInteract(const KnobDoublePtr& from1,
 void
 Node::initializeHostOverlays()
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (!nodeGui) {
         return;
@@ -8355,7 +8361,7 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
                                   unsigned int version)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
@@ -8414,7 +8420,7 @@ Node::getPluginPythonModule() const
 bool
 Node::hasHostOverlayForParam(const KnobIConstPtr& knob) const
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if ( nodeGui && nodeGui->hasHostOverlayForParam(knob) ) {
         return true;
@@ -8426,7 +8432,7 @@ Node::hasHostOverlayForParam(const KnobIConstPtr& knob) const
 bool
 Node::hasHostOverlay() const
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if ( nodeGui && nodeGui->hasHostOverlay() ) {
         return true;
@@ -8438,7 +8444,7 @@ Node::hasHostOverlay() const
 void
 Node::pushUndoCommand(const UndoCommandPtr& command)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         nodeGui->pushUndoCommand(command);
@@ -8450,7 +8456,7 @@ Node::pushUndoCommand(const UndoCommandPtr& command)
 void
 Node::setCurrentCursor(CursorEnum defaultCursor)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         nodeGui->setCurrentCursor(defaultCursor);
@@ -8460,7 +8466,7 @@ Node::setCurrentCursor(CursorEnum defaultCursor)
 bool
 Node::setCurrentCursor(const QString& customCursorFilePath)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if (nodeGui) {
         return nodeGui->setCurrentCursor(customCursorFilePath);
@@ -8472,7 +8478,7 @@ Node::setCurrentCursor(const QString& customCursorFilePath)
 void
 Node::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 {
-    boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
+    NodeGuiIPtr nodeGui = getNodeGui();
 
     if ( nodeGui && nodeGui->hasHostOverlay() ) {
         nodeGui->setCurrentViewportForHostOverlays(viewPort);
@@ -8502,7 +8508,7 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    KnobStringPtr availableViewsKnob = boost::dynamic_pointer_cast<KnobString>(knob);
+    KnobStringPtr availableViewsKnob = isKnobString(knob);
     if (!availableViewsKnob) {
         return;
     }
@@ -8527,7 +8533,7 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
 
     if ( !missingViews.isEmpty() ) {
         KnobIPtr fileKnob = getKnobByName(kOfxImageEffectFileParamName);
-        KnobFilePtr inputFileKnob = boost::dynamic_pointer_cast<KnobFile>( fileKnob.get() );
+        KnobFilePtr inputFileKnob = isKnobFile(fileKnob);
         if (inputFileKnob) {
             std::string filename = inputFileKnob->getValue();
             std::stringstream ss;
@@ -8603,7 +8609,7 @@ Node::onRefreshIdentityStateRequestReceived()
 
     bool isIdentity = false;
     int inputNb = -1;
-    OneViewNode* isOneView = dynamic_cast<OneViewNode*>( _imp->effect.get() );
+    OneViewNodePtr isOneView = isEffectOneViewNode();
     if (!isOneView) {
         for (int i = 0; i < nViews; ++i) {
             int identityInputNb = -1;
@@ -8626,7 +8632,7 @@ Node::onRefreshIdentityStateRequestReceived()
     //depending on the view
 
 
-    boost::shared_ptr<NodeGuiI> nodeUi = _imp->guiPointer.lock();
+    NodeGuiIPtr nodeUi = _imp->guiPointer.lock();
     assert(nodeUi);
     nodeUi->onIdentityStateChanged(isIdentity ? inputNb : -1);
 } // Node::onRefreshIdentityStateRequestReceived
@@ -8656,22 +8662,22 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         return false;
     }
     for (std::map<int, MaskSelector >::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
-        if (it->second.channel.lock().get() == what) {
+        if (it->second.channel.lock() == what) {
             _imp->onMaskSelectorChanged(it->first, it->second);
             break;
         }
     }
 
     bool ret = true;
-    if ( what == _imp->previewEnabledKnob.lock().get() ) {
+    if ( what == _imp->previewEnabledKnob.lock() ) {
         if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
             Q_EMIT previewKnobToggled();
         }
-    } else if ( what == _imp->renderButton.lock().get() ) {
+    } else if ( what == _imp->renderButton.lock() ) {
         if ( getEffectInstance()->isWriter() ) {
             /*if this is a button and it is a render button,we're safe to assume the plug-ins wants to start rendering.*/
             AppInstance::RenderWork w;
-            w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>( _imp->effect.get() );
+            w.writer = isEffectOutput();
             w.firstFrame = INT_MIN;
             w.lastFrame = INT_MAX;
             w.frameStep = INT_MIN;
@@ -8680,7 +8686,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             works.push_back(w);
             getApp()->startWritersRendering(false, works);
         }
-    } else if ( ( what == _imp->disableNodeKnob.lock().get() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
+    } else if ( ( what == _imp->disableNodeKnob.lock() ) && !_imp->isMultiInstance && !_imp->multiInstanceParent.lock() ) {
         Q_EMIT disabledKnobToggled( _imp->disableNodeKnob.lock()->getValue() );
         if ( QThread::currentThread() == qApp->thread() ) {
             getApp()->redrawAllViewers();
@@ -8697,11 +8703,11 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
                 (*it)->computeHashRecursive(markedNodes);
             }
         }
-    } else if ( what == _imp->nodeLabelKnob.lock().get() ) {
+    } else if ( what == _imp->nodeLabelKnob.lock() ) {
         Q_EMIT nodeExtraLabelChanged( QString::fromUtf8( _imp->nodeLabelKnob.lock()->getValue().c_str() ) );
     } else if (what->getName() == kNatronOfxParamStringSublabelName) {
         //special hack for the merge node and others so we can retrieve the sublabel and display it in the node's label
-        KnobStringPtr strKnob = boost::dynamic_pointer_cast<KnobString>(what);
+        KnobStringPtr strKnob = isKnobString(what);
         if (strKnob) {
             QString operation = QString::fromUtf8( strKnob->getValue().c_str() );
             if ( !operation.isEmpty() ) {
@@ -8710,11 +8716,11 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             }
             replaceCustomDataInlabel(operation);
         }
-    } else if ( what == _imp->hideInputs.lock().get() ) {
+    } else if ( what == _imp->hideInputs.lock() ) {
         Q_EMIT hideInputsKnobChanged( _imp->hideInputs.lock()->getValue() );
     } else if ( _imp->effect->isReader() && (what->getName() == kReadOIIOAvailableViewsKnobName) ) {
         refreshCreatedViews(what);
-    } else if ( what == _imp->refreshInfoButton.lock().get() ) {
+    } else if ( what == _imp->refreshInfoButton.lock() ) {
         int maxinputs = getMaxInputCount();
         std::stringstream ssinfo;
         for (int i = 0; i < maxinputs; ++i) {
@@ -8744,7 +8750,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         }
         ssinfo << "</font>";
         _imp->nodeInfos.lock()->setValue( ssinfo.str() );
-    } else if ( what == _imp->openglRenderingEnabledKnob.lock().get() ) {
+    } else if ( what == _imp->openglRenderingEnabledKnob.lock() ) {
         bool enabled = true;
         int thisKnobIndex = _imp->openglRenderingEnabledKnob.lock()->getValue();
         if (thisKnobIndex == 1 || (thisKnobIndex == 2 && getApp()->isBackground())) {
@@ -8762,9 +8768,9 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
     }
 
     if (!ret) {
-        KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(what);
+        KnobGroupPtr isGroup = isKnobGroup(what);
         if ( isGroup && isGroup->getIsDialog() ) {
-            boost::shared_ptr<NodeGuiI> gui = getNodeGui();
+            NodeGuiIPtr gui = getNodeGui();
             if (gui) {
                 gui->showGroupKnobAsDialog(isGroup);
                 ret = true;
@@ -8774,7 +8780,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     if (!ret) {
         for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
-            if (it->second.layer.lock().get() == what) {
+            if (it->second.layer.lock() == what) {
                 _imp->onLayerChanged(it->first, it->second);
                 ret = true;
                 break;
@@ -8788,7 +8794,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
             if (!enabled) {
                 break;
             }
-            if (enabled.get() == what) {
+            if (enabled == what) {
                 checkForPremultWarningAndCheckboxes();
                 ret = true;
                 break;
@@ -8803,7 +8809,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
                  || ( what->getName() == kNatronGroupInputIsMaskParamName) ) {
                 NodeCollectionPtr col = isInput->getNode()->getGroup();
                 assert(col);
-                NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( col.get() );
+                NodeGroupPtr isGrp = isNodeGroup(col);
                 assert(isGrp);
                 if (isGrp) {
                     ///Refresh input arrows of the node to reflect the state
@@ -9187,7 +9193,7 @@ Node::isNodeDisabled() const
 {
     KnobBoolPtr b = _imp->disableNodeKnob.lock();
     bool thisDisabled = b ? b->getValue() : false;
-    NodeGroupPtr isContainerGrp = boost::dynamic_pointer_cast<NodeGroup>( getGroup().get() );
+    NodeGroupPtr isContainerGrp = isNodeGroup( getGroup() );
 
     if (isContainerGrp) {
         return thisDisabled || isContainerGrp->getNode()->isNodeDisabled();
@@ -9291,7 +9297,7 @@ Node::getAllKnobsKeyframes(std::list<SequenceTime>* keyframes)
             continue;
         }
         int dim = knobs[i]->getDimension();
-        KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knobs[i]);
+        KnobFilePtr isFile = isKnobFile(knobs[i]);
         if (isFile) {
             ///skip file knobs
             continue;
@@ -9443,7 +9449,7 @@ Node::updateEffectLabelKnob(const QString & name)
         return;
     }
     KnobIPtr knob = getKnobByName(kNatronOfxParamStringSublabelName);
-    KnobStringPtr strKnob = boost::dynamic_pointer_cast<KnobString>(knob);
+    KnobStringPtr strKnob = isKnobString(knob);
     if (strKnob) {
         strKnob->setValue( name.toStdString() );
     }
@@ -9452,19 +9458,18 @@ Node::updateEffectLabelKnob(const QString & name)
 bool
 Node::canOthersConnectToThisNode() const
 {
-    if ( dynamic_cast<Backdrop*>( _imp->effect.get() ) ) {
+    if ( isEffectBackdrop() ) {
         return false;
-    } else if ( boost::dynamic_pointer_cast<GroupOutput>( _imp->effect ) ) {
+    } else if ( isEffectGroupOutput() ) {
         return false;
     } else if ( _imp->effect->isWriter() && (_imp->effect->getSequentialPreference() == eSequentialPreferenceOnlySequential) ) {
         return false;
     }
     ///In debug mode only allow connections to Writer nodes
 # ifdef DEBUG
-
-    return dynamic_cast<const ViewerInstance*>( _imp->effect.get() ) == NULL;
+    return !isEffectViewerInstance();
 # else // !DEBUG
-    return dynamic_cast<const ViewerInstance*>( _imp->effect.get() ) == NULL /* && !_imp->effect->isWriter()*/;
+    return !isEffectViewerInstance() /* && !_imp->effect->isWriter()*/;
 # endif // !DEBUG
 }
 
@@ -9632,12 +9637,12 @@ Node::dequeueActions()
 } // Node::dequeueActions
 
 static void
-addIdentityNodesRecursively(const Node* caller,
-                            const Node* node,
+addIdentityNodesRecursively(NodeConstPtr caller,
+                            NodeConstPtr node,
                             double time,
                             ViewIdx view,
-                            std::list<const Node*>* outputs,
-                            std::list<const Node*>* markedNodes)
+                            std::list<NodeConstPtr>* outputs,
+                            std::list<NodeConstPtr>* markedNodes)
 {
     if ( std::find(markedNodes->begin(), markedNodes->end(), node) != markedNodes->end() ) {
         return;
@@ -9647,7 +9652,7 @@ addIdentityNodesRecursively(const Node* caller,
 
 
     if (caller != node) {
-        boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
+        ParallelRenderArgsPtr inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
         const FrameViewRequest* request = 0;
         bool isIdentity = false;
         if (inputFrameArgs && inputFrameArgs->request) {
@@ -9692,12 +9697,12 @@ addIdentityNodesRecursively(const Node* caller,
         if (!output) {
             continue;
         }
-        GroupOutput* isGroupOutput = boost::dynamic_pointer_cast<GroupOutput>( output->getEffectInstance() );
+        GroupOutputPtr isGroupOutput = output->isEffectGroupOutput();
         //If the node is an output node, add all the outputs of the group node instead
         if (isGroupOutput) {
             NodeCollectionPtr collection = output->getGroup();
             assert(collection);
-            NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+            NodeGroupPtr isGrp = isNodeGroup(collection);
             if (isGrp) {
                 NodesWList groupOutputs;
                 isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
@@ -9708,7 +9713,7 @@ addIdentityNodesRecursively(const Node* caller,
         }
 
         //If the node is a group, add all its inputs
-        NodeGroup* isGrp = dynamic_cast<NodeGroup*>(output->getEffectInstance().get());
+        NodeGroupPtr isGrp = output->isEffectNodeGroup();
         if (isGrp) {
             NodesList inputOutputs;
             isGrp->getInputsOutputs(&inputOutputs, false);
@@ -9723,7 +9728,7 @@ addIdentityNodesRecursively(const Node* caller,
     for (NodesWList::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
         NodePtr node = it->lock();
         if (node) {
-            addIdentityNodesRecursively(caller, node.get(), time, view, outputs, markedNodes);
+            addIdentityNodesRecursively(caller, node, time, view, outputs, markedNodes);
         }
     }
 } // addIdentityNodesRecursively
@@ -9749,10 +9754,10 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
      * - The node does not support tiles
      */
 
-    std::list<const Node*> outputs;
+    std::list<NodeConstPtr> outputs;
     {
-        std::list<const Node*> markedNodes;
-        addIdentityNodesRecursively(this, this, time, view, &outputs, &markedNodes);
+        std::list<NodeConstPtr> markedNodes;
+        addIdentityNodesRecursively(shared_from_this(), shared_from_this(), time, view, &outputs, &markedNodes);
     }
     std::size_t sz = outputs.size();
 
@@ -9761,8 +9766,8 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         return true;
     } else {
         if (sz == 1) {
-            const Node* output = outputs.front();
-            ViewerInstance* isViewer = output->isEffectViewerInstance();
+            NodeConstPtr output = outputs.front();
+            ViewerInstancePtr isViewer = output->isEffectViewerInstance();
             if (isViewer) {
                 int activeInputs[2];
                 isViewer->getActiveInputs(activeInputs[0], activeInputs[1]);
@@ -9775,7 +9780,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 }
             }
 
-            RotoPaint* isRoto = dynamic_cast<RotoPaint*>(output->getEffectInstance().get());
+            RotoPaintPtr isRoto = isRotoPaint( output->getEffectInstance() );
             if (isRoto) {
                 // THe roto internally makes multiple references to the input so cache it
                 return true;
@@ -9811,7 +9816,7 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                 //Users wants it cached
                 return true;
             }
-            NodeGroupPtr parentIsGroup = boost::dynamic_pointer_cast<NodeGroup>( getGroup().get() );
+            NodeGroupPtr parentIsGroup = isNodeGroup( getGroup() );
             if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput(false).get() == this) ) {
                 //if the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
                 return true;
@@ -10145,7 +10150,7 @@ void
 Node::setPosition(double x,
                   double y)
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (gui) {
         gui->setPosition(x, y);
@@ -10156,7 +10161,7 @@ void
 Node::getPosition(double *x,
                   double *y) const
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (gui) {
         gui->getPosition(x, y);
@@ -10170,7 +10175,7 @@ void
 Node::setSize(double w,
               double h)
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (gui) {
         gui->setSize(w, h);
@@ -10181,7 +10186,7 @@ void
 Node::getSize(double* w,
               double* h) const
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (gui) {
         gui->getSize(w, h);
@@ -10196,7 +10201,7 @@ Node::getColor(double* r,
                double *g,
                double* b) const
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (gui) {
         gui->getColor(r, g, b);
@@ -10214,7 +10219,7 @@ Node::setColor(double r,
                double g,
                double b)
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (gui) {
         gui->setColor(r, g, b);
@@ -10222,14 +10227,14 @@ Node::setColor(double r,
 }
 
 void
-Node::setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui)
+Node::setNodeGuiPointer(const NodeGuiIPtr& gui)
 {
     assert( !_imp->guiPointer.lock() );
     assert( QThread::currentThread() == qApp->thread() );
     _imp->guiPointer = gui;
 }
 
-boost::shared_ptr<NodeGuiI>
+NodeGuiIPtr
 Node::getNodeGui() const
 {
     return _imp->guiPointer.lock();
@@ -10238,7 +10243,7 @@ Node::getNodeGui() const
 bool
 Node::isUserSelected() const
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (!gui) {
         return false;
@@ -10250,7 +10255,7 @@ Node::isUserSelected() const
 bool
 Node::isSettingsPanelMinimized() const
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (!gui) {
         return false;
@@ -10262,7 +10267,7 @@ Node::isSettingsPanelMinimized() const
 bool
 Node::isSettingsPanelVisibleInternal(std::set<const Node*>& recursionList) const
 {
-    boost::shared_ptr<NodeGuiI> gui = _imp->guiPointer.lock();
+    NodeGuiIPtr gui = _imp->guiPointer.lock();
 
     if (!gui) {
         return false;
@@ -10696,7 +10701,7 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
         runOnNodeCreatedCBInternal(cb, userEdited);
     }
 
-    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
+    NodeGroupPtr isGroup = isNodeGroup(group);
     KnobStringPtr nodeCreatedCbKnob = nodeCreatedCallback.lock();
     if (!nodeCreatedCbKnob && isGroup) {
         cb = isGroup->getNode()->getAfterNodeCreatedCallback();
@@ -10729,7 +10734,7 @@ Node::Implementation::runOnNodeDeleteCB()
     }
 
 
-    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
+    NodeGroupPtr isGroup = isNodeGroup(group);
     KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
     if (!nodeDeletedKnob && isGroup) {
         NodePtr grpNode = isGroup->getNode();
@@ -10847,7 +10852,7 @@ Node::Implementation::runInputChangedCallback(int index,
     }
 
     std::string thisGroupVar;
-    NodeGroupPtr isParentGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+    NodeGroupPtr isParentGrp = isNodeGroup(collection);
     if (isParentGrp) {
         std::string nodeName = isParentGrp->getNode()->getFullyQualifiedName();
         std::string nodeFullName = appID + "." + nodeName;
@@ -10883,7 +10888,7 @@ Node::getChannelSelectorKnob(int inputNb) const
                 return KnobChoicePtr();
             }
 
-            return boost::dynamic_pointer_cast<KnobChoice>(knob);
+            return isKnobChoice(knob);
         }
 
         return KnobChoicePtr();
@@ -11492,7 +11497,7 @@ Node::addUserComponents(const ImageComponents& comps)
     }
     {
         ///Set the selector to the new channel
-        KnobChoicePtr layerChoice = boost::dynamic_pointer_cast<KnobChoice>( outputLayerKnob.get() );
+        KnobChoicePtr layerChoice = isKnobChoice(outputLayerKnob);
         if (layerChoice) {
             layerChoice->setValueFromLabel(comps.getLayerName(), 0);
         }
@@ -11635,7 +11640,7 @@ InspectorNode::refreshActiveInputs(int inputNbChanged,
             }
         } else {
             if ( !isASide && (_activeInputs[0] != -1) ) {
-                ViewerInstance* isViewer = isEffectViewerInstance();
+                ViewerInstancePtr isViewer = isEffectViewerInstance();
                 if (isViewer) {
                     OpenGLViewerI* viewerUI = isViewer->getUiContext();
                     if (viewerUI) {

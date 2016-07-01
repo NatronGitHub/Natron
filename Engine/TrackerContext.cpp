@@ -90,7 +90,7 @@ TrackerContext::~TrackerContext()
 void
 TrackerContext::load(const TrackerContextSerialization& serialization)
 {
-    boost::shared_ptr<TrackerContext> thisShared = shared_from_this();
+    TrackerContextPtr thisShared = shared_from_this();
     QMutexLocker k(&_imp->trackerContextMutex);
 
     for (std::list<TrackSerialization>::const_iterator it = serialization._tracks.begin(); it != serialization._tracks.end(); ++it) {
@@ -750,7 +750,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = isKnobDouble(knob);
     assert(ret);
 
     return ret;
@@ -768,7 +768,7 @@ getCornerPinPoint(Node* node,
     QString name = isFrom ? QString::fromUtf8("from%1").arg(index + 1) : QString::fromUtf8("to%1").arg(index + 1);
     KnobIPtr knob = node->getKnobByName( name.toStdString() );
     assert(knob);
-    KnobDoublePtr  ret = boost::dynamic_pointer_cast<KnobDouble>(knob);
+    KnobDoublePtr  ret = isKnobDouble(knob);
     assert(ret);
 
     return ret;
@@ -857,7 +857,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         {
             KnobIPtr knob = createdNode->getKnobByName(kCornerPinParamMatrix);
             if (knob) {
-                KnobDoublePtr isType = boost::dynamic_pointer_cast<KnobDouble>(knob);
+                KnobDoublePtr isType = isKnobDouble(knob);
                 if (isType) {
                     isType->cloneAndUpdateGui( _imp->cornerPinMatrix.lock().get() );
                 }
@@ -868,7 +868,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     case eTrackerTransformNodeTransform: {
         KnobIPtr translateKnob = createdNode->getKnobByName(kTransformParamTranslate);
         if (translateKnob) {
-            KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(translateKnob);
+            KnobDoublePtr isDbl = isKnobDouble(translateKnob);
             if (isDbl) {
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->translate.lock().get() );
@@ -881,7 +881,7 @@ TrackerContext::exportTrackDataFromExportOptions()
 
         KnobIPtr scaleKnob = createdNode->getKnobByName(kTransformParamScale);
         if (scaleKnob) {
-            KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(scaleKnob);
+            KnobDoublePtr isDbl = isKnobDouble(scaleKnob);
             if (isDbl) {
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->scale.lock().get() );
@@ -894,7 +894,7 @@ TrackerContext::exportTrackDataFromExportOptions()
 
         KnobIPtr rotateKnob = createdNode->getKnobByName(kTransformParamRotate);
         if (rotateKnob) {
-            KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(rotateKnob);
+            KnobDoublePtr isDbl = isKnobDouble(rotateKnob);
             if (isDbl) {
                 if (!linked) {
                     isDbl->cloneAndUpdateGui( _imp->rotate.lock().get() );
@@ -905,7 +905,7 @@ TrackerContext::exportTrackDataFromExportOptions()
         }
         KnobIPtr centerKnob = createdNode->getKnobByName(kTransformParamCenter);
         if (centerKnob) {
-            KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(centerKnob);
+            KnobDoublePtr isDbl = isKnobDouble(centerKnob);
             if (isDbl) {
                 isDbl->cloneAndUpdateGui( _imp->center.lock().get() );
             }
@@ -916,7 +916,7 @@ TrackerContext::exportTrackDataFromExportOptions()
 
     KnobIPtr cpInvertKnob = createdNode->getKnobByName(kTransformParamInvert);
     if (cpInvertKnob) {
-        KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(cpInvertKnob);
+        KnobBoolPtr isBool = isKnobBool(cpInvertKnob);
         if (isBool) {
             if (!linked) {
                 isBool->cloneAndUpdateGui( _imp->invertTransform.lock().get() );
@@ -929,7 +929,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamMotionBlur);
         if (knob) {
-            KnobDoublePtr isType = boost::dynamic_pointer_cast<KnobDouble>(knob);
+            KnobDoublePtr isType = isKnobDouble(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->motionBlur.lock().get() );
             }
@@ -938,7 +938,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamShutter);
         if (knob) {
-            KnobDoublePtr isType = boost::dynamic_pointer_cast<KnobDouble>(knob);
+            KnobDoublePtr isType = isKnobDouble(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->shutter.lock().get() );
             }
@@ -947,7 +947,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamShutterOffset);
         if (knob) {
-            KnobChoicePtr isType = boost::dynamic_pointer_cast<KnobChoice>(knob);
+            KnobChoicePtr isType = isKnobChoice(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->shutterOffset.lock().get() );
             }
@@ -956,7 +956,7 @@ TrackerContext::exportTrackDataFromExportOptions()
     {
         KnobIPtr knob = createdNode->getKnobByName(kTransformParamCustomShutterOffset);
         if (knob) {
-            KnobDoublePtr isType = boost::dynamic_pointer_cast<KnobDouble>(knob);
+            KnobDoublePtr isType = isKnobDouble(knob);
             if (isType) {
                 isType->cloneAndUpdateGui( _imp->customShutterOffset.lock().get() );
             }

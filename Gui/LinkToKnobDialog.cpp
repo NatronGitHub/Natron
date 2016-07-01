@@ -151,7 +151,7 @@ LinkToKnobDialog::LinkToKnobDialog(const KnobGuiPtr& from,
     }
     NodeCollectionPtr group = isEffect->getNode()->getGroup();
     group->getActiveNodes(&_imp->allNodes);
-    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
+    NodeGroupPtr isGroup = isNodeGroup( group.get() );
     if (isGroup) {
         _imp->allNodes.push_back( isGroup->getNode() );
     }
@@ -204,9 +204,9 @@ LinkToKnobDialog::onNodeComboEditingFinished()
     KnobIPtr from = _imp->fromKnob->getKnob();
     for (U32 j = 0; j < knobs.size(); ++j) {
         if ( !knobs[j]->getIsSecret() && (knobs[j] != from) ) {
-            KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(knobs[j]);
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[j]);
-            KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knobs[j]);
+            KnobButtonPtr isButton = isKnobButton(knobs[j]);
+            KnobPagePtr isPage = isKnobPage(knobs[j]);
+            KnobGroupPtr isGroup = isKnobGroup(knobs[j]);
             if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
                 QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
                 bool canInsertKnob = true;

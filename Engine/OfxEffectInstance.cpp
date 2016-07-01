@@ -481,7 +481,7 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
             {
                 KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
                 if (foundCursorKnob) {
-                    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundCursorKnob);
+                    KnobStringPtr isStringKnob = isKnobString(foundCursorKnob);
                     _imp->cursorKnob = isStringKnob;
                 }
             }
@@ -490,21 +490,21 @@ OfxEffectInstance::createOfxImageEffectInstance(OFX::Host::ImageEffect::ImageEff
 
                 KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
                 if (foundSelKnob) {
-                    KnobIntPtr isIntKnob = boost::dynamic_pointer_cast<KnobInt>(foundSelKnob);
+                    KnobIntPtr isIntKnob = isKnobInt(foundSelKnob);
                     _imp->selectionRectangleStateKnob = isIntKnob;
                 }
             }
             {
                 KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
                 if (foundTextKnob) {
-                    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(foundTextKnob);
+                    KnobStringPtr isStringKnob = isKnobString(foundTextKnob);
                     _imp->undoRedoTextKnob = isStringKnob;
                 }
             }
             {
                 KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
                 if (foundUndoRedoKnob) {
-                    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(foundUndoRedoKnob);
+                    KnobBoolPtr isBool = isKnobBool(foundUndoRedoKnob);
                     _imp->undoRedoStateKnob = isBool;
                 }
             }
@@ -767,7 +767,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         interactDesc.setEntryPoint(interactEntryPoint);
 #pragma message WARN("FIXME: bitdepth and hasalpha are probably wrong")
         interactDesc.describe(/*bitdepthPerComponent=*/ 8, /*hasAlpha=*/ false);
-        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob.get(), interactDesc, effectInstance()->getHandle()) );
+        boost::shared_ptr<OfxParamOverlayInteract> overlayInteract( new OfxParamOverlayInteract( knob, interactDesc, effectInstance()->getHandle()) );
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
@@ -2024,7 +2024,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     bool multiPlanar = isMultiPlanar();
     std::list<std::string> ofxPlanes;
-    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin();
+    for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
         if (!multiPlanar) {
             // When not multi-planar, the components of the image will be the colorplane
@@ -2550,7 +2550,7 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     {
         // Handle cursor knob
         KnobStringPtr cursorKnob = _imp->cursorKnob.lock();
-        if (k == cursorKnob.get()) {
+        if (k == cursorKnob) {
             CursorEnum c;
             std::string cursorStr = cursorKnob->getValue();
             if (OfxImageEffectInstance::ofxCursorToNatronCursor(cursorStr, &c)) {
@@ -2561,7 +2561,7 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
             return true;
         }
         KnobStringPtr undoRedoText = _imp->undoRedoTextKnob.lock();
-        if (k == undoRedoText.get()) {
+        if (k == undoRedoText) {
             KnobBoolPtr undoRedoState = _imp->undoRedoStateKnob.lock();
             assert(undoRedoState);
 

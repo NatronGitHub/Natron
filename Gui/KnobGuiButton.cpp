@@ -89,7 +89,7 @@ KnobGuiButton::KnobGuiButton(KnobIPtr knob,
     : KnobGui(knob, container)
     , _button(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobButton>(knob);
+    _knob = isKnobButton(knob);
 }
 
 void

@@ -225,11 +225,11 @@ public:
     void setDuringInteractAction(bool b);
 
 #if NATRON_ENABLE_TRIMAP
-    void markImageAsBeingRendered(const boost::shared_ptr<Image> & img);
+    void markImageAsBeingRendered(const ImagePtr & img);
 
-    bool waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi, const boost::shared_ptr<Image> & img);
+    bool waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi, const ImagePtr & img);
 
-    void unmarkImageAsBeingRendered(const boost::shared_ptr<Image> & img, bool renderFailed);
+    void unmarkImageAsBeingRendered(const ImagePtr & img, bool renderFailed);
 #endif
 
     /**
@@ -277,7 +277,7 @@ public:
                          bool isIdentity,
                          double identityTime,
                          const EffectInstancePtr& identityInput,
-                         const boost::shared_ptr<ComponentsNeededMap>& compsNeeded,
+                         const ComponentsNeededMapPtr& compsNeeded,
                          const EffectInstance::InputImagesMap& inputImages,
                          const RoIMap & roiMap,
                          int firstFrame,
@@ -290,7 +290,7 @@ public:
         ~ScopedRenderArgs();
     };
 
-    void addInputImageTempPointer(int inputNb, const boost::shared_ptr<Image> & img);
+    void addInputImageTempPointer(int inputNb, const ImagePtr & img);
 
     void clearInputImagePointers();
 
@@ -310,11 +310,11 @@ public:
         ViewIdx view;
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
-        boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
+        ComponentsNeededMapPtr  compsNeeded;
         ImageComponents outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
-        boost::shared_ptr<ImagePlanesToRender> planes;
+        ImagePlanesToRenderPtr planes;
     };
 
     RenderingFunctorRetEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,  const RectToRender & specificData,
@@ -335,9 +335,9 @@ public:
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
                                                   const ImageComponents & outputClipPrefsComps,
-                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                  const ComponentsNeededMapPtr & compsNeeded,
                                                   const std::bitset<4>& processChannels,
-                                                  const boost::shared_ptr<ImagePlanesToRender> & planes);
+                                                  const ImagePlanesToRenderPtr & planes);
 
 
     ///These are the image passed to the plug-in to render
@@ -373,8 +373,8 @@ public:
                                           const ImageBitDepthEnum outputClipPrefDepth,
                                           const ImageComponents & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
-                                          const boost::shared_ptr<Image> & originalInputImage,
-                                          const boost::shared_ptr<Image> & maskImage,
+                                          const ImagePtr & originalInputImage,
+                                          const ImagePtr & maskImage,
                                           const ImagePremultiplicationEnum originalImagePremultiplication,
                                           ImagePlanesToRender & planes);
 

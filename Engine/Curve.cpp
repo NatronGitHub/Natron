@@ -213,76 +213,46 @@ Curve::Curve(const KnobIPtr& owner,
     //std::string typeName = _imp->owner->typeName(); // crashes because the Knob constructor is not finished at this point
     bool found = false;
     // use RTTI to guess curve type
-    if (!found) {
-        KnobDoublePtr k = boost::dynamic_pointer_cast<KnobDouble>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeDouble;
-            found = true;
-        }
+    if ( !found && isKnobDouble(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeDouble;
+        found = true;
     }
-    if (!found) {
-        KnobColorPtr k = boost::dynamic_pointer_cast<KnobColor>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeDouble;
-            found = true;
-        }
+    if ( !found && isKnobColor(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeDouble;
+        found = true;
     }
-    if (!found) {
-        KnobIntPtr k = boost::dynamic_pointer_cast<KnobInt>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeInt;
-            found = true;
-        }
+    if ( !found && isKnobInt(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeInt;
+        found = true;
     }
-    if (!found) {
-        KnobChoicePtr k = boost::dynamic_pointer_cast<KnobChoice>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
-            found = true;
-        }
+    if ( !found && isKnobChoice(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeIntConstantInterp;
+        found = true;
     }
-    if (!found) {
-        KnobStringPtr k = boost::dynamic_pointer_cast<KnobString>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && isKnobString(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobFilePtr k = boost::dynamic_pointer_cast<KnobFile>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && isKnobFile(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobOutputFilePtr k = boost::dynamic_pointer_cast<KnobOutputFile>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && isKnobOutputFile(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobPathPtr k = boost::dynamic_pointer_cast<KnobPath>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeString;
-            found = true;
-        }
+    if ( !found && isKnobPath(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeString;
+        found = true;
     }
-    if (!found) {
-        KnobBoolPtr k = boost::dynamic_pointer_cast<KnobBool>(owner);
-        if (k) {
-            _imp->type = CurvePrivate::eCurveTypeBool;
-            found = true;
-        }
+    if ( !found && isKnobBool(owner) ) {
+        _imp->type = CurvePrivate::eCurveTypeBool;
+        found = true;
     }
-
-    if (!found) {
-        KnobParametricPtr parametric = boost::dynamic_pointer_cast<KnobParametric>(owner);
-        if (parametric) {
-            _imp->isParametric = true;
-            found = true;
-        }
+    
+    if ( !found && isKnobParametric(owner) ) {
+        _imp->isParametric = true;
+        found = true;
     }
     assert(found);
 }
@@ -1044,8 +1014,8 @@ Curve::YRange Curve::getCurveYRange() const
     }
     KnobIPtr owner = _imp->owner.lock();
     if (owner) {
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(owner);
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(owner);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(owner);
+        KnobIntBasePtr isInt = isKnobIntBase(owner);
         if (isDouble) {
             double min = isDouble->getMinimum(_imp->dimensionInOwner);
             if (min <= -DBL_MAX) {

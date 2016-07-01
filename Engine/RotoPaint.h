@@ -221,6 +221,18 @@ private:
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 };
 
+inline RotoPaintPtr
+isRotoPaint(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<RotoPaint>(effect);
+}
+
+inline RotoNodePtr
+isRotoNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<RotoNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // ROTOPAINT_H

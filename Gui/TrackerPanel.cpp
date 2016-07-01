@@ -321,7 +321,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
     , _imp( new TrackerPanelPrivate(this, n) )
 {
     QObject::connect( parent, SIGNAL(closeChanged(bool)), this, SLOT(onSettingsPanelClosed(bool)) );
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
     QObject::connect( n->getNode()->getApp()->getTimeLine().get(), SIGNAL(frameChanged(SequenceTime,int)), this,
                       SLOT(onTimeChanged(SequenceTime,int)) );
     QObject::connect( context.get(), SIGNAL(selectionChanged(int)), this, SLOT(onContextSelectionChanged(int)) );
@@ -532,7 +532,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 static QString
 tooltipFromKnob(const KnobIPtr& knob)
 {
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr isChoice = isKnobChoice(knob);
     QString tt = QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8( knob->getName().c_str() ) );
     QString realTt;
 
@@ -847,7 +847,7 @@ TrackerPanel::removeMarker(const TrackMarkerPtr & marker)
     }
 }
 
-boost::shared_ptr<TrackerContext>
+TrackerContextPtr
 TrackerPanel::getContext() const
 {
     return _imp->context.lock();
@@ -943,7 +943,7 @@ TrackerPanel::onRemoveButtonClicked()
 void
 TrackerPanel::onSelectAllButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     context->selectAll(TrackerContext::eTrackSelectionInternal);
@@ -952,7 +952,7 @@ TrackerPanel::onSelectAllButtonClicked()
 void
 TrackerPanel::onResetButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     std::list<TrackMarkerPtr > markers;
@@ -971,7 +971,7 @@ TrackerPanel::onResetButtonClicked()
 TrackMarkerPtr
 TrackerPanel::makeTrackInternal()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     TrackMarkerPtr ret = context->createMarker();
@@ -984,7 +984,7 @@ TrackerPanel::makeTrackInternal()
 void
 TrackerPanel::onAverageButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     std::list<TrackMarkerPtr > markers;
@@ -1331,7 +1331,7 @@ TrackerPanel::selectInternal(const std::list<TrackMarkerPtr >& markers,
             _imp->node.lock()->getNode()->getApp()->addUserMultipleKeyframeIndicatorsAdded(userKeysToAdd, true);
         }
 
-        boost::shared_ptr<TrackerContext> context = getContext();
+        TrackerContextPtr context = getContext();
         assert(context);
         context->beginEditSelection(TrackerContext::eTrackSelectionSettingsPanel);
         context->clearSelection(TrackerContext::eTrackSelectionSettingsPanel);
@@ -1423,7 +1423,7 @@ TrackerPanel::onItemEnabledCheckBoxChecked(bool checked)
         QWidget* cellW = _imp->view->cellWidget(i, COL_ENABLED);
         if (widgetContainer == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            boost::shared_ptr<TrackerContext> context = getContext();
+            TrackerContextPtr context = getContext();
             // Set the selection to only this marker otherwise all markers will get the enabled value
             context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
             context->clearSelection(TrackerContext::eTrackSelectionInternal);
@@ -1447,7 +1447,7 @@ TrackerPanel::onItemMotionModelChanged(int index)
         QWidget* cellW = _imp->view->cellWidget(i, COL_MOTION_MODEL);
         if (widget == cellW) {
             TrackMarkerPtr marker = _imp->items[i].marker.lock();
-            boost::shared_ptr<TrackerContext> context = getContext();
+            TrackerContextPtr context = getContext();
             // Set the selection to only this marker otherwise all markers will get the enabled value
             context->beginEditSelection(TrackerContext::eTrackSelectionInternal);
             context->clearSelection(TrackerContext::eTrackSelectionInternal);

@@ -136,5 +136,11 @@ private:
     boost::scoped_ptr<JoinViewsNodePrivate> _imp;
 };
 
+inline JoinViewsNodePtr
+isJoinViewsNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<JoinViewsNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 #endif // Engine_JoinViewsNode_h

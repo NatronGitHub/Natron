@@ -213,7 +213,7 @@ public:
                    const RenderScale& renderScale,
                    ViewIdx view);
 
-    bool hasHostOverlayForParam(const KnobI* param);
+    bool hasHostOverlayForParam(const KnobIConstPtr& param);
 
     void removePositionHostOverlay(const KnobIPtr& knob);
 

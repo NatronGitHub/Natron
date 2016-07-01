@@ -141,7 +141,7 @@ void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    boost::shared_ptr<RenderEngine> engine = _imp->viewerNode->getRenderEngine();
+    RenderEnginePtr engine = _imp->viewerNode->getRenderEngine();
 
     assert(engine);
     if (connect) {

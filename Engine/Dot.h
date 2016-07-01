@@ -71,6 +71,12 @@ public:
     }
 };
 
+inline DotPtr
+isDot(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<Dot>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_Dot_h

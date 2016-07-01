@@ -390,7 +390,7 @@ NodeGraph::mouseMoveEvent(QMouseEvent* e)
 
     bool mustUpdate = true;
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(collection);
+    NodeGroupPtr isGroup = isNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {

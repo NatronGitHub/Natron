@@ -402,7 +402,7 @@ OfxParamToKnob::onChoiceMenuPopulated()
     if (!knob) {
         return;
     }
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr isChoice = isKnobChoice(knob);
     if (!isChoice) {
         return;
     }

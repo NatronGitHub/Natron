@@ -360,7 +360,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                               NodePtr(), // rotoPaintNode
                                               true, //isAnalysis
                                               false, //draftMode
-                                              boost::shared_ptr<RenderStats>() ); // Stats
+                                              RenderStatsPtr() ); // Stats
     EffectInstance::RenderRoIArgs args( frame,
                                         scale,
                                         downscale,

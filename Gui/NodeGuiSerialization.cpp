@@ -72,7 +72,7 @@ NodeGuiSerialization::initialize(const NodeGui*  n)
             if (!(*it)->isPartOfProject()) {
                 continue;
             }
-            boost::shared_ptr<NodeGuiI> gui_i = (*it)->getNodeGui();
+            NodeGuiIPtr gui_i = (*it)->getNodeGui();
             if (!gui_i) {
                 continue;
             }

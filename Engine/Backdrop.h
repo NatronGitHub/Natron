@@ -93,6 +93,12 @@ private:
     boost::scoped_ptr<BackdropPrivate> _imp;
 };
 
+inline BackdropPtr
+isBackdrop(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<Backdrop>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // BACKDROP_H

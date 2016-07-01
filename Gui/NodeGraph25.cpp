@@ -226,7 +226,7 @@ void
 NodeGraph::keyPressEvent(QKeyEvent* e)
 {
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(collection);
+    NodeGroupPtr isGroup = isNodeGroup(collection);
     bool groupEdited = true;
 
     if (isGroup) {
@@ -318,7 +318,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             if ( !outputs.empty() ) {
                 NodePtr firstOutput = outputs.front().lock();
                 if (firstOutput) {
-                    boost::shared_ptr<NodeGuiI> output_i = firstOutput->getNodeGui();
+                    NodeGuiIPtr output_i = firstOutput->getNodeGui();
                     NodeGuiPtr output = boost::dynamic_pointer_cast<NodeGui>(output_i);
                     if (output) {
                         if ( output->getIsSelected() && modCASIsShift(e) ) {

@@ -94,6 +94,12 @@ public:
                              bool /*originatedFromMainThread*/) OVERRIDE FINAL;
 };
 
+inline GroupInputPtr
+isGroupInput(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<GroupInput>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NOOP_H

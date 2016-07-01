@@ -56,7 +56,7 @@ struct NumericKnobValidatorPrivate
     {
         KnobIPtr internalKnob = knob->getKnob();
 
-        isDouble = boost::dynamic_pointer_cast<KnobDoubleBase >(internalKnob);
+        isDouble = isKnobDoubleBase(internalKnob);
         isInt = boost::dynamic_pointer_cast<KnobIntBase >(internalKnob);
         assert( isDouble.lock() || isInt.lock() );
     }

@@ -45,9 +45,9 @@ ProjectSerialization::initialize(const Project* project)
 
     std::vector< KnobIPtr > knobs = project->getKnobs_mt_safe();
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knobs[i]);
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
-        KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(knobs[i]);
+        KnobGroupPtr isGroup = isKnobGroup(knobs[i]);
+        KnobPagePtr isPage = isKnobPage(knobs[i]);
+        KnobButtonPtr isButton = isKnobButton(knobs[i]);
         if ( knobs[i]->getIsPersistant() &&
              !isGroup && !isPage && !isButton &&
              knobs[i]->hasModificationsForSerialization() ) {

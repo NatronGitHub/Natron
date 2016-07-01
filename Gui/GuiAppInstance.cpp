@@ -85,7 +85,7 @@ struct RotoPaintData
     double distToNextIn, distToNextOut;
 
     //The image used to render the currently drawn stroke mask
-    boost::shared_ptr<Image> strokeImage;
+    ImagePtr strokeImage;
 
     RotoPaintData()
         : rotoPaintNode()
@@ -475,7 +475,7 @@ GuiAppInstance::createNodeGui(const NodePtr &node,
         nodegui->hideGui();
 
 
-        boost::shared_ptr<NodeGuiI> parentNodeGui_i = parentMultiInstance->getNodeGui();
+        NodeGuiIPtr parentNodeGui_i = parentMultiInstance->getNodeGui();
         assert(parentNodeGui_i);
         nodegui->setParentMultiInstance( boost::dynamic_pointer_cast<NodeGui>(parentNodeGui_i) );
     }
@@ -1080,7 +1080,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
         NodeGraph* graph = 0;
         NodeCollectionPtr collection = node->getGroup();
         assert(collection);
-        NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+        NodeGroupPtr isGrp = isNodeGroup(collection);
         if (isGrp) {
             NodeGraphI* graph_i = isGrp->getNodeGraph();
             assert(graph_i);
@@ -1100,7 +1100,7 @@ GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
                 selectedNode.reset();
             }
         }
-        boost::shared_ptr<NodeGuiI> node_gui_i = node->getNodeGui();
+        NodeGuiIPtr node_gui_i = node->getNodeGui();
         assert(node_gui_i);
         NodeGuiPtr nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
         graph->moveNodesForIdealPosition(nodeGui, selectedNode, true);
@@ -1301,7 +1301,7 @@ void
 GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
                                     std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
                                     double *distNextIn,
-                                    boost::shared_ptr<Image>* strokeImage) const
+                                    ImagePtr* strokeImage) const
 {
     QMutexLocker k(&_imp->rotoDataMutex);
 
@@ -1312,7 +1312,7 @@ GuiAppInstance::getRenderStrokeData(RectD* lastStrokeMovementBbox,
 }
 
 void
-GuiAppInstance::updateStrokeImage(const boost::shared_ptr<Image>& image,
+GuiAppInstance::updateStrokeImage(const ImagePtr& image,
                                   double distNextOut,
                                   bool setDistNextOut)
 {

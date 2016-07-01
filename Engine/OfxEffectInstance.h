@@ -337,6 +337,18 @@ private:
     boost::scoped_ptr<OfxEffectInstancePrivate> _imp;
 };
 
+inline AbstractOfxEffectInstancePtr
+isAbstractOfxEffectInstance(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<AbstractOfxEffectInstance>(effect);
+}
+
+inline OfxEffectInstancePtr
+isOfxEffectInstance(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<OfxEffectInstance>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_OFXNODE_H

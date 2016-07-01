@@ -353,7 +353,7 @@ ViewerTab::abortViewersAndRefresh()
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerInstance* viewer = (*it)->getInternalNode();
         if (viewer) {
-            boost::shared_ptr<RenderEngine> engine = viewer->getRenderEngine();
+            RenderEnginePtr engine = viewer->getRenderEngine();
             if ( engine ) {
                 engine->abortRenderingAutoRestart();
                 engine->renderCurrentFrame(false, true);
@@ -497,7 +497,7 @@ ViewerTab::~ViewerTab()
         if (_imp->viewerNode) {
             NodeCollectionPtr collection = _imp->viewerNode->getNode()->getGroup();
             if (collection) {
-                NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+                NodeGroupPtr isGrp = isNodeGroup(collection);
                 if (isGrp) {
                     NodeGraphI* graph_i = isGrp->getNodeGraph();
                     if (graph_i) {
@@ -907,7 +907,7 @@ ViewerTab::eventFilter(QObject *target,
 {
     if (e->type() == QEvent::MouseButtonPress) {
         if ( getGui() && getGui()->getApp() ) {
-            boost::shared_ptr<NodeGuiI> gui_i = _imp->viewerNode->getNode()->getNodeGui();
+            NodeGuiIPtr gui_i = _imp->viewerNode->getNode()->getNodeGui();
             assert(gui_i);
             NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             getGui()->selectNode(gui);

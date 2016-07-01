@@ -184,7 +184,7 @@ TabGroup::onGroupKnobSecretChanged()
         return;
     }
 
-    KnobGroupPtr groupKnob = boost::dynamic_pointer_cast<KnobGroup>(knob);
+    KnobGroupPtr groupKnob = isKnobGroup(knob);
     if (!groupKnob) {
         return;
     }

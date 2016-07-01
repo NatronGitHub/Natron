@@ -364,19 +364,19 @@ static ParamDataTypeEnum
 getChoiceIndexFromKnobType(const KnobIPtr& knob)
 {
     int dim = knob->getDimension();
-    KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
+    KnobIntPtr isInt = isKnobInt(knob);
     KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
-    KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(knob);
-    KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
-    KnobOutputFilePtr isOutputFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
-    KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(knob);
-    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
-    KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(knob);
-    KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobColorPtr isColor = isKnobColor(knob);
+    KnobChoicePtr isChoice = isKnobChoice(knob);
+    KnobBoolPtr isBool = isKnobBool(knob);
+    KnobStringPtr isStr = isKnobString(knob);
+    KnobFilePtr isFile = isKnobFile(knob);
+    KnobOutputFilePtr isOutputFile = isKnobOutputFile(knob);
+    KnobPathPtr isPath = isKnobPath(knob);
+    KnobGroupPtr isGrp = isKnobGroup(knob);
+    KnobPagePtr isPage = isKnobPage(knob);
+    KnobButtonPtr isBtn = isKnobButton(knob);
+    KnobSeparatorPtr isSep = isKnobSeparator(knob);
 
     if (isInt) {
         if (dim == 1) {
@@ -542,8 +542,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             bool startNewLine = true;
             KnobIPtr parentKnob = _imp->knob->getParentKnob();
             if (parentKnob) {
-                KnobGroupPtr parentIsGrp = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
-                KnobPagePtr parentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
+                KnobGroupPtr parentIsGrp = isKnobGroup(parentKnob);
+                KnobPagePtr parentIsPage = isKnobPage(parentKnob);
                 assert(parentIsGrp || parentIsPage);
                 KnobsVec children;
                 if (parentIsGrp) {
@@ -636,7 +636,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->menuItemsEdit->setToolTip(tt);
         _imp->mainLayout->addRow(_imp->menuItemsLabel, _imp->menuItemsEdit);
 
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+        KnobChoicePtr isChoice = isKnobChoice(knob);
         if (isChoice) {
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
             std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
@@ -664,7 +664,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->multiLine);
         _imp->mainLayout->addRow(_imp->multiLineLabel, optContainer);
 
-        KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(knob);
+        KnobStringPtr isStr = isKnobString(knob);
         if (isStr) {
             if ( isStr && isStr->isMultiLine() ) {
                 _imp->multiLine->setChecked(true);
@@ -685,7 +685,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->richText);
         _imp->mainLayout->addRow(_imp->richTextLabel, optContainer);
 
-        KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(knob);
+        KnobStringPtr isStr = isKnobString(knob);
         if (isStr) {
             if ( isStr && isStr->isMultiLine() && isStr->usesRichText() ) {
                 _imp->richText->setChecked(true);
@@ -703,8 +703,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->sequenceDialog);
         _imp->mainLayout->addRow(_imp->sequenceDialogLabel, optContainer);
 
-        KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
-        KnobOutputFilePtr isOutFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+        KnobFilePtr isFile = isKnobFile(knob);
+        KnobOutputFilePtr isOutFile = isKnobOutputFile(knob);
         if (isFile) {
             if ( isFile->isInputImageFile() ) {
                 _imp->sequenceDialog->setChecked(true);
@@ -726,7 +726,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->multiPath);
         _imp->mainLayout->addRow(_imp->multiPathLabel, optContainer);
 
-        KnobPathPtr isStr = boost::dynamic_pointer_cast<KnobPath>(knob);
+        KnobPathPtr isStr = isKnobPath(knob);
         if (isStr) {
             if ( isStr && isStr->isMultiPath() ) {
                 _imp->multiPath->setChecked(true);
@@ -744,7 +744,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         optLayout->addWidget(_imp->groupAsTab);
         _imp->mainLayout->addRow(_imp->groupAsTabLabel, optContainer);
 
-        KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
+        KnobGroupPtr isGrp = isKnobGroup(knob);
         if (isGrp) {
             if ( isGrp && isGrp->isTab() ) {
                 _imp->groupAsTab->setChecked(true);
@@ -791,8 +791,8 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         dminMaxLayout->addStretch();
 
         KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(knob);
-        KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
-        KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
+        KnobIntPtr isInt = isKnobInt(knob);
+        KnobColorPtr isColor = isKnobColor(knob);
 
 
         if (isDbl) {
@@ -870,11 +870,11 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         _imp->mainLayout->addRow(_imp->defaultValueLabel, defValContainer);
 
 
-        KnobDoubleBasePtr isDbl = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-        KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
-        KnobStringBasePtr isStr = boost::dynamic_pointer_cast<KnobStringBase>(knob);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+        KnobDoubleBasePtr isDbl = isKnobDoubleBase(knob);
+        KnobIntBasePtr isInt = isKnobIntBase(knob);
+        KnobBoolPtr isBool = isKnobBool(knob);
+        KnobStringBasePtr isStr = isKnobStringBase(knob);
+        KnobChoicePtr isChoice = isKnobChoice(knob);
 
         if (isChoice) {
             _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(0) ).c_str() ) );
@@ -912,7 +912,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
             continue;
         }
         if ( knob->isUserKnob() ) {
-            KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
+            KnobGroupPtr isGrp = isKnobGroup(knob);
             if (isGrp) {
                 _imp->userGroups.push_back(isGrp);
             }
@@ -944,7 +944,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     const KnobsVec& internalKnobs = _imp->panel->getHolder()->getKnobs();
     for (KnobsVec::const_iterator it = internalKnobs.begin(); it != internalKnobs.end(); ++it) {
         if ( (*it)->isUserKnob() ) {
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = isKnobPage(*it);
             if (isPage) {
                 _imp->userPages.push_back(isPage);
             }
@@ -1000,7 +1000,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         KnobPagePtr topLvlPage = knob->getTopLevelPage();
         if (topLvlPage) {
             KnobIPtr parent = knob->getParentKnob();
-            KnobGroupPtr isParentGrp = boost::dynamic_pointer_cast<KnobGroup>(parent);
+            KnobGroupPtr isParentGrp = isKnobGroup(parent);
             if (isParentGrp) {
                 for (std::list<KnobGroupPtr>::iterator it = _imp->userGroups.begin(); it != _imp->userGroups.end(); ++it) {
                     KnobPagePtr page = (*it)->getTopLevelPage();
@@ -1676,7 +1676,7 @@ AddKnobDialog::onOkClicked()
         KnobHolderPtr holder = _imp->panel->getHolder();
         assert(holder);
 
-        NodeGroupPtr isHolderGroup = boost::dynamic_pointer_cast<NodeGroup>(holder);
+        NodeGroupPtr isHolderGroup = isNodeGroup(holder);
         if (isHolderGroup) {
             //Check if the group has a node with the exact same script name as the param script name, in which case we error
             //otherwise the attribute on the python object would be overwritten
@@ -1712,14 +1712,14 @@ AddKnobDialog::onOkClicked()
         assert(_imp->typeChoice);
         t = (ParamDataTypeEnum)_imp->typeChoice->activeIndex();
     } else {
-        oldKnobIsPage = boost::dynamic_pointer_cast<KnobPage>(_imp->knob);
+        oldKnobIsPage = isKnobPage(_imp->knob);
         oldKnobScriptName = _imp->knob->getName();
         effect = boost::dynamic_pointer_cast<EffectInstance>( _imp->knob->getHolder() );
         oldParentPage = _imp->knob->getTopLevelPage();
         wasNewLineActivated = _imp->knob->isNewLineActivated();
         t = getChoiceIndexFromKnobType(_imp->knob);
         KnobIPtr parent = _imp->knob->getParentKnob();
-        KnobGroupPtr isParentGrp = boost::dynamic_pointer_cast<KnobGroup>(parent);
+        KnobGroupPtr isParentGrp = isKnobGroup(parent);
         if ( isParentGrp && ( isParentGrp == _imp->getSelectedGroup() ) ) {
             KnobsVec children = isParentGrp->getChildren();
             for (U32 i = 0; i < children.size(); ++i) {
@@ -1801,7 +1801,7 @@ AddKnobDialog::onOkClicked()
             _imp->knob->clone( _imp->originalKnobSerialization->getKnob() );
         }
 
-        KnobStringPtr isLabelKnob = boost::dynamic_pointer_cast<KnobString>(_imp->knob);
+        KnobStringPtr isLabelKnob = isKnobString(_imp->knob);
         if ( isLabelKnob && isLabelKnob->isLabel() ) {
             ///Label knob only has a default value, but the "clone" function call above will keep the previous value,
             ///so we have to force a reset to the default value.
@@ -1829,7 +1829,7 @@ AddKnobDialog::onOkClicked()
         KnobGroupPtr group = _imp->getSelectedGroup();
         KnobGroupPtr shrdGrp;
         if (group) {
-            shrdGrp = boost::dynamic_pointer_cast<KnobGroup>( group->shared_from_this() );
+            shrdGrp = isKnobGroup( group->shared_from_this() );
         }
 
         try {
@@ -1849,13 +1849,13 @@ AddKnobDialog::onOkClicked()
             return;
         }
 
-        KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(_imp->knob);
+        KnobColorPtr isColor = isKnobColor(_imp->knob);
         KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(_imp->knob);
-        KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(_imp->knob);
-        KnobStringBasePtr isStr = boost::dynamic_pointer_cast<KnobStringBase>(_imp->knob);
-        KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(_imp->knob);
-        KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(_imp->knob);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(_imp->knob);
+        KnobIntPtr isInt = isKnobInt(_imp->knob);
+        KnobStringBasePtr isStr = isKnobStringBase(_imp->knob);
+        KnobGroupPtr isGrp = isKnobGroup(_imp->knob);
+        KnobBoolPtr isBool = isKnobBool(_imp->knob);
+        KnobChoicePtr isChoice = isKnobChoice(_imp->knob);
         if (isColor || isDbl) {
             _imp->setKnobMinMax<double>(_imp->knob);
         } else if (isInt) {
@@ -1892,8 +1892,8 @@ AddKnobDialog::onOkClicked()
     bool startNewLine = _imp->startNewLineBox->isChecked();
     KnobIPtr parentKnob = _imp->knob->getParentKnob();
     if (parentKnob) {
-        KnobGroupPtr parentIsGrp = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
-        KnobPagePtr parentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
+        KnobGroupPtr parentIsGrp = isKnobGroup(parentKnob);
+        KnobPagePtr parentIsPage = isKnobPage(parentKnob);
         assert(parentIsGrp || parentIsPage);
         KnobsVec children;
         if (parentIsGrp) {

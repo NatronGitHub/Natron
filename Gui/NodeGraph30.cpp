@@ -108,7 +108,7 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
     ///get a ptr to the NodeGui
-    boost::shared_ptr<NodeGuiI> gui_i = v->getNodeGui();
+    NodeGuiIPtr gui_i = v->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
     ///if there's no selected node or the viewer is selected, then try refreshing that input nb if it is connected.

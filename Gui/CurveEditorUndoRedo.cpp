@@ -97,7 +97,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
         }
         KnobParametricPtr isParametric;
         if (knob) {
-            isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+            isParametric = isKnobParametric(knob);
         }
 
         if (add && isSetKeyCommand) {
@@ -141,10 +141,10 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-                            KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
-                            KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-                            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+                            KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+                            KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+                            KnobIntBasePtr isInt = isKnobIntBase(knob);
+                            KnobStringBasePtr isString = isKnobStringBase(knob);
                             if (isDouble) {
                                 isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
                             } else if (isBool) {
@@ -156,7 +156,7 @@ AddKeysCommand::addOrRemoveKeyframe(bool isSetKeyCommand,
                             }
                         }
                     } else {
-                        KnobParametricPtr parametricKnob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
+                        KnobParametricPtr parametricKnob = isKnobParametric( isKnobCurve->getInternalKnob() );
 
                         if (parametricKnob) {
                             StatusEnum st = parametricKnob->deleteControlPoint( eValueChangedReasonUserEdited, it->dimension,
@@ -227,7 +227,7 @@ SetKeysCommand::undo()
 
     if (isKnobCurve) {
         KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+        KnobParametricPtr isParametric = isKnobParametric(knob);
         if (!isParametric) {
             knob->cloneCurve(ViewSpec::all(), isKnobCurve->getDimension(), *_oldCurve);
         } else {
@@ -280,7 +280,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                 knob->beginChanges();
                 knob->blockValueChanges();
             }
-            isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+            isParametric = isKnobParametric(knob);
         }
 
         if (guiKnob && isKnobCurve && !isParametric) {
@@ -301,10 +301,10 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             assert(st == eStatusOK);
                             Q_UNUSED(st);
                         } else {
-                            KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-                            KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
-                            KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-                            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+                            KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+                            KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+                            KnobIntBasePtr isInt = isKnobIntBase(knob);
+                            KnobStringBasePtr isString = isKnobStringBase(knob);
                             if (isDouble) {
                                 isDouble->setValueAtTime( time, isDouble->getValueAtTime( time, 0, ViewIdx(0) ), ViewIdx(0), isKnobCurve->getDimension() );
                             } else if (isBool) {
@@ -316,7 +316,7 @@ RemoveKeysCommand::addOrRemoveKeyframe(bool add)
                             }
                         }
                     } else {
-                        KnobParametricPtr knob = boost::dynamic_pointer_cast<KnobParametric>( isKnobCurve->getInternalKnob() );
+                        KnobParametricPtr knob = isKnobParametric( isKnobCurve->getInternalKnob() );
 
                         if (knob) {
                             StatusEnum st = knob->deleteControlPoint( eValueChangedReasonUserEdited, isKnobCurve->getDimension(),
@@ -398,7 +398,7 @@ moveKeys(CurveGui* curve,
         }
     } else if (isKnobCurve) {
         KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+        KnobParametricPtr isParametric = isKnobParametric(knob);
 
         if (!isParametric) {
             std::vector<KeyFrame> keysToChange( vect.size() );
@@ -579,7 +579,7 @@ SetKeysInterpolationCommand::setNewInterpolation(bool undo)
         KnobCurveGui* isKnobCurve = dynamic_cast<KnobCurveGui*>( it->key->curve.get() );
         if (isKnobCurve) {
             KnobIPtr knob = isKnobCurve->getInternalKnob();
-            KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+            KnobParametricPtr isParametric = isKnobParametric(knob);
 
             if (isParametric) {
                 int keyframeIndex = it->key->curve->getKeyFrameIndex( it->key->key.getTime() );
@@ -752,7 +752,7 @@ MoveTangentCommand::setNewDerivatives(bool undo)
     if (isKnobCurve) {
         KnobIPtr attachedKnob = isKnobCurve->getInternalKnob();
         assert(attachedKnob);
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(attachedKnob);
+        KnobParametricPtr isParametric = isKnobParametric(attachedKnob);
         double left = undo ? _oldLeft : _newLeft;
         double right = undo ? _oldRight : _newRight;
         KeyframeTypeEnum interp = undo ? _oldInterp : _newInterp;
@@ -873,7 +873,7 @@ transform(const Transform::Matrix3x3& matrix,
 
     if (isKnobCurve) {
         KnobIPtr knob = isKnobCurve->getInternalKnob();
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+        KnobParametricPtr isParametric = isKnobParametric(knob);
 
         if (isParametric) {
             CurvePtr internalCurve = curve->getInternalCurve();

@@ -762,7 +762,7 @@ RotoPaintInteract::setCurrentTool(const KnobButtonPtr& tool)
         return;
     }
     KnobIPtr parentKnob = tool->getParentKnob();
-    KnobGroupPtr parentGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+    KnobGroupPtr parentGroup = isKnobGroup(parentKnob);
     assert(parentGroup);
     if (!parentGroup) {
         return;

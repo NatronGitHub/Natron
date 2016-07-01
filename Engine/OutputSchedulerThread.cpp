@@ -3057,7 +3057,7 @@ RenderEngine::renderCurrentFrameInternal(bool enableRenderStats,
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    ViewerInstancePtr isViewer = boost::dynamic_pointer_cast<ViewerInstance>( _imp->output.lock() );
+    ViewerInstancePtr isViewer = isViewerInstance( _imp->output.lock() );
     if (!isViewer) {
         qDebug() << "RenderEngine::renderCurrentFrame for a writer is unsupported";
 
@@ -3357,7 +3357,7 @@ RenderEngine::notifyFrameProduced(const BufferableObjectList& frames,
 OutputSchedulerThread*
 ViewerRenderEngine::createScheduler(const boost::shared_ptr<OutputEffectInstance>& effect)
 {
-    return new ViewerDisplayScheduler( this, boost::dynamic_pointer_cast<ViewerInstance>(effect) );
+    return new ViewerDisplayScheduler( this, isViewerInstance(effect) );
 }
 
 ////////////////////////ViewerCurrentFrameRequestScheduler////////////////////////

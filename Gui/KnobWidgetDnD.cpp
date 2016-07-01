@@ -382,7 +382,7 @@ KnobWidgetDnD::drop(QDropEvent* e)
                     return false;
                 }
                 NodeCollectionPtr group = effect->getNode()->getGroup();
-                NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
+                NodeGroupPtr isGroup = isNodeGroup( group.get() );
                 std::string expr;
                 std::stringstream ss;
                 if (isGroup) {

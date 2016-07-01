@@ -327,7 +327,7 @@ void
 ReadNodePrivate::placeReadNodeKnobsInPage()
 {
     KnobIPtr pageKnob = _publicInterface->getKnobByName("Controls");
-    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(pageKnob);
+    KnobPagePtr isPage = isKnobPage(pageKnob);
 
     if (!isPage) {
         return;
@@ -373,7 +373,7 @@ ReadNodePrivate::placeReadNodeKnobsInPage()
                 isSecret = children[foundSep]->getIsSecret();
             }
             if (foundSep < (int)children.size()) {
-                separatorKnob.lock()->setSecret(boost::dynamic_pointer_cast<KnobSeparator>(children[foundSep].get()));
+                separatorKnob.lock()->setSecret(isKnobSeparator(children[foundSep].get()));
             } else {
                 separatorKnob.lock()->setSecret(true);
             }
@@ -393,8 +393,8 @@ ReadNodePrivate::cloneGenericKnobs()
         KnobIPtr serializedKnob = (*it)->getKnob();
         for (KnobsVec::const_iterator it2 = knobs.begin(); it2 != knobs.end(); ++it2) {
             if ( (*it2)->getName() == serializedKnob->getName() ) {
-                KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>( (*it2).get() );
-                KnobChoicePtr serializedIsChoice = boost::dynamic_pointer_cast<KnobChoice>( serializedKnob.get() );;
+                KnobChoicePtr isChoice = isKnobChoice( (*it2).get() );
+                KnobChoicePtr serializedIsChoice = isKnobChoice( serializedKnob.get() );;
                 if (isChoice && serializedIsChoice) {
                     const ChoiceExtraData* extraData = dynamic_cast<const ChoiceExtraData*>( (*it)->getExtraData() );
                     assert(extraData);
@@ -451,7 +451,7 @@ ReadNodePrivate::destroyReadNode()
             }
 
             //Keep pages around they will be re-used
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
+            KnobPagePtr isPage = isKnobPage(*it);
             if (isPage) {
                 continue;
             }
@@ -573,7 +573,7 @@ getFileNameFromSerialization(const std::list<KnobSerializationPtr>& serializatio
 
     for (std::list<KnobSerializationPtr>::const_iterator it = serializations.begin(); it != serializations.end(); ++it) {
         if ( (*it)->getKnob()->getName() == kOfxImageEffectFileParamName ) {
-            KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>( (*it)->getKnob().get() );
+            KnobStringBasePtr isString = isKnobStringBase( (*it)->getKnob().get() );
             assert(isString);
             if (isString) {
                 filePattern = isString->getValue();
@@ -720,7 +720,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     KnobIPtr knob = node ? node->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {
-        inputFileKnob = boost::dynamic_pointer_cast<KnobFile>(knob);
+        inputFileKnob = isKnobFile(knob);
     }
 } // ReadNodePrivate::createReadNode
 
@@ -1175,7 +1175,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 
         KnobIPtr hasMetaDatasKnob = p->getKnobByName("showMetadata");
         if (hasMetaDatasKnob) {
-            KnobButtonPtr showMetasKnob = boost::dynamic_pointer_cast<KnobButton>( hasMetaDatasKnob.get() );
+            KnobButtonPtr showMetasKnob = isKnobButton( hasMetaDatasKnob.get() );
             if (showMetasKnob) {
                 showMetasKnob->trigger();
             }

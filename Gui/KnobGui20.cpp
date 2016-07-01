@@ -332,7 +332,7 @@ KnobGui::linkTo(int dimension)
 
             std::stringstream expr;
             NodeCollectionPtr thisCollection = isEffect->getNode()->getGroup();
-            NodeGroupPtr otherIsGroup = boost::dynamic_pointer_cast<NodeGroup>(otherEffect);
+            NodeGroupPtr otherIsGroup = isNodeGroup(otherEffect);
             if ( otherIsGroup == thisCollection.get() ) {
                 expr << "thisGroup"; // make expression generic if possible
             } else {
@@ -381,10 +381,10 @@ void
 KnobGui::resetDefault(int dimension)
 {
     KnobIPtr knob = getKnob();
-    KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(knob);
-    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
-    KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    KnobSeparatorPtr isSeparator = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobButtonPtr isBtn = isKnobButton(knob);
+    KnobPagePtr isPage = isKnobPage(knob);
+    KnobGroupPtr isGroup = isKnobGroup(knob);
+    KnobSeparatorPtr isSeparator = isKnobSeparator(knob);
 
     if (!isBtn && !isPage && !isGroup && !isSeparator) {
         std::list<KnobIPtr > knobs;
@@ -456,10 +456,10 @@ KnobGui::onSetValueUsingUndoStack(const Variant & v,
 {
     KnobIPtr knob = getKnob();
 
-    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
-    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+    KnobIntBasePtr isInt = isKnobIntBase(knob);
+    KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+    KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+    KnobStringBasePtr isString = isKnobStringBase(knob);
 
     if (isInt) {
         pushUndoCommand( new KnobUndoCommand<int>(shared_from_this(), isInt->getValue(dim), v.toInt(), dim) );
@@ -748,7 +748,7 @@ void
 KnobGui::onFrozenChanged(bool frozen)
 {
     KnobIPtr knob = getKnob();
-    KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(knob);
+    KnobButtonPtr isBtn = isKnobButton(knob);
 
     if ( isBtn && !isBtn->isRenderButton() ) {
         return;

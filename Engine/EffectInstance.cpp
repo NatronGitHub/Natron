@@ -95,7 +95,7 @@ class KnobOutputFile;
 
 void
 EffectInstance::addThreadLocalInputImageTempPointer(int inputNb,
-                                                    const boost::shared_ptr<Image> & img)
+                                                    const ImagePtr & img)
 {
     _imp->addInputImageTempPointer(inputNb, img);
 }
@@ -125,7 +125,7 @@ EffectInstance::~EffectInstance()
 }
 
 void
-EffectInstance::lock(const boost::shared_ptr<Image> & entry)
+EffectInstance::lock(const ImagePtr & entry)
 {
     NodePtr n = _node.lock();
 
@@ -133,7 +133,7 @@ EffectInstance::lock(const boost::shared_ptr<Image> & entry)
 }
 
 bool
-EffectInstance::tryLock(const boost::shared_ptr<Image> & entry)
+EffectInstance::tryLock(const ImagePtr & entry)
 {
     NodePtr n = _node.lock();
 
@@ -141,7 +141,7 @@ EffectInstance::tryLock(const boost::shared_ptr<Image> & entry)
 }
 
 void
-EffectInstance::unlock(const boost::shared_ptr<Image> & entry)
+EffectInstance::unlock(const ImagePtr & entry)
 {
     NodePtr n = _node.lock();
 
@@ -220,7 +220,7 @@ EffectInstance::isDuringActionThatCanSetValue() const
 #endif //DEBUG
 
 void
-EffectInstance::setNodeRequestThreadLocal(const boost::shared_ptr<NodeFrameRequest> & nodeRequest)
+EffectInstance::setNodeRequestThreadLocal(const NodeFrameRequestPtr & nodeRequest)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
 
@@ -229,7 +229,7 @@ EffectInstance::setNodeRequestThreadLocal(const boost::shared_ptr<NodeFrameReque
 
         return;
     }
-    std::list<boost::shared_ptr<ParallelRenderArgs> >& argsList = tls->frameArgs;
+    std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
     if ( argsList.empty() ) {
         return;
     }
@@ -245,7 +245,7 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          const AbortableRenderInfoPtr& abortInfo,
                                          const NodePtr & treeRoot,
                                          int visitsCount,
-                                         const boost::shared_ptr<NodeFrameRequest> & nodeRequest,
+                                         const NodeFrameRequestPtr & nodeRequest,
                                          const OSGLContextPtr& glContext,
                                          int textureIndex,
                                          const TimeLine* timeline,
@@ -256,11 +256,11 @@ EffectInstance::setParallelRenderArgsTLS(double time,
                                          PluginOpenGLRenderSupport currentOpenGLSupport,
                                          bool doNanHandling,
                                          bool draftMode,
-                                         const boost::shared_ptr<RenderStats> & stats)
+                                         const RenderStatsPtr & stats)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    std::list<boost::shared_ptr<ParallelRenderArgs> >& argsList = tls->frameArgs;
-    boost::shared_ptr<ParallelRenderArgs> args(new ParallelRenderArgs);
+    std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
+    ParallelRenderArgsPtr args(new ParallelRenderArgs);
 
     args->time = time;
     args->timeline = timeline;
@@ -316,7 +316,7 @@ EffectInstance::setDuringPaintStrokeCreationThreadLocal(bool duringPaintStroke)
 }
 
 void
-EffectInstance::setParallelRenderArgsTLS(const boost::shared_ptr<ParallelRenderArgs> & args)
+EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args)
 {
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
@@ -334,20 +334,20 @@ EffectInstance::invalidateParallelRenderArgsTLS()
     }
 
     assert( !tls->frameArgs.empty() );
-    const boost::shared_ptr<ParallelRenderArgs>& back = tls->frameArgs.back();
+    const ParallelRenderArgsPtr& back = tls->frameArgs.back();
     for (NodesList::iterator it = back->rotoPaintNodes.begin(); it != back->rotoPaintNodes.end(); ++it) {
         (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
     }
     tls->frameArgs.pop_back();
 }
 
-boost::shared_ptr<ParallelRenderArgs>
+ParallelRenderArgsPtr
 EffectInstance::getParallelRenderArgsTLS() const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
 
     if ( !tls || tls->frameArgs.empty() ) {
-        return boost::shared_ptr<ParallelRenderArgs>();
+        return ParallelRenderArgsPtr();
     }
 
     return tls->frameArgs.back();
@@ -371,7 +371,7 @@ EffectInstance::getRenderHash() const
         return getHash();
     }
 
-    const boost::shared_ptr<ParallelRenderArgs> &args = tls->frameArgs.back();
+    const ParallelRenderArgsPtr &args = tls->frameArgs.back();
 
     if (args->request) {
         //A request pass was made, Hash for this thread was already computed, use it
@@ -397,7 +397,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 
         // Fallback on the flag set on the node that requested the render in OutputSchedulerThread
         if (treeRoot) {
-            OutputEffectInstancePtr effect = boost::dynamic_pointer_cast<OutputEffectInstance>(treeRoot);
+            OutputEffectInstancePtr effect = isOutputEffectInstance(treeRoot);
             assert(effect);
             if (effect) {
                 return effect->isSequentialRenderBeingAborted();
@@ -421,7 +421,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 
         // If this node can start sequential renders (e.g: start playback like on the viewer or render on disk) and it is already doing a sequential render, abort
         // this render
-        OutputEffectInstancePtr isRenderEffect = boost::dynamic_pointer_cast<OutputEffectInstance>(treeRoot);
+        OutputEffectInstancePtr isRenderEffect = isOutputEffectInstance(treeRoot);
         if (isRenderEffect) {
             if ( isRenderEffect->isDoingSequentialRender() ) {
                 return true;
@@ -463,7 +463,7 @@ EffectInstance::aborted() const
         if ( tls->frameArgs.empty() ) {
             return false;
         }
-        const boost::shared_ptr<ParallelRenderArgs> & args = tls->frameArgs.back();
+        const ParallelRenderArgsPtr & args = tls->frameArgs.back();
         isRenderUserInteraction = args->isRenderResponseToUserInteraction;
         abortInfo = args->abortInfo.lock();
         if (args->treeRoot) {
@@ -706,7 +706,7 @@ EffectInstance::getImage(int inputNb,
     EffectInstancePtr inputEffect;
 
     //Check for transform redirections
-    boost::shared_ptr<InputMatrixMap> transformRedirections;
+    InputMatrixMapPtr transformRedirections;
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
     if (tls && tls->currentRenderArgs.validArgs) {
         transformRedirections = tls->currentRenderArgs.transformRedirections;
@@ -827,7 +827,7 @@ EffectInstance::getImage(int inputNb,
 
         if (inputEffect) {
             //When analysing we do not compute a request pass so we do not enter this condition
-            boost::shared_ptr<ParallelRenderArgs> inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
+            ParallelRenderArgsPtr inputFrameArgs = inputEffect->getParallelRenderArgsTLS();
             const FrameViewRequest* request = 0;
             if (inputFrameArgs && inputFrameArgs->request) {
                 request = inputFrameArgs->request->getFrameViewRequest(time, view);
@@ -839,7 +839,7 @@ EffectInstance::getImage(int inputNb,
         }
 
         if ( !tls->frameArgs.empty() ) {
-            const boost::shared_ptr<ParallelRenderArgs>& frameRenderArgs = tls->frameArgs.back();
+            const ParallelRenderArgsPtr& frameRenderArgs = tls->frameArgs.back();
             nodeHash = frameRenderArgs->nodeHash;
             duringPaintStroke = frameRenderArgs->isDuringPaintStrokeCreation;
             isAnalysisPass = frameRenderArgs->isAnalysis;
@@ -1396,7 +1396,7 @@ EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* n
     // If the node is in a group, notify also the group
     NodeCollectionPtr group = node->getGroup();
     if (group) {
-        NodeGroupPtr isGroupNode = boost::dynamic_pointer_cast<NodeGroup>(group);
+        NodeGroupPtr isGroupNode = isNodeGroup(group);
         if (isGroupNode) {
             _didGroupEmit = isGroupNode->getNode()->notifyRenderingStarted();
         }
@@ -1411,7 +1411,7 @@ EffectInstance::NotifyRenderingStarted_RAII::~NotifyRenderingStarted_RAII()
     if (_didGroupEmit) {
         NodeCollectionPtr group = _node->getGroup();
         if (group) {
-            NodeGroupPtr isGroupNode = boost::dynamic_pointer_cast<NodeGroup>(group);
+            NodeGroupPtr isGroupNode = isNodeGroup(group);
             if (isGroupNode) {
                 isGroupNode->getNode()->notifyRenderingEnded();
             }
@@ -1592,9 +1592,9 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                                                     ImageBitDepthEnum bitdepth,
                                                     const ImageComponents & components,
                                                     const EffectInstance::InputImagesMap & inputImages,
-                                                    const boost::shared_ptr<RenderStats> & stats,
-                                                    const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
-                                                    boost::shared_ptr<Image>* image)
+                                                    const RenderStatsPtr & stats,
+                                                    const OSGLContextAttacherPtr& glContextAttacher,
+                                                    ImagePtr* image)
 {
     ImageList cachedImages;
     bool isCached = false;
@@ -1729,7 +1729,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 imageParams->setMipMapLevel(mipMapLevel);
 
 
-                boost::shared_ptr<Image> img;
+                ImagePtr img;
                 getOrCreateFromCacheInternal(key, imageParams, imageToConvert->usesBitMap(), &img);
                 if (!img) {
                     return;
@@ -1947,8 +1947,8 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
                                    bool renderFullScaleThenDownscale,
                                    StorageModeEnum storage,
                                    bool createInCache,
-                                   boost::shared_ptr<Image>* fullScaleImage,
-                                   boost::shared_ptr<Image>* downscaleImage)
+                                   ImagePtr* fullScaleImage,
+                                   ImagePtr* downscaleImage)
 {
     //If we're rendering full scale and with input images at full scale, don't cache the downscale image since it is cheap to
     //recreate, instead cache the full-scale image
@@ -2004,11 +2004,11 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 
 void
 EffectInstance::transformInputRois(const EffectInstancePtr& self,
-                                   const boost::shared_ptr<InputMatrixMap> & inputTransforms,
+                                   const InputMatrixMapPtr & inputTransforms,
                                    double par,
                                    const RenderScale & scale,
                                    RoIMap* inputsRoi,
-                                   std::map<int, EffectInstancePtr>* reroutesMap)
+                                   ReRoutesMap* reroutesMap)
 {
     if (!inputTransforms) {
         return;
@@ -2056,7 +2056,7 @@ EffectInstance::renderInputImagesForRoI(const FrameViewRequest* request,
                                         ViewIdx view,
                                         const RectD & rod,
                                         const RectD & canonicalRenderWindow,
-                                        const boost::shared_ptr<InputMatrixMap>& inputTransforms,
+                                        const InputMatrixMapPtr& inputTransforms,
                                         unsigned int mipMapLevel,
                                         const RenderScale & renderMappedScale,
                                         bool useScaleOneInputImages,
@@ -2154,9 +2154,9 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const bool byPassCache,
                                                       const ImageBitDepthEnum outputClipPrefDepth,
                                                       const ImageComponents & outputClipPrefsComps,
-                                                      const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
+                                                      const ComponentsNeededMapPtr & compsNeeded,
                                                       const std::bitset<4>& processChannels,
-                                                      const boost::shared_ptr<ImagePlanesToRender> & planes) // when MT, planes is a copy so there's is no data race
+                                                      const ImagePlanesToRenderPtr & planes) // when MT, planes is a copy so there's is no data race
 {
     ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
 #ifdef DEBUG
@@ -2204,7 +2204,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     // check the bitmap!
     bool bitmapMarkedForRendering = false;
-    const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
+    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
     if (frameArgs->tilesSupported) {
         if (renderFullScaleThenDownscale) {
             // We cannot be rendering using OpenGL in this case
@@ -2415,13 +2415,13 @@ EffectInstance::Implementation::renderHandler(const EffectDataTLSPtr& tls,
                                               const ImageBitDepthEnum outputClipPrefDepth,
                                               const ImageComponents & outputClipPrefsComps,
                                               const std::bitset<4>& processChannels,
-                                              const boost::shared_ptr<Image> & originalInputImage,
-                                              const boost::shared_ptr<Image> & maskImage,
+                                              const ImagePtr & originalInputImage,
+                                              const ImagePtr & maskImage,
                                               const ImagePremultiplicationEnum originalImagePremultiplication,
                                               ImagePlanesToRender & planes)
 {
     boost::shared_ptr<TimeLapse> timeRecorder;
-    const boost::shared_ptr<ParallelRenderArgs>& frameArgs = tls->frameArgs.back();
+    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
 
     if (frameArgs->stats) {
         timeRecorder.reset( new TimeLapse() );
@@ -3021,7 +3021,7 @@ EffectInstance::openImageFileKnob()
 
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobFile::typeNameStatic() ) {
-            KnobFilePtr fk = boost::dynamic_pointer_cast<KnobFile>(knobs[i]);
+            KnobFilePtr fk = isKnobFile(knobs[i]);
             assert(fk);
             if ( fk->isInputImageFile() ) {
                 std::string file = fk->getValue();
@@ -3031,7 +3031,7 @@ EffectInstance::openImageFileKnob()
                 break;
             }
         } else if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            KnobOutputFilePtr fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
+            KnobOutputFilePtr fk = isKnobOutputFile(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 std::string file = fk->getValue();
@@ -3200,7 +3200,7 @@ EffectInstance::setOutputFilesForWriter(const std::string & pattern)
     const KnobsVec & knobs = getKnobs();
     for (U32 i = 0; i < knobs.size(); ++i) {
         if ( knobs[i]->typeName() == KnobOutputFile::typeNameStatic() ) {
-            KnobOutputFilePtr fk = boost::dynamic_pointer_cast<KnobOutputFile>(knobs[i]);
+            KnobOutputFilePtr fk = isKnobOutputFile(knobs[i]);
             assert(fk);
             if ( fk->isOutputImageFile() ) {
                 fk->setValue(pattern);
@@ -4657,7 +4657,7 @@ EffectInstance::getThreadLocalRenderedPlanes(std::map<ImageComponents, EffectIns
 }
 
 bool
-EffectInstance::getThreadLocalNeededComponents(boost::shared_ptr<ComponentsNeededMap>* neededComps) const
+EffectInstance::getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const
 {
     EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
 
@@ -4785,7 +4785,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     ///If the param changed is a button and the node is disabled don't do anything which might
     ///trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && boost::dynamic_pointer_cast<KnobButton>(k) && node->isNodeDisabled() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && isKnobButton(k) && node->isNodeDisabled() ) {
         return false;
     }
 
@@ -4823,7 +4823,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                                         NodePtr(), // activeRotoPaintNode
                                                         true, // isAnalysis
                                                         false, // draftMode
-                                                        boost::shared_ptr<RenderStats>() ) );
+                                                        RenderStatsPtr() ) );
         }
         {
             RECURSIVE_ACTION();

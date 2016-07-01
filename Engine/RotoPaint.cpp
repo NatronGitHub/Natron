@@ -186,7 +186,7 @@ void
 RotoPaint::initializeKnobs()
 {
     //This page is created in the RotoContext, before initializeKnobs() is called.
-    KnobPagePtr generalPage = boost::dynamic_pointer_cast<KnobPage>( getKnobByName("General") );
+    KnobPagePtr generalPage = isKnobPage( getKnobByName("General") );
 
     assert(generalPage);
 
@@ -1130,11 +1130,11 @@ RotoPaint::onKnobsLoaded()
     if (toolbar) {
         KnobsVec toolbarChildren = toolbar->getChildren();
         for (std::size_t i = 0; i < toolbarChildren.size(); ++i) {
-            KnobGroupPtr isChildGroup = boost::dynamic_pointer_cast<KnobGroup>(toolbarChildren[i]);
+            KnobGroupPtr isChildGroup = isKnobGroup(toolbarChildren[i]);
             if ( isChildGroup && isChildGroup->getValue() ) {
                 KnobsVec toolbuttonsChildren = isChildGroup->getChildren();
                 for (KnobsVec::iterator it = toolbuttonsChildren.begin(); it != toolbuttonsChildren.end(); ++it) {
-                    KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(*it);
+                    KnobButtonPtr isButton = isKnobButton(*it);
                     if ( isButton && isButton->getValue() ) {
                         _imp->ui->setCurrentTool(isButton);
                         _imp->ui->onRoleChangedInternal(isChildGroup);
@@ -1167,8 +1167,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
     }
     bool ret = true;
     KnobIPtr kShared = k->shared_from_this();
-    KnobButtonPtr isBtn = boost::dynamic_pointer_cast<KnobButton>(kShared);
-    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(kShared);
+    KnobButtonPtr isBtn = isKnobButton(kShared);
+    KnobGroupPtr isGrp = isKnobGroup(kShared);
     if ( isBtn && _imp->ui->onToolChangedInternal(isBtn) ) {
         return true;
     } else if ( isGrp && _imp->ui->onRoleChangedInternal(isGrp) ) {
@@ -1452,7 +1452,7 @@ RotoPaint::render(const RenderActionArgs& args)
     ImageBitDepthEnum bgDepth = getBitDepth(0);
     std::list<ImageComponents> neededComps;
 
-    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+    for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator plane = args.outputPlanes.begin();
          plane != args.outputPlanes.end(); ++plane) {
         neededComps.push_back(plane->first);
     }
@@ -1465,7 +1465,7 @@ RotoPaint::render(const RenderActionArgs& args)
         RectI bgImgRoI;
         ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
 
-        for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             if (bgImg) {
                 if ( bgImg->getComponents() != plane->second->getComponents() ) {
@@ -1521,7 +1521,7 @@ RotoPaint::render(const RenderActionArgs& args)
         } else if (code == eRenderRoIRetCodeAborted) {
             return eStatusOK;
         } else if ( rotoPaintImages.empty() ) {
-            for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+            for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator plane = args.outputPlanes.begin();
                  plane != args.outputPlanes.end(); ++plane) {
                 plane->second->fillZero(args.roi);
             }
@@ -1535,7 +1535,7 @@ RotoPaint::render(const RenderActionArgs& args)
         ImagePremultiplicationEnum outputPremult = getPremult();
         bool triedGetImage = false;
 
-        for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             std::map<ImageComponents, ImagePtr>::iterator rotoImagesIt = rotoPaintImages.find(plane->first);
             assert( rotoImagesIt != rotoPaintImages.end() );

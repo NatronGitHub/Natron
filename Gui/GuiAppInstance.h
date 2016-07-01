@@ -245,10 +245,10 @@ public:
                                            int strokeIndex) OVERRIDE FINAL;
     virtual void getLastPaintStrokePoints(std::list<std::list<std::pair<Point, double> > >* strokes, int* strokeIndex) const OVERRIDE FINAL;
     virtual void getRenderStrokeData(RectD* lastStrokeMovementBbox, std::list<std::pair<Point, double> >* lastStrokeMovementPoints,
-                                     double *distNextIn, boost::shared_ptr<Image>* strokeImage) const OVERRIDE FINAL;
+                                     double *distNextIn, ImagePtr* strokeImage) const OVERRIDE FINAL;
     virtual int getStrokeLastIndex() const OVERRIDE FINAL;
     virtual void getStrokeAndMultiStrokeIndex(RotoStrokeItemPtr* stroke, int* strokeIndex) const OVERRIDE FINAL;
-    virtual void updateStrokeImage(const boost::shared_ptr<Image>& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
+    virtual void updateStrokeImage(const ImagePtr& image, double distNextOut, bool setDistNextOut) OVERRIDE FINAL;
     virtual RectD getLastPaintStrokeBbox() const OVERRIDE FINAL;
     virtual RectD getPaintStrokeWholeBbox() const OVERRIDE FINAL;
     virtual void setUserIsPainting(const NodePtr& rotopaintNode,

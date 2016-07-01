@@ -200,8 +200,8 @@ Param::setAddNewLine(bool a)
 
     KnobIPtr parentKnob = knob->getParentKnob();
     if (parentKnob) {
-        KnobGroupPtr parentIsGrp = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
-        KnobPagePtr parentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentKnob);
+        KnobGroupPtr parentIsGrp = isKnobGroup(parentKnob);
+        KnobPagePtr parentIsPage = isKnobPage(parentKnob);
         assert(parentIsGrp || parentIsPage);
         KnobsVec children;
         if (parentIsGrp) {
@@ -1521,7 +1521,7 @@ StringParamBase::addAsDependencyOf(int fromExprDimension,
 ////////////////////StringParam
 
 StringParam::StringParam(const KnobStringPtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( isKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1561,7 +1561,7 @@ StringParam::setType(StringParam::TypeEnum type)
 /////////////////////FileParam
 
 FileParam::FileParam(const KnobFilePtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( isKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1606,7 +1606,7 @@ FileParam::reloadFile()
 /////////////////////OutputFileParam
 
 OutputFileParam::OutputFileParam(const KnobOutputFilePtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( isKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1639,7 +1639,7 @@ OutputFileParam::openFile()
 ////////////////////PathParam
 
 PathParam::PathParam(const KnobPathPtr& knob)
-    : StringParamBase( boost::dynamic_pointer_cast<KnobStringBase>(knob) )
+    : StringParamBase( isKnobStringBase(knob) )
     , _sKnob(knob)
 {
 }
@@ -1661,7 +1661,7 @@ PathParam::setAsMultiPathTable()
 
 ButtonParam::ButtonParam(const KnobButtonPtr& knob)
     : Param(knob)
-    , _buttonKnob( boost::dynamic_pointer_cast<KnobButton>(knob) )
+    , _buttonKnob( isKnobButton(knob) )
 {
 }
 
@@ -1679,7 +1679,7 @@ ButtonParam::trigger()
 
 SeparatorParam::SeparatorParam(const KnobSeparatorPtr& knob)
     : Param(knob)
-    , _separatorKnob( boost::dynamic_pointer_cast<KnobSeparator>(knob) )
+    , _separatorKnob( isKnobSeparator(knob) )
 {
 }
 
@@ -1691,7 +1691,7 @@ SeparatorParam::~SeparatorParam()
 
 GroupParam::GroupParam(const KnobGroupPtr& knob)
     : Param(knob)
-    , _groupKnob( boost::dynamic_pointer_cast<KnobGroup>(knob) )
+    , _groupKnob( isKnobGroup(knob) )
 {
 }
 
@@ -1733,7 +1733,7 @@ GroupParam::getIsOpened() const
 
 PageParam::PageParam(const KnobPagePtr& knob)
     : Param(knob)
-    , _pageKnob( boost::dynamic_pointer_cast<KnobPage>(knob) )
+    , _pageKnob( isKnobPage(knob) )
 {
 }
 

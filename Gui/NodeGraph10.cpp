@@ -194,7 +194,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
 
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(collection);
+    NodeGroupPtr isGroup = isNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
@@ -303,7 +303,7 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
 
         NodePtr dotNode = getGui()->getApp()->createNode(args);
         assert(dotNode);
-        boost::shared_ptr<NodeGuiI> dotNodeGui_i = dotNode->getNodeGui();
+        NodeGuiIPtr dotNodeGui_i = dotNode->getNodeGui();
         NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
 

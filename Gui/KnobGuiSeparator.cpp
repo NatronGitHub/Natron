@@ -89,7 +89,7 @@ KnobGuiSeparator::KnobGuiSeparator(KnobIPtr knob,
     : KnobGui(knob, container)
     , _line(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    _knob = isKnobSeparator(knob);
 }
 
 void

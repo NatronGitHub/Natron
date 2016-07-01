@@ -156,7 +156,7 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
         }
     } else if (_imp->preRender.lock() == k) {
         AppInstance::RenderWork w;
-        w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>( shared_from_this() );
+        w.writer = isOutputEffectInstance( shared_from_this() );
         assert(w.writer);
         w.firstFrame = INT_MIN;
         w.lastFrame = INT_MAX;
@@ -212,7 +212,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 
     const std::pair<ImageComponents, ImagePtr>& output = args.outputPlanes.front();
 
-    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
+    for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
         ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, eStorageModeRAM /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
         if (!srcImg) {

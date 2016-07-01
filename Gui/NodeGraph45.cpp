@@ -587,7 +587,7 @@ NodeGraph::expandSelectedGroups()
 void
 NodeGraph::onGroupNameChanged(const QString& /*name*/)
 {
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( getGroup().get() );
+    NodeGroupPtr isGrp = isNodeGroup( getGroup().get() );
 
     assert(isGrp);
     if (isGrp) {
@@ -610,7 +610,7 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
     if (!group) {
         return;
     }
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
+    NodeGroupPtr isGrp = isNodeGroup( group.get() );
     if (!isGrp) {
         return;
     }
@@ -668,7 +668,7 @@ NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
         NodesList allNodes;
         group->getActiveNodes(&allNodes);
         // If the group is a Group node, append to all nodes reachable through links
-        NodeGroupPtr isGroupNode = boost::dynamic_pointer_cast<NodeGroup>(group);
+        NodeGroupPtr isGroupNode = isNodeGroup(group);
         if (isGroupNode) {
             allNodes.push_back(isGroupNode->getNode());
         }

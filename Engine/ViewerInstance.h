@@ -124,7 +124,7 @@ public:
                                                                 U64 viewerHash,
                                                                 bool canAbort,
                                                                 const NodePtr& rotoPaintNode,
-                                                                const boost::shared_ptr<RenderStats>& stats,
+                                                                const RenderStatsPtr& stats,
                                                                 ViewerArgs* outArgs);
 
 private:
@@ -138,7 +138,7 @@ private:
                                                          U64 viewerHash,
                                                          const NodePtr& rotoPaintNode,
                                                          const AbortableRenderInfoPtr& abortInfo,
-                                                         const boost::shared_ptr<RenderStats>& stats,
+                                                         const RenderStatsPtr& stats,
                                                          ViewerArgs* outArgs);
 
 
@@ -166,7 +166,7 @@ private:
                                                const bool useCache,
                                                const bool isDraftMode,
                                                const unsigned int mipmapLevel,
-                                               const boost::shared_ptr<RenderStats>& stats,
+                                               const RenderStatsPtr& stats,
                                                ViewerArgs* outArgs);
 
 
@@ -180,7 +180,7 @@ private:
     ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
                                              const U64 viewerHash,
                                              const NodePtr& rotoPaintNode,
-                                             const boost::shared_ptr<RenderStats>& stats,
+                                             const RenderStatsPtr& stats,
                                              ViewerArgs* outArgs);
 
 public:
@@ -205,7 +205,7 @@ public:
                                      bool useTLS,
                                      boost::shared_ptr<ViewerArgs> args[2],
                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                     const boost::shared_ptr<RenderStats>& stats) WARN_UNUSED_RETURN;
+                                     const RenderStatsPtr& stats) WARN_UNUSED_RETURN;
 
     ViewerRenderRetCode getViewerArgsAndRenderViewer(SequenceTime time,
                                                      bool canAbort,
@@ -213,7 +213,7 @@ public:
                                                      U64 viewerHash,
                                                      const NodePtr& rotoPaintNode,
                                                      const RotoStrokeItemPtr& strokeItem,
-                                                     const boost::shared_ptr<RenderStats>& stats,
+                                                     const RenderStatsPtr& stats,
                                                      boost::shared_ptr<ViewerArgs>* argsA,
                                                      boost::shared_ptr<ViewerArgs>* argsB);
 
@@ -427,7 +427,7 @@ private:
                                               const NodePtr& rotoPaintNode,
                                               bool useTLS,
                                               const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                              const boost::shared_ptr<RenderStats>& stats,
+                                              const RenderStatsPtr& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
 
@@ -437,6 +437,12 @@ private:
 
     boost::scoped_ptr<ViewerInstancePrivate> _imp;
 };
+
+inline ViewerInstancePtr
+isViewerInstance(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<ViewerInstance>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

@@ -783,7 +783,7 @@ Gui::renderSelectedNode()
                 //if ((*it)->getNode()->is)
                 ///if the node is a writer, just use it to render!
                 AppInstance::RenderWork w;
-                w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>(effect);
+                w.writer = isOutputEffectInstance(effect);
                 assert(w.writer);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
@@ -806,7 +806,7 @@ Gui::renderSelectedNode()
 #endif
                 if (writer) {
                     AppInstance::RenderWork w;
-                    w.writer = boost::dynamic_pointer_cast<OutputEffectInstance>( writer->getEffectInstance() );
+                    w.writer = isOutputEffectInstance( writer->getEffectInstance() );
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
@@ -880,7 +880,7 @@ Gui::onTimelineTimeAboutToChange()
     assert( QThread::currentThread() == qApp->thread() );
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        boost::shared_ptr<RenderEngine> engine = (*it)->getInternalNode()->getRenderEngine();
+        RenderEnginePtr engine = (*it)->getInternalNode()->getRenderEngine();
         engine->abortRenderingAutoRestart();
     }
 }

@@ -502,14 +502,14 @@ boost::shared_ptr<DSKnob> DopeSheet::findDSKnob(const KnobGui* knobGui) const
 bool
 DopeSheet::isPartOfGroup(DSNode *dsNode) const
 {
-    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = isNodeGroup( dsNode->getInternalNode()->getGroup() );
 
     return (parentGroup);
 }
 
 boost::shared_ptr<DSNode> DopeSheet::getGroupDSNode(DSNode *dsNode) const
 {
-    NodeGroupPtr parentGroup = boost::dynamic_pointer_cast<NodeGroup>( dsNode->getInternalNode()->getGroup() );
+    NodeGroupPtr parentGroup = isNodeGroup( dsNode->getInternalNode()->getGroup() );
     boost::shared_ptr<DSNode> parentGroupDSNode;
 
     if (parentGroup) {

@@ -1851,11 +1851,11 @@ Settings::saveSettings(const KnobsVec& knobs,
 
     settings.setValue(QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName), NATRON_VERSION_MAJOR);
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knobs[i]);
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knobs[i]);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knobs[i]);
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knobs[i]);
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knobs[i]);
+        KnobStringBasePtr isString = isKnobStringBase(knobs[i]);
+        KnobIntBasePtr isInt = isKnobIntBase(knobs[i]);
+        KnobChoicePtr isChoice = isKnobChoice(knobs[i]);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knobs[i]);
+        KnobBoolBasePtr isBool = isKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
         for (int j = 0; j < knobs[i]->getDimension(); ++j) {
@@ -1928,11 +1928,11 @@ Settings::restoreKnobsFromSettings(const KnobsVec& knobs)
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knobs[i]);
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knobs[i]);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knobs[i]);
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knobs[i]);
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knobs[i]);
+        KnobStringBasePtr isString = isKnobStringBase(knobs[i]);
+        KnobIntBasePtr isInt = isKnobIntBase(knobs[i]);
+        KnobChoicePtr isChoice = isKnobChoice(knobs[i]);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(knobs[i]);
+        KnobBoolBasePtr isBool = isKnobBoolBase(knobs[i]);
 
         const std::string& name = knobs[i]->getName();
 
@@ -2462,8 +2462,8 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
         QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
         QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it);
-        KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(*it);
+        KnobPagePtr isPage = isKnobPage(*it);
+        KnobSeparatorPtr isSep = isKnobSeparator(*it);
         if (isPage) {
             if (isPage->getParentKnob()) {
                 ms << "### " << knobLabel << "\n\n";
@@ -3492,7 +3492,7 @@ Settings::restoreDefaultAppearance()
     std::vector< KnobIPtr > children = _appearanceTab->getChildren();
 
     for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobColorPtr isColorKnob = boost::dynamic_pointer_cast<KnobColor>(children[i]);
+        KnobColorPtr isColorKnob = isKnobColor(children[i]);
         if ( isColorKnob && isColorKnob->isSimplified() ) {
             isColorKnob->blockValueChanges();
             for (int j = 0; j < isColorKnob->getDimension(); ++j) {

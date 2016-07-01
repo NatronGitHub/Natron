@@ -238,16 +238,16 @@ struct ValueSerialization
     void save(Archive & ar,
               const unsigned int /*version*/) const
     {
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(_knob);
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(_knob);
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(_knob);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(_knob);
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(_knob);
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(_knob);
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(_knob);
-        KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(_knob);
-        KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(_knob);
-        KnobButtonPtr btn = boost::dynamic_pointer_cast<KnobButton>(_knob);
+        KnobIntBasePtr isInt = isKnobIntBase(_knob);
+        KnobBoolBasePtr isBool = isKnobBoolBase(_knob);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(_knob);
+        KnobChoicePtr isChoice = isKnobChoice(_knob);
+        KnobStringBasePtr isString = isKnobStringBase(_knob);
+        KnobParametricPtr isParametric = isKnobParametric(_knob);
+        KnobPagePtr isPage = isKnobPage(_knob);
+        KnobGroupPtr isGrp = isKnobGroup(_knob);
+        KnobSeparatorPtr isSep = isKnobSeparator(_knob);
+        KnobButtonPtr btn = isKnobButton(_knob);
         bool enabled = _knob->isEnabled(_dimension);
         ar & ::boost::serialization::make_nvp("Enabled", enabled);
         bool hasAnimation = _knob->isAnimated(_dimension);
@@ -303,17 +303,17 @@ struct ValueSerialization
     void load(Archive & ar,
               const unsigned int version)
     {
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(_knob);
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(_knob);
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(_knob);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(_knob);
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(_knob);
-        KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(_knob);
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(_knob);
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(_knob);
-        KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(_knob);
-        KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(_knob);
-        KnobButtonPtr btn = boost::dynamic_pointer_cast<KnobButton>(_knob);
+        KnobIntBasePtr isInt = isKnobIntBase(_knob);
+        KnobBoolBasePtr isBool = isKnobBoolBase(_knob);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(_knob);
+        KnobChoicePtr isChoice = isKnobChoice(_knob);
+        KnobStringBasePtr isString = isKnobStringBase(_knob);
+        KnobFilePtr isFile = isKnobFile(_knob);
+        KnobParametricPtr isParametric = isKnobParametric(_knob);
+        KnobPagePtr isPage = isKnobPage(_knob);
+        KnobGroupPtr isGrp = isKnobGroup(_knob);
+        KnobSeparatorPtr isSep = isKnobSeparator(_knob);
+        KnobButtonPtr btn = isKnobButton(_knob);
         bool enabled;
         ar & ::boost::serialization::make_nvp("Enabled", enabled);
 
@@ -488,8 +488,8 @@ class KnobSerialization
     {
         assert(_knob);
         AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(_knob);
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(_knob);
-        KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(_knob);
+        KnobParametricPtr isParametric = isKnobParametric(_knob);
+        KnobDoublePtr isDouble = isKnobDouble(_knob);
         std::string name = _knob->getName();
         ar & ::boost::serialization::make_nvp("Name", name);
         ar & ::boost::serialization::make_nvp("Type", _typeName);
@@ -587,10 +587,10 @@ class KnobSerialization
         }
 
         AnimatingKnobStringHelperPtr isStringAnimated = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(_knob);
-        KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(_knob);
-        KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(_knob);
-        KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(_knob);
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(_knob);
+        KnobFilePtr isFile = isKnobFile(_knob);
+        KnobParametricPtr isParametric = isKnobParametric(_knob);
+        KnobDoublePtr isDouble = isKnobDouble(_knob);
+        KnobChoicePtr isChoice = isKnobChoice(_knob);
         if (isChoice && !_extraData) {
             _extraData = new ChoiceExtraData;
         }
@@ -636,7 +636,7 @@ class KnobSerialization
         }
 
         if (version >= KNOB_SERIALIZATION_INTRODUCES_USER_KNOB) {
-            KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(_knob);
+            KnobChoicePtr isChoice = isKnobChoice(_knob);
             if (isChoice) {
                 //ChoiceExtraData* cData = new ChoiceExtraData;
                 assert(_extraData);
@@ -668,7 +668,7 @@ class KnobSerialization
                     }
                 }
 
-                KnobStringPtr isString = boost::dynamic_pointer_cast<KnobString>(_knob);
+                KnobStringPtr isString = isKnobString(_knob);
                 if (isString) {
                     TextExtraData* tdata = new TextExtraData;
                     ar & ::boost::serialization::make_nvp("IsLabel", tdata->label);
@@ -676,9 +676,9 @@ class KnobSerialization
                     ar & ::boost::serialization::make_nvp("UseRichText", tdata->richText);
                     _extraData = tdata;
                 }
-                KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(_knob);
-                KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(_knob);
-                KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(_knob);
+                KnobDoublePtr isDbl = isKnobDouble(_knob);
+                KnobIntPtr isInt = isKnobInt(_knob);
+                KnobColorPtr isColor = isKnobColor(_knob);
                 if (isDbl || isInt || isColor) {
                     ValueExtraData* extraData = new ValueExtraData;
                     ar & ::boost::serialization::make_nvp("Min", extraData->min);
@@ -690,15 +690,15 @@ class KnobSerialization
                     _extraData = extraData;
                 }
 
-                KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(_knob);
-                KnobOutputFilePtr isOutFile = boost::dynamic_pointer_cast<KnobOutputFile>(_knob);
+                KnobFilePtr isFile = isKnobFile(_knob);
+                KnobOutputFilePtr isOutFile = isKnobOutputFile(_knob);
                 if (isFile || isOutFile) {
                     FileExtraData* extraData = new FileExtraData;
                     ar & ::boost::serialization::make_nvp("Sequences", extraData->useSequences);
                     _extraData = extraData;
                 }
 
-                KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(_knob);
+                KnobPathPtr isPath = isKnobPath(_knob);
                 if (isPath) {
                     PathExtraData* extraData = new PathExtraData;
                     ar & ::boost::serialization::make_nvp("MultiPath", extraData->multiPath);
@@ -711,10 +711,10 @@ class KnobSerialization
                 }
 
                 if (version >= KNOB_SERIALIZATION_INTRODUCES_DEFAULT_VALUES && version < KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES) {
-                    KnobDoubleBasePtr isDoubleVal = boost::dynamic_pointer_cast<KnobDoubleBase>(_knob);
-                    KnobIntBasePtr isIntVal = boost::dynamic_pointer_cast<KnobIntBase>(_knob);
-                    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(_knob);
-                    KnobStringBasePtr isStr = boost::dynamic_pointer_cast<KnobStringBase>(_knob);
+                    KnobDoubleBasePtr isDoubleVal = isKnobDoubleBase(_knob);
+                    KnobIntBasePtr isIntVal = isKnobIntBase(_knob);
+                    KnobBoolPtr isBool = isKnobBool(_knob);
+                    KnobStringBasePtr isStr = isKnobStringBase(_knob);
 
                     for (int i = 0; i < _knob->getDimension(); ++i) {
                         if (isDoubleVal) {
@@ -787,7 +787,7 @@ public:
         _animationEnabled = knob->isAnimationEnabled();
         _tooltip = knob->getHintToolTip();
 
-        KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(_knob);
+        KnobChoicePtr isChoice = isKnobChoice(_knob);
         if (isChoice) {
             ChoiceExtraData* extraData = new ChoiceExtraData;
             extraData->_entries = isChoice->getEntries_mt_safe();
@@ -799,7 +799,7 @@ public:
             _extraData = extraData;
         }
         if (_isUserKnob) {
-            KnobStringPtr isString = boost::dynamic_pointer_cast<KnobString>(_knob);
+            KnobStringPtr isString = isKnobString(_knob);
             if (isString) {
                 TextExtraData* extraData = new TextExtraData;
                 extraData->label = isString->isLabel();
@@ -807,9 +807,9 @@ public:
                 extraData->richText = isString->usesRichText();
                 _extraData = extraData;
             }
-            KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(_knob);
-            KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(_knob);
-            KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(_knob);
+            KnobDoublePtr isDbl = isKnobDouble(_knob);
+            KnobIntPtr isInt = isKnobInt(_knob);
+            KnobColorPtr isColor = isKnobColor(_knob);
             if (isDbl || isInt || isColor) {
                 ValueExtraData* extraData = new ValueExtraData;
                 if (isDbl) {
@@ -831,15 +831,15 @@ public:
                 _extraData = extraData;
             }
 
-            KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(_knob);
-            KnobOutputFilePtr isOutFile = boost::dynamic_pointer_cast<KnobOutputFile>(_knob);
+            KnobFilePtr isFile = isKnobFile(_knob);
+            KnobOutputFilePtr isOutFile = isKnobOutputFile(_knob);
             if (isFile || isOutFile) {
                 FileExtraData* extraData = new FileExtraData;
                 extraData->useSequences = isFile ? isFile->isInputImageFile() : isOutFile->isOutputImageFile();
                 _extraData = extraData;
             }
 
-            KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(_knob);
+            KnobPathPtr isPath = isKnobPath(_knob);
             if (isPath) {
                 PathExtraData* extraData = new PathExtraData;
                 extraData->multiPath = isPath->isMultiPath();
@@ -993,8 +993,8 @@ public:
         , _isSetAsTab(false)
         , _isOpened(false)
     {
-        KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
-        KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
+        KnobGroupPtr isGrp = isKnobGroup(knob);
+        KnobPagePtr isPage = isKnobPage(knob);
 
         assert(isGrp || isPage);
 
@@ -1023,12 +1023,12 @@ public:
                     continue;
                 }
             }
-            KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(children[i]);
+            KnobGroupPtr isGrp = isKnobGroup(children[i]);
             if (isGrp) {
                 boost::shared_ptr<GroupKnobSerialization> serialisation( new GroupKnobSerialization(isGrp) );
                 _children.push_back(serialisation);
             } else {
-                //KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(children[i].get());
+                //KnobChoicePtr isChoice = isKnobChoice(children[i].get());
                 //bool copyKnob = false;//isChoice != NULL;
                 boost::shared_ptr<KnobSerialization> serialisation( new KnobSerialization(children[i]) );
                 _children.push_back(serialisation);

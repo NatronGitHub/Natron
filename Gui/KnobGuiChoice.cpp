@@ -208,7 +208,7 @@ KnobGuiChoice::KnobGuiChoice(KnobIPtr knob,
     : KnobGui(knob, container)
     , _comboBox(0)
 {
-    KnobChoicePtr k = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr k = isKnobChoice(knob);
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
     QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );

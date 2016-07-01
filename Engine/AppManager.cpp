@@ -1941,7 +1941,7 @@ AppManager::createOFXEffect(const NodePtr& node,
 }
 
 void
-AppManager::removeFromNodeCache(const boost::shared_ptr<Image> & image)
+AppManager::removeFromNodeCache(const ImagePtr & image)
 {
     _imp->_nodeCache->removeEntry(image);
 }
@@ -2040,7 +2040,7 @@ AppManager::setNumberOfThreads(int threadsNb)
 
 bool
 AppManager::getImage(const ImageKey & key,
-                     std::list<boost::shared_ptr<Image> >* returnValue) const
+                     std::list<ImagePtr >* returnValue) const
 {
     return _imp->_nodeCache->get(key, returnValue);
 }
@@ -2048,14 +2048,14 @@ AppManager::getImage(const ImageKey & key,
 bool
 AppManager::getImageOrCreate(const ImageKey & key,
                              const boost::shared_ptr<ImageParams>& params,
-                             boost::shared_ptr<Image>* returnValue) const
+                             ImagePtr* returnValue) const
 {
     return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
 }
 
 bool
 AppManager::getImage_diskCache(const ImageKey & key,
-                               std::list<boost::shared_ptr<Image> >* returnValue) const
+                               std::list<ImagePtr >* returnValue) const
 {
     return _imp->_diskCache->get(key, returnValue);
 }
@@ -2063,7 +2063,7 @@ AppManager::getImage_diskCache(const ImageKey & key,
 bool
 AppManager::getImageOrCreate_diskCache(const ImageKey & key,
                                        const boost::shared_ptr<ImageParams>& params,
-                                       boost::shared_ptr<Image>* returnValue) const
+                                       ImagePtr* returnValue) const
 {
     return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
 }

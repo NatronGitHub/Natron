@@ -100,7 +100,7 @@ struct TrackMarkerPrivate
     std::list<double> keyframesAddedWhileTracking;
 
     TrackMarkerPrivate(TrackMarker* publicInterface,
-                       const boost::shared_ptr<TrackerContext>& context)
+                       const TrackerContextPtr& context)
         : _publicInterface(publicInterface)
         , context(context)
         , searchWindowBtmLeft()
@@ -127,7 +127,7 @@ struct TrackMarkerPrivate
     }
 };
 
-TrackMarker::TrackMarker(const boost::shared_ptr<TrackerContext>& context)
+TrackMarker::TrackMarker(const TrackerContextPtr& context)
     : NamedKnobHolder( context->getNode()->getApp() )
     , boost::enable_shared_from_this<TrackMarker>()
     , _imp( new TrackMarkerPrivate(this, context) )
@@ -141,7 +141,7 @@ TrackMarker::~TrackMarker()
 void
 TrackMarker::initializeKnobs()
 {
-    boost::shared_ptr<TrackerContext> context = _imp->context.lock();
+    TrackerContextPtr context = _imp->context.lock();
     KnobIntPtr defPatternSizeKnob = context->getDefaultMarkerPatternWinSizeKnob();
     KnobIntPtr defSearchSizeKnob = context->getDefaultMarkerSearchWinSizeKnob();
 
@@ -289,7 +289,7 @@ void
 TrackMarker::clone(const TrackMarker& other)
 {
     TrackMarkerPtr thisShared = shared_from_this();
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     context->s_trackAboutToClone(thisShared);
 
@@ -352,7 +352,7 @@ TrackMarker::save(TrackSerialization* serialization) const
     }
 }
 
-boost::shared_ptr<TrackerContext>
+TrackerContextPtr
 TrackMarker::getContext() const
 {
     return _imp->context.lock();
@@ -666,7 +666,7 @@ TrackMarker::getReferenceFrame(int time,
 void
 TrackMarker::resetCenter()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     NodePtr input = context->getNode()->getInput(0);
@@ -1092,7 +1092,7 @@ TrackMarker::getMarkerImageRoI(int time) const
     return roi;
 }
 
-std::pair<boost::shared_ptr<Image>, RectI>
+std::pair<ImagePtr, RectI>
 TrackMarker::getMarkerImage(int time,
                             const RectI& roi) const
 {
@@ -1128,7 +1128,7 @@ TrackMarker::getMarkerImage(int time,
                                               NodePtr(),
                                               true, //isAnalysis
                                               false, //draftMode
-                                              boost::shared_ptr<RenderStats>() );
+                                              RenderStatsPtr() );
     RenderScale scale;
     scale.x = scale.y = 1.;
     EffectInstance::RenderRoIArgs args( time,
@@ -1169,7 +1169,7 @@ TrackMarker::onKnobSlaved(const KnobIPtr& slave,
     }
 }
 
-TrackMarkerPM::TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context)
+TrackMarkerPM::TrackMarkerPM(const TrackerContextPtr& context)
     : TrackMarker(context)
 {
 }

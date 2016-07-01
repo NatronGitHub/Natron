@@ -163,6 +163,12 @@ private:
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };
 
+inline ReadNodePtr
+isReadNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<ReadNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // READNODE_H

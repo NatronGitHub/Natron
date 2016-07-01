@@ -107,7 +107,7 @@ TrackerNodeInteract::~TrackerNodeInteract()
     }
 }
 
-boost::shared_ptr<TrackerContext>
+TrackerContextPtr
 TrackerNodeInteract::getContext() const
 {
     return _p->publicInterface->getNode()->getTrackerContext();
@@ -147,7 +147,7 @@ TrackerNodeInteract::onTrackRangeClicked()
 void
 TrackerNodeInteract::onTrackAllKeyframesClicked()
 {
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     std::list<TrackMarkerPtr> selectedMarkers;
 
     ctx->getSelectedMarkers(&selectedMarkers);
@@ -171,7 +171,7 @@ TrackerNodeInteract::onTrackAllKeyframesClicked()
 void
 TrackerNodeInteract::onTrackCurrentKeyframeClicked()
 {
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     SequenceTime currentFrame = _p->publicInterface->getCurrentTime();
     std::list<TrackMarkerPtr> selectedMarkers;
 
@@ -217,7 +217,7 @@ TrackerNodeInteract::onTrackBwClicked()
     viewer->getUiContext()->getViewerFrameRange(&first, &last);
 
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
@@ -234,7 +234,7 @@ TrackerNodeInteract::onTrackPrevClicked()
     ViewerInstance* viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     ctx->trackSelectedMarkers( startFrame, startFrame - 2, -1, overlay );
 }
 
@@ -253,7 +253,7 @@ TrackerNodeInteract::onTrackNextClicked()
     ViewerInstance* viewer = overlay->getInternalViewerNode();
     assert(viewer);
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     ctx->trackSelectedMarkers( startFrame, startFrame + 2, true, overlay );
 }
 
@@ -269,7 +269,7 @@ TrackerNodeInteract::onTrackFwClicked()
     viewer->getUiContext()->getViewerFrameRange(&first, &last);
 
     int startFrame = viewer->getTimeline()->currentFrame();
-    boost::shared_ptr<TrackerContext> ctx = getContext();
+    TrackerContextPtr ctx = getContext();
     if ( ctx->isCurrentlyTracking() ) {
         ctx->abortTracking();
     } else {
@@ -372,7 +372,7 @@ TrackerNodeInteract::onResetOffsetButtonClicked()
 void
 TrackerNodeInteract::onResetTrackButtonClicked()
 {
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
 
     assert(context);
     std::list<TrackMarkerPtr > markers;
@@ -1143,7 +1143,7 @@ toBGRA(unsigned char r,
 }
 
 void
-TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const boost::shared_ptr<Image>& image,
+TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
                                                      const boost::shared_ptr<Texture>& tex,
                                                      const RectI& renderWindow)
 {
@@ -1329,9 +1329,9 @@ void
 TrackerNodeInteract::onTrackImageRenderingFinished()
 {
     assert( QThread::currentThread() == qApp->thread() );
-    QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<boost::shared_ptr<Image>, RectI> >*>( sender() );
+    QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
     assert(future);
-    std::pair<boost::shared_ptr<Image>, RectI> ret = future->result();
+    std::pair<ImagePtr, RectI> ret = future->result();
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
@@ -1365,7 +1365,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
     assert( QThread::currentThread() == qApp->thread() );
     TrackWatcher* future = dynamic_cast<TrackWatcher*>( sender() );
     assert(future);
-    std::pair<boost::shared_ptr<Image>, RectI> ret = future->result();
+    std::pair<ImagePtr, RectI> ret = future->result();
     if ( !ret.first || ret.second.isNull() ) {
         return;
     }
@@ -1481,7 +1481,7 @@ TrackerNodeInteract::transformPattern(double time,
 {
     KnobDoublePtr searchWndTopRight, searchWndBtmLeft;
     KnobDoublePtr patternCorners[4];
-    boost::shared_ptr<TrackerContext> context = getContext();
+    TrackerContextPtr context = getContext();
     KnobDoublePtr centerKnob = interactMarker->getCenterKnob();
     KnobDoublePtr offsetKnob = interactMarker->getOffsetKnob();
     bool transformPatternCorners = state != eMouseStateDraggingOuterBtmLeft &&

@@ -124,6 +124,12 @@ private:
     boost::scoped_ptr<WriteNodePrivate> _imp;
 };
 
+inline WriteNodePtr
+isWriteNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<WriteNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_WriteNode_h

@@ -64,7 +64,7 @@ NodeGraph::makeFullyQualifiedLabel(Node* node,
                                    std::string* ret)
 {
     NodeCollectionPtr parent = node->getGroup();
-    NodeGroupPtr isParentGrp = boost::dynamic_pointer_cast<NodeGroup>(parent);
+    NodeGroupPtr isParentGrp = isNodeGroup(parent);
     std::string toPreprend = node->getLabel();
 
     if (isParentGrp) {
@@ -89,7 +89,7 @@ NodeGraph::NodeGraph(Gui* gui,
 
     setAttribute(Qt::WA_MacShowFocusRect, 0);
 
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( group.get() );
+    NodeGroupPtr isGrp = isNodeGroup( group.get() );
     if (isGrp) {
         std::string newName = isGrp->getNode()->getFullyQualifiedName();
         for (std::size_t i = 0; i < newName.size(); ++i) {
@@ -286,7 +286,7 @@ NodeGraph::paintEvent(QPaintEvent* e)
     }
 
     NodeCollectionPtr collection = getGroup();
-    NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>(collection);
+    NodeGroupPtr isGroup = isNodeGroup(collection);
     bool isGroupEditable = true;
     bool groupEdited = true;
     if (isGroup) {
@@ -371,7 +371,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
     NodeGuiPtr node_ui;
     Dot* isDot = dynamic_cast<Dot*>( node->getEffectInstance() );
     Backdrop* isBd = dynamic_cast<Backdrop*>( node->getEffectInstance() );
-    NodeGroupPtr isGrp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance() );
+    NodeGroupPtr isGrp = isNodeGroup( node->getEffectInstance() );
 
 
     if (isDot) {
@@ -413,7 +413,7 @@ NodeGraph::createNodeGUI(const NodePtr & node,
         _imp->_nodes.push_back(node_ui);
     }
 
-    //NodeGroupPtr parentIsGroup = boost::dynamic_pointer_cast<NodeGroup>(node->getGroup());;
+    //NodeGroupPtr parentIsGroup = isNodeGroup(node->getGroup());;
     const std::list<NodePtr>& nodesBeingCreated = getGui()->getApp()->getNodesBeingCreated();
     bool isTopLevelNodeBeingCreated = false;
     if ( !nodesBeingCreated.empty() && (nodesBeingCreated.front() == node) ) {

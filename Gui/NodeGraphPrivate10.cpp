@@ -164,7 +164,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
     if (!n) {
         return NodeGuiPtr();
     }
-    boost::shared_ptr<NodeGuiI> gui_i = n->getNodeGui();
+    NodeGuiIPtr gui_i = n->getNodeGui();
     NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
     assert(gui);
 
@@ -206,7 +206,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 
     ///Add the node group itself
     {
-        NodeGroupPtr isContainerGroup = boost::dynamic_pointer_cast<NodeGroup>(n->getGroup());
+        NodeGroupPtr isContainerGroup = isNodeGroup(n->getGroup());
         if (isContainerGroup) {
             allNodes.push_back( isContainerGroup->getNode() );
         }
@@ -232,7 +232,7 @@ NodeGraphPrivate::pasteNode(const NodeSerializationPtr & internalSerialization,
 
     ///Recurse if this is a group or multi-instance
     NodeGroupPtr isGrp =
-        boost::dynamic_pointer_cast<NodeGroup>( n->getEffectInstance()->shared_from_this() );
+        isNodeGroup( n->getEffectInstance()->shared_from_this() );
     const std::list<NodeSerializationPtr >& nodes = internalSerialization->getNodesCollection();
     std::list<boost::shared_ptr<NodeGuiSerialization> >  nodesUi;
     if (guiSerialization) {

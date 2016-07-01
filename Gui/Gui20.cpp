@@ -486,7 +486,7 @@ Gui::removeViewerTab(ViewerTab* tab,
     NodeCollectionPtr collection;
     if ( tab->getInternalNode() && tab->getInternalNode()->getNode() ) {
         NodeCollectionPtr collection = tab->getInternalNode()->getNode()->getGroup();
-        isGrp = boost::dynamic_pointer_cast<NodeGroup>(collection);
+        isGrp = isNodeGroup(collection);
     }
 
 
@@ -541,7 +541,7 @@ Gui::removeViewerTab(ViewerTab* tab,
         assert(_imp->_nodeGraphArea);
         ///call the deleteNode which will call this function again when the node will be deactivated.
         NodePtr internalNode = tab->getInternalNode()->getNode();
-        boost::shared_ptr<NodeGuiI> guiI = internalNode->getNodeGui();
+        NodeGuiIPtr guiI = internalNode->getNodeGui();
         NodeGuiPtr gui = boost::dynamic_pointer_cast<NodeGui>(guiI);
         assert(gui);
         NodeGraphI* graph_i = internalNode->getGroup()->getNodeGraph();

@@ -243,7 +243,7 @@ NodeGraph::moveNodesForIdealPosition(const NodeGuiPtr &node,
                 if (!output) {
                     continue;
                 }
-                boost::shared_ptr<NodeGuiI> output_i = output->getNodeGui();
+                NodeGuiIPtr output_i = output->getNodeGui();
                 if (!output_i) {
                     continue;
                 }

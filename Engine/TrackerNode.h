@@ -167,6 +167,12 @@ private:
     boost::scoped_ptr<TrackerNodePrivate> _imp;
 };
 
+inline TrackerNodePtr
+isTrackerNode(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<TrackerNode>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // TRACKERNODE_H

@@ -620,7 +620,7 @@ KnobStringBase::getValueFromMasterAt(double time,
                                         int dimension,
                                         const KnobIPtr& master)
 {
-    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(master);
+    KnobStringBasePtr isString = isKnobStringBase(master);
     assert(isString); //< other data types aren't supported
     if (isString) {
         return isString->getValueAtTime(time, dimension, view, false);
@@ -637,7 +637,7 @@ KnobStringBase::getValueFromMaster(ViewSpec view,
                                       const KnobIPtr& master,
                                       bool /*clamp*/)
 {
-    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(master);
+    KnobStringBasePtr isString = isKnobStringBase(master);
     assert(isString); //< other data types aren't supported
     if (isString) {
         return isString->getValue(dimension, view, false);
@@ -654,9 +654,9 @@ Knob<T>::getValueFromMasterAt(double time,
                               int dimension,
                               const KnobIPtr& master)
 {
-    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(master);
-    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(master);
-    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(master);
+    KnobIntBasePtr isInt = isKnobIntBase(master);
+    KnobBoolBasePtr isBool = isKnobBoolBase(master);
+    KnobDoubleBasePtr isDouble = isKnobDoubleBase(master);
     assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
     if (isInt) {
         return isInt->getValueAtTime(time, dimension, view);
@@ -676,9 +676,9 @@ Knob<T>::getValueFromMaster(ViewSpec view,
                             const KnobIPtr& master,
                             bool clamp)
 {
-    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(master);
-    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(master);
-    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(master);
+    KnobIntBasePtr isInt = isKnobIntBase(master);
+    KnobBoolBasePtr isBool = isKnobBoolBase(master);
+    KnobDoubleBasePtr isDouble = isKnobDoubleBase(master);
     assert( master->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
     if (isInt) {
         return (T)isInt->getValue(dimension, view, clamp);
@@ -1860,9 +1860,9 @@ Knob<T>::getKeyFrameValueByIndex(ViewSpec view,
     std::pair<int, KnobIPtr > master = getMaster(dimension);
 
     if (master.second) {
-        KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(master.second);
-        KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(master.second);
-        KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(master.second);
+        KnobIntBasePtr isInt = isKnobIntBase(master.second);
+        KnobBoolBasePtr isBool = isKnobBoolBase(master.second);
+        KnobDoubleBasePtr isDouble = isKnobDoubleBase(master.second);
         assert( master.second->isTypePOD() && (isInt || isBool || isDouble) ); //< other data types aren't supported
         if (isInt) {
             return isInt->getKeyFrameValueByIndex(view, master.first, index, ok);
@@ -1899,7 +1899,7 @@ KnobStringBase::getKeyFrameValueByIndex(ViewSpec view,
     std::pair<int, KnobIPtr > master = getMaster(dimension);
 
     if (master.second) {
-        KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(master.second);
+        KnobStringBasePtr isString = isKnobStringBase(master.second);
         assert(isString); //< other data types aren't supported
         if (isString) {
             return isString->getKeyFrameValueByIndex(view, master.first, index, ok);
@@ -2607,7 +2607,7 @@ KnobStringBase::cloneValues(const KnobIPtr& other,
                                int dimension,
                                int otherDimension)
 {
-    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(other);
+    KnobStringBasePtr isString = isKnobStringBase(other);
     ///Can only clone strings
     assert(isString);
     if (isString) {
@@ -2621,9 +2621,9 @@ Knob<T>::cloneValues(const KnobIPtr& other,
                      int dimension,
                      int otherDimension)
 {
-    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(other);
-    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(other);
-    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(other);
+    KnobIntBasePtr isInt = isKnobIntBase(other);
+    KnobBoolBasePtr isBool = isKnobBoolBase(other);
+    KnobDoubleBasePtr isDouble = isKnobDoubleBase(other);
     assert(isInt || isBool || isDouble);
 
     QMutexLocker k(&_valueMutex);
@@ -2642,7 +2642,7 @@ KnobStringBase::cloneValuesAndCheckIfChanged(const KnobIPtr& other,
                                                 int dimension,
                                                 int otherDimension)
 {
-    KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(other);
+    KnobStringBasePtr isString = isKnobStringBase(other);
     assert( (dimension == otherDimension) || (dimension != -1) );
     ///Can only clone strings
     assert(isString);
@@ -2659,9 +2659,9 @@ Knob<T>::cloneValuesAndCheckIfChanged(const KnobIPtr& other,
                                       int dimension,
                                       int otherDimension)
 {
-    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(other);
-    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(other);
-    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(other);
+    KnobIntBasePtr isInt = isKnobIntBase(other);
+    KnobBoolBasePtr isBool = isKnobBoolBase(other);
+    KnobDoubleBasePtr isDouble = isKnobDoubleBase(other);
     assert(isInt || isBool || isDouble);
 
     QMutexLocker k(&_valueMutex);

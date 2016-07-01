@@ -265,7 +265,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
         _imp->refreshButtons();
     }
     NodePtr node = getNode();
-    OutputEffectInstancePtr effect = boost::dynamic_pointer_cast<OutputEffectInstance>( node->getEffectInstance() );
+    OutputEffectInstancePtr effect = isOutputEffectInstance( node->getEffectInstance() );
     node->getApp()->removeRenderFromQueue(effect);
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
@@ -299,7 +299,7 @@ ProgressTaskInfo::restartTask()
         } else {
             firstFrame =  _imp->lastRenderedFrame;
         }
-        AppInstance::RenderWork w( boost::dynamic_pointer_cast<OutputEffectInstance>( node->getEffectInstance() ),
+        AppInstance::RenderWork w( isOutputEffectInstance( node->getEffectInstance() ),
                                    firstFrame,
                                    _imp->lastFrame,
                                    _imp->frameStep,
@@ -432,7 +432,7 @@ ProgressTaskInfoPrivate::createItems()
         return;
     }
     NodePtr node = getNode();
-    boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
+    NodeGuiIPtr gui_i = node->getNodeGui();
     NodeGui* nodeUI = dynamic_cast<NodeGui*>( gui_i.get() );
     QColor color;
     if (nodeUI) {

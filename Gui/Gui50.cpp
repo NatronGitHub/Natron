@@ -929,7 +929,7 @@ Gui::exportGroupAsPythonScript(NodeCollection* collection)
     NodesList nodes = collection->getNodes();
     bool hasOutput = false;
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( (*it)->isActivated() && boost::dynamic_pointer_cast<GroupOutput>( (*it)->getEffectInstance() ) ) {
+        if ( (*it)->isActivated() && isGroupOutput( (*it)->getEffectInstance() ) ) {
             hasOutput = true;
             break;
         }

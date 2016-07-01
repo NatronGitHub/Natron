@@ -72,7 +72,7 @@ KnobGuiFile::KnobGuiFile(KnobIPtr knob,
     , _lastOpened()
     , _lastModificationDates()
 {
-    KnobFilePtr k = boost::dynamic_pointer_cast<KnobFile>(knob);
+    KnobFilePtr k = isKnobFile(knob);
 
     assert(k);
     QObject::connect( k.get(), SIGNAL(openFile()), this, SLOT(open_file()) );
@@ -468,7 +468,7 @@ KnobGuiOutputFile::KnobGuiOutputFile(KnobIPtr knob,
     , _lineEdit(0)
     , _openFileButton(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
+    _knob = isKnobOutputFile(knob);
     assert( _knob.lock() );
     QObject::connect( _knob.lock().get(), SIGNAL(openFile(bool)), this, SLOT(open_file(bool)) );
 }
@@ -721,7 +721,7 @@ KnobGuiPath::KnobGuiPath(KnobIPtr knob,
     , _lineEdit(0)
     , _openFileButton(0)
 {
-    _knob = boost::dynamic_pointer_cast<KnobPath>(knob);
+    _knob = isKnobPath(knob);
     assert( _knob.lock() );
 }
 

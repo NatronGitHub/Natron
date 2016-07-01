@@ -124,6 +124,12 @@ private:
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
+inline NoOpBasePtr
+isNoOpBase(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<NoOpBase>(effect);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Engine_NoOpBase_h

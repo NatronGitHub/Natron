@@ -32,7 +32,7 @@
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
 
-Track::Track(const boost::shared_ptr<TrackMarker>& marker)
+Track::Track(const TrackMarkerPtr& marker)
     : _marker(marker)
 {
 }
@@ -72,7 +72,7 @@ Track::reset()
     _marker->resetTrack();
 }
 
-Tracker::Tracker(const boost::shared_ptr<TrackerContext>& ctx)
+Tracker::Tracker(const TrackerContextPtr& ctx)
     : _ctx(ctx)
 {
 }

@@ -72,8 +72,8 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
         std::vector< KnobIPtr >  knobs = n->getEffectInstance()->getKnobs_mt_safe();
         std::list<KnobIPtr > userPages;
         for (U32 i  = 0; i < knobs.size(); ++i) {
-            KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knobs[i]);
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knobs[i]);
+            KnobGroupPtr isGroup = isKnobGroup(knobs[i]);
+            KnobPagePtr isPage = isKnobPage(knobs[i]);
 
             if (isPage) {
                 _pagesIndexes.push_back( knobs[i]->getName() );
@@ -137,7 +137,7 @@ NodeSerialization::NodeSerialization(const NodePtr & n,
             _hasRotoContext = false;
         }
 
-        boost::shared_ptr<TrackerContext> tracker = n->getTrackerContext();
+        TrackerContextPtr tracker = n->getTrackerContext();
         if (tracker) {
             _hasTrackerContext = true;
             tracker->save(&_trackerContext);

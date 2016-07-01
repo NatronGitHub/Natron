@@ -201,7 +201,7 @@ Effect::Effect(const NodePtr& node)
     if (node) {
         NodeGroupPtr grp;
         if ( node->getEffectInstance() ) {
-            grp = boost::dynamic_pointer_cast<NodeGroup>( node->getEffectInstance()->shared_from_this() );
+            grp = isNodeGroup( node->getEffectInstance()->shared_from_this() );
             init( boost::dynamic_pointer_cast<NodeCollection>(grp) );
         }
     }
@@ -352,20 +352,20 @@ Param*
 Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 {
     int dims = knob->getDimension();
-    KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
-    KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
-    KnobStringPtr isString = boost::dynamic_pointer_cast<KnobString>(knob);
-    KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
-    KnobOutputFilePtr isOutputFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
-    KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(knob);
-    KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(knob);
-    KnobGroupPtr isGroup = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(knob);
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
-    KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
+    KnobIntPtr isInt = isKnobInt(knob);
+    KnobDoublePtr isDouble = isKnobDouble(knob);
+    KnobBoolPtr isBool = isKnobBool(knob);
+    KnobChoicePtr isChoice = isKnobChoice(knob);
+    KnobColorPtr isColor = isKnobColor(knob);
+    KnobStringPtr isString = isKnobString(knob);
+    KnobFilePtr isFile = isKnobFile(knob);
+    KnobOutputFilePtr isOutputFile = isKnobOutputFile(knob);
+    KnobPathPtr isPath = isKnobPath(knob);
+    KnobButtonPtr isButton = isKnobButton(knob);
+    KnobGroupPtr isGroup = isKnobGroup(knob);
+    KnobPagePtr isPage = isKnobPage(knob);
+    KnobParametricPtr isParametric = isKnobParametric(knob);
+    KnobSeparatorPtr isSep = isKnobSeparator(knob);
 
     if (isInt) {
         switch (dims) {
@@ -897,7 +897,7 @@ Effect::getRotoContext() const
 Tracker*
 Effect::getTrackerContext() const
 {
-    boost::shared_ptr<TrackerContext> t = getInternalNode()->getTrackerContext();
+    TrackerContextPtr t = getInternalNode()->getTrackerContext();
 
     if (t) {
         return new Tracker(t);

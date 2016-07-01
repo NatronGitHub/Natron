@@ -49,7 +49,7 @@ KnobGui::onCreateAliasOnGroupActionTriggered()
         throw std::logic_error("");
     }
     NodeCollectionPtr collec = isEffect->getNode()->getGroup();
-    NodeGroupPtr isCollecGroup = boost::dynamic_pointer_cast<NodeGroup>(collec);
+    NodeGroupPtr isCollecGroup = isNodeGroup(collec);
     assert(isCollecGroup);
     if (isCollecGroup) {
         createDuplicateOnNode(isCollecGroup, true, KnobPagePtr(), KnobGroupPtr(), -1);
@@ -202,7 +202,7 @@ KnobGui::isSecretRecursive() const
     bool isViewerKnob = _imp->container->isInViewerUIKnob();
     bool showit = isViewerKnob ? !knob->getInViewerContextSecret() : !knob->getIsSecret();
     KnobIPtr parentKnob = knob->getParentKnob();
-    KnobGroupPtr parentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+    KnobGroupPtr parentIsGroup = isKnobGroup(parentKnob);
 
     while (showit && parentKnob && parentIsGroup) {
         KnobGuiGroup* parentGui = dynamic_cast<KnobGuiGroup*>( _imp->container->getKnobGui(parentKnob).get() );
@@ -213,7 +213,7 @@ KnobGui::isSecretRecursive() const
         }
         // prepare for next loop iteration
         parentKnob = parentKnob->getParentKnob();
-        parentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentKnob);
+        parentIsGroup = isKnobGroup(parentKnob);
     }
 
     return !showit;
@@ -390,10 +390,10 @@ KnobGui::onSetKeyActionTriggered()
                 AddKeysCommand::KeyToAdd keyToAdd;
                 KeyFrame kf;
                 kf.setTime(time);
-                KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-                KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
+                KnobIntBasePtr isInt = isKnobIntBase(knob);
+                KnobBoolBasePtr isBool = isKnobBoolBase(knob);
                 AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
-                KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
+                KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
 
                 if (isInt) {
                     kf.setValue( isInt->getValue(i) );
@@ -500,7 +500,7 @@ QString
 KnobGui::toolTip() const
 {
     KnobIPtr knob = getKnob();
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+    KnobChoicePtr isChoice = isKnobChoice(knob);
     bool isMarkdown = knob.get()->isHintInMarkdown();
     QString tt;
     QString realTt;

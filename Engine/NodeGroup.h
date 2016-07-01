@@ -238,7 +238,7 @@ public:
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
 
 
-    void getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const;
+    void getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >& argsMap) const;
 
 
     void forceComputeInputDependentDataOnAllTrees();
@@ -406,6 +406,18 @@ private:
                              bool /*originatedFromMainThread*/) OVERRIDE;
     boost::scoped_ptr<NodeGroupPrivate> _imp;
 };
+
+inline NodeGroupPtr
+isNodeGroup(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<NodeGroup>(effect);
+}
+
+inline NodeGroupPtr
+isNodeGroup(const NodeCollectionPtr& group)
+{
+    return boost::dynamic_pointer_cast<NodeGroup>(group);
+}
 
 NATRON_NAMESPACE_EXIT;
 

@@ -39,7 +39,7 @@ struct HistogramRequest
 {
     int binsCount;
     int mode;
-    boost::shared_ptr<Image> image;
+    ImagePtr image;
     RectI rect;
     double vmin;
     double vmax;
@@ -58,7 +58,7 @@ struct HistogramRequest
 
     HistogramRequest(int binsCount,
                      int mode,
-                     const boost::shared_ptr<Image> & image,
+                     const ImagePtr & image,
                      const RectI & rect,
                      double vmin,
                      double vmax,
@@ -136,7 +136,7 @@ HistogramCPU::~HistogramCPU()
 
 void
 HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
-                               const boost::shared_ptr<Image> & image,
+                               const ImagePtr & image,
                                const RectI & rect,
                                int binsCount,
                                double vmin,
@@ -167,7 +167,7 @@ HistogramCPU::quitAnyComputation()
 
         ///post a fake request to wakeup the thread
         l.unlock();
-        computeHistogram(0, boost::shared_ptr<Image>(), RectI(), 0, 0, 0, 0);
+        computeHistogram(0, ImagePtr(), RectI(), 0, 0, 0, 0);
         l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);

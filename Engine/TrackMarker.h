@@ -109,12 +109,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 protected: // derives from KnobHolder
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarker(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarker(const TrackerContextPtr& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context) WARN_UNUSED_RETURN
+    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<TrackMarker>( new TrackMarker(context) );
+        return TrackMarkerPtr( new TrackMarker(context) );
     }
 
     virtual ~TrackMarker();
@@ -125,7 +125,7 @@ public:
 
     void save(TrackSerialization* serialization) const;
 
-    boost::shared_ptr<TrackerContext> getContext() const;
+    TrackerContextPtr getContext() const;
 
     bool setScriptName(const std::string& name);
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -190,7 +190,7 @@ public:
 
     void removeAllUserKeyframes();
 
-    std::pair<boost::shared_ptr<Image>, RectI> getMarkerImage(int time, const RectI& roi) const;
+    std::pair<ImagePtr, RectI> getMarkerImage(int time, const RectI& roi) const;
 
     RectI getMarkerImageRoI(int time) const;
 
@@ -263,12 +263,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private:
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
-    TrackMarkerPM(const boost::shared_ptr<TrackerContext>& context);
+    TrackMarkerPM(const TrackerContextPtr& context);
 
 public:
-    static boost::shared_ptr<TrackMarker> create(const boost::shared_ptr<TrackerContext>& context) WARN_UNUSED_RETURN
+    static TrackMarkerPtr create(const TrackerContextPtr& context) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<TrackMarker>( new TrackMarkerPM(context) );
+        return TrackMarkerPtr( new TrackMarkerPM(context) );
     }
 
     virtual ~TrackMarkerPM();

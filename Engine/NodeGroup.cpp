@@ -306,7 +306,7 @@ NodeCollection::hasNodeRendering() const
                     return true;
                 }
             } else {
-                OutputEffectInstancePtr effect = boost::dynamic_pointer_cast<OutputEffectInstance>( (*it)->getEffectInstance() );
+                OutputEffectInstancePtr effect = isOutputEffectInstance( (*it)->getEffectInstance() );
                 if ( effect && effect->getRenderEngine()->hasThreadsWorking() ) {
                     return true;
                 }
@@ -798,8 +798,8 @@ NodeCollection::fixRelativeFilePaths(const std::string& projectPathName,
 
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knobs[j]);
-                KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(isString);
+                KnobStringBasePtr isString = isKnobStringBase(knobs[j]);
+                KnobStringPtr isStringKnob = isKnobString(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
@@ -834,8 +834,8 @@ NodeCollection::fixPathName(const std::string& oldName,
         if ( (*it)->isActivated() ) {
             const KnobsVec& knobs = (*it)->getKnobs();
             for (U32 j = 0; j < knobs.size(); ++j) {
-                KnobStringBasePtr isString = boost::dynamic_pointer_cast<KnobStringBase>(knobs[j]);
-                KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(isString);
+                KnobStringBasePtr isString = isKnobStringBase(knobs[j]);
+                KnobStringPtr isStringKnob = isKnobString(isString);
                 if ( !isString || isStringKnob || ( knobs[j] == project->getEnvVarKnob() ) ) {
                     continue;
                 }
@@ -944,7 +944,7 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
 }
 
 void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<ParallelRenderArgs> >& argsMap) const
+NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >& argsMap) const
 {
     NodesList nodes = getNodes();
 
@@ -952,7 +952,7 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
         if ( !(*it)->isActivated() ) {
             continue;
         }
-        boost::shared_ptr<ParallelRenderArgs> args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
+        ParallelRenderArgsPtr args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
         if (args) {
             argsMap.insert( std::make_pair(*it, args) );
         }
@@ -963,7 +963,7 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
             NodesList children;
             (*it)->getChildrenMultiInstance(&children);
             for (NodesList::iterator it2 = children.begin(); it2 != children.end(); ++it2) {
-                boost::shared_ptr<ParallelRenderArgs> childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr childArgs = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
                 if (childArgs) {
                     argsMap.insert( std::make_pair(*it2, childArgs) );
                 }
@@ -974,7 +974,7 @@ NodeCollection::getParallelRenderArgs(std::map<NodePtr, boost::shared_ptr<Parall
         RotoContextPtr rotoContext = (*it)->getRotoContext();
         if (args && rotoContext) {
             for (NodesList::const_iterator it2 = args->rotoPaintNodes.begin(); it2 != args->rotoPaintNodes.end(); ++it2) {
-                boost::shared_ptr<ParallelRenderArgs> args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
+                ParallelRenderArgsPtr args2 = (*it2)->getEffectInstance()->getParallelRenderArgsTLS();
                 if (args2) {
                     argsMap.insert( std::make_pair(*it2, args2) );
                 }
@@ -1171,7 +1171,7 @@ NodeGroup::isInputOptional(int inputNb) const
     if (!knob) {
         return false;
     }
-    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
+    KnobBoolPtr isBool = isKnobBool(knob);
     assert(isBool);
 
     return isBool ? isBool->getValue() : false;
@@ -1215,7 +1215,7 @@ NodeGroup::isInputMask(int inputNb) const
     if (!knob) {
         return false;
     }
-    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
+    KnobBoolPtr isBool = isKnobBool(knob);
     assert(isBool);
 
     return isBool ? isBool->getValue() : false;
@@ -1227,7 +1227,7 @@ NodeGroup::initializeKnobs()
     KnobIPtr nodePage = getKnobByName(NATRON_PARAMETER_PAGE_NAME_EXTRA);
 
     assert(nodePage);
-    KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(nodePage);
+    KnobPagePtr isPage = isKnobPage(nodePage);
     assert(isPage);
     _imp->exportAsTemplate = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Export as PyPlug") );
     _imp->exportAsTemplate->setName("exportAsPyPlug");
@@ -1267,7 +1267,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
             ///The input must have been tracked before
             assert(false);
         }
-        GroupOutputPtr isOutput = boost::dynamic_pointer_cast<GroupOutput>( node->getEffectInstance() );
+        GroupOutputPtr isOutput = isGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             for (NodesWList::iterator it = _imp->outputs.begin(); it != _imp->outputs.end(); ++it) {
                 if (it->lock()->getEffectInstance() == isOutput) {
@@ -1312,7 +1312,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
             _imp->guiInputs.push_back(node);
             thisNode->initializeInputs();
         }
-        GroupOutputPtr isOutput = boost::dynamic_pointer_cast<GroupOutput>( node->getEffectInstance() );
+        GroupOutputPtr isOutput = isGroupOutput( node->getEffectInstance() );
         if (isOutput) {
             _imp->outputs.push_back(node);
             _imp->guiOutputs.push_back(node);
@@ -1495,7 +1495,7 @@ NodeGroup::knobChanged(const KnobIPtr& k,
     bool ret = true;
 
     if (k == _imp->exportAsTemplate) {
-        boost::shared_ptr<NodeGuiI> gui_i = getNode()->getNodeGui();
+        NodeGuiIPtr gui_i = getNode()->getNodeGui();
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
         }
@@ -1595,15 +1595,15 @@ exportKnobValues(int indentLevel,
 {
     bool hasExportedValue = false;
 
-    KnobStringBasePtr isStr = boost::dynamic_pointer_cast<KnobStringBase>(knob);
+    KnobStringBasePtr isStr = isKnobStringBase(knob);
     AnimatingKnobStringHelperPtr isAnimatedStr = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(knob);
-    KnobDoubleBasePtr isDouble = boost::dynamic_pointer_cast<KnobDoubleBase>(knob);
-    KnobIntBasePtr isInt = boost::dynamic_pointer_cast<KnobIntBase>(knob);
-    KnobBoolBasePtr isBool = boost::dynamic_pointer_cast<KnobBoolBase>(knob);
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    KnobStringPtr isStringKnob = boost::dynamic_pointer_cast<KnobString>(knob);
+    KnobDoubleBasePtr isDouble = isKnobDoubleBase(knob);
+    KnobIntBasePtr isInt = isKnobIntBase(knob);
+    KnobBoolBasePtr isBool = isKnobBoolBase(knob);
+    KnobParametricPtr isParametric = isKnobParametric(knob);
+    KnobChoicePtr isChoice = isKnobChoice(knob);
+    KnobGroupPtr isGrp = isKnobGroup(knob);
+    KnobStringPtr isStringKnob = isKnobString(knob);
 
     ///Don't export this kind of parameter. Mainly this is the html label of the node which is 99% of times empty
     if ( isStringKnob &&
@@ -1845,19 +1845,19 @@ exportUserKnob(int indentLevel,
                KnobPagePtr page,
                QTextStream& ts)
 {
-    KnobIntPtr isInt = boost::dynamic_pointer_cast<KnobInt>(knob);
-    KnobDoublePtr isDouble = boost::dynamic_pointer_cast<KnobDouble>(knob);
-    KnobBoolPtr isBool = boost::dynamic_pointer_cast<KnobBool>(knob);
-    KnobChoicePtr isChoice = boost::dynamic_pointer_cast<KnobChoice>(knob);
-    KnobColorPtr isColor = boost::dynamic_pointer_cast<KnobColor>(knob);
-    KnobStringPtr isStr = boost::dynamic_pointer_cast<KnobString>(knob);
-    KnobFilePtr isFile = boost::dynamic_pointer_cast<KnobFile>(knob);
-    KnobOutputFilePtr isOutFile = boost::dynamic_pointer_cast<KnobOutputFile>(knob);
-    KnobPathPtr isPath = boost::dynamic_pointer_cast<KnobPath>(knob);
-    KnobGroupPtr isGrp = boost::dynamic_pointer_cast<KnobGroup>(knob);
-    KnobButtonPtr isButton = boost::dynamic_pointer_cast<KnobButton>(knob);
+    KnobIntPtr isInt = isKnobInt(knob);
+    KnobDoublePtr isDouble = isKnobDouble(knob);
+    KnobBoolPtr isBool = isKnobBool(knob);
+    KnobChoicePtr isChoice = isKnobChoice(knob);
+    KnobColorPtr isColor = isKnobColor(knob);
+    KnobStringPtr isStr = isKnobString(knob);
+    KnobFilePtr isFile = isKnobFile(knob);
+    KnobOutputFilePtr isOutFile = isKnobOutputFile(knob);
+    KnobPathPtr isPath = isKnobPath(knob);
+    KnobGroupPtr isGrp = isKnobGroup(knob);
+    KnobButtonPtr isButton = isKnobButton(knob);
     KnobSeparatorPtr isSep = boost::dynamic_pointer_cast<KnobSeparator>(knob);
-    KnobParametricPtr isParametric = boost::dynamic_pointer_cast<KnobParametric>(knob);
+    KnobParametricPtr isParametric = isKnobParametric(knob);
     boost::shared_ptr<KnobI > aliasedParam;
     {
         KnobI::ListenerDimsMap listeners;
@@ -1983,7 +1983,7 @@ exportUserKnob(int indentLevel,
                                                  ESC( isChoice->getName() ) +
                                                  QString::fromUtf8(", ") + ESC( isChoice->getLabel() ) + QString::fromUtf8(")") );
 
-        KnobChoicePtr aliasedIsChoice = boost::dynamic_pointer_cast<KnobChoice>(aliasedParam);
+        KnobChoicePtr aliasedIsChoice = isKnobChoice(aliasedParam);
 
         if (!aliasedIsChoice) {
             std::vector<std::string> entries = isChoice->getEntries_mt_safe();
@@ -2362,7 +2362,7 @@ exportAllNodeKnobs(int indentLevel,
         }
 
         if ( (*it2)->isUserKnob() ) {
-            KnobPagePtr isPage = boost::dynamic_pointer_cast<KnobPage>(*it2);
+            KnobPagePtr isPage = isKnobPage(*it2);
             if (isPage) {
                 userPages.push_back(isPage);
             }

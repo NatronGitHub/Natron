@@ -380,7 +380,7 @@ PrecompNodePrivate::setReadNodeErrorChoice()
     if (read) {
         KnobIPtr knob = read->getKnobByName("onMissingFrame");
         if (knob) {
-            KnobChoicePtr choice = boost::dynamic_pointer_cast<KnobChoice>(knob);
+            KnobChoicePtr choice = isKnobChoice(knob);
             if (choice) {
                 choice->setValue( errorBehaviourKnbo.lock()->getValue() );
             }
@@ -457,7 +457,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     app.lock()->getProject()->getNodes_recursive(nodes, true);
     PrecompNodePtr precomp;
     if (setPartOfPrecomp) {
-        precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
+        precomp = isPrecompNode( _publicInterface->shared_from_this() );
         assert(precomp);
 
         //extract all inputs of the tree
@@ -553,7 +553,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    KnobOutputFilePtr fileKnob = boost::dynamic_pointer_cast<KnobOutputFile>( fileNameKnob.get() );
+    KnobOutputFilePtr fileKnob = isKnobOutputFile( fileNameKnob.get() );
     if (!fileKnob) {
         return;
     }
@@ -588,7 +588,7 @@ PrecompNodePrivate::createReadNode()
         return;
     }
 
-    PrecompNodePtr precomp = boost::dynamic_pointer_cast<PrecompNode>( _publicInterface->shared_from_this() );
+    PrecompNodePtr precomp = isPrecompNode( _publicInterface->shared_from_this() );
     assert(precomp);
     read->setPrecompNode(precomp);
 
@@ -641,8 +641,8 @@ PrecompNodePrivate::setFirstAndLastFrame()
     }
     KnobIPtr writefirstFrameKnob = writeNode->getKnobByName("firstFrame");
     KnobIPtr writelastFrameKnob = writeNode->getKnobByName("lastFrame");
-    KnobIntPtr firstFrame = boost::dynamic_pointer_cast<KnobInt>( writefirstFrameKnob.get() );
-    KnobIntPtr lastFrame = boost::dynamic_pointer_cast<KnobInt>( writelastFrameKnob.get() );
+    KnobIntPtr firstFrame = isKnobInt( writefirstFrameKnob.get() );
+    KnobIntPtr lastFrame = isKnobInt( writelastFrameKnob.get() );
     if (firstFrame) {
         firstFrameKnob.lock()->setValue( firstFrame->getValue() );
     }
@@ -678,14 +678,14 @@ PrecompNodePrivate::launchPreRender()
 
         return;
     }
-    AppInstance::RenderWork w(boost::dynamic_pointer_cast<OutputEffectInstance>( output->getEffectInstance() ),
+    AppInstance::RenderWork w(isOutputEffectInstance( output->getEffectInstance() ),
                               firstFrameKnob.lock()->getValue(),
                               lastFrameKnob.lock()->getValue(),
                               1,
                               false);
 
     if (w.writer) {
-        boost::shared_ptr<RenderEngine> engine = w.writer->getRenderEngine();
+        RenderEnginePtr engine = w.writer->getRenderEngine();
         if (engine) {
             QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
         }
@@ -704,10 +704,10 @@ PrecompNode::onPreRenderFinished()
     if (!output) {
         return;
     }
-    OutputEffectInstancePtr writer = boost::dynamic_pointer_cast<OutputEffectInstance>( output->getEffectInstance() );
+    OutputEffectInstancePtr writer = isOutputEffectInstance( output->getEffectInstance() );
     assert(writer);
     if (writer) {
-        boost::shared_ptr<RenderEngine> engine = writer->getRenderEngine();
+        RenderEnginePtr engine = writer->getRenderEngine();
         if (engine) {
             QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
         }

@@ -50,7 +50,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef boost::shared_ptr<RenderStats> RenderStatsPtr;
+typedef RenderStatsPtr RenderStatsPtr;
 
 struct BufferedFrame
 {

@@ -107,8 +107,9 @@ public:
     FramebufferConfig();
 };
 
-struct GLRendererID
+class GLRendererID
 {
+public:
     int renderID;
 
     // wgl NV extension use handles and not integers
@@ -123,8 +124,9 @@ struct GLRendererID
     explicit GLRendererID(void* handle) : renderID(0), rendererHandle(handle) {}
 };
 
-struct OpenGLRendererInfo
+class OpenGLRendererInfo
 {
+public:
     std::size_t maxMemBytes;
     std::string rendererName;
     std::string vendorName;

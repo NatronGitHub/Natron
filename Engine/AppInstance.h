@@ -398,9 +398,9 @@ public:
     virtual void getRenderStrokeData(RectD* /*lastStrokeMovementBbox*/,
                                      std::list<std::pair<Point, double> >* /*lastStrokeMovementPoints*/,
                                      double */*distNextIn*/,
-                                     boost::shared_ptr<Image>* /*strokeImage*/) const {}
+                                     ImagePtr* /*strokeImage*/) const {}
 
-    virtual void updateStrokeImage(const boost::shared_ptr<Image>& /*image*/,
+    virtual void updateStrokeImage(const ImagePtr& /*image*/,
                                    double /*distNextOut*/,
                                    bool /*setDistNextOut*/) {}
 

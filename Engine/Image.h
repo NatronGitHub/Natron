@@ -248,7 +248,7 @@ public:
      * @brief Same as ensureBounds() except that if a resize is needed, it will do the resize in the output image instead to avoid taking the
      * write lock from this image.
      **/
-    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, boost::shared_ptr<Image>* output);
+    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output);
 
 
     static void applyTextureMapping(const RectI& bounds, const RectI& roi);
@@ -261,7 +261,7 @@ private:
                                bool fillWithBlackAndTransparent,
                                bool setBitmapTo1,
                                bool createInCache,
-                               boost::shared_ptr<Image>* outputImage);
+                               ImagePtr* outputImage);
 
 public:
 
@@ -850,7 +850,7 @@ public:
                                   ImagePremultiplicationEnum outputPremult,
                                   ImagePremultiplicationEnum originalImagePremult,
                                   std::bitset<4> processChannels,
-                                  const boost::shared_ptr<Image>& originalImage,
+                                  const ImagePtr& originalImage,
                                   bool ignorePremult,
                                   const OSGLContextPtr& glContext = OSGLContextPtr() );
 
@@ -929,19 +929,19 @@ private:
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels,
                                            const RectI& roi,
-                                           const boost::shared_ptr<Image>& originalImage);
+                                           const ImagePtr& originalImage);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool ignorePremult>
     void copyUnProcessedChannelsForPremult(bool premult, bool originalPremult,
                                            std::bitset<4> processChannels,
                                            const RectI& roi,
-                                           const boost::shared_ptr<Image>& originalImage);
+                                           const ImagePtr& originalImage);
 
     template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
     void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
                                             const bool premult,
                                             const RectI& roi,
-                                            const boost::shared_ptr<Image>& originalImage,
+                                            const ImagePtr& originalImage,
                                             const bool originalPremult,
                                             const bool ignorePremult);
 
@@ -949,7 +949,7 @@ private:
     void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
                                             const bool premult,
                                             const RectI& roi,
-                                            const boost::shared_ptr<Image>& originalImage,
+                                            const ImagePtr& originalImage,
                                             const bool originalPremult,
                                             const bool ignorePremult);
 
@@ -958,7 +958,7 @@ private:
     void copyUnProcessedChannelsForComponents(bool premult,
                                               const RectI& roi,
                                               const std::bitset<4> processChannels,
-                                              const boost::shared_ptr<Image>& originalImage,
+                                              const ImagePtr& originalImage,
                                               const bool originalPremult,
                                               const bool ignorePremult);
 
@@ -966,7 +966,7 @@ private:
     void copyUnProcessedChannelsForDepth(bool premult,
                                          const RectI& roi,
                                          std::bitset<4> processChannels,
-                                         const boost::shared_ptr<Image>& originalImage,
+                                         const ImagePtr& originalImage,
                                          bool originalPremult,
                                          bool ignorePremult);
 

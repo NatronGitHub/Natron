@@ -300,20 +300,22 @@ public:
 
     GroupInputPtr isEffectGroupInput() const;
 
-    GroupOutputPtr isEffectGroupOutput();
+    GroupOutputPtr isEffectGroupOutput() const;
 
-    ReadNodePtr isEffectReadNode();
+    ReadNodePtr isEffectReadNode() const;
 
-    WriteNodePtr isEffectWriteNode();
+    WriteNodePtr isEffectWriteNode() const;
 
-    BackdropPtr isEffectBackdrop();
+    BackdropPtr isEffectBackdrop() const;
+
+    OneViewNodePtr isEffectOneViewNode() const;
 
     /**
      * @brief Returns a pointer to the rotoscoping context if the node is in the paint context, otherwise NULL.
      **/
     RotoContextPtr getRotoContext() const;
 
-    boost::shared_ptr<TrackerContext> getTrackerContext() const;
+    TrackerContextPtr getTrackerContext() const;
 
     U64 getRotoAge() const;
 
@@ -493,7 +495,7 @@ public:
                                   unsigned int mipmapLevel,
                                   std::list<std::list<std::pair<Point, double> > >* strokes,
                                   int* strokeIndex) const;
-    boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
+    ImagePtr getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                         double par,
                                                         const ImageComponents& components,
                                                         ImageBitDepthEnum depth) const;
@@ -588,9 +590,9 @@ public:
      **/
     bool replaceInput(const NodePtr& input, int inputNumber);
 
-    void setNodeGuiPointer(const boost::shared_ptr<NodeGuiI>& gui);
+    void setNodeGuiPointer(const NodeGuiIPtr& gui);
 
-    boost::shared_ptr<NodeGuiI> getNodeGui() const;
+    NodeGuiIPtr getNodeGui() const;
 
     bool isSettingsPanelVisible() const;
 
@@ -888,16 +890,16 @@ public:
      * rendering that image, this function will wait until the image is available for render again.
      * This is used internally by EffectInstance::renderRoI
      **/
-    void lock(const boost::shared_ptr<Image>& entry);
-    bool tryLock(const boost::shared_ptr<Image>& entry);
-    void unlock(const boost::shared_ptr<Image>& entry);
+    void lock(const ImagePtr& entry);
+    bool tryLock(const ImagePtr& entry);
+    void unlock(const ImagePtr& entry);
 
 
     /**
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    boost::shared_ptr<Image> getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
+    ImagePtr getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
 
     void beginInputEdition();
 

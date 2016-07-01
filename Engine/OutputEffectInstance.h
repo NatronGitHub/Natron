@@ -66,7 +66,7 @@ private:
 
     mutable QMutex _outputEffectDataLock;
     std::list<RenderSequenceArgs> _renderSequenceRequests;
-    boost::shared_ptr<RenderEngine> _engine;
+    RenderEnginePtr _engine;
 
 protected: // derives from EffectInstance, parent of AbstractOfxEffectInstance, OfxEffectInstance, DiskCacheNode, NodeGroup, NoOpBase, ViewerInstance
     // TODO: enable_shared_from_this
@@ -88,7 +88,7 @@ public:
         return true;
     }
 
-    boost::shared_ptr<RenderEngine> getRenderEngine() const
+    RenderEnginePtr getRenderEngine() const
     {
         return _engine;
     }
@@ -132,6 +132,12 @@ protected:
      **/
     virtual RenderEngine* createRenderEngine();
 };
+
+inline OutputEffectInstancePtr
+isOutputEffectInstance(const EffectInstancePtr& effect)
+{
+    return boost::dynamic_pointer_cast<OutputEffectInstance>(effect);
+}
 
 NATRON_NAMESPACE_EXIT;
 

@@ -140,7 +140,7 @@ public:
                                            ViewIdx view) = 0;
     virtual bool hasHostOverlay() const = 0;
     virtual void setCurrentViewportForHostOverlays(OverlaySupport* viewPort) = 0;
-    virtual bool hasHostOverlayForParam(const KnobI* param) = 0;
+    virtual bool hasHostOverlayForParam(const KnobIConstPtr& param) = 0;
     virtual void removePositionHostOverlay(const KnobIPtr& knob) = 0;
     virtual void setPluginIDAndVersion(const std::list<std::string>& grouping,
                                        const std::string& pluginLabel,

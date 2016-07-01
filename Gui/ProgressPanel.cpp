@@ -473,9 +473,9 @@ ProgressPanel::startTask(const NodePtr& node,
     }
     if (!process) {
         if ( node->getEffectInstance()->isOutput() ) {
-            OutputEffectInstancePtr isOutput = boost::dynamic_pointer_cast<OutputEffectInstance>( node->getEffectInstance() );
+            OutputEffectInstancePtr isOutput = isOutputEffectInstance( node->getEffectInstance() );
             if (isOutput) {
-                boost::shared_ptr<RenderEngine> engine = isOutput->getRenderEngine();
+                RenderEnginePtr engine = isOutput->getRenderEngine();
                 assert(engine);
                 QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
                 QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );

@@ -130,9 +130,9 @@ private:
     TrackerContext(const NodePtr &node);
 
 public:
-    static boost::shared_ptr<TrackerContext> create(const NodePtr &node) WARN_UNUSED_RETURN
+    static TrackerContextPtr create(const NodePtr &node) WARN_UNUSED_RETURN
     {
-        return boost::shared_ptr<TrackerContext>( new TrackerContext(node) );
+        return TrackerContextPtr( new TrackerContext(node) );
     }
 
     virtual ~TrackerContext();

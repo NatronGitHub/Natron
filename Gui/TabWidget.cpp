@@ -1081,12 +1081,12 @@ TabWidget::removeTab(int index,
          */
         NodeCollectionPtr collect = isGraph->getGroup();
         assert(collect);
-        NodeGroupPtr isGroup = boost::dynamic_pointer_cast<NodeGroup>( collect.get() );
+        NodeGroupPtr isGroup = isNodeGroup( collect.get() );
         if (isGroup) {
             collect = isGroup->getNode()->getGroup();
             if (collect) {
                 NodeGraph* parentGraph = 0;
-                isGroup  = boost::dynamic_pointer_cast<NodeGroup>( collect.get() );
+                isGroup  = isNodeGroup( collect.get() );
                 if (isGroup) {
                     parentGraph = dynamic_cast<NodeGraph*>( isGroup->getNodeGraph() );
                 } else {
