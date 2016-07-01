@@ -113,7 +113,8 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
                     args.setProperty<bool>(kCreateNodeArgsPropSilent, true);
                     args.setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                     args.setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-
+                    args.setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+                    
                     NodePtr parent = group->getApplication()->createNode(args);
                     try {
                         parent->setScriptName( (*it)->getMultiInstanceParentName().c_str() );

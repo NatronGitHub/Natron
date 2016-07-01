@@ -1482,7 +1482,7 @@ TrackerContext::onSchedulerTrackingFinished()
 void
 TrackerContext::onSchedulerTrackingProgress(double progress)
 {
-    if ( !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
+    if ( getNode()->getApp() && !getNode()->getApp()->progressUpdate(getNode(), progress) ) {
         _imp->scheduler.abortThreadedTask();
     }
 }
@@ -1838,7 +1838,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
     std::vector<int> trackIndexes( tracks.size() );
     for (std::size_t i = 0; i < tracks.size(); ++i) {
         trackIndexes[i] = i;
-
+        tracks[i]->natronMarker->notifyTrackingStarted();
         // unslave the enabled knob, since it is slaved to the gui but we may modify it
         boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
         enabledKnob->unSlave(0, false);
@@ -1967,6 +1967,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             // unslave the enabled knob, since it is slaved to the gui but we may modify it
             boost::shared_ptr<KnobBool> enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
 
+            tracks[i]->natronMarker->notifyTrackingEnded();
             contextEnabledKnob->blockListenersNotification();
             contextEnabledKnob->cloneAndUpdateGui( enabledKnob.get() );
             contextEnabledKnob->unblockListenersNotification();

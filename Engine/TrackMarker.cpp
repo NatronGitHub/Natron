@@ -56,8 +56,24 @@
 #define kTrackerPMParamTrackingOffset "offset"
 #define kTrackerPMParamTrackingCenterPoint "center"
 
+
 NATRON_NAMESPACE_ENTER;
 
+
+NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+class MetaTypesRegistration
+{
+public:
+    inline MetaTypesRegistration()
+    {
+        qRegisterMetaType<TrackMarkerPtr>("TrackMarkerPtr");
+    }
+};
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT
+
+static MetaTypesRegistration registration;
 
 struct TrackMarkerPrivate
 {
@@ -78,6 +94,10 @@ struct TrackMarkerPrivate
     std::set<int> userKeyframes;
     std::string trackScriptName, trackLabel;
     boost::weak_ptr<KnobBool> enabled;
+
+    // Only used by the TrackScheduler thread
+    int trackingStartedCount;
+    std::list<double> keyframesAddedWhileTracking;
 
     TrackMarkerPrivate(TrackMarker* publicInterface,
                        const boost::shared_ptr<TrackerContext>& context)
@@ -101,6 +121,8 @@ struct TrackMarkerPrivate
         , trackScriptName()
         , trackLabel()
         , enabled()
+        , trackingStartedCount(0)
+        , keyframesAddedWhileTracking()
     {
     }
 };
@@ -891,8 +913,14 @@ TrackMarker::onCenterKeyframeSet(double time,
                                  int /*reason*/,
                                  bool added)
 {
-    if (added) {
-        getContext()->s_keyframeSetOnTrackCenter(shared_from_this(), time);
+    if (!_imp->trackingStartedCount) {
+        if (added) {
+            getContext()->s_keyframeSetOnTrackCenter(shared_from_this(), time);
+        }
+    } else {
+        if (added) {
+            _imp->keyframesAddedWhileTracking.push_back(time);
+        }
     }
 }
 
@@ -945,7 +973,9 @@ TrackMarker::onCenterKnobValueChanged(ViewSpec /*view*/,
                                       int dimension,
                                       int reason)
 {
-    getContext()->s_centerKnobValueChanged(shared_from_this(), dimension, reason);
+    if (!_imp->trackingStartedCount) {
+        getContext()->s_centerKnobValueChanged(shared_from_this(), dimension, reason);
+    }
 }
 
 void
@@ -961,7 +991,9 @@ TrackMarker::onErrorKnobValueChanged(ViewSpec /*view*/,
                                      int dimension,
                                      int reason)
 {
-    getContext()->s_errorKnobValueChanged(shared_from_this(), dimension, reason);
+    if (!_imp->trackingStartedCount) {
+        getContext()->s_errorKnobValueChanged(shared_from_this(), dimension, reason);
+    }
 }
 
 void
@@ -980,30 +1012,7 @@ TrackMarker::onMotionModelKnobValueChanged(ViewSpec /*view*/,
     getContext()->s_motionModelKnobValueChanged(shared_from_this(), dimension, reason);
 }
 
-/*void
-   TrackMarker::onPatternTopLeftKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternTopLeftKnobValueChanged(shared_from_this(), dimension, reason);
-   }
 
-   void
-   TrackMarker::onPatternTopRightKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternTopRightKnobValueChanged(shared_from_this(), dimension, reason);
-   }
-
-   void
-   TrackMarker::onPatternBtmRightKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternBtmRightKnobValueChanged(shared_from_this(), dimension, reason);
-   }
-
-   void
-   TrackMarker::onPatternBtmLeftKnobValueChanged(int dimension,int reason)
-   {
-   getContext()->s_patternBtmLeftKnobValueChanged(shared_from_this(), dimension, reason);
-   }
- */
 void
 TrackMarker::onSearchBtmLeftKnobValueChanged(ViewSpec /*view*/,
                                              int dimension,
@@ -1019,6 +1028,35 @@ TrackMarker::onSearchTopRightKnobValueChanged(ViewSpec /*view*/,
 {
     getContext()->s_searchTopRightKnobValueChanged(shared_from_this(), dimension, reason);
 }
+
+void
+TrackMarker::notifyTrackingStarted()
+{
+    ++_imp->trackingStartedCount;
+    _imp->keyframesAddedWhileTracking.clear();
+}
+
+void
+TrackMarker::notifyTrackingEnded()
+{
+    if (_imp->trackingStartedCount) {
+        --_imp->trackingStartedCount;
+    }
+
+    // Refresh knobs once finished
+    if (!_imp->trackingStartedCount) {
+        TrackMarkerPtr marker = shared_from_this();
+        getContext()->s_errorKnobValueChanged(marker, 0, eValueChangedReasonNatronInternalEdited);
+        for (int i = 0; i < 2; ++i) {
+            getContext()->s_centerKnobValueChanged(marker, i, eValueChangedReasonNatronInternalEdited);
+        }
+        if (!_imp->keyframesAddedWhileTracking.empty()) {
+            getContext()->s_multipleKeyframesSetOnTrackCenter(marker, _imp->keyframesAddedWhileTracking);
+            _imp->keyframesAddedWhileTracking.clear();
+        }
+    }
+}
+
 
 RectI
 TrackMarker::getMarkerImageRoI(int time) const
@@ -1343,6 +1381,7 @@ TrackMarkerPM::initializeKnobs()
         searchWindowTopRight->slaveTo(i, getSearchWindowTopRightKnob(), i);
     }
 } // TrackMarkerPM::initializeKnobs
+
 
 NATRON_NAMESPACE_EXIT;
 

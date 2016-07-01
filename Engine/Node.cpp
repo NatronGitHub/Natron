@@ -10641,6 +10641,9 @@ Node::Implementation::runOnNodeDeleteCBInternal(const std::string& cb)
 void
 Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 {
+    if (!isPartOfProject) {
+        return;
+    }
     std::string cb = _publicInterface->getApp()->getProject()->getOnNodeCreatedCB();
     boost::shared_ptr<NodeCollection> group = _publicInterface->getGroup();
 
@@ -10666,6 +10669,9 @@ Node::Implementation::runOnNodeCreatedCB(bool userEdited)
 void
 Node::Implementation::runOnNodeDeleteCB()
 {
+    if (!isPartOfProject) {
+        return;
+    }
 
     if (_publicInterface->getScriptName_mt_safe().empty()) {
         return;

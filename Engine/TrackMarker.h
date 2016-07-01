@@ -199,6 +199,9 @@ public:
                               int dimension,
                               bool isSlave) OVERRIDE FINAL;
 
+    void notifyTrackingStarted();
+    void notifyTrackingEnded();
+
 protected:
 
     virtual void initializeKnobs() OVERRIDE;
