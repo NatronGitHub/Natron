@@ -993,7 +993,7 @@ EffectInstance::getImage(int inputNb,
                     }
                 }
 
-                inputImg = attachedStroke->renderMaskFromStroke(components,
+                inputImg = attachedStroke->renderMask(components,
                                                                 time, view, depth, mipMapLevel, rotoSrcRod);
 
                 if ( roto->isDoingNeatRender() ) {
@@ -1448,7 +1448,7 @@ getOrCreateFromCacheInternal(const ImageKey & key,
         assert(params->getStorageInfo().mode != eStorageModeGLTex);
 
         if (params->getStorageInfo().mode == eStorageModeRAM) {
-            appPTR->getImageOrCreate(key, params, image);
+            appPTR->getImageOrCreate(key, params, 0, image);
         } else if (params->getStorageInfo().mode == eStorageModeDisk) {
             appPTR->getImageOrCreate_diskCache(key, params, image);
         }

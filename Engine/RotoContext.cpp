@@ -60,7 +60,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Format.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/ImageParams.h"
+#include "Engine/ImageLocker.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
@@ -2666,7 +2668,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
         }
     }
 
-    distToNext = RotoContextPrivate::renderStroke(imgWrapper.ctx, dotPatterns, strokes, distToNext, this, doBuildUp, opacity, time, mipmapLevel);
+    distToNext = RotoContextPrivate::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNext, this, doBuildUp, opacity, time, mipmapLevel);
 
     updatePatternCache(dotPatterns);
 
@@ -2684,7 +2686,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
 } // RotoStrokeItem::renderSingleStroke
 
 boost::shared_ptr<Image>
-RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
+RotoDrawableItem::renderMask(const ImageComponents& components,
                                        const double time,
                                        const ViewIdx view,
                                        const ImageBitDepthEnum depth,
@@ -2714,12 +2716,13 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
                                                   /*draftMode=*/ false,
                                                   /*fullScaleWithDownscaleInputs=*/ false) );
 
-    {
-        QReadLocker k(&_imp->cacheAccessMutex);
-        node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), boost::shared_ptr<OSGLContextAttacher>(), &image);
-    }
+
+    node->getEffectInstance()->getImageFromCacheAndConvertIfNeeded(true, eStorageModeRAM, eStorageModeRAM, *key, mipmapLevel, NULL, NULL, RectI(), depth, components, EffectInstance::InputImagesMap(), boost::shared_ptr<RenderStats>(), boost::shared_ptr<OSGLContextAttacher>(), &image);
+
 
     if (image) {
+        // Ensure the image is finished rendering
+        ImageLocker k(node->getEffectInstance().get(), image);
         return image;
     }
 
@@ -2760,11 +2763,11 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
             }
         }
         if ( isBezier->isOpenBezier() ) {
-            std::list<std::list< ParametricPoint> > decastelJauPolygon;
+            std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
             isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(false, time, mipmapLevel, &decastelJauPolygon, 0);
             std::list<std::pair<Point, double> > points;
-            for (std::list<std::list< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
-                for (std::list< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
+            for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
+                for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
                     Point p = {it2->x, it2->y};
                     points.push_back( std::make_pair(p, 1.) );
                 }
@@ -2795,13 +2798,10 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
                                                                node->getEffectInstance()->getPremult(),
                                                                node->getEffectInstance()->getFieldingOrder() );
     /*
-       At this point we take the cacheAccessMutex so that no other thread can retrieve this image from the cache while it has not been
-       finished rendering. You might wonder why we do this differently here than in EffectInstance::renderRoI, this is because we do not use
-       the trimap and notification system here in the rotocontext, which would be to much just for this small object, rather we just lock
-       it once, which is fine.
+       Lock the image so that other threads wait before they can access it
      */
-    QWriteLocker k(&_imp->cacheAccessMutex);
-    appPTR->getImageOrCreate(*key, params, &image);
+    ImageLocker imgLocker(node->getEffectInstance().get());
+    bool isCached = appPTR->getImageOrCreate(*key, params, &imgLocker, &image);
     if (!image) {
         std::stringstream ss;
         ss << "Failed to allocate an image of ";
@@ -2812,17 +2812,39 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
         return image;
     }
 
+
+    if (isCached) {
+        imgLocker.lock(image);
+    }
+
     ///Does nothing if image is already alloc
     image->allocateMemory();
 
 
-    image = renderMaskInternal(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
+    image = renderMaskInternal_cairo(pixelRod, components, startTime, endTime, mbFrameStep, time, inverted, depth, mipmapLevel, strokes, image);
 
     return image;
 } // RotoDrawableItem::renderMaskFromStroke
 
 boost::shared_ptr<Image>
-RotoDrawableItem::renderMaskInternal(const RectI & roi,
+RotoDrawableItem::renderMaskInternal_gl(const OSGLContextPtr& glContext,
+                                               const RectI & roi,
+                                               const ImageComponents& components,
+                                               const double startTime,
+                                               const double endTime,
+                                               const double timeStep,
+                                               const double time,
+                                               const bool inverted,
+                                               const ImageBitDepthEnum depth,
+                                               const unsigned int mipmapLevel,
+                                               const std::list<std::list<std::pair<Point, double> > >& strokes,
+                                               const boost::shared_ptr<Image> &image)
+{
+    
+}
+
+boost::shared_ptr<Image>
+RotoDrawableItem::renderMaskInternal_cairo(const RectI & roi,
                                      const ImageComponents& components,
                                      const double startTime,
                                      const double endTime,
@@ -2834,9 +2856,7 @@ RotoDrawableItem::renderMaskInternal(const RectI & roi,
                                      const std::list<std::list<std::pair<Point, double> > >& strokes,
                                      const boost::shared_ptr<Image> &image)
 {
-    Q_UNUSED(startTime);
-    Q_UNUSED(endTime);
-    Q_UNUSED(timeStep);
+
     NodePtr node = getContext()->getNode();
     RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
     Bezier* isBezier = dynamic_cast<Bezier*>(this);
@@ -2895,7 +2915,7 @@ RotoDrawableItem::renderMaskInternal(const RectI & roi,
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             dotPatterns[i] = (cairo_pattern_t*)0;
         }
-        RotoContextPrivate::renderStroke(imgWrapper.ctx, dotPatterns, strokes, 0, this, doBuildUp, opacity, time, mipmapLevel);
+        RotoContextPrivate::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, 0, this, doBuildUp, opacity, time, mipmapLevel);
 
         for (std::size_t i = 0; i < dotPatterns.size(); ++i) {
             if (dotPatterns[i]) {
@@ -2904,7 +2924,10 @@ RotoDrawableItem::renderMaskInternal(const RectI & roi,
             }
         }
     } else {
-        RotoContextPrivate::renderBezier(imgWrapper.ctx, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel);
+        ///render the bezier only if finished (closed) and activated
+        if ( isBezier->isCurveFinished() && isBezier->isActivated(time) && ( isBezier->getControlPointsCount() <= 1 ) ) {
+            RotoContextPrivate::renderBezier_cairo(imgWrapper.ctx, isBezier, opacity, time, startTime, endTime, timeStep, mipmapLevel);
+        }
     }
 
     bool useOpacityToConvert = (isBezier != 0);
@@ -2934,7 +2957,7 @@ RotoDrawableItem::renderMaskInternal(const RectI & roi,
     cairo_surface_flush(imgWrapper.cairoImg);
 
     return image;
-} // RotoDrawableItem::renderMaskInternal
+} // RotoDrawableItem::renderMaskInternal_cairo
 
 static inline
 double
@@ -3052,7 +3075,7 @@ getRenderDotParams(double alpha,
 }
 
 double
-RotoContextPrivate::renderStroke(cairo_t* cr,
+RotoContextPrivate::renderStroke_cairo(cairo_t* cr,
                                  std::vector<cairo_pattern_t*>& dotPatterns,
                                  const std::list<std::list<std::pair<Point, double> > >& strokes,
                                  double distToNext,
@@ -3214,19 +3237,13 @@ RotoContext::allocateAndRenderSingleDotStroke(int brushSizePixel,
 }
 
 void
-RotoContextPrivate::renderBezier(cairo_t* cr,
+RotoContextPrivate::renderBezier_cairo(cairo_t* cr,
                                  const Bezier* bezier,
                                  double opacity,
-                                 double time,
+                                 double /*time*/,
                                  double startTime, double endTime, double mbFrameStep,
                                  unsigned int mipmapLevel)
 {
-    ///render the bezier only if finished (closed) and activated
-    if ( !bezier->isCurveFinished() || !bezier->isActivated(time) || ( bezier->getControlPointsCount() <= 1 ) ) {
-        return;
-    }
-
-
 
     for (double t = startTime; t <= endTime; t+=mbFrameStep) {
 
@@ -3253,8 +3270,6 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
             featherDist /= (1 << mipmapLevel);
         }
 
-        Transform::Matrix3x3 transform;
-        bezier->getTransformAtTime(t, &transform);
 
 
 #ifdef ROTO_RENDER_TRIANGLES_ONLY
@@ -3267,12 +3282,14 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
         renderInternalShape_cairo(internalTriangles, internalFans, internalStrips, shapeColor, mesh);
         Q_UNUSED(opacity);
 #else
-        renderFeather(bezier, t, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
+        renderFeather_old_cairo(bezier, t, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
 
+        Transform::Matrix3x3 transform;
+        bezier->getTransformAtTime(t, &transform);
 
         // strangely, the above-mentioned cairo bug doesn't affect this function
         BezierCPs cps = bezier->getControlPoints_mt_safe();
-        renderInternalShape(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
+        renderInternalShape_old_cairo(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
         
 #endif
         
@@ -3282,7 +3299,7 @@ RotoContextPrivate::renderBezier(cairo_t* cr,
 } // RotoContextPrivate::renderBezier
 
 void
-RotoContextPrivate::renderFeather(const Bezier* bezier,
+RotoContextPrivate::renderFeather_old_cairo(const Bezier* bezier,
                                   double time,
                                   unsigned int mipmapLevel,
                                   double shapeColor[3],
@@ -3303,8 +3320,8 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
     ///here is the polygon of the feather bezier
     ///This is used only if the feather distance is different of 0 and the feather points equal
     ///the control points in order to still be able to apply the feather distance.
-    std::list<ParametricPoint> featherPolygon;
-    std::list<ParametricPoint> bezierPolygon;
+    std::vector<ParametricPoint> featherPolygon;
+    std::vector<ParametricPoint> bezierPolygon;
     RectD featherPolyBBox;
 
     featherPolyBBox.setupInfinity();
@@ -3329,18 +3346,18 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
     assert( !featherPolygon.empty() && !bezierPolygon.empty() );
 
 
-    std::list<Point> featherContour;
+    std::vector<Point> featherContour;
 
     // prepare iterators
-    std::list<ParametricPoint>::iterator next = featherPolygon.begin();
+    std::vector<ParametricPoint>::iterator next = featherPolygon.begin();
     ++next;  // can only be valid since we assert the list is not empty
     if ( next == featherPolygon.end() ) {
         next = featherPolygon.begin();
     }
-    std::list<ParametricPoint>::iterator prev = featherPolygon.end();
+    std::vector<ParametricPoint>::iterator prev = featherPolygon.end();
     --prev; // can only be valid since we assert the list is not empty
-    std::list<ParametricPoint>::iterator bezIT = bezierPolygon.begin();
-    std::list<ParametricPoint>::iterator prevBez = bezierPolygon.end();
+    std::vector<ParametricPoint>::iterator bezIT = bezierPolygon.begin();
+    std::vector<ParametricPoint>::iterator prevBez = bezierPolygon.end();
     --prevBez; // can only be valid since we assert the list is not empty
 
     // prepare p1
@@ -3366,7 +3383,7 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
 
 
     // increment for first iteration
-    std::list<ParametricPoint>::iterator cur = featherPolygon.begin();
+    std::vector<ParametricPoint>::iterator cur = featherPolygon.begin();
     // ++cur, ++prev, ++next, ++bezIT, ++prevBez
     // all should be valid, actually
     assert( cur != featherPolygon.end() &&
@@ -3506,19 +3523,19 @@ RotoContextPrivate::renderFeather(const Bezier* bezier,
 } // RotoContextPrivate::renderFeather
 
 void
-RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vertices, double shapeColor[3], double fallOff, cairo_pattern_t * mesh)
+RotoContextPrivate::renderFeather_cairo(const PolygonData& inArgs, double shapeColor[3], double fallOff, cairo_pattern_t * mesh)
 {
     // Roto feather is rendered as triangles
-    assert(vertices.size() >= 3 && vertices.size() % 3 == 0);
+    assert(inArgs.featherMesh.size() >= 3 && inArgs.featherMesh.size() % 3 == 0);
 
     double fallOffInverse = 1. / fallOff;
     
-    std::list<RotoFeatherVertex>::const_iterator next = vertices.begin();
+    std::vector<RotoFeatherVertex>::const_iterator next = inArgs.featherMesh.begin();
     ++next;
-    std::list<RotoFeatherVertex>::const_iterator nextNext = next;
+    std::vector<RotoFeatherVertex>::const_iterator nextNext = next;
     ++nextNext;
     int index = 0;
-    for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); index += 3) {
+    for (std::vector<RotoFeatherVertex>::const_iterator it = inArgs.featherMesh.begin(); it!=inArgs.featherMesh.end(); index += 3) {
 
 
         cairo_mesh_pattern_begin_patch(mesh);
@@ -3621,61 +3638,226 @@ RotoContextPrivate::renderFeather_cairo(const std::list<RotoFeatherVertex>& vert
         cairo_mesh_pattern_end_patch(mesh);
 
 
-        assert(nextNext != vertices.end());
+        assert(nextNext != inArgs.featherMesh.end());
         ++nextNext;
 
         // check if we reached the end
-        if (nextNext == vertices.end()) {
+        if (nextNext == inArgs.featherMesh.end()) {
             break;
         }
         // advance a second time
         ++nextNext;
-        if (nextNext == vertices.end()) {
+        if (nextNext == inArgs.featherMesh.end()) {
             break;
         }
         // advance a 3rd time
         ++nextNext;
-        if (nextNext == vertices.end()) {
+        if (nextNext == inArgs.featherMesh.end()) {
             break;
         }
 
-        assert(next != vertices.end());
+        assert(next != inArgs.featherMesh.end());
         ++next;
-        assert(next != vertices.end());
+        assert(next != inArgs.featherMesh.end());
         ++next;
-        assert(next != vertices.end());
+        assert(next != inArgs.featherMesh.end());
         ++next;
-        assert(next != vertices.end());
+        assert(next != inArgs.featherMesh.end());
 
-        assert(it != vertices.end());
+        assert(it != inArgs.featherMesh.end());
         ++it;
-        assert(it != vertices.end());
+        assert(it != inArgs.featherMesh.end());
         ++it;
-        assert(it != vertices.end());
+        assert(it != inArgs.featherMesh.end());
         ++it;
-        assert(it != vertices.end());
+        assert(it != inArgs.featherMesh.end());
     } // for (std::list<RotoFeatherVertex>::const_iterator it = vertices.begin(); it!=vertices.end(); ) 
 } // RotoContextPrivate::renderFeather_cairo
 
-
-struct tessPolygonData
+template <typename GL>
+void renderBezier_gl_internal(int nbVertices, int nbIds, int vboVerticesID, int vboColorsID, int iboID, unsigned int primitiveType, const void* verticesData, const void* colorsData, const void* idsData, bool uploadVertices = true)
 {
-    std::list<RotoTriangleFans>* internalFans;
-    std::list<RotoTriangles>* internalTriangles;
-    std::list<RotoTriangleStrips>* internalStrips;
 
-    boost::scoped_ptr<RotoTriangleFans> fanBeingEdited;
-    boost::scoped_ptr<RotoTriangles> trianglesBeingEdited;
-    boost::scoped_ptr<RotoTriangleStrips> stripsBeingEdited;
+    GL::glBindBuffer(GL_ARRAY_BUFFER, vboVerticesID);
+    if (uploadVertices) {
+        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 2 * sizeof(GLfloat), verticesData, GL_DYNAMIC_DRAW);
+    }
+    GL::glEnableClientState(GL_VERTEX_ARRAY);
+    GL::glVertexPointer(2, GL_FLOAT, 0, 0);
 
-    std::list<boost::shared_ptr<Point> > allocatedIntersections;
-    unsigned int error;
-};
+    GL::glBindBuffer(GL_ARRAY_BUFFER, vboColorsID);
+    if (uploadVertices) {
+        GL::glBufferData(GL_ARRAY_BUFFER, nbVertices * 4 * sizeof(GLfloat), colorsData, GL_DYNAMIC_DRAW);
+    }
+    GL::glEnableClientState(GL_COLOR_ARRAY);
+    GL::glColorPointer(4, GL_FLOAT, 0, 0);
+
+    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboID);
+    GL::glBufferData(GL_ELEMENT_ARRAY_BUFFER, nbIds * sizeof(GLuint), idsData, GL_DYNAMIC_DRAW);
+
+
+    GL::glDrawElements(primitiveType, nbIds, GL_UNSIGNED_INT, 0);
+
+    GL::glDisableClientState(GL_COLOR_ARRAY);
+    GL::glBindBuffer(GL_ARRAY_BUFFER, 0);
+    GL::glDisableClientState(GL_VERTEX_ARRAY);
+
+    GL::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glCheckError(GL);
+
+}
+
+void
+RotoContextPrivate::renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double /*time*/, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel)
+{
+
+    int vboVerticesID = glContext->getOrCreateVBOVerticesId();
+    int vboColorsID = glContext->getOrCreateVBOColorsId();
+    int iboID = glContext->getOrCreateIBOId();
+
+    RamBuffer<float> verticesArray;
+    RamBuffer<float> colorsArray;
+    RamBuffer<int> indicesArray;
+
+    double mbOpacity = 1. / ((endTime - startTime + 1) / mbFrameStep);
+
+    double shapeOpacity = opacity * mbOpacity;
+
+    for (double t = startTime; t <= endTime; t+=mbFrameStep) {
+        double fallOff = bezier->getFeatherFallOff(t);
+        double featherDist = bezier->getFeatherDistance(t);
+        double shapeColor[3];
+        bezier->getColor(t, shapeColor);
+
+
+        ///Adjust the feather distance so it takes the mipmap level into account
+        if (mipmapLevel != 0) {
+            featherDist /= (1 << mipmapLevel);
+        }
+
+        PolygonData data;
+        computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
+
+        // First upload the feather mesh
+        {
+            int nbVertices = data.featherMesh.size();
+            if (!nbVertices) {
+                continue;
+            }
+
+            verticesArray.resize(nbVertices * 2);
+            colorsArray.resize(nbVertices * 4);
+            indicesArray.resize(nbVertices);
+
+            // Fill buffer
+            float* v_data = verticesArray.getData();
+            float* c_data = colorsArray.getData();
+            int* i_data = indicesArray.getData();
+
+            for (std::size_t i = 0; i < data.featherMesh.size(); ++i) {
+                v_data[0] = data.featherMesh[i].x;
+                v_data[1] = data.featherMesh[i].y;
+                i_data[0] = i;
+
+                c_data[0] = shapeColor[0];
+                c_data[1] = shapeColor[1];
+                c_data[2] = shapeColor[2];
+                if (data.featherMesh[i].isInner) {
+                    c_data[3] = shapeOpacity;
+                } else {
+                    c_data[3] = 0.;
+                }
+
+                v_data += 2;
+                c_data += 4;
+                ++i_data;
+            }
+
+            if (glContext->isGPUContext()) {
+                renderBezier_gl_internal<GL_GPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
+            } else {
+                renderBezier_gl_internal<GL_CPU>(nbVertices, nbVertices, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)indicesArray.getData());
+            }
+        }
+
+        int nbVertices = data.bezierPolygonJoined.size();
+        if (!nbVertices) {
+            continue;
+        }
+
+        verticesArray.resize(nbVertices * 2);
+        colorsArray.resize(nbVertices * 4);
+
+
+        // Fill buffer
+        float* v_data = verticesArray.getData();
+        float* c_data = colorsArray.getData();
+        for (std::size_t i = 0; i < data.bezierPolygonJoined.size(); ++i) {
+            v_data[0] = data.bezierPolygonJoined[i].x;
+            v_data[1] = data.featherMesh[i].y;
+
+            c_data[0] = shapeColor[0];
+            c_data[1] = shapeColor[1];
+            c_data[2] = shapeColor[2];
+            c_data[3] = shapeOpacity;
+
+
+            v_data += 2;
+            c_data += 4;
+        }
+
+        {
+            // Render internal triangles
+            for (std::size_t i = 0; i < data.internalTriangles.size(); ++i) {
+                int nbIds = data.internalTriangles[i].indices.size();
+                if (nbIds) {
+                    if (glContext->isGPUContext()) {
+                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalTriangles[i].indices[0]));
+                    } else {
+                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLES, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalTriangles[i].indices[0]));
+                    }
+                }
+            }
+
+        }
+        {
+            // Render internal triangle fans
+            for (std::size_t i = 0; i < data.internalFans.size(); ++i) {
+                int nbIds = data.internalFans[i].indices.size();
+                if (nbIds) {
+                    if (glContext->isGPUContext()) {
+                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), false);
+                    } else {
+                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_FAN, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalFans[i].indices[0]), false);
+                    }
+                }
+            }
+
+        }
+        {
+            // Render internal triangle strips
+            for (std::size_t i = 0; i < data.internalStrips.size(); ++i) {
+                int nbIds = data.internalStrips[i].indices.size();
+                if (nbIds) {
+                    if (glContext->isGPUContext()) {
+                        renderBezier_gl_internal<GL_GPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), false);
+                    } else {
+                        renderBezier_gl_internal<GL_CPU>(nbVertices, nbIds, vboVerticesID, vboColorsID, iboID, GL_TRIANGLE_STRIP, (const void*)verticesArray.getData(), (const void*)colorsArray.getData(), (const void*)(&data.internalStrips[i].indices[0]), false);
+                    }
+                }
+            }
+
+        }
+        
+    }
+} // RotoContextPrivate::renderBezier_gl
+
+
 
 static void tess_begin_primitive_callback(unsigned int which, void *polygonData)
 {
 
-    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    RotoContextPrivate::PolygonData* myData = (RotoContextPrivate::PolygonData*)polygonData;
     assert(myData);
 
     switch (which) {
@@ -3699,7 +3881,7 @@ static void tess_begin_primitive_callback(unsigned int which, void *polygonData)
 
 static void tess_end_primitive_callback(void *polygonData)
 {
-    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    RotoContextPrivate::PolygonData* myData = (RotoContextPrivate::PolygonData*)polygonData;
     assert(myData);
 
     assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
@@ -3707,13 +3889,13 @@ static void tess_end_primitive_callback(void *polygonData)
            (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
 
     if (myData->stripsBeingEdited) {
-        myData->internalStrips->push_back(*myData->stripsBeingEdited);
+        myData->internalStrips.push_back(*myData->stripsBeingEdited);
         myData->stripsBeingEdited.reset();
     } else if (myData->fanBeingEdited) {
-        myData->internalFans->push_back(*myData->fanBeingEdited);
+        myData->internalFans.push_back(*myData->fanBeingEdited);
         myData->fanBeingEdited.reset();
     } else if (myData->trianglesBeingEdited) {
-        myData->internalTriangles->push_back(*myData->trianglesBeingEdited);
+        myData->internalTriangles.push_back(*myData->trianglesBeingEdited);
         myData->trianglesBeingEdited.reset();
     }
 
@@ -3721,65 +3903,68 @@ static void tess_end_primitive_callback(void *polygonData)
 
 static void tess_vertex_callback(void* data /*per-vertex client data*/, void *polygonData)
 {
-    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    RotoContextPrivate::PolygonData* myData = (RotoContextPrivate::PolygonData*)polygonData;
     assert(myData);
 
     assert((myData->stripsBeingEdited && !myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
            (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
            (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
 
-    Point* p = (Point*)data;
+    int* p = (int*)data;
     assert(p);
 
     if (myData->stripsBeingEdited) {
-        myData->stripsBeingEdited->vertices.push_back(*p);
+        myData->stripsBeingEdited->indices.push_back(*p);
     } else if (myData->fanBeingEdited) {
-        myData->fanBeingEdited->vertices.push_back(*p);
+        myData->fanBeingEdited->indices.push_back(*p);
     } else if (myData->trianglesBeingEdited) {
-        myData->trianglesBeingEdited->vertices.push_back(*p);
+        myData->trianglesBeingEdited->indices.push_back(*p);
     }
 
 }
 
 static void tess_error_callback(unsigned int error, void *polygonData)
 {
-    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    RotoContextPrivate::PolygonData* myData = (RotoContextPrivate::PolygonData*)polygonData;
     assert(myData);
     myData->error = error;
 }
 
 static void tess_intersection_combine_callback(double coords[3], void */*data*/[4] /*4 original vertices*/, double /*w*/[4] /*weights*/, void **dataOut, void *polygonData)
 {
-    tessPolygonData* myData = (tessPolygonData*)polygonData;
+    RotoContextPrivate::PolygonData* myData = (RotoContextPrivate::PolygonData*)polygonData;
     assert(myData);
 
-    boost::shared_ptr<Point> ret(new Point);
-    ret->x = coords[0];
-    ret->y = coords[1];
+
+    ParametricPoint v;
+    v.x = coords[0];
+    v.x = coords[1];
+    v.t = 0;
+
+    myData->bezierPolygonIndices.push_back(myData->bezierPolygonJoined.size());
+    myData->bezierPolygonJoined.push_back(v);
+
     /*new->r = w[0]*d[0]->r + w[1]*d[1]->r + w[2]*d[2]->r + w[3]*d[3]->r;
     new->g = w[0]*d[0]->g + w[1]*d[1]->g + w[2]*d[2]->g + w[3]*d[3]->g;
     new->b = w[0]*d[0]->b + w[1]*d[1]->b + w[2]*d[2]->b + w[3]*d[3]->b;
     new->a = w[0]*d[0]->a + w[1]*d[1]->a + w[2]*d[2]->a + w[3]*d[3]->a;*/
-    *dataOut = ret.get();
-    myData->allocatedIntersections.push_back(ret);
+    *dataOut = (void*)&(myData->bezierPolygonIndices.back());
+
 }
 
 void
 RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel, double featherDist,
-                                     std::list<RotoFeatherVertex>* featherMesh,
-                                     std::list<RotoTriangleFans>* internalFans,
-                                     std::list<RotoTriangles>* internalTriangles,
-                                     std::list<RotoTriangleStrips>* internalStrips)
+                                     PolygonData* outArgs)
 {
     ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
     ///to the Natron image.
 
+    assert(outArgs);
+    outArgs->error = 0;
+
     bool clockWise = bezier->isFeatherPolygonClockwiseOriented(false, time);
 
     const double absFeatherDist = std::abs(featherDist);
-
-    std::list<std::list<ParametricPoint> > featherPolygon;
-    std::list<std::list<ParametricPoint> > bezierPolygon;
 
     RectD featherPolyBBox;
     featherPolyBBox.setupInfinity();
@@ -3790,32 +3975,32 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
     double error = 1;
 #endif
 
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,error, true, &featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, error,&bezierPolygon, NULL);
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(false, time, mipmapLevel,error, true, &outArgs->featherPolygon, &featherPolyBBox);
+    bezier->evaluateAtTime_DeCasteljau(false, time, mipmapLevel, error,&outArgs->bezierPolygon, NULL);
 
 
     // First compute the mesh composed of triangles of the feather
-    assert( !featherPolygon.empty() && !bezierPolygon.empty() && featherPolygon.size() == bezierPolygon.size());
+    assert( !outArgs->featherPolygon.empty() && !outArgs->bezierPolygon.empty() && outArgs->featherPolygon.size() == outArgs->bezierPolygon.size());
 
-    std::list<std::list<ParametricPoint> >::const_iterator fIt = featherPolygon.begin();
-    for (std::list<std::list<ParametricPoint> > ::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it, ++fIt) {
+    std::vector<std::vector<ParametricPoint> >::const_iterator fIt = outArgs->featherPolygon.begin();
+    for (std::vector<std::vector<ParametricPoint> > ::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it, ++fIt) {
 
         // Iterate over each bezier segment.
         // There are the same number of bezier segments for the feather and the internal bezier. Each discretized segment is a contour (list of vertices)
 
-        std::list<ParametricPoint>::const_iterator bSegmentIt = it->begin();
-        std::list<ParametricPoint>::const_iterator fSegmentIt = fIt->begin();
+        std::vector<ParametricPoint>::const_iterator bSegmentIt = it->begin();
+        std::vector<ParametricPoint>::const_iterator fSegmentIt = fIt->begin();
 
         assert(!it->empty() && !fIt->empty());
 
 
         // prepare iterators to compute derivatives for feather distance
-        std::list<ParametricPoint>::const_iterator fnext = fSegmentIt;
+        std::vector<ParametricPoint>::const_iterator fnext = fSegmentIt;
         ++fnext;  // can only be valid since we assert the list is not empty
         if ( fnext == fIt->end() ) {
             fnext = fIt->begin();
         }
-        std::list<ParametricPoint>::const_iterator fprev = fIt->end();
+        std::vector<ParametricPoint>::const_iterator fprev = fIt->end();
         --fprev; // can only be valid since we assert the list is not empty
 
 
@@ -3825,7 +4010,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
             lastInnerVert.x = bSegmentIt->x;
             lastInnerVert.y = bSegmentIt->y;
             lastInnerVert.isInner = true;
-            featherMesh->push_back(lastInnerVert);
+            outArgs->featherMesh.push_back(lastInnerVert);
             ++bSegmentIt;
         }
         {
@@ -3849,7 +4034,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
             }
 
             lastOutterVert.isInner = false;
-            featherMesh->push_back(lastOutterVert);
+            outArgs->featherMesh.push_back(lastOutterVert);
             ++fSegmentIt;
         }
 
@@ -3892,7 +4077,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
                 lastInnerVert.x = bSegmentIt->x;
                 lastInnerVert.y = bSegmentIt->y;
                 lastInnerVert.isInner = true;
-                featherMesh->push_back(lastInnerVert);
+                outArgs->featherMesh.push_back(lastInnerVert);
                 ++bSegmentIt;
 
             } else {
@@ -3915,7 +4100,7 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
                     }
                 }
                 lastOutterVert.isInner = false;
-                featherMesh->push_back(lastOutterVert);
+                outArgs->featherMesh.push_back(lastOutterVert);
                 ++fSegmentIt;
 
 
@@ -3931,21 +4116,17 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
             if (fSegmentIt == fIt->end() && bSegmentIt == it->end()) {
                 break;
             }
-            featherMesh->push_back(lastOutterVert);
-            featherMesh->push_back(lastInnerVert);
-
-
+            outArgs->featherMesh.push_back(lastOutterVert);
+            outArgs->featherMesh.push_back(lastInnerVert);
+            
+            
         } // for(;;)
 
+    }
+ 
 
-    } // for all points in polygon
 
     // Now tesselate the internal bezier using glu
-    tessPolygonData tessData;
-    tessData.internalStrips = internalStrips;
-    tessData.internalFans = internalFans;
-    tessData.internalTriangles = internalTriangles;
-    tessData.error = 0;
     libtess_GLUtesselator* tesselator = libtess_gluNewTess();
 
     libtess_gluTessCallback(tesselator, LIBTESS_GLU_TESS_BEGIN_DATA, (void (*)())tess_begin_primitive_callback);
@@ -3957,50 +4138,54 @@ RotoContextPrivate::computeTriangles(const Bezier * bezier, double time, unsigne
     // From README: if you know that all polygons lie in the x-y plane, call
     // gluTessNormal(tess, 0.0, 0.0, 1.0) before rendering any polygons.
     libtess_gluTessNormal(tesselator, 0, 0, 1);
-    libtess_gluTessBeginPolygon(tesselator, (void*)&tessData);
+    libtess_gluTessBeginPolygon(tesselator, (void*)outArgs);
     libtess_gluTessBeginContour(tesselator);
 
-    for (std::list<std::list<ParametricPoint> >::const_iterator it = bezierPolygon.begin(); it != bezierPolygon.end(); ++it) {
-        for (std::list<ParametricPoint>::const_iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-            double coords[3] = {it2->x, it2->y, 1.};
-            libtess_gluTessVertex(tesselator, coords, (void*)&(*it2) /*per-vertex client data*/);
-        }
+    // Join the internal polygon into a single vector of vertices now that we don't need per-bezier segments separation.
+    // we will need the indices for libtess
+    for (std::vector<std::vector<ParametricPoint> >::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it) {
+        outArgs->bezierPolygonJoined.insert(outArgs->bezierPolygonJoined.end(), it->begin(), it->end());
     }
+    outArgs->bezierPolygon.clear();
 
+    outArgs->bezierPolygonIndices.resize(outArgs->bezierPolygonJoined.size());
+
+    for (std::size_t i = 0; i < outArgs->bezierPolygonIndices.size(); ++i) {
+        double coords[3] = {outArgs->bezierPolygonJoined[i].x, outArgs->bezierPolygonJoined[i].y, 1.};
+        outArgs->bezierPolygonIndices[i] = i;
+        libtess_gluTessVertex(tesselator, coords, (void*)(&outArgs->bezierPolygonIndices[i]) /*per-vertex client data*/);
+    }
 
     libtess_gluTessEndContour(tesselator);
     libtess_gluTessEndPolygon(tesselator);
     libtess_gluDeleteTess(tesselator);
 
     // check for errors
-    assert(tessData.error == 0);
+    assert(outArgs->error == 0);
 
 } // RotoContextPrivate::computeFeatherTriangles
 
 void
-RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& triangles,
-                                              const std::list<RotoTriangleFans>& fans,
-                                              const std::list<RotoTriangleStrips>& strips,
-                                              double shapeColor[3], cairo_pattern_t * mesh)
+RotoContextPrivate::renderInternalShape_cairo(const PolygonData& inArgs, double shapeColor[3], cairo_pattern_t * mesh)
 {
-    for (std::list<RotoTriangles>::const_iterator it = triangles.begin(); it!=triangles.end(); ++it ) {
+    for (std::vector<RotoTriangles>::const_iterator it = inArgs.internalTriangles.begin(); it!=inArgs.internalTriangles.end(); ++it ) {
 
-        assert(it->vertices.size() >= 3 && it->vertices.size() % 3 == 0);
+        assert(it->indices.size() >= 3 && it->indices.size() % 3 == 0);
 
         int c = 0;
-        const Point* coonsPatchStart = 0;
-        for (std::list<Point>::const_iterator it2 = it->vertices.begin(); it2!=it->vertices.end(); ++it2) {
+        const int* coonsPatchStart = 0;
+        for (std::vector<int>::const_iterator it2 = it->indices.begin(); it2!=it->indices.end(); ++it2) {
             if (c == 0) {
                 cairo_mesh_pattern_begin_patch(mesh);
-                cairo_mesh_pattern_move_to(mesh, it2->x, it2->y);
+                cairo_mesh_pattern_move_to(mesh, inArgs.bezierPolygonJoined[*it2].x, inArgs.bezierPolygonJoined[*it2].y);
                 coonsPatchStart = &(*it2);
             } else {
-                cairo_mesh_pattern_line_to(mesh, it2->x, it2->y);
+                cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*it2].x, inArgs.bezierPolygonJoined[*it2].y);
             }
             if (c == 2) {
                 assert(coonsPatchStart);
                 // close coons patch by transforming the triangle into a degenerated coons patch
-                cairo_mesh_pattern_line_to(mesh, coonsPatchStart->x, coonsPatchStart->y);
+                cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*coonsPatchStart].x, inArgs.bezierPolygonJoined[*coonsPatchStart].y);
                 // IMPORTANT NOTE:
                 // The two sqrt below are due to a probable cairo bug.
                 // To check wether the bug is present is a given cairo version,
@@ -4022,20 +4207,20 @@ RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& tr
             }
         }
     }
-    for (std::list<RotoTriangleFans>::const_iterator it = fans.begin(); it!=fans.end(); ++it ) {
+    for (std::vector<RotoTriangleFans>::const_iterator it = inArgs.internalFans.begin(); it!=inArgs.internalFans.end(); ++it ) {
 
-        assert(it->vertices.size() >= 3);
-        std::list<Point>::const_iterator cur = it->vertices.begin();
-        const Point* fanStart = &(*(cur));
+        assert(it->indices.size() >= 3);
+        std::vector<int>::const_iterator cur = it->indices.begin();
+        const int* fanStart = &(*(cur));
         ++cur;
-        std::list<Point>::const_iterator next = cur;
+        std::vector<int>::const_iterator next = cur;
         ++next;
-        for (;next != it->vertices.end();) {
+        for (;next != it->indices.end();) {
             cairo_mesh_pattern_begin_patch(mesh);
-            cairo_mesh_pattern_move_to(mesh, fanStart->x, fanStart->y);
-            cairo_mesh_pattern_line_to(mesh, cur->x, cur->y);
-            cairo_mesh_pattern_line_to(mesh, next->x, next->y);
-            cairo_mesh_pattern_line_to(mesh, fanStart->x, fanStart->y);
+            cairo_mesh_pattern_move_to(mesh, inArgs.bezierPolygonJoined[*fanStart].x, inArgs.bezierPolygonJoined[*fanStart].y);
+            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*cur].x, inArgs.bezierPolygonJoined[*cur].y);
+            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*next].x, inArgs.bezierPolygonJoined[*next].y);
+            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*fanStart].x, inArgs.bezierPolygonJoined[*fanStart].y);
             // IMPORTANT NOTE:
             // The two sqrt below are due to a probable cairo bug.
             // To check wether the bug is present is a given cairo version,
@@ -4056,21 +4241,21 @@ RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& tr
             ++cur;
         }
     }
-    for (std::list<RotoTriangleStrips>::const_iterator it = strips.begin(); it!=strips.end(); ++it ) {
+    for (std::vector<RotoTriangleStrips>::const_iterator it = inArgs.internalStrips.begin(); it!=inArgs.internalStrips.end(); ++it ) {
 
-        assert(it->vertices.size() >= 3);
+        assert(it->indices.size() >= 3);
 
-        std::list<Point>::const_iterator cur = it->vertices.begin();
-        const Point* prevPrev = &(*(cur));
+        std::vector<int>::const_iterator cur = it->indices.begin();
+        const int* prevPrev = &(*(cur));
         ++cur;
-        const Point* prev = &(*(cur));
+        const int* prev = &(*(cur));
         ++cur;
-        for (; cur != it->vertices.end(); ++cur) {
+        for (; cur != it->indices.end(); ++cur) {
             cairo_mesh_pattern_begin_patch(mesh);
-            cairo_mesh_pattern_move_to(mesh, prevPrev->x, prevPrev->y);
-            cairo_mesh_pattern_line_to(mesh, prev->x, prev->y);
-            cairo_mesh_pattern_line_to(mesh, cur->x, cur->y);
-            cairo_mesh_pattern_line_to(mesh, prevPrev->x, prevPrev->y);
+            cairo_mesh_pattern_move_to(mesh, inArgs.bezierPolygonJoined[*prevPrev].x, inArgs.bezierPolygonJoined[*prevPrev].y);
+            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*prev].x, inArgs.bezierPolygonJoined[*prev].y);
+            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*cur].x, inArgs.bezierPolygonJoined[*cur].y);
+            cairo_mesh_pattern_line_to(mesh, inArgs.bezierPolygonJoined[*prevPrev].x, inArgs.bezierPolygonJoined[*prevPrev].y);
 
             // IMPORTANT NOTE:
             // The two sqrt below are due to a probable cairo bug.
@@ -4096,7 +4281,7 @@ RotoContextPrivate::renderInternalShape_cairo(const std::list<RotoTriangles>& tr
 
 
 void
-RotoContextPrivate::renderInternalShape(double time,
+RotoContextPrivate::renderInternalShape_old_cairo(double time,
                                         unsigned int mipmapLevel,
                                         double /*shapeColor*/[3],
                                         double /*opacity*/,
@@ -4305,7 +4490,7 @@ RotoContextPrivate::renderInternalShape(double time,
     cairo_fill(cr);
 //    }
 #endif // ifdef ROTO_USE_MESH_PATTERN_ONLY
-} // RotoContextPrivate::renderInternalShape
+} // RotoContextPrivate::renderInternalShape_old_cairo
 
 struct qpointf_compare_less
 {

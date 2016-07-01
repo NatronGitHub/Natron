@@ -92,6 +92,12 @@ public:
 
     unsigned int getFBOId() const;
 
+    unsigned int getOrCreateVBOVerticesId();
+
+    unsigned int getOrCreateVBOColorsId();
+
+    unsigned int getOrCreateIBOId();
+
     // Helper functions used by platform dependent implementations
     static bool stringInExtensionString(const char* string, const char* extensions);
     static const FramebufferConfig& chooseFBConfig(const FramebufferConfig& desired, const std::vector<FramebufferConfig>& alternatives, int count);

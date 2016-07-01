@@ -2065,9 +2065,10 @@ AppManager::getImage(const ImageKey & key,
 bool
 AppManager::getImageOrCreate(const ImageKey & key,
                              const boost::shared_ptr<ImageParams>& params,
+                             ImageLocker* locker,
                              boost::shared_ptr<Image>* returnValue) const
 {
-    return _imp->_nodeCache->getOrCreate(key, params, 0, returnValue);
+    return _imp->_nodeCache->getOrCreate(key, params, locker, returnValue);
 }
 
 bool

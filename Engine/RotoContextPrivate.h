@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AppManager.h"
 #include "Engine/BezierCP.h"
+#include "Engine/Bezier.h"
 #include "Engine/Curve.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
@@ -372,17 +373,17 @@ struct RotoFeatherVertex
 
 struct RotoTriangleStrips
 {
-    std::list<Point> vertices;
+    std::vector<int> indices;
 };
 
 struct RotoTriangleFans
 {
-    std::list<Point> vertices;
+    std::vector<int> indices;
 };
 
 struct RotoTriangles
 {
-    std::list<Point> vertices;
+    std::vector<int> indices;
 };
 
 struct BezierPrivate
@@ -771,9 +772,6 @@ public:
 #endif
     std::list<KnobPtr > knobs; //< list for easy access to all knobs
 
-    //Used to prevent 2 threads from writing the same image in the rotocontext
-    mutable QReadWriteLock cacheAccessMutex;
-
     RotoDrawableItemPrivate(bool isPaintingNode)
         : effectNode()
         , mergeNode()
@@ -821,7 +819,6 @@ public:
         , timeOffset( new KnobInt(NULL, tr(kRotoBrushTimeOffsetParamLabel), 1, true) )
         , timeOffsetMode( new KnobChoice(NULL, tr(kRotoBrushTimeOffsetModeParamLabel), 1, true) )
         , knobs()
-        , cacheAccessMutex()
     {
         opacity.reset( new KnobDouble(NULL, tr(kRotoOpacityParamLabel), 1, true) );
         opacity->setHintToolTip( tr(kRotoOpacityHint) );
@@ -2184,6 +2181,35 @@ public:
         return minLayer;
     }
 
+    struct PolygonData
+    {
+
+        // Discretized beziers
+        std::vector<std::vector<ParametricPoint> > featherPolygon;
+        std::vector<std::vector<ParametricPoint> > bezierPolygon;
+
+        // Union of all discretized bezier segments
+        std::vector<ParametricPoint> bezierPolygonJoined;
+
+        // indices (from 0 to n) of the points in bezierPoygonJoined
+        std::vector<int> bezierPolygonIndices;
+
+        // The computed mesh for the feather
+        std::vector<RotoFeatherVertex> featherMesh;
+
+        // Stuff out of libtess
+        std::vector<RotoTriangleFans> internalFans;
+        std::vector<RotoTriangles> internalTriangles;
+        std::vector<RotoTriangleStrips> internalStrips;
+
+        // internal stuff for libtess callbacks
+        boost::scoped_ptr<RotoTriangleFans> fanBeingEdited;
+        boost::scoped_ptr<RotoTriangles> trianglesBeingEdited;
+        boost::scoped_ptr<RotoTriangleStrips> stripsBeingEdited;
+        
+        unsigned int error;
+    };
+
     static void renderDot(cairo_t* cr,
                           std::vector<cairo_pattern_t*>* dotPatterns,
                           const Point &center,
@@ -2193,7 +2219,7 @@ public:
                           bool doBuildUp,
                           const std::vector<std::pair<double, double> >& opacityStops,
                           double opacity);
-    static double renderStroke(cairo_t* cr,
+    static double renderStroke_cairo(cairo_t* cr,
                                std::vector<cairo_pattern_t*>& dotPatterns,
                                const std::list<std::list<std::pair<Point, double> > >& strokes,
                                double distToNext,
@@ -2202,15 +2228,18 @@ public:
                                double opacity,
                                double time,
                                unsigned int mipmapLevel);
-    static void renderBezier(cairo_t* cr, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
-    static void renderFeather(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
-    static void renderFeather_cairo(const std::list<RotoFeatherVertex>& vertices, double shapeColor[3],  double fallOff, cairo_pattern_t * mesh);
-    static void renderInternalShape_cairo(const std::list<RotoTriangles>& triangles,
-                                          const std::list<RotoTriangleFans>& fans,
-                                          const std::list<RotoTriangleStrips>& strips,
+    static void renderBezier_cairo(cairo_t* cr, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
+    static void renderFeather_old_cairo(const Bezier * bezier, double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
+    static void renderInternalShape_old_cairo(double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
+    static void renderFeather_cairo(const PolygonData& inArgs, double shapeColor[3],  double fallOff, cairo_pattern_t * mesh);
+    static void renderInternalShape_cairo(const PolygonData& inArgs,
                                           double shapeColor[3],  cairo_pattern_t * mesh);
-    static void computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel,  double featherDist, std::list<RotoFeatherVertex>* featherMesh, std::list<RotoTriangleFans>* internalFans, std::list<RotoTriangles>* internalTriangles,std::list<RotoTriangleStrips>* internalStrips);
-    static void renderInternalShape(double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
+
+    static void renderBezier_gl(const OSGLContextPtr& glContext, const Bezier* bezier, double opacity, double time, double startTime, double endTime, double mbFrameStep, unsigned int mipmapLevel);
+
+
+
+    static void computeTriangles(const Bezier * bezier, double time, unsigned int mipmapLevel,  double featherDist, PolygonData* outArgs);
     static void bezulate(double time, const BezierCPs& cps, std::list<BezierCPs>* patches);
     static void applyAndDestroyMask(cairo_t* cr, cairo_pattern_t* mesh);
 };

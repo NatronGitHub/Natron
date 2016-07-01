@@ -708,7 +708,7 @@ bezierSegmentEval(bool useGuiCurves,
                   double errorScale,
 #endif
                   const Transform::Matrix3x3& transform,
-                  std::list< ParametricPoint >* points, ///< output
+                  std::vector< ParametricPoint >* points, ///< output
                   RectD* bbox = NULL) ///< input/output (optional)
 {
     Transform::Point3D p0M, p1M, p2M, p3M;
@@ -2516,8 +2516,8 @@ Bezier::deCastelJau(bool useGuiCurves,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
-                    std::list<std::list<ParametricPoint> >* points,
-                    std::list<ParametricPoint >* pointsSingleList,
+                    std::vector<std::vector<ParametricPoint> >* points,
+                    std::vector<ParametricPoint >* pointsSingleList,
                     RectD* bbox)
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
@@ -2537,7 +2537,7 @@ Bezier::deCastelJau(bool useGuiCurves,
         }
 
         if (points) {
-            std::list<ParametricPoint> segmentPoints;
+            std::vector<ParametricPoint> segmentPoints;
             bezierSegmentEval(useGuiCurves, *(*it), *(*next), time, ViewIdx(0), mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox);
             points->push_back(segmentPoints);
         } else {
@@ -2561,7 +2561,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 #else
                                    double errorScale,
 #endif
-                                   std::list<std::list< ParametricPoint> >* points,
+                                   std::vector<std::vector< ParametricPoint> >* points,
                                    RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
@@ -2582,7 +2582,7 @@ Bezier::evaluateAtTime_DeCasteljau(bool useGuiPoints,
 #else
                                    double errorScale,
 #endif
-                                   std::list<ParametricPoint >* pointsSingleList,
+                                   std::vector<ParametricPoint >* pointsSingleList,
                                    RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,
@@ -2603,8 +2603,8 @@ Bezier::evaluateAtTime_DeCasteljau_internal(bool useGuiCurves,
 #else
                                             double errorScale,
 #endif
-                                            std::list<std::list<ParametricPoint> >* points,
-                                            std::list<ParametricPoint >* pointsSingleList,
+                                            std::vector<std::vector<ParametricPoint> >* points,
+                                            std::vector<ParametricPoint >* pointsSingleList,
                                             RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
@@ -2625,7 +2625,7 @@ void
 Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(bool useGuiPoints,
                                                 double time,
                                                 unsigned int mipMapLevel,
-                                                std::list<std::list<ParametricPoint> >* points,
+                                                std::vector<std::vector<ParametricPoint> >* points,
                                                 RectD* bbox) const
 {
     evaluateAtTime_DeCasteljau(useGuiPoints, time, mipMapLevel,
@@ -2647,7 +2647,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiCurves,
                                                 double errorScale,
 #endif
                                              bool evaluateIfEqual,
-                                             std::list<ParametricPoint >* points,
+                                             std::vector<ParametricPoint >* points,
                                              RectD* bbox) const
 {
     evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiCurves, time, mipMapLevel,
@@ -2669,8 +2669,8 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
                                                          double errorScale,
 #endif
                                                          bool evaluateIfEqual,
-                                                         std::list<std::list<ParametricPoint>  >* points,
-                                                         std::list<ParametricPoint >* pointsSingleList,
+                                                         std::vector<std::vector<ParametricPoint>  >* points,
+                                                         std::vector<ParametricPoint >* pointsSingleList,
                                                          RectD* bbox) const
 {
     assert((points && !pointsSingleList) || (!points && pointsSingleList));
@@ -2709,7 +2709,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(bool useGuiPoints,
             continue;
         }
         if (points) {
-            std::list<ParametricPoint> segmentPoints;
+            std::vector<ParametricPoint> segmentPoints;
             bezierSegmentEval(useGuiPoints, *(*it), *(*next), time, ViewIdx(0),  mipMapLevel,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
@@ -2753,7 +2753,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(bool useGuiPoints,
                                                 double errorScale,
 #endif
                                                 bool evaluateIfEqual, ///< evaluate only if feather points are different from control points
-                                                std::list<std::list<ParametricPoint> >* points, ///< output
+                                                std::vector<std::vector<ParametricPoint> >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
     evaluateFeatherPointsAtTime_DeCasteljau_internal(useGuiPoints, time, mipMapLevel,

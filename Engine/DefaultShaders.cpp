@@ -83,4 +83,11 @@ const char* copyUnprocessedChannels_FragmentShader =
     "#endif\n"
     "}";
 
+const char* rotoRamp_FragmentShader =
+"uniform vec4 fillColor;\n"
+"\n"
+"void main() {\n"
+"	gl_FragColor = fillColor;\n"
+"}";
+
 NATRON_NAMESPACE_EXIT;

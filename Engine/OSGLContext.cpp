@@ -252,6 +252,15 @@ struct OSGLContextPrivate
     // The main FBO onto which we do all renders
     unsigned int fboID;
 
+    // A vbo used to upload vertices (for now only used in Roto)
+    unsigned int vboVerticesID;
+
+    // a vbo used to upload vertices colors (for now only used in Roto)
+    unsigned int vboColorsID;
+
+    // an ibo used to call glDrawElements (for now only used in Roto)
+    unsigned int iboID;
+
     boost::scoped_ptr<ShadersContainer<GL_GPU> > gpuShaders;
     boost::scoped_ptr<ShadersContainer<GL_CPU> > cpuShaders;
 
@@ -271,6 +280,9 @@ struct OSGLContextPrivate
 #endif
         , pboID(0)
         , fboID(0)
+        , vboVerticesID(0)
+        , vboColorsID(0)
+        , iboID(0)
         , gpuShaders()
         , cpuShaders()
     {
@@ -365,6 +377,30 @@ OSGLContext::~OSGLContext()
             GL_CPU::glDeleteFramebuffers(1, &_imp->fboID);
         }
     }
+
+    if (_imp->vboVerticesID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glDeleteBuffers(1, &_imp->vboVerticesID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_imp->vboVerticesID);
+        }
+    }
+
+    if (_imp->vboColorsID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glDeleteBuffers(1, &_imp->vboColorsID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_imp->vboColorsID);
+        }
+    }
+
+    if (_imp->iboID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glDeleteBuffers(1, &_imp->iboID);
+        } else {
+            GL_CPU::glDeleteBuffers(1, &_imp->iboID);
+        }
+    }
 }
 
 void
@@ -408,6 +444,45 @@ unsigned int
 OSGLContext::getFBOId() const
 {
     return _imp->fboID;
+}
+
+unsigned int
+OSGLContext::getOrCreateVBOVerticesId()
+{
+    if (!_imp->vboVerticesID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glGenBuffers(1, &_imp->vboVerticesID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_imp->vboVerticesID);
+        }
+    }
+    return _imp->vboVerticesID;
+}
+
+unsigned int
+OSGLContext::getOrCreateVBOColorsId()
+{
+    if (!_imp->vboColorsID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glGenBuffers(1, &_imp->vboColorsID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_imp->vboColorsID);
+        }
+    }
+    return _imp->vboColorsID;
+}
+
+unsigned int
+OSGLContext::getOrCreateIBOId()
+{
+    if (!_imp->iboID) {
+        if (_imp->useGPUContext) {
+            GL_GPU::glGenBuffers(1, &_imp->iboID);
+        } else {
+            GL_CPU::glGenBuffers(1, &_imp->iboID);
+        }
+    }
+    return _imp->iboID;
 }
 
 void
